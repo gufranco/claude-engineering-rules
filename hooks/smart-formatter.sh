@@ -25,25 +25,34 @@ fi
 
 EXT="${FILE_PATH##*.}"
 
+format_with() {
+    if command -v "$1" >/dev/null 2>&1; then
+        "$@" >/dev/null 2>&1 || true
+    fi
+}
+
 case "${EXT}" in
     js|jsx|ts|tsx|json|css|scss|html|md|yaml|yml)
-        command -v prettier >/dev/null 2>&1 && prettier --write "${FILE_PATH}" >/dev/null 2>&1 || true
+        format_with prettier --write "${FILE_PATH}"
         ;;
     py)
-        command -v black >/dev/null 2>&1 && black --quiet "${FILE_PATH}" >/dev/null 2>&1 || \
-        command -v ruff >/dev/null 2>&1 && ruff format "${FILE_PATH}" >/dev/null 2>&1 || true
+        if command -v black >/dev/null 2>&1; then
+            black --quiet "${FILE_PATH}" >/dev/null 2>&1 || true
+        elif command -v ruff >/dev/null 2>&1; then
+            ruff format "${FILE_PATH}" >/dev/null 2>&1 || true
+        fi
         ;;
     go)
-        command -v gofmt >/dev/null 2>&1 && gofmt -w "${FILE_PATH}" >/dev/null 2>&1 || true
+        format_with gofmt -w "${FILE_PATH}"
         ;;
     rs)
-        command -v rustfmt >/dev/null 2>&1 && rustfmt "${FILE_PATH}" >/dev/null 2>&1 || true
+        format_with rustfmt "${FILE_PATH}"
         ;;
     rb)
-        command -v rubocop >/dev/null 2>&1 && rubocop -A --fail-level E "${FILE_PATH}" >/dev/null 2>&1 || true
+        format_with rubocop -A --fail-level E "${FILE_PATH}"
         ;;
     sh|bash|zsh)
-        command -v shfmt >/dev/null 2>&1 && shfmt -w "${FILE_PATH}" >/dev/null 2>&1 || true
+        format_with shfmt -w "${FILE_PATH}"
         ;;
     *) ;;
 esac
