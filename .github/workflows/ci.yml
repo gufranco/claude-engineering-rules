@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install linters
+        run: pip install ruff
+
+      - name: ShellCheck (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck --severity=style --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
+
+      - name: ShellCheck (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install shellcheck
+          shellcheck --severity=style --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
+
+      - name: Python lint
+        run: ruff check hooks/*.py scripts/*.py
+
+      - name: Validate JSON
+        run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True)]"
+
+      - name: Validate Markdown structure
+        run: |
+          errors=0
+          for f in rules/*.md skills/*/SKILL.md checklists/*.md; do
+            # Check for unclosed code blocks (odd number of triple backticks)
+            count=$(grep -c '```' "$f" 2>/dev/null || echo 0)
+            if [ $((count % 2)) -ne 0 ]; then
+              echo "ERROR: $f has unclosed code block ($count triple-backtick lines)"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "$errors file(s) with markdown issues"
+            exit 1
+          fi
+          echo "All markdown files valid"
+
+  hooks:
+    name: Hook tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install jq (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq jq
+
+      - name: Make hooks executable
+        run: chmod +x hooks/*.sh hooks/*.py tests/test-hooks.sh
+
+      - name: Run hook smoke tests
+        run: bash tests/test-hooks.sh
