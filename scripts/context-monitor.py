@@ -17,7 +17,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 
 # Context window estimates by model family (in tokens)
 CONTEXT_LIMITS = {

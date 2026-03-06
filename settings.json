@@ -100,7 +100,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "osascript -e 'display notification \"Response complete\" with title \"Claude Code\"' 2>/dev/null || true"
+            "command": "if command -v osascript >/dev/null 2>&1; then osascript -e 'display notification \"Response complete\" with title \"Claude Code\"'; elif command -v notify-send >/dev/null 2>&1; then notify-send 'Claude Code' 'Response complete'; fi"
           }
         ]
       }

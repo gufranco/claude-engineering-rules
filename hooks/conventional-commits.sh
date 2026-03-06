@@ -11,7 +11,7 @@ set -euo pipefail
 
 INPUT=$(cat)
 
-COMMAND=$(echo "$INPUT" | python3 -c "
+COMMAND=$(echo "${INPUT}" | python3 -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -21,17 +21,17 @@ except:
 " 2>/dev/null)
 
 # Only check git commit commands
-if ! echo "$COMMAND" | grep -qE '\bgit\s+commit\b'; then
+if ! echo "${COMMAND}" | grep -qE '\bgit\s+commit\b'; then
     exit 0
 fi
 
 # Skip amend, merge, and squash commits (they reuse existing messages)
-if echo "$COMMAND" | grep -qE '\-\-amend|\-\-no-edit|\-\-squash'; then
+if echo "${COMMAND}" | grep -qE '\-\-amend|\-\-no-edit|\-\-squash'; then
     exit 0
 fi
 
 # Extract message from -m flag (handles both 'single' and "double" quotes)
-MESSAGE=$(echo "$COMMAND" | python3 -c "
+MESSAGE=$(echo "${COMMAND}" | python3 -c "
 import re, sys
 cmd = sys.stdin.read()
 # Match heredoc format: cat <<'EOF' or cat <<EOF
@@ -40,7 +40,7 @@ if heredoc:
     print(heredoc.group(1).strip())
     sys.exit(0)
 # Match -m with quotes
-m_flag = re.search(r'-m\s+[\"'\\''](.+?)[\"'\\'']', cmd)
+m_flag = re.search(r'-m\s+[\x22\x27](.+?)[\x22\x27]', cmd)
 if m_flag:
     print(m_flag.group(1).strip())
     sys.exit(0)
@@ -55,19 +55,19 @@ if m_sub:
 " 2>/dev/null)
 
 # If we couldn't extract a message, allow (might be interactive or --allow-empty-message)
-if [ -z "$MESSAGE" ]; then
+if [[ -z "${MESSAGE}" ]]; then
     exit 0
 fi
 
 # Get the first line (subject)
-SUBJECT=$(echo "$MESSAGE" | head -1)
+SUBJECT=$(echo "${MESSAGE}" | head -1)
 
 # Validate conventional commit format
 PATTERN='^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?(!)?: .+'
-if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+if ! echo "${SUBJECT}" | grep -qE "${PATTERN}"; then
     echo "BLOCKED: Commit message does not follow conventional commit format."
     echo ""
-    echo "  Got: $SUBJECT"
+    echo "  Got: ${SUBJECT}"
     echo ""
     echo "  Expected: <type>(<scope>): <subject>"
     echo "  Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert"
@@ -75,12 +75,12 @@ if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
     exit 2
 fi
 
-# Validate subject length (max 50 chars for subject line)
+# Validate subject length (max 72 chars for subject line)
 SUBJECT_LENGTH=${#SUBJECT}
-if [ "$SUBJECT_LENGTH" -gt 72 ]; then
-    echo "BLOCKED: Commit subject line is $SUBJECT_LENGTH characters (max 72)."
+if [[ "${SUBJECT_LENGTH}" -gt 72 ]]; then
+    echo "BLOCKED: Commit subject line is ${SUBJECT_LENGTH} characters (max 72)."
     echo ""
-    echo "  Got: $SUBJECT"
+    echo "  Got: ${SUBJECT}"
     echo ""
     echo "  Keep the subject concise. Use the body for details."
     exit 2
