@@ -1,0 +1,48 @@
+################################################################################
+# Claude Code runtime data
+################################################################################
+
+# Session and conversation data
+debug/
+projects/
+plans/
+todos/
+tasks/
+file-history/
+shell-snapshots/
+backups/
+paste-cache/
+session-env/
+history.jsonl
+
+# Caches
+cache/
+stats-cache.json
+mcp-needs-auth-cache.json
+
+# IDE and editor integration
+ide/
+.vscode/
+
+# Plugins and telemetry
+plugins/
+telemetry/
+
+# Logs
+changes.log
+*.log
+
+################################################################################
+# macOS
+################################################################################
+.DS_Store
+._*
+
+################################################################################
+# General
+################################################################################
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
