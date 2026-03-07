@@ -121,3 +121,27 @@ Every test must produce the same result on every run, on every machine. A test t
 | File system | Use temp directories, clean up in `afterEach` |
 
 If a test fails intermittently, fix or delete it. Flaky tests erode trust in the entire suite and train developers to ignore failures.
+
+## Snapshot Testing
+
+Snapshot tests serialize output and compare it against a stored reference. They catch unintended changes but create maintenance burden when used carelessly.
+
+**When snapshots are appropriate:**
+
+- Serialized output that is expensive to assert field-by-field: complex JSON responses, GraphQL query results, CLI output formatting
+- Rendered component trees where the exact markup matters, like design system components
+- Generated code, SQL, or config where the full output should be reviewed on change
+
+**When snapshots are inappropriate:**
+
+- Business logic. A snapshot passing tells you "nothing changed", not "the behavior is correct". Use explicit assertions
+- Data structures that change frequently. API responses with timestamps, IDs, or version fields generate constant snapshot updates that train developers to blindly approve changes
+- Large objects where a meaningful diff is hard to spot. If the snapshot is 500 lines, nobody reads the diff carefully
+
+**Rules:**
+
+- Review every snapshot update in the diff. Blindly running `--update` defeats the purpose
+- Keep snapshots small. Extract the relevant subset before snapshotting instead of capturing the entire response
+- Use inline snapshots when the output is short enough to read in the test file. External `.snap` files are harder to review
+- Never snapshot non-deterministic values. Strip or mask timestamps, UUIDs, and random tokens before comparing
+- When a snapshot test fails during refactoring, consider whether it should be an explicit assertion instead. If the test name does not describe a specific behavior, it probably should be

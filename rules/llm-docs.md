@@ -43,6 +43,7 @@ When implementing, debugging, or making decisions about a technology, check the 
 | Fastify | [llms.txt](https://fastify.dev/llms.txt) | [llms-full.txt](https://fastify.dev/llms-full.txt) |
 | Hono | [llms.txt](https://hono.dev/llms.txt) | [llms-full.txt](https://hono.dev/llms-full.txt) |
 | Fiber | [llms.txt](https://docs.gofiber.io/llms.txt) | [llms-full.txt](https://docs.gofiber.io/llms-full.txt) |
+| NestJS | [llms.txt](https://docs.nestjs.com/llms.txt) | N/A |
 | Express.js | N/A | [4.x API](https://expressjs.com/en/4x/api.html) |
 | Rails | N/A | [Guides](https://guides.rubyonrails.org/) |
 | Django | N/A | [Docs](https://docs.djangoproject.com/en/stable/) |
@@ -59,6 +60,7 @@ When implementing, debugging, or making decisions about a technology, check the 
 | MongoDB | [llms.txt](https://www.mongodb.com/llms.txt) | N/A |
 | Redis | [llms.txt](https://redis.io/llms.txt) | N/A |
 | Supabase | [llms.txt](https://supabase.com/llms.txt) | [Docs llms.txt](https://supabase.com/docs/llms.txt) |
+| Turso | [llms.txt](https://docs.turso.tech/llms.txt) | [llms-full.txt](https://docs.turso.tech/llms-full.txt) |
 | PostgreSQL | N/A | [Docs](https://www.postgresql.org/docs/current/) |
 
 ## Frontend
@@ -72,6 +74,11 @@ When implementing, debugging, or making decisions about a technology, check the 
 | Angular | [llms.txt](https://angular.dev/llms.txt) | N/A |
 | TanStack Query | [llms.txt](https://tanstack.com/llms.txt) | Via llms.txt index |
 | Turborepo | [llms.txt](https://turborepo.com/llms.txt) | Via llms.txt index |
+| Astro | [llms.txt](https://docs.astro.build/llms.txt) | [llms-full.txt](https://docs.astro.build/llms-full.txt) |
+| Remix | [llms.txt](https://remix.run/llms.txt) | N/A |
+| SolidJS | [llms.txt](https://docs.solidjs.com/llms.txt) | [llms-full.txt](https://docs.solidjs.com/llms-full.txt) |
+| shadcn/ui | [llms.txt](https://ui.shadcn.com/llms.txt) | [llms-full.txt](https://ui.shadcn.com/llms-full.txt) |
+| Tailwind CSS | [llms.txt](https://tailwindcss.com/llms.txt) | [llms-full.txt](https://tailwindcss.com/llms-full.txt) |
 
 ## Validation and Testing
 
@@ -82,6 +89,7 @@ When implementing, debugging, or making decisions about a technology, check the 
 | Playwright | N/A | [Docs](https://playwright.dev/docs/intro) |
 | Jest | N/A | [Docs](https://jestjs.io/docs/getting-started) |
 | pytest | N/A | [Docs](https://docs.pytest.org/en/stable/) |
+| Biome | [llms.txt](https://biomejs.dev/llms.txt) | [llms-full.txt](https://biomejs.dev/llms-full.txt) |
 
 ## Services and APIs
 
@@ -92,6 +100,8 @@ When implementing, debugging, or making decisions about a technology, check the 
 | OpenAI | [llms.txt](https://platform.openai.com/docs/llms.txt) | [llms-full.txt](https://platform.openai.com/docs/llms-full.txt) |
 | Datadog | [llms.txt](https://docs.datadoghq.com/llms.txt) | N/A |
 | Linear | [llms.txt](https://linear.app/llms.txt) | Via llms.txt index |
+| Resend | [llms.txt](https://resend.com/docs/llms.txt) | [llms-full.txt](https://resend.com/docs/llms-full.txt) |
+| Upstash | [llms.txt](https://upstash.com/docs/llms.txt) | [llms-full.txt](https://upstash.com/docs/llms-full.txt) |
 
 ## When to Fetch Docs
 
