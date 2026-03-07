@@ -76,6 +76,14 @@ run_test "ignores non-commit commands" \
     "${HOOKS}/conventional-commits.sh" \
     "${FIXTURES}/commit-not-a-commit.json" 0
 
+run_test "blocks commit with subject over 72 chars" \
+    "${HOOKS}/conventional-commits.sh" \
+    "${FIXTURES}/bash-commit-long-subject.json" 2
+
+run_test "allows valid heredoc commit" \
+    "${HOOKS}/conventional-commits.sh" \
+    "${FIXTURES}/bash-commit-heredoc.json" 0
+
 echo ""
 echo "=== Secret Scanner ==="
 
@@ -87,6 +95,12 @@ run_test "allows safe commands" \
     "${HOOKS}/secret-scanner.py" \
     "${FIXTURES}/bash-safe-command.json" 0
 
+# Note: positive secret detection requires staged files with actual secrets
+# in a real git repo. The scanner correctly skips when there are no staged files.
+run_test "allows commit when no staged files have secrets" \
+    "${HOOKS}/secret-scanner.py" \
+    "${FIXTURES}/commit-with-secret.json" 0
+
 echo ""
 echo "=== Smart Formatter ==="
 
@@ -97,9 +111,81 @@ run_test "handles nonexistent file gracefully" \
 echo ""
 echo "=== Change Tracker ==="
 
-run_test "handles nonexistent file gracefully" \
+run_test "logs file modification for Write tool" \
     "${HOOKS}/change-tracker.sh" \
     "${FIXTURES}/write-tool-input.json" 0
+
+run_test "handles nonexistent file gracefully" \
+    "${HOOKS}/change-tracker.sh" \
+    "${FIXTURES}/edit-nonexistent-file.json" 0
+
+echo ""
+echo "=== TDD Gate ==="
+
+run_test "allows editing test files" \
+    "${HOOKS}/tdd-gate.sh" \
+    "${FIXTURES}/edit-test-file.json" 0
+
+run_test "allows editing config files" \
+    "${HOOKS}/tdd-gate.sh" \
+    "${FIXTURES}/edit-config-file.json" 0
+
+run_test "ignores non-Edit tool calls" \
+    "${HOOKS}/tdd-gate.sh" \
+    "${FIXTURES}/bash-safe-command.json" 0
+
+echo ""
+echo "=== Large File Blocker ==="
+
+run_test "allows safe commands" \
+    "${HOOKS}/large-file-blocker.sh" \
+    "${FIXTURES}/bash-safe-command.json" 0
+
+run_test "allows non-commit commands" \
+    "${HOOKS}/large-file-blocker.sh" \
+    "${FIXTURES}/commit-not-a-commit.json" 0
+
+# Note: positive large file detection requires staged files exceeding 5MB
+# in a real git repo. The blocker correctly passes when there are no large staged files.
+run_test "allows commit when no staged files are large" \
+    "${HOOKS}/large-file-blocker.sh" \
+    "${FIXTURES}/commit-valid.json" 0
+
+echo ""
+echo "=== Env File Guard ==="
+
+run_test "blocks writing to .env" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-env-file.json" 2
+
+run_test "allows writing to .env.example" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-env-example.json" 0
+
+run_test "blocks editing private key files" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/edit-private-key.json" 2
+
+run_test "blocks writing to secrets directory" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-secrets-dir.json" 2
+
+run_test "allows safe file writes" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-tool-input.json" 0
+
+run_test "ignores non-Write/Edit tools" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/bash-safe-command.json" 0
+
+echo ""
+echo "=== Scope Guard ==="
+
+# scope-guard runs as a Stop hook and reads git state, not stdin tool input.
+# It always exits 0 (non-blocking), so we verify it doesn't crash.
+run_test "exits cleanly outside a git repo" \
+    "${HOOKS}/scope-guard.sh" \
+    "${FIXTURES}/bash-safe-command.json" 0
 
 echo ""
 echo "=== Results ==="
