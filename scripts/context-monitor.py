@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 # Context window estimates by model family (in tokens)
 CONTEXT_LIMITS = {
@@ -25,8 +26,11 @@ CONTEXT_LIMITS = {
     "haiku": 200000,
 }
 
-# Rough bytes-per-token ratio for transcript files
-BYTES_PER_TOKEN = 4
+# Rough bytes-per-token ratio for transcript files.
+# Transcripts are JSON with metadata, tool results, and system prompts,
+# which inflate byte count relative to content tokens. 3 bytes per token
+# is a better estimate for structured content than the 4:1 prose ratio.
+BYTES_PER_TOKEN = 3
 
 # ANSI-free statusline symbols
 BAR_FULL = "#"
@@ -84,6 +88,24 @@ def format_cost(cost):
         return ""
 
 
+def format_duration(transcript_path):
+    """Calculate session duration from transcript file creation time."""
+    if not transcript_path or not os.path.exists(transcript_path):
+        return ""
+    try:
+        created = os.path.getctime(transcript_path)
+        elapsed = int(time.time() - created)
+        if elapsed < 60:
+            return ""
+        hours, remainder = divmod(elapsed, 3600)
+        minutes = remainder // 60
+        if hours > 0:
+            return f"{hours}h{minutes:02d}m"
+        return f"{minutes}m"
+    except OSError:
+        return ""
+
+
 def build_bar(percentage):
     """Build a text progress bar."""
     filled = int(BAR_WIDTH * percentage / 100)
@@ -131,6 +153,11 @@ def main():
     git_info = get_git_info(workspace)
     if git_info:
         parts.append(git_info)
+
+    # Duration
+    dur_str = format_duration(transcript_path)
+    if dur_str:
+        parts.append(dur_str)
 
     # Cost
     cost_str = format_cost(cost)
