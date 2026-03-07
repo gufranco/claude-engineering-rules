@@ -20,7 +20,17 @@
       "Read(./.env.local)",
       "Read(./.env.production)",
       "Read(./secrets/**)",
-      "Read(./config/credentials.json)"
+      "Read(./config/credentials.json)",
+      "Write(./.env)",
+      "Write(./.env.local)",
+      "Write(./.env.production)",
+      "Write(./secrets/**)",
+      "Write(./config/credentials.json)",
+      "Edit(./.env)",
+      "Edit(./.env.local)",
+      "Edit(./.env.production)",
+      "Edit(./secrets/**)",
+      "Edit(./config/credentials.json)"
     ]
   },
   "hooks": {
@@ -49,6 +59,42 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/conventional-commits.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/large-file-blocker.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/env-file-guard.sh"
           }
         ]
       }
