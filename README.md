@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Opinionated Claude Code configuration with 18 engineering rules, 19 skills, and 7 runtime hooks that enforce standards before code ships.</strong>
+<strong>Opinionated Claude Code configuration with 18 engineering rules, 21 skills, and 9 runtime hooks that enforce standards before code ships.</strong>
 
 <br>
 <br>
@@ -12,14 +12,14 @@
 
 ---
 
-**18** rule files · **19** skills · **7** hooks · **322** checklist items · **~7,000** lines of engineering standards
+**18** rule files · **21** skills · **9** hooks · **322** checklist items · **~8,000** lines of engineering standards
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-Seven hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, auto-format code, and track every file change.
+Nine hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, prevent large file commits, guard environment files, auto-format code, and track every file change.
 
 </td>
 <td width="50%" valign="top">
@@ -33,7 +33,7 @@ From distributed systems and caching to frontend accessibility and database migr
 <td width="50%" valign="top">
 
 ### Slash-Command Skills
-`/commit`, `/pr`, `/review`, `/test`, `/terraform`, `/docker`, and 13 more. Each skill is a structured prompt that orchestrates multi-step workflows with a single command.
+`/commit`, `/pr`, `/review`, `/test`, `/audit`, `/incident`, and 15 more. Each skill is a structured prompt that orchestrates multi-step workflows with a single command.
 
 </td>
 <td width="50%" valign="top">
@@ -58,6 +58,8 @@ graph LR
         B[Dangerous Command Blocker]
         C[Secret Scanner]
         D[Conventional Commits]
+        E2[Large File Blocker]
+        F2[Env File Guard]
     end
     subgraph Claude Code
         E[CLAUDE.md Rules]
@@ -68,8 +70,8 @@ graph LR
         H[Smart Formatter]
         I[Change Tracker]
     end
-    A --> B & C & D
-    B & C & D --> E
+    A --> B & C & D & E2 & F2
+    B & C & D & E2 & F2 --> E
     E --> F
     F --> G
     G --> H & I
@@ -84,7 +86,7 @@ graph LR
 | Rule | What it covers |
 |:-----|:---------------|
 | `code-style` | DRY/SOLID/KISS, immutability, data safety gates, error classification, TypeScript conventions |
-| `testing` | Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests |
+| `testing` | Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot testing guidelines |
 | `resilience` | Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads |
 | `distributed-systems` | Consistency models, saga pattern, outbox, distributed locking, event ordering, schema evolution, zero-downtime deploys |
 | `infrastructure` | IaC principles, networking, container orchestration, CI/CD pipeline design, cloud architecture, DORA metrics |
@@ -100,7 +102,7 @@ graph LR
 | `verification` | Evidence-based completion gates. No claim without fresh test/build/lint output |
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
-| `llm-docs` | LLM-optimized documentation URLs for 50+ technologies. Fetch before coding, never guess APIs |
+| `llm-docs` | LLM-optimized documentation URLs for 60+ technologies. Fetch before coding, never guess APIs |
 
 ### Skills
 
@@ -112,6 +114,8 @@ graph LR
 | `/assessment` | Architecture completeness audit against the full checklist |
 | `/test` | Detect test runner, execute tests with coverage and linting |
 | `/checks` | Monitor CI/CD checks and diagnose failures |
+| `/audit` | Multi-layer security audit: dependencies, secrets, Dockerfiles, code patterns |
+| `/incident` | Gather incident context and generate blameless postmortems |
 | `/terraform` | Run Terraform workflows with plan review and approval gates |
 | `/docker` | Manage Docker containers with Colima-aware context detection |
 | `/db` | Database migrations, standalone containers, and data operations |
@@ -128,15 +132,24 @@ graph LR
 
 ### Hooks
 
+#### Global hooks (active in all projects)
+
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
 | `dangerous-command-blocker.py` | PreToolUse (Bash) | Three-level protection: blocks catastrophic commands, protects critical paths, warns on suspicious patterns |
 | `secret-scanner.py` | PreToolUse (Bash) | Scans staged files for 30+ secret patterns before any git commit |
 | `conventional-commits.sh` | PreToolUse (Bash) | Validates commit messages match conventional commit format |
+| `large-file-blocker.sh` | PreToolUse (Bash) | Blocks commits containing files over 5MB to prevent accidental binary commits |
+| `env-file-guard.sh` | PreToolUse (Write/Edit) | Blocks modifications to `.env`, private keys, and files in secrets directories |
 | `smart-formatter.sh` | PostToolUse (Edit/Write) | Auto-formats files by extension using prettier, black, gofmt, rustfmt, rubocop, or shfmt |
 | `change-tracker.sh` | PostToolUse (Edit/Write) | Logs every file modification with timestamps, auto-rotates at 2000 lines |
-| `scope-guard.sh` | Stop (per-project) | Compares modified files against spec scope, warns on scope creep |
-| `tdd-gate.sh` | PreToolUse (per-project) | Blocks production code edits if no corresponding test file exists |
+
+#### Per-project hooks (opt-in)
+
+| Hook | Trigger | What it does |
+|:-----|:--------|:-------------|
+| `scope-guard.sh` | Stop | Compares modified files against spec scope, warns on scope creep |
+| `tdd-gate.sh` | PreToolUse (Edit/Write) | Blocks production code edits if no corresponding test file exists |
 
 ### Engineering Checklist
 
@@ -186,6 +199,7 @@ The hooks, rules, and skills activate automatically.
 ~/.claude/
   CLAUDE.md              # Core engineering rules (~180 lines)
   settings.json          # Permissions, hooks, MCP servers, statusline
+  .markdownlint.json     # Markdownlint configuration for CI
   checklists/
     engineering.md       # 322-item shared checklist (32 categories)
   rules/
@@ -200,21 +214,23 @@ The hooks, rules, and skills activate automatically.
     frontend.md          # Typography, a11y, responsive, components
     git-workflow.md      # Commits, branches, CI, PRs
     infrastructure.md    # IaC, networking, containers, CI/CD, cloud
-    llm-docs.md          # LLM-optimized doc URLs for 50+ technologies
+    llm-docs.md          # LLM-optimized doc URLs for 60+ technologies
     observability.md     # Logging, metrics, tracing, SLOs, incidents
     pre-flight.md        # Pre-implementation verification gates
     resilience.md        # Retries, idempotency, DLQs, back pressure
     security.md          # Secrets, auth, encryption, supply chain
-    testing.md           # Integration-first, strict mocks, fake data
+    testing.md           # Integration-first, strict mocks, fake data, snapshots
     verification.md      # Evidence-based completion gates
   skills/
     assessment/          # Architecture completeness audit
+    audit/               # Multi-layer security audit
     checks/              # CI/CD monitoring
     commit/              # Semantic commits
     db/                  # Database operations
     deps/                # Dependency auditing
     design-review/       # Visual and UX audit
     docker/              # Container management
+    incident/            # Incident response and postmortems
     morning/             # Start-of-day dashboard
     palette/             # OKLCH color palette generation
     perf/                # Load testing and benchmarks
@@ -231,18 +247,20 @@ The hooks, rules, and skills activate automatically.
     change-tracker.sh    # File modification logging
     conventional-commits.sh  # Commit message validation
     dangerous-command-blocker.py  # Catastrophic command prevention
-    scope-guard.sh       # Spec scope enforcement
+    env-file-guard.sh    # Environment and secret file protection
+    large-file-blocker.sh # Large binary commit prevention
+    scope-guard.sh       # Spec scope enforcement (per-project)
     secret-scanner.py    # Pre-commit secret scanning
     smart-formatter.sh   # Auto-formatting by extension
-    tdd-gate.sh          # Test-first enforcement
+    tdd-gate.sh          # Test-first enforcement (per-project)
   scripts/
-    context-monitor.py   # Statusline: context usage, git, cost
+    context-monitor.py   # Statusline: context usage, git, duration, cost
   tests/
-    test-hooks.sh        # Hook smoke tests (14 cases)
+    test-hooks.sh        # Hook smoke tests (31 cases)
     fixtures/            # JSON fixtures for hook testing
   .github/
     workflows/
-      ci.yml             # Lint + hook tests on Ubuntu and macOS
+      ci.yml             # Lint (shellcheck, ruff, markdownlint) + hook tests
 ```
 
 </details>
@@ -260,15 +278,17 @@ Two MCP servers are configured in `settings.json`:
 
 ### Permissions
 
-Sensitive files are explicitly denied from read access:
+Sensitive files are explicitly denied from read, write, and edit access:
 
 - `.env`, `.env.local`, `.env.production`
 - `secrets/**`
 - `config/credentials.json`
 
+The `env-file-guard.sh` hook provides an additional runtime layer that blocks modifications to `.env` files, private keys, and files in secrets directories, even if the deny rules are bypassed.
+
 ### Statusline
 
-A custom Python script displays context window usage, git branch, and session cost in the status bar. Context estimation uses transcript file size as a proxy for token usage, with color-coded thresholds from green to critical.
+A custom Python script displays context window usage, git branch, session duration, and cost in the status bar. Context estimation uses transcript file size as a proxy for token usage, with thresholds from green to critical.
 
 ### Per-Project Hooks
 
