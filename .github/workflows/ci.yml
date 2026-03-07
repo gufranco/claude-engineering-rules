@@ -46,6 +46,15 @@ jobs:
       - name: Validate JSON
         run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True)]"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Markdownlint
+        run: |
+          npx --yes markdownlint-cli2 "rules/*.md" "skills/*/SKILL.md" "checklists/*.md" "README.md"
+
       - name: Validate Markdown structure
         run: |
           errors=0
@@ -77,10 +86,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Install jq (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq jq
 
       - name: Make hooks executable
         run: chmod +x hooks/*.sh hooks/*.py tests/test-hooks.sh
