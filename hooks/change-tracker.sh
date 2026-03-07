@@ -8,8 +8,20 @@
 LOG="${HOME}/.claude/changes.log"
 
 INPUT=$(cat)
-TOOL=$(echo "${INPUT}" | jq -r '.tool_name // empty' 2>/dev/null)
-FILE_PATH=$(echo "${INPUT}" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+
+PARSED=$(echo "${INPUT}" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    tool = data.get('tool_name', '')
+    path = data.get('input', {}).get('file_path', '')
+    print(f'{tool}\n{path}')
+except Exception:
+    pass
+" 2>/dev/null)
+
+TOOL=$(echo "${PARSED}" | head -1)
+FILE_PATH=$(echo "${PARSED}" | tail -1)
 
 [[ -z "${FILE_PATH}" ]] && exit 0
 
