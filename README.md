@@ -12,19 +12,21 @@
 
 ---
 
-**18** rule files · **21** skills · **9** hooks · **322** checklist items · **~8,000** lines of engineering standards
+**18** rule files · **21** skills · **9** hooks · **322** checklist items · **~8,500** lines of engineering standards
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
+
 Nine hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, prevent large file commits, guard environment files, auto-format code, and track every file change.
 
 </td>
 <td width="50%" valign="top">
 
 ### Domain-Specific Rules
+
 From distributed systems and caching to frontend accessibility and database migrations. Each rule file is a standalone reference loaded into context when relevant.
 
 </td>
@@ -33,12 +35,14 @@ From distributed systems and caching to frontend accessibility and database migr
 <td width="50%" valign="top">
 
 ### Slash-Command Skills
+
 `/commit`, `/pr`, `/review`, `/test`, `/audit`, `/incident`, and 15 more. Each skill is a structured prompt that orchestrates multi-step workflows with a single command.
 
 </td>
 <td width="50%" valign="top">
 
 ### Anti-Hallucination by Design
+
 Mandatory verification gates, pre-flight checks, and a "never guess" policy. Every file path, import, and API call must be verified before use.
 
 </td>
@@ -102,7 +106,7 @@ graph LR
 | `verification` | Evidence-based completion gates. No claim without fresh test/build/lint output |
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
-| `llm-docs` | LLM-optimized documentation URLs for 60+ technologies. Fetch before coding, never guess APIs |
+| `llm-docs` | LLM-optimized documentation URLs for 59 technologies. Fetch before coding, never guess APIs |
 
 ### Skills
 
@@ -214,7 +218,7 @@ The hooks, rules, and skills activate automatically.
     frontend.md          # Typography, a11y, responsive, components
     git-workflow.md      # Commits, branches, CI, PRs
     infrastructure.md    # IaC, networking, containers, CI/CD, cloud
-    llm-docs.md          # LLM-optimized doc URLs for 60+ technologies
+    llm-docs.md          # LLM-optimized doc URLs for 59 technologies
     observability.md     # Logging, metrics, tracing, SLOs, incidents
     pre-flight.md        # Pre-implementation verification gates
     resilience.md        # Retries, idempotency, DLQs, back pressure
