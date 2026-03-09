@@ -1,5 +1,11 @@
 # Engineering Rules
 
+## Language
+
+- **ALWAYS respond in English.** Every message, explanation, code comment, and communication must be in English regardless of what language the user writes in. Never mirror the user's language. This is non-negotiable.
+- This applies to everything: conversation, code comments, commit messages, PR descriptions, review comments, documentation, error messages, and any other output.
+- When the user writes in a non-English language, respond in English. Do not translate their message back to them. Just answer in English.
+
 ## Core Checklist
 
 Before acting and before declaring any task done:
@@ -13,10 +19,6 @@ Before acting and before declaring any task done:
 - [ ] **Explicit over implicit.** Explicit types, env, config. No magic.
 - [ ] **Reuse first.** Before implementing, check if the problem or solution already exists in branches, PRs, or the codebase.
 - [ ] **Performance first.** When multiple solutions exist, choose the most performant one. Avoid unnecessary allocations, copies, iterations, and re-renders. Think about algorithmic complexity before writing the first line.
-
-## Language
-
-- **ALWAYS respond in English.** Every message, explanation, code comment, and communication must be in English regardless of what language the user writes in. Never mirror the user's language. This is non-negotiable.
 
 ## Tone
 
