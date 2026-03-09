@@ -315,7 +315,7 @@ This skill accepts optional arguments after `/assessment`:
     gh repo edit <owner>/<repo> --add-topic <topic1> --add-topic <topic2> ...
     ```
 
-    **Account handling**: follow the borrow-and-restore pattern from `rules/borrow-restore.md`. Check `gh auth status`, switch to the account that owns the repo if needed, update metadata, verify with `gh repo view`, and restore the original account.
+    **Account handling**: follow the borrow-and-restore pattern from `standards/borrow-restore.md`. Check `gh auth status`, switch to the account that owns the repo if needed, update metadata, verify with `gh repo view`, and restore the original account.
 
     Commit the README as a separate commit: `docs: add technical README with architecture and design decisions`. The GitHub metadata update does not require a commit since it only changes the repository settings.
 
@@ -668,7 +668,7 @@ Steps 1-12 above define **what** to do. These rules define **constraints** on ho
 - Rank by severity first: CRITICAL before HIGH before MEDIUM before LOW. Within the same severity, lower effort first.
 - If everything is covered, say so. Do not invent problems.
 - Security findings are always at least HIGH severity. A missing auth check or exposed secret is CRITICAL.
-- Reference the relevant rules file for each category: `rules/security.md`, `rules/api-design.md`, `rules/resilience.md`, `rules/database.md`, `rules/caching.md`, `rules/distributed-systems.md`, `rules/observability.md`, `rules/code-style.md`.
+- Reference the relevant rules file for each category: `rules/security.md`, `standards/api-design.md`, `standards/resilience.md`, `standards/database.md`, `standards/caching.md`, `standards/distributed-systems.md`, `standards/observability.md`, `rules/code-style.md`.
 - Do not flag deployment readiness for code that is explicitly a prototype, proof-of-concept, or interview take-home unless `--focus ops` was specified.
 - When `--comments` is active, every comment must pass this test: would a senior engineer reading this code for the first time learn something from the comment that the code alone does not convey? If not, delete the comment. `--comments` only affects the fix step, not the assessment output.
 - The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in `../../checklists/engineering.md`. Do not duplicate them here.

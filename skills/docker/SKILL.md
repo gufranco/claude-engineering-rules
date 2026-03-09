@@ -87,7 +87,7 @@ This skill accepts optional arguments after `/docker`:
 
 ## Context Resolution
 
-Uses per-command context flags as described in `rules/borrow-restore.md`. Never switches the global Docker context with `docker context use`, since the user may have multiple projects open in different terminals targeting different Colima profiles.
+Uses per-command context flags as described in `standards/borrow-restore.md`. Never switches the global Docker context with `docker context use`, since the user may have multiple projects open in different terminals targeting different Colima profiles.
 
 1. **Determine expected context** for this project:
    - Check for `DOCKER_CONTEXT` env var in `.env` or `.envrc`.

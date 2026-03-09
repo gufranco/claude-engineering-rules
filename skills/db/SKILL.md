@@ -36,7 +36,7 @@ This skill accepts optional arguments after `/db`:
 
 1. **Detect database setup, migration tool, and package manager.** Run these **in parallel**:
    - Check for standalone database containers: `docker ps -a --format "{{.Names}}"` and look for `mongo`, `postgres`, `redis`, `valkey`, `redict`. If Docker is not reachable, check `which colima` and suggest `colima-start` if stopped.
-   - **Resolve Docker context** following `rules/borrow-restore.md`: check for `DOCKER_CONTEXT` or `DOCKER_HOST` in `.env`/`.envrc`. If a context is resolved, pass `--context <name>` on all subsequent Docker commands instead of switching globally. If Colima is the runtime, verify the target profile is running with `colima list` before using it.
+   - **Resolve Docker context** following `standards/borrow-restore.md`: check for `DOCKER_CONTEXT` or `DOCKER_HOST` in `.env`/`.envrc`. If a context is resolved, pass `--context <name>` on all subsequent Docker commands instead of switching globally. If Colima is the runtime, verify the target profile is running with `colima list` before using it.
    - Detect the migration tool by checking project files and dependencies:
      - `prisma/schema.prisma` or `prisma` in deps: **Prisma**.
      - `knexfile.*` or `knex` in deps: **Knex**.

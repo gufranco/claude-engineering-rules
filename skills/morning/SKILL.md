@@ -241,13 +241,13 @@ Flags can be combined: `/morning --all --review`.
     - #101: not reviewed (stopped)
     ```
 
-13. **Restore the original account** per `rules/borrow-restore.md`. Mandatory even if earlier steps fail or the user stops the review loop.
+13. **Restore the original account** per `standards/borrow-restore.md`. Mandatory even if earlier steps fail or the user stops the review loop.
 
 ## Rules
 
 - Always detect the git platform from the remote URL. Never assume GitHub or GitLab.
 - Always determine all authenticated users dynamically. Never hardcode usernames.
-- Always restore the original account per `rules/borrow-restore.md`, even if steps fail or the user stops mid-review.
+- Always restore the original account per `standards/borrow-restore.md`, even if steps fail or the user stops mid-review.
 - Always show which account owns each PR, review, or notification when multiple accounts are present. Use the login as a label.
 - Always show times in relative format ("2 days ago", "3 hours ago"), not absolute timestamps.
 - Always switch to the correct account before performing any review or posting any comment. Never post from the wrong account.

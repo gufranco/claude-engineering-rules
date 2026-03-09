@@ -5,7 +5,7 @@ description: Audit a page or component for visual design, UX, accessibility, res
 
 Perform a design and UX audit on frontend code. Unlike `/review` which checks code quality and correctness, this skill evaluates the visual and interactive quality of the output: does it look right, feel right, and work for all users?
 
-Use the rules in `rules/frontend.md` as the reference checklist. Every finding must cite the specific rule it violates.
+Use the rules in `standards/frontend.md` as the reference checklist. Every finding must cite the specific rule it violates.
 
 ## When to use
 
@@ -44,7 +44,7 @@ This skill accepts optional arguments after `/design-review`:
 3. **Audit: Color contrast.** For every foreground/background color pair in the code:
    - Identify the CSS custom properties used (e.g., `text-muted-foreground` on `bg-background`).
    - Resolve them to their actual OKLCH or hex values from the stylesheet.
-   - Calculate the contrast ratio using the OKLCH conversion functions from `rules/frontend.md`.
+   - Calculate the contrast ratio using the OKLCH conversion functions from `standards/frontend.md`.
    - Flag any pair below 4.5:1 for normal text or 3:1 for large text (>= 18px bold or >= 24px).
    - Check BOTH light and dark mode values. A pair that passes in one mode may fail in the other.
    - Severity: **HIGH** for body text failures, **MEDIUM** for large text or UI component failures.
@@ -104,7 +104,7 @@ This skill accepts optional arguments after `/design-review`:
 
 10. **Compile findings.** Group findings by severity. For each finding:
     - State what the issue is and which file/line it affects.
-    - Cite the rule from `rules/frontend.md` it violates.
+    - Cite the rule from `standards/frontend.md` it violates.
     - Provide the fix (exact code change).
     - If `--fix` was passed, apply the fix directly.
 

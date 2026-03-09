@@ -153,7 +153,7 @@ Without fencing, a lock only gives "best effort" mutual exclusion.
 | At-least-once | Delivered one or more times | Ack after processing, redeliver on timeout | Default. Requires idempotent consumers |
 | Exactly-once | Processed exactly one time | At-least-once delivery + idempotent/deduplicated processing | Financial, inventory. Achieved at application level, not transport |
 
-**Exactly-once is not a transport guarantee.** It is at-least-once delivery combined with application-level deduplication. See `rules/resilience.md` for dedup patterns.
+**Exactly-once is not a transport guarantee.** It is at-least-once delivery combined with application-level deduplication. See `standards/resilience.md` for dedup patterns.
 
 ### Ordering Scope
 
@@ -217,4 +217,4 @@ Every deployment to production should be invisible to users. No maintenance wind
 - **Backward-compatible changes**: old and new versions will run simultaneously during any deployment. Database schema, API contracts, and message formats must work for both
 - **Health checks**: the orchestrator must know when an instance is ready to receive traffic. No traffic until readiness probe passes
 - **Graceful shutdown**: on termination, stop accepting new requests, finish in-flight requests within a timeout, then exit
-- **Database migrations**: run before the deployment, not during. The old code must work with the new schema. See `rules/database.md` for safe migration patterns
+- **Database migrations**: run before the deployment, not during. The old code must work with the new schema. See `standards/database.md` for safe migration patterns

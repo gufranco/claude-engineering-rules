@@ -29,7 +29,7 @@ This skill accepts optional arguments after `/checks`:
    - `git remote get-url origin` to detect the git platform.
    - `git branch --show-current` to get the current branch name.
    - Determine the CLI tool from the remote URL: `github.com` means `gh`, `gitlab` means `glab`. Verify with `which <tool>`.
-   - **Resolve account** per `rules/borrow-restore.md`: match the remote URL against authenticated `gh`/`glab` accounts, switch if needed, record the original to restore later.
+   - **Resolve account** per `standards/borrow-restore.md`: match the remote URL against authenticated `gh`/`glab` accounts, switch if needed, record the original to restore later.
 2. Check if a PR/MR exists:
    - If a number was provided, use that directly.
    - Otherwise, check the current branch:
@@ -78,7 +78,7 @@ This skill accepts optional arguments after `/checks`:
    ```
 
 8. After diagnosing, suggest next steps but do not automatically fix anything.
-9. **Restore the original account** per `rules/borrow-restore.md`.
+9. **Restore the original account** per `standards/borrow-restore.md`.
 
 ## Rules
 
@@ -89,7 +89,7 @@ This skill accepts optional arguments after `/checks`:
 - Never mark a task as complete if checks are still running or failing.
 - Do not automatically fix failures. Present the diagnosis and let the user decide.
 - If the required CLI tool (`gh` or `glab`) is not installed, stop and tell the user.
-- Always restore the original account per `rules/borrow-restore.md`, even if earlier steps fail.
+- Always restore the original account per `standards/borrow-restore.md`, even if earlier steps fail.
 
 ## Related skills
 

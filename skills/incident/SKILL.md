@@ -3,7 +3,7 @@ name: incident
 description: Gather incident context and generate a blameless postmortem from the template in observability rules.
 ---
 
-Gather incident data from multiple sources, like recent deploys, error spikes, affected services, and recent changes, and produce a structured blameless postmortem following the template in `rules/observability.md`. Can also help during active incidents by collecting diagnostic information.
+Gather incident data from multiple sources, like recent deploys, error spikes, affected services, and recent changes, and produce a structured blameless postmortem following the template in `standards/observability.md`. Can also help during active incidents by collecting diagnostic information.
 
 ## When to use
 
@@ -81,9 +81,9 @@ This skill accepts optional arguments after `/incident`:
 3. **Build the timeline.** Combine user-provided timestamps with automated data:
    - Match deploy times against the incident window.
    - Identify the most likely triggering change.
-   - Structure events chronologically with GMT timestamps per `rules/observability.md`.
+   - Structure events chronologically with GMT timestamps per `standards/observability.md`.
 
-4. **Generate the postmortem draft.** Follow this structure from `rules/observability.md`:
+4. **Generate the postmortem draft.** Follow this structure from `standards/observability.md`:
 
    ```markdown
    # Postmortem: <title>
@@ -149,7 +149,7 @@ This skill accepts optional arguments after `/incident`:
 
 ## Rules
 
-- All timestamps in GMT per `rules/observability.md`. Never use local timezones.
+- All timestamps in GMT per `standards/observability.md`. Never use local timezones.
 - Blameless tone throughout. No individual blame, no "should have known better." Focus on systems and processes.
 - Action items must be concrete tasks with owners, not vague improvements like "be more careful" or "improve monitoring."
 - Never fabricate incident details. If information is missing, leave a placeholder and note what needs to be filled in.

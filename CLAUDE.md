@@ -6,6 +6,10 @@
 - This applies to everything: conversation, code comments, commit messages, PR descriptions, review comments, documentation, error messages, and any other output.
 - When the user writes in a non-English language, respond in English. Do not translate their message back to them. Just answer in English.
 
+## On-Demand Standards
+
+Domain-specific standards live in `standards/` and are NOT loaded automatically. Before starting work, check `rules/index.yml` for `on_demand` entries whose triggers match the task. Read the matching files from `standards/` before writing code. This keeps context small while ensuring relevant standards are available.
+
 ## Core Checklist
 
 Before acting and before declaring any task done:
@@ -114,8 +118,8 @@ When caught hallucinating: stop, correct, re-verify from source.
 
 ## Scope Control
 
-- Complete ONE task fully before starting another
-- Ask before expanding scope
+- HALT. Complete ONE task fully before starting another
+- HALT and ask before expanding scope
 - Max 3 to 5 files per task
 - **Default to "all".** When presenting a list of improvements, fixes, or assessment findings, implement all of them without asking which to do. The user's default answer is always "all"
 
@@ -140,15 +144,36 @@ Common commands may be aliased to different tools (`du` to `dust`, `ls` to `eza`
 For non-trivial tasks:
 
 1. **Clarify.** Ask questions, understand requirements.
-2. **Propose.** Present approach, wait for approval.
+2. **Plan.** For tasks touching 3+ files or involving trade-offs, run `/plan` to create a spec folder. For simpler tasks, state the approach and wait for approval.
 3. **Decompose.** Split into small, verifiable steps.
 4. **Implement.** Only then write code.
 
-## Mandatory Verification
+For architecture decisions that will outlive the current task, record them with `/adr`.
 
-Before declaring ANY task complete, run the project's test, lint, and build commands and show output. Detect the project's package manager and scripts from the lockfile or config.
+## Completion Gates
 
-**Claims without evidence = not done.**
+Before declaring ANY task complete, pass every applicable gate. A gate that was not run is a gate that failed.
+
+**Every code change:**
+
+1. Read the full diff. Every changed line, not just the files you touched
+2. Run the test suite. Full suite, not just changed tests. Show output
+3. Run the linter. Zero warnings, zero errors. Show output
+4. Run the build. Clean build, no errors. Show output
+
+**Bug fixes add:**
+
+- The bug was reproduced before writing the fix
+- A test exists that fails without the fix and passes with it
+- The original reproduction steps now succeed
+
+**New features add:**
+
+- Every acceptance criterion has a corresponding passing test
+- Error paths are tested, not just happy paths
+- Public interfaces have explicit types and input validation
+
+Detect the project's package manager and scripts from the lockfile or config. "It should pass" is not evidence.
 
 ## Delivery Summary
 
