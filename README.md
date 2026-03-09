@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Opinionated Claude Code configuration with 18 engineering rules, 21 skills, and 9 runtime hooks that enforce standards before code ships.</strong>
+<strong>Opinionated Claude Code configuration with 19 engineering rules, 21 skills, and 9 runtime hooks that enforce standards before code ships.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**18** rule files · **21** skills · **9** hooks · **322** checklist items · **~8,500** lines of engineering standards
+**19** rule files · **21** skills · **9** hooks · **322** checklist items · **32** categories · **~8,200** lines of engineering standards
 
 <table>
 <tr>
@@ -106,7 +106,8 @@ graph LR
 | `verification` | Evidence-based completion gates. No claim without fresh test/build/lint output |
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
-| `llm-docs` | LLM-optimized documentation URLs for 59 technologies. Fetch before coding, never guess APIs |
+| `llm-docs` | LLM-optimized documentation URLs for 64 technologies. Fetch before coding, never guess APIs |
+| `language` | Response language enforcement. All output in English regardless of user input language |
 
 ### Skills
 
@@ -218,7 +219,8 @@ The hooks, rules, and skills activate automatically.
     frontend.md          # Typography, a11y, responsive, components
     git-workflow.md      # Commits, branches, CI, PRs
     infrastructure.md    # IaC, networking, containers, CI/CD, cloud
-    llm-docs.md          # LLM-optimized doc URLs for 59 technologies
+    language.md          # Response language enforcement
+    llm-docs.md          # LLM-optimized doc URLs for 64 technologies
     observability.md     # Logging, metrics, tracing, SLOs, incidents
     pre-flight.md        # Pre-implementation verification gates
     resilience.md        # Retries, idempotency, DLQs, back pressure
