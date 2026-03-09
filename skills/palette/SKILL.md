@@ -65,7 +65,7 @@ This skill accepts arguments after `/palette`:
    - Dark mode is NOT the inverse of light mode. Dark mode primary should be lighter (higher L) to maintain contrast against dark backgrounds.
    - Dark mode muted-foreground needs special attention. It must be light enough to read against dark backgrounds (L > 0.60).
 
-3. **Verify contrast ratios.** Run the OKLCH contrast verification for every pair that appears together in the UI. Use the conversion functions from `rules/frontend.md`.
+3. **Verify contrast ratios.** Run the OKLCH contrast verification for every pair that appears together in the UI. Use the conversion functions from `standards/frontend.md`.
 
    Required pairs to check (in BOTH light and dark mode):
 

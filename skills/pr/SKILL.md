@@ -41,7 +41,7 @@ Arguments can be combined: `/pr --draft --base develop --reviewer alice --label 
    - If there are uncommitted changes, stop and suggest `/commit`.
    - If on `main` or `master`, stop and tell the user PRs are for feature branches.
    - Determine the CLI tool from the remote URL: `github.com` means `gh`, `gitlab` means `glab`. Verify it is installed with `which <tool>`.
-   - **Resolve account** per `rules/borrow-restore.md`: match the remote URL against authenticated `gh`/`glab` accounts, switch if needed, record the original to restore later.
+   - **Resolve account** per `standards/borrow-restore.md`: match the remote URL against authenticated `gh`/`glab` accounts, switch if needed, record the original to restore later.
 2. **Check existing PR and detect base branch.** Run these **in parallel**:
    - Check if a PR/MR already exists:
      - GitHub: `gh pr view --json number,url,state`.
@@ -90,7 +90,7 @@ Arguments can be combined: `/pr --draft --base develop --reviewer alice --label 
     - **Update (GitLab):** `glab mr update <number> --title "<title>" --description-file <tmpfile>`. Fall back to `--description "$(cat <tmpfile>)"` if `--description-file` is not supported.
     - Always clean up the temp file after the command completes, whether it succeeded or failed. Use a trap or finally block.
 12. **Show the PR/MR URL when done.**
-13. **Restore the original account** per `rules/borrow-restore.md`.
+13. **Restore the original account** per `standards/borrow-restore.md`.
 14. **If `--pipeline` was passed, enter the pipeline monitoring loop** (see "Pipeline Monitoring" section below).
 
 ## PR Title
@@ -254,7 +254,7 @@ If no actionable comments are found, report that the PR is clean and ready for r
 - If there are no commits ahead of the base branch, say so and stop.
 - Warn the user if the PR exceeds 400 lines. Ask for confirmation if it exceeds 1000 lines.
 - Do not merge the PR/MR. Only create or update it.
-- Always restore the original account per `rules/borrow-restore.md`, even if earlier steps fail.
+- Always restore the original account per `standards/borrow-restore.md`, even if earlier steps fail.
 
 ## Related skills
 

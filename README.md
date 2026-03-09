@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Opinionated Claude Code configuration with 19 engineering rules, 21 skills, and 9 runtime hooks that enforce standards before code ships.</strong>
+<strong>Opinionated Claude Code configuration with 10 rules, 10 on-demand standards, 24 skills, and 9 runtime hooks that enforce standards before code ships.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**19** rule files · **21** skills · **9** hooks · **322** checklist items · **32** categories · **~8,200** lines of engineering standards
+**10** rules · **10** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,900** lines of engineering standards
 
 <table>
 <tr>
@@ -25,9 +25,9 @@ Nine hooks intercept tool calls in real time: block dangerous commands, scan for
 </td>
 <td width="50%" valign="top">
 
-### Domain-Specific Rules
+### Two-Tier Rule Loading
 
-From distributed systems and caching to frontend accessibility and database migrations. Each rule file is a standalone reference loaded into context when relevant.
+Universal rules load automatically. Domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~22,000 tokens per conversation.
 
 </td>
 </tr>
@@ -85,29 +85,39 @@ graph LR
 
 ## What's Included
 
-### Rules
+### Rules (always loaded)
+
+These 10 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
 | `code-style` | DRY/SOLID/KISS, immutability, data safety gates, error classification, TypeScript conventions |
-| `testing` | Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot testing guidelines |
-| `resilience` | Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads |
-| `distributed-systems` | Consistency models, saga pattern, outbox, distributed locking, event ordering, schema evolution, zero-downtime deploys |
-| `infrastructure` | IaC principles, networking, container orchestration, CI/CD pipeline design, cloud architecture, DORA metrics |
-| `database` | Schema rules, query optimization, isolation levels, safe migrations, conditional writes, NoSQL key design |
-| `api-design` | REST conventions, error format, pagination, versioning, deprecation lifecycle, rate limiting, bulk operations |
-| `observability` | Structured logging, metrics naming, distributed tracing, health checks, SLIs/SLOs, alerting, incident response |
+| `testing` | Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests |
 | `security` | Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security |
-| `frontend` | Typography, spacing, WCAG AA contrast, responsive design, accessibility, component patterns, performance |
-| `caching` | Cache-aside/write-through strategies, invalidation, thundering herd prevention, cache warming, sizing |
-| `code-review` | PR authoring, review style, test evidence, branch freshness, documentation checks, tech debt tracking, ADRs |
+| `code-review` | PR authoring, review style, test evidence, branch freshness, documentation checks, tech debt tracking |
 | `git-workflow` | Conventional commits, branch naming, CI monitoring, PR creation, conflict resolution, rollback strategy |
 | `debugging` | Four-phase process: reproduce, isolate, root cause, fix+verify. Multi-component tracing |
 | `verification` | Evidence-based completion gates. No claim without fresh test/build/lint output |
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
-| `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
-| `llm-docs` | LLM-optimized documentation URLs for 64 technologies. Fetch before coding, never guess APIs |
+| `documentation` | Preserve existing valid information when skills modify documentation files |
 | `language` | Response language enforcement. All output in English regardless of user input language |
+
+### Standards (loaded on demand)
+
+These 10 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+
+| Standard | What it covers |
+|:---------|:---------------|
+| `infrastructure` | IaC principles, networking, container orchestration, CI/CD pipeline design, cloud architecture, DORA metrics |
+| `distributed-systems` | Consistency models, saga pattern, outbox, distributed locking, event ordering, schema evolution, zero-downtime deploys |
+| `frontend` | Typography, spacing, WCAG AA contrast, responsive design, accessibility, component patterns, performance |
+| `resilience` | Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure |
+| `database` | Schema rules, query optimization, isolation levels, safe migrations, conditional writes, NoSQL key design |
+| `observability` | Structured logging, metrics naming, distributed tracing, health checks, SLIs/SLOs, alerting, incident response |
+| `llm-docs` | LLM-optimized documentation URLs for 64 technologies. Fetch before coding, never guess APIs |
+| `api-design` | REST conventions, error format, pagination, versioning, deprecation lifecycle, rate limiting, bulk operations |
+| `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
+| `caching` | Cache-aside/write-through strategies, invalidation, thundering herd prevention, cache warming, sizing |
 
 ### Skills
 
@@ -134,6 +144,9 @@ graph LR
 | `/design-review` | Audit pages for visual design, UX, accessibility, and contrast |
 | `/palette` | Generate accessible OKLCH color palettes for Tailwind CSS |
 | `/perf` | Load tests and benchmarks using k6, wrk, hey, or ab |
+| `/plan` | Structured planning with spec folder output, trade-off analysis, and reference gathering |
+| `/discover` | Extract codebase conventions and patterns into reusable rule files |
+| `/adr` | Create and manage Architecture Decision Records for significant technical decisions |
 
 ### Hooks
 
@@ -156,9 +169,123 @@ graph LR
 | `scope-guard.sh` | Stop | Compares modified files against spec scope, warns on scope creep |
 | `tdd-gate.sh` | PreToolUse (Edit/Write) | Blocks production code edits if no corresponding test file exists |
 
+### Rule Index
+
+`rules/index.yml` is the catalog for both tiers. It maps each rule and standard to a description and trigger keywords. When a task starts, Claude matches the task against trigger keywords and reads the relevant `standards/` files on demand. Skills like `/plan` and `/discover` also reference this index. Run `/discover` to add project-specific entries.
+
 ### Engineering Checklist
 
 A 322-item checklist across 32 categories, shared by `/review` and `/assessment`. Categories include idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture.
+
+## Workflows
+
+Step-by-step guides for common engineering tasks. Each workflow references the specific skills and rules involved.
+
+### New Feature
+
+1. **Plan.** Run `/plan` with a description of the feature. This searches for existing solutions in the codebase, open PRs, and branches. It gathers references from similar code, matches relevant rules, evaluates alternatives, and creates a spec folder with the implementation plan.
+
+2. **Scaffold.** If the feature involves new files, run `/scaffold <type> <name>` to generate boilerplate that matches existing project patterns. Types: endpoint, service, component, module, model, controller, middleware, hook.
+
+3. **Implement.** Follow the spec's task breakdown. Work through each step, running `/test` after each meaningful change to catch regressions early.
+
+4. **Test.** Run `/test --coverage` to verify coverage meets the 80% threshold for new code. Add missing tests for edge cases and error paths.
+
+5. **Commit.** Run `/commit` to create conventional commits. Use `--push` to push immediately, or `--push --pipeline` to push and monitor CI until all checks pass.
+
+6. **PR.** Run `/pr` to create a pull request with a structured description. Add `--pipeline` to monitor CI and auto-fix failures.
+
+7. **Self-review.** Run `/review --local` before requesting human review to catch issues early.
+
+### Bug Fix
+
+1. **Reproduce.** Trigger the bug reliably. If you can't reproduce it, gather more data before proceeding.
+
+2. **Isolate.** Find the minimal failing case. Follow the four-phase process from `rules/debugging.md`: reproduce, isolate, root cause, fix+verify.
+
+3. **Test first.** Write a test that fails due to the bug. This proves the bug exists and prevents future regressions.
+
+4. **Fix.** Address the root cause, not the symptom. One change at a time.
+
+5. **Verify.** Run `/test` to confirm the new test passes and no existing tests broke. Demonstrate the fix using the original reproduction steps.
+
+6. **Ship.** Run `/commit --push --pipeline` to commit, push, and verify CI passes.
+
+### Debugging
+
+Follow the four-phase process defined in `rules/debugging.md`:
+
+1. **Reproduce.** Can you trigger it reliably? Record exact inputs, environment, and steps.
+
+2. **Isolate.** Binary search the problem space. Comment out halves of the system until the failure disappears. Check recent changes with `git log --oneline -20`. Use `git bisect` if the bug exists on a branch but not on main.
+
+3. **Root cause.** Explain WHY it happens, not just WHERE. Verify your theory by predicting what will happen with a specific test input, then running it. If the prediction is wrong, discard the theory and start over.
+
+4. **Fix and verify.** Fix the cause, write a test that captures it, run the full suite. Check for the same pattern elsewhere in the codebase and fix all instances.
+
+Use `/test` to run specific test files during isolation. Use `/checks` if the issue manifests in CI but not locally.
+
+### Code Review
+
+1. **Review a PR.** Run `/review <PR-number>` to review a pull request. Use `--backend` or `--frontend` to focus scope on large PRs.
+
+2. **Review local changes.** Run `/review --local` to review your own uncommitted changes before creating a PR.
+
+3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
+
+The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 322-item engineering checklist across 32 categories.
+
+### Architecture Planning
+
+1. **Plan.** Run `/plan` for the feature or system change. This produces a spec folder with the implementation plan, trade-off analysis, and references to existing code patterns.
+
+2. **Record decisions.** For significant decisions like database choice, service boundaries, or auth strategy, run `/adr new <title>` to create an Architecture Decision Record. ADRs capture the context, alternatives considered, and reasoning so future engineers understand WHY.
+
+3. **Audit completeness.** After implementation, run `/assessment` to verify the implementation against architectural patterns, resilience requirements, security standards, and operational readiness.
+
+### Establishing Project Standards
+
+1. **Discover.** Run `/discover` in a project to extract existing conventions into rule files. The skill scans the codebase, identifies recurring patterns, and walks through each one: asking why the pattern exists, drafting a concise rule, and creating the file after your confirmation.
+
+2. **Focus areas.** Use `/discover --area src/api` to focus on a specific module. Use `--output project` to write rules to the project's CLAUDE.md instead of global `rules/`.
+
+3. **Iterate.** As the project evolves, run `/discover` again to capture new conventions. Run `/retro` after significant sessions to capture workflow-level patterns.
+
+### Daily Routine
+
+1. **Morning.** Run `/morning` for a briefing: open PRs, pending reviews, notifications, and repo state. Add `--review` to jump straight into reviewing pending PRs smallest-first.
+
+2. **Work.** Use the feature, bug fix, or debugging workflow above. For tasks touching 3+ files, start with `/plan`.
+
+3. **End of day.** Run `/retro` after significant sessions to capture corrections, preferences, and patterns as durable configuration updates.
+
+### Security Audit
+
+Run `/audit` to perform a multi-layer security scan:
+
+- `--deps`: dependency vulnerabilities
+- `--secrets`: secret detection in code and git history
+- `--docker`: Dockerfile best practices
+- `--code`: code-level security patterns
+
+No arguments runs all four layers. Findings are prioritized by severity.
+
+### Dependency Management
+
+1. **Audit.** Run `/deps` to check for known vulnerabilities in dependencies.
+2. **Outdated.** Run `/deps outdated` to list packages with available updates.
+3. **Update.** Run `/deps update <package>` to update a specific dependency with full verification.
+4. **Deep scan.** Run `/deps scan` to use trivy, snyk, or gitleaks for deeper analysis when available.
+
+### Release
+
+Run `/release` to create a tagged release with an auto-generated changelog from conventional commits. The skill detects the version bump from commit types: breaking changes bump major, features bump minor, fixes bump patch. Use `--dry-run` to preview without creating the release.
+
+### Infrastructure
+
+1. **Terraform.** Run `/terraform` for infrastructure changes. The skill validates before planning, plans before applying, and requires explicit approval before any apply or destroy.
+2. **Docker.** Run `/docker` for container operations. The skill detects Colima profiles and uses per-command `--context` flags to avoid polluting global Docker state.
+3. **Database.** Run `/db` for migrations, container management, and data operations. The skill detects your ORM and suggests your shell functions instead of raw Docker commands.
 
 ## Quick Start
 
@@ -202,32 +329,36 @@ The hooks, rules, and skills activate automatically.
 
 ```
 ~/.claude/
-  CLAUDE.md              # Core engineering rules (~180 lines)
+  CLAUDE.md              # Core engineering rules (~200 lines)
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
     engineering.md       # 322-item shared checklist (32 categories)
-  rules/
-    api-design.md        # REST conventions, pagination, versioning
-    borrow-restore.md    # CLI context management pattern
-    caching.md           # Strategies, invalidation, thundering herd
+  rules/                 # Tier 1: always loaded into every conversation
+    index.yml            # Rule catalog with trigger keywords for both tiers
     code-review.md       # PR authoring, review style, tech debt
     code-style.md        # DRY/SOLID, immutability, TypeScript conventions
-    database.md          # Schema, queries, migrations, locking
     debugging.md         # Four-phase debugging process
-    distributed-systems.md # Consistency, saga, outbox, locking, events
-    frontend.md          # Typography, a11y, responsive, components
+    documentation.md     # Documentation preservation during skill execution
     git-workflow.md      # Commits, branches, CI, PRs
-    infrastructure.md    # IaC, networking, containers, CI/CD, cloud
     language.md          # Response language enforcement
-    llm-docs.md          # LLM-optimized doc URLs for 64 technologies
-    observability.md     # Logging, metrics, tracing, SLOs, incidents
     pre-flight.md        # Pre-implementation verification gates
-    resilience.md        # Retries, idempotency, DLQs, back pressure
     security.md          # Secrets, auth, encryption, supply chain
     testing.md           # Integration-first, strict mocks, fake data, snapshots
     verification.md      # Evidence-based completion gates
+  standards/             # Tier 2: loaded on demand when task matches triggers
+    api-design.md        # REST conventions, pagination, versioning
+    borrow-restore.md    # CLI context management pattern
+    caching.md           # Strategies, invalidation, thundering herd
+    database.md          # Schema, queries, migrations, locking
+    distributed-systems.md # Consistency, saga, outbox, locking, events
+    frontend.md          # Typography, a11y, responsive, components
+    infrastructure.md    # IaC, networking, containers, CI/CD, cloud
+    llm-docs.md          # LLM-optimized doc URLs for 64 technologies
+    observability.md     # Logging, metrics, tracing, SLOs, incidents
+    resilience.md        # Retries, idempotency, DLQs, back pressure
   skills/
+    adr/                 # Architecture Decision Records
     assessment/          # Architecture completeness audit
     audit/               # Multi-layer security audit
     checks/              # CI/CD monitoring
@@ -235,11 +366,13 @@ The hooks, rules, and skills activate automatically.
     db/                  # Database operations
     deps/                # Dependency auditing
     design-review/       # Visual and UX audit
+    discover/            # Codebase pattern extraction
     docker/              # Container management
     incident/            # Incident response and postmortems
     morning/             # Start-of-day dashboard
     palette/             # OKLCH color palette generation
     perf/                # Load testing and benchmarks
+    plan/                # Structured planning with spec folders
     pr/                  # Pull request creation
     readme/              # README generation
     release/             # Tagged releases

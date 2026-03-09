@@ -106,7 +106,7 @@ Run **in parallel**:
 - `git branch --show-current` to get the current branch.
 - Determine the CLI tool: `github.com` means `gh`, `gitlab` means `glab`. Verify with `which <tool>`.
 
-**Resolve account** per `rules/borrow-restore.md`: match the remote URL against authenticated `gh`/`glab` accounts, switch if needed, record the original to restore later.
+**Resolve account** per `standards/borrow-restore.md`: match the remote URL against authenticated `gh`/`glab` accounts, switch if needed, record the original to restore later.
 
 Then check if a PR/MR exists for the branch:
 - GitHub: `gh pr view --json number,url,statusCheckRollup`.
@@ -175,7 +175,7 @@ After presenting all failures, ask the user:
 - Never include files that contain secrets or credentials.
 - If there are no changes to commit, say so and stop.
 - `--pipeline` without a push is meaningless. If the user declines to push, skip monitoring entirely.
-- Always restore the original account per `rules/borrow-restore.md`, even if earlier steps fail.
+- Always restore the original account per `standards/borrow-restore.md`, even if earlier steps fail.
 
 ## Related skills
 
