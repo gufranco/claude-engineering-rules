@@ -1,0 +1,101 @@
+# Rule Index
+#
+# Two tiers: rules/ (always loaded) and standards/ (loaded on demand).
+# Before domain-specific work, match the task against triggers below
+# and read the relevant standards/ files.
+
+# ── Tier 1: Always loaded (rules/) ──────────────────────────────────
+
+always_loaded:
+  code-style:
+    description: DRY/SOLID/KISS, immutability, TypeScript conventions, error classification, data safety, enums, validation
+    triggers: [style, typescript, type, enum, interface, immutable, validation, zod, dto]
+
+  code-review:
+    description: PR authoring, review comment style, test evidence, branch freshness, tech debt tracking, ADRs
+    triggers: [review, pr, pull request, code review, adr, tech debt]
+
+  debugging:
+    description: Four-phase debugging process, multi-component tracing, common traps to avoid
+    triggers: [debug, bug, error, trace, reproduce, isolate, root cause, stack trace]
+
+  documentation:
+    description: Preserve existing valid information when skills or automated processes modify documentation files
+    triggers: [readme, docs, documentation, changelog, guide, skill output, merge]
+
+  git-workflow:
+    description: Conventional commits, branch naming, CI monitoring, PR creation, conflict resolution, rollback strategy
+    triggers: [git, commit, branch, merge, rebase, ci, pipeline, release, tag]
+
+  language:
+    description: Response language enforcement, all output in English regardless of user input language
+    triggers: [language, english, translation, locale]
+
+  pre-flight:
+    description: Pre-implementation verification gates for duplicates, architecture fit, interface verification, scope agreement
+    triggers: [planning, pre-flight, scope, interface, duplicate, architecture fit]
+
+  security:
+    description: Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security
+    triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp]
+
+  testing:
+    description: Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot guidelines
+    triggers: [test, testing, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e]
+
+  verification:
+    description: Evidence-based completion gates, fresh output required for every claim, no rounding up partial completion
+    triggers: [verify, evidence, complete, done, claim, proof, gate]
+
+# ── Tier 2: On demand (standards/) ──────────────────────────────────
+
+on_demand:
+  api-design:
+    path: standards/api-design.md
+    description: REST conventions, status codes, error format, pagination, versioning, deprecation, rate limiting, bulk operations
+    triggers: [api, endpoint, route, controller, rest, http, request, response, pagination, webhook]
+
+  borrow-restore:
+    path: standards/borrow-restore.md
+    description: Safe global state management for CLI tools with context switching and guaranteed restore
+    triggers: [docker, kubectl, terraform, gh, context, workspace, profile, switch]
+
+  caching:
+    path: standards/caching.md
+    description: Cache strategies, invalidation, thundering herd prevention, warming, sizing, eviction policies
+    triggers: [cache, redis, memcached, ttl, invalidation, cdn, lru, stale]
+
+  database:
+    path: standards/database.md
+    description: Schema rules, query optimization, isolation levels, safe migrations, locking, connection management, NoSQL key design
+    triggers: [database, sql, migration, schema, query, index, transaction, postgres, dynamo, mongo, redis]
+
+  distributed-systems:
+    path: standards/distributed-systems.md
+    description: Consistency models, saga pattern, outbox, distributed locking, event ordering, schema evolution, zero-downtime deploys
+    triggers: [distributed, microservice, saga, event, consistency, replication, partition, outbox, cqrs]
+
+  frontend:
+    path: standards/frontend.md
+    description: Typography, spacing, WCAG AA contrast, responsive design, accessibility, Tailwind, component patterns, performance
+    triggers: [frontend, react, css, tailwind, accessibility, responsive, component, ui, ux, a11y, wcag]
+
+  infrastructure:
+    path: standards/infrastructure.md
+    description: IaC, networking, container orchestration, CI/CD pipeline design, cloud architecture, DORA metrics, cost allocation
+    triggers: [infrastructure, terraform, kubernetes, docker, aws, gcp, cloud, deploy, ci, cd, helm]
+
+  llm-docs:
+    path: standards/llm-docs.md
+    description: LLM-optimized documentation URLs for 64 technologies, fetch before coding, verify APIs against docs
+    triggers: [docs, documentation, api reference, library, framework, llms.txt]
+
+  observability:
+    path: standards/observability.md
+    description: Structured logging, metrics naming, distributed tracing, health checks, SLIs/SLOs, alerting, incident response
+    triggers: [logging, metrics, tracing, monitoring, alert, slo, sli, incident, health check, datadog, prometheus]
+
+  resilience:
+    path: standards/resilience.md
+    description: Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads
+    triggers: [retry, idempotent, circuit breaker, dlq, backpressure, timeout, rate limit, resilience, fault tolerance]
