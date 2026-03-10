@@ -34,6 +34,36 @@
 
 Types: `feature/`, `bugfix/`, `hotfix/`, `release/`, `chore/`
 
+## Local Quality Gate (MANDATORY)
+
+Before every `git commit` or `git push`, run all available quality tools in the project. The goal is to catch problems locally instead of waiting for CI pipeline feedback.
+
+**Required checks, in order:**
+
+1. **Format**: run the project's formatter. Code that fails formatting is not ready to commit.
+2. **Lint**: run the project's linter. Zero warnings, zero errors.
+3. **Type check**: if the project has a type checker, run it. Zero errors.
+4. **Test**: run the full test suite. All tests pass.
+5. **Build**: run the build command. Clean build, no errors.
+
+Detect the correct commands from the project's package manager, lockfile, and scripts. Common patterns:
+
+| Tool area | Detection |
+|-----------|-----------|
+| Formatter | `prettier`, `black`, `gofmt`, `rustfmt` in scripts or devDependencies |
+| Linter | `eslint`, `ruff`, `golangci-lint`, `clippy` in scripts or devDependencies |
+| Type check | `tsc --noEmit`, `mypy`, `pyright` in scripts or devDependencies |
+| Test | `test` or `test:unit` script, `pytest`, `go test`, `cargo test` |
+| Build | `build` script, `go build`, `cargo build` |
+
+**Rules:**
+
+- If a check fails, fix the issue before committing. Do not skip checks.
+- If the project lacks a specific tool, skip that step. Do not invent checks that do not exist.
+- Show the output of each check. Silent success is not evidence.
+- This gate applies to every commit, not just the final one before a push.
+- Stale results do not count. If code changed since the last run, run again.
+
 ## CI/CD Monitoring (MANDATORY)
 
 After ANY push:

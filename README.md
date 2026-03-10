@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 10 rules, 11 on-demand standards, 24 skills, and 9 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 11 rules, 11 on-demand standards, 24 skills, and 9 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **11** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,700** lines of engineering standards
+**11** rules · **11** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,700** lines of engineering standards
 
 <table>
 <tr>
@@ -106,7 +106,7 @@ graph LR
 
 ### Rules (always loaded)
 
-These 10 rules are loaded into every conversation automatically.
+These 11 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -114,9 +114,10 @@ These 10 rules are loaded into every conversation automatically.
 | `testing` | Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests |
 | `security` | Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security |
 | `code-review` | PR authoring, review style, test evidence, branch freshness, documentation checks, tech debt tracking |
-| `git-workflow` | Conventional commits, branch naming, CI monitoring, PR creation, conflict resolution, rollback strategy |
+| `git-workflow` | Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy |
 | `debugging` | Four-phase process: reproduce, isolate, root cause, fix+verify. Multi-component tracing |
 | `verification` | Evidence-based completion gates. No claim without fresh test/build/lint output |
+| `writing-precision` | Precision gate for all text output: concrete over abstract, examples over vague instructions, self-test before finalizing |
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `documentation` | Preserve existing valid information when skills modify documentation files |
 | `language` | Response language enforcement. All output in English regardless of user input language |
@@ -366,6 +367,7 @@ The hooks, rules, and skills activate automatically.
     security.md          # Secrets, auth, encryption, supply chain
     testing.md           # Integration-first, strict mocks, fake data, snapshots
     verification.md      # Evidence-based completion gates
+    writing-precision.md # Precision gate for all text output
   standards/             # Tier 2: loaded on demand when task matches triggers
     api-design.md        # REST conventions, pagination, versioning
     borrow-restore.md    # CLI context management pattern
