@@ -84,7 +84,7 @@ The error handler itself must be self-protecting: if logging fails inside the ha
 3. **Evaluate.** Compare the top 3-5 options in the category using a structured table with measurable criteria: maintenance activity (commits in last 6 months), community size (stars, dependents), known vulnerabilities, bundle size, and API quality. Never pick by gut feeling.
 4. **Size.** Avoid heavy packages for simple tasks.
 5. Pin exact versions. Separate dev dependencies. Commit lockfile.
-6. **Pin the package manager itself.** Different versions of the same package manager can produce different lockfiles and resolve dependencies differently. Use Corepack, a version field in the manifest, or CI configuration to ensure every environment uses the same package manager version.
+6. **Pin the package manager.** Different versions produce different lockfiles. Use Corepack, a manifest version field, or CI config to enforce consistency.
 
 ## Validation
 

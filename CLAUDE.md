@@ -1,14 +1,8 @@
 # Engineering Rules
 
-## Language
-
-- **ALWAYS respond in English.** Every message, explanation, code comment, and communication must be in English regardless of what language the user writes in. Never mirror the user's language. This is non-negotiable.
-- This applies to everything: conversation, code comments, commit messages, PR descriptions, review comments, documentation, error messages, and any other output.
-- When the user writes in a non-English language, respond in English. Do not translate their message back to them. Just answer in English.
-
 ## On-Demand Standards
 
-Domain-specific standards live in `standards/` and are NOT loaded automatically. Before starting work, check `rules/index.yml` for `on_demand` entries whose triggers match the task. Read the matching files from `standards/` before writing code. This keeps context small while ensuring relevant standards are available.
+Domain-specific standards live in `standards/` and are NOT loaded automatically. Before starting work, check `rules/index.yml` for `on_demand` entries matching the task. Read matching files from `standards/` before writing code.
 
 ## Core Checklist
 
@@ -43,7 +37,7 @@ Any text others will read, whether reviews, PR comments, Slack messages, commit 
 
 ### Banned Phrases
 
-These are the most common AI tells. Never use them or anything similar:
+Never use these or similar:
 
 - **Openers:** "Great question!", "Sure!", "Absolutely!", "Of course!", "That's a great point!"
 - **Closers:** "Let me know if you need anything else", "Hope this helps!", "Feel free to ask"
@@ -64,10 +58,10 @@ These are the most common AI tells. Never use them or anything similar:
 
 All text that other people will read, like PR descriptions, review comments, commit messages, and documentation, must read like a real person wrote it.
 
-- Vary sentence structure and length. Do not repeat the same patterns across comments.
+- Vary structure and length across comments.
 - Never use perfectly parallel structure or exhaustive enumeration.
-- No bold prefix labels in prose unless they genuinely add clarity.
-- Each review comment should feel independent, not like items from a checklist.
+- No bold prefix labels in prose unless they add clarity.
+- Each review comment must feel independent, not like items from a checklist.
 - Read what you wrote before posting. If it sounds like a report, rewrite it.
 
 ### Timestamps
@@ -87,12 +81,13 @@ Not everyone reading instructions will have CLI knowledge. When writing steps fo
 
 **Rule: if you haven't read it or run it in this session, you don't know it.**
 
-- Read every file you will modify. Read the signature, types, and callers of any function you will change.
+- Read every file you will modify, including signatures, types, and callers of functions you change.
 - Never say "I think", "probably", or "likely" about code facts. You either verified it or you didn't.
 - About to write an import path, reference a function name, suggest a CLI flag, or say "this should work"? STOP. Read the source first.
 - If the urge to fill a knowledge gap with a plausible guess arises: that's the signal to look it up, not to guess.
 - One thing unclear: investigate silently. Multiple things unclear: ask one blocking question. Three failed attempts: change approach or ask.
 - Multiple valid approaches: state trade-offs briefly, pick the most performant, say why.
+- When the user's request is ambiguous ("compress", "clean up", "simplify"), confirm the specific meaning before executing. The cost of one clarifying question is near zero. The cost of wrong-direction work is a full revert.
 
 ## Anti-Hallucination
 
@@ -122,6 +117,7 @@ When caught hallucinating: stop, correct, re-verify from source.
 - HALT and ask before expanding scope
 - Max 3 to 5 files per task
 - **Default to "all".** When presenting a list of improvements, fixes, or assessment findings, implement all of them without asking which to do. The user's default answer is always "all"
+- **Never strip content when optimizing.** When asked to compress, optimize, or improve existing files: tighten language, remove filler words, fix duplication. NEVER remove rules, examples, explanations, or tables. If a section seems removable, ask first.
 
 ## External Tools
 
@@ -135,9 +131,7 @@ Before using any external tool or CLI command:
 
 ### Shell Alias Safety
 
-Common commands may be aliased to different tools (`du` to `dust`, `ls` to `eza`). These aliases change flags and output format, causing unexpected failures.
-
-**Rule: always prefix shell commands with `command` to bypass aliases.** Examples: `command du -sh`, `command ls -la`, `command stat`. This applies to any command where you rely on standard flags or output format.
+Commands may be aliased (`du`→`dust`, `ls`→`eza`), changing flags and output. Always prefix with `command` to bypass: `command du -sh`, `command ls -la`, `command stat`. Applies to any command where you rely on standard flags or output format.
 
 ## Think Before You Code
 
@@ -149,6 +143,8 @@ For non-trivial tasks:
 4. **Implement.** Only then write code.
 
 For architecture decisions that will outlive the current task, record them with `/adr`.
+
+When the user references external projects or URLs as approach guidance, study them BEFORE implementing. Do not start execution while reference material is unread.
 
 ## Completion Gates
 
@@ -179,18 +175,6 @@ Detect the project's package manager and scripts from the lockfile or config. "I
 
 After completing a task, briefly cover: what files changed, what was done and why, test/lint/build evidence, and any risks or follow-ups. Scale the detail to the task size. A one-file fix needs one sentence, not five sections.
 
-## Debugging Approach
-
-```
-1. REPRODUCE   -> Can you trigger it reliably?
-2. ISOLATE     -> What is the minimal failing case?
-3. ROOT CAUSE  -> Why is it happening? (not just where)
-4. FIX+VERIFY  -> Fix the cause, prove it is fixed
-```
-
-- One change at a time
-- Read full error messages
-
 ## Context Compaction
 
 When compacting context, always preserve: the list of modified files, test commands already run and their results, the current task description, and any user decisions made during the conversation.
@@ -201,10 +185,10 @@ When you make a mistake, say so plainly, fix it, and move on. No ceremony.
 
 ## Session Retrospective
 
-After completing significant multi-step work or sessions where corrections were given, run a `/retro` analysis before wrapping up. This captures recurring patterns, preferences, and mistakes as durable configuration so they do not repeat in future sessions. Skip for trivial single-task conversations with no corrections.
+After significant multi-step work or sessions with corrections, run `/retro`. Captures patterns and preferences as durable config. Skip for trivial conversations.
 
 ---
 
 ## Claude Configuration Documentation
 
-The file `claude/README.md` documents the full Claude Code setup: settings, skills, review checklist, and directory structure. Whenever you modify any file inside the `claude/` directory, including skills, settings, CLAUDE.md itself, or the reviewer prompt, you must also update `claude/README.md` to reflect those changes. Do not wait for the user to ask. Do it as part of the same task.
+`claude/README.md` documents the full setup. When modifying any file inside `claude/`, update `README.md` in the same task.

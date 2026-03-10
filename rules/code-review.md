@@ -12,11 +12,11 @@
 
 Write review comments the way a human colleague would. No prefix labels, no structured templates. Just say what you mean directly.
 
-If something needs to be fixed, say it. If you have a question, ask it. If something looks good, say so briefly. Each comment should be its own thought, written naturally, not items from a generated checklist.
+If something needs to be fixed, say it. If you have a question, ask it. If something looks good, say so briefly. Each comment must be its own thought, written naturally, not items from a checklist.
 
 ## Test Evidence (MANDATORY)
 
-Every PR that changes behavior must have evidence of tests passing. Check CI first: if the PR has a pipeline that runs tests and they pass, that is sufficient evidence. Only request manual test output with coverage percentage when the project has no CI pipeline, when the pipeline does not run tests, or when the pipeline has not executed yet. Do not ask authors to paste terminal output for something CI already verifies.
+Every behavior-changing PR must have passing test evidence. CI pipeline passing is sufficient. Only request manual output when CI doesn't exist, doesn't run tests, or hasn't executed.
 
 ## Branch Freshness (MANDATORY)
 
