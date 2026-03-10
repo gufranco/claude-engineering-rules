@@ -99,3 +99,8 @@ on_demand:
     path: standards/resilience.md
     description: Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads
     triggers: [retry, idempotent, circuit breaker, dlq, backpressure, timeout, rate limit, resilience, fault tolerance]
+
+  twelve-factor:
+    path: standards/twelve-factor.md
+    description: Cloud-native app design across all 12 factors with actionable rules for stateless processes, config, backing services, disposability, and admin processes
+    triggers: [twelve-factor, 12-factor, cloud-native, saas, stateless, port binding, backing service, disposability, admin process, dev-prod parity]
