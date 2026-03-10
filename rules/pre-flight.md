@@ -2,7 +2,7 @@
 
 ## Core Rule
 
-No implementation without pre-flight verification. Starting to code before confirming direction is the most expensive mistake: wrong-direction work wastes more tokens and time than any bug.
+No implementation without pre-flight verification. Wrong-direction work is the most expensive mistake.
 
 ## When to Apply
 
@@ -78,7 +78,7 @@ After completing the gate, briefly state:
 - Which interfaces were verified
 - What the implementation approach will be
 
-Then proceed. No lengthy plans for simple changes, one sentence is enough when the task is small.
+Then proceed. One sentence is enough for small tasks.
 
 ## Common Failures
 

@@ -19,7 +19,7 @@
 
 ## Auth Delegation
 
-Unless the project has dedicated security expertise, prefer a specialized identity provider (Auth0, Cognito, Clerk, Keycloak) over implementing auth from scratch. Auth flows have too many moving parts: password hashing, token lifecycle, session management, MFA, rate limiting, account recovery. A single mistake creates a vulnerability.
+Prefer specialized identity providers (Auth0, Cognito, Clerk, Keycloak) over custom auth. Auth flows have too many moving parts: password hashing, token lifecycle, session management, MFA, rate limiting, account recovery. A single mistake creates a vulnerability.
 
 When delegating: separate the auth concern behind an interface so the provider can be swapped without rewriting business logic. Record the trade-off (vendor coupling, privacy, cost) in an ADR.
 
@@ -48,7 +48,7 @@ When handling personal data, design for compliance from the start:
 - **Consent**: if data use requires consent, record when and what was consented to. Make withdrawal easy
 - **Audit trail**: log who accessed personal data, when, and why
 
-These apply regardless of whether your users are covered by GDPR, LGPD, CCPA, or no regulation yet. Building it later is always harder than building it in.
+Applies regardless of GDPR, LGPD, CCPA coverage. Building later is always harder.
 
 ## Audit Logging
 
@@ -89,7 +89,7 @@ Use a framework middleware or reverse proxy to set these once, not per-route.
 
 ## Token Revocation
 
-Stateless tokens like JWTs cannot be invalidated after issuance without server-side state. When token revocation is a requirement:
+JWTs cannot be invalidated without server-side state. When revocation is required:
 
 - Maintain a blocklist of revoked token IDs (the `jti` claim) in a fast store like Redis
 - Set a TTL on blocklist entries matching the token's remaining lifetime
@@ -100,14 +100,14 @@ Short-lived access tokens (5-15 minutes) with refresh token rotation reduce the 
 
 ## Process Isolation
 
-- Run application processes as a non-root user. Root access inside a container means root-equivalent access to the host if the container is escaped
+- Run as non-root. Container root = host root if the container is escaped
 - In containers: create a dedicated user in the Dockerfile (`USER node`, `USER appuser`), never run as PID 1 without signal handling
 - In VMs and bare metal: create a service account with only the permissions the application needs
-- File system permissions: the application should own only its working directory. System directories, config files outside the app, and other users' data should be inaccessible
+- File system: application must own only its working directory. System dirs, config outside the app, and other users' data must be inaccessible
 
 ## Supply Chain Security
 
-Your dependencies are your attack surface. A compromised or malicious package runs with the same permissions as your code.
+Dependencies are attack surface. A compromised package runs with your code's permissions.
 
 - **Lock dependencies**: always commit lockfiles. Pin exact versions, not ranges
 - **Verify integrity**: enable lockfile integrity checking (`npm ci`, not `npm install` in CI)
