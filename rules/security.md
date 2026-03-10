@@ -6,6 +6,7 @@
 
 - Required env vars MUST be documented in `.env.example` with placeholder values
 - Validate required env at startup. Fail fast with a clear message listing what is missing.
+- **Env vars are a shared attack surface.** Every dependency in the process can read the full environment. A single compromised transitive package can exfiltrate all secrets via the process environment. Mitigations: grant each service only the secrets it needs, restrict container outbound network access, run high-privilege operations in separate processes with minimal dependencies
 
 ## Auth Checklist
 
@@ -15,6 +16,12 @@
 - [ ] Permission check on every request
 - [ ] CSRF protection on state-changing endpoints (SameSite cookies, CSRF tokens, or origin validation)
 - [ ] Principle of least privilege: every component, user, and service account has only the permissions it needs, nothing more
+
+## Auth Delegation
+
+Unless the project has dedicated security expertise, prefer a specialized identity provider (Auth0, Cognito, Clerk, Keycloak) over implementing auth from scratch. Auth flows have too many moving parts: password hashing, token lifecycle, session management, MFA, rate limiting, account recovery. A single mistake creates a vulnerability.
+
+When delegating: separate the auth concern behind an interface so the provider can be swapped without rewriting business logic. Record the trade-off (vendor coupling, privacy, cost) in an ADR.
 
 ## Access Control
 
@@ -55,6 +62,48 @@ Log sensitive actions with context:
 - Personal data access and exports
 
 Format: `{ action, userId, targetId, timestamp, ip, userAgent }`
+
+## Web Security Headers
+
+Set security headers on every HTTP response. Missing headers are silent vulnerabilities that scanners catch but developers miss.
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` | Force HTTPS for 2 years, include subdomains |
+| `Content-Security-Policy` | Start with `default-src 'self'`, loosen as needed | Prevent XSS by controlling resource origins |
+| `X-Content-Type-Options` | `nosniff` | Prevent MIME type sniffing |
+| `X-Frame-Options` | `DENY` or `SAMEORIGIN` | Prevent clickjacking |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Control referrer information leakage |
+| `Permissions-Policy` | Disable unused APIs: `camera=(), microphone=(), geolocation=()` | Restrict browser feature access |
+
+Use a framework middleware or reverse proxy to set these once, not per-route.
+
+## Input and Output Safety
+
+- **Payload size limits**: enforce maximum request body size at the framework or reverse proxy level. Unbounded payloads enable denial of service. Default to a reasonable limit (e.g., 1MB) and increase per-endpoint only when justified
+- **Output encoding**: encode all user-supplied data before rendering into HTML, JavaScript, CSS, or SQL. Use framework-provided escaping by default. Manual string concatenation into templates is a bug
+- **ReDoS prevention**: avoid unbounded quantifiers in regex patterns that process user input. Patterns like `(a+)+$` or `([a-zA-Z]+)*` backtrack exponentially. Use linear-time regex engines or validate input length before matching
+- **Dynamic code execution**: never use `eval()`, `Function()`, `exec()`, or equivalent constructs that execute strings as code. If dynamic behavior is needed, use a lookup table or strategy pattern
+- **Open redirect prevention**: validate redirect destinations against an allowlist of trusted domains. Never redirect to a URL taken directly from user input without validation. Relative paths are safer than absolute URLs
+- **SSRF prevention**: when the server fetches URLs on behalf of user input, allowlist permitted domains and protocols. Block requests to private IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, ::1) and cloud metadata endpoints (169.254.169.254). Validate the resolved IP, not just the hostname, to prevent DNS rebinding
+
+## Token Revocation
+
+Stateless tokens like JWTs cannot be invalidated after issuance without server-side state. When token revocation is a requirement:
+
+- Maintain a blocklist of revoked token IDs (the `jti` claim) in a fast store like Redis
+- Set a TTL on blocklist entries matching the token's remaining lifetime
+- Check the blocklist on every authenticated request
+- Revoke tokens on: password change, explicit logout, permission change, account compromise
+
+Short-lived access tokens (5-15 minutes) with refresh token rotation reduce the window of exposure and the size of the blocklist.
+
+## Process Isolation
+
+- Run application processes as a non-root user. Root access inside a container means root-equivalent access to the host if the container is escaped
+- In containers: create a dedicated user in the Dockerfile (`USER node`, `USER appuser`), never run as PID 1 without signal handling
+- In VMs and bare metal: create a service account with only the permissions the application needs
+- File system permissions: the application should own only its working directory. System directories, config files outside the app, and other users' data should be inaccessible
 
 ## Supply Chain Security
 
