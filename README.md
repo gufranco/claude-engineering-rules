@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Opinionated Claude Code configuration with 10 rules, 10 on-demand standards, 24 skills, and 9 runtime hooks that enforce standards before code ships.</strong>
+<strong>Ship code that passes review the first time. 10 rules, 11 on-demand standards, 24 skills, and 9 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **10** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,900** lines of engineering standards
+**10** rules · **11** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,700** lines of engineering standards
 
 <table>
 <tr>
@@ -27,7 +27,7 @@ Nine hooks intercept tool calls in real time: block dangerous commands, scan for
 
 ### Two-Tier Rule Loading
 
-Universal rules load automatically. Domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~22,000 tokens per conversation.
+Universal rules load automatically. Domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Cuts auto-loaded context from ~135KB to ~50KB per conversation.
 
 </td>
 </tr>
@@ -36,7 +36,7 @@ Universal rules load automatically. Domain-specific standards load on demand, ma
 
 ### Slash-Command Skills
 
-`/commit`, `/pr`, `/review`, `/test`, `/audit`, `/incident`, and 15 more. Each skill is a structured prompt that orchestrates multi-step workflows with a single command.
+`/commit`, `/pr`, `/review`, `/test`, `/audit`, `/incident`, and 18 more. Each skill is a structured prompt that orchestrates multi-step workflows with a single command.
 
 </td>
 <td width="50%" valign="top">
@@ -48,6 +48,25 @@ Mandatory verification gates, pre-flight checks, and a "never guess" policy. Eve
 </td>
 </tr>
 </table>
+
+## The Problem
+
+Claude Code is capable out of the box, but it does not enforce your engineering standards. It will happily mock your database in tests, commit with vague messages, skip CI checks, guess import paths, and write code that passes locally but fails in review. Every conversation starts from zero, with no memory of how your team works.
+
+## The Solution
+
+This configuration turns Claude Code into an opinionated engineering partner. Rules define what it should do. Hooks enforce it at runtime. Skills automate the tedious parts. Standards load on demand so context stays small.
+
+| Capability | Vanilla Claude Code | With This Config |
+|:-----------|:-------------------:|:----------------:|
+| Conventional commits enforced | ❌ | ✅ |
+| Secret scanning before commit | ❌ | ✅ |
+| Dangerous command blocking | ❌ | ✅ |
+| Integration-first test policy | ❌ | ✅ |
+| Pre-flight verification gates | ❌ | ✅ |
+| On-demand domain standards | ❌ | ✅ |
+| 24 workflow skills | ❌ | ✅ |
+| 322-item review checklist | ❌ | ✅ |
 
 ## How It Works
 
@@ -104,7 +123,7 @@ These 10 rules are loaded into every conversation automatically.
 
 ### Standards (loaded on demand)
 
-These 10 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 11 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
@@ -118,6 +137,7 @@ These 10 standards live in `standards/` and are loaded only when the task matche
 | `api-design` | REST conventions, error format, pagination, versioning, deprecation lifecycle, rate limiting, bulk operations |
 | `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
 | `caching` | Cache-aside/write-through strategies, invalidation, thundering herd prevention, cache warming, sizing |
+| `twelve-factor` | Cloud-native app design: stateless processes, config in env, backing services, disposability, admin processes |
 
 ### Skills
 
@@ -158,9 +178,9 @@ These 10 standards live in `standards/` and are loaded only when the task matche
 | `secret-scanner.py` | PreToolUse (Bash) | Scans staged files for 30+ secret patterns before any git commit |
 | `conventional-commits.sh` | PreToolUse (Bash) | Validates commit messages match conventional commit format |
 | `large-file-blocker.sh` | PreToolUse (Bash) | Blocks commits containing files over 5MB to prevent accidental binary commits |
-| `env-file-guard.sh` | PreToolUse (Write/Edit) | Blocks modifications to `.env`, private keys, and files in secrets directories |
-| `smart-formatter.sh` | PostToolUse (Edit/Write) | Auto-formats files by extension using prettier, black, gofmt, rustfmt, rubocop, or shfmt |
-| `change-tracker.sh` | PostToolUse (Edit/Write) | Logs every file modification with timestamps, auto-rotates at 2000 lines |
+| `env-file-guard.sh` | PreToolUse (Write/Edit/MultiEdit) | Blocks modifications to `.env`, private keys, and files in secrets directories |
+| `smart-formatter.sh` | PostToolUse (Edit/Write/MultiEdit) | Auto-formats files by extension using prettier, black, gofmt, rustfmt, rubocop, or shfmt |
+| `change-tracker.sh` | PostToolUse (Edit/Write/MultiEdit) | Logs every file modification with timestamps, auto-rotates at 2000 lines |
 
 #### Per-project hooks (opt-in)
 
@@ -357,6 +377,7 @@ The hooks, rules, and skills activate automatically.
     llm-docs.md          # LLM-optimized doc URLs for 64 technologies
     observability.md     # Logging, metrics, tracing, SLOs, incidents
     resilience.md        # Retries, idempotency, DLQs, back pressure
+    twelve-factor.md     # Cloud-native app design across all 12 factors
   skills/
     adr/                 # Architecture Decision Records
     assessment/          # Architecture completeness audit
@@ -395,7 +416,7 @@ The hooks, rules, and skills activate automatically.
   scripts/
     context-monitor.py   # Statusline: context usage, git, duration, cost
   tests/
-    test-hooks.sh        # Hook smoke tests (31 cases)
+    test-hooks.sh        # Hook smoke tests (32 cases)
     fixtures/            # JSON fixtures for hook testing
   .github/
     workflows/
