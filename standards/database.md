@@ -15,6 +15,12 @@
 - Filter at the database level, not in application code
 - Use database-native aggregation instead of fetching rows and aggregating in the app
 
+## Data Access Layer
+
+- **Repository pattern**: data access functions return plain objects, never ORM-specific model instances. Use `raw: true`, `.lean()`, `toJSON()`, or equivalent to strip ORM metadata before returning data to the domain layer
+- **Domain-ORM boundary**: the domain layer never imports or references the ORM, query builder, or database driver. It receives and returns plain data. This keeps business logic testable without a database and makes ORM migration feasible
+- **Batch over iteration**: one query for N records beats N queries for 1 record. Use `WHERE id IN (...)`, bulk inserts, and batch updates. This applies to every I/O boundary: databases, APIs, file systems
+
 ## Isolation Levels
 
 Choose the isolation level explicitly. The default varies by database and is often not what you need.
