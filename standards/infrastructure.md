@@ -131,6 +131,35 @@ Sidecars handle cross-cutting concerns without modifying the application:
 - **Log collector** (Fluentd, Fluent Bit): ship logs to a central system without application changes
 - **Secrets injector** (Vault Agent): inject secrets at runtime without baking them into the image
 
+## Dockerfile Best Practices
+
+Container images are deployment artifacts. A poorly built image is large, slow to pull, leaks secrets, and contains unnecessary attack surface.
+
+### Build Strategy
+
+- **Multi-stage builds**: use a builder stage for compilation and dependency installation, copy only the production artifact into the final stage. The final image should not contain compilers, build tools, or source code
+- **Minimal base images**: prefer slim or distroless variants. Alpine (~5MB) over Debian (~130MB) over Ubuntu (~80MB). Evaluate on CVE count, image size, and native module compatibility. Alpine uses musl instead of glibc, which can break native modules in some ecosystems
+- **Pin exact versions**: never use `latest`, `lts`, or floating tags. `node:22.5.1-alpine3.20`, not `node:lts`. Today's `latest` is tomorrow's breaking change
+
+### Layer Optimization
+
+- **Order by change frequency**: copy dependency manifests and install dependencies before copying source code. Source changes frequently; dependencies change rarely. This maximizes layer cache hits
+- **.dockerignore**: exclude `.git`, `node_modules`, `.env`, test fixtures, documentation, and IDE configs. Reduces context size, speeds up builds, and prevents secrets from entering the image
+- **Clean package manager cache**: remove cache directories (`npm cache clean --force`, `pip cache purge`, `apt-get clean`) in the same layer as the install to avoid bloating the image
+
+### Security
+
+- **Non-root user**: create a dedicated user and switch to it before the CMD. Never run application code as root. Set directory ownership explicitly when using WORKDIR with a non-root user
+- **No build-time secrets in the final image**: use `--mount=type=secret` (BuildKit) or multi-stage builds to prevent credentials from persisting in image layers. `ARG` values are visible in image history
+- **Image scanning**: scan images for CVEs in CI (Trivy, Grype, Snyk). Block deployment on critical/high findings. Scan on every build, not on a schedule
+- **HEALTHCHECK directive**: define a HEALTHCHECK in the Dockerfile so the orchestrator knows when the container is ready. Without it, the container is marked healthy as soon as the process starts, even during initialization
+
+### Runtime
+
+- **Init process**: use `tini`, `dumb-init`, or `docker run --init` to handle PID 1 signal forwarding and zombie process reaping. See `standards/twelve-factor.md` Factor IX for details
+- **Production-only dependencies**: exclude dev dependencies from the final image. Install with `--omit=dev`, `--only=production`, or equivalent
+- **Single concern per container**: one process per container. Do not run application server, cron daemon, and log rotator in the same container
+
 ## CI/CD Pipeline Design
 
 A good pipeline catches problems early, deploys safely, and provides fast feedback. A bad pipeline is slow, flaky, and gives false confidence.

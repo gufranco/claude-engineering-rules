@@ -27,6 +27,16 @@ Optional context fields:
 }
 ```
 
+## Log Destination
+
+Write logs to stdout and stderr. Never write log files from the application.
+
+- stdout for normal log events (info, debug)
+- stderr for errors and warnings
+- The infrastructure layer (container runtime, log collector sidecar, systemd journal) is responsible for routing, rotation, and storage
+- This separation lets the same application run locally (logs to terminal), in Docker (logs via `docker logs`), and in Kubernetes (logs to node agent) without code changes
+- Never open file handles for logging inside the application. File-based logging creates rotation concerns, disk pressure, and permission issues that belong to the platform, not the app
+
 ## Log Levels
 
 | Level | When to use |
