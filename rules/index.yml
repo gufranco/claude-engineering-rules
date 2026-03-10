@@ -24,8 +24,8 @@ always_loaded:
     triggers: [readme, docs, documentation, changelog, guide, skill output, merge]
 
   git-workflow:
-    description: Conventional commits, branch naming, CI monitoring, PR creation, conflict resolution, rollback strategy
-    triggers: [git, commit, branch, merge, rebase, ci, pipeline, release, tag]
+    description: Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy
+    triggers: [git, commit, branch, merge, rebase, ci, pipeline, release, tag, lint, format, build]
 
   language:
     description: Response language enforcement, all output in English regardless of user input language
@@ -46,6 +46,10 @@ always_loaded:
   verification:
     description: Evidence-based completion gates, fresh output required for every claim, no rounding up partial completion
     triggers: [verify, evidence, complete, done, claim, proof, gate]
+
+  writing-precision:
+    description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
+    triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description]
 
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
 
