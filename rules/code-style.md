@@ -16,10 +16,14 @@
 - **No side effects at module level**: module/file scope runs on import. Keep it free of I/O, network calls, global state mutations, and event listener registration. All side effects belong inside explicitly called functions. A module that changes behavior just by being imported is a hidden coupling
 - Use braces for all control structures
 - **Never swallow errors**: no empty catch; log with context, rethrow or handle
+- **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, document why
 - **No deep nesting**: max 3 levels of indentation. Guard clauses and early returns to flatten control flow
+- **Flat control flow**: avoid recursion unless the data structure is inherently recursive, like trees or graphs. Prefer iterative solutions with explicit bounds. Recursion hides stack growth, making resource usage unpredictable and stack overflows hard to diagnose. When recursion is necessary, always add a depth limit
 - **Strong typing**: explicit types for parameters, return values, and public interfaces. Never `any`, use `unknown` and narrow. Enable strict mode
 - **Enums over string literal unions**: string enums for domain values. They exist at runtime, can be iterated, and are the single source of truth
 - **Explicit imports**: import only what you use. Barrel imports (`import * from`) and re-export index files load entire modules, increasing startup time and memory. For libraries you author, provide granular exports so consumers can import individual functions
+- **Bounded iteration**: every loop and retry must have an explicit upper bound. No `while (true)` without a break condition that is guaranteed to trigger. Polling loops need a timeout. Retry loops need a max attempt count. Pagination loops need a page limit. An unbounded loop is a latent outage
+- **Minimal scope**: declare variables at the smallest scope where they are used. Do not declare at function top and use 40 lines later. In languages with block scope, declare inside the block. Smaller scope means fewer interactions, easier reasoning, and less surface for bugs
 - **Don't block the request-handling thread**: never run CPU-intensive work (image processing, compression, cryptographic operations on large inputs) or synchronous I/O on the thread that serves requests. Offload to a worker thread, background job, or separate process. A blocked request thread stalls all concurrent requests
 - **DI only when needed**: start with direct module imports. Only adopt dependency injection when you genuinely need to swap implementations at runtime or in tests. DI containers add indirection, increase startup time, and make stack traces harder to follow. Most applications never need to swap a real implementation
 
@@ -67,6 +71,31 @@ Also classify by scope:
 - **Process-scoped** (catastrophic): trigger graceful shutdown. Unrecoverable state corruption, exhausted resources, broken invariants that affect all requests
 
 The error handler itself must be self-protecting: if logging fails inside the handler, fall back to stdout directly. A crashing error handler turns every error into an unrecoverable crash.
+
+## Defensive Invariants
+
+Functions that transform data or coordinate side effects must assert their preconditions. Not every function needs assertions, but functions at trust boundaries, data transformation pipelines, and state transitions must validate assumptions before proceeding.
+
+Where to assert:
+
+| Location | What to check |
+|----------|--------------|
+| Public API entry points | Input ranges, required fields, enum membership |
+| After external data arrives | Parsed shape matches expected schema, nulls are absent where required |
+| Before irreversible operations | State preconditions that, if violated, would corrupt data |
+| After complex transformations | Output satisfies postconditions the caller depends on |
+
+Use the language's native assertion mechanism: `assert` in Python, `console.assert` or throwing on violation in TypeScript, `debug_assert!`/`assert!` in Rust, `if err != nil` patterns in Go. The goal is executable documentation of assumptions, not ceremony.
+
+## Analyzability
+
+Write code that automated tools can reason about. Avoid patterns that defeat static analysis, linters, and type checkers.
+
+- Avoid dynamic property access when the set of keys is known. Use typed lookups or maps instead of `obj[someVariable]`
+- Avoid `eval`, `Function()`, `exec`, and runtime code generation. Use lookup tables or strategy patterns instead
+- Avoid excessive type assertions or casts. If the type system cannot express the relationship, the design likely needs rethinking
+- Keep the call graph static. When dynamic dispatch is needed, like plugins or event handlers, constrain it through typed interfaces, not arbitrary function references
+- Metaprogramming, like decorators, macros, and code generation, must produce output that is itself analyzable. If a decorator hides control flow that a linter cannot trace, the decorator is a liability
 
 ## Comments Policy
 

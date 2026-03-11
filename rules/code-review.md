@@ -87,6 +87,9 @@ Store ADRs in a `docs/adr/` directory in the repository. Number them sequentiall
 - [ ] Async processors have DLQ, partial batch failure reporting, dedup by message ID, and monitoring
 - [ ] Input validation (user endpoints)
 - [ ] No sensitive data exposed
+- [ ] All loops and retries have explicit upper bounds. No unbounded `while (true)` or unlimited pagination
+- [ ] No ignored return values. Every non-void result is used or explicitly discarded with justification
+- [ ] Preconditions asserted before irreversible operations and at trust boundaries
 - [ ] Tests written and passing
 - [ ] **Test data uses fake data generator.** No hardcoded static values in test setup. Generator is seeded for determinism
 - [ ] README updated (if API/setup/env changed)
