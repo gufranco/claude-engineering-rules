@@ -12,7 +12,7 @@
 
 ---
 
-**11** rules · **11** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,700** lines of engineering standards
+**11** rules · **11** standards · **24** skills · **9** hooks · **322** checklist items · **32** categories · **~8,900** lines of engineering standards
 
 <table>
 <tr>
@@ -43,7 +43,7 @@ Universal rules load automatically. Domain-specific standards load on demand, ma
 
 ### Anti-Hallucination by Design
 
-Mandatory verification gates, pre-flight checks, and a "never guess" policy. Every file path, import, and API call must be verified before use.
+Mandatory verification gates, pre-flight checks, response self-check for analytical output, prompt injection guards on skills that process external content, and a "never guess" policy. Every file path, import, and API call must be verified before use.
 
 </td>
 </tr>
@@ -66,6 +66,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Pre-flight verification gates | ❌ | ✅ |
 | On-demand domain standards | ❌ | ✅ |
 | 24 workflow skills | ❌ | ✅ |
+| Prompt injection guards | ❌ | ✅ |
 | 322-item review checklist | ❌ | ✅ |
 
 ## How It Works
@@ -116,7 +117,7 @@ These 11 rules are loaded into every conversation automatically.
 | `code-review` | PR authoring, review style, test evidence, branch freshness, documentation checks, tech debt tracking |
 | `git-workflow` | Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy |
 | `debugging` | Four-phase process: reproduce, isolate, root cause, fix+verify. Multi-component tracing |
-| `verification` | Evidence-based completion gates. No claim without fresh test/build/lint output |
+| `verification` | Evidence-based completion gates, response self-check for analytical output, no claim without fresh evidence |
 | `writing-precision` | Precision gate for all text output: concrete over abstract, examples over vague instructions, self-test before finalizing |
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `documentation` | Preserve existing valid information when skills modify documentation files |
@@ -165,7 +166,7 @@ These 11 standards live in `standards/` and are loaded only when the task matche
 | `/design-review` | Audit pages for visual design, UX, accessibility, and contrast |
 | `/palette` | Generate accessible OKLCH color palettes for Tailwind CSS |
 | `/perf` | Load tests and benchmarks using k6, wrk, hey, or ab |
-| `/plan` | Structured planning with spec folder output, trade-off analysis, and reference gathering |
+| `/plan` | Structured planning with spec folder output, trade-off analysis, decisive tests, and reference gathering |
 | `/discover` | Extract codebase conventions and patterns into reusable rule files |
 | `/adr` | Create and manage Architecture Decision Records for significant technical decisions |
 
@@ -258,7 +259,7 @@ The review skill runs three passes: per-file analysis, cross-file consistency, a
 
 ### Architecture Planning
 
-1. **Plan.** Run `/plan` for the feature or system change. This produces a spec folder with the implementation plan, trade-off analysis, and references to existing code patterns.
+1. **Plan.** Run `/plan` for the feature or system change. This produces a spec folder with the implementation plan, trade-off analysis, decisive tests for each approach, and references to existing code patterns.
 
 2. **Record decisions.** For significant decisions like database choice, service boundaries, or auth strategy, run `/adr new <title>` to create an Architecture Decision Record. ADRs capture the context, alternatives considered, and reasoning so future engineers understand WHY.
 
