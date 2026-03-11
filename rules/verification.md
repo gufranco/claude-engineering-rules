@@ -47,6 +47,22 @@ Before declaring any task complete:
 
 **Dependency changes**: lockfile committed, tests pass, build succeeds. No version conflicts.
 
+## Response Self-Check
+
+Before presenting analysis, recommendations, or findings, verify your own output against these categories.
+
+| Category | What to look for |
+|----------|-----------------|
+| Fabrication | Did you reference any file path, function name, API endpoint, or version without reading it in this session? |
+| Source drift | Does your summary say something stronger or different than the code actually shows? |
+| Logic gaps | Does every "therefore" or "because" follow from evidence, not assumption? |
+| Internal contradictions | Does any part of your response contradict another part? |
+| Uncritical agreement | Did you accept the user's framing without scrutiny? If the user said "this is simple," did you verify that? |
+
+Walk through each finding or recommendation. If any came from inference rather than source, verify it or label it as unverified.
+
+This check applies to analytical output: reviews, assessments, incident analyses, architecture recommendations. It complements the command-based verification above, which covers code changes.
+
 ## Partial Completion
 
 If you cannot verify everything:

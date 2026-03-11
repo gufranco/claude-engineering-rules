@@ -74,7 +74,17 @@ For non-trivial decisions, identify 2-3 approaches. For each:
 - Trade-offs: performance, complexity, maintainability, compatibility
 - Risk level: low, medium, high
 
-Recommend one approach with a clear reason. Present to the user for approval before continuing.
+Recommend one approach with a clear reason.
+
+For each viable approach, identify:
+
+- **Decisive test**: the smallest experiment that confirms or invalidates the approach. A failing spike is cheaper than a failing implementation.
+- **Stop signal**: what result means this approach is wrong. Be specific: a number, a behavior, a constraint violation.
+- **Pivot trigger**: what result means you should switch to the next-best alternative.
+
+The decisive test must be executable within hours, not days. Prefer: a throwaway script, a single integration test, a prototype endpoint, or a manual check against real data. If no quick test exists, that itself is a risk worth noting.
+
+Present to the user for approval before continuing.
 
 For decisions significant enough to outlive this task, suggest creating an ADR with `/adr new <title>`.
 
@@ -114,6 +124,13 @@ Ordered list of steps. Each step includes:
 ## Risks
 
 Known risks and how to mitigate them.
+
+## Validation Strategy
+
+For the chosen approach:
+- **Decisive test:** <smallest experiment that confirms the approach works>
+- **Stop signal:** <what result means this approach is wrong>
+- **Expected timeline:** <when the decisive test produces a result>
 ```
 
 **decisions.md:**
