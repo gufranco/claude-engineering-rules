@@ -44,7 +44,7 @@ Before every `git commit` or `git push`, run all available quality tools in the 
 2. **Lint**: run the project's linter. Zero warnings, zero errors.
 3. **Type check**: if the project has a type checker, run it. Zero errors.
 4. **Test**: run the full test suite. All tests pass.
-5. **Build**: run the build command. Clean build, no errors.
+5. **Build**: run the build command. Clean build, zero warnings, zero errors.
 
 Detect the correct commands from the project's package manager, lockfile, and scripts. Common patterns:
 
@@ -70,11 +70,12 @@ After ANY push:
 
 1. Run `gh pr checks --watch`
 2. Wait for ALL checks
-3. If failed: `gh run view <id> --log-failed`
-4. Before fixing: search for an existing fix in source branch, open PRs, and remote branches
-5. If no existing fix: Fix, push, repeat until green
+3. Review CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts require a fix in the same task
+4. If failed: `gh run view <id> --log-failed`
+5. Before fixing: search for an existing fix in source branch, open PRs, and remote branches
+6. If no existing fix: Fix, push, repeat until green
 
-**Never** mark task complete with failing/running pipeline.
+**Never** mark task complete with failing/running pipeline or unresolved warnings.
 
 ## PR/MR Creation
 
