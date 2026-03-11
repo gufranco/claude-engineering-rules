@@ -17,6 +17,7 @@ Before acting and before declaring any task done:
 - [ ] **Explicit over implicit.** Explicit types, env, config. No magic.
 - [ ] **Reuse first.** Before implementing, check if the problem or solution already exists in branches, PRs, or the codebase.
 - [ ] **Performance first.** When multiple solutions exist, choose the most performant one. Avoid unnecessary allocations, copies, iterations, and re-renders. Think about algorithmic complexity before writing the first line.
+- [ ] **Zero warnings.** Treat every warning as an error. Deprecation notices, linter warnings, build warnings, CI annotations, runtime warnings: all must be resolved, not ignored. A warning left unaddressed is a future breakage.
 
 ## Tone
 
@@ -155,7 +156,8 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 1. Read the full diff. Every changed line, not just the files you touched
 2. Run the test suite. Full suite, not just changed tests. Show output
 3. Run the linter. Zero warnings, zero errors. Show output
-4. Run the build. Clean build, no errors. Show output
+4. Run the build. Clean build, zero warnings, zero errors. Show output
+5. After push, check CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts all require a fix before the task is done
 
 **Bug fixes add:**
 
