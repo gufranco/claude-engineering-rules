@@ -26,6 +26,7 @@ Before declaring any task complete:
 | "No regressions" | Full test suite output, not just the changed test |
 | "File was updated" | Read the file and confirm the changes are present |
 | "Endpoint returns X" | Actual response from the endpoint, not the code that should return X |
+| "CI is clean" | All checks pass AND zero annotations/warnings. Deprecation notices and non-fatal alerts count as unresolved |
 
 ## Common Failures to Catch
 
@@ -34,6 +35,7 @@ Before declaring any task complete:
 - "Build succeeds" based on no syntax errors, without actually building
 - "Fixed the bug" based on the fix looking correct, without reproducing
 - Conflating "no errors" with "works correctly" (silent failures)
+- "CI passed" but ignoring deprecation warnings or non-fatal annotations in the run output
 
 ## Verification by Task Type
 
