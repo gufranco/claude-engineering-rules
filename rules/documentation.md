@@ -25,3 +25,11 @@ When any skill or automated process modifies a documentation file (README, docs,
 - Placeholder text that the new content replaces with real data.
 
 When in doubt, keep the existing content and ask.
+
+## Content Migration
+
+When moving content from one file to another (consolidating checklists, extracting sections, merging configs):
+
+1. **Count items before and after.** Use grep to count discrete items (checkboxes, bullet points, table rows) in the source before migration and in the destination after. The counts must match, adjusted for intentional additions or removals.
+2. **Diff the source.** After migration, review the full diff of the source file. Every removed line must have a corresponding line in the destination or an explicit reason for removal.
+3. **Categorize omissions.** Items intentionally excluded from the new file must be documented: either they belong in a different file, or they are obsolete. Silent drops are bugs.
