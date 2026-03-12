@@ -7,7 +7,7 @@
 - Single export per file
 - For functions with many arguments, pass one options object. Return objects.
 - File order: main export first, then subcomponents, helpers, static content, types
-- Design for change: isolate business logic from the framework. Prefer dependency inversion.
+- Design for change: isolate business logic from the framework. Prefer dependency inversion. Structure as **functional core, imperative shell**: pure logic with no I/O in the core, side effects pushed to the outermost layer. The core is testable with no mocks. The shell converts between the external world and the core's types
 - **Use-case functions**: for multi-step business flows, write a thin orchestration function that contains zero conditionals, zero loops, and zero exception handling. Only flat, sequential calls to domain services. Name it in business language (`calculatePriceCut`, `transferOwnership`), not technical language (`processData`). Use cases serve as a navigation index: any reader can see the full flow, its parameters, and its dependencies at a glance
 - **No environment conditionals**: never branch business logic on `NODE_ENV`, `APP_ENV`, or equivalent. Code that runs only in production is code that is never tested. Use configuration externalization for infrastructure differences (log format, connection strings), not code conditionals
 - **Domain exception boundary**: services and domain logic throw domain-specific error classes, never framework HTTP exceptions. An exception filter or middleware at the boundary maps domain errors to HTTP responses.
@@ -35,21 +35,62 @@
 | `type` | Unions, intersections, mapped types, conditional types, tuples, function signatures |
 | `enum` (string) | Fixed domain values that need runtime existence: statuses, roles, categories |
 | `as const` object | Lookup tables with metadata, derive union types from keys/values |
+| Discriminated union | Sum types with a `kind`/`type` tag: model states, outcomes, domain events |
+| Branded type | Nominal distinction for structurally identical primitives: `UserId` vs `OrderId` |
 
 - `interface` for object shapes, `type` for the rest. Do not mix for the same purpose
 - Consistency within a codebase. If DTOs use `interface`, all DTOs use `interface`
 - Never alias a single primitive with `type`. Use a branded pattern if needed
 - Prefer `interface` when either works. Clearer error messages, supports declaration merging
 
+### Discriminated Unions
+
+Use discriminated unions to make illegal states unrepresentable. When fields depend on each other, model them as variants of a tagged union, not as optional fields on a flat interface.
+
+- Every variant must share a literal `kind`, `type`, or `tag` discriminant property
+- Exhaustive matching is mandatory. Use `satisfies never` in the default branch or a library like ts-pattern with `.exhaustive()`. Adding a new variant must produce compile errors at every unhandled match site
+- Avoid boolean blindness: when the caller needs to know WHY, return a discriminated union instead of a boolean
+- Prefer discriminated unions over class hierarchies for domain modeling. They compose with pattern matching, serialize trivially, and do not require `instanceof`
+
+### Branded Types
+
+Use branded types to prevent structurally identical values from being confused. A `UserId` and an `OrderId` are both strings, but passing one where the other is expected is a bug.
+
+```typescript
+type Brand<T, B extends string> = T & { readonly __brand: B };
+type UserId = Brand<string, 'UserId'>;
+type OrderId = Brand<string, 'OrderId'>;
+```
+
+- Zero runtime cost. The brand is a phantom property that exists only in the type system
+- Combine with Zod's `.brand()` for runtime validation and compile-time branding in one step
+- Use for: IDs, validated strings (Email, URL), units of measure (Seconds vs Milliseconds), monetary amounts with currency
+
 ## Immutability
+
+Immutable by default, mutable by exception. Every value starts as readonly. Mutability requires an explicit decision, not the other way around.
+
+### Behavioral Rules
 
 - Never mutate function arguments. Copy, modify the copy, return it
 - `const` by default. `let` only when reassignment is needed, never `var`
-- Spread or structured clone over in-place mutation: `{ ...obj, field: newValue }`
-- Arrays: `[...arr, item]`, `.filter()`, `.map()` over `.push()`, `.splice()`, `.sort()` on the original
+- Spread or `structuredClone` over in-place mutation: `{ ...obj, field: newValue }` for shallow updates, `structuredClone(obj)` when you need a true deep copy without structural sharing
+- Arrays: `[...arr, item]`, `.filter()`, `.map()` over `.push()`, `.splice()`, `.sort()` on the original. Prefer ES2023 non-mutating methods when available: `.toSorted()`, `.toReversed()`, `.toSpliced()`, `.with(index, value)`
 - State transitions produce new state, never mutate the previous one
 - Derive values with selectors or computed properties. Never cache derived values as mutable fields
 - Framework-internal mutation like Immer or MobX stays at the framework boundary. Everything else treats state as read-only
+
+### Type-Level Enforcement (TypeScript)
+
+Make the compiler catch mutations instead of relying on discipline alone. `readonly` is compile-time only, zero runtime overhead.
+
+- Mark interface and type properties as `readonly` when the value must not change after construction
+- Use `as const` on object and array literals whose values are known at declaration time. This makes every property deeply readonly and narrows types to their literal values. Combine with `satisfies` to get both literal inference and type validation: `const ROUTES = { home: '/' } as const satisfies Record<string, string>`
+- Function parameters that accept arrays: use `readonly T[]` or `ReadonlyArray<T>`. This removes `.push()`, `.splice()`, `.sort()` from the type signature
+- Function parameters that accept objects: use `Readonly<T>` when the function must not modify the input
+- Use `ReadonlyMap<K, V>` and `ReadonlySet<T>` for collections used as lookups that must not grow or shrink
+- Enable `@typescript-eslint/prefer-readonly-parameter-types` to enforce readonly parameters automatically
+- Prefer `readonly` over `Object.freeze()`. `readonly` catches mutations at compile time with no cost. `Object.freeze()` is runtime, shallow only, and has overhead. Reserve `Object.freeze()` for runtime protection at trust boundaries where external code may bypass the type system
 
 ## Data Safety
 
@@ -72,6 +113,15 @@ Also classify by scope:
 
 The error handler itself must be self-protecting: if logging fails inside the handler, fall back to stdout directly. A crashing error handler turns every error into an unrecoverable crash.
 
+### Typed Error Returns
+
+In domain logic, prefer returning typed errors over throwing exceptions. A `Result<T, E>` type makes the error channel visible in the function signature. Callers cannot forget to handle the failure path because the type system forces it.
+
+- Use exceptions for truly exceptional, unrecoverable situations: broken invariants, programmer errors, process-scoped failures
+- Use Result types for expected domain failures: validation errors, not-found, permission denied, business rule violations
+- At framework boundaries (HTTP handlers, CLI entry points, queue consumers), convert Result types to the framework's error mechanism (throw, error response, rejection)
+- A hand-rolled discriminated union is sufficient. Libraries like neverthrow or Effect provide chaining utilities if the codebase benefits from pipelines
+
 ## Defensive Invariants
 
 Functions that transform data or coordinate side effects must assert their preconditions. Not every function needs assertions, but functions at trust boundaries, data transformation pipelines, and state transitions must validate assumptions before proceeding.
@@ -86,6 +136,19 @@ Where to assert:
 | After complex transformations | Output satisfies postconditions the caller depends on |
 
 Use the language's native assertion mechanism: `assert` in Python, `console.assert` or throwing on violation in TypeScript, `debug_assert!`/`assert!` in Rust, `if err != nil` patterns in Go. The goal is executable documentation of assumptions, not ceremony.
+
+### Total Functions
+
+A total function returns a valid result for every valid input. A partial function crashes, throws, or returns garbage for some inputs. Prefer total functions.
+
+| Strategy | Technique |
+|----------|-----------|
+| Narrow the input | Use branded types or discriminated unions so invalid inputs are unrepresentable at the type level |
+| Widen the output | Return `T \| undefined` or `Result<T, E>` instead of throwing |
+| Validate at construction | Smart constructors that return a Result, making invalid instances impossible to create |
+| Exhaust all cases | Handle every variant of a union type. Use `satisfies never` to catch missing branches at compile time |
+
+Partial functions are acceptable after validation at a system boundary. If the API layer proved the array is non-empty, internal functions can assume non-emptiness.
 
 ## Analyzability
 
