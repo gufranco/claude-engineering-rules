@@ -77,19 +77,10 @@ Store ADRs in a `docs/adr/` directory in the repository. Number them sequentiall
 
 ## Pre-Completion Checklist
 
+Run through `checklists/code-quality.md`. This is the same checklist used by `/review`. During implementation, it runs as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean.
+
+Additionally, verify these implementation-specific items:
+
 - [ ] Reuse checked (codebase, PRs, branches)
-- [ ] Backward compatible
-- [ ] Matches existing patterns
-- [ ] Errors classified (transient vs permanent) and handled accordingly
-- [ ] **Idempotent**: every write operation safe to execute twice with the same input. If not naturally idempotent, what guard prevents duplicate effects?
-- [ ] **Deduplicated**: identified the natural dedup key. Durable check-before-process in place. In-memory-only dedup is not acceptable
-- [ ] **Atomic**: related writes wrapped in a transaction or conditional expression. No partial writes left to corrupt state
-- [ ] Async processors have DLQ, partial batch failure reporting, dedup by message ID, and monitoring
-- [ ] Input validation (user endpoints)
-- [ ] No sensitive data exposed
-- [ ] All loops and retries have explicit upper bounds. No unbounded `while (true)` or unlimited pagination
-- [ ] No ignored return values. Every non-void result is used or explicitly discarded with justification
-- [ ] Preconditions asserted before irreversible operations and at trust boundaries
-- [ ] Tests written and passing
-- [ ] **Test data uses fake data generator.** No hardcoded static values in test setup. Generator is seeded for determinism
-- [ ] README updated (if API/setup/env changed)
+- [ ] Tests written and passing (full suite, not just changed tests)
+- [ ] Test/lint/build evidence shown (not just "it should pass")
