@@ -5,10 +5,11 @@ description: Review a pull request or local branch changes following the code re
 
 Review a pull request, merge request, or local branch changes with an extremely rigorous, detail-oriented analysis. Every line of the diff is scrutinized for correctness, security, performance, maintainability, and adherence to best practices. This review leaves nothing to chance.
 
-Use two checklists as structured guides:
+Use three checklists as structured guides:
 
-1. `reviewer-prompt.md` in this directory for review-only categories (correctness, performance, testing, code quality, naming, dependencies, PR quality).
+1. `../../checklists/code-quality.md` for the 16 code-level quality categories (correctness, security, error handling, concurrency, data integrity, performance, testing, code quality, naming, architecture, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis). This is the same checklist used by the completion gates during implementation.
 2. `../../checklists/engineering.md` for the 32 shared architecture, resilience, and infrastructure categories (also used by `/assessment`).
+3. `reviewer-prompt.md` in this directory for the comment format, code example standards, and review-specific examples.
 
 Go through every applicable category. Do not skip sections because the changes "look simple."
 
@@ -137,36 +138,11 @@ When scope filtering is active, report at the start of the review: how many file
    - **Verify PR description matches the diff** (PR mode only). Compare what the PR description claims to do against what the diff actually does. Flag undocumented changes: code in the diff that the description doesn't mention. Flag missing changes: things the description promises but the diff doesn't deliver. Flag scope creep: unrelated changes bundled into the PR without explanation.
 6. **Deep analysis: three explicit passes.** Do not treat this as a single scan. Execute three distinct passes, each with a different lens. Findings from earlier passes inform later ones. Do not stop after finding a few issues: exhaustive coverage across all passes is the goal.
 
-   **Pass 1: Per-file analysis.** For each in-scope file, go through every category in `reviewer-prompt.md` and every applicable category in `../../checklists/engineering.md`:
-   - **Correctness:** Does the logic actually do what it claims? Trace through the code mentally with concrete inputs, especially edge cases. Look for off-by-one errors, null/undefined access, wrong operator precedence, incorrect boolean logic, missing return statements, unreachable code.
-   - **Security:** Apply the full OWASP top 10 lens. Check for injection, broken auth, sensitive data exposure, XXE, broken access control, misconfig, XSS, insecure deserialization, known vulnerable components, insufficient logging. Check for secrets, tokens, or credentials in the diff.
-   - **Error handling:** Are all error paths covered? Are errors caught with context, or silently swallowed? Are error messages helpful for debugging? Is the error propagation strategy consistent? Could a thrown exception crash a request handler?
-   - **Performance:** Look for O(n^2) loops hidden as nested iterations, unnecessary allocations inside loops, missing database indexes on new queries, N+1 query patterns, unbounded list fetches, missing pagination, synchronous I/O blocking the event loop, unnecessary re-renders.
-   - **Concurrency and race conditions:** Shared mutable state, missing locks, time-of-check-to-time-of-use (TOCTOU) bugs, unhandled promise rejections, missing `await`, fire-and-forget async calls that should be awaited.
-   - **Data integrity:** Missing validation at system boundaries, missing database constraints, missing uniqueness checks, potential for duplicate processing, missing idempotency on mutations.
-   - **Naming and readability:** Are variables, functions, and files named with precision? Could someone unfamiliar with the codebase understand this code? Are abstractions at the right level? Is the code self-documenting or does it need comments that are missing?
-   - **Design:** Single responsibility respected? Coupling between modules appropriate? Dependencies flowing in the right direction? Composition over inheritance? Is this the simplest solution that works, or is it over/under-engineered?
-   - **Testing:** Are the changes covered by meaningful tests? Do tests verify real behavior or just mock behavior? Are edge cases and error paths tested? Is the test structure clean (AAA pattern)? Are assertions specific enough to catch regressions?
-   - **Mock policy (STRICT, blocking):** Tests must connect to real infrastructure: database, Redis, queues, caches. These dependencies belong in docker-compose for the test environment, with `beforeAll()` hooks to seed data. Only external third-party APIs, time, and randomness may be mocked. Mocking your own database, services, or modules is a blocking issue: the test may pass while the actual integration is broken, which is worse than no test. If any test mocks something that should be real, flag it as a blocking issue with a code example showing the real-connection approach.
-   - **Consistency:** Does the code follow the existing patterns in the codebase? Is the style consistent with surrounding code? Are similar problems solved the same way?
+   **Pass 1: Per-file analysis.** For each in-scope file, go through every applicable category in `../../checklists/code-quality.md` (categories 1-14) and every applicable category in `../../checklists/engineering.md`. The code-quality checklist covers correctness, security, error handling, concurrency, data integrity, performance, testing (including strict mock policy), code quality, naming, architecture, backward compatibility, dependencies, and documentation.
 
-   **Pass 2: Cross-file consistency.** After reviewing each file individually, review the diff as a whole. Look for contradictions and implicit assumptions that only become visible when files interact:
-   - **Design contradictions:** Does one file assume graceful degradation while another enforces a hard dependency? Does one file treat a field as optional while another treats it as required? Does one file validate input while another trusts it blindly?
-   - **Import chain side effects:** When a new module is imported, trace the full import chain. Does it trigger module-level side effects like connections, env validation, or scheduled tasks that change startup behavior? Would a missing env var crash the entire process at import time?
-   - **Configuration completeness:** When a new env var, dependency, or infrastructure requirement is introduced, verify all environments can satisfy it: local dev, CI, staging, production. Check `.env.example`, Docker configs, CI pipelines, and IaC templates.
-   - **Contract alignment:** Does the frontend send data in the exact format the backend expects? Do header names, field names, parameter positions, and types match? Is the API client updated to match the API changes?
-   - **Error path consistency:** If module A classifies or throws errors in a specific way, does module B handle those error types correctly? Do error responses from the backend match what the frontend catches and displays?
-   - **Behavioral symmetry:** If an operation has setup, does it have teardown? If a resource is acquired, is it released on all paths? If a feature is enabled, can it be disabled?
+   **Pass 2: Cross-file consistency.** After reviewing each file individually, review the diff as a whole using category 15 from `../../checklists/code-quality.md`. Look for contradictions and implicit assumptions that only become visible when files interact: design contradictions, import chain side effects, configuration completeness, contract alignment, error path consistency, and behavioral symmetry.
 
-   **Pass 3: Cascading fix analysis.** For every issue found in passes 1 and 2, think one step ahead. If the author implements the suggested fix exactly as described, what new problems could that introduce?
-   - Would the fix add a new dependency, env var, or startup requirement?
-   - Would the fix change a function signature, breaking callers not in this diff?
-   - Would the fix require coordinated changes in files not touched by this PR?
-   - Would the fix change error behavior that other code relies on?
-   - Would the fix behave differently across environments (dev vs staging vs production)?
-   - Would the fix introduce a new test requirement that isn't mentioned?
-
-   When the answer to any of these is yes, include a "When implementing this fix, also..." note in the review comment. This front-loads what would otherwise become a second review round. The goal is that the author can address every issue and its downstream effects in a single iteration.
+   **Pass 3: Cascading fix analysis.** For every issue found in passes 1 and 2, apply category 16 from `../../checklists/code-quality.md`. Think one step ahead: if the author implements the suggested fix exactly as described, what new problems could that introduce? When the answer to any cascading question is yes, include a "When implementing this fix, also..." note in the review comment. This front-loads what would otherwise become a second review round.
 7. **Run local verification.** Detect test, lint, and build commands using the same lockfile and config detection as `/test`. Run them and report the results.
 8. **Check branch freshness, CI status, test evidence, and PR size.** Do these **in parallel**:
    - Verify the branch is up to date with the base branch. If behind, this is a blocking issue.

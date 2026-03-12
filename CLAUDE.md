@@ -172,11 +172,12 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 
 **Every code change:**
 
-1. Read the full diff. Every changed line, not just the files you touched
+1. **Self-review loop.** Read the full diff and run through `checklists/code-quality.md`. This is a code review of your own work, not just reading the diff. Fix any issues found. Re-read the diff after fixes. **Repeat until the diff is clean.** The goal: `/review --local` should find zero issues.
 2. Run the test suite. Full suite, not just changed tests. Show output
 3. Run the linter. Zero warnings, zero errors. Show output
 4. Run the build. Clean build, zero warnings, zero errors. Show output
-5. After push, check CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts all require a fix before the task is done
+5. **If steps 2-4 required code fixes, return to step 1.** Every code change gets a fresh self-review. No exceptions.
+6. After push, check CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts all require a fix before the task is done
 
 **Bug fixes add:**
 
