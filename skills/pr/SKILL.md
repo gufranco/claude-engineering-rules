@@ -25,12 +25,12 @@ This skill accepts optional arguments after `/pr`:
 - `--draft`: create as a draft PR/MR.
 - `--base <branch>`: target a specific base branch instead of the default. Useful for stacked PRs or release branches.
 - `--reviewer <user>`: request review from a specific user. Can be repeated for multiple reviewers.
-- `--assignee <user>`: assign the PR/MR to a user.
+- `--assignee <user>`: assign the PR/MR to a specific user. Defaults to self-assign (`@me` on GitHub, current authenticated username on GitLab) if not provided.
 - `--label <name>`: add a label. Can be repeated for multiple labels.
-- `--pipeline`: after creating/updating the PR, monitor CI/CD checks until they pass or fail. On failure, offers to diagnose, fix, and re-push automatically.
+- `--no-pipeline`: skip the default CI/CD monitoring after creating/updating the PR. By default, `/pr` monitors checks until they pass or fail, diagnosing and offering to fix failures automatically.
 - `update` or an existing PR/MR number: update the title and description of an existing PR/MR.
 
-Arguments can be combined: `/pr --draft --base develop --reviewer alice --label bugfix --pipeline`.
+Arguments can be combined: `/pr --draft --base develop --reviewer alice --label bugfix`.
 
 ## Steps
 
@@ -84,14 +84,15 @@ Arguments can be combined: `/pr --draft --base develop --reviewer alice --label 
 10. **Build the PR/MR title and description** following the format below.
 11. **Create or update the PR/MR:**
     - Write the description to a temp file first to avoid shell escaping issues.
-    - **Create (GitHub):** `gh pr create --title "<title>" --body-file <tmpfile>`. Add `--draft`, `--base`, `--reviewer`, `--assignee`, `--label` flags as provided.
-    - **Create (GitLab):** `glab mr create --title "<title>" --description-file <tmpfile>`. Fall back to `--description "$(cat <tmpfile>)"` if `--description-file` is not supported. Add `--draft`, `--target-branch`, `--reviewer`, `--assignee`, `--label` flags as provided.
+    - **Self-assign by default:** unless `--assignee` was explicitly provided, add `--assignee @me` on GitHub. On GitLab, resolve the current username from `glab auth status` and add `--assignee <username>`.
+    - **Create (GitHub):** `gh pr create --title "<title>" --body-file <tmpfile>`. Add `--draft`, `--base`, `--reviewer`, `--assignee`, `--label` flags as provided or defaulted.
+    - **Create (GitLab):** `glab mr create --title "<title>" --description-file <tmpfile>`. Fall back to `--description "$(cat <tmpfile>)"` if `--description-file` is not supported. Add `--draft`, `--target-branch`, `--reviewer`, `--assignee`, `--label` flags as provided or defaulted.
     - **Update (GitHub):** `gh pr edit <number> --title "<title>" --body-file <tmpfile>`. Add `--add-reviewer`, `--add-assignee`, `--add-label` if provided.
     - **Update (GitLab):** `glab mr update <number> --title "<title>" --description-file <tmpfile>`. Fall back to `--description "$(cat <tmpfile>)"` if `--description-file` is not supported.
     - Always clean up the temp file after the command completes, whether it succeeded or failed. Use a trap or finally block.
 12. **Show the PR/MR URL when done.**
 13. **Restore the original account** per `standards/borrow-restore.md`.
-14. **If `--pipeline` was passed, enter the pipeline monitoring loop** (see "Pipeline Monitoring" section below).
+14. **Enter the pipeline monitoring loop** unless `--no-pipeline` was passed (see "Pipeline Monitoring" section below).
 
 ## PR Title
 
@@ -152,7 +153,7 @@ If issue references were found in the branch name or commits, add them at the en
 
 ## Pipeline Monitoring
 
-This section applies when `--pipeline` was passed. It runs after step 12, once the PR/MR is created/updated and the URL has been shown.
+This section runs by default after step 12, once the PR/MR is created/updated and the URL has been shown. Skip it only when `--no-pipeline` was passed.
 
 ### Step 1: Wait for checks
 
@@ -258,6 +259,6 @@ If no actionable comments are found, report that the PR is clean and ready for r
 
 ## Related skills
 
-- `/commit` - Create semantic commits before opening a PR. Also supports `--pipeline`.
+- `/commit` - Create semantic commits before opening a PR. Supports `--pipeline` for CI monitoring.
 - `/checks` - Monitor CI/CD pipeline status independently (without the fix loop).
 - `/review` - Review a PR/MR before merging.
