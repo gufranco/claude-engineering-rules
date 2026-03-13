@@ -39,7 +39,7 @@ Before declaring any task complete:
 
 ## Verification by Task Type
 
-**Code changes**: run tests + lint + build. All three.
+**Code changes**: run formatter + tests + lint + build. All four.
 
 **Configuration changes**: verify the config loads correctly. Start the relevant service or run a validation command.
 
