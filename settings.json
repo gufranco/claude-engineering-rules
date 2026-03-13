@@ -158,6 +158,7 @@
   },
   "outputStyle": "Explanatory",
   "language": "english",
+  "effortLevel": "high",
   "mcpServers": {
     "context7": {
       "command": "npx",
@@ -169,6 +170,5 @@
     "sentry": {
       "url": "https://mcp.sentry.dev/mcp"
     }
-  },
-  "effortLevel": "high"
+  }
 }
