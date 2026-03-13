@@ -2,6 +2,9 @@
 # Claude Code runtime data
 ################################################################################
 
+# Internal state (OAuth, sessions, feature flags)
+.claude.json
+
 # Session and conversation data
 debug/
 projects/
