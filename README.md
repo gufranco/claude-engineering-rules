@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 11 rules, 11 on-demand standards, 24 skills, and 9 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 11 rules, 12 on-demand standards, 24 skills, and 9 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**11** rules · **11** standards · **24** skills · **9** hooks · **451** checklist items · **48** categories · **~8,900** lines of engineering standards
+**11** rules · **12** standards · **24** skills · **9** hooks · **451** checklist items · **48** categories · **~9,400** lines of engineering standards
 
 <table>
 <tr>
@@ -125,7 +125,7 @@ These 11 rules are loaded into every conversation automatically.
 
 ### Standards (loaded on demand)
 
-These 11 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 12 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
@@ -139,6 +139,7 @@ These 11 standards live in `standards/` and are loaded only when the task matche
 | `api-design` | REST conventions, error format, pagination, versioning, deprecation lifecycle, rate limiting, bulk operations |
 | `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
 | `caching` | Cache-aside/write-through strategies, invalidation, thundering herd prevention, cache warming, sizing |
+| `identifiers` | Identifier type selection: UUID v1-v8, ULID, TSID, Snowflake, TypeID, CUID2, NanoID, xid, Sqids. Decision flowchart, use-case matrix, DB storage, index performance |
 | `twelve-factor` | Cloud-native app design: stateless processes, config in env, backing services, disposability, admin processes |
 
 ### Skills
@@ -380,6 +381,7 @@ The hooks, rules, and skills activate automatically.
     database.md          # Schema, queries, migrations, locking
     distributed-systems.md # Consistency, saga, outbox, locking, events
     frontend.md          # Typography, a11y, responsive, components
+    identifiers.md       # Identifier type selection guide and decision framework
     infrastructure.md    # IaC, networking, containers, CI/CD, cloud
     llm-docs.md          # LLM-optimized doc URLs for 64 technologies
     observability.md     # Logging, metrics, tracing, SLOs, incidents

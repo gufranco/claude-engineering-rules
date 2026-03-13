@@ -104,6 +104,11 @@ on_demand:
     description: Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads
     triggers: [retry, idempotent, circuit breaker, dlq, backpressure, timeout, rate limit, resilience, fault tolerance]
 
+  identifiers:
+    path: standards/identifiers.md
+    description: Identifier type selection guide covering UUID v1-v8, ULID, TSID, Snowflake, Sonyflake, Randflake, TypeID, CUID2, NanoID, xid, Sqids, and auto-increment. Decision flowchart, use-case matrix, database storage, index performance
+    triggers: [identifier, id, uuid, ulid, tsid, snowflake, sonyflake, cuid, nanoid, typeid, primary key, pk, serial, auto-increment, bigserial, objectid, sqids, hashids, randflake, xid]
+
   twelve-factor:
     path: standards/twelve-factor.md
     description: Cloud-native app design across all 12 factors with actionable rules for stateless processes, config, backing services, disposability, and admin processes
