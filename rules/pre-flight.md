@@ -14,7 +14,7 @@ Run these checks in order. If any fails, stop and resolve before writing code.
 
 ### 1. Duplicate Check
 
-Search the codebase, open PRs, and recent branches for existing solutions.
+Search the codebase, open PRs, recent branches, and community packages for existing solutions.
 
 | Where to look | How |
 |----------------|-----|
@@ -22,8 +22,11 @@ Search the codebase, open PRs, and recent branches for existing solutions.
 | Open PRs | `gh pr list --search "<keywords>"` |
 | Recent branches | `git branch -a --list "*<keyword>*"` |
 | Closed PRs | `gh pr list --state closed --search "<keywords>"` |
+| Community packages | Search for established libraries that solve the problem. Check npm, PyPI, or the relevant registry |
 
-If a solution exists, reuse or extend it. Do not reimplement.
+If a solution exists in the codebase, reuse or extend it. If a well-adopted package exists, suggest it before implementing manually. Building from scratch what a maintained library already solves is wasted effort and ongoing maintenance burden.
+
+When suggesting a package, follow the evaluation criteria from `rules/code-style.md` Dependencies section: compare top options, check maintenance activity, community size, vulnerabilities, and bundle size.
 
 ### 2. Architecture Fit
 
