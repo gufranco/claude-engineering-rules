@@ -121,3 +121,23 @@ on_demand:
     path: standards/twelve-factor.md
     description: Cloud-native app design across all 12 factors with actionable rules for stateless processes, config, backing services, disposability, and admin processes
     triggers: [twelve-factor, 12-factor, cloud-native, saas, stateless, port binding, backing service, disposability, admin process, dev-prod parity]
+
+  hexagonal-architecture:
+    path: standards/hexagonal-architecture.md
+    description: Ports and adapters pattern with dependency direction, port interfaces, adapter implementations, and per-layer testing strategy
+    triggers: [hexagonal, ports and adapters, port, adapter, dependency direction, architecture layers, domain isolation]
+
+  railway-oriented-programming:
+    path: standards/railway-oriented-programming.md
+    description: Result type composition with map, flatMap, error accumulation, pipe/flow, neverthrow, Effect, and boundary conversion
+    triggers: [railway, result type, neverthrow, effect, andThen, flatMap, error accumulation, result chaining, functional error]
+
+  ddd-tactical-patterns:
+    path: standards/ddd-tactical-patterns.md
+    description: Entities, value objects, aggregates, domain events, repositories, domain services, and ubiquitous language
+    triggers: [ddd, domain-driven, entity, value object, aggregate, domain event, repository pattern, ubiquitous language, bounded context]
+
+  state-machines:
+    path: standards/state-machines.md
+    description: Type state pattern, runtime state machines, transition tables, guard conditions, XState, and testing strategies for stateful workflows
+    triggers: [state machine, state chart, statechart, xstate, transition, workflow, lifecycle, type state, guard condition]
