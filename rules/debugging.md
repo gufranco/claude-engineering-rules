@@ -53,6 +53,7 @@ When the issue spans multiple services or layers:
 ## Common Traps
 
 - **Fixing the symptom**: adding a null check instead of understanding why the value is null.
+- **Relaxing the checker**: when a linter or CI check fails, fix the code. Do not lower severity, disable rules, or weaken configuration to make the failure disappear. Only suppress a finding after confirming it is a false positive or a deliberate, documented pattern.
 - **Confirmation bias**: seeing what you expect in the logs instead of what's there.
 - **Scope creep**: "while I'm here, let me also fix..." during debugging. Don't. File it separately.
 - **Stale assumptions**: "this worked yesterday" is not evidence. Verify the current state.

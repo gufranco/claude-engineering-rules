@@ -15,7 +15,7 @@ Before acting and before declaring any task done:
 - [ ] **Safe defaults.** Deny by default. Production-safe config. No silent failures.
 - [ ] **Single source of truth.** One place for config, constants, business rules.
 - [ ] **Explicit over implicit.** Explicit types, env, config. No magic.
-- [ ] **Reuse first.** Before implementing, check if the problem or solution already exists in branches, PRs, or the codebase.
+- [ ] **Reuse first.** Before implementing, check if the problem or solution already exists in branches, PRs, the codebase, or as an established community package. Building from scratch what a well-adopted library already solves is wasted effort.
 - [ ] **Performance first.** When multiple solutions exist, choose the most performant one. Avoid unnecessary allocations, copies, iterations, and re-renders. Think about algorithmic complexity before writing the first line.
 - [ ] **Zero warnings.** Treat every warning as an error. Deprecation notices, linter warnings, build warnings, CI annotations, runtime warnings: all must be resolved, not ignored. A warning left unaddressed is a future breakage.
 
@@ -129,6 +129,7 @@ Before using any external tool or CLI command:
 3. **Never assume availability.** Even common tools like gh, docker, and aws may not be installed.
 4. **Linux package management.** Never use Homebrew on Linux. Use the distribution's native package manager.
 5. **Preferred package manager.** Use pnpm for JavaScript and TypeScript projects. Never default to npm.
+6. **Respect rate limits.** Before polling any API or service in a loop, check the rate limit first. For GitHub: `gh api rate_limit`. For other services: check headers or docs. Never use tight polling loops (e.g. every 3 seconds) without confirming sufficient quota. When rate limited, wait for the reset window instead of retrying immediately.
 
 ### Shell Alias Safety
 

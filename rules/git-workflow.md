@@ -68,14 +68,31 @@ Detect the correct commands from the project's package manager, lockfile, and sc
 
 After ANY push:
 
-1. Run `gh pr checks --watch`
-2. Wait for ALL checks
-3. Review CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts require a fix in the same task
-4. If failed: `gh run view <id> --log-failed`
-5. Before fixing: search for an existing fix in source branch, open PRs, and remote branches
-6. If no existing fix: Fix, push, repeat until green
+1. **Cancel superseded runs.** List all in-progress and queued runs on the branch. Cancel every run except the one triggered by the latest push. Older runs test stale code and waste runner minutes.
+2. Run `gh pr checks --watch` or `gh run watch <latest-id>`
+3. Wait for ALL checks
+4. Review CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts require a fix in the same task
+5. If failed: `gh run view <id> --log-failed`
+6. Before fixing: search for an existing fix in source branch, open PRs, and remote branches
+7. If no existing fix: Fix, push, repeat until green
 
 **Never** mark task complete with failing/running pipeline or unresolved warnings.
+
+**Batch fixes before pushing.** When CI fails with multiple issues, fix all of them locally before pushing again. One push with all fixes, not one push per fix. Each push triggers a full pipeline run across all platforms.
+
+**Rate limit awareness.** `gh run watch` polls every 3 seconds (~1200 requests/hour). Never run multiple watchers concurrently. Before starting a watcher, check quota with `gh api rate_limit`. If remaining quota is below 500, use one-shot `gh run view <id>` checks instead of continuous polling.
+
+## CI File Validation
+
+Before committing changes to CI workflow files, run the relevant linters locally to avoid fix-push-fail cycles:
+
+| File type | Tool | Command |
+|-----------|------|---------|
+| `.github/workflows/*.yml` | actionlint | `actionlint` |
+| Any `.yml` / `.yaml` | yamllint | `yamllint -d "{extends: default, rules: {line-length: disable}}" <file>` |
+| Shell scripts referenced by CI | shellcheck | `shellcheck <file>` |
+
+If a tool is not installed locally, install it before proceeding. Do not skip the check and hope CI catches it.
 
 ## PR/MR Creation
 

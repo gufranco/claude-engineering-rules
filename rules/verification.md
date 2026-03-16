@@ -65,6 +65,10 @@ Walk through each finding or recommendation. If any came from inference rather t
 
 This check applies to analytical output: reviews, assessments, incident analyses, architecture recommendations. It complements the command-based verification above, which covers code changes.
 
+## Cross-Platform Verification
+
+When code has platform-specific branches (architecture checks, OS detection, conditional package lists), never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
+
 ## Partial Completion
 
 If you cannot verify everything:
