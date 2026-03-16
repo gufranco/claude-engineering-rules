@@ -67,6 +67,24 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/gh-token-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/glab-token-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash ~/.claude/hooks/large-file-blocker.sh"
           }
         ]
