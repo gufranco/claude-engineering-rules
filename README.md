@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 13 rules, 12 on-demand standards, 24 skills, and 11 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 13 rules, 16 on-demand standards, 24 skills, and 11 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**13** rules · **12** standards · **24** skills · **11** hooks · **451** checklist items · **48** categories · **~9,750** lines of engineering standards
+**13** rules · **16** standards · **24** skills · **11** hooks · **451** checklist items · **48** categories · **~9,750** lines of engineering standards
 
 <table>
 <tr>
@@ -130,7 +130,7 @@ These 13 rules are loaded into every conversation automatically.
 
 ### Standards (loaded on demand)
 
-These 12 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 16 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
@@ -146,6 +146,10 @@ These 12 standards live in `standards/` and are loaded only when the task matche
 | `caching` | Cache-aside/write-through strategies, invalidation, thundering herd prevention, cache warming, sizing |
 | `identifiers` | Identifier type selection: UUID v1-v8, ULID, TSID, Snowflake, TypeID, CUID2, NanoID, xid, Sqids. Decision flowchart, use-case matrix, DB storage, index performance |
 | `twelve-factor` | Cloud-native app design: stateless processes, config in env, backing services, disposability, admin processes |
+| `hexagonal-architecture` | Ports and adapters: port interfaces, adapter implementations, dependency direction, per-layer testing |
+| `railway-oriented-programming` | Result type composition: map, flatMap, error accumulation, neverthrow, Effect, boundary conversion |
+| `ddd-tactical-patterns` | Entities, value objects, aggregates, domain events, repositories, domain services, ubiquitous language |
+| `state-machines` | Type state pattern, runtime state machines, transition tables, guard conditions, XState, testing strategies |
 
 ### Skills
 
@@ -396,6 +400,10 @@ The hooks, rules, and skills activate automatically.
     observability.md     # Logging, metrics, tracing, SLOs, incidents
     resilience.md        # Retries, idempotency, DLQs, back pressure
     twelve-factor.md     # Cloud-native app design across all 12 factors
+    hexagonal-architecture.md  # Ports and adapters pattern
+    railway-oriented-programming.md  # Result type composition
+    ddd-tactical-patterns.md   # DDD tactical patterns
+    state-machines.md    # Type state and runtime state machines
   skills/
     adr/                 # Architecture Decision Records
     assessment/          # Architecture completeness audit
