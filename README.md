@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 11 rules, 12 on-demand standards, 24 skills, and 9 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 13 rules, 12 on-demand standards, 24 skills, and 11 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**11** rules · **12** standards · **24** skills · **9** hooks · **451** checklist items · **48** categories · **~9,400** lines of engineering standards
+**13** rules · **12** standards · **24** skills · **11** hooks · **451** checklist items · **48** categories · **~9,750** lines of engineering standards
 
 <table>
 <tr>
@@ -20,7 +20,7 @@
 
 ### Runtime Guardrails
 
-Nine hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, prevent large file commits, guard environment files, auto-format code, and track every file change.
+Eleven hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account token safety for `gh` and `glab`, auto-format code, and track every file change.
 
 </td>
 <td width="50%" valign="top">
@@ -62,6 +62,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Conventional commits enforced | ❌ | ✅ |
 | Secret scanning before commit | ❌ | ✅ |
 | Dangerous command blocking | ❌ | ✅ |
+| Multi-account token safety | ❌ | ✅ |
 | Integration-first test policy | ❌ | ✅ |
 | Pre-flight verification gates | ❌ | ✅ |
 | On-demand domain standards | ❌ | ✅ |
@@ -82,6 +83,8 @@ graph LR
         B[Dangerous Command Blocker]
         C[Secret Scanner]
         D[Conventional Commits]
+        B2[GH Token Guard]
+        B3[GLab Token Guard]
         E2[Large File Blocker]
         F2[Env File Guard]
     end
@@ -94,8 +97,8 @@ graph LR
         H[Smart Formatter]
         I[Change Tracker]
     end
-    A --> B & C & D & E2 & F2
-    B & C & D & E2 & F2 --> E
+    A --> B & C & D & B2 & B3 & E2 & F2
+    B & C & D & B2 & B3 & E2 & F2 --> E
     E --> F
     F --> G
     G --> H & I
@@ -107,7 +110,7 @@ graph LR
 
 ### Rules (always loaded)
 
-These 11 rules are loaded into every conversation automatically.
+These 13 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -122,6 +125,8 @@ These 11 rules are loaded into every conversation automatically.
 | `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `documentation` | Preserve existing valid information when skills modify documentation files. Content migration verification for file consolidations |
 | `language` | Response language enforcement. All output in English regardless of user input language |
+| `github-accounts` | Multi-account safety for `gh` CLI: require inline `GH_TOKEN`, block `gh auth switch`, account mapping by remote URL |
+| `gitlab-accounts` | Multi-account safety for `glab` CLI: require inline `GITLAB_TOKEN` and `GITLAB_HOST`, block `glab auth login` |
 
 ### Standards (loaded on demand)
 
@@ -180,6 +185,8 @@ These 12 standards live in `standards/` and are loaded only when the task matche
 | `dangerous-command-blocker.py` | PreToolUse (Bash) | Three-level protection: blocks catastrophic commands, protects critical paths, warns on suspicious patterns |
 | `secret-scanner.py` | PreToolUse (Bash) | Scans staged files for 30+ secret patterns before any git commit |
 | `conventional-commits.sh` | PreToolUse (Bash) | Validates commit messages match conventional commit format |
+| `gh-token-guard.py` | PreToolUse (Bash) | Blocks `gh` commands without inline `GH_TOKEN` and blocks `gh auth switch` to prevent global account mutation |
+| `glab-token-guard.py` | PreToolUse (Bash) | Blocks `glab` commands without inline `GITLAB_TOKEN` and blocks `glab auth login` to prevent global config mutation |
 | `large-file-blocker.sh` | PreToolUse (Bash) | Blocks commits containing files over 5MB to prevent accidental binary commits |
 | `env-file-guard.sh` | PreToolUse (Write/Edit/MultiEdit) | Blocks modifications to `.env`, private keys, and files in secrets directories |
 | `smart-formatter.sh` | PostToolUse (Edit/Write/MultiEdit) | Auto-formats files by extension using prettier, black, gofmt, rustfmt, rubocop, or shfmt |
@@ -368,6 +375,8 @@ The hooks, rules, and skills activate automatically.
     debugging.md         # Four-phase debugging process
     documentation.md     # Documentation preservation during skill execution
     git-workflow.md      # Commits, branches, CI, PRs
+    github-accounts.md   # GitHub multi-account safety
+    gitlab-accounts.md   # GitLab multi-account safety
     language.md          # Response language enforcement
     pre-flight.md        # Pre-implementation verification gates
     security.md          # Secrets, auth, encryption, supply chain
@@ -417,6 +426,8 @@ The hooks, rules, and skills activate automatically.
     conventional-commits.sh  # Commit message validation
     dangerous-command-blocker.py  # Catastrophic command prevention
     env-file-guard.sh    # Environment and secret file protection
+    gh-token-guard.py    # GitHub multi-account token enforcement
+    glab-token-guard.py  # GitLab multi-account token enforcement
     large-file-blocker.sh # Large binary commit prevention
     scope-guard.sh       # Spec scope enforcement (per-project)
     secret-scanner.py    # Pre-commit secret scanning

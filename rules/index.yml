@@ -51,6 +51,14 @@ always_loaded:
     description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
     triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description]
 
+  github-accounts:
+    description: Multi-account safety for gh CLI, require inline GH_TOKEN, block gh auth switch, account mapping by remote URL
+    triggers: [github, gh, gh auth, multi-account, token]
+
+  gitlab-accounts:
+    description: Multi-account safety for glab CLI, require inline GITLAB_TOKEN and GITLAB_HOST, block glab auth login
+    triggers: [gitlab, glab, glab auth, multi-account, token]
+
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
 
 on_demand:
