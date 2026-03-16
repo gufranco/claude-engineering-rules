@@ -1,6 +1,6 @@
 # Code Style
 
-- DRY, SOLID, KISS
+- DRY, SOLID, KISS, YAGNI, LoD, CQS, Pit of Success
 - Small functions (< 30 lines)
 - Meaningful names
 - No magic numbers
@@ -10,8 +10,10 @@
 - Design for change: isolate business logic from the framework. Prefer dependency inversion. Structure as **functional core, imperative shell**: pure logic with no I/O in the core, side effects pushed to the outermost layer. The core is testable with no mocks. The shell converts between the external world and the core's types
 - **Use-case functions**: for multi-step business flows, write a thin orchestration function that contains zero conditionals, zero loops, and zero exception handling. Only flat, sequential calls to domain services. Name it in business language (`calculatePriceCut`, `transferOwnership`), not technical language (`processData`). Use cases serve as a navigation index: any reader can see the full flow, its parameters, and its dependencies at a glance
 - **No environment conditionals**: never branch business logic on `NODE_ENV`, `APP_ENV`, or equivalent. Code that runs only in production is code that is never tested. Use configuration externalization for infrastructure differences (log format, connection strings), not code conditionals
+- **Remove over guard**: when a feature or dependency is unsupported on a platform, prefer removing it over wrapping it in a conditional. Conditionals add complexity, testing surface, and maintenance burden. Only guard when the feature is critical and has no cross-platform alternative
 - **Domain exception boundary**: services and domain logic throw domain-specific error classes, never framework HTTP exceptions. An exception filter or middleware at the boundary maps domain errors to HTTP responses.
 - **Validation infrastructure**: in NestJS projects, register validation globally via interceptor + method decorator, not per-parameter pipes. Controllers should have no validation imports or logic.
+- **Law of Demeter**: only call methods on direct dependencies: `this`, parameters, objects you create, and owned fields. Never chain through transitive objects like `order.getCustomer().getAddress().getCity()`. Each intermediate accessor is a coupling point. If you need data from a distant object, ask your direct collaborator to provide it
 - Prefer composition over inheritance
 - **No side effects at module level**: module/file scope runs on import. Keep it free of I/O, network calls, global state mutations, and event listener registration. All side effects belong inside explicitly called functions. A module that changes behavior just by being imported is a hidden coupling
 - Use braces for all control structures
@@ -25,6 +27,7 @@
 - **Bounded iteration**: every loop and retry must have an explicit upper bound. No `while (true)` without a break condition that is guaranteed to trigger. Polling loops need a timeout. Retry loops need a max attempt count. Pagination loops need a page limit. An unbounded loop is a latent outage
 - **Minimal scope**: declare variables at the smallest scope where they are used. Do not declare at function top and use 40 lines later. In languages with block scope, declare inside the block. Smaller scope means fewer interactions, easier reasoning, and less surface for bugs
 - **Don't block the request-handling thread**: never run CPU-intensive work (image processing, compression, cryptographic operations on large inputs) or synchronous I/O on the thread that serves requests. Offload to a worker thread, background job, or separate process. A blocked request thread stalls all concurrent requests
+- **Pit of Success**: design APIs so the correct usage is the easiest path. Wrong usage should require deliberate effort. Accept `NonEmptyArray<T>` instead of `T[]` with a runtime check. Require dependencies in the constructor instead of exposing an `init()` the caller might forget. Use enums instead of magic strings. When a caller can misuse your API without the compiler stopping them, the API is a pit of failure
 - **DI only when needed**: start with direct module imports. Only adopt dependency injection when you genuinely need to swap implementations at runtime or in tests. DI containers add indirection, increase startup time, and make stack traces harder to follow. Most applications never need to swap a real implementation
 
 ## TypeScript Type Constructs
@@ -65,6 +68,41 @@ type OrderId = Brand<string, 'OrderId'>;
 - Zero runtime cost. The brand is a phantom property that exists only in the type system
 - Combine with Zod's `.brand()` for runtime validation and compile-time branding in one step
 - Use for: IDs, validated strings (Email, URL), units of measure (Seconds vs Milliseconds), monetary amounts with currency
+
+### Type State Pattern
+
+Encode state machine transitions in the type system. Each state is a distinct type. Methods on a state return the next valid state. Invalid transitions do not exist in the API.
+
+```typescript
+class DraftOrder {
+  submit(items: readonly OrderItem[]): SubmittedOrder { /* ... */ }
+  // no ship(), no cancel() — only submit is valid from draft
+}
+
+class SubmittedOrder {
+  ship(tracking: TrackingId): ShippedOrder { /* ... */ }
+  cancel(reason: string): CancelledOrder { /* ... */ }
+  // no submit() — can't submit twice
+}
+
+class ShippedOrder {
+  deliver(signature: string): DeliveredOrder { /* ... */ }
+  // no cancel() — shipped orders follow a return flow, not cancellation
+}
+```
+
+- Use when: order workflows, payment processing, document lifecycles, connection states, authentication flows
+- Different from discriminated unions: unions model "what states exist" as data. Type state models "what transitions are legal" through method availability. The compiler prevents invalid transitions, not runtime checks
+- Combine with branded types for state identifiers: `DraftOrderId` vs `ShippedOrderId` prevents passing the wrong order to the wrong function
+
+## Command-Query Separation
+
+A function either changes state (command, returns void) or returns data (query, no side effects). Never both.
+
+- Commands perform an action: `saveUser(user)`, `sendEmail(message)`. Return `void` or a `Result` indicating success/failure
+- Queries return data without side effects: `getUserById(id)`, `calculateTotal(items)`. Safe to call multiple times
+- When you need both, split into two: `createOrder()` (command) then `getOrder(id)` (query), not `createAndReturnOrder()`
+- Exceptions: stack/queue `pop` operations where the removal and retrieval are inherently atomic. Document these cases
 
 ## Immutability
 
@@ -183,6 +221,7 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 - **Zod** is the preferred validation library for TypeScript projects
 - Validate semantically, not just syntactically: positive monetary values, valid date ranges, enum membership
 - Validate both input and output schemas at system boundaries
+- **Parse, don't validate**: validation that returns `boolean` is wasteful. The caller still holds untyped data and downstream functions cannot trust it without re-checking. Instead, parse into a typed value. `parseEmail(input: string): Result<Email, ValidationError>` returns a branded `Email` type. After this point, every function that accepts `Email` is guaranteed valid input with zero re-validation. Combine Zod's `.transform()` + `.brand()` to parse and brand in a single step
 
 ## File Naming
 
