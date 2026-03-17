@@ -62,6 +62,20 @@ Prevent lost updates and race conditions by writing only when the current state 
 
 When a conditional write fails, classify it: conflict (retry with fresh read) or duplicate (skip safely).
 
+### ORM-Native Equivalents (Prisma)
+
+When the project uses an ORM or query builder, never drop to raw SQL. No exceptions. In Prisma: never use `$executeRaw`, `$queryRaw`, or `$queryRawUnsafe`. Express every pattern through native methods:
+
+| Raw SQL pattern | Prisma native equivalent |
+|-----------------|--------------------------|
+| `UPDATE ... WHERE version = :expected` (optimistic locking) | `update` with version field in `where`, handle `RecordNotFound` as conflict |
+| `INSERT ... ON CONFLICT DO NOTHING` (deduplication) | `createMany` with `skipDuplicates: true`, or `upsert` |
+| `SELECT ... FOR UPDATE` + conditional write | `updateMany` with full condition in `where`, check `count === 0` for conflict |
+| `UPDATE ... WHERE condition` (atomic conditional) | `updateMany` with conditional `where`, check `count` for success/failure |
+| Serializable isolation | `db.$transaction(fn, { isolationLevel: 'Serializable' })` |
+
+**Default for atomic check-and-claim:** use `updateMany` with a conditional `where` clause. It translates to a single `UPDATE ... WHERE` at the database level. PostgreSQL's row-level lock during the UPDATE prevents concurrent transactions from seeing stale data. Reserve `Serializable` isolation for cases where multiple reads across different tables must be consistent within the same transaction.
+
 ## Access Pattern Design
 
 Design the schema around how data will be queried, not just how it is structured.
@@ -126,7 +140,8 @@ For DynamoDB, Cassandra, and similar:
 
 ## Locking Strategy
 
-- Prefer `SELECT ... FOR UPDATE` over advisory locks for row-level concurrency control
+- When the project has an ORM or query builder, use atomic conditional writes through native methods. In Prisma: `updateMany` with a conditional `where` clause. Never use raw `SELECT ... FOR UPDATE`
+- `SELECT ... FOR UPDATE` is the correct database-level pattern for pessimistic locking in projects without an ORM or query builder
 - Advisory locks (`pg_advisory_lock`) are aggressive: they block at the session or transaction level regardless of which rows are involved, causing performance problems under contention
 - Only use advisory locks where provably necessary and where row-level locking is insufficient
 
