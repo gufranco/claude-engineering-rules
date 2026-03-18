@@ -30,7 +30,7 @@ When suggesting a package, follow the evaluation criteria from `rules/code-style
 
 ### 2. Architecture Fit
 
-Read the surrounding code. Confirm the new code fits the existing patterns.
+Read the surrounding code. Confirm the new code fits the existing patterns, except when existing patterns violate `~/.claude/` rules. Rules always take priority.
 
 - What conventions does this area of the codebase follow?
 - What abstractions already exist that the new code should use?

@@ -1,5 +1,19 @@
 # Engineering Rules
 
+## Rule Priority (HIGHEST)
+
+All code generated in this session must comply 100% with the rules defined in `~/.claude/CLAUDE.md`, `~/.claude/rules/`, and `~/.claude/checklists/`. No exceptions.
+
+When existing code in the project violates these rules, the generated code must still follow the rules. Existing violations are not precedent. They are not permission. "The file already uses `any`" does not justify adding more `any`. "The existing function swallows errors" does not justify swallowing errors in the new code.
+
+**Priority order when instructions conflict:**
+
+1. `~/.claude/CLAUDE.md` and `~/.claude/rules/` (our rules, always win)
+2. Project-level `CLAUDE.md` (project conventions, second priority)
+3. Existing code patterns (follow only when they don't violate 1 or 2)
+
+When following an existing pattern would violate a rule, follow the rule and fix the pattern in the code you touch.
+
 ## On-Demand Standards
 
 Domain-specific standards live in `standards/` and are NOT loaded automatically. Before starting work, check `rules/index.yml` for `on_demand` entries matching the task. Read matching files from `standards/` before writing code.
@@ -173,7 +187,18 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 
 **Every code change:**
 
-1. **Self-review loop.** Read the full diff and run through `checklists/code-quality.md`. This is a code review of your own work, not just reading the diff. For every function that contains a modified line, read the entire function body from signature to closing brace — a one-line addition does not excuse violations in the surrounding code. Fix any issues found. Re-read the diff after fixes. **Repeat until the diff is clean.** The goal: `/review --local` should find zero issues.
+1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. For each function, walk through these categories from `checklists/code-quality.md` and state findings inline:
+
+   - **Error handling (cat 3):** every `await` result checked? Every catch has context? No silently swallowed errors?
+   - **Concurrency (cat 4):** any check-then-act (TOCTOU)? Protected by constraint, lock, or conditional write?
+   - **Data integrity (cat 5):** writes idempotent? DB constraints match app validation? External service limits (pagination, row caps) handled?
+   - **Security (cat 2):** inputs validated? No secrets? Auth enforced where needed?
+   - **Correctness (cat 1):** null/undefined handled? Edge cases traced?
+   - **Type safety (code-style):** zero `any` in generated code? Proper types imported from library `.d.ts` files? `unknown` with narrowing instead of `any`?
+
+   State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
+
+   This step is NOT optional. Skipping it to jump to format/lint/test is the single most common failure mode. Steps 2-5 verify syntax and behavior. Step 1 verifies logic and design. They catch different classes of bugs.
 2. **Run the formatter.** Any file that needs reformatting must be fixed before continuing. Show output.
 3. Run the test suite. Full suite, not just changed tests. Show output
 4. Run the linter. Zero warnings, zero errors. Show output
@@ -192,6 +217,12 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 - Every acceptance criterion has a corresponding passing test
 - Error paths are tested, not just happy paths
 - Public interfaces have explicit types and input validation
+
+**Database changes add:**
+
+- Back up affected tables before running destructive operations (DELETE, UPDATE, DROP). A dump taken after the change is not a backup
+- Run each step individually with verification counts between steps, not as a single batch
+- Verify the final state matches expectations before declaring done
 
 Detect the project's package manager and scripts from the lockfile or config. "It should pass" is not evidence.
 
