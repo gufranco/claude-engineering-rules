@@ -149,7 +149,7 @@ Skip if no frontend code changed.
 
 ## 11. Architecture and Patterns
 
-- [ ] Change follows existing patterns in the codebase
+- [ ] Change follows existing patterns in the codebase, except when existing patterns violate rules in `~/.claude/`. Rules always win over existing code style
 - [ ] If a new pattern is introduced, it is justified and better than the existing one
 - [ ] Coupling between modules appropriate. Changed code testable in isolation
 - [ ] No circular dependencies introduced
