@@ -153,6 +153,25 @@ If a change causes problems:
 
 **Never** force push or amend pushed commits.
 
+## Migration Ordering
+
+When a project uses sequential migrations (Prisma, Flyway, Knex, etc.), migrations for the current task must always have the latest timestamps. Other team members may merge migrations while you work.
+
+Before every commit, push, rebase, or PR:
+
+1. List existing migrations: `ls <migrations_dir> | sort | tail -5`
+2. If your migrations are not last, rename them with newer timestamps
+3. Verify ordering again after rebase (rebasing can interleave with newly merged migrations)
+
+## Migration Idempotency
+
+Every migration must be safe to run more than once. Assume the migration might be applied to a database where the objects already exist.
+
+- Use `IF NOT EXISTS` for `CREATE TABLE`, `CREATE INDEX`, `CREATE EXTENSION`
+- Use `DO $$ IF NOT EXISTS ... END $$` for statements that lack native `IF NOT EXISTS` support (e.g., `CREATE MATERIALIZED VIEW` in PostgreSQL)
+- Use `IF EXISTS` for `DROP` statements
+- Never assume a clean slate. Another migration, manual intervention, or partial deploy might have created the object already
+
 ## Ignored Artifacts
 
 Build output directories must never be committed:
