@@ -40,30 +40,52 @@ Read through the entire conversation and extract:
 | **Tool/workflow preferences** | How the user wants to interact with you | "Always run tests before declaring done" |
 | **Project-specific knowledge** | Facts about the codebase learned during the session | "macOS stat needs /usr/bin/stat to bypass GNU" |
 
-### 2. Deduplicate against existing configuration
+### 2. Deduplicate and diagnose against existing configuration
 
-For each finding, check if it already exists in:
+For each finding, read every potentially related file before drawing conclusions:
 
 1. `~/.claude/CLAUDE.md`
-2. `~/.claude/rules/*.md`
+2. `~/.claude/rules/*.md` (read each file, not just the index)
 3. Project-level `CLAUDE.md` files
 4. Memory files in `~/.claude/projects/*/memory/`
 
-Skip anything already covered. Flag items that partially overlap and could be strengthened.
+For each finding, answer two questions:
+
+**Does it already exist?**
+
+- If no existing coverage: mark as **New**, proceed to classification.
+- If fully covered: skip it entirely. Do not re-add.
+- If partially covered: mark as **Strengthen**, propose the specific addition that closes the gap.
+
+**If it exists, why wasn't it respected in this session?**
+
+This is mandatory when a finding matches an existing rule. Skipping this question means the same violation will happen again. Diagnose one of:
+
+| Root cause | Action |
+|------------|--------|
+| Rule is vague or uses weak language ("should", "consider") | Rewrite with "must", add a concrete example that makes the boundary clear |
+| Rule exists but has no example showing the wrong path | Add a bad/good example that matches this session's violation |
+| Rule is buried inside a long section and easy to miss | Extract to a top-level bullet, or add a cross-reference from CLAUDE.md |
+| Rule is in memory but applies universally | Move it to `~/.claude/rules/` or `~/.claude/CLAUDE.md` |
+| Rule was correct but the context in this session was genuinely ambiguous | Add a clarifying note or edge-case handling to the rule |
+
+Present the diagnosis as part of the finding row. "Rule exists but was vague" is a finding, not a reason to skip.
 
 ### 3. Classify each finding
 
-Assign each unique finding to a destination. **Default to `~/.claude/` files, not memory.** Memory is the exception for facts that only apply to one project. If a preference, convention, or behavioral rule could apply across projects, it belongs in `CLAUDE.md` or a rules file.
+Assign each unique finding to a destination. **`~/.claude/` is always the first choice.** Memory is the last resort, reserved only for facts that are physically impossible to apply outside a specific codebase.
 
-| Destination | When | Example |
-|-------------|------|---------|
-| **`~/.claude/CLAUDE.md`** | Universal behavioral change, writing style, communication preference, workflow rule | "Use GMT in reports", "Always provide UI walkthroughs for instructions" |
-| **`~/.claude/rules/*.md`** (new or existing) | Domain-specific convention that needs detail or belongs with related rules | New testing convention, new code style rule, new API design pattern |
-| **Skill update** | Change to how a skill operates | "/commit should also check for X" |
-| **Memory file** | Project-specific fact that only applies to one codebase: infra details, team members, architecture decisions | "Aurora cluster ID is database", "ECS cluster name is webservices" |
-| **No action** | One-time context, not a pattern | "Fix the typo on line 42" |
+Apply the classification gate in order. Stop at the first destination that fits:
 
-**Classification test:** "Would this rule improve my behavior in a different project?" If yes, it goes in `~/.claude/`. If it only makes sense in the context of this specific codebase, it goes in memory.
+1. **`~/.claude/CLAUDE.md`**: universal behavioral change, writing style, communication preference, workflow rule. Examples: "Use GMT in reports", "Always provide UI walkthroughs for instructions".
+2. **`~/.claude/rules/*.md`** (new or existing file): domain-specific convention with enough detail to warrant its own section. Examples: new testing convention, new code style rule, new API design pattern.
+3. **Skill update (`~/.claude/skills/<name>/SKILL.md`)**: change to how a specific skill operates. Example: "/commit should also check for X".
+4. **Memory file**: only when the finding is a concrete, project-specific fact that would be misleading if applied to any other codebase. Infrastructure IDs, team member names, architecture choices for one specific repo. Examples: "Aurora cluster ID is database", "ECS cluster name is webservices".
+5. **No action**: one-time context, not a pattern. Example: "Fix the typo on line 42".
+
+**Hard rule:** if the finding describes behavior, a preference, or a recurring mistake, it goes in `~/.claude/`. Memory does not change behavior. Only `~/.claude/` files do. If you find yourself writing a behavioral rule into a memory file, stop and reclassify it.
+
+**Classification check before writing:** ask "Could this finding cause the same problem in a completely different project?" If yes: `~/.claude/`. If the answer is "only if that project happens to use the same database/repo/service": memory.
 
 ### 4. Present findings
 
@@ -101,6 +123,23 @@ After presenting the proposals:
 
 - Read each modified file to confirm the changes are present and correctly placed.
 - If a rules file was updated, verify it does not contradict existing rules in other files.
+
+### 7. Offer commit and push for `~/.claude/` changes
+
+If any file inside `~/.claude/` was written or modified, ask the user:
+
+> "Do you want to commit and push the changes made to `~/.claude/`?"
+
+If the user says yes:
+
+1. `cd ~/.claude`
+2. Run `git status` to show exactly which files changed.
+3. Stage only the modified files (never `git add .` or `git add -A`).
+4. Commit using conventional format: `chore(claude): <short description of what changed>`.
+5. Push: `git push`.
+6. Confirm the push succeeded.
+
+If the user says no, skip silently. Do not offer again.
 
 ## Rules
 
