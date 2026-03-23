@@ -77,12 +77,7 @@ Store ADRs in a `docs/adr/` directory in the repository. Number them sequentiall
 
 ## Zero Warnings (MANDATORY)
 
-Every warning is a future error. During review, whether self-review or reviewing others, treat warnings as blocking issues.
-
-- Compiler warnings, linter warnings, type checker warnings, build warnings, test runner warnings, deprecation notices, CI annotations: all must be zero before approval
-- A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing
-- Never approve code that suppresses a warning without a documented justification. Suppression comments like `// eslint-disable` or `@ts-ignore` require an explanation of why the warning is a false positive, not just "it works"
-- When reviewing, grep the CI output for "warn", "deprecated", "notice", and "annotation". Automated green checks miss non-fatal warnings that accumulate silently
+Apply `checklists/code-quality.md` category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
 
 ## Pre-Completion Checklist
 

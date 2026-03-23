@@ -235,15 +235,7 @@ For domain-driven structure, follow `name-of-content.type.ts`: `user-credentials
 
 ## Zero Warnings
 
-Treat every warning as an error. No exceptions.
-
-- **Compiler and type checker warnings**: fix every one. Never ship code with `tsc` warnings, `-Wunused-variable`, or equivalent. Enable strict mode and the strictest reasonable lint preset
-- **Linter warnings**: zero warnings, not just zero errors. A linter warning left unresolved becomes invisible over time as the count grows. Fix it now or disable the rule globally with documented justification
-- **Deprecation notices**: replace the deprecated API. A deprecation is a removal announcement with a countdown. Using it means writing code that will break on the next major version
-- **Runtime warnings**: console warnings, framework warnings, driver warnings during tests or development: all must be investigated and resolved. A noisy console hides real problems
-- **Never suppress without justification**: `// eslint-disable`, `@ts-ignore`, `#pragma warning disable`, `@SuppressWarnings`: each requires an inline comment explaining why the warning is a false positive or why suppression is the correct choice. "It works" is not a justification
-
-When modifying a file that already has warnings, fix the warnings in the code you touch. Do not increase the warning count. Existing warnings are not permission to add more.
+Apply `checklists/code-quality.md` category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
 
 ## Code Examples
 

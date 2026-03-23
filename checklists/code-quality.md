@@ -1,6 +1,6 @@
 # Code Quality Checklist
 
-Shared by the completion gates (self-review during implementation) and `/review` (code review). One source of truth for what to check at the code level.
+Shared by the completion gates (self-review during implementation), `/review` (code review), and `/assessment` (architecture audit). One source of truth for what to check at the code level.
 
 For architecture, resilience, and infrastructure categories, see `engineering.md` in this directory.
 
@@ -197,7 +197,7 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 
 ## 16. Cascading Fix Analysis
 
-For every issue found in categories 1-15, evaluate the downstream effects of the fix.
+For every issue found in categories 1-15 and 17, evaluate the downstream effects of the fix.
 
 - [ ] Would the fix introduce a new dependency, env var, or startup requirement?
 - [ ] Would the fix change a function signature or public interface, breaking callers not in this diff?
@@ -206,3 +206,34 @@ For every issue found in categories 1-15, evaluate the downstream effects of the
 - [ ] Would the fix need new tests that are not mentioned?
 
 When any answer is yes, the fix must include a note about downstream effects. The goal: every issue and its cascading consequences are addressed in a single iteration.
+
+## 17. Zero Warnings
+
+Treat every warning as an error. A warning ignored today becomes a broken build after the next dependency update. Zero tolerance, no exceptions.
+
+### Tooling warnings
+
+- [ ] Compiler and type checker output has zero warnings. `tsc`, `-Wall`, `mypy --strict`, `clippy`: all clean
+- [ ] Linter output has zero warnings, not just zero errors. Warning-severity findings are findings
+- [ ] Formatter reports zero changes needed. Run in check mode before committing
+- [ ] Build output has zero warnings. Unused imports, implicit-any, deprecated API calls: all resolved
+- [ ] Test runner output has zero warnings. Deprecation notices, experimental API notices, plugin compatibility warnings: all resolved
+- [ ] CI pipeline output has zero non-fatal annotations. Deprecation notices, version warnings, action warnings: all resolved
+
+### Runtime warnings
+
+- [ ] No `console.warn` calls from code under test or during development. If the code warns, either fix the cause or remove the warning if it is no longer relevant
+- [ ] No framework or driver warnings during startup, test execution, or normal operation
+- [ ] No deprecation warnings from dependencies used in the code being changed
+
+### Suppression policy
+
+- [ ] No warning suppression without a documented justification. `// eslint-disable`, `@ts-ignore`, `#pragma warning disable`, `@SuppressWarnings`, `# type: ignore`: each requires an inline comment explaining why the warning is a false positive
+- [ ] Suppression comments never say just "it works" or "not needed". State the specific reason
+- [ ] When modifying a file with existing suppressions, verify each suppression is still necessary. Remove stale ones
+
+### Warning baseline
+
+- [ ] Warning count in changed files is equal to or lower than before the change. Never increase it
+- [ ] When modifying a file that already has warnings, fix the warnings in the code you touch. Existing warnings are not permission to add more
+- [ ] After all tools run, scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`, `WARN`, `WARNING`. If any appear, the task is not done
