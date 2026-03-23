@@ -4,6 +4,7 @@
 
 # Internal state (OAuth, sessions, feature flags)
 .claude.json
+.credentials.json
 
 # Session and conversation data
 debug/
