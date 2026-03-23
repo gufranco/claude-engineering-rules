@@ -53,6 +53,7 @@ When the issue spans multiple services or layers:
 ## Common Traps
 
 - **Fixing the symptom**: adding a null check instead of understanding why the value is null.
+- **Workarounds over fixes**: setting an env var to suppress a deprecation warning instead of upgrading the dependency. Adding a compatibility shim instead of migrating the caller. Every workaround is technical debt with interest. If an upstream fix exists, like a version bump, a config change, or a code rewrite, apply it. Only accept a workaround when no permanent fix is available, and document why with a `TODO(debt):` comment.
 - **Relaxing the checker**: when a linter or CI check fails, fix the code. Do not lower severity, disable rules, or weaken configuration to make the failure disappear. Only suppress a finding after confirming it is a false positive or a deliberate, documented pattern.
 - **Confirmation bias**: seeing what you expect in the logs instead of what's there.
 - **Scope creep**: "while I'm here, let me also fix..." during debugging. Don't. File it separately.
