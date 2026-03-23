@@ -141,3 +141,8 @@ on_demand:
     path: standards/state-machines.md
     description: Type state pattern, runtime state machines, transition tables, guard conditions, XState, and testing strategies for stateful workflows
     triggers: [state machine, state chart, statechart, xstate, transition, workflow, lifecycle, type state, guard condition]
+
+  algorithmic-complexity:
+    path: standards/algorithmic-complexity.md
+    description: Data structure selection guide, sorting algorithm comparison, complexity analysis rules, common anti-patterns with hidden costs, space complexity awareness
+    triggers: [performance, big-o, complexity, algorithm, data structure, sort, hash, heap, tree, map, set, queue, O(n), quadratic, optimization, memory, space complexity, oom]
