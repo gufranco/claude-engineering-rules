@@ -10,12 +10,7 @@
 
 ## Auth Checklist
 
-- [ ] Passwords hashed (bcrypt/argon2)
-- [ ] Rate limiting on auth endpoints
-- [ ] Token expiration configured
-- [ ] Permission check on every request
-- [ ] CSRF protection on state-changing endpoints (SameSite cookies, CSRF tokens, or origin validation)
-- [ ] Principle of least privilege: every component, user, and service account has only the permissions it needs, nothing more
+Apply `checklists/checklist.md` category 33 (Security and Access Control). The full auth verification items live there.
 
 ## Auth Delegation
 

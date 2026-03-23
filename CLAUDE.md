@@ -18,9 +18,9 @@ When following an existing pattern would violate a rule, follow the rule and fix
 
 Domain-specific standards live in `standards/` and are NOT loaded automatically. Before starting work, check `rules/index.yml` for `on_demand` entries matching the task. Read matching files from `standards/` before writing code.
 
-## Core Checklist
+## Core Principles
 
-Before acting and before declaring any task done:
+Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (49 categories, 506 items).
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.
@@ -188,7 +188,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 
 **Every code change:**
 
-1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. Apply every applicable category from `checklists/code-quality.md` and state findings inline. Key categories to always check:
+1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. Apply every applicable category from `checklists/checklist.md` and state findings inline. Key categories to always check:
 
    - **Correctness (cat 1):** null/undefined handled? Edge cases traced?
    - **Security (cat 2):** inputs validated? No secrets? Auth enforced?
@@ -197,7 +197,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Data integrity (cat 5):** writes idempotent? DB constraints match validation?
    - **Zero warnings (cat 17):** tool output clean? Suppression justified?
 
-   These are quick-scan reminders. The full criteria for each category, including type safety, testing, naming, architecture, and backward compatibility, live in `checklists/code-quality.md`. Read the checklist, not just this summary.
+   These are quick-scan reminders for the most critical categories. All 49 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, and applicable categories 18-49 for architecture and infrastructure. Read the full checklist, not just this summary.
 
    State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
 

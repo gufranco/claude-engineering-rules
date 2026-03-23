@@ -8,8 +8,8 @@
 
 always_loaded:
   code-style:
-    description: DRY/SOLID/KISS, immutability, TypeScript conventions, error classification, data safety, enums, validation
-    triggers: [style, typescript, type, enum, interface, immutable, validation, zod, dto]
+    description: DRY/SOLID/KISS, immutability, TypeScript conventions, error classification, data safety, enums, validation, maximum compiler and checker strictness
+    triggers: [style, typescript, type, enum, interface, immutable, validation, zod, dto, tsconfig, strict, compiler, strictness]
 
   code-review:
     description: PR authoring, review comment style, test evidence, branch freshness, tech debt tracking, ADRs

@@ -30,7 +30,7 @@ Before declaring any task complete:
 
 ## Zero Warnings as Verification Requirement
 
-Apply `checklists/code-quality.md` category 17 during every verification. "Zero errors" is not "clean". A tool run that produces warnings is a failing verification. Scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`. If any appear, fix and re-run.
+Apply `checklists/checklist.md` category 17 during every verification. "Zero errors" is not "clean". A tool run that produces warnings is a failing verification. Scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`. If any appear, fix and re-run.
 
 ## Common Failures to Catch
 
