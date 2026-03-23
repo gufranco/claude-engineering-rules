@@ -77,15 +77,8 @@ Store ADRs in a `docs/adr/` directory in the repository. Number them sequentiall
 
 ## Zero Warnings (MANDATORY)
 
-Apply `checklists/code-quality.md` category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
+Apply `checklists/checklist.md` category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
 
 ## Pre-Completion Checklist
 
-Run through `checklists/code-quality.md`. This is the same checklist used by `/review`. During implementation, it runs as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean.
-
-Additionally, verify these implementation-specific items:
-
-- [ ] Reuse checked (codebase, PRs, branches)
-- [ ] Tests written and passing (full suite, not just changed tests)
-- [ ] Test/lint/build evidence shown (not just "it should pass")
-- [ ] Zero warnings across all tools: formatter, linter, type checker, test runner, build
+Run through `checklists/checklist.md`. All 49 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, and 17 specifically cover reuse verification, test evidence, and zero warnings.

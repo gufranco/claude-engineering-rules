@@ -78,7 +78,7 @@ This skill accepts optional arguments after `/assessment`:
 
    Record all results for inclusion in the assessment output.
 
-5. **Hunt for planted defects.** Some projects, especially interview take-homes and coding challenges, contain **intentional bugs, anti-patterns, or subtle correctness issues** designed to test whether the candidate can spot and fix them. Read the code with suspicion. For each file, look for: logic bugs, data bugs, validation gaps, concurrency bugs, security flaws, anti-patterns, configuration issues, dependency traps, test gaps, mock abuse, and structural violations. The specific criteria for each category are defined in `../../checklists/code-quality.md` categories 1-9 and 17, and `../../checklists/engineering.md`. Use those checklists as the hunting guide, but read with the assumption that defects may be intentional. Pay special attention to tests that mock internal infrastructure like databases, Redis, or queues instead of using real connections: this is a common defect that makes tests pass while the actual code is broken.
+5. **Hunt for planted defects.** Some projects, especially interview take-homes and coding challenges, contain **intentional bugs, anti-patterns, or subtle correctness issues** designed to test whether the candidate can spot and fix them. Read the code with suspicion. For each file, look for: logic bugs, data bugs, validation gaps, concurrency bugs, security flaws, anti-patterns, configuration issues, dependency traps, test gaps, mock abuse, and structural violations. The specific criteria for each category are defined in `../../checklists/checklist.md` categories 1-9, 17, and 18-49. Use the checklist as the hunting guide, but read with the assumption that defects may be intentional. Pay special attention to tests that mock internal infrastructure like databases, Redis, or queues instead of using real connections: this is a common defect that makes tests pass while the actual code is broken.
 
    If any defect is found, classify it with the same severity/effort scale used for missing patterns. Planted bugs that affect correctness or security are always CRITICAL.
 
@@ -86,31 +86,31 @@ This skill accepts optional arguments after `/assessment`:
 
    | Trait | Signal | Categories to check |
    |:------|:-------|:-------------------|
-   | Has a write path | API endpoints, event handlers, DB writes | 1, 2, 17, 22 |
-   | Has a read path | Queries, API responses, dashboards | 4, 14, 17 |
-   | Has external deps | HTTP calls, third-party APIs, DB connections | 3, 7, 18, 21, 25 |
-   | Has async processing | Queues, events, background jobs | 1, 10, 19 |
-   | Spans multiple services | Service-to-service calls, event bus | 5, 9, 11, 12, 24 |
-   | Handles variable load | Public API, webhook receiver, batch processor | 6, 8, 23 |
-   | Stores data | Database reads/writes, file storage | 2, 13, 14, 22, 23 |
-   | Has auth/user data | Login, signup, roles, PII | 16 |
-   | Exposes an API | REST/GraphQL endpoints | 17 |
-   | Runs in production | Deployed service, not a script or CLI | 15, 18, 20, 21, 25 |
-   | Has testable logic | Business rules, domain logic, state machines | 24 |
-   | Serves multiple tenants | SaaS, shared infrastructure, per-customer data | 26 |
-   | Replaces existing system | Migration, rewrite, platform change | 27 |
-   | Has infrastructure config | Terraform, CloudFormation, Pulumi, Dockerfiles, K8s manifests | 28, 30, 31 |
-   | Uses cloud services | AWS/GCP/Azure resources, managed services | 28, 29, 32 |
+   | Has a write path | API endpoints, event handlers, DB writes | 18, 19, 34, 39 |
+   | Has a read path | Queries, API responses, dashboards | 21, 31, 34 |
+   | Has external deps | HTTP calls, third-party APIs, DB connections | 20, 24, 35, 38, 42 |
+   | Has async processing | Queues, events, background jobs | 18, 27, 36 |
+   | Spans multiple services | Service-to-service calls, event bus | 22, 26, 28, 29, 41 |
+   | Handles variable load | Public API, webhook receiver, batch processor | 23, 25, 40 |
+   | Stores data | Database reads/writes, file storage | 19, 30, 31, 39, 40 |
+   | Has auth/user data | Login, signup, roles, PII | 33 |
+   | Exposes an API | REST/GraphQL endpoints | 34 |
+   | Runs in production | Deployed service, not a script or CLI | 32, 35, 37, 38, 42 |
+   | Has testable logic | Business rules, domain logic, state machines | 41 |
+   | Serves multiple tenants | SaaS, shared infrastructure, per-customer data | 43 |
+   | Replaces existing system | Migration, rewrite, platform change | 44 |
+   | Has infrastructure config | Terraform, CloudFormation, Pulumi, Dockerfiles, K8s manifests | 45, 47, 48 |
+   | Uses cloud services | AWS/GCP/Azure resources, managed services | 45, 46, 49 |
 
    If `--focus` was provided, only check categories in that area:
-   - `security`: 16, 17 (auth/input parts)
-   - `resilience`: 3, 6, 7, 8, 18, 19, 21
-   - `api`: 1, 17
-   - `data`: 2, 4, 5, 13, 14, 22
-   - `ops`: 15, 19, 20, 23, 25, 27
-   - `quality`: 24
-   - `tenancy`: 26
-   - `infra`: 28, 29, 30, 31, 32
+   - `security`: 33, 34 (auth/input parts)
+   - `resilience`: 20, 23, 24, 25, 35, 36, 38
+   - `api`: 18, 34
+   - `data`: 19, 21, 22, 30, 31, 39
+   - `ops`: 32, 36, 37, 40, 42, 44
+   - `quality`: 41
+   - `tenancy`: 43
+   - `infra`: 45, 46, 47, 48, 49
 
    **Superset detection.** If the codebase uses a language that has a widely adopted superset offering stronger type safety or tooling, ask the user whether they want to convert. This is especially valuable in interview contexts where using the superset demonstrates engineering rigor.
 
@@ -140,7 +140,7 @@ This skill accepts optional arguments after `/assessment`:
 
    This logic is language-agnostic. The principle is: every dependency must have full type support in the target superset. If it doesn't, either find types, find an alternative that has types, or write the types yourself.
 
-7. **Audit against each applicable category.** For every category that applies based on step 6, evaluate the implementation against the code quality checklist (`../../checklists/code-quality.md`) for code-level quality, the engineering checklist (`../../checklists/engineering.md`) for architecture and infrastructure, and the requirements gathered in step 1. Include any defects found in step 5 and verification failures from step 4 as findings under the most relevant category.
+7. **Audit against each applicable category.** For every category that applies based on step 6, evaluate the implementation against `../../checklists/checklist.md`: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure. Cross-reference with the requirements gathered in step 1. Include any defects found in step 5 and verification failures from step 4 as findings under the most relevant category.
 
    After auditing each file individually, perform a **cross-file consistency check**:
    - **Design contradictions:** Does one module assume graceful degradation while another enforces a hard dependency? Does one file treat a field as optional while another treats it as required?
@@ -149,13 +149,13 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 32 engineering categories, also assess:
+   In addition to the 49 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
    - **Git history quality.** For interview submissions, commit history signals engineering discipline. Check: are commits logical and atomic (one concern per commit)? Do messages follow conventional commit format? Is there a meaningful progression (infrastructure first, then core logic, then tests, then polish)? A single "initial commit" with everything is a MEDIUM finding. Messy or meaningless commit messages are LOW.
 
-   - **Dependency health and package selection.** Apply `../../checklists/code-quality.md` category 13 for the baseline checks (justified, maintained, pinned, licensed, typed, better alternatives). Beyond that, also check assessment-specific concerns:
+   - **Dependency health and package selection.** Apply `../../checklists/checklist.md` category 13 for the baseline checks (justified, maintained, pinned, licensed, typed, better alternatives). Beyond that, also check assessment-specific concerns:
      - Is the runtime version the latest stable LTS, pinned with a version manager config file and `engines` (or equivalent) in the package manifest?
      - Are there platform-specific issues (native modules failing on Apple Silicon, deprecated packages with no ARM64 support)?
      - **Better alternatives signals**: no commits in 12+ months, open security issues, archived repository, missing type support when alternatives have it, large bundle size when a lighter option exists. Flag and include the replacement in the fix step.
@@ -238,7 +238,7 @@ This skill accepts optional arguments after `/assessment`:
 
    **Mock policy (STRICT).** Tests must connect to real infrastructure. If the code talks to a database, the test connects to a real database. If it uses Redis, the test uses a real Redis instance. Same for queues, caches, and any other data store. Add test dependencies to docker-compose with a `beforeAll()` hook to seed required data. Only external third-party APIs outside your control, time, and randomness may be mocked. Mocking your own database, services, or modules is a CRITICAL finding: the test may pass while the actual integration is broken, which is worse than no test at all. When fixing mock violations, replace the mock with a real connection, add the dependency to docker-compose if missing, and use `beforeAll()` / `afterAll()` for setup and teardown.
 
-   **For any fix involving transactions**, follow `../../checklists/engineering.md` category 2: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
+   **For any fix involving transactions**, follow `../../checklists/checklist.md` category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
 
    **If `--comments` was passed**, add an inline comment above each significant code change explaining:
    - **What** pattern is being applied and **why** it matters here.
@@ -276,7 +276,7 @@ This skill accepts optional arguments after `/assessment`:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate `../../checklists/code-quality.md`? Run all 17 categories against the modified files. This is the same checklist used by completion gates and `/review`.
+       - Did any fix violate `../../checklists/checklist.md`? Run all 49 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
        - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.dotfiles/claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
@@ -562,7 +562,7 @@ This skill accepts optional arguments after `/assessment`:
 
 ## Assessment Checklist Categories
 
-The full 32-category checklist lives in `../../checklists/engineering.md` (shared with `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers.
+The full 49-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers.
 
 ## Output Format
 
@@ -673,8 +673,8 @@ Steps 1-12 above define **what** to do. These rules define **constraints** on ho
 - Reference the relevant rules file for each category: `rules/security.md`, `standards/api-design.md`, `standards/resilience.md`, `standards/database.md`, `standards/caching.md`, `standards/distributed-systems.md`, `standards/observability.md`, `rules/code-style.md`.
 - Do not flag deployment readiness for code that is explicitly a prototype, proof-of-concept, or interview take-home unless `--focus ops` was specified.
 - When `--comments` is active, every comment must pass this test: would a senior engineer reading this code for the first time learn something from the comment that the code alone does not convey? If not, delete the comment. `--comments` only affects the fix step, not the assessment output.
-- The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in `../../checklists/engineering.md`. Do not duplicate them here.
-- Every API must validate both sides of the boundary: inputs (request body, query params, path params, headers) AND outputs (response body) with a schema library. Missing output validation is a finding. See `../../checklists/engineering.md` category 16.
+- The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in `../../checklists/checklist.md`. Do not duplicate them here.
+- Every API must validate both sides of the boundary: inputs (request body, query params, path params, headers) AND outputs (response body) with a schema library. Missing output validation is a finding. See `../../checklists/checklist.md` category 33.
 
 ## Related skills
 

@@ -12,7 +12,7 @@
 
 ---
 
-**13** rules · **17** standards · **24** skills · **11** hooks · **486** checklist items · **49** categories · **~11,000** lines of engineering standards
+**13** rules · **17** standards · **24** skills · **11** hooks · **506** checklist items · **49** categories · **~11,000** lines of engineering standards
 
 <table>
 <tr>
@@ -68,7 +68,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | On-demand domain standards | ❌ | ✅ |
 | 24 workflow skills | ❌ | ✅ |
 | Prompt injection guards | ❌ | ✅ |
-| 486-item review checklist | ❌ | ✅ |
+| 506-item review checklist | ❌ | ✅ |
 
 ## How It Works
 
@@ -158,7 +158,7 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 |:------|:-------------|
 | `/commit` | Analyze changes and create semantic conventional commits |
 | `/pr` | Create or update PRs with structured descriptions |
-| `/review` | Code review following the 486-item quality and engineering checklists |
+| `/review` | Code review following the 506-item quality and engineering checklists |
 | `/assessment` | Architecture completeness audit against the full checklist |
 | `/test` | Detect test runner, execute tests with coverage and linting |
 | `/checks` | Monitor CI/CD checks and diagnose failures |
@@ -208,12 +208,11 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 
 `rules/index.yml` is the catalog for both tiers. It maps each rule and standard to a description and trigger keywords. When a task starts, Claude matches the task against trigger keywords and reads the relevant `standards/` files on demand. Skills like `/plan` and `/discover` also reference this index. Run `/discover` to add project-specific entries.
 
-### Checklists
+### Checklist
 
-Two checklists cover different layers of quality:
+One unified checklist covers all layers of quality:
 
-- **Code quality** (`checklists/code-quality.md`): 17 categories for code-level quality. Shared by completion gates (self-review loop during implementation), `/review`, and `/assessment`. Categories: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings.
-- **Engineering** (`checklists/engineering.md`): 322 items across 32 categories for architecture, resilience, and infrastructure. Shared by `/review` and `/assessment`. Categories include idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture.
+- **Unified checklist** (`checklists/checklist.md`): 506 items across 49 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture.
 
 ## Workflows
 
@@ -271,7 +270,7 @@ Use `/test` to run specific test files during isolation. Use `/checks` if the is
 
 3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
 
-The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 486-item checklist across 49 categories covering both code quality and engineering architecture.
+The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 506-item checklist across 49 categories covering both code quality and engineering architecture.
 
 ### Architecture Planning
 
@@ -371,8 +370,7 @@ The hooks, rules, and skills activate automatically.
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
-    code-quality.md      # 17-category code-level checklist (shared by completion gates, /review, and /assessment)
-    engineering.md       # 322-item architecture/infrastructure checklist (32 categories)
+    checklist.md         # 506-item unified checklist across 49 categories (shared by completion gates, /review, and /assessment)
   rules/                 # Tier 1: always loaded into every conversation
     index.yml            # Rule catalog with trigger keywords for both tiers
     code-review.md       # PR authoring, review style, tech debt

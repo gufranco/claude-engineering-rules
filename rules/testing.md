@@ -66,7 +66,7 @@ During code review, static test data is a **blocking issue** with the same sever
 
 ## Zero Warnings in Test Output
 
-Apply `checklists/code-quality.md` category 17. A clean test run means zero failures AND zero warnings. Test runner warnings, deprecation notices, and console warnings during test execution all count. A noisy test suite trains developers to ignore output, which means real failures get missed.
+Apply `checklists/checklist.md` category 17. A clean test run means zero failures AND zero warnings. Test runner warnings, deprecation notices, and console warnings during test execution all count. A noisy test suite trains developers to ignore output, which means real failures get missed.
 
 ## Test Naming
 

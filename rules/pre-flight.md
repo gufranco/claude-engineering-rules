@@ -65,7 +65,7 @@ If any answer is no, investigate further. Do not write a speculative fix.
 
 ### 5. Warning Baseline
 
-Apply the "Warning baseline" section of `checklists/code-quality.md` category 17. Run linter, type checker, and test suite on the files you plan to change. Record the current warning count. After implementation, the count must be equal to or lower.
+Apply the "Warning baseline" section of `checklists/checklist.md` category 17. Run linter, type checker, and test suite on the files you plan to change. Record the current warning count. After implementation, the count must be equal to or lower.
 
 ### 6. Scope Agreement
 

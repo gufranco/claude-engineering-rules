@@ -21,7 +21,7 @@
 - **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, document why
 - **No deep nesting**: max 3 levels of indentation. Guard clauses and early returns to flatten control flow
 - **Flat control flow**: avoid recursion unless the data structure is inherently recursive, like trees or graphs. Prefer iterative solutions with explicit bounds. Recursion hides stack growth, making resource usage unpredictable and stack overflows hard to diagnose. When recursion is necessary, always add a depth limit
-- **Strong typing**: explicit types for parameters, return values, and public interfaces. Never `any`, use `unknown` and narrow. Enable strict mode. When modifying a file that already uses `any`, replace it with proper types in the code you touch. Existing violations are not permission to add more
+- **Strong typing**: explicit types for parameters, return values, and public interfaces. Never `any`, use `unknown` and narrow. Enable maximum strictness (see "Maximum Compiler and Checker Strictness" section below). When modifying a file that already uses `any`, replace it with proper types in the code you touch. Existing violations are not permission to add more
 - **Enums over string literal unions**: string enums for domain values. They exist at runtime, can be iterated, and are the single source of truth
 - **Explicit imports**: import only what you use. Barrel imports (`import * from`) and re-export index files load entire modules, increasing startup time and memory. For libraries you author, provide granular exports so consumers can import individual functions
 - **Bounded iteration**: every loop and retry must have an explicit upper bound. No `while (true)` without a break condition that is guaranteed to trigger. Polling loops need a timeout. Retry loops need a max attempt count. Pagination loops need a page limit. An unbounded loop is a latent outage
@@ -143,7 +143,7 @@ See `standards/resilience.md` for patterns and `standards/database.md` for trans
 
 ## Error Classification
 
-Checklist items: `checklists/code-quality.md` category 3. Retry parameters and HTTP status mapping: `checklists/engineering.md` category 3.
+Checklist items: `checklists/checklist.md` category 3. Retry parameters and HTTP status mapping: `checklists/checklist.md` category 20.
 
 Every `catch` must classify: transient (retry with backoff), permanent (fail immediately), or ambiguous (retry with limit, then permanent). A bare catch that logs and rethrows is a bug.
 
@@ -235,9 +235,39 @@ For domain-driven structure, follow `name-of-content.type.ts`: `user-credentials
 - Always use the latest stable or LTS version of languages, runtimes, and dependencies
 - When a platform has version constraints, use the latest version available on that platform
 
+## Maximum Compiler and Checker Strictness
+
+Every project's compiler, type checker, and linter must be configured at the highest strictness level the toolchain supports. "Strict mode" is the starting point, not the ceiling.
+
+### Principle
+
+Stricter checks catch bugs at compile time instead of production. The cost of fixing a type error during development is near zero. The cost of debugging the same error in production is high. Always err on the side of more strictness.
+
+### Per-language requirements
+
+| Language | Requirement |
+|----------|-------------|
+| TypeScript | `"strict": true` plus every additional flag not covered by `strict`: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`, `noFallthroughCasesInSwitch`, `forceConsistentCasingInFileNames`, `verbatimModuleSyntax`. When a new strictness flag is added to TypeScript, enable it |
+| Go | `go vet` plus `staticcheck` or `golangci-lint` with all relevant linters enabled |
+| Rust | `#![deny(warnings)]` in `lib.rs`/`main.rs`. `clippy::pedantic` enabled in CI |
+| Python | `mypy --strict` or `pyright` in strict mode. `ruff` with all applicable rule sets |
+| Java/Kotlin | `-Xlint:all` for javac. `-Werror` to treat warnings as errors |
+
+### Rules
+
+- When creating a new project, configure maximum strictness from the start
+- When joining an existing project, verify the strictness configuration. If flags are missing, add them and fix the resulting errors in the same PR
+- Never lower strictness to make code compile. Fix the code instead
+- When a new strictness flag becomes available in a toolchain update, enable it
+- Document any flag intentionally left disabled with the specific reason in the config file
+
+### TypeScript target and module settings
+
+For Node.js projects, `target` and `module`/`moduleResolution` must match the runtime version. Use the `@tsconfig/node{version}/tsconfig.json` base or set equivalent values manually. Running ES2024+ features through downlevel compilation when the runtime supports them natively adds overhead and hides bugs.
+
 ## Zero Warnings
 
-Apply `checklists/code-quality.md` category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
+Apply `checklists/checklist.md` category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
 
 ## Code Examples
 
