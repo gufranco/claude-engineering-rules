@@ -12,7 +12,7 @@
 
 ---
 
-**13** rules · **16** standards · **24** skills · **11** hooks · **472** checklist items · **49** categories · **~9,750** lines of engineering standards
+**13** rules · **16** standards · **24** skills · **11** hooks · **472** checklist items · **49** categories · **~10,900** lines of engineering standards
 
 <table>
 <tr>
@@ -270,7 +270,7 @@ Use `/test` to run specific test files during isolation. Use `/checks` if the is
 
 3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
 
-The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 472-item checklist across 48 categories covering both code quality and engineering architecture.
+The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 472-item checklist across 49 categories covering both code quality and engineering architecture.
 
 ### Architecture Planning
 
@@ -366,7 +366,7 @@ The hooks, rules, and skills activate automatically.
 
 ```
 ~/.claude/
-  CLAUDE.md              # Core engineering rules (~200 lines)
+  CLAUDE.md              # Core engineering rules (~250 lines)
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
