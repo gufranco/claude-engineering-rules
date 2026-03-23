@@ -66,11 +66,7 @@ During code review, static test data is a **blocking issue** with the same sever
 
 ## Zero Warnings in Test Output
 
-A clean test run means zero failures AND zero warnings. Test runner warnings, deprecation notices, and console warnings during test execution all count.
-
-- Fix warnings from the test runner itself: experimental API notices, configuration deprecations, plugin compatibility issues
-- Fix warnings emitted by the code under test: runtime deprecation calls, console.warn output, driver warnings. If the code warns during a test, either the code has a problem or the test is exercising a deprecated path
-- Never let warning noise accumulate. A test suite that routinely prints 50 warnings trains developers to ignore the output, which means real failures get missed
+Apply `checklists/code-quality.md` category 17. A clean test run means zero failures AND zero warnings. Test runner warnings, deprecation notices, and console warnings during test execution all count. A noisy test suite trains developers to ignore output, which means real failures get missed.
 
 ## Test Naming
 

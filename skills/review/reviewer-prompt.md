@@ -4,7 +4,7 @@
 
 Apply these two checklists to every review. Go through every applicable category. Do not skip sections because the change "looks small" or "is just a refactor."
 
-1. **Code quality checklist** (`../../checklists/code-quality.md`): 16 categories for code-level quality. This is the same checklist used by the completion gates during implementation. Categories 1-14 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found.
+1. **Code quality checklist** (`../../checklists/code-quality.md`): 17 categories for code-level quality. This is the same checklist used by the completion gates during implementation. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found.
 2. **Engineering checklist** (`../../checklists/engineering.md`): 32 architecture, resilience, and infrastructure categories. Apply every category relevant to the system and the scope of the diff.
 
 For every issue found, explain why it matters and provide a code example showing the fix.

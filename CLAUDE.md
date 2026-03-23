@@ -196,6 +196,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Security (cat 2):** inputs validated? No secrets? Auth enforced where needed?
    - **Correctness (cat 1):** null/undefined handled? Edge cases traced?
    - **Type safety (code-style):** zero `any` in generated code? Proper types imported from library `.d.ts` files? `unknown` with narrowing instead of `any`?
+   - **Zero warnings (cat 17):** all tool output scanned for warnings, deprecations, and notices? Suppression justified? Warning count not increased?
 
    State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
 

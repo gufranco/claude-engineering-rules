@@ -211,7 +211,7 @@ These 16 standards live in `standards/` and are loaded only when the task matche
 
 Two checklists cover different layers of quality:
 
-- **Code quality** (`checklists/code-quality.md`): 16 categories for code-level quality. Shared by completion gates (self-review loop during implementation), `/review`, and `/assessment`. Categories: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, and cascading fix analysis.
+- **Code quality** (`checklists/code-quality.md`): 17 categories for code-level quality. Shared by completion gates (self-review loop during implementation), `/review`, and `/assessment`. Categories: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings.
 - **Engineering** (`checklists/engineering.md`): 322 items across 32 categories for architecture, resilience, and infrastructure. Shared by `/review` and `/assessment`. Categories include idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture.
 
 ## Workflows
