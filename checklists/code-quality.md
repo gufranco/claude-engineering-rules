@@ -72,15 +72,42 @@ Error classification and typed error returns: `rules/code-style.md`. Retry param
 
 ## 6. Algorithmic Performance
 
+Data structure selection guide and anti-pattern catalog: `standards/algorithmic-complexity.md`.
+
+### Complexity
+
 - [ ] No O(n^2) or worse hidden in nested loops, repeated `.find()`, `.filter()` inside `.map()`
-- [ ] Data structures appropriate: Set for lookups instead of array `.includes()` in a loop
+- [ ] No `.find()`, `.includes()`, or `.indexOf()` called inside a loop over another collection. Build a Map or Set first
+- [ ] No string concatenation in loops. Collect in array, `.join()` at the end
+- [ ] No `Array.shift()` in a while loop (O(n^2) from reindexing). Use a queue, pointer index, or reverse + pop
+- [ ] No nested `.reduce()` with spread accumulator (O(n^2) from copying). Mutate the accumulator
+- [ ] No sorting when only min/max/k-th element is needed. Use a heap or selection algorithm
+- [ ] No re-sorting after single insertions. Use binary search + insert or a sorted data structure
 - [ ] Sorting only when necessary, using the right algorithm for the data size
-- [ ] No unbounded data loaded into memory. Streams used for large files
-- [ ] No allocations inside hot loops (object creation, string concatenation)
+
+### Data structures
+
+- [ ] Data structures match the dominant operation. See `standards/algorithmic-complexity.md` decision guide
+- [ ] Set for membership checks, Map for key-value lookups. Not array scans
+- [ ] Queue or deque for FIFO processing. Not array + `.shift()`
+- [ ] Heap or priority queue for priority ordering. Not sorted array with re-sort
+
+### Resource management
+
+- [ ] No unbounded data loaded into memory. Streams or pagination for large datasets
+- [ ] No allocations inside hot loops (object creation, string concatenation, closures)
 - [ ] File handles, connections, and streams closed after use
 - [ ] No synchronous I/O in async code paths
 - [ ] No N+1 query patterns. Batch or join instead
 - [ ] No blocking I/O in request handlers
+
+### Space complexity
+
+- [ ] No unbounded caches. Every Map or object used as cache has a max size, TTL, or LRU eviction
+- [ ] No closure leaks: closures in long-lived objects (event handlers, timers, singletons) do not capture large scopes
+- [ ] No event listener accumulation: listeners registered in loops or hot paths have cleanup
+- [ ] Recursive functions have bounded depth or use iteration with explicit stack
+- [ ] `.map()` / `.filter()` chains on large datasets use a single loop or generators to avoid intermediate array allocations
 
 ## 7. Frontend Performance
 

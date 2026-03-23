@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 13 rules, 16 on-demand standards, 24 skills, and 11 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 13 rules, 17 on-demand standards, 24 skills, and 11 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**13** rules · **16** standards · **24** skills · **11** hooks · **472** checklist items · **49** categories · **~10,900** lines of engineering standards
+**13** rules · **17** standards · **24** skills · **11** hooks · **486** checklist items · **49** categories · **~11,000** lines of engineering standards
 
 <table>
 <tr>
@@ -68,7 +68,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | On-demand domain standards | ❌ | ✅ |
 | 24 workflow skills | ❌ | ✅ |
 | Prompt injection guards | ❌ | ✅ |
-| 472-item review checklist | ❌ | ✅ |
+| 486-item review checklist | ❌ | ✅ |
 
 ## How It Works
 
@@ -130,7 +130,7 @@ These 13 rules are loaded into every conversation automatically.
 
 ### Standards (loaded on demand)
 
-These 16 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 17 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
@@ -150,6 +150,7 @@ These 16 standards live in `standards/` and are loaded only when the task matche
 | `railway-oriented-programming` | Result type composition: map, flatMap, error accumulation, neverthrow, Effect, boundary conversion |
 | `ddd-tactical-patterns` | Entities, value objects, aggregates, domain events, repositories, domain services, ubiquitous language |
 | `state-machines` | Type state pattern, runtime state machines, transition tables, guard conditions, XState, testing strategies |
+| `algorithmic-complexity` | Data structure selection guide, sorting algorithm comparison, complexity analysis rules, anti-pattern catalog, space complexity |
 
 ### Skills
 
@@ -157,7 +158,7 @@ These 16 standards live in `standards/` and are loaded only when the task matche
 |:------|:-------------|
 | `/commit` | Analyze changes and create semantic conventional commits |
 | `/pr` | Create or update PRs with structured descriptions |
-| `/review` | Code review following the 472-item quality and engineering checklists |
+| `/review` | Code review following the 486-item quality and engineering checklists |
 | `/assessment` | Architecture completeness audit against the full checklist |
 | `/test` | Detect test runner, execute tests with coverage and linting |
 | `/checks` | Monitor CI/CD checks and diagnose failures |
@@ -270,7 +271,7 @@ Use `/test` to run specific test files during isolation. Use `/checks` if the is
 
 3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
 
-The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 472-item checklist across 49 categories covering both code quality and engineering architecture.
+The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 486-item checklist across 49 categories covering both code quality and engineering architecture.
 
 ### Architecture Planning
 
@@ -404,6 +405,7 @@ The hooks, rules, and skills activate automatically.
     railway-oriented-programming.md  # Result type composition
     ddd-tactical-patterns.md   # DDD tactical patterns
     state-machines.md    # Type state and runtime state machines
+    algorithmic-complexity.md  # Data structures, sorting, anti-patterns, space complexity
   skills/
     adr/                 # Architecture Decision Records
     assessment/          # Architecture completeness audit
