@@ -63,7 +63,17 @@ For bug fixes, confirm the root cause before writing the fix.
 
 If any answer is no, investigate further. Do not write a speculative fix.
 
-### 5. Scope Agreement
+### 5. Warning Baseline
+
+Before writing code, check the current warning state of the area you will modify.
+
+1. Run the linter on the files you plan to change. Record the current warning count
+2. Run the type checker. Note existing type errors in those files
+3. Run the test suite. Note any test warnings, deprecation notices, or non-fatal alerts
+
+After implementation, the warning count must be equal to or lower than the baseline. Never increase it. If existing warnings exist in the code you touch, fix them as part of the task.
+
+### 6. Scope Agreement
 
 Confirm the scope is bounded and agreed upon.
 

@@ -75,6 +75,15 @@ What are the trade-offs? What becomes easier? What becomes harder?
 
 Store ADRs in a `docs/adr/` directory in the repository. Number them sequentially. Never delete a superseded ADR, mark it as superseded and link to the replacement.
 
+## Zero Warnings (MANDATORY)
+
+Every warning is a future error. During review, whether self-review or reviewing others, treat warnings as blocking issues.
+
+- Compiler warnings, linter warnings, type checker warnings, build warnings, test runner warnings, deprecation notices, CI annotations: all must be zero before approval
+- A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing
+- Never approve code that suppresses a warning without a documented justification. Suppression comments like `// eslint-disable` or `@ts-ignore` require an explanation of why the warning is a false positive, not just "it works"
+- When reviewing, grep the CI output for "warn", "deprecated", "notice", and "annotation". Automated green checks miss non-fatal warnings that accumulate silently
+
 ## Pre-Completion Checklist
 
 Run through `checklists/code-quality.md`. This is the same checklist used by `/review`. During implementation, it runs as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean.
@@ -84,3 +93,4 @@ Additionally, verify these implementation-specific items:
 - [ ] Reuse checked (codebase, PRs, branches)
 - [ ] Tests written and passing (full suite, not just changed tests)
 - [ ] Test/lint/build evidence shown (not just "it should pass")
+- [ ] Zero warnings across all tools: formatter, linter, type checker, test runner, build

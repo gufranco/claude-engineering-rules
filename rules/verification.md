@@ -28,6 +28,22 @@ Before declaring any task complete:
 | "Endpoint returns X" | Actual response from the endpoint, not the code that should return X |
 | "CI is clean" | All checks pass AND zero annotations/warnings. Deprecation notices and non-fatal alerts count as unresolved |
 
+## Zero Warnings as Verification Requirement
+
+"Zero errors" is not "clean". A tool run that produces warnings is a failing verification.
+
+When verifying any claim, scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`, `WARN`, `WARNING`. If any appear, the verification fails. Fix the warnings and re-run.
+
+| Tool output | What to scan for |
+|-------------|-----------------|
+| Test runner | Deprecation notices, experimental API warnings, console.warn calls from tested code |
+| Linter | Warning-severity findings, not just error-severity |
+| Build | Deprecation warnings, unused import warnings, implicit-any warnings |
+| Type checker | Strict mode violations reported as warnings |
+| CI pipeline | Non-fatal annotations, deprecation notices in action logs, version warnings |
+
+A warning ignored today becomes an error after the next dependency update. Fix it while the context is fresh.
+
 ## Common Failures to Catch
 
 - "Tests pass" based on a previous run, but code changed since then
