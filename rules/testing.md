@@ -33,6 +33,8 @@ Every test MUST use these exact Arrange-Act-Assert comments:
 
 Never append descriptions or colons: `// Act`, not `// Act: do something`. If a test needs more context, it is too complex. Split or rename.
 
+No other comments are permitted anywhere in a test body. No inline comments between statements, no section labels, no explanatory notes. The three markers are the complete comment budget for a test. If a line between `// Arrange` and `// Act` needs a comment to make sense, the test setup is too complex: extract a helper or split the test.
+
 ## Test Data
 
 Use a fake data generator to produce test data. Never use hardcoded static values like `"test@example.com"`, `"John Doe"`, or `"password123"` in test setup.

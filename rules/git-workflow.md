@@ -63,6 +63,7 @@ Detect the correct commands from the project's package manager, lockfile, and sc
 - Show the output of each check. Silent success is not evidence.
 - This gate applies to every commit, not just the final one before a push.
 - Stale results do not count. If code changed since the last run, run again.
+- **Formatter and linter are not always the same tool.** Many projects have a `lint` script that runs ESLint (or equivalent) without invoking Prettier. Running `pnpm lint` in that case does not satisfy step 1. Always check whether the lint script includes the formatter. If it does not, run `prettier --check` (or the equivalent check-mode command) as a separate explicit step. A Prettier failure caught only by CI forces an extra commit and an extra pipeline run.
 
 ## CI/CD Monitoring (MANDATORY)
 
