@@ -188,15 +188,16 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 
 **Every code change:**
 
-1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. For each function, walk through these categories from `checklists/code-quality.md` and state findings inline:
+1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. Apply every applicable category from `checklists/code-quality.md` and state findings inline. Key categories to always check:
 
-   - **Error handling (cat 3):** every `await` result checked? Every catch has context? No silently swallowed errors?
-   - **Concurrency (cat 4):** any check-then-act (TOCTOU)? Protected by constraint, lock, or conditional write?
-   - **Data integrity (cat 5):** writes idempotent? DB constraints match app validation? External service limits (pagination, row caps) handled?
-   - **Security (cat 2):** inputs validated? No secrets? Auth enforced where needed?
    - **Correctness (cat 1):** null/undefined handled? Edge cases traced?
-   - **Type safety (code-style):** zero `any` in generated code? Proper types imported from library `.d.ts` files? `unknown` with narrowing instead of `any`?
-   - **Zero warnings (cat 17):** all tool output scanned for warnings, deprecations, and notices? Suppression justified? Warning count not increased?
+   - **Security (cat 2):** inputs validated? No secrets? Auth enforced?
+   - **Error handling (cat 3):** every `await` result checked? Every catch has context?
+   - **Concurrency (cat 4):** TOCTOU? Protected by constraint or lock?
+   - **Data integrity (cat 5):** writes idempotent? DB constraints match validation?
+   - **Zero warnings (cat 17):** tool output clean? Suppression justified?
+
+   These are quick-scan reminders. The full criteria for each category, including type safety, testing, naming, architecture, and backward compatibility, live in `checklists/code-quality.md`. Read the checklist, not just this summary.
 
    State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
 

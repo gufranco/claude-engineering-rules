@@ -143,6 +143,8 @@ See `standards/resilience.md` for patterns and `standards/database.md` for trans
 
 ## Error Classification
 
+Checklist items: `checklists/code-quality.md` category 3. Retry parameters and HTTP status mapping: `checklists/engineering.md` category 3.
+
 Every `catch` must classify: transient (retry with backoff), permanent (fail immediately), or ambiguous (retry with limit, then permanent). A bare catch that logs and rethrows is a bug.
 
 Also classify by scope:

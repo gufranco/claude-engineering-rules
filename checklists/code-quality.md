@@ -44,6 +44,8 @@ Not every category applies to every change. Skip categories that are clearly irr
 
 ## 3. Error Handling
 
+Error classification and typed error returns: `rules/code-style.md`. Retry parameters and HTTP status mapping: `checklists/engineering.md` category 3.
+
 - [ ] Every error path covered with context, not silently swallowed
 - [ ] Error messages helpful for debugging without leaking internals
 - [ ] Error propagation strategy consistent across modules
@@ -92,6 +94,8 @@ Skip if no frontend code changed.
 
 ## 8. Testing
 
+Full testing philosophy, policies, and guidelines: `rules/testing.md`.
+
 ### Coverage
 
 - [ ] Every new function/method has tests
@@ -101,7 +105,7 @@ Skip if no frontend code changed.
 
 ### Test quality
 
-- [ ] Tests follow AAA pattern (Arrange, Act, Assert) with those exact comments
+- [ ] Tests follow AAA pattern with those exact comments: `// Arrange`, `// Act`, `// Assert`. No other comments in test bodies. See `rules/testing.md` for the full AAA policy
 - [ ] Test names describe behavior, not implementation ("should reject expired token" not "test validateToken")
 - [ ] Assertions specific enough to catch regressions. Not just `toBeTruthy()` when a specific value matters
 - [ ] No test-only backdoors in production code
@@ -109,16 +113,30 @@ Skip if no frontend code changed.
 - [ ] Tests verify the behavior they claim to test, not just that no error was thrown
 - [ ] Negative tests present: invalid input, unauthorized access, missing resources
 - [ ] Boundary value tests: empty arrays, zero, max int, empty string, null
-- [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values
+- [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values. See `rules/testing.md` for the library table and seeding guidelines
 - [ ] Contract tests at service boundaries: consumer expectations verified against provider responses
 - [ ] Property-based tests for complex logic: invariants hold across randomized inputs, not just hand-picked examples
 
+### Determinism
+
+- [ ] No dependency on current time, unseeded random values, network calls, shared database state, execution order, timing delays, or file system state. See `rules/testing.md` for the full flakiness table
+- [ ] Snapshot tests strip non-deterministic values: timestamps, UUIDs, random tokens
+
 ### Mock policy (STRICT, blocking issue)
+
+See `rules/testing.md` for the full mock policy with rationale.
 
 - [ ] Database, Redis, queues, and caches use real connections via docker-compose, with `beforeAll()` seed and `afterAll()` cleanup
 - [ ] Own services and modules tested with real implementations, not mocks
 - [ ] Only external third-party APIs, time, and randomness are mocked
 - [ ] Any mock of internal infrastructure is a **blocking issue**
+
+### Snapshot policy
+
+- [ ] Snapshots used only for serialized output, rendered component trees, or generated code. Not for business logic
+- [ ] Snapshot updates reviewed in the diff, not blindly accepted
+- [ ] Snapshots small and focused. No 500-line snapshots
+- [ ] Non-deterministic values stripped or masked before comparing
 
 ## 9. Code Quality and Design
 
