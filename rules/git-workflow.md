@@ -124,6 +124,8 @@ gh pr create --draft --title "<TICKET-ID>: WIP"
 gh pr merge <number> --squash --delete-branch
 ```
 
+**Dual-base PRs (same change targeting two branches):** never use `--delete-branch` on the first merge. GitHub auto-closes any other open PR whose head is the deleted branch. Use separate branches (`fix/foo-develop`, `fix/foo-main`) from the start, or omit `--delete-branch` until both PRs are merged.
+
 ## Conflict Resolution
 
 ```bash
