@@ -64,6 +64,7 @@ Detect the correct commands from the project's package manager, lockfile, and sc
 - This gate applies to every commit, not just the final one before a push.
 - Stale results do not count. If code changed since the last run, run again.
 - **Formatter and linter are not always the same tool.** Many projects have a `lint` script that runs ESLint (or equivalent) without invoking Prettier. Running `pnpm lint` in that case does not satisfy step 1. Always check whether the lint script includes the formatter. If it does not, run `prettier --check` (or the equivalent check-mode command) as a separate explicit step. A Prettier failure caught only by CI forces an extra commit and an extra pipeline run.
+- **When a format check fails for `package.json` and the project uses `prettier-plugin-packagejson`**, do not guess the field order manually. The plugin applies its own schema-based ordering that is not alphabetical. Run `prettier --write package.json` locally with the project's exact plugin version installed and read the result. One local run gives the correct format. Repeated manual attempts without running the formatter do not.
 
 ## CI/CD Monitoring (MANDATORY)
 
@@ -125,6 +126,25 @@ gh pr merge <number> --squash --delete-branch
 ```
 
 **Dual-base PRs (same change targeting two branches):** never use `--delete-branch` on the first merge. GitHub auto-closes any other open PR whose head is the deleted branch. Use separate branches (`fix/foo-develop`, `fix/foo-main`) from the start, or omit `--delete-branch` until both PRs are merged.
+
+## Shallow Clone Detection
+
+Before running `git rebase` on a repo that may be a shallow clone (repos in `/tmp/`, CI workspaces, repos cloned with `--depth`):
+
+1. Check: `git rev-parse --is-shallow-repository`
+2. If `true`: run `git fetch --unshallow` before rebasing.
+
+Symptom when missed: `error: update-ref requires a fully qualified refname e.g. refs/heads/grafted`.
+
+## CI Not Triggering After Push
+
+Before diagnosing a CI pipeline failure, check branch mergeability:
+
+```bash
+GH_TOKEN=... gh pr view <number> --repo <owner/repo> --json mergeable,mergeableState
+```
+
+If `mergeableState` is `dirty`, the branch has merge conflicts. GitHub Actions `pull_request.synchronize` will not start new runs on a conflicted branch. Resolve conflicts and push first, then diagnose CI.
 
 ## Conflict Resolution
 
