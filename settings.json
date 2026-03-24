@@ -13,7 +13,9 @@
       "WebSearch",
       "Skill",
       "Bash",
-      "NotebookEdit"
+      "NotebookEdit",
+      "Read(/tmp/**)",
+      "Read(/private/tmp/**)"
     ],
     "deny": [
       "Read(./.env)",
@@ -174,6 +176,7 @@
     "type": "command",
     "command": "python3 ~/.claude/scripts/context-monitor.py"
   },
+  "model": "claude-opus-4-6",
   "outputStyle": "Explanatory",
   "language": "english",
   "effortLevel": "high",
