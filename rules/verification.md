@@ -40,6 +40,7 @@ Apply `checklists/checklist.md` category 17 during every verification. "Zero err
 - "Fixed the bug" based on the fix looking correct, without reproducing
 - Conflating "no errors" with "works correctly" (silent failures)
 - "CI passed" but ignoring deprecation warnings or non-fatal annotations in the run output
+- Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. `tail -20` on a run with 50+ failures shows only the summary line, hiding every failure. Always use `grep -E "passed|failed"` to capture the full result counts, or read the exit code. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
 
 ## Verification by Task Type
 

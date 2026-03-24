@@ -269,6 +269,30 @@ For Node.js projects, `target` and `module`/`moduleResolution` must match the ru
 
 Apply `checklists/checklist.md` category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
 
+## Removal Safety
+
+Before removing or renaming any resource, verify all consumers. A resource is anything that other code references: a function, a file, an export, a route, an API endpoint, a database column, an environment variable, a translation key, or a CSS class.
+
+**Verification steps:**
+1. Grep the entire codebase for the resource name before deleting
+2. Check imports, string references, and dynamic access patterns
+3. If the resource is a URL path, search for both the route definition and any `fetch()`, `href`, or `goto()` calls
+4. If the resource is a database column or table, search the Prisma schema AND all raw queries, services, and seed files
+5. If the resource is an env var, check `.env.example`, CI configs, Docker files, and all `process.env` references
+
+| Resource removed | Where to check |
+|-----------------|---------------|
+| Function or export | All imports, barrel re-exports, test files |
+| File or module | All import paths, dynamic imports, config references |
+| API route or endpoint | All `fetch()`, `axios`, `trpc`, `href`, `action` attributes |
+| Database column or model | Prisma schema, services, seed files, migration scripts |
+| Environment variable | `.env.example`, CI/CD, Docker, Terraform, all `process.env` reads |
+| Translation key | All `t('key')`, `t.raw('key')`, message JSON files |
+| CSS class or design token | All `className`, Tailwind config, component files |
+| Package dependency | All imports from that package across `src/` and `tests/` |
+
+A removal without a consumer search is a latent runtime error.
+
 ## Code Examples
 
 Every code snippet in any output must follow all rules. A code example that violates a rule is a defect. If a fix suggestion introduces a violation, the suggestion itself is a review defect.
