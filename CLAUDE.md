@@ -175,8 +175,9 @@ For non-trivial tasks:
 
 1. **Clarify.** Ask questions, understand requirements.
 2. **Plan.** For tasks touching 3+ files or involving trade-offs, run `/plan` to create a spec folder. For simpler tasks, state the approach and wait for approval.
-3. **Decompose.** Split into small, verifiable steps.
-4. **Implement.** Only then write code.
+3. **Quality impact.** When a plan, proposal, or constraint involves any trade-off that could reduce output quality or capability, state that trade-off explicitly before presenting. Do not wait for the user to ask.
+4. **Decompose.** Split into small, verifiable steps.
+5. **Implement.** Only then write code.
 
 For architecture decisions that will outlive the current task, record them with `/adr`.
 
@@ -196,6 +197,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Concurrency (cat 4):** TOCTOU? Protected by constraint or lock?
    - **Data integrity (cat 5):** writes idempotent? DB constraints match validation?
    - **Zero warnings (cat 17):** tool output clean? Suppression justified?
+   - **Writing style (prose/docs/rules):** em dashes removed? No parentheses in prose? Check every documentation, rule, or comment block you write or modify.
 
    These are quick-scan reminders for the most critical categories. All 49 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, and applicable categories 18-49 for architecture and infrastructure. Read the full checklist, not just this summary.
 

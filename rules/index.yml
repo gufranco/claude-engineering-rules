@@ -59,6 +59,10 @@ always_loaded:
     description: Multi-account safety for glab CLI, require inline GITLAB_TOKEN and GITLAB_HOST, block glab auth login
     triggers: [gitlab, glab, glab auth, multi-account, token]
 
+  agent-usage:
+    description: Agent and parallelism budget rules, prefer inline tool calls over spawning agents, max two concurrent agents, rate budget awareness
+    triggers: [agent, spawn, parallel, subagent, rate limit, rate budget, parallelize, concurrent agents]
+
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
 
 on_demand:
