@@ -54,6 +54,12 @@ Apply `checklists/checklist.md` category 17 during every verification. "Zero err
 
 **Dependency changes**: lockfile committed, tests pass, build succeeds. No version conflicts.
 
+**Scheduled jobs, such as cron, pg_cron, and CloudWatch, add:**
+
+- Before finalizing any interval, verify that job execution time fits within it. Query historical run times from the job's run history table: `cron.job_run_details` for pg_cron, CloudWatch Logs for AWS. If execution time exceeds the interval, jobs queue behind a lock and pile up.
+- If no history exists on first deploy, set a conservative interval: at minimum 2x the expected duration. Tighten after observing actual run times.
+- After the first full cycle completes, confirm via the run history that all jobs reached a succeeded status with no overlap.
+
 ## Response Self-Check
 
 Before presenting analysis, recommendations, or findings, verify your own output against these categories.
