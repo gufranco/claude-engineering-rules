@@ -24,6 +24,7 @@ history.jsonl
 cache/
 stats-cache.json
 mcp-needs-auth-cache.json
+policy-limits.json
 
 # IDE and editor integration
 ide/
