@@ -35,6 +35,7 @@
       "Edit(./config/credentials.json)"
     ]
   },
+  "model": "claude-opus-4-6",
   "hooks": {
     "PreToolUse": [
       {
@@ -176,7 +177,6 @@
     "type": "command",
     "command": "python3 ~/.claude/scripts/context-monitor.py"
   },
-  "model": "claude-opus-4-6",
   "outputStyle": "Explanatory",
   "language": "english",
   "effortLevel": "high",
@@ -188,8 +188,275 @@
         "@upstash/context7-mcp"
       ]
     },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "docker": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-docker"
+      ]
+    },
+    "lighthouse": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "lighthouse-mcp"
+      ]
+    },
+    "ollama": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "ollama-mcp-server"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/gufranco/Dropbox",
+        "/Users/gufranco/Workspace",
+        "/Users/gufranco/Docker",
+        "/tmp"
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "gitlab": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-gitlab"
+      ],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@localhost:5454/field_service"
+      ]
+    },
+    "redis": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-redis",
+        "redis://localhost:6379"
+      ]
+    },
+    "slack": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-slack"
+      ],
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    },
+    "obsidian": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "obsidian-mcp-server"
+      ],
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "${OBSIDIAN_VAULT_PATH}"
+      }
+    },
+    "kubernetes": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-kubernetes"
+      ]
+    },
+    "aws": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-aws"
+      ]
+    },
+    "cloudflare": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cloudflare/mcp-server-cloudflare"
+      ],
+      "env": {
+        "CLOUDFLARE_API_TOKEN": "${CLOUDFLARE_API_TOKEN}"
+      }
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+    "google-maps": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-google-maps"
+      ],
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
+      }
+    },
+    "exa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "exa-mcp-server"
+      ],
+      "env": {
+        "EXA_API_KEY": "${EXA_API_KEY}"
+      }
+    },
+    "firecrawl": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
+    "resend": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-resend"
+      ],
+      "env": {
+        "RESEND_API_KEY": "${RESEND_API_KEY}"
+      }
+    },
+    "todoist": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "todoist-mcp-server"
+      ],
+      "env": {
+        "TODOIST_API_TOKEN": "${TODOIST_API_TOKEN}"
+      }
+    },
+    "discord": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "discord-mcp"
+      ],
+      "env": {
+        "DISCORD_TOKEN": "${DISCORD_TOKEN}"
+      }
+    },
+    "perplexity": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "perplexity-mcp"
+      ],
+      "env": {
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+      }
+    },
+    "langsmith": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "langsmith-mcp-server"
+      ],
+      "env": {
+        "LANGSMITH_API_KEY": "${LANGSMITH_API_KEY}"
+      }
+    },
     "sentry": {
       "url": "https://mcp.sentry.dev/mcp"
+    },
+    "linear": {
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "figma": {
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "notion": {
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "vercel": {
+      "url": "https://mcp.vercel.com"
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "atlassian": {
+      "url": "https://mcp.atlassian.com/v1/mcp"
+    },
+    "mermaid-chart": {
+      "url": "https://chatgpt.mermaid.ai/anthropic/mcp"
+    },
+    "excalidraw": {
+      "url": "https://mcp.excalidraw.com/mcp"
+    },
+    "granola": {
+      "url": "https://mcp.granola.ai/mcp"
+    },
+    "miro": {
+      "url": "https://mcp.miro.com/"
+    },
+    "asana": {
+      "url": "https://mcp.asana.com/v2/mcp"
+    },
+    "microsoft-learn": {
+      "url": "https://learn.microsoft.com/api/mcp"
     }
   }
 }

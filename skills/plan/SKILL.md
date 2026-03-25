@@ -1,198 +1,171 @@
 ---
 name: plan
-description: Gather context and create a structured implementation plan with a persistent spec folder
+description: Plan implementations, record architecture decisions, and scaffold boilerplate. Subcommands: plan (default), adr, scaffold. Creates spec folders, manages ADRs, and generates files from existing project patterns.
 ---
 
-# /plan
+Unified planning skill for requirements gathering, architecture decisions, and code generation. Replaces standalone `/plan`, `/adr`, and `/scaffold` skills.
 
-Gathers requirements, searches for existing solutions, evaluates trade-offs, and produces a structured implementation plan saved to a spec folder. The spec persists as institutional memory for the project.
+## Subcommand Routing
 
-## When to use
+| Invocation | Action |
+|-----------|--------|
+| `/plan` or `/plan <description>` | Create implementation plan (default) |
+| `/plan adr` | List existing ADRs |
+| `/plan adr new <title>` | Create a new ADR |
+| `/plan adr supersede <number> <title>` | Supersede an existing ADR |
+| `/plan scaffold <type> <name>` | Generate boilerplate from project patterns |
 
-- Before implementing any feature that touches 3+ files or involves architectural decisions
-- When evaluating multiple technical approaches for a problem
-- Before refactoring that changes module boundaries or data flow
-- When onboarding to a task that needs context from multiple parts of the codebase
+If no subcommand is recognized, treat the argument as a plan description.
 
-## When NOT to use
+---
 
-- Single-file changes, config tweaks, typo fixes
-- Tasks where the implementation path is obvious and well-understood
-- When a spec already exists and implementation can start immediately
+## plan (default)
 
-## Arguments
+Gather requirements, search for existing solutions, evaluate trade-offs, and produce a structured implementation plan saved to a spec folder.
 
-- No arguments: interactive planning mode
-- `<description>`: start planning with the given task description
-- `--light`: abbreviated plan without reference gathering or trade-off analysis. Produces `plan.md` only
-- `--resume`: locate and continue from the most recent spec folder in the project
+### When to use
 
-## Process
+- Before implementing any feature touching 3+ files or involving architectural decisions.
+- When evaluating multiple approaches.
+- Before refactoring that changes module boundaries.
 
-### 1. Clarify scope
+### Arguments
 
-Ask the user to describe the task in one paragraph. If they already provided a description, confirm understanding.
+- No arguments: interactive planning mode.
+- `<description>`: start planning with the given task.
+- `--light`: abbreviated plan without references or trade-off analysis. Produces `plan.md` only.
+- `--resume`: continue from the most recent spec folder.
 
-Determine:
+### Process
 
-- What is being built or changed?
-- What is the expected outcome?
-- Are there constraints: timeline, compatibility, performance targets?
+1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints?
 
-One question at a time. Do not front-load multiple questions.
+2. **Search for existing work** (parallel):
+   - Grep codebase for related patterns.
+   - `gh pr list --search "<keywords>"` for open PRs.
+   - `git branch -a --list "*<keyword>*"` for branches.
+   - `gh pr list --state closed --search "<keywords>"` for prior attempts.
 
-### 2. Search for existing work
+3. **Gather references.** Identify 2-5 files following patterns the new code should match. Read them. Note structure, naming, error handling, testing.
 
-Run these **in parallel**:
+4. **Match relevant rules.** Read `rules/index.yml`. Match top 3-5 rules by triggers. Read them.
 
-- Grep the codebase for related patterns, similar features, or prior implementations
-- `gh pr list --search "<keywords>"` for open PRs addressing the same area
-- `git branch -a --list "*<keyword>*"` for in-progress branches
-- `gh pr list --state closed --search "<keywords>"` for previously attempted solutions
+5. **Evaluate alternatives.** For non-trivial decisions, 2-3 approaches with trade-offs, risk level, and recommendation. For each:
+   - **Decisive test**: smallest experiment to confirm/invalidate.
+   - **Stop signal**: what result means the approach is wrong.
+   - **Pivot trigger**: when to switch to next-best alternative.
+   Present for approval. Suggest `/plan adr new` for significant decisions.
 
-If existing work is found, present it with file paths or PR links. The user decides whether to reuse, extend, or start fresh.
+6. **Create spec folder:**
+   ```
+   specs/<YYYY-MM-DD>-<slug>/
+     plan.md        (goal, approach, task breakdown, risks, validation)
+     decisions.md   (context, options, chosen with reasoning)
+     references.md  (patterns, related work, applicable rules)
+   ```
 
-### 3. Gather references
+7. **Present plan.** Wait for approval.
 
-Identify 2-5 files in the codebase that follow patterns the new code should match:
+8. **Hand off.** Confirm spec written. State first step. Suggest `/plan scaffold` if new files needed. Suggest `/plan adr` if architecture decision was made.
 
-- Same module or domain area
-- Similar data flow or API shape
-- Same framework conventions
+---
 
-Read these files. Note the patterns: naming, structure, error handling, testing approach.
+## adr
 
-### 4. Match relevant rules
+Create and manage Architecture Decision Records. ADRs capture context, alternatives, and reasoning behind significant technical decisions.
 
-Read `rules/index.yml`. Match rules to the task using the `triggers` field. Suggest the top 3-5 most relevant rules. Read them to inform the plan.
+### When to use
 
-### 5. Evaluate alternatives
+- After a non-trivial architecture decision.
+- When changing or reversing a previous decision.
+- During planning when a decision deserves its own record.
 
-For non-trivial decisions, identify 2-3 approaches. For each:
+### Subcommands
 
-- Brief description in 2-3 sentences
-- Trade-offs: performance, complexity, maintainability, compatibility
-- Risk level: low, medium, high
+- No arguments: list existing ADRs.
+- `new <title>`: create interactively.
+- `supersede <number> <title>`: create new ADR that supersedes existing.
+- `--status <status>`: filter by proposed/accepted/deprecated/superseded.
 
-Recommend one approach with a clear reason.
+### Process
 
-For each viable approach, identify:
-
-- **Decisive test**: the smallest experiment that confirms or invalidates the approach. A failing spike is cheaper than a failing implementation.
-- **Stop signal**: what result means this approach is wrong. Be specific: a number, a behavior, a constraint violation.
-- **Pivot trigger**: what result means you should switch to the next-best alternative.
-
-The decisive test must be executable within hours, not days. Prefer: a throwaway script, a single integration test, a prototype endpoint, or a manual check against real data. If no quick test exists, that itself is a risk worth noting.
-
-Present to the user for approval before continuing.
-
-For decisions significant enough to outlive this task, suggest creating an ADR with `/adr new <title>`.
-
-### 6. Create the spec folder
-
-Create a timestamped folder in the project:
-
-```
-specs/<YYYY-MM-DD>-<slug>/
-  plan.md
-  decisions.md
-  references.md
-```
-
-If the project has a `.claude/` directory, create under `.claude/specs/` instead.
-
-**plan.md:**
+1. Locate or create `docs/adr/`. Files: `NNN-<slug>.md`, zero-padded.
+2. For new ADRs, ask one question at a time: what decision? What problem? What alternatives?
+3. Draft:
 
 ```markdown
-# <Task Title>
+# ADR-NNN: <Title>
 
-## Goal
+**Status:** accepted
+**Date:** <YYYY-MM-DD>
 
-One paragraph: what this achieves and why.
-
-## Approach
-
-The chosen approach with key implementation details.
-
-## Task Breakdown
-
-Ordered list of steps. Each step includes:
-- What to do
-- Which files to create or modify
-- Acceptance criteria for this step
-
-## Risks
-
-Known risks and how to mitigate them.
-
-## Validation Strategy
-
-For the chosen approach:
-- **Decisive test:** <smallest experiment that confirms the approach works>
-- **Stop signal:** <what result means this approach is wrong>
-- **Expected timeline:** <when the decisive test produces a result>
+## Context
+## Decision
+## Alternatives Considered
+### <Alt 1> -- pros, cons
+### <Alt 2> -- pros, cons
+## Consequences
+### Positive
+### Negative
+### Risks
 ```
 
-**decisions.md:**
+4. Show draft, incorporate feedback, write file.
+5. For supersession: update original status to `superseded by ADR-NNN`, link from new ADR.
 
-```markdown
-# Decisions
+### Rules
 
-## <Decision Title>
+- ADRs are append-only. Never delete superseded ones.
+- At least two alternatives documented.
+- Status values: proposed, accepted, deprecated, superseded by ADR-NNN.
+- Title describes the decision, not the problem.
 
-**Context:** Why this decision was needed.
+---
 
-**Options:**
-1. <Option A> — description, pros, cons
-2. <Option B> — description, pros, cons
+## scaffold
 
-**Chosen:** <Which option> — <why>.
-```
+Generate boilerplate by reading existing project patterns. No external generators, everything derived from the codebase.
 
-**references.md:**
+### When to use
 
-```markdown
-# References
+- Creating a new endpoint, service, component, module, or model.
+- When new code must match existing style.
 
-## Patterns to Follow
+### Arguments
 
-- `path/to/file.ts` — what pattern to follow from this file
+`<type> <name>` where type is a project pattern: `endpoint`, `service`, `component`, `module`, `model`, `controller`, `middleware`, `hook`.
 
-## Related Work
+### Steps
 
-- PR #123 — relevance to this task
+1. Parse type and name. If missing, list available types and ask.
+2. **Detect framework and find examples** (parallel): read manifest, map directory structure, search for existing examples of the type.
+3. Analyze 2-3 examples: naming convention, export style, imports, code structure, test file location, TypeScript patterns.
+4. Generate: main file + test file following exact patterns. Placeholder `TODO` comments for business logic.
+5. Present for approval before writing.
+6. Write files. Update barrel exports if applicable.
 
-## Applicable Rules
+### Rules
 
-- `rules/xyz.md` — why this rule applies
-```
+- Always read existing code to derive patterns.
+- Always present for approval before writing.
+- Match exact naming, export style, imports.
+- Never generate without at least one example.
+- Never install dependencies.
+- Keep generated code minimal: skeleton with TODOs.
 
-### 7. Present the plan
-
-Show the full plan to the user. Wait for approval, adjustments, or questions before finalizing.
-
-### 8. Hand off
-
-After approval:
-
-1. Confirm the spec folder was written
-2. State the first implementation step clearly
-3. If the task involves new files, suggest `/scaffold`
-4. If an architecture decision was made, suggest `/adr`
+---
 
 ## Rules
 
-- Planning is investigation, not implementation. Do not write production code during `/plan`
-- Every decision must document at least two alternatives. "Only one way" is rarely true
-- Spec folders are permanent artifacts. They record WHY decisions were made for future reference
-- The plan must reference specific file paths verified by reading them, not assumed from memory
-- If the task is too small for a full plan, say so and suggest proceeding directly
-- Search for existing work before designing new solutions. Reuse first
-- Spec folders go in `specs/` or `.claude/specs/` within the project, never in `~/.claude/`
+- Planning is investigation, not implementation. Do not write production code during `/plan`.
+- Every decision must document at least two alternatives.
+- Spec folders are permanent. They record WHY decisions were made.
+- The plan must reference verified file paths.
+- Search for existing work before designing new solutions.
+- Spec folders go in `specs/` or `.claude/specs/` within the project, never in `~/.claude/`.
 
 ## Related skills
 
-- `/adr` — Record significant architecture decisions from the plan
-- `/scaffold` — Generate boilerplate after the plan is approved
-- `/discover` — Discover existing patterns that inform the plan
-- `/assessment` — Audit implementation completeness after the plan is executed
+- `/review` -- Review code quality after implementing the plan.
+- `/ship` -- Ship the implementation.
+- `/assessment` -- Audit completeness after plan execution.

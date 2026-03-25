@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 13 rules, 17 on-demand standards, 24 skills, and 11 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 13 rules, 17 on-demand standards, 12 skills (with subcommands), 40 MCP servers, and 11 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**13** rules · **17** standards · **24** skills · **11** hooks · **506** checklist items · **49** categories · **~11,000** lines of engineering standards
+**13** rules · **17** standards · **12** skills · **40** MCP servers · **11** hooks · **506** checklist items · **49** categories · **~11,000** lines of engineering standards
 
 <table>
 <tr>
@@ -36,7 +36,7 @@ Universal rules load automatically. Domain-specific standards load on demand, ma
 
 ### Slash-Command Skills
 
-`/commit`, `/pr`, `/review`, `/test`, `/audit`, `/incident`, and 18 more. Each skill is a structured prompt that orchestrates multi-step workflows with a single command.
+`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/infra`, and 6 more. 25 workflows consolidated into 12 skills with subcommands. Each skill orchestrates multi-step workflows with a single command.
 
 </td>
 <td width="50%" valign="top">
@@ -66,7 +66,8 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Integration-first test policy | ❌ | ✅ |
 | Pre-flight verification gates | ❌ | ✅ |
 | On-demand domain standards | ❌ | ✅ |
-| 24 workflow skills | ❌ | ✅ |
+| 12 workflow skills (25 absorbed) | ❌ | ✅ |
+| 40 MCP server integrations | ❌ | ✅ |
 | Prompt injection guards | ❌ | ✅ |
 | 506-item review checklist | ❌ | ✅ |
 
@@ -154,32 +155,22 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 
 ### Skills
 
-| Skill | What it does |
-|:------|:-------------|
-| `/commit` | Analyze changes and create semantic conventional commits |
-| `/pr` | Create or update PRs with structured descriptions |
-| `/review` | Code review following the 506-item quality and engineering checklists |
-| `/assessment` | Architecture completeness audit against the full checklist |
-| `/test` | Detect test runner, execute tests with coverage and linting |
-| `/checks` | Monitor CI/CD checks and diagnose failures |
-| `/audit` | Multi-layer security audit: dependencies, secrets, Dockerfiles, code patterns |
-| `/incident` | Gather incident context and generate blameless postmortems |
-| `/terraform` | Run Terraform workflows with plan review and approval gates |
-| `/docker` | Manage Docker containers with Colima-aware context detection |
-| `/db` | Database migrations, standalone containers, and data operations |
-| `/deps` | Audit dependencies for vulnerabilities and outdated packages |
-| `/release` | Tagged releases with auto-generated changelog from conventional commits |
-| `/morning` | Start-of-day dashboard: open PRs, pending reviews, notifications |
-| `/retro` | Analyze conversation for corrections and propose config updates |
-| `/worktree` | Manage git worktrees for parallel development |
-| `/scaffold` | Generate boilerplate by reading existing project patterns |
-| `/readme` | Generate README by analyzing the actual codebase |
-| `/design-review` | Audit pages for visual design, UX, accessibility, and contrast |
-| `/palette` | Generate accessible OKLCH color palettes for Tailwind CSS |
-| `/perf` | Load tests and benchmarks using k6, wrk, hey, or ab |
-| `/plan` | Structured planning with spec folder output, trade-off analysis, decisive tests, and reference gathering |
-| `/discover` | Extract codebase conventions and patterns into reusable rule files |
-| `/adr` | Create and manage Architecture Decision Records for significant technical decisions |
+12 skills with subcommands, consolidating 25 workflows.
+
+| Skill | Subcommands | What it does |
+|:------|:------------|:-------------|
+| `/ship` | `commit`, `pr`, `release`, `checks`, `worktree` | Full delivery pipeline: semantic commits, PRs with CI monitoring, tagged releases, pipeline diagnosis, parallel worktrees |
+| `/review` | `code` (default), `qa`, `design` | Three-pass code review with 49-category checklist, 30-rule QA analysis with PICT and coverage delta, visual/UX/accessibility audit |
+| `/audit` | `deps`, `secrets`, `docker`, `code`, `scan`, `image` | Multi-layer security audit and dependency management with trivy/snyk/gitleaks |
+| `/test` | `perf`, `lint`, `scan`, `ci`, `stubs` | Test execution, load testing (k6/wrk/hey/ab), coverage, linting, security scanning, test stub generation |
+| `/plan` | `adr`, `scaffold` | Structured planning with spec folders, Architecture Decision Records, boilerplate generation from project patterns |
+| `/infra` | `docker`, `terraform`, `db` | Container orchestration (Colima-aware), IaC workflows with safety gates, database migrations with ORM detection |
+| `/retro` | `discover`, `--curate`, `--promote` | Session retrospective, codebase pattern extraction, memory curation, rule graduation (self-improving agent lifecycle) |
+| `/assessment` | -- | Architecture completeness audit against the full 49-category checklist |
+| `/morning` | -- | Start-of-day dashboard: open PRs, pending reviews, notifications, standup prep |
+| `/incident` | -- | Incident context gathering and blameless postmortem generation |
+| `/readme` | -- | README generation by analyzing the actual codebase |
+| `/palette` | -- | Accessible OKLCH color palette generation for Tailwind CSS and shadcn/ui |
 
 ### Hooks
 
@@ -206,7 +197,7 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 
 ### Rule Index
 
-`rules/index.yml` is the catalog for both tiers. It maps each rule and standard to a description and trigger keywords. When a task starts, Claude matches the task against trigger keywords and reads the relevant `standards/` files on demand. Skills like `/plan` and `/discover` also reference this index. Run `/discover` to add project-specific entries.
+`rules/index.yml` is the catalog for both tiers. It maps each rule and standard to a description and trigger keywords. When a task starts, Claude matches the task against trigger keywords and reads the relevant `standards/` files on demand. Skills like `/plan` and `/retro discover` also reference this index. Run `/retro discover` to add project-specific entries.
 
 ### Checklist
 
@@ -222,17 +213,19 @@ Step-by-step guides for common engineering tasks. Each workflow references the s
 
 1. **Plan.** Run `/plan` with a description of the feature. This searches for existing solutions in the codebase, open PRs, and branches. It gathers references from similar code, matches relevant rules, evaluates alternatives, and creates a spec folder with the implementation plan.
 
-2. **Scaffold.** If the feature involves new files, run `/scaffold <type> <name>` to generate boilerplate that matches existing project patterns. Types: endpoint, service, component, module, model, controller, middleware, hook.
+2. **Scaffold.** If the feature involves new files, run `/plan scaffold <type> <name>` to generate boilerplate that matches existing project patterns. Types: endpoint, service, component, module, model, controller, middleware, hook.
 
 3. **Implement.** Follow the spec's task breakdown. Work through each step, running `/test` after each meaningful change to catch regressions early.
 
 4. **Test.** Run `/test --coverage` to verify coverage meets the 80% threshold for new code. Add missing tests for edge cases and error paths.
 
-5. **Commit.** Run `/commit` to create conventional commits. Use `--push` to push immediately, or `--push --pipeline` to push and monitor CI until all checks pass.
+5. **QA.** Run `/review qa` to analyze the feature from a QA perspective. This maps all behavior paths, cross-references existing tests, and reports coverage gaps. Use `--fix` to auto-generate missing tests.
 
-6. **PR.** Run `/pr` to create a pull request with a structured description. Add `--pipeline` to monitor CI and auto-fix failures.
+6. **Commit.** Run `/ship commit` to create conventional commits. Use `--push` to push immediately, or `--push --pipeline` to push and monitor CI until all checks pass.
 
-7. **Self-review.** Run `/review --local` before requesting human review to catch issues early.
+7. **PR.** Run `/ship pr` to create a pull request with a structured description. CI monitoring runs by default.
+
+8. **Self-review.** Run `/review --local` before requesting human review to catch issues early.
 
 ### Bug Fix
 
@@ -246,7 +239,7 @@ Step-by-step guides for common engineering tasks. Each workflow references the s
 
 5. **Verify.** Run `/test` to confirm the new test passes and no existing tests broke. Demonstrate the fix using the original reproduction steps.
 
-6. **Ship.** Run `/commit --push --pipeline` to commit, push, and verify CI passes.
+6. **Ship.** Run `/ship commit --push --pipeline` to commit, push, and verify CI passes.
 
 ### Debugging
 
@@ -260,7 +253,7 @@ Follow the four-phase process defined in `rules/debugging.md`:
 
 4. **Fix and verify.** Fix the cause, write a test that captures it, run the full suite. Check for the same pattern elsewhere in the codebase and fix all instances.
 
-Use `/test` to run specific test files during isolation. Use `/checks` if the issue manifests in CI but not locally.
+Use `/test` to run specific test files during isolation. Use `/ship checks` if the issue manifests in CI but not locally.
 
 ### Code Review
 
@@ -276,17 +269,17 @@ The review skill runs three passes: per-file analysis, cross-file consistency, a
 
 1. **Plan.** Run `/plan` for the feature or system change. This produces a spec folder with the implementation plan, trade-off analysis, decisive tests for each approach, and references to existing code patterns.
 
-2. **Record decisions.** For significant decisions like database choice, service boundaries, or auth strategy, run `/adr new <title>` to create an Architecture Decision Record. ADRs capture the context, alternatives considered, and reasoning so future engineers understand WHY.
+2. **Record decisions.** For significant decisions like database choice, service boundaries, or auth strategy, run `/plan adr new <title>` to create an Architecture Decision Record. ADRs capture the context, alternatives considered, and reasoning so future engineers understand WHY.
 
 3. **Audit completeness.** After implementation, run `/assessment` to verify the implementation against architectural patterns, resilience requirements, security standards, and operational readiness.
 
 ### Establishing Project Standards
 
-1. **Discover.** Run `/discover` in a project to extract existing conventions into rule files. The skill scans the codebase, identifies recurring patterns, and walks through each one: asking why the pattern exists, drafting a concise rule, and creating the file after your confirmation.
+1. **Discover.** Run `/retro discover` in a project to extract existing conventions into rule files. The skill scans the codebase, identifies recurring patterns, and walks through each one: asking why the pattern exists, drafting a concise rule, and creating the file after your confirmation.
 
-2. **Focus areas.** Use `/discover --area src/api` to focus on a specific module. Use `--output project` to write rules to the project's CLAUDE.md instead of global `rules/`.
+2. **Focus areas.** Use `/retro discover --area src/api` to focus on a specific module. Use `--output project` to write rules to the project's CLAUDE.md instead of global `rules/`.
 
-3. **Iterate.** As the project evolves, run `/discover` again to capture new conventions. Run `/retro` after significant sessions to capture workflow-level patterns.
+3. **Iterate.** As the project evolves, run `/retro discover` again to capture new conventions. Run `/retro` after significant sessions to capture workflow-level patterns. Use `/retro --curate` to clean up stale memory and `/retro --promote` to graduate useful patterns to rules.
 
 ### Daily Routine
 
@@ -300,29 +293,31 @@ The review skill runs three passes: per-file analysis, cross-file consistency, a
 
 Run `/audit` to perform a multi-layer security scan:
 
-- `--deps`: dependency vulnerabilities
-- `--secrets`: secret detection in code and git history
-- `--docker`: Dockerfile best practices
-- `--code`: code-level security patterns
+- `/audit deps`: dependency vulnerabilities
+- `/audit secrets`: secret detection in code and git history
+- `/audit docker`: Dockerfile best practices
+- `/audit code`: code-level security patterns
+- `/audit scan`: deep scanning with trivy/snyk/gitleaks
+- `/audit image <name>`: Docker image vulnerability analysis
 
-No arguments runs all four layers. Findings are prioritized by severity.
+No arguments runs all layers. Findings are prioritized by severity.
 
 ### Dependency Management
 
-1. **Audit.** Run `/deps` to check for known vulnerabilities in dependencies.
-2. **Outdated.** Run `/deps outdated` to list packages with available updates.
-3. **Update.** Run `/deps update <package>` to update a specific dependency with full verification.
-4. **Deep scan.** Run `/deps scan` to use trivy, snyk, or gitleaks for deeper analysis when available.
+1. **Audit.** Run `/audit deps` to check for known vulnerabilities in dependencies.
+2. **Outdated.** Run `/audit deps outdated` to list packages with available updates.
+3. **Update.** Run `/audit deps update <package>` to update a specific dependency with full verification.
+4. **Deep scan.** Run `/audit scan` to use trivy, snyk, or gitleaks for deeper analysis when available.
 
 ### Release
 
-Run `/release` to create a tagged release with an auto-generated changelog from conventional commits. The skill detects the version bump from commit types: breaking changes bump major, features bump minor, fixes bump patch. Use `--dry-run` to preview without creating the release.
+Run `/ship release` to create a tagged release with an auto-generated changelog from conventional commits. The skill detects the version bump from commit types: breaking changes bump major, features bump minor, fixes bump patch. Use `--dry-run` to preview without creating the release.
 
 ### Infrastructure
 
-1. **Terraform.** Run `/terraform` for infrastructure changes. The skill validates before planning, plans before applying, and requires explicit approval before any apply or destroy.
-2. **Docker.** Run `/docker` for container operations. The skill detects Colima profiles and uses per-command `--context` flags to avoid polluting global Docker state.
-3. **Database.** Run `/db` for migrations, container management, and data operations. The skill detects your ORM and suggests your shell functions instead of raw Docker commands.
+1. **Terraform.** Run `/infra terraform` for infrastructure changes. The skill validates before planning, plans before applying, and requires explicit approval before any apply or destroy.
+2. **Docker.** Run `/infra docker` for container operations. The skill detects Colima profiles and uses per-command `--context` flags to avoid polluting global Docker state.
+3. **Database.** Run `/infra db` for migrations, container management, and data operations. The skill detects your ORM and suggests your shell functions instead of raw Docker commands.
 
 ## Quick Start
 
@@ -355,7 +350,7 @@ cp -r claude-engineering-rules/* ~/.claude/
 Open Claude Code in any project and run:
 
 ```bash
-/commit
+/ship commit
 # Should enforce conventional commit format
 ```
 
@@ -404,31 +399,19 @@ The hooks, rules, and skills activate automatically.
     ddd-tactical-patterns.md   # DDD tactical patterns
     state-machines.md    # Type state and runtime state machines
     algorithmic-complexity.md  # Data structures, sorting, anti-patterns, space complexity
-  skills/
-    adr/                 # Architecture Decision Records
+  skills/                # 12 skills (consolidated from 25)
+    ship/                # Delivery: commit, pr, release, checks, worktree
+    review/              # Code review, QA analysis, design audit (includes reviewer-prompt.md)
+    audit/               # Security audit and dependency management
+    test/                # Test execution, load testing, coverage, linting
+    plan/                # Planning, ADRs, scaffolding
+    infra/               # Docker, Terraform, database operations
+    retro/               # Session retrospective and codebase discovery
     assessment/          # Architecture completeness audit
-    audit/               # Multi-layer security audit
-    checks/              # CI/CD monitoring
-    commit/              # Semantic commits
-    db/                  # Database operations
-    deps/                # Dependency auditing
-    design-review/       # Visual and UX audit
-    discover/            # Codebase pattern extraction
-    docker/              # Container management
-    incident/            # Incident response and postmortems
     morning/             # Start-of-day dashboard
-    palette/             # OKLCH color palette generation
-    perf/                # Load testing and benchmarks
-    plan/                # Structured planning with spec folders
-    pr/                  # Pull request creation
+    incident/            # Incident response and postmortems
     readme/              # README generation
-    release/             # Tagged releases
-    retro/               # Session retrospective
-    review/              # Code review (includes reviewer-prompt.md)
-    scaffold/            # Boilerplate generation
-    terraform/           # Infrastructure workflows
-    test/                # Test execution
-    worktree/            # Git worktree management
+    palette/             # OKLCH color palette generation
   hooks/
     change-tracker.sh    # File modification logging
     conventional-commits.sh  # Commit message validation
@@ -457,12 +440,13 @@ The hooks, rules, and skills activate automatically.
 
 ### MCP Servers
 
-Two MCP servers are configured in `settings.json`:
+40 MCP servers configured in `settings.json`, organized into three groups:
 
-| Server | Purpose |
-|:-------|:--------|
-| Context7 | Library documentation lookup via `@upstash/context7-mcp` |
-| Sentry | Error tracking integration via `mcp.sentry.dev` |
+**Stdio servers (no config needed):** Context7, Playwright, Memory, Sequential Thinking, Docker, Lighthouse, Ollama, Filesystem
+
+**Stdio servers (with env vars):** GitHub, GitLab, PostgreSQL, Redis, Slack, Obsidian, Kubernetes, AWS, Cloudflare, Puppeteer, Brave Search, Google Maps, Exa, Firecrawl, Resend, Todoist, Discord, Perplexity, LangSmith
+
+**Remote HTTP servers (zero startup cost):** Sentry, Linear, Figma, Notion, Vercel, Supabase, Atlassian, Mermaid Chart, Excalidraw, Granola, Miro, Asana, Microsoft Learn
 
 ### Permissions
 
