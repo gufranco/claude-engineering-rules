@@ -1,117 +1,158 @@
 ---
 name: test
-description: Detect the project's test runner and execute tests with coverage, linting, and security scanning.
+description: Run tests, load benchmarks, coverage analysis, linting, and security scanning. Subcommands absorb /perf for HTTP load testing with k6/wrk/hey/ab.
 ---
 
-Detect the project's test framework and package manager, then run tests with optional coverage, watch mode, or file targeting. Also supports linting, type checking, and security scanning as complementary verification steps.
+Unified testing skill covering test execution, load testing, coverage, linting, and scanning. Replaces standalone `/test` and `/perf` skills.
 
-## When to use
+## Subcommand Routing
 
-- After making code changes and before committing.
-- When you need to verify that existing tests still pass.
-- When you want to run tests for a specific file or pattern.
-- When you need a coverage report.
-- When you want to lint shell scripts, run Go linters, or scan for vulnerabilities.
+| Invocation | Action |
+|-----------|--------|
+| `/test` | Run the full test suite (default) |
+| `/test <path>` | Run tests matching a file or pattern |
+| `/test --coverage` | Run with coverage reporting |
+| `/test --watch` | Run in watch mode |
+| `/test lint` | Run linters |
+| `/test scan` | Security vulnerability scanning |
+| `/test ci` | Simulate CI locally with `act` |
+| `/test perf <url>` | Load test an HTTP endpoint |
+| `/test stubs <path>` | Generate test stubs for uncovered code |
 
-## When NOT to use
+---
 
-- When the project has no test configuration or test files.
+## Test Execution (default)
 
-## Arguments
+### Package Manager Detection
 
-This skill accepts optional arguments after `/test`:
+`bun.lock`/`bun.lockb` = bun, `pnpm-lock.yaml` = pnpm, `yarn.lock` = yarn, `package-lock.json` = npm, `Cargo.toml` = cargo, `go.mod` = go, `pyproject.toml` with `uv.lock` = uv, `pyproject.toml` with `[tool.poetry]` = poetry, `pyproject.toml`/`requirements.txt` = pip. Also check `Makefile`/`Justfile` for test targets.
 
-- No arguments: run the full test suite.
-- A file path or pattern (e.g. `src/auth/login.test.ts`): run only matching tests.
-- `--coverage`: run with coverage reporting enabled.
-- `--watch`: run in watch mode for continuous feedback.
-- `--lint`: run linters instead of tests.
-- `--scan`: run security vulnerability scanning on the codebase.
-- `--ci`: simulate CI locally using `act` (GitHub Actions).
+### Test Runner Detection
 
-## Steps
+- Node.js: `vitest.config.*` or vitest in devDeps, `jest.config.*` or jest in devDeps, `mocha` in devDeps.
+- Rust: `cargo test`. Go: `go test ./...`. Python: look for `pytest.ini`, `pyproject.toml` with `[tool.pytest]`.
+- Shell: check for `shellcheck`.
 
-1. Detect the package manager by checking for lockfiles in the project root:
-   - `bun.lock` or `bun.lockb`: use `bun run`.
-   - `pnpm-lock.yaml`: use `pnpm run`.
-   - `yarn.lock`: use `yarn`.
-   - `package-lock.json`: use `npm run`.
-   - `Cargo.toml`: use `cargo test`.
-   - `go.mod`: use `go test`.
-   - `pyproject.toml` with `uv.lock` or `[tool.uv]`: use `uv run pytest`.
-   - `pyproject.toml` with `[tool.poetry]`: use `poetry run pytest`.
-   - `pyproject.toml` or `requirements.txt`: use `pytest` (verify with `which pytest`).
-   - `Makefile` with a `test` target: use `make test`.
-   - `Justfile` with a `test` recipe: use `just test` (verify with `which just`).
-   - If none found, ask the user how to run tests.
-2. Detect the test runner and configuration:
-   - **Node.js projects:** check `package.json` for a `test` script. Then look for:
-     - `vitest.config.*` or `vitest` in devDependencies: vitest.
-     - `jest.config.*` or `jest` in devDependencies: jest.
-     - `mocha` in devDependencies or `.mocharc.*`: mocha.
-   - **Rust:** `cargo test` (built-in).
-   - **Go:** `go test ./...` (built-in). Also check for `golangci-lint` with `which golangci-lint` for linting.
-   - **Python:** look for `pytest.ini`, `pyproject.toml` with `[tool.pytest]`, or `setup.cfg` with `[tool:pytest]`.
-   - **Shell scripts:** if the project has `.sh` or `.zsh` files and no other test runner, check for `shellcheck` with `which shellcheck`.
-   - If the test runner cannot be determined, read `package.json` scripts and ask the user.
-3. Build the test command:
-   - Start with the base command from step 1 (e.g. `pnpm run test`).
-   - If a file path or pattern was provided:
-     - vitest/jest: append the path directly (e.g. `pnpm run test src/auth`).
-     - pytest: append the path (e.g. `pytest src/auth/`).
-     - go: use the package path (e.g. `go test ./pkg/auth/...`).
-     - cargo: use `cargo test <name>`.
-   - If `--coverage` was requested:
-     - vitest: add `--coverage`.
-     - jest: add `--coverage`.
-     - pytest: add `--cov` (verify `pytest-cov` is installed).
-     - go: add `-cover` or `-coverprofile=coverage.out` for detailed output.
-     - cargo: suggest `cargo-tarpaulin` if installed.
-   - If `--watch` was requested:
-     - vitest: watch mode is default, no flag needed.
-     - jest: add `--watch`.
-     - pytest: suggest `pytest-watch` if installed.
-     - go/cargo: watch mode not built-in, suggest `entr` as alternative (verify with `which entr`).
-4. For **`--lint`** mode:
-   - **Node.js:** check `package.json` for `lint` script, run it.
-   - **Go:** run `golangci-lint run` (verify with `which golangci-lint`).
-   - **Shell:** run `shellcheck <files>` on `.sh` and `.zsh` files (verify with `which shellcheck`).
-   - **Python:** run `ruff check .` or `flake8` based on what is configured.
-   - **GitHub Actions:** run `actionlint` on `.github/workflows/*.yml` files (verify with `which actionlint`).
-   - **Vim:** run `vint` on `.vim` files if relevant (verify with `which vint`).
-5. For **`--scan`** mode:
-   - Check for `trivy` with `which trivy`. If found, run `trivy fs .` to scan the project filesystem for vulnerabilities.
-   - Check for `snyk` with `which snyk`. If found, run `snyk test` for dependency vulnerabilities.
-   - Check for `gitleaks` with `which gitleaks`. If found, run `gitleaks detect --source .` to scan for leaked secrets.
-   - Show results from whichever tools are available. If none are installed, say so and list what could be installed.
-6. For **`--ci`** mode:
-   - Verify `act` is installed with `which act`.
-   - If found, run `act --list` to show available workflows.
-   - Ask the user which workflow to run, or run the default push event with `act push --container-architecture linux/amd64`. The `--container-architecture` flag is needed because most GitHub Actions runners are amd64, even when running locally on ARM.
-   - Note: this requires Docker to be running.
-7. Run the test command and capture the output.
-8. Parse the results:
-   - Count passed, failed, and skipped tests.
-   - If coverage was requested, extract the coverage summary (total percentage and per-file breakdown if available).
-   - Identify any failing test names and their error messages.
-9. Present the results:
-   - If all tests pass: report the count and coverage if available.
-   - If tests fail: show each failing test with its error message and file location.
-   - If coverage is below a threshold noted in project config, mention it.
+### Steps
+
+1. Detect package manager and test runner.
+2. Build command: base command + path/pattern + `--coverage` or `--watch` flags.
+3. Run and capture output.
+4. Parse: passed, failed, skipped counts. Coverage summary if requested.
+5. Present: pass count, failures with error messages and file locations, coverage if applicable.
+
+---
+
+## lint
+
+Run linters based on project configuration.
+
+- Node.js: `package.json` lint script.
+- Go: `golangci-lint run`.
+- Shell: `shellcheck` on `.sh`/`.zsh` files.
+- Python: `ruff check .` or `flake8`.
+- GitHub Actions: `actionlint` on workflow files.
+
+---
+
+## scan
+
+Deep security scanning with available tools.
+
+- `trivy fs .` for dependency + config vulnerabilities.
+- `snyk test` + `snyk code test`.
+- `gitleaks detect --source .` for leaked secrets.
+
+Report results from whichever tools are installed. List missing tools if none available.
+
+---
+
+## ci
+
+Simulate CI locally with `act`.
+
+1. Verify `act` installed.
+2. `act --list` to show workflows.
+3. Run selected workflow with `act push --container-architecture linux/amd64`.
+
+---
+
+## perf
+
+Load test HTTP endpoints. Auto-detects the best available tool.
+
+### Arguments
+
+- A URL (required): endpoint to test.
+- `-n <requests>`: total requests (default: 1000).
+- `-c <concurrency>`: concurrent connections (default: 10).
+- `-d <duration>`: test duration (e.g. `30s`). Overrides `-n`.
+- `--method <METHOD>`: HTTP method (default: GET).
+- `--body <json>`: request body.
+- `--header <key:value>`: custom header (repeatable).
+- `--compare`: run twice with a pause for changes between runs.
+- `--script <path>`: custom k6 script.
+
+### Steps
+
+1. Parse arguments. Validate target with a single request.
+2. Detect tool (preference order): k6, wrk, hey, ab.
+3. Build command:
+   - **k6**: generate temp script with VUs, duration/iterations, headers, body. Run with `--summary-trend-stats`.
+   - **wrk**: `wrk -t<threads> -c<concurrency> -d<duration> <url>`. Lua script for POST.
+   - **hey**: `hey -n <n> -c <c> -m <method> <url>`.
+   - **ab**: `ab -n <n> -c <c> <url>`. Temp file for POST body.
+4. Run and extract metrics:
+
+| Metric | Description |
+|--------|-------------|
+| Total requests | Completed |
+| Failed requests | Non-2xx or connection errors |
+| Requests/sec | Throughput |
+| Latency avg | Mean response time |
+| Latency p50 | Median |
+| Latency p95 | 95th percentile |
+| Latency p99 | 99th percentile |
+| Transfer rate | Data throughput |
+
+5. Flag: p99 > 1s, error rate > 1%.
+6. **Compare mode**: run once, wait for user signal, run again. Side-by-side comparison with percentage changes.
+7. Clean up temp files.
+
+---
+
+## stubs
+
+Generate test file stubs for code that lacks tests.
+
+### Steps
+
+1. Read the target file(s).
+2. Identify all exported functions, classes, and methods.
+3. Check for existing test files. Skip already-tested exports.
+4. Generate a test stub per untested export following project conventions:
+   - Read existing test files in the same module for patterns.
+   - Follow `rules/testing.md`: AAA pattern, faker for data, real database.
+   - Include: one happy-path test, one error-path test, placeholder `// TODO: add edge cases`.
+5. Present stubs for approval before writing.
+6. After writing, run the test suite to verify stubs compile (they may fail on TODO assertions, which is expected).
+
+---
 
 ## Rules
 
-- Always detect the package manager from the lockfile. Never assume npm.
-- Always detect the test runner from project config. Never guess.
-- Always check for `Justfile` and `Makefile` as potential test runners.
-- Never install test dependencies without asking the user.
-- Never modify test files. Only run them.
-- If no test configuration exists, say so and stop. Do not create test config.
-- If tests fail, show the failures clearly but do not automatically fix them.
-- For `--scan`, only run tools that are already installed. Never install security tools without asking.
+- Always detect package manager and test runner from project config.
+- Never install test dependencies without asking.
+- Never modify test files during test execution (only `stubs` generates files).
+- Never run perf tests against production URLs without explicit confirmation.
+- Always validate perf target is reachable before load testing.
+- Always clean up temporary files.
+- Default perf to safe values (1000 requests, 10 concurrency).
+- Show exact commands so user can reproduce manually.
+- If no test config exists, say so and stop.
 
 ## Related skills
 
-- `/commit` - After tests pass, commit the changes.
-- `/checks` - After pushing, verify CI/CD tests also pass.
-- `/deps` - Audit dependencies for vulnerabilities. The `deps scan` subcommand provides the same trivy/snyk/gitleaks scanning as `test --scan`.
+- `/ship` -- Commit after tests pass.
+- `/review qa` -- QA analysis for coverage gaps.
+- `/audit scan` -- Security vulnerability scanning.
