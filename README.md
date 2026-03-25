@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 13 rules, 17 on-demand standards, 12 skills (with subcommands), 40 MCP servers, and 11 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 14 rules, 17 on-demand standards, 12 skills with subcommands, 40 MCP servers, and 11 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**13** rules · **17** standards · **12** skills · **40** MCP servers · **11** hooks · **506** checklist items · **49** categories · **~11,000** lines of engineering standards
+**14** rules · **17** standards · **12** skills · **40** MCP servers · **11** hooks · **506** checklist items · **49** categories · **~12,000** lines of engineering standards
 
 <table>
 <tr>
@@ -111,7 +111,7 @@ graph LR
 
 ### Rules (always loaded)
 
-These 13 rules are loaded into every conversation automatically.
+These 14 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -128,6 +128,7 @@ These 13 rules are loaded into every conversation automatically.
 | `language` | Response language enforcement. All output in English regardless of user input language |
 | `github-accounts` | Multi-account safety for `gh` CLI: require inline `GH_TOKEN`, block `gh auth switch`, account mapping by remote URL |
 | `gitlab-accounts` | Multi-account safety for `glab` CLI: require inline `GITLAB_TOKEN` and `GITLAB_HOST`, block `glab auth login` |
+| `agent-usage` | Agent and parallelism budget: inline-first policy, two-agent concurrency cap, cascade prevention, context injection rules, result size management |
 
 ### Standards (loaded on demand)
 
@@ -361,13 +362,14 @@ The hooks, rules, and skills activate automatically.
 
 ```
 ~/.claude/
-  CLAUDE.md              # Core engineering rules (~250 lines)
+  CLAUDE.md              # Core engineering rules (~255 lines)
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
     checklist.md         # 506-item unified checklist across 49 categories (shared by completion gates, /review, and /assessment)
-  rules/                 # Tier 1: always loaded into every conversation
+  rules/                 # Tier 1: always loaded into every conversation (14 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
+    agent-usage.md       # Agent parallelism budget and cascade prevention
     code-review.md       # PR authoring, review style, tech debt
     code-style.md        # DRY/SOLID, immutability, FP patterns, TypeScript conventions
     debugging.md         # Four-phase debugging process
