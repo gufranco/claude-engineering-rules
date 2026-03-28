@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 14 rules, 17 on-demand standards, 12 skills with subcommands, 40 MCP servers, and 11 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 15 rules, 17 on-demand standards, 12 skills with subcommands, 40 MCP servers, and 11 runtime hooks for Claude Code.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**14** rules · **17** standards · **12** skills · **40** MCP servers · **11** hooks · **506** checklist items · **49** categories · **~12,000** lines of engineering standards
+**15** rules · **17** standards · **12** skills · **40** MCP servers · **11** hooks · **506** checklist items · **49** categories · **~12,000** lines of engineering standards
 
 <table>
 <tr>
@@ -111,7 +111,7 @@ graph LR
 
 ### Rules (always loaded)
 
-These 14 rules are loaded into every conversation automatically.
+These 15 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -129,6 +129,7 @@ These 14 rules are loaded into every conversation automatically.
 | `github-accounts` | Multi-account safety for `gh` CLI: require inline `GH_TOKEN`, block `gh auth switch`, account mapping by remote URL |
 | `gitlab-accounts` | Multi-account safety for `glab` CLI: require inline `GITLAB_TOKEN` and `GITLAB_HOST`, block `glab auth login` |
 | `agent-usage` | Agent and parallelism budget: inline-first policy, two-agent concurrency cap, cascade prevention, context injection rules, result size management |
+| `clean-room` | Clean room implementation process: structural/naming/logic independence verification, license compliance, similarity thresholds, seven-section checklist to prevent plagiarism and legal exposure |
 
 ### Standards (loaded on demand)
 
@@ -367,7 +368,7 @@ The hooks, rules, and skills activate automatically.
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
     checklist.md         # 506-item unified checklist across 49 categories (shared by completion gates, /review, and /assessment)
-  rules/                 # Tier 1: always loaded into every conversation (14 rules)
+  rules/                 # Tier 1: always loaded into every conversation (15 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
     agent-usage.md       # Agent parallelism budget and cascade prevention
     code-review.md       # PR authoring, review style, tech debt
@@ -383,6 +384,7 @@ The hooks, rules, and skills activate automatically.
     testing.md           # Integration-first, strict mocks, fake data, snapshots
     verification.md      # Evidence-based completion gates
     writing-precision.md # Precision gate for all text output
+    clean-room.md        # Clean room implementation and plagiarism prevention
   standards/             # Tier 2: loaded on demand when task matches triggers
     api-design.md        # REST conventions, pagination, versioning
     borrow-restore.md    # CLI context management pattern

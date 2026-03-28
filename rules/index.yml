@@ -63,6 +63,10 @@ always_loaded:
     description: Agent and parallelism budget rules, prefer inline tool calls over spawning agents, max two concurrent agents, rate budget awareness
     triggers: [agent, spawn, parallel, subagent, rate limit, rate budget, parallelize, concurrent agents]
 
+  clean-room:
+    description: Clean room implementation process to avoid plagiarism and legal exposure when using external projects as reference or inspiration
+    triggers: [clean room, plagiarism, copyright, license, reference, inspiration, external source, derivative, similar, copy]
+
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
 
 on_demand:
