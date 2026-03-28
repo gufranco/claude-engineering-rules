@@ -85,10 +85,10 @@ def main():
             branch = ""
 
         targets_protected = (
-            "origin main" in command
-            or "origin master" in command
-            or "origin develop" in command
-            or (branch in ("main", "master", "develop") and "origin " not in command)
+            re.search(r"\borigin\s+main\b", command)
+            or re.search(r"\borigin\s+master\b", command)
+            or re.search(r"\borigin\s+develop\b", command)
+            or (branch in ("main", "master", "develop") and not re.search(r"\borigin\s+\w", command))
         )
         if targets_protected:
             print(

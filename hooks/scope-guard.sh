@@ -10,7 +10,7 @@ PROJECT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
 
 # Find the most recent .spec.md file
 SPEC_FILE=""
-SPEC_FILE=$(find "${PROJECT_DIR}" -name "*.spec.md" -mtime -14 -type f -print 2>/dev/null | head -1) || true
+SPEC_FILE=$(find "${PROJECT_DIR}" -name "*.spec.md" -type f -print 2>/dev/null | sort -r | head -1) || true
 [[ -z "${SPEC_FILE}" ]] && exit 0
 
 # Extract declared files from "Files to Create/Modify" section

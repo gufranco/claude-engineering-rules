@@ -14,7 +14,7 @@ case "${TOOL}" in
   *) exit 0 ;;
 esac
 
-FILE_PATH=$(echo "${INPUT}" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
+FILE_PATH=$(echo "${INPUT}" | jq -r '.input.file_path // empty' 2>/dev/null)
 [[ -z "${FILE_PATH}" ]] && exit 0
 
 EXT="${FILE_PATH##*.}"

@@ -35,10 +35,11 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S' || true)
 echo "[${TIMESTAMP}] ${ACTION}: ${FILE_PATH}" >> "${LOG}"
 
 # Rotate: keep last 1000 lines when log exceeds 2000
+# Uses atomic rename via temp file on the same filesystem
 if [[ -f "${LOG}" ]]; then
   LINE_COUNT=$(wc -l < "${LOG}" || true)
   if [[ "${LINE_COUNT}" -gt 2000 ]]; then
-    tail -n 1000 "${LOG}" > "${LOG}.tmp" && mv "${LOG}.tmp" "${LOG}"
+    TMPLOG=$(mktemp "${LOG}.XXXXXX") && tail -n 1000 "${LOG}" > "${TMPLOG}" && mv "${TMPLOG}" "${LOG}" || rm -f "${TMPLOG}"
   fi
 fi
 

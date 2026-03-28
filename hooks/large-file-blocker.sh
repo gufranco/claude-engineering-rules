@@ -34,7 +34,7 @@ while IFS= read -r file; do
 
     SIZE_KB=$(du -k "${file}" 2>/dev/null | cut -f1) || true
     if [[ -n "${SIZE_KB}" ]] && [[ "${SIZE_KB}" -gt "${MAX_SIZE_KB}" ]]; then
-        SIZE_MB=$(echo "scale=1; ${SIZE_KB} / 1024" | bc 2>/dev/null || echo "${SIZE_KB}KB")
+        SIZE_MB=$(awk "BEGIN {printf \"%.1f\", ${SIZE_KB} / 1024}" 2>/dev/null || echo "${SIZE_KB}KB")
         LARGE_FILES="${LARGE_FILES}\n  ${file} (${SIZE_MB} MB)"
     fi
 done < <(git diff --cached --name-only 2>/dev/null || true)

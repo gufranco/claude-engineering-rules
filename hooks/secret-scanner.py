@@ -66,6 +66,9 @@ SECRET_PATTERNS = [
     ("Generic Secret", r"(?i)(?:secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{8,}['\"]"),
     ("Database URL", r"(?:postgres|mysql|mongodb|redis)://[^\s'\"]+:[^\s'\"]+@"),
     ("Connection String", r"(?i)(?:server|data source)=[^;]+;.*(?:password|pwd)=[^;]+"),
+    ("Bearer Token", r"(?i)(?:authorization|bearer)\s*[:=]\s*bearer\s+[A-Za-z0-9_\-\.]+"),
+    ("API Key Header", r"(?i)x-api-key\s*[:=]\s*[A-Za-z0-9_\-]{16,}"),
+    ("Basic Auth", r"(?i)authorization\s*[:=]\s*basic\s+[A-Za-z0-9+/=]{10,}"),
 ]
 
 
