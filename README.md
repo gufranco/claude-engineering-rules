@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 15 rules, 17 on-demand standards, 12 skills with subcommands, 40 MCP servers, and 11 runtime hooks for Claude Code.</strong>
+<strong>Ship code that passes review the first time. 15 rules, 24 on-demand standards, 12 skills, 40 MCP servers, and 11 runtime hooks that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**15** rules · **17** standards · **12** skills · **40** MCP servers · **11** hooks · **506** checklist items · **49** categories · **~12,000** lines of engineering standards
+**15** rules · **24** standards · **12** skills · **40** MCP servers · **11** hooks · **540** checklist items · **50** categories · **~10,500** lines of engineering standards
 
 <table>
 <tr>
@@ -47,6 +47,22 @@ Mandatory verification gates, pre-flight checks, response self-check for analyti
 
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top">
+
+### 540-Item Review Checklist
+
+Single unified checklist spanning 50 categories, from correctness and security to distributed systems and cloud architecture. Shared by completion gates, `/review`, and `/assessment`.
+
+</td>
+<td width="50%" valign="top">
+
+### Clean Room Verification
+
+30+ checks across seven sections prevent plagiarism when using external projects as reference. Structural, naming, logic, license, and documentation independence gates with similarity thresholds.
+
+</td>
+</tr>
 </table>
 
 ## The Problem
@@ -59,21 +75,22 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 
 | Capability | Vanilla Claude Code | With This Config |
 |:-----------|:-------------------:|:----------------:|
-| Conventional commits enforced | ❌ | ✅ |
-| Secret scanning before commit | ❌ | ✅ |
-| Dangerous command blocking | ❌ | ✅ |
-| Multi-account token safety | ❌ | ✅ |
-| Integration-first test policy | ❌ | ✅ |
-| Pre-flight verification gates | ❌ | ✅ |
-| On-demand domain standards | ❌ | ✅ |
-| 12 workflow skills (25 absorbed) | ❌ | ✅ |
-| 40 MCP server integrations | ❌ | ✅ |
-| Prompt injection guards | ❌ | ✅ |
-| 506-item review checklist | ❌ | ✅ |
+| Conventional commits enforced | - | Yes |
+| Secret scanning before commit | - | Yes |
+| Dangerous command blocking | - | Yes |
+| Multi-account token safety | - | Yes |
+| Integration-first test policy | - | Yes |
+| Pre-flight verification gates | - | Yes |
+| On-demand domain standards | - | Yes |
+| 12 workflow skills (25 absorbed) | - | Yes |
+| 40 MCP server integrations | - | Yes |
+| Prompt injection guards | - | Yes |
+| 540-item review checklist (50 categories) | - | Yes |
+| Clean room plagiarism prevention | - | Yes |
 
 ## How It Works
 
-This repository configures Claude Code's global behavior through `~/.claude/`. It uses three mechanisms working together:
+This repository configures Claude Code's global behavior through `~/.claude/`. Three mechanisms work together:
 
 ```mermaid
 graph LR
@@ -123,17 +140,17 @@ These 15 rules are loaded into every conversation automatically.
 | `debugging` | Four-phase process: reproduce, isolate, root cause, fix+verify. Multi-component tracing |
 | `verification` | Evidence-based completion gates, response self-check for analytical output, no claim without fresh evidence |
 | `writing-precision` | Precision gate for all text output: concrete over abstract, examples over vague instructions, self-test before finalizing |
-| `pre-flight` | Duplicate check, architecture fit, interface verification, root cause confirmation, scope agreement |
+| `pre-flight` | Duplicate check, market research, architecture fit, interface verification, root cause confirmation, scope agreement |
 | `documentation` | Preserve existing valid information when skills modify documentation files. Content migration verification for file consolidations |
 | `language` | Response language enforcement. All output in English regardless of user input language |
 | `github-accounts` | Multi-account safety for `gh` CLI: require inline `GH_TOKEN`, block `gh auth switch`, account mapping by remote URL |
 | `gitlab-accounts` | Multi-account safety for `glab` CLI: require inline `GITLAB_TOKEN` and `GITLAB_HOST`, block `glab auth login` |
 | `agent-usage` | Agent and parallelism budget: inline-first policy, two-agent concurrency cap, cascade prevention, context injection rules, result size management |
-| `clean-room` | Clean room implementation process: structural/naming/logic independence verification, license compliance, similarity thresholds, seven-section checklist to prevent plagiarism and legal exposure |
+| `clean-room` | Clean room implementation: 30+ verification checks across structural, naming, logic, config, license, documentation, and output independence. Similarity thresholds, safe/unsafe boundaries, per-source process |
 
 ### Standards (loaded on demand)
 
-These 17 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 24 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
@@ -147,13 +164,20 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 | `api-design` | REST conventions, error format, pagination, versioning, deprecation lifecycle, rate limiting, bulk operations |
 | `borrow-restore` | Safe global state management for CLI tools: Docker contexts, gh accounts, terraform workspaces |
 | `caching` | Cache-aside/write-through strategies, invalidation, thundering herd prevention, cache warming, sizing |
+| `cost-optimization` | Cost allocation tagging, compute right-sizing, storage lifecycle policies, network cost reduction, database cost tuning, budget alerts, FinOps practices |
 | `identifiers` | Identifier type selection: UUID v1-v8, ULID, TSID, Snowflake, TypeID, CUID2, NanoID, xid, Sqids. Decision flowchart, use-case matrix, DB storage, index performance |
 | `twelve-factor` | Cloud-native app design: stateless processes, config in env, backing services, disposability, admin processes |
 | `hexagonal-architecture` | Ports and adapters: port interfaces, adapter implementations, dependency direction, per-layer testing |
 | `railway-oriented-programming` | Result type composition: map, flatMap, error accumulation, neverthrow, Effect, boundary conversion |
 | `ddd-tactical-patterns` | Entities, value objects, aggregates, domain events, repositories, domain services, ubiquitous language |
 | `state-machines` | Type state pattern, runtime state machines, transition tables, guard conditions, XState, testing strategies |
+| `accessibility-testing` | WCAG AA/AAA compliance, axe-core integration, Lighthouse CI, Pa11y, manual testing checklist, ARIA patterns, color contrast verification |
 | `algorithmic-complexity` | Data structure selection guide, sorting algorithm comparison, complexity analysis rules, anti-pattern catalog, space complexity |
+| `multi-tenancy` | Tenant isolation strategies, noisy neighbor prevention, data leakage prevention with RLS, tenant-scoped observability, tenant lifecycle, cross-tenant testing, per-tenant configuration |
+| `graphql-api-design` | Schema design, query complexity limits, N+1 prevention with DataLoader, error unions, field-level auth, federation, subscriptions, persisted queries, schema evolution |
+| `websocket-realtime` | WebSocket and SSE lifecycle, reconnection with backoff, message envelopes, sequence ordering, deduplication, backpressure, horizontal scaling with pub/sub, security hardening |
+| `message-queues` | Queue topology patterns, message envelopes with schema versioning, consumer groups, ordering guarantees, DLQ and poison message handling, exactly-once processing, monitoring and lag alerts, platform comparison |
+| `feature-flags` | Flag types and lifecycle, evaluation performance with local cache, rollout strategies with automatic rollback, flag cleanup and expiration, testing both states, boundary evaluation pattern, observability, platform comparison |
 
 ### Skills
 
@@ -162,13 +186,13 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 | Skill | Subcommands | What it does |
 |:------|:------------|:-------------|
 | `/ship` | `commit`, `pr`, `release`, `checks`, `worktree` | Full delivery pipeline: semantic commits, PRs with CI monitoring, tagged releases, pipeline diagnosis, parallel worktrees |
-| `/review` | `code` (default), `qa`, `design` | Three-pass code review with 49-category checklist, 30-rule QA analysis with PICT and coverage delta, visual/UX/accessibility audit |
+| `/review` | `code` (default), `qa`, `design` | Three-pass code review with 50-category checklist, 30-rule QA analysis with PICT and coverage delta, visual/UX/accessibility audit |
 | `/audit` | `deps`, `secrets`, `docker`, `code`, `scan`, `image` | Multi-layer security audit and dependency management with trivy/snyk/gitleaks |
 | `/test` | `perf`, `lint`, `scan`, `ci`, `stubs` | Test execution, load testing (k6/wrk/hey/ab), coverage, linting, security scanning, test stub generation |
 | `/plan` | `adr`, `scaffold` | Structured planning with spec folders, Architecture Decision Records, boilerplate generation from project patterns |
 | `/infra` | `docker`, `terraform`, `db` | Container orchestration (Colima-aware), IaC workflows with safety gates, database migrations with ORM detection |
 | `/retro` | `discover`, `--curate`, `--promote` | Session retrospective, codebase pattern extraction, memory curation, rule graduation (self-improving agent lifecycle) |
-| `/assessment` | -- | Architecture completeness audit against the full 49-category checklist |
+| `/assessment` | -- | Architecture completeness audit against the full 50-category checklist |
 | `/morning` | -- | Start-of-day dashboard: open PRs, pending reviews, notifications, standup prep |
 | `/incident` | -- | Incident context gathering and blameless postmortem generation |
 | `/readme` | -- | README generation by analyzing the actual codebase |
@@ -205,7 +229,7 @@ These 17 standards live in `standards/` and are loaded only when the task matche
 
 One unified checklist covers all layers of quality:
 
-- **Unified checklist** (`checklists/checklist.md`): 506 items across 49 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture.
+- **Unified checklist** (`checklists/checklist.md`): 540 items across 50 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification when external sources were consulted.
 
 ## Workflows
 
@@ -219,7 +243,7 @@ Step-by-step guides for common engineering tasks. Each workflow references the s
 
 3. **Implement.** Follow the spec's task breakdown. Work through each step, running `/test` after each meaningful change to catch regressions early.
 
-4. **Test.** Run `/test --coverage` to verify coverage meets the 80% threshold for new code. Add missing tests for edge cases and error paths.
+4. **Test.** Run `/test --coverage` to verify coverage meets the 95% threshold for new and changed code. Add missing tests for edge cases and error paths.
 
 5. **QA.** Run `/review qa` to analyze the feature from a QA perspective. This maps all behavior paths, cross-references existing tests, and reports coverage gaps. Use `--fix` to auto-generate missing tests.
 
@@ -265,7 +289,7 @@ Use `/test` to run specific test files during isolation. Use `/ship checks` if t
 
 3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
 
-The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 506-item checklist across 49 categories covering both code quality and engineering architecture.
+The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 540-item checklist across 50 categories covering both code quality and engineering architecture.
 
 ### Architecture Planning
 
@@ -367,10 +391,11 @@ The hooks, rules, and skills activate automatically.
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
-    checklist.md         # 506-item unified checklist across 49 categories (shared by completion gates, /review, and /assessment)
+    checklist.md         # 540-item unified checklist across 50 categories
   rules/                 # Tier 1: always loaded into every conversation (15 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
     agent-usage.md       # Agent parallelism budget and cascade prevention
+    clean-room.md        # Clean room implementation and plagiarism prevention
     code-review.md       # PR authoring, review style, tech debt
     code-style.md        # DRY/SOLID, immutability, FP patterns, TypeScript conventions
     debugging.md         # Four-phase debugging process
@@ -384,38 +409,43 @@ The hooks, rules, and skills activate automatically.
     testing.md           # Integration-first, strict mocks, fake data, snapshots
     verification.md      # Evidence-based completion gates
     writing-precision.md # Precision gate for all text output
-    clean-room.md        # Clean room implementation and plagiarism prevention
   standards/             # Tier 2: loaded on demand when task matches triggers
+    accessibility-testing.md   # WCAG compliance, axe-core, Lighthouse, ARIA, contrast
+    algorithmic-complexity.md  # Data structures, sorting, anti-patterns, space complexity
     api-design.md        # REST conventions, pagination, versioning
     borrow-restore.md    # CLI context management pattern
     caching.md           # Strategies, invalidation, thundering herd
+    cost-optimization.md # Cost allocation, right-sizing, lifecycle policies, FinOps
     database.md          # Schema, queries, migrations, locking
+    ddd-tactical-patterns.md   # DDD tactical patterns
     distributed-systems.md # Consistency, saga, outbox, locking, events
     frontend.md          # Typography, a11y, responsive, components
+    hexagonal-architecture.md  # Ports and adapters pattern
     identifiers.md       # Identifier type selection guide and decision framework
     infrastructure.md    # IaC, networking, containers, CI/CD, cloud
     llm-docs.md          # LLM-optimized doc URLs for 64 technologies
+    multi-tenancy.md     # Tenant isolation, noisy neighbor, data leakage, lifecycle
     observability.md     # Logging, metrics, tracing, SLOs, incidents
-    resilience.md        # Retries, idempotency, DLQs, back pressure
-    twelve-factor.md     # Cloud-native app design across all 12 factors
-    hexagonal-architecture.md  # Ports and adapters pattern
     railway-oriented-programming.md  # Result type composition
-    ddd-tactical-patterns.md   # DDD tactical patterns
+    resilience.md        # Retries, idempotency, DLQs, back pressure
     state-machines.md    # Type state and runtime state machines
-    algorithmic-complexity.md  # Data structures, sorting, anti-patterns, space complexity
+    twelve-factor.md     # Cloud-native app design across all 12 factors
+    graphql-api-design.md # GraphQL schema, complexity, DataLoader, federation
+    websocket-realtime.md # WebSocket/SSE lifecycle, reconnection, ordering, scaling
+    feature-flags.md     # Flag types, evaluation, rollout, cleanup, testing, observability
   skills/                # 12 skills (consolidated from 25)
-    ship/                # Delivery: commit, pr, release, checks, worktree
-    review/              # Code review, QA analysis, design audit (includes reviewer-prompt.md)
-    audit/               # Security audit and dependency management
-    test/                # Test execution, load testing, coverage, linting
-    plan/                # Planning, ADRs, scaffolding
-    infra/               # Docker, Terraform, database operations
-    retro/               # Session retrospective and codebase discovery
     assessment/          # Architecture completeness audit
-    morning/             # Start-of-day dashboard
+    audit/               # Security audit and dependency management
     incident/            # Incident response and postmortems
-    readme/              # README generation
+    infra/               # Docker, Terraform, database operations
+    morning/             # Start-of-day dashboard
     palette/             # OKLCH color palette generation
+    plan/                # Planning, ADRs, scaffolding
+    readme/              # README generation
+    retro/               # Session retrospective and codebase discovery
+    review/              # Code review, QA analysis, design audit
+    ship/                # Delivery: commit, pr, release, checks, worktree
+    test/                # Test execution, load testing, coverage, linting
   hooks/
     change-tracker.sh    # File modification logging
     conventional-commits.sh  # Commit message validation
@@ -431,7 +461,7 @@ The hooks, rules, and skills activate automatically.
   scripts/
     context-monitor.py   # Statusline: context usage, git, duration, cost
   tests/
-    test-hooks.sh        # Hook smoke tests (32 cases)
+    test-hooks.sh        # Hook smoke tests (40 cases)
     fixtures/            # JSON fixtures for hook testing
   .github/
     workflows/
