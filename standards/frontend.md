@@ -61,7 +61,22 @@ function cr(a,b){const x=Math.max(a,b),y=Math.min(a,b);return(x+.05)/(y+.05)}
 
 ## Responsive Design
 
-Mobile-first. Always. Write the mobile layout first, then add breakpoints for larger screens.
+Mobile-first. Always. Write the mobile layout first, then add breakpoints for larger screens. Every page and component must be designed, built, and tested starting from the smallest screen.
+
+### Device Validation (mandatory)
+
+Every UI change must be verified on the smallest screens available on both platforms before shipping. These are the minimum validation targets:
+
+| Platform | Device | Viewport | Density |
+|:---------|:-------|:---------|:--------|
+| Android | Galaxy S24 | 360x780 | 3x |
+| Android | Galaxy A14 (budget) | 360x800 | 2x |
+| iOS | iPhone SE (3rd gen) | 375x667 | 2x |
+| iOS | iPhone 16 Pro | 393x852 | 3x |
+
+Validation means: no horizontal scrolling, no overlapping elements, no truncated text that loses meaning, all touch targets at least 44x44px, all interactive elements reachable with one thumb. Use browser DevTools device mode, Playwright's device emulation, or real devices. DevTools is the minimum; real device testing is required for production releases.
+
+If a layout does not work at 360px wide, it does not ship. This is blocking, not advisory.
 
 ### Breakpoints
 
@@ -122,6 +137,46 @@ Use the right element, not a styled div.
 - Wrap all animations in `@media (prefers-reduced-motion: no-preference)`
 - Provide CSS fallback with `prefers-reduced-motion: reduce` that shows content without animation
 - Never animate opacity from 0 in a way that hides content from users who disable motion. Use opacity: 1 and transform: none as the reduced-motion state
+
+## Component Library
+
+Use a headless or pre-built component library for all interactive UI elements. Never build custom implementations of components that the library already provides. Never use native HTML elements for complex interactions when a library component exists.
+
+### Preferred stack
+
+| Layer | Library | Why |
+|:------|:--------|:----|
+| Primitives | Radix UI | Headless, accessible, composable. Handles ARIA, keyboard navigation, focus management |
+| Styled components | shadcn/ui | Radix + Tailwind. Copy-paste ownership, full control, consistent design tokens |
+| Form handling | React Hook Form + Zod | Uncontrolled by default (performance), schema validation, typed errors |
+| Data tables | TanStack Table | Headless, virtualized, sortable, filterable, framework-agnostic |
+| Date picker | shadcn/ui date-picker (uses react-day-picker) | Accessible, locale-aware, range support |
+
+### Native elements to avoid
+
+| Instead of | Use | Why |
+|:-----------|:----|:----|
+| `<select>` | `Select` from shadcn/ui | Native select cannot be styled, has inconsistent behavior across browsers and mobile OS versions, and cannot support search, multi-select, or grouped options |
+| `<input type="date">` | `DatePicker` from shadcn/ui | Native date input renders differently on every browser, cannot be styled, and has poor mobile UX on some Android devices |
+| `<dialog>` | `Dialog` or `AlertDialog` from shadcn/ui | Native dialog has limited animation support, inconsistent backdrop behavior, and no built-in focus trap on older browsers |
+| `window.confirm()` | `AlertDialog` from shadcn/ui | Blocks the main thread, cannot be styled, and shows different text on different browsers |
+| `<input type="file">` | `Dropzone` component with drag-and-drop | Native file input cannot be styled and offers no drag-and-drop, preview, or validation UX |
+| `<details>` / `<summary>` | `Accordion` from shadcn/ui | Native implementation cannot animate open/close and has limited ARIA support |
+| `<input type="color">` | Custom color picker or OKLCH palette component | Native color picker varies wildly across browsers and does not support OKLCH or design tokens |
+
+### When native is acceptable
+
+- `<button>`: native button is correct for simple actions. Use the `Button` component from shadcn/ui for styled buttons, but `<button>` with custom styles is fine for icon buttons or minimal UI
+- `<input type="text">`, `<textarea>`: native text inputs are acceptable when paired with the `Input` component from shadcn/ui for consistent styling. The native element is the base; the library wraps it
+- `<a>`: native links are correct. Use `Link` from Next.js for client-side navigation
+- `<form>`: native form element is the correct semantic choice. The library handles field rendering, not the form itself
+
+### Rules
+
+- Every interactive component must handle keyboard navigation (Tab, Enter, Escape, arrow keys) without custom code. This is why library components exist: they implement the WAI-ARIA patterns
+- Never reimplement a component that the library provides. The library has been tested across browsers, screen readers, and devices. A custom implementation has not
+- When the project uses shadcn/ui, use its components for all UI elements before considering alternatives. Only reach for a different library when shadcn/ui genuinely does not cover the use case
+- When building a new project, install shadcn/ui as the first UI dependency. Configure it before writing any components
 
 ## Component Patterns
 
