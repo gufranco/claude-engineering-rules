@@ -36,7 +36,7 @@ BASENAME=$(basename "${FILE_PATH}")
 
 # Block .env files (except .env.example and .env.template)
 case "${BASENAME}" in
-    .env|.env.local|.env.production|.env.staging|.env.development)
+    .env|.env.local|.env.production|.env.staging|.env.development|.env.testing|.env.ci|.env.docker)
         echo "BLOCKED: Cannot modify ${BASENAME}. Environment files may contain secrets."
         echo "  File: ${FILE_PATH}"
         echo ""
