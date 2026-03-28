@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 49-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility audit.
+description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 50-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility audit.
 ---
 
 Unified review skill covering code quality, QA analysis, and visual design audit. Replaces standalone `/review`, `/qa`, and `/design-review` skills.
@@ -22,7 +22,7 @@ If no subcommand is given, default to `code`.
 Review a pull request, merge request, or local branch changes with rigorous, detail-oriented analysis. Every line of the diff is scrutinized for correctness, security, performance, maintainability, and adherence to best practices.
 
 Use two references:
-1. `../../checklists/checklist.md` for all 49 quality categories.
+1. `../../checklists/checklist.md` for all 50 quality categories.
 2. `reviewer-prompt.md` in this directory for comment format and examples.
 
 ### Arguments
@@ -52,14 +52,15 @@ When `--backend` or `--frontend` is passed, classify each file:
 4. **Apply scope filter** if `--backend` or `--frontend` passed.
 5. **Read context**: PR description, commit messages, every changed file in full, imported modules, existing review comments, verify PR description matches diff.
 6. **Three explicit passes**:
-   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md` (1-14, 17, 18-49).
+   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md` (1-14, 17, 18-50).
    - **Pass 2: Cross-file consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency.
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
-7. **Run local verification**: test, lint, build.
-8. **Check branch freshness, CI, test evidence, PR size** (parallel). Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
-9. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes.
-10. **Next steps**:
-    - **Own PR / local**: offer to fix issues. Convergence loop (max 5 iterations): fix, re-verify, re-audit.
+7. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply `../../checklists/checklist.md` category 8. If coverage is below threshold, flag it as a blocking finding.
+8. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply `../../checklists/checklist.md` category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
+9. **Check branch freshness, CI, test evidence, PR size** (parallel). Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
+10. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes.
+11. **Next steps**:
+    - **Own PR / local**: offer to fix issues. Convergence loop (max 5 iterations): fix, re-verify, re-audit. If 5 iterations are exhausted with findings still open, stop, list the remaining issues, and inform the author. Five iterations is enough for any reasonable convergence; remaining issues likely need a design change, not another fix pass.
     - **Someone else's PR**: offer to post inline comments. `--post` posts without asking.
 
 ### Review Standards
@@ -114,7 +115,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 | Partially covered | N |
 | Missing coverage | N |
 | Untestable | N |
-| Coverage ratio | N% |
+| Coverage ratio | N% (PASS if >= 95%, FAIL otherwise) |
 
 ### Critical Findings
 <severity: critical or high>
@@ -130,7 +131,8 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 <prioritized list, grouped by severity>
 ```
 
-10. **Fix mode** (if `--fix`): present report first, wait for confirmation. Generate tests following `rules/testing.md`: AAA pattern, real database, faker for test data. Run test suite after writing.
+10. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths (auth, data writes, error handling) is a blocking finding.
+11. **Fix mode** (if `--fix`): present report first, wait for confirmation. Generate tests following `rules/testing.md`: AAA pattern, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
 
 ### 30 QA Rules Reference
 

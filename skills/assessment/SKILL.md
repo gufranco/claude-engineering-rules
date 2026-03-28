@@ -35,7 +35,7 @@ This skill accepts optional arguments after `/assessment`:
 1. **Understand the requirements.** Before assessing the implementation, understand what was asked.
    - Scan the **entire project** for requirement and context documents, not just the root or `docs/`. Search all directories for files named README, INSTRUCTIONS, BRIEF, ASSIGNMENT, REQUIREMENTS, CHALLENGE, TASK, PROMPT, PROBLEM, SPEC, DESIGN, ARCHITECTURE, ADR, or similar, in any format: `.md`, `.txt`, `.pdf`, `.docx`, `.html`. Also check for hidden files like `.assignment`, `.brief`, or dotfiles that might contain instructions.
    - Read every document found. Extract: the problem statement, explicit requirements, evaluation criteria, constraints, time limits, and bonus/stretch goals if mentioned.
-   - Ask the user: **"Do you have additional instructions from email, a job posting, or other external sources that I should consider? If this is for a specific company, what is the company name?"** Wait for a response before proceeding. If the user provides text, screenshots, or URLs, incorporate that as additional requirements context.
+   - Ask the user: **"Do you have additional instructions from email, a job posting, or other external sources that I should consider? If this is for a specific company, what is the company name? Were any external projects, codebases, or articles used as reference during implementation?"** Wait for a response before proceeding. If the user provides text, screenshots, or URLs, incorporate that as additional requirements context. If external sources were consulted, record them for category 50 (Clean Room) verification in step 7.
    - **Company research.** If a company name is provided, search for their engineering blog, tech blog, GitHub organization, open source projects, tech talks, and **Glassdoor interview reviews**. Glassdoor is especially valuable: candidates often share the exact take-home problem, evaluation criteria, interview questions, and what the company looks for. Search for `"<company name>" interview software engineer site:glassdoor.com` and similar queries. Also understand what technologies they use, what patterns they value, and what their engineering culture looks like. A company that blogs about event sourcing will notice if you didn't use it. A company with strict TypeScript repos will judge a loosely-typed submission. Use this context to prioritize which patterns matter most for the assessment.
    - Record all requirements, but treat them as a **floor, not a ceiling**. The explicit requirements define the minimum. The assessment should go well beyond them, identifying patterns and improvements that would make the implementation stand out. In interview contexts, what separates a passing submission from an impressive one is the engineering depth that was not explicitly asked for.
 
@@ -74,11 +74,11 @@ This skill accepts optional arguments after `/assessment`:
    - **Dependency audit and update**: run the package manager's audit command (`pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc.). Record any known vulnerabilities by severity. Then check for outdated dependencies (`pnpm outdated`, `npm outdated`, `pip list --outdated`, etc.). **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest` (or equivalent) and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
    - **Output verification**: if the requirements include example inputs, expected outputs, or acceptance criteria, actually run the code with those inputs and verify the results match. Reading the code and believing it works is not proof.
 
-   Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Low test coverage (below 80%) is MEDIUM.
+   Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Low test coverage (below 95%) is MEDIUM.
 
    Record all results for inclusion in the assessment output.
 
-5. **Hunt for planted defects.** Some projects, especially interview take-homes and coding challenges, contain **intentional bugs, anti-patterns, or subtle correctness issues** designed to test whether the candidate can spot and fix them. Read the code with suspicion. For each file, look for: logic bugs, data bugs, validation gaps, concurrency bugs, security flaws, anti-patterns, configuration issues, dependency traps, test gaps, mock abuse, and structural violations. The specific criteria for each category are defined in `../../checklists/checklist.md` categories 1-9, 17, and 18-49. Use the checklist as the hunting guide, but read with the assumption that defects may be intentional. Pay special attention to tests that mock internal infrastructure like databases, Redis, or queues instead of using real connections: this is a common defect that makes tests pass while the actual code is broken.
+5. **Hunt for planted defects.** Some projects, especially interview take-homes and coding challenges, contain **intentional bugs, anti-patterns, or subtle correctness issues** designed to test whether the candidate can spot and fix them. Read the code with suspicion. For each file, look for: logic bugs, data bugs, validation gaps, concurrency bugs, security flaws, anti-patterns, configuration issues, dependency traps, test gaps, mock abuse, and structural violations. The specific criteria for each category are defined in `../../checklists/checklist.md` categories 1-9, 17, 18-49, and 50. Use the checklist as the hunting guide, but read with the assumption that defects may be intentional. Pay special attention to tests that mock internal infrastructure like databases, Redis, or queues instead of using real connections: this is a common defect that makes tests pass while the actual code is broken.
 
    If any defect is found, classify it with the same severity/effort scale used for missing patterns. Planted bugs that affect correctness or security are always CRITICAL.
 
@@ -108,9 +108,10 @@ This skill accepts optional arguments after `/assessment`:
    - `api`: 18, 34
    - `data`: 19, 21, 22, 30, 31, 39
    - `ops`: 32, 36, 37, 40, 42, 44
-   - `quality`: 41
+   - `quality`: 41, 50
    - `tenancy`: 43
    - `infra`: 45, 46, 47, 48, 49
+   - `clean-room`: 50
 
    **Superset detection.** If the codebase uses a language that has a widely adopted superset offering stronger type safety or tooling, ask the user whether they want to convert. This is especially valuable in interview contexts where using the superset demonstrates engineering rigor.
 
@@ -140,7 +141,7 @@ This skill accepts optional arguments after `/assessment`:
 
    This logic is language-agnostic. The principle is: every dependency must have full type support in the target superset. If it doesn't, either find types, find an alternative that has types, or write the types yourself.
 
-7. **Audit against each applicable category.** For every category that applies based on step 6, evaluate the implementation against `../../checklists/checklist.md`: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure. Cross-reference with the requirements gathered in step 1. Include any defects found in step 5 and verification failures from step 4 as findings under the most relevant category.
+7. **Audit against each applicable category.** For every category that applies based on step 6, evaluate the implementation against `../../checklists/checklist.md`: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, and category 50 for clean room verification. Cross-reference with the requirements gathered in step 1. Include any defects found in step 5 and verification failures from step 4 as findings under the most relevant category.
 
    After auditing each file individually, perform a **cross-file consistency check**:
    - **Design contradictions:** Does one module assume graceful degradation while another enforces a hard dependency? Does one file treat a field as optional while another treats it as required?
@@ -149,7 +150,7 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 49 checklist categories, also assess:
+   In addition to the 50 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
@@ -276,7 +277,7 @@ This skill accepts optional arguments after `/assessment`:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate `../../checklists/checklist.md`? Run all 49 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
+       - Did any fix violate `../../checklists/checklist.md`? Run all 50 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
        - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.dotfiles/claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
@@ -562,7 +563,7 @@ This skill accepts optional arguments after `/assessment`:
 
 ## Assessment Checklist Categories
 
-The full 49-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers.
+The full 50-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted during implementation.
 
 ## Output Format
 
@@ -594,7 +595,7 @@ The full 49-category checklist lives in `../../checklists/checklist.md` (shared 
 | Output verification | PASS / FAIL / N/A | [Expected vs actual results] |
 
 ## Classification
-[System traits detected and which of the 32 categories apply]
+[System traits detected and which applicable categories from the 50-category checklist apply]
 
 ## Defects Found
 [List any bugs, anti-patterns, or correctness issues found in the existing code]

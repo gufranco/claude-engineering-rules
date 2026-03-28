@@ -159,4 +159,4 @@ This skill accepts arguments after `/palette`:
 6. **Integration instructions.** Tell the user:
    - Where to paste the CSS (globals.css, inside the `:root` and `.dark` blocks).
    - Remind them to update the inline dark mode script in layout.tsx if the localStorage key or class name differs.
-   - Suggest running `/design-review --focus contrast` after integration to verify in context.
+   - Suggest running `/review design --focus contrast` after integration to verify in context.
