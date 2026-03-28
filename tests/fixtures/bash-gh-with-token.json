@@ -1,0 +1,1 @@
+{"tool_name": "Bash", "input": {"command": "GH_TOKEN=$(gh auth token --user gufranco) gh pr list"}}
