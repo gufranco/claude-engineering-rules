@@ -107,14 +107,17 @@ A function either changes state (command, returns void) or returns data (query, 
 
 ## Immutability
 
-Immutable by default, mutable by exception. Every value starts as readonly. Mutability requires an explicit decision, not the other way around.
+Immutable by default, mutable by exception. Every value starts as readonly. Mutability requires an explicit decision, not the other way around. This rule is absolute. Code review must reject any `.push()`, `.splice()`, `.sort()`, or `let` that could be `const`.
 
 ### Behavioral Rules
 
 - Never mutate function arguments. Copy, modify the copy, return it
-- `const` by default. `let` only when reassignment is needed, never `var`
+- `const` by default. `let` only when reassignment is genuinely needed (loop counters, accumulators that cannot be expressed functionally). Never `var`
 - Spread or `structuredClone` over in-place mutation: `{ ...obj, field: newValue }` for shallow updates, `structuredClone(obj)` when you need a true deep copy without structural sharing
-- Arrays: `[...arr, item]`, `.filter()`, `.map()` over `.push()`, `.splice()`, `.sort()` on the original. Prefer ES2023 non-mutating methods when available: `.toSorted()`, `.toReversed()`, `.toSpliced()`, `.with(index, value)`
+- Arrays: `[...arr, item]`, `.filter()`, `.map()`, `reduce()` over `.push()`, `.splice()`, `.sort()` on the original. Prefer ES2023 non-mutating methods when available: `.toSorted()`, `.toReversed()`, `.toSpliced()`, `.with(index, value)`
+- **`.push()` is banned.** Use spread `[...arr, item]` or `Array.from()`. The only exception is `router.push()` from Next.js/framework navigation, which is not an array mutation
+- **`.sort()` is banned.** Use `.toSorted()`. If the target does not support ES2023, spread first: `[...arr].sort()`
+- **`let` that could be `const`** is a code review failure. Use ternary, lookup maps, or `??` to avoid `let` with conditional assignment
 - State transitions produce new state, never mutate the previous one
 - Derive values with selectors or computed properties. Never cache derived values as mutable fields
 - Framework-internal mutation like Immer or MobX stays at the framework boundary. Everything else treats state as read-only
@@ -292,6 +295,37 @@ Before removing or renaming any resource, verify all consumers. A resource is an
 | Package dependency | All imports from that package across `src/` and `tests/` |
 
 A removal without a consumer search is a latent runtime error.
+
+## Date and Time Handling
+
+Use a date library for all date operations. Never use raw `Date` methods for formatting, parsing, comparison, or arithmetic.
+
+| Raw Date pattern | Preferred replacement |
+|-----------------|----------------------|
+| `new Date().getFullYear()` | `getYear(new Date())` from date-fns |
+| `date.toISOString()` | `formatISO(date)` from date-fns |
+| `new Date(isoString)` | `parseISO(isoString)` from date-fns |
+| `dateA < dateB` | `isBefore(dateA, dateB)` from date-fns |
+| `new Date(d.setMonth(...))` | `subMonths(d, n)` from date-fns |
+| `date.toLocaleDateString()` | `format(date, pattern)` from date-fns |
+
+- `new Date()` for creating a timestamp to pass to a database ORM is acceptable since the ORM needs a Date object
+- For TypeScript projects, `date-fns` is the preferred library. For other languages, use the equivalent standard library
+- All date formatting must respect user locale or configurable format preferences, never hardcode a single format
+
+## Destructive Action Confirmation
+
+Every single-click action that deletes, cancels, or significantly alters a record must show a confirmation dialog before executing. This applies to:
+
+- Delete buttons
+- Status changes (approve, reject, cancel, archive)
+- Toggle switches (activate/deactivate)
+- Revoke actions (API keys, access tokens)
+- Bulk operations
+
+Form submissions where the user deliberately filled fields and clicks "Save" do not need confirmation. The deliberate act of filling the form is the confirmation.
+
+Never use the native browser `confirm()` or `window.confirm()`. Use the framework's dialog component (AlertDialog in shadcn/ui, Modal in other UI libraries).
 
 ## Code Examples
 
