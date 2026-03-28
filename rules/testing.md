@@ -12,7 +12,7 @@ Tests should verify real behavior, not mock behavior.
 
 ## Mocks Policy (STRICT)
 
-**Allowed:** External third-party APIs outside your control, Time/Date, Randomness
+**Allowed:** External third-party APIs outside your control (systems you do not own and cannot run locally), Time/Date, Randomness
 
 **NEVER Mock:**
 - **Database**: connect to a real database. Add it to docker-compose for the test environment. Use `beforeAll()` to seed, `afterAll()` to clean up
@@ -76,7 +76,8 @@ Apply `checklists/checklist.md` category 17. A clean test run means zero failure
 
 ## Coverage
 
-- New code: 80%+ coverage
+- New code: 95%+ coverage
+- Changed files and files directly related to the changes: 95%+ coverage
 - Existing code: do not reduce coverage
 
 ## Test Scenario Planning

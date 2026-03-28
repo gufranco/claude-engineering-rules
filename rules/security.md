@@ -31,7 +31,7 @@ When delegating: separate the auth concern behind an interface so the provider c
 |-------|-------------|
 | In transit | TLS 1.2+ on all external connections. No plaintext HTTP for APIs. Enforce HTTPS redirects |
 | At rest | Encrypt sensitive data in databases and object storage. Use platform-managed keys (AWS KMS, GCP KMS) unless you have a specific reason to manage your own |
-| Application | Hash passwords with bcrypt or argon2. Never use MD5 or SHA for password storage. Use constant-time comparison for secrets |
+| Application | Hash passwords with bcrypt or argon2 (dedicated key derivation functions). Never use standalone MD5, SHA-1, or SHA-256 for password storage: these are fast hashes, not password hashes. Use constant-time comparison for secrets |
 
 ## Data Privacy
 

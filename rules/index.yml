@@ -37,11 +37,11 @@ always_loaded:
 
   security:
     description: Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security
-    triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp]
+    triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls]
 
   testing:
     description: Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot guidelines
-    triggers: [test, testing, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e]
+    triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e]
 
   verification:
     description: Evidence-based completion gates, fresh output required for every claim, no rounding up partial completion
@@ -49,7 +49,7 @@ always_loaded:
 
   writing-precision:
     description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
-    triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description]
+    triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description, code comment, error message]
 
   github-accounts:
     description: Multi-account safety for gh CLI, require inline GH_TOKEN, block gh auth switch, account mapping by remote URL
@@ -84,6 +84,11 @@ on_demand:
     path: standards/caching.md
     description: Cache strategies, invalidation, thundering herd prevention, warming, sizing, eviction policies
     triggers: [cache, redis, memcached, ttl, invalidation, cdn, lru, stale]
+
+  cost-optimization:
+    path: standards/cost-optimization.md
+    description: Cost allocation tagging, compute right-sizing, storage lifecycle policies, network cost reduction, database cost optimization, budget alerts, FinOps practices
+    triggers: [cost, finops, budget, savings plan, reserved instance, spot instance, right-sizing, tagging, cost allocation, cost optimization, lifecycle policy, unused resources]
 
   database:
     path: standards/database.md
@@ -123,7 +128,7 @@ on_demand:
   identifiers:
     path: standards/identifiers.md
     description: Identifier type selection guide covering UUID v1-v8, ULID, TSID, Snowflake, Sonyflake, Randflake, TypeID, CUID2, NanoID, xid, Sqids, and auto-increment. Decision flowchart, use-case matrix, database storage, index performance
-    triggers: [identifier, id, uuid, ulid, tsid, snowflake, sonyflake, cuid, nanoid, typeid, primary key, pk, serial, auto-increment, bigserial, objectid, sqids, hashids, randflake, xid]
+    triggers: [identifier, id, uuid, ulid, tsid, snowflake, sonyflake, cuid, nanoid, typeid, primary key, pk, serial, auto-increment, bigserial, objectid, sqids, hashids, randflake, xid, overflow, partition key, shard key]
 
   twelve-factor:
     path: standards/twelve-factor.md
@@ -133,12 +138,12 @@ on_demand:
   hexagonal-architecture:
     path: standards/hexagonal-architecture.md
     description: Ports and adapters pattern with dependency direction, port interfaces, adapter implementations, and per-layer testing strategy
-    triggers: [hexagonal, ports and adapters, port, adapter, dependency direction, architecture layers, domain isolation]
+    triggers: [hexagonal, ports and adapters, port, adapter, dependency direction, architecture layers, domain isolation, layered architecture]
 
   railway-oriented-programming:
     path: standards/railway-oriented-programming.md
     description: Result type composition with map, flatMap, error accumulation, pipe/flow, neverthrow, Effect, and boundary conversion
-    triggers: [railway, result type, neverthrow, effect, andThen, flatMap, error accumulation, result chaining, functional error]
+    triggers: [railway, result type, neverthrow, effect, andThen, flatMap, error accumulation, result chaining, functional error, typed errors, result monad]
 
   ddd-tactical-patterns:
     path: standards/ddd-tactical-patterns.md
@@ -150,7 +155,37 @@ on_demand:
     description: Type state pattern, runtime state machines, transition tables, guard conditions, XState, and testing strategies for stateful workflows
     triggers: [state machine, state chart, statechart, xstate, transition, workflow, lifecycle, type state, guard condition]
 
+  accessibility-testing:
+    path: standards/accessibility-testing.md
+    description: WCAG AA/AAA compliance, axe-core integration, Lighthouse CI, Pa11y, manual testing checklist, ARIA patterns, focus management, color contrast verification, screen reader testing
+    triggers: [accessibility, a11y, wcag, axe, axe-core, jest-axe, playwright-axe, cypress-axe, lighthouse, pa11y, screen reader, voiceover, nvda, talkback, aria, focus management, contrast, keyboard navigation]
+
   algorithmic-complexity:
     path: standards/algorithmic-complexity.md
     description: Data structure selection guide, sorting algorithm comparison, complexity analysis rules, common anti-patterns with hidden costs, space complexity awareness
-    triggers: [performance, big-o, complexity, algorithm, data structure, sort, hash, heap, tree, map, set, queue, O(n), quadratic, optimization, memory, space complexity, oom]
+    triggers: [performance, big-o, complexity, algorithm, data structure, sort, hash, heap, tree, map, set, queue, O(n), quadratic, optimization, memory, space complexity, oom, memory leak, unbounded growth, scaling issue]
+
+  multi-tenancy:
+    path: standards/multi-tenancy.md
+    description: Tenant isolation strategies, noisy neighbor prevention, data leakage prevention with RLS, tenant-scoped observability, tenant lifecycle, cross-tenant testing, per-tenant configuration
+    triggers: [multi-tenant, tenant, tenancy, tenant_id, isolation, noisy neighbor, rls, row-level security, tenant context, tenant onboarding, tenant offboarding, per-tenant]
+
+  graphql-api-design:
+    path: standards/graphql-api-design.md
+    description: GraphQL schema design, query complexity limits, N+1 prevention with DataLoader, error handling with union types, field-level authorization, federation, subscriptions, persisted queries, schema evolution and deprecation lifecycle
+    triggers: [graphql, schema, resolver, mutation, subscription, dataloader, federation, supergraph, subgraph, apollo, relay, connection, edges, persisted query, query complexity, introspection]
+
+  websocket-realtime:
+    path: standards/websocket-realtime.md
+    description: WebSocket and SSE lifecycle, reconnection with backoff, message envelopes, sequence ordering, deduplication, backpressure, horizontal scaling with pub/sub, security hardening
+    triggers: [websocket, ws, sse, server-sent events, real-time, realtime, socket, pub/sub, heartbeat, ping, pong, reconnect, bidirectional]
+
+  feature-flags:
+    path: standards/feature-flags.md
+    description: Flag types and lifecycle, evaluation performance with local cache, rollout strategies with automatic rollback, flag cleanup and expiration, testing both states, boundary evaluation pattern, observability, platform comparison
+    triggers: [feature flag, feature toggle, flag, toggle, rollout, canary, a/b test, experiment, kill switch, launchdarkly, unleash, flagsmith, growthbook, percentage rollout, flag cleanup]
+
+  message-queues:
+    path: standards/message-queues.md
+    description: Topology patterns, message envelope format, consumer patterns, ordering guarantees, DLQ and error handling, backpressure, exactly-once processing, monitoring, testing, platform comparison
+    triggers: [queue, message queue, broker, sqs, rabbitmq, kafka, nats, redis streams, consumer, producer, publisher, subscriber, dlq, dead letter, pub/sub, topic, fanout, outbox, deduplication, consumer lag, prefetch]
