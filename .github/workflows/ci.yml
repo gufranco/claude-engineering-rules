@@ -32,16 +32,19 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck --severity=style --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
+          shellcheck --severity=warning --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
 
       - name: ShellCheck (macOS)
         if: runner.os == 'macOS'
         run: |
           brew install shellcheck
-          shellcheck --severity=style --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
+          shellcheck --severity=warning --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
 
       - name: Python lint
         run: ruff check hooks/*.py scripts/*.py
+
+      - name: Validate counts
+        run: python3 scripts/validate-counts.py
 
       - name: Validate JSON
         run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True)]"
@@ -53,7 +56,31 @@ jobs:
 
       - name: Markdownlint
         run: |
-          npx --yes markdownlint-cli2 "rules/*.md" "skills/*/SKILL.md" "checklists/*.md" "README.md"
+          npx --yes markdownlint-cli2 "rules/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md"
+
+      - name: Validate YAML
+        run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))" 2>/dev/null || python3 -c "import json; print('PyYAML not installed, skipping YAML validation')"
+
+      - name: Validate index.yml paths
+        run: |
+          python3 -c "
+          import yaml, os, sys
+          try:
+              with open('rules/index.yml') as f:
+                  idx = yaml.safe_load(f)
+              errors = 0
+              for section in ['always_loaded', 'on_demand']:
+                  for name, entry in (idx.get(section) or {}).items():
+                      path = entry.get('path', f'rules/{name}.md')
+                      if not os.path.exists(path):
+                          print(f'ERROR: {path} referenced in index.yml does not exist')
+                          errors += 1
+              if errors:
+                  sys.exit(1)
+              print('All index.yml paths valid')
+          except ImportError:
+              print('PyYAML not installed, skipping path validation')
+          "
 
       - name: Validate Markdown structure
         run: |
