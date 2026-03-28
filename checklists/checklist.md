@@ -127,7 +127,7 @@ Full testing philosophy, policies, and guidelines: `rules/testing.md`.
 
 - [ ] Every new function/method has tests
 - [ ] Every code branch tested: success, each error case, each edge case
-- [ ] Coverage on changed code at 80% or above
+- [ ] Coverage on changed code and related files at 95% or above
 - [ ] Integration tests for database operations, not mocked unit tests
 
 #### Test quality
@@ -237,15 +237,22 @@ See `rules/testing.md` for the full mock policy with rationale.
 - [ ] New dependency justified. Could this be done with existing code or stdlib?
 - [ ] Dependency actively maintained with recent commits and no known vulnerabilities
 - [ ] Version pinned exactly in lockfile
-- [ ] License compatible with the project
+- [ ] License compatible with the project (no GPL in MIT projects, no AGPL in SaaS without compliance)
 - [ ] Bundle size impact acceptable for frontend dependencies
 - [ ] Dev dependencies correctly separated from production dependencies
+- [ ] Transitive dependencies audited: no known vulnerabilities in the dependency tree
+- [ ] No duplicate packages solving the same problem (two HTTP clients, two date libraries)
+- [ ] Type definitions available (native or `@types/*`) for TypeScript projects
 
 ### 14. Documentation
 
 - [ ] README updated if setup, env vars, API, or architecture changed
 - [ ] New env vars documented in `.env.example`
 - [ ] Breaking changes documented with migration steps
+- [ ] API documentation updated for new or changed endpoints (OpenAPI, JSDoc, or inline)
+- [ ] Changelog entry added for user-facing changes
+- [ ] Migration guide provided when upgrading dependencies with breaking changes
+- [ ] Inline code comments explain non-obvious decisions (the "why", not the "what")
 - [ ] PR description explains what changed and why (review mode only)
 - [ ] PR scope focused: one logical change, not a grab-bag of unrelated fixes (review mode only)
 
@@ -259,6 +266,8 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 - [ ] Contracts aligned across boundaries. Frontend sends data in the exact format backend expects: header names, field names, parameter types, and positions all match
 - [ ] Error types flow correctly. Errors thrown in one module are caught and handled correctly by callers
 - [ ] Symmetry maintained. Resources acquired are released on all paths. Features enabled can be disabled
+- [ ] Shared types aligned. DTOs, enums, and interfaces used across module boundaries have a single definition, not copies
+- [ ] Feature flag states consistent. If a flag guards behavior in one file, all related files respect the same flag
 
 ### 16. Cascading Fix Analysis
 
@@ -813,3 +822,60 @@ Reference: `standards/infrastructure.md` (CI/CD Pipeline Design)
 - [ ] Reserved capacity or savings plans for stable workloads? Spot/preemptible for fault-tolerant jobs.
 
 Reference: `standards/infrastructure.md` (Cloud Architecture)
+
+### 50. Clean Room Verification
+
+Applies when any external project, codebase, article, or third-party source was consulted during planning or implementation. If no external sources were consulted, state that explicitly and skip this category.
+
+Full process and similarity thresholds: `rules/clean-room.md`.
+
+#### Structural independence (section A)
+
+- [ ] File and module organization differs from the source
+- [ ] Functions split and grouped differently from the source
+- [ ] Class/module hierarchy independently designed
+- [ ] Data flow and transformation sequence differs from the source
+- [ ] Public interfaces (routes, exports, method signatures) independently designed
+
+#### Naming independence (section B)
+
+- [ ] No variable or constant names copied from the source
+- [ ] Function and method names independently chosen (standard names like `get`, `set`, `parse` exempt)
+- [ ] Type, interface, class, and enum names independently chosen
+- [ ] File names independently chosen (conventional names like `index.ts`, `main.go` exempt)
+- [ ] Error messages, log messages, and user-facing text are original
+- [ ] No comments copied or closely paraphrased from the source
+
+#### Logic independence (section C)
+
+- [ ] Algorithms expressed independently, even when the abstract algorithm is the same
+- [ ] Control flow (branching, guards, loops) differs from the source
+- [ ] Error types, messages, and recovery strategies independently designed
+- [ ] Edge cases handled based on own analysis, not copied from the source
+- [ ] Validation logic derived from requirements, not copied
+- [ ] State shape, transitions, and storage independently designed
+
+#### Configuration and infrastructure independence (section D)
+
+- [ ] Configuration files use own structure and key names
+- [ ] Database schema (table names, column names, relationships) independently designed
+- [ ] Tests verify the same requirements but are structured independently
+
+#### License and legal compliance (section E)
+
+- [ ] Source license permits learning from it (no restriction on derivative works for ideas)
+- [ ] No copyleft contamination: if source is GPL/AGPL, implementation is structurally independent
+- [ ] No patented algorithms reproduced (check source README, LICENSE, PATENTS files)
+- [ ] Source was publicly available, not accessed through NDA or restricted channel
+- [ ] No function, class, or block of 4+ lines copied from the source
+
+#### Remediation process (when a check fails)
+
+A failing check does not mean delete the work. The functionality is correct; only the expression is too close to the source:
+
+1. Identify the specific similarity: which names, structures, or patterns match
+2. Redesign that specific aspect independently: different names, different decomposition, different data flow
+3. Rewrite preserving the same functionality but with independent expression
+4. Re-run the failing check to confirm it passes
+
+Reference: `rules/clean-room.md`
