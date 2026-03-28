@@ -64,9 +64,15 @@ Gather requirements, search for existing solutions, evaluate trade-offs, and pro
      references.md  (patterns, related work, applicable rules)
    ```
 
-7. **Present plan.** Wait for approval.
+7. **Append mandatory closing gates.** Every `plan.md` task breakdown must end with these two items, in this order, as the final tasks. They are not optional. They cannot be moved earlier or removed.
 
-8. **Hand off.** Confirm spec written. State first step. Suggest `/plan scaffold` if new files needed. Suggest `/plan adr` if architecture decision was made.
+   **Gate 1: Test Coverage (95%+).** Apply `../../checklists/checklist.md` category 8 (Testing). Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
+
+   **Gate 2: Clean Room Verification.** Apply `../../checklists/checklist.md` category 50 (Clean Room). Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: `rules/clean-room.md`.
+
+8. **Present plan.** Wait for approval.
+
+9. **Hand off.** Confirm spec written. State first step. Suggest `/plan scaffold` if new files needed. Suggest `/plan adr` if architecture decision was made.
 
 ---
 

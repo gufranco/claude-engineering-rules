@@ -4,7 +4,7 @@
 
 Apply the checklist to every review. Go through every applicable category. Do not skip sections because the change "looks small" or "is just a refactor."
 
-**Checklist** (`../../checklists/checklist.md`): 49 categories covering code-level quality (1-17) and architecture, resilience, and infrastructure (18-49). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-49 apply when relevant to the system type.
+**Checklist** (`../../checklists/checklist.md`): 50 categories covering code-level quality (1-17), architecture, resilience, and infrastructure (18-49), and clean room verification (50). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-49 apply when relevant to the system type. Category 50 applies when external sources were consulted.
 
 For every issue found, explain why it matters and provide a code example showing the fix.
 
@@ -73,12 +73,13 @@ This function has three branches: success, validation error, and database error.
 The test only covers the success case. If someone refactors the error handling
 later, there's no test to catch a regression.
 
-Add tests for the other two paths:
+Add tests for the other two paths. Use faker for test data and real database
+connections per `rules/testing.md` mock policy:
 
 ```typescript
-it('should return 400 when email format is invalid', () => {
+it('should return 400 when email format is invalid', async () => {
   // Arrange
-  const invalidPayload = { email: 'not-an-email', name: 'Test' };
+  const invalidPayload = { email: faker.string.alpha(10), name: faker.person.fullName() };
 
   // Act
   const response = await request(app).post('/users').send(invalidPayload);
@@ -88,19 +89,19 @@ it('should return 400 when email format is invalid', () => {
   expect(response.body.error.code).toBe('VALIDATION_ERROR');
 });
 
-it('should return 500 and log the error when the database is unavailable', () => {
+it('should return 500 when the database is unavailable', async () => {
   // Arrange
-  jest.spyOn(userRepository, 'save').mockRejectedValue(new Error('connection refused'));
+  await db.destroy(); // tear down the real connection to simulate unavailability
+  const validPayload = { email: faker.internet.email(), name: faker.person.fullName() };
 
   // Act
   const response = await request(app).post('/users').send(validPayload);
 
   // Assert
   expect(response.status).toBe(500);
-  expect(logger.error).toHaveBeenCalledWith(
-    expect.stringContaining('connection refused'),
-    expect.objectContaining({ requestId: expect.any(String) }),
-  );
+
+  // Restore for other tests
+  await db.initialize();
 });
 ```
 ````
