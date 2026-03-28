@@ -179,6 +179,48 @@ run_test "ignores non-Write/Edit tools" \
     "${FIXTURES}/bash-safe-command.json" 0
 
 echo ""
+echo "=== GH Token Guard ==="
+
+run_test "allows gh with GH_TOKEN set" \
+    "${HOOKS}/gh-token-guard.py" \
+    "${FIXTURES}/bash-gh-with-token.json" 0
+
+run_test "blocks gh without GH_TOKEN" \
+    "${HOOKS}/gh-token-guard.py" \
+    "${FIXTURES}/bash-gh-without-token.json" 2
+
+run_test "blocks gh auth switch" \
+    "${HOOKS}/gh-token-guard.py" \
+    "${FIXTURES}/bash-gh-auth-switch.json" 2
+
+run_test "allows gh auth token (exempt)" \
+    "${HOOKS}/gh-token-guard.py" \
+    "${FIXTURES}/bash-gh-auth-token.json" 0
+
+run_test "allows non-gh commands" \
+    "${HOOKS}/gh-token-guard.py" \
+    "${FIXTURES}/bash-safe-command.json" 0
+
+echo ""
+echo "=== GLab Token Guard ==="
+
+run_test "allows glab with GITLAB_TOKEN set" \
+    "${HOOKS}/glab-token-guard.py" \
+    "${FIXTURES}/bash-glab-with-token.json" 0
+
+run_test "blocks glab without GITLAB_TOKEN" \
+    "${HOOKS}/glab-token-guard.py" \
+    "${FIXTURES}/bash-glab-without-token.json" 2
+
+run_test "blocks glab auth login" \
+    "${HOOKS}/glab-token-guard.py" \
+    "${FIXTURES}/bash-glab-auth-login.json" 2
+
+run_test "allows non-glab commands" \
+    "${HOOKS}/glab-token-guard.py" \
+    "${FIXTURES}/bash-safe-command.json" 0
+
+echo ""
 echo "=== Scope Guard ==="
 
 # scope-guard runs as a Stop hook and reads git state, not stdin tool input.
