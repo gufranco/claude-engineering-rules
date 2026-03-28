@@ -35,7 +35,6 @@
       "Edit(./config/credentials.json)"
     ]
   },
-  "model": "claude-opus-4-6",
   "hooks": {
     "PreToolUse": [
       {
