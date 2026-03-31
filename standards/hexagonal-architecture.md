@@ -92,7 +92,7 @@ Each layer has a different testing approach:
 | Layer | Test type | Infrastructure | Speed |
 |-------|-----------|---------------|-------|
 | Domain | Unit tests | None. Pure logic, no mocks needed | Instant |
-| Application | Integration tests with in-memory adapters | In-memory implementations of ports | Fast |
+| Application | Integration tests with in-memory adapters | In-memory implementations of ports, or in-memory SQL engines (SQLite, better-sqlite3) for lightweight persistence tests | Fast |
 | Adapters | Integration tests with real infrastructure | Real database, real API (or contract tests) | Slower |
 | Full stack | E2E tests | Everything real | Slowest |
 
