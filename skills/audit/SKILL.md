@@ -58,7 +58,7 @@ If no subcommand is given, run all layers (excluding threat modeling, which requ
 - [ ] Dependencies have no critical vulnerabilities
 ```
 
-7. **Suggest next steps** per finding severity.
+1. **Suggest next steps** per finding severity.
 
 ---
 

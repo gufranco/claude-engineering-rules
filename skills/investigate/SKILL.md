@@ -40,7 +40,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 
 ### Phase 2: Isolate
 
-5. **Classify the bug type.** Determine which category applies:
+1. **Classify the bug type.** Determine which category applies:
 
    | Category | Indicators |
    |----------|-----------|
@@ -50,30 +50,30 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
    | Environment bug | Version difference, OS behavior, dependency conflict |
    | Integration bug | API contract changed, schema mismatch, network timeout |
 
-6. **Narrow the scope.** Use binary search:
+2. **Narrow the scope.** Use binary search:
    - If multi-component: trace the request path backward from the error boundary.
    - If single-component: read the full error message and stack trace. The root cause is often in the middle, not the top.
    - Check if the bug exists on the default branch. If not, identify the introducing commit.
 
 ### Phase 3: Hypothesize and Test
 
-7. **State the hypothesis.** Before changing any code, write:
+1. **State the hypothesis.** Before changing any code, write:
    - "I believe the bug is caused by [specific cause] in [specific location]."
    - "If this hypothesis is correct, then [specific test input] will produce [specific output]."
 
-8. **Test the hypothesis.** Run the predicted test.
+2. **Test the hypothesis.** Run the predicted test.
    - If the prediction matches: proceed to Phase 4.
    - If the prediction does not match: **discard the hypothesis entirely**. Do not patch it. Return to step 7 with a new hypothesis.
 
 ### Phase 4: Fix (3-Strike Limit)
 
-9. **Attempt the fix.** Apply a single, focused change that addresses the root cause.
+1. **Attempt the fix.** Apply a single, focused change that addresses the root cause.
 
-10. **Verify the fix.** Run these **in parallel**:
+2. **Verify the fix.** Run these **in parallel**:
     - The original reproduction steps (must now succeed).
     - The full test suite (must not regress).
 
-11. **Track attempts.** Maintain a running log:
+3. **Track attempts.** Maintain a running log:
 
     | Attempt | Hypothesis | Change made | Result |
     |---------|-----------|-------------|--------|
@@ -81,7 +81,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
     | 2 | ... | ... | ... |
     | 3 | ... | ... | ... |
 
-12. **Strike rules:**
+4. **Strike rules:**
     - **Strike 1:** Diagnose why the fix failed. Apply a targeted correction.
     - **Strike 2:** Different approach. The first strategy is wrong. Try an alternative method.
     - **Strike 3:** Broader rethink. Question the assumptions behind all previous attempts. Search for related issues in the codebase, open issues, or documentation.
@@ -89,17 +89,17 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 
 ### Phase 5: Verify and Clean Up
 
-13. **Verify completeness:**
+1. **Verify completeness:**
     - The original reproduction steps succeed.
     - A test exists that fails without the fix and passes with it.
     - The full test suite passes.
     - Check for other places where the same pattern exists. Fix them all.
 
-14. **Remove diagnostic instrumentation.** Delete any temporary logging, debug prints, or test scaffolding added during investigation.
+2. **Remove diagnostic instrumentation.** Delete any temporary logging, debug prints, or test scaffolding added during investigation.
 
-15. **Remove freeze (if active).** Delete `~/.claude/.freeze-scope` to restore normal editing scope.
+3. **Remove freeze (if active).** Delete `~/.claude/.freeze-scope` to restore normal editing scope.
 
-16. **Summary.** State:
+4. **Summary.** State:
     - Root cause (WHY, not just WHERE).
     - Fix applied.
     - How many attempts it took.

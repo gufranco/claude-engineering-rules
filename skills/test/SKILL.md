@@ -115,9 +115,9 @@ Load test HTTP endpoints. Auto-detects the best available tool.
 | Latency p99 | 99th percentile |
 | Transfer rate | Data throughput |
 
-5. Flag: p99 > 1s, error rate > 1%.
-6. **Compare mode**: run once, wait for user signal, run again. Side-by-side comparison with percentage changes.
-7. Clean up temp files.
+1. Flag: p99 > 1s, error rate > 1%.
+2. **Compare mode**: run once, wait for user signal, run again. Side-by-side comparison with percentage changes.
+3. Clean up temp files.
 
 ---
 
