@@ -180,6 +180,11 @@ on_demand:
     description: WebSocket and SSE lifecycle, reconnection with backoff, message envelopes, sequence ordering, deduplication, backpressure, horizontal scaling with pub/sub, security hardening
     triggers: [websocket, ws, sse, server-sent events, real-time, realtime, socket, pub/sub, heartbeat, ping, pong, reconnect, bidirectional]
 
+  terraform-testing:
+    path: standards/terraform-testing.md
+    description: Terraform built-in test framework with .tftest.hcl files, plan vs apply mode, mock providers, parallel execution, expect_failures, state key isolation
+    triggers: [terraform test, tftest, .tftest.hcl, terraform mock, terraform plan test, terraform integration test, terraform unit test, hcl test]
+
   feature-flags:
     path: standards/feature-flags.md
     description: Flag types and lifecycle, evaluation performance with local cache, rollout strategies with automatic rollback, flag cleanup and expiration, testing both states, boundary evaluation pattern, observability, platform comparison
@@ -189,3 +194,48 @@ on_demand:
     path: standards/message-queues.md
     description: Topology patterns, message envelope format, consumer patterns, ordering guarantees, DLQ and error handling, backpressure, exactly-once processing, monitoring, testing, platform comparison
     triggers: [queue, message queue, broker, sqs, rabbitmq, kafka, nats, redis streams, consumer, producer, publisher, subscriber, dlq, dead letter, pub/sub, topic, fanout, outbox, deduplication, consumer lag, prefetch]
+
+  browser-testing:
+    path: standards/browser-testing.md
+    description: Playwright test architecture, page objects, visual regression, accessibility tree testing, responsive testing, Core Web Vitals measurement, cookie management, CI configuration
+    triggers: [browser, playwright, e2e, visual regression, screenshot, viewport, responsive, core web vitals, lighthouse, cwv, lcp, cls, inp, page object, axe, browser test]
+
+  grpc-services:
+    path: standards/grpc-services.md
+    description: gRPC service design, proto file conventions, error handling with status codes, deadlines, interceptors, health checking, reflection, load balancing for HTTP/2
+    triggers: [grpc, protobuf, proto, streaming, reflection, grpc-web, grpc health, interceptor, deadline, status code]
+
+  i18n-l10n:
+    path: standards/i18n-l10n.md
+    description: Text externalization, pluralization with ICU MessageFormat, number/date/currency formatting, RTL support, locale detection, translation workflow, pseudo-localization testing
+    triggers: [i18n, l10n, locale, translation, rtl, pluralization, intl, internationalization, localization, icu, message format, right-to-left]
+
+  data-pipelines:
+    path: standards/data-pipelines.md
+    description: Batch, micro-batch, and streaming pipelines, idempotent processing, backfill strategy, data quality validation, error handling, ETL vs ELT
+    triggers: [etl, elt, pipeline, batch, streaming, backfill, data quality, data pipeline, ingestion, transformation, data warehouse]
+
+  mlops:
+    path: standards/mlops.md
+    description: Model lifecycle, experiment tracking, feature stores, model serving patterns, data and concept drift detection, training/serving parity testing
+    triggers: [ml, model, training, inference, feature store, drift, mlflow, experiment, mlops, machine learning, serving, prediction]
+
+  ab-testing:
+    path: standards/ab-testing.md
+    description: Experiment design, statistical rigor, power analysis, assignment and randomization, multivariate testing, analysis methodology, post-experiment documentation
+    triggers: [ab test, a/b test, experiment, multivariate, statistical significance, power analysis, p-value, conversion, variant, control group, treatment]
+
+  mobile-development:
+    path: standards/mobile-development.md
+    description: Framework selection, navigation, offline support, performance optimization, push notifications, app store compliance, device matrix testing
+    triggers: [mobile, ios, android, react native, flutter, swift, kotlin, app store, push notification, offline, deep link]
+
+  dashboard-design:
+    path: standards/dashboard-design.md
+    description: Purpose-driven dashboards, layout principles, metric grouping with RED method, SLO visualization with error budgets, chart selection, alert integration
+    triggers: [dashboard, grafana, metric grouping, slo visualization, error budget, burn rate, panel, chart, monitoring dashboard]
+
+  documentation-generation:
+    path: standards/documentation-generation.md
+    description: OpenAPI generation from code, AsyncAPI for events, GraphQL schema docs, TypeDoc, documentation-as-code, versioning, CI validation
+    triggers: [openapi, asyncapi, swagger, typedoc, docs generation, api docs, schema docs, docusaurus, mkdocs, documentation site]

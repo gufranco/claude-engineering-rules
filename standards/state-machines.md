@@ -241,6 +241,28 @@ it('should reject submit when order has no items', () => {
 - Every guard condition has both a passing and failing test
 - The full happy-path lifecycle is tested end-to-end (Draft → Submitted → Approved → Shipped → Delivered)
 
+## Serialization and Deserialization
+
+State machines that persist state must handle serialization explicitly.
+
+- Serialize only the state identifier and context data, not the state class instance
+- On deserialization, reconstruct the correct type from the stored discriminant. Use a factory or repository that maps `status` to the appropriate state class
+- Version the serialization format. When adding new states or changing context shape, ensure existing persisted records can still be deserialized
+- For type state: the repository is the deserialization boundary. See the "Persistence with Type State" section above
+- For runtime machines: store `{ state: string, context: object }` and rehydrate through the transition function
+
+## Entry and Exit Actions
+
+Actions that run on entering or leaving a state, independent of which transition caused the change.
+
+| Action type | When it runs | Example |
+|-------------|-------------|---------|
+| Entry action | Every time the state is entered, regardless of source transition | Start a timer on entering `AwaitingPayment`, send notification on entering `Shipped` |
+| Exit action | Every time the state is left, regardless of destination | Cancel the timer on leaving `AwaitingPayment`, release a held resource |
+| Transition action | Only on a specific transition | Log the approver on `Submitted -> Approved` |
+
+Entry/exit actions reduce duplication when multiple transitions lead to the same state. Without them, the same side effect must be repeated in every transition action that targets that state.
+
 ## Anti-Patterns
 
 | Anti-pattern | Problem | Fix |

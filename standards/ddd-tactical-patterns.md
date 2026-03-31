@@ -127,8 +127,9 @@ Rules:
 - One repository per aggregate. `OrderRepository`, never `OrderItemRepository`
 - Transactions do not span aggregates. Each aggregate is a consistency boundary
 - Reference other aggregates by ID, not by object reference. `Order` holds `customerId: CustomerId`, not `customer: Customer`
-- Keep aggregates small. Large aggregates create contention and performance problems. If two parts of the aggregate change independently, they are probably two aggregates
-- Cross-aggregate consistency is eventual. Use domain events to synchronize
+- Keep aggregates small. Large aggregates create contention and performance problems. If two parts of the aggregate change independently, they are probably two aggregates. Target fewer than 10 entities per aggregate. If load testing shows lock contention, split
+- Cross-aggregate consistency is eventual. Use domain events to synchronize. For multi-step cross-aggregate workflows, use the Saga pattern from `standards/distributed-systems.md`
+- Validation belongs in the domain layer, not in adapters. See `standards/hexagonal-architecture.md` Ports section for how domain ports define validation contracts
 
 ## Domain Events
 
@@ -213,6 +214,21 @@ Rules:
 - `save` handles both insert and update. The caller does not distinguish between new and existing aggregates
 - Repositories do not contain query logic for reporting or search. Use separate read models for complex queries (CQRS)
 
+## Saga vs Domain Events
+
+Sagas and domain events solve different coordination problems. Do not conflate them.
+
+| Mechanism | Purpose | Consistency | Rollback |
+|-----------|---------|-------------|----------|
+| Domain events | Notify that something happened. Listeners react independently | Eventual. Each listener succeeds or fails independently | No built-in rollback. Each listener handles its own failure |
+| Saga (orchestration) | Coordinate a multi-step workflow across aggregates or services | Eventual. Steps run sequentially with compensating actions | Each step has a compensating action that undoes its effect |
+| Saga (choreography) | Decentralized coordination via event chains | Eventual. Each service reacts to events and publishes its own | Each service publishes a compensating event on failure |
+
+**When to use which:**
+- Single aggregate change that other modules need to know about: domain event
+- Multi-aggregate workflow where all steps must eventually succeed or all must be compensated: saga
+- Default to orchestration sagas. Choreography sagas become hard to trace and debug beyond 3-4 steps
+
 ## Anti-Patterns
 
 | Anti-pattern | Problem | Fix |
@@ -223,3 +239,4 @@ Rules:
 | Domain events with incomplete data | Event only has an ID, consumer must query for details | Include all relevant data in the event payload |
 | Repository with business logic | Repository filters by business rules | Business logic in domain services. Repository provides collection operations |
 | Ubiquitous language drift | Code uses developer terms while docs use business terms | Rename. The code IS the model |
+| Transaction spans aggregates | A single database transaction modifies multiple aggregates | Each aggregate is a consistency boundary. Use domain events or sagas for cross-aggregate coordination |

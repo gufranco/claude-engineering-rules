@@ -3,13 +3,13 @@
 ## Schema Rules
 
 - Always: `created_at`, `updated_at`
-- Soft delete: `deleted_at` (nullable)
+- Soft delete: `deleted_at` (nullable). In event-driven systems, publish a domain event on soft delete so downstream consumers can react. See `standards/distributed-systems.md` Saga Pattern for cross-service consistency
 - Dates in UTC
 
 ## Query Optimization
 
 - No `SELECT *`: specify columns
-- No N+1: use include/eager loading
+- No N+1: use include/eager loading, or batch loading (`WHERE id IN (...)`) for cases where eager loading causes cartesian explosion
 - Pagination for lists
 - Indexes for WHERE, JOIN, ORDER BY
 - Filter at the database level, not in application code
@@ -160,7 +160,7 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 - Use connection pooling. Never open a connection per request
 - Set pool size based on expected concurrency, not a guess. Too large wastes resources, too small causes contention
 - Configure idle timeout to reclaim unused connections
-- Handle connection errors gracefully: retry on transient failures, fail fast on auth errors
+- Handle connection errors gracefully: retry on transient failures (deadlocks, lock timeouts), fail fast on auth errors. See `standards/resilience.md` for error classification and retry strategies
 - For serverless: use a connection proxy (RDS Proxy, PgBouncer) to avoid connection exhaustion from cold starts
 
 ## Locking Strategy

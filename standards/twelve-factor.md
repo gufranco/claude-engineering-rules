@@ -96,7 +96,7 @@ Export services via port binding. The app is completely self-contained.
 - The application binds to a port and listens for requests. It does not rely on an external webserver container (Apache, Tomcat) injected at runtime
 - A webserver library is a dependency declared in the manifest (Express, Uvicorn, Gin, Actix), not an external runtime
 - In development: `http://localhost:$PORT`. In production: a routing layer (load balancer, reverse proxy) maps public hostnames to the port-bound process
-- This applies beyond HTTP. Any protocol (gRPC, WebSocket, AMQP) is exported by binding to a port
+- This applies beyond HTTP. Any protocol (gRPC, WebSocket, AMQP) is exported by binding to a port. For gRPC, bind the gRPC server to its own port. For WebSocket, bind on the same HTTP port with an upgrade path, or on a separate port if the transport layer requires it. For SSE, use the HTTP port with proper connection draining on shutdown
 - One port-bound app can become a backing service for another by providing its URL through config
 
 ## VIII. Concurrency

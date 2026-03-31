@@ -104,6 +104,7 @@ Deprecation is a process, not an event. Follow this sequence:
 - POST endpoints that create resources must support an `Idempotency-Key` header
 - Store the key server-side with the response for the TTL window (default: 24h)
 - Return the cached response on duplicate requests, do not re-execute
+- See `standards/resilience.md` Idempotency section for retry-safe implementation patterns and deduplication strategies
 
 ## Rate Limiting
 

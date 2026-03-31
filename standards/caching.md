@@ -38,6 +38,7 @@ When a popular cache key expires, hundreds of concurrent requests miss simultane
 - **Stale-while-revalidate**: serve the expired value while one background request refreshes
 - **Probabilistic early expiration**: each request has a small random chance of refreshing before TTL, spreading the load
 - **TTL jitter**: never set the same TTL on all keys. Add `TTL + random(0, TTL * 0.1)` to prevent synchronized expiration
+- **Recovery after outage**: when a cache comes back after an extended outage, all keys are cold. Apply rate limiting on cache-miss paths to protect the origin from a full-dataset reload spike. See `standards/resilience.md` Back Pressure for load shedding strategies
 
 ## Cache Warming
 
@@ -45,7 +46,7 @@ Cold caches after deploy or restart cause a load spike on the origin.
 
 - Pre-load hot keys on startup from a known list or recent access log
 - Use canary deploys: route a small percentage of traffic first so the cache fills gradually
-- If pre-loading is not feasible, rate-limit cache-miss paths to protect the origin during warmup
+- If pre-loading is not feasible, rate-limit cache-miss paths to protect the origin during warmup. See `standards/resilience.md` Back Pressure for rate limiting patterns
 
 ## Sizing and Eviction
 

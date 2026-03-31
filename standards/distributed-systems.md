@@ -32,7 +32,7 @@ Every read in a distributed system returns data with some staleness guarantee. K
 | Read-your-writes | A client always sees its own writes, may not see others' | Medium | User profile updates, form submissions, settings |
 | Causal | If A caused B, everyone sees A before B | Medium | Comment threads, collaborative editing |
 
-**Default rule**: choose the weakest model your use case tolerates. Strong consistency everywhere kills scalability.
+**Default rule**: choose the weakest model your use case tolerates. Strong consistency everywhere kills scalability. When using eventual consistency with a cache layer, align cache TTL with the staleness tolerance. See `standards/caching.md` for invalidation strategies.
 
 ### Read-Your-Writes in Practice
 
@@ -48,7 +48,7 @@ Avoid session stickiness for read-your-writes. It is fragile and breaks on rebal
 
 ## Saga Pattern
 
-When a business transaction spans multiple services and a distributed transaction (2PC) is not feasible.
+When a business transaction spans multiple services and a distributed transaction (2PC) is not feasible. Never use distributed transactions (2PC, XA) across services. They couple services at the protocol level, require all participants to be available simultaneously, and create a single point of failure in the transaction coordinator. Use sagas instead.
 
 ### Orchestration vs Choreography
 

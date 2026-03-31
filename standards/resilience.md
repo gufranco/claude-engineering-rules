@@ -103,9 +103,9 @@ For calls to external services that may be degraded:
 
 - **Closed** (normal): requests pass through, failures are counted
 - **Open** (tripped): requests fail immediately without calling the service, checked periodically
-- **Half-open** (probing): limited requests pass through to test recovery
+- **Half-open** (probing): limited requests pass through to test recovery. Send a single probe request on a timer. If it succeeds, move to Closed. If it fails, return to Open and reset the timer with backoff
 
-Track: failure count, failure rate, response time. Trip on sustained failure, not a single error.
+Track: failure count, failure rate, response time. Trip on sustained failure, not a single error. For database-specific failures (deadlocks, lock timeouts), apply the same circuit breaker pattern. See `standards/database.md` Connection Management for retry-worthy transient errors.
 
 ## Partial Failure
 
@@ -125,7 +125,7 @@ Every external call must have an explicit timeout:
 - Queue operations: visibility timeout aligned with processing time
 - Background jobs: execution timeout with cleanup
 
-Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns.
+Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns. See `standards/database.md` Transactions section for statement timeout configuration.
 
 ## Back Pressure
 
