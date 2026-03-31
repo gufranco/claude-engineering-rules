@@ -146,6 +146,7 @@ Before using any external tool or CLI command:
 4. **Linux package management.** Never use Homebrew on Linux. Use the distribution's native package manager.
 5. **Preferred package manager.** Use pnpm for JavaScript and TypeScript projects. Never default to npm.
 6. **Respect rate limits.** Before polling any API or service in a loop, check the rate limit first. For GitHub: `gh api rate_limit`. For other services: check headers or docs. Never use tight polling loops (e.g. every 3 seconds) without confirming sufficient quota. When rate limited, wait for the reset window instead of retrying immediately.
+7. **Local binaries first.** Never run a CLI tool through Docker when a local binary exists or can be installed. Check `which <tool>` first. If not installed, ask to install it locally (e.g., `brew install postgresql` for `psql`). Only fall back to Docker when local installation is not viable or the user explicitly prefers it. Docker wrappers add complexity, consume extra tokens, and obscure errors. When the user accepts a brew install, check `~/.dotfiles/Brewfile` and ask whether the package should be added there.
 
 ### Shell Alias Safety
 
