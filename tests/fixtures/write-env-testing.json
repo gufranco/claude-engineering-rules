@@ -1,0 +1,6 @@
+{
+  "tool_name": "Write",
+  "input": {
+    "file_path": "/tmp/project/.env.testing"
+  }
+}

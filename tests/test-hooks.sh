@@ -61,6 +61,10 @@ run_test "blocks fork bomb" \
     "${HOOKS}/dangerous-command-blocker.py" \
     "${FIXTURES}/bash-fork-bomb.json" 2
 
+run_test "handles malformed JSON gracefully" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/malformed-json.json" 0
+
 echo ""
 echo "=== Conventional Commits ==="
 
@@ -84,6 +88,10 @@ run_test "allows valid heredoc commit" \
     "${HOOKS}/conventional-commits.sh" \
     "${FIXTURES}/bash-commit-heredoc.json" 0
 
+run_test "handles malformed JSON gracefully" \
+    "${HOOKS}/conventional-commits.sh" \
+    "${FIXTURES}/malformed-json.json" 0
+
 echo ""
 echo "=== Secret Scanner ==="
 
@@ -100,6 +108,10 @@ run_test "allows safe commands" \
 run_test "allows commit when no staged files have secrets" \
     "${HOOKS}/secret-scanner.py" \
     "${FIXTURES}/commit-with-secret.json" 0
+
+run_test "handles malformed JSON gracefully" \
+    "${HOOKS}/secret-scanner.py" \
+    "${FIXTURES}/malformed-json.json" 0
 
 echo ""
 echo "=== Smart Formatter ==="
@@ -129,6 +141,10 @@ run_test "allows editing test files" \
 run_test "allows editing config files" \
     "${HOOKS}/tdd-gate.sh" \
     "${FIXTURES}/edit-config-file.json" 0
+
+run_test "blocks production code without matching test" \
+    "${HOOKS}/tdd-gate.sh" \
+    "${FIXTURES}/edit-production-code.json" 2
 
 run_test "ignores non-Edit tool calls" \
     "${HOOKS}/tdd-gate.sh" \
@@ -170,6 +186,18 @@ run_test "blocks writing to secrets directory" \
     "${HOOKS}/env-file-guard.sh" \
     "${FIXTURES}/write-secrets-dir.json" 2
 
+run_test "blocks writing to .env.staging" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-env-staging.json" 2
+
+run_test "blocks writing to .env.testing" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-env-testing.json" 2
+
+run_test "allows writing to .env.defaults" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-env-defaults.json" 0
+
 run_test "allows safe file writes" \
     "${HOOKS}/env-file-guard.sh" \
     "${FIXTURES}/write-tool-input.json" 0
@@ -177,6 +205,10 @@ run_test "allows safe file writes" \
 run_test "ignores non-Write/Edit tools" \
     "${HOOKS}/env-file-guard.sh" \
     "${FIXTURES}/bash-safe-command.json" 0
+
+run_test "handles malformed JSON gracefully" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/malformed-json.json" 0
 
 echo ""
 echo "=== GH Token Guard ==="
