@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Security audit across dependencies, secrets, Docker, code patterns, and images. Subcommands absorb /deps for vulnerability scanning, outdated packages, and deep scanning with trivy/snyk/gitleaks.
+description: Security audit across dependencies, secrets, Docker, code patterns, and images. Subcommands absorb /deps for vulnerability scanning, outdated packages, and deep scanning with trivy/snyk/gitleaks. Use when user says "security audit", "scan for vulnerabilities", "check dependencies", "find secrets", "audit Docker", "CVE scan", or wants to find security issues across the full project. Do NOT use for code review (use /review), architecture completeness (use /assessment), or running tests (use /test).
 ---
 
 Multi-layer security audit and dependency management. Replaces standalone `/audit` and `/deps` skills.
@@ -18,8 +18,9 @@ Multi-layer security audit and dependency management. Replaces standalone `/audi
 | `/audit code` | Code pattern analysis (injection, XSS, etc.) |
 | `/audit scan` | Deep scan with trivy/snyk/gitleaks |
 | `/audit image <name>` | Docker image vulnerability and layer analysis |
+| `/audit threat` | STRIDE threat modeling for the project or a specific component |
 
-If no subcommand is given, run all layers.
+If no subcommand is given, run all layers (excluding threat modeling, which requires focused analysis).
 
 ---
 
@@ -92,6 +93,95 @@ Check available tools (parallel): `trivy`, `snyk`, `gitleaks`. Run all available
 
 - `trivy image <name>` for OS and library vulnerabilities.
 - `dive <name>` for layer analysis and wasted space.
+
+---
+
+## threat
+
+STRIDE threat modeling for the full project or a specific component. Systematic analysis of security threats across six categories.
+
+### When to use
+
+- Before deploying a new service or API to production.
+- When adding authentication, authorization, or data handling features.
+- During security review of an existing system.
+- When compliance or regulatory requirements demand threat analysis.
+
+### Arguments
+
+- No arguments: analyze the full project.
+- `<component>`: focus on a specific module, service, or feature (e.g., `/audit threat auth`, `/audit threat payments`).
+
+### Steps
+
+1. **Map the attack surface.** Read the project structure and identify:
+   - Entry points: API routes, webhooks, message consumers, CLI commands.
+   - Data stores: databases, caches, file storage, session stores.
+   - External integrations: third-party APIs, OAuth providers, payment processors.
+   - Trust boundaries: where authenticated meets unauthenticated, where internal meets external.
+
+2. **Analyze each STRIDE category.** For every entry point and data flow:
+
+   | Category | Question | What to look for |
+   |----------|----------|-----------------|
+   | **S**poofing | Can an attacker impersonate a user or service? | Missing auth on endpoints, weak token validation, no mutual TLS between services |
+   | **T**ampering | Can data be modified in transit or at rest? | Missing input validation, unsigned payloads, no integrity checks on stored data |
+   | **R**epudiation | Can a user deny performing an action? | Missing audit logging, no transaction records, unsigned operations |
+   | **I**nformation Disclosure | Can sensitive data leak? | Verbose error messages, exposed stack traces, missing field-level authorization |
+   | **D**enial of Service | Can the system be overwhelmed? | Missing rate limits, unbounded queries, no payload size limits, resource-intensive operations without throttling |
+   | **E**levation of Privilege | Can a user gain unauthorized access? | Missing authorization checks, IDOR vulnerabilities, role bypass, privilege escalation through API chaining |
+
+3. **Score each finding.**
+
+   | Severity | Criteria |
+   |----------|---------|
+   | Critical (9-10) | Exploitable without authentication, data breach risk |
+   | High (7-8) | Exploitable with low-privilege access, significant impact |
+   | Medium (4-6) | Requires specific conditions, moderate impact |
+   | Low (1-3) | Theoretical risk, minimal impact |
+
+4. **Generate the threat model report:**
+
+   ```markdown
+   ## STRIDE Threat Model
+
+   **Scope:** <full project or component name>
+   **Date:** <date GMT>
+   **Entry points analyzed:** <count>
+
+   ### Attack Surface Map
+   <list of entry points, data stores, trust boundaries>
+
+   ### Findings by Category
+
+   #### Spoofing
+   | # | Threat | Severity | Affected Component | Mitigation |
+   |---|--------|----------|-------------------|------------|
+
+   #### Tampering
+   ...
+
+   #### Repudiation
+   ...
+
+   #### Information Disclosure
+   ...
+
+   #### Denial of Service
+   ...
+
+   #### Elevation of Privilege
+   ...
+
+   ### Summary
+   | Category | Critical | High | Medium | Low |
+   |----------|----------|------|--------|-----|
+
+   ### Priority Actions
+   <findings rated 8+ must be resolved before shipping>
+   ```
+
+5. **Gate check.** Findings rated 8/10 or higher are blocking. State them explicitly and recommend resolution before deployment.
 
 ---
 

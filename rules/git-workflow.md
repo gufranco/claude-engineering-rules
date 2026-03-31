@@ -156,15 +156,26 @@ git add <file> && git rebase --continue
 git push --force-with-lease
 ```
 
-## Post-Task Workflow
+## Push Strategy
 
-After completing significant features:
+Every `git push` triggers a CI pipeline run. Pipeline runs consume paid runner minutes. Minimize pushes.
 
-1. Stage and commit with conventional message
-2. Push to remote: `git push`
-3. Verify remote is updated
+**Rules:**
 
-**Keep remote in sync.** Do not accumulate local-only commits.
+- Commit locally as often as needed. Small, atomic commits are good.
+- Do NOT push after every commit. Accumulate local commits until the task is complete and all local quality gates pass.
+- Push once at the end of the task, after format + lint + typecheck + test + build all pass locally.
+- If the task spans multiple sessions, push at the end of the last session, not at the end of each session.
+- When a task requires a PR, push once to create the PR. Do not push work-in-progress.
+- After push, monitor CI as described in "CI/CD Monitoring."
+
+**Exceptions where intermediate pushes are acceptable:**
+
+- The user explicitly asks to push.
+- A PR review is needed before continuing (push to get feedback).
+- The branch needs to be shared with another developer.
+
+**Batch CI fixes.** When CI fails with multiple issues, fix all of them locally before pushing. One push with all fixes, not one push per fix.
 
 ## Rollback Strategy
 

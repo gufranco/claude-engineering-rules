@@ -1,6 +1,6 @@
 ---
 name: assessment
-description: Architecture completeness audit for an implementation. Finds missing patterns, planted defects, and opportunities to stand out.
+description: Architecture completeness audit for an implementation. Finds missing patterns, planted defects, and opportunities to stand out. Use when user says "assess", "what am I missing", "interview prep", "take-home review", "check my architecture", "pre-submission audit", or wants to verify an implementation covers all engineering patterns before declaring it done. Do NOT use for diff-based code review (use /review), security-only audits (use /audit), or running tests (use /test).
 ---
 
 Perform an architecture completeness audit on an implementation. Unlike `/review` which checks diffs for correctness, this skill reads the full implementation and identifies **what's missing**: architectural patterns, resilience strategies, security measures, API contracts, and design decisions that should be present but aren't.
@@ -150,7 +150,7 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 50 checklist categories, also assess:
+   In addition to the 52 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
@@ -277,8 +277,8 @@ This skill accepts optional arguments after `/assessment`:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate `../../checklists/checklist.md`? Run all 50 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
-       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.dotfiles/claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
+       - Did any fix violate `../../checklists/checklist.md`? Run all 52 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
+       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
        - Did any fix introduce a new startup dependency or configuration requirement without updating all relevant config files (.env.example, Docker, CI)?
@@ -299,17 +299,13 @@ This skill accepts optional arguments after `/assessment`:
     - Missing tests for new code paths added during fixes
     - Dependencies added during fixes that need audit, type checking, or justification
 
-11. **Generate the README.** After convergence, generate a technical README that documents what was built and why. See the README structure below.
+11. **Generate the README.** After convergence, generate a technical README following the template in `readme-template.md` in this skill directory. Read it before writing.
 
 12. **Update GitHub repository metadata.** After committing the README, update the repository's description and topics on GitHub so the repo page communicates the same quality as the code.
 
     **Description format**: one sentence describing what the project is and its key technologies, followed by a second sentence listing comma-separated architectural highlights and a quantified test claim. Keep it under 350 characters.
 
-    Example: `"Production-grade contractor payment API on Express.js, Sequelize, and SQLite. Clean architecture with dependency inversion, SERIALIZABLE transactions with LOCK.UPDATE, two-sided Zod validation, typed repository pattern, and 48 zero-mock integration tests at 98.85% coverage"`
-
     **Topics**: add 10-12 specific technology topics as lowercase kebab-case tags. Include the primary language, runtime version, framework, database, ORM, validation library, test framework, and 3-5 distinguishing architectural or domain terms. Do not use generic tags like "backend" or "api".
-
-    Example topics: `typescript`, `expressjs`, `sequelize`, `sqlite`, `zod`, `clean-architecture`, `node22`, `jest`, `helmet`, `dependency-injection`, `repository-pattern`, `contractor-payments`
 
     **Commands**:
     ```bash
@@ -317,253 +313,13 @@ This skill accepts optional arguments after `/assessment`:
     gh repo edit <owner>/<repo> --add-topic <topic1> --add-topic <topic2> ...
     ```
 
-    **Account handling**: follow the borrow-and-restore pattern from `standards/borrow-restore.md`. Check `gh auth status`, switch to the account that owns the repo if needed, update metadata, verify with `gh repo view`, and restore the original account.
+    **Account handling**: follow the borrow-and-restore pattern from `standards/borrow-restore.md`.
 
     Commit the README as a separate commit: `docs: add technical README with architecture and design decisions`. The GitHub metadata update does not require a commit since it only changes the repository settings.
 
-    The README structure for step 11 follows. An interviewer or reviewer reading it should understand the architecture, the reasoning behind every decision, and how to run the project, all before opening a single source file.
-
-    **Data gathering.** Scan the project in parallel: package manifest, infrastructure configs, source tree structure, environment files, git context, test output with coverage, and any existing README. Read the actual codebase to extract concrete details: number of tests, coverage percentage, number of endpoints, isolation levels used, patterns applied, and technologies with their exact versions from the lockfile or config.
-
-    **Assessment README structure.** Use the structure below. The tone is technical and explanatory. Every section uses tables and concrete examples. Design decisions are written as narrative paragraphs, not structured labels. Architecture uses Mermaid diagrams with subgraphs for layers.
-
-    ```
-    # {Company} {Role}: Technical Assessment
-
-    A production-grade [type of system] for [domain], built with [key technologies].
-    Submitted as a take-home assessment for the **{Role}** position at **{Company}**.
-
-    If the company name or role is unknown, use a neutral title:
-    # [Project Name]: Technical Assessment
-
-    ## What This Assessment Covers
-
-    This is not a minimal [type]. It is a fully operational system with
-    production-level engineering across every layer:
-
-    | Area | What was built |
-    |------|---------------|
-    | **[Area name]** | [Concrete description of what was implemented, referencing specific patterns, tools, or techniques. Not vague claims like "clean code" but specifics like "Three-layer design with dependency inversion. Domain has zero framework imports."] |
-    | **[Area name]** | [Another concrete description] |
-
-    Include 8-12 rows covering: architecture, transaction safety, input validation,
-    type safety, ORM/data access, repository pattern, error handling, security,
-    query optimization, testing (with count and coverage), and developer tooling.
-    Only include rows for things actually implemented. Never invent features.
-
-    ## Architecture
-
-    Mermaid diagram showing system layers, components, and dependency direction.
-    Use subgraphs for architectural layers and arrows for dependency flow.
-
-    The diagram must show:
-    - Each architectural layer as a labeled subgraph
-    - Key components within each layer (entities, use cases, repositories, models, routes)
-    - Dependency direction with labeled arrows
-    - External actors (HTTP client, database) at the boundaries
-    - Max 15-20 nodes to keep it readable
-
-    Example Mermaid diagram (wrap in a mermaid code fence):
-
-        graph TB
-          subgraph Domain["Domain Layer"]
-            Entities["Entities: EntityA, EntityB, EntityC"]
-            Repos["Repository Interfaces: IRepoA, IRepoB, IUnitOfWork"]
-            Errors["Domain Errors: NotFoundError, ForbiddenError"]
-          end
-          subgraph Application["Application Layer"]
-            UseCases["Use Cases: UseCaseA, UseCaseB, UseCaseC"]
-          end
-          subgraph Infrastructure["Infrastructure Layer"]
-            Routes["Routes and Middleware"]
-            RepoImpl["Repository Implementations"]
-            Models["ORM Models"]
-          end
-          Client["HTTP Client"] --> Routes
-          UseCases -->|depends on| Repos
-          Routes -->|depends on| UseCases
-          RepoImpl -->|implements| Repos
-          Models --> DB[(Database)]
-
-    After the diagram, add a paragraph explaining the dependency direction
-    and how the composition root wires everything together.
-
-    ## Project Structure
-
-    Directory tree showing the actual project layout with inline descriptions
-    for each directory. Explain the file naming convention used.
-
-    src/
-      domain/
-        entities/           [Description of what lives here]
-        errors/             [Description]
-        repositories/       [Description]
-      application/
-        use-cases/          [Description]
-      infrastructure/
-        database/
-          models/           [Description]
-          repositories/     [Description]
-      middleware/           [Description]
-      routes/              [Description]
-        schemas/           [Description]
-      container.ts         [Description of composition root]
-      app.ts               [Description]
-      server.ts            [Description]
-
-    After the tree, add a paragraph explaining the naming convention:
-    "Files use a `name.type.ts` naming convention: `profile.model.ts`,
-    `get-contract-by-id.use-case.ts`. The suffix tells you what a file
-    contains before you open it."
-
-    ## API Endpoints
-
-    All endpoints require [auth mechanism description].
-
-    Group endpoints by resource. For each resource group:
-
-    ### [Resource Name]
-
-    | Method | Endpoint | Description |
-    |--------|----------|-------------|
-    | GET | `/resource/:id` | [What it does, including security behavior] |
-    | POST | `/resource` | [What it does] |
-
-    **Response format:**
-
-    ```json
-    {
-      "field": "value",
-      "nested": { "field": "value" }
-    }
-    ```
-
-    For endpoints with error conditions, add an error table:
-
-    | Error condition | Status | Error code |
-    |----------------|--------|------------|
-    | [Condition] | 404 | `NOT_FOUND` |
-    | [Condition] | 403 | `FORBIDDEN` |
-
-    Include a final section documenting the error response format:
-
-    ### Error response format
-
-    All errors return a consistent shape:
-
-    ```json
-    {
-      "error": {
-        "code": "ERROR_CODE",
-        "message": "Human-readable description",
-        "details": [
-          { "field": "fieldName", "message": "Specific error" }
-        ]
-      }
-    }
-    ```
-
-    Explain the `code`, `message`, and `details` fields.
-
-    ## Design Decisions
-
-    For each significant decision (at least 5), write a narrative subsection.
-    Do NOT use structured labels like "Choice/Why/Trade-off". Write natural
-    paragraphs that explain what was done, why, and the trade-off, all woven
-    into the prose. Each subsection has a descriptive title.
-
-    ### [Descriptive decision title]
-
-    [One or more paragraphs explaining the decision naturally. Start with what
-    was done, flow into why this approach over alternatives, and end with the
-    trade-off. Reference specific code patterns, file names, or techniques.
-    The reader should understand the engineering reasoning without seeing the code.]
-
-    Cover decisions like: architecture pattern, transaction strategy, validation
-    approach, type safety configuration, ORM setup, error handling design,
-    query optimization strategy, testing approach. Only document decisions that
-    were actually made in the code.
-
-    ## Testing
-
-    [Number] integration tests using [framework] against [database setup].
-    [Testing philosophy: e.g., "No mocks for the database layer: tests exercise
-    the full request path from HTTP to database and back."]
-
-    ```bash
-    npm test              # run all tests
-    npm run test:coverage # run with coverage report
-    ```
-
-    | Metric | Coverage |
-    |--------|----------|
-    | Statements | XX% |
-    | Functions | XX% |
-    | Lines | XX% |
-
-    Tests cover:
-
-    - **Happy paths**: [specific examples]
-    - **Authorization**: [specific examples]
-    - **Business rules**: [specific examples]
-    - **Edge cases**: [specific examples]
-
-    ## Prerequisites
-
-    | Tool | Version | Required for | Install |
-    |------|---------|-------------|---------|
-    | [Tool] | [Version] | [Purpose] | [Link or command] |
-
-    ## Getting Started
-
-    ```bash
-    [install command]
-    [seed/setup command]
-    [start command]
-    ```
-
-    ## Scripts
-
-    | Command | Description |
-    |---------|-------------|
-    | `npm start` | [Description] |
-    | `npm test` | [Description] |
-    | `npm run lint` | [Description] |
-
-    ## Developer Tooling
-
-    | Tool | Purpose | Configuration |
-    |------|---------|---------------|
-    | [Tool] | [What it does] | [Config file] |
-
-    ## Tech Stack
-
-    | Category | Technology |
-    |----------|-----------|
-    | Runtime | [Name version] |
-    | Framework | [Name version with key detail] |
-    | ORM | [Name version with key detail] |
-    | Database | [Name with usage detail] |
-    | Validation | [Name version with key detail] |
-    | Testing | [Name version, test count, coverage] |
-    | Code quality | [Tools with key configs] |
-    ```
-
-    **README generation rules:**
-    - Every claim must be grounded in the actual codebase. Never invent features. Read the code to verify before writing.
-    - The "Design Decisions" section is the most important. This is where the engineer's thinking shows. Write each decision as a natural narrative paragraph, not as a structured template with labels. The reader should feel like a senior engineer is explaining their reasoning over coffee, not filling out a form.
-    - The "What This Assessment Covers" table is the second most important. Each row must reference a specific, concrete implementation detail. "Clean architecture" is too vague. "Three-layer design with dependency inversion. Domain has zero framework imports. Use cases depend on repository interfaces, never on Sequelize or Express" is concrete.
-    - Architecture diagrams use Mermaid with subgraphs for layers and labeled arrows for dependency direction. Max 15-20 nodes to keep diagrams readable. GitHub, GitLab, and most markdown renderers support Mermaid natively.
-    - API documentation includes endpoint tables, JSON request/response examples with realistic data, and error condition tables with status codes and machine-readable error codes.
-    - Skip sections that don't apply. A project without an API skips API Endpoints. A project without CI skips CI/CD.
-    - Quantify everything: number of tests, coverage percentage, number of endpoints, specific TypeScript flags enabled, specific ESLint rules configured.
-    - Include exact version numbers in the Tech Stack table, pulled from the lockfile or config files.
-    - The title must include the company name and role if known. Format: `# {Company} {Role}: Technical Assessment`. If unknown, use `# [Project Name]: Technical Assessment`.
-    - Commit the README as a separate commit: `docs: add technical README with architecture and design decisions`.
-
 ## Assessment Checklist Categories
 
-The full 50-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted during implementation.
+The full 52-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted, category 51 (Deployment Verification) when the project deploys, and category 52 (Design Quality) when a frontend is present.
 
 ## Output Format
 
@@ -595,7 +351,7 @@ The full 50-category checklist lives in `../../checklists/checklist.md` (shared 
 | Output verification | PASS / FAIL / N/A | [Expected vs actual results] |
 
 ## Classification
-[System traits detected and which applicable categories from the 50-category checklist apply]
+[System traits detected and which applicable categories from the 52-category checklist apply]
 
 ## Defects Found
 [List any bugs, anti-patterns, or correctness issues found in the existing code]
@@ -681,5 +437,5 @@ Steps 1-12 above define **what** to do. These rules define **constraints** on ho
 
 - `/review` — Diff-based code review for correctness. Catches bugs in what's written.
 - `/test` — Run tests to verify the implementation works.
-- `/commit` — Commit fixes after addressing assessment gaps.
+- `/ship commit` — Commit fixes after addressing assessment gaps.
 - `/readme` — Marketing-grade README. The assessment README reuses Phase 1 scanning but uses a technical structure instead.

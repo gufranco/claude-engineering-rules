@@ -111,13 +111,69 @@ Data structure selection guide and anti-pattern catalog: `standards/algorithmic-
 
 ### 7. Frontend Performance
 
-Skip if no frontend code changed.
+Skip if no frontend code changed. Full reference: `standards/frontend.md`.
+
+#### Rendering
 
 - [ ] No unnecessary re-renders. Dependencies in `useEffect`/`useMemo`/`useCallback` correct
-- [ ] Large lists virtualized
-- [ ] Images and assets optimized
-- [ ] No blocking operations on the main thread
+- [ ] Large lists virtualized (content-visibility or library) when > 100 items
+- [ ] No blocking operations on the main thread. CPU-intensive work offloaded to Web Workers
 - [ ] Bundle size impact considered. No unnecessarily large dependencies added
+
+#### Performance Budgets
+
+- [ ] Total page weight < 1.5 MB
+- [ ] JavaScript (compressed) < 300 KB
+- [ ] CSS (compressed) < 100 KB
+- [ ] Above-fold images < 500 KB total
+- [ ] Fonts < 100 KB total. Self-hosted, not loaded from external CDNs
+
+#### Core Web Vitals
+
+- [ ] LCP < 2.5s. LCP element preloaded with `fetchpriority="high"` and `loading="eager"`. Critical CSS inlined (< 14 KB). No render-blocking JS in `<head>`
+- [ ] INP < 200ms. No tasks > 50ms on main thread. Event handlers complete in < 100ms. Heavy work deferred with `requestIdleCallback`. Visual feedback provided immediately on interaction
+- [ ] CLS < 0.1. All images and videos have explicit `width`/`height` or `aspect-ratio`. Ads and embeds have `min-height` containers. Dynamic content inserted below viewport, not above. Fonts use `font-display: optional` or matched `size-adjust` metrics. Animations use `transform`/`opacity` only
+
+#### Images
+
+- [ ] Format selection: AVIF for photos (fallback WebP, then JPEG), PNG for transparency, SVG for icons and illustrations
+- [ ] Responsive images use `<picture>` with multiple `srcset` breakpoints and `sizes` attribute
+- [ ] Below-fold images use `loading="lazy"` and `decoding="async"`
+
+#### Fonts
+
+- [ ] `font-display: swap` (primary) or `font-display: optional` (non-critical)
+- [ ] Critical fonts preloaded: `<link rel="preload" href="font.woff2" as="font" type="font/woff2" crossorigin>`
+- [ ] Variable fonts used when multiple weights are needed (one file instead of many)
+
+#### Third-Party Scripts
+
+- [ ] Loaded with `async` or `defer`. No synchronous third-party scripts in critical path
+- [ ] Non-essential scripts (analytics, chat widgets) deferred until after interaction or DOMContentLoaded
+
+#### SEO
+
+Skip if the project is not a public-facing web application.
+
+- [ ] Every page has a unique `<title>` (50-60 chars) with primary keyword near the beginning
+- [ ] Every page has a unique `<meta name="description">` (150-160 chars)
+- [ ] Single `<h1>` per page. Heading hierarchy follows logical order, no skipped levels
+- [ ] Canonical URL set: `<link rel="canonical" href="...">`
+- [ ] Images have descriptive `alt` text and keyword-relevant filenames
+- [ ] Structured data (JSON-LD) present for the content type (Article, Product, FAQ, Organization, BreadcrumbList)
+- [ ] `robots.txt` allows crawling of public pages, blocks `/admin/`, `/api/`, `/private/`
+- [ ] XML sitemap exists, includes only canonical indexable URLs, submitted to Search Console
+
+#### Accessibility (WCAG 2.2)
+
+Full testing strategy: `standards/accessibility-testing.md`. Design rules: `standards/frontend.md`.
+
+- [ ] All interactive targets meet 24x24 CSS pixel minimum (WCAG 2.5.8)
+- [ ] Focused element not entirely hidden by sticky headers, footers, or overlays (WCAG 2.4.11). `scroll-margin-top`/`scroll-margin-bottom` set to account for fixed bars
+- [ ] Drag actions have single-pointer alternatives: buttons, inputs, or click-based interactions (WCAG 2.5.7)
+- [ ] Help mechanisms (contact, chat, FAQ) appear in the same relative position across pages (WCAG 3.2.6)
+- [ ] Users not forced to re-enter information already provided in the same session (WCAG 3.3.7)
+- [ ] Login does not rely solely on cognitive function tests. Paste allowed in password fields. `autocomplete="current-password"` set. Alternative auth methods available (WCAG 3.3.8)
 
 ### 8. Testing
 
@@ -243,6 +299,8 @@ See `rules/testing.md` for the full mock policy with rationale.
 - [ ] Transitive dependencies audited: no known vulnerabilities in the dependency tree
 - [ ] No duplicate packages solving the same problem (two HTTP clients, two date libraries)
 - [ ] Type definitions available (native or `@types/*`) for TypeScript projects
+- [ ] License compatible with all project dependencies (no transitive GPL in MIT projects)
+- [ ] Bundle size delta measured for frontend dependencies. No single dependency adds more than 50KB gzipped without justification
 
 ### 14. Documentation
 
@@ -255,6 +313,8 @@ See `rules/testing.md` for the full mock policy with rationale.
 - [ ] Inline code comments explain non-obvious decisions (the "why", not the "what")
 - [ ] PR description explains what changed and why (review mode only)
 - [ ] PR scope focused: one logical change, not a grab-bag of unrelated fixes (review mode only)
+- [ ] Public API types and interfaces have JSDoc or equivalent doc comments describing purpose and constraints
+- [ ] Inline comments explain the "why" for non-obvious decisions. No comments restating what the code does
 
 ### 15. Cross-File Consistency
 
@@ -268,6 +328,8 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 - [ ] Symmetry maintained. Resources acquired are released on all paths. Features enabled can be disabled
 - [ ] Shared types aligned. DTOs, enums, and interfaces used across module boundaries have a single definition, not copies
 - [ ] Feature flag states consistent. If a flag guards behavior in one file, all related files respect the same flag
+- [ ] Env var completeness. Every env var referenced in code exists in `.env.example`, Docker Compose, CI/CD, and Terraform with matching names
+- [ ] Error type consistency. Domain error classes used across modules share a common base or discriminant, not ad-hoc strings
 
 ### 16. Cascading Fix Analysis
 
@@ -879,3 +941,32 @@ A failing check does not mean delete the work. The functionality is correct; onl
 4. Re-run the failing check to confirm it passes
 
 Reference: `rules/clean-room.md`
+
+### 51. Deployment Verification
+
+Apply after merging and deploying. Verify the deployed code works in production. Reference: `/deploy` skill.
+
+- [ ] Health endpoint returns 200 after deployment
+- [ ] Key user flows verified in production (login, core feature, checkout)
+- [ ] Error rate compared against pre-deploy baseline, no increase
+- [ ] No new console errors or warnings in browser
+- [ ] Performance metrics (response time, LCP) within acceptable range vs baseline
+- [ ] Rollback plan documented and verified (revert commit identified, rollback command ready)
+- [ ] Deployment logs clean, no warnings or deprecation notices
+- [ ] Database migrations applied successfully (if applicable)
+
+### 52. Design Quality
+
+Apply to frontend changes. Reference: `/review design` subcommand, `standards/frontend.md`, `standards/browser-testing.md`.
+
+- [ ] Typography hierarchy consistent: max 3-4 distinct sizes per page, clear visual weight progression
+- [ ] Color palette uses semantic tokens from the design system, no hardcoded hex values
+- [ ] All color combinations pass WCAG AA contrast (4.5:1 normal text, 3:1 large text)
+- [ ] Spacing follows the project's grid system (4px or 8px scale), no arbitrary pixel values
+- [ ] Every interactive element has visible focus state (3:1 contrast minimum)
+- [ ] All async operations have loading states
+- [ ] Empty states designed with guidance, not blank screens
+- [ ] Error states are informative and actionable, not generic "Something went wrong"
+- [ ] Component renders correctly at mobile, tablet, and desktop breakpoints
+- [ ] Touch targets at least 44x44px on mobile viewports
+- [ ] No AI-pattern defaults accepted without intentional customization (generic fonts, stock layouts, placeholder gradients)

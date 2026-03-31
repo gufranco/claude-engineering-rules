@@ -1,6 +1,6 @@
 ---
 name: incident
-description: Gather incident context and generate a blameless postmortem from the template in observability rules.
+description: Gather incident context and generate a blameless postmortem from the template in observability rules. Use when user says "postmortem", "incident report", "outage report", "what happened", "write a post-mortem", or needs to document an incident with timeline, root cause, and action items.
 ---
 
 Gather incident data from multiple sources, like recent deploys, error spikes, affected services, and recent changes, and produce a structured blameless postmortem following the template in `standards/observability.md`. Can also help during active incidents by collecting diagnostic information.
@@ -160,6 +160,6 @@ This skill accepts optional arguments after `/incident`:
 
 ## Related skills
 
-- `/checks` - Check CI/CD pipeline status during incident investigation.
-- `/commit` - Commit the postmortem document.
+- `/ship checks` - Check CI/CD pipeline status during incident investigation.
+- `/ship commit` - Commit the postmortem document.
 - `/review` - Review changes related to incident fixes.

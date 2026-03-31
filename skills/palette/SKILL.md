@@ -1,6 +1,6 @@
 ---
 name: palette
-description: Generate an accessible OKLCH color palette with WCAG AA contrast verification, ready for Tailwind CSS and shadcn/ui.
+description: Generate an accessible OKLCH color palette with WCAG AA contrast verification, ready for Tailwind CSS and shadcn/ui. Use when user says "generate colors", "color palette", "create a theme", "design tokens", "OKLCH palette", or needs accessible color scales for a frontend project. Do NOT use for full design audits (use /review design) or existing palette review.
 ---
 
 Generate a complete color system in OKLCH, verify all contrast ratios meet WCAG AA, and output CSS custom properties compatible with Tailwind CSS v4 and shadcn/ui.

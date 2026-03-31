@@ -144,6 +144,50 @@ pa11y-ci --config pa11y.config.js
 
 Zero errors for a pass. Pa11y returns a non-zero exit code on any violation, so it blocks the pipeline by default.
 
+## WCAG 2.2 Additions
+
+WCAG 2.2 adds criteria not present in 2.1. Check these in addition to the 2.1 baseline. Checklist items: `checklists/checklist.md` category 7 (Accessibility subsection).
+
+### Focus Not Obscured (2.4.11, AA)
+
+A focused element must not be entirely hidden by sticky headers, footers, overlays, or banners. Account for fixed/sticky bars when scrolling to focus:
+
+```css
+:focus {
+  scroll-margin-top: 80px;  /* height of sticky header */
+  scroll-margin-bottom: 60px; /* height of sticky footer */
+}
+
+:target {
+  scroll-margin-top: 80px;
+}
+```
+
+### Target Size Minimum (2.5.8, AA)
+
+Interactive targets must be at least 24x24 CSS pixels. Recommended comfortable size: 44x44px. Exceptions: inline text links, browser-controlled elements, targets whose 24px circle does not overlap another target's circle.
+
+### Dragging Movements (2.5.7, AA)
+
+Every drag action must have a single-pointer alternative. Sortable lists need up/down buttons alongside drag handles. Drag-to-resize needs input fields or buttons to set dimensions. Slider controls need keyboard arrow key support and direct value input.
+
+### Consistent Help (3.2.6, A)
+
+Help mechanisms (contact info, chat widget, FAQ link) must appear in the same relative position across pages. Do not move help to different locations on different pages.
+
+### Redundant Entry (3.3.7, A)
+
+Do not force users to re-enter the same information within the same session. Auto-populate from earlier steps. Let users select from previously entered values. Exceptions: security re-confirmation, expired content.
+
+### Accessible Authentication (3.3.8, AA)
+
+Login must not rely solely on cognitive function tests (puzzles, pattern recognition).
+
+- Allow paste in password fields: `<input type="password" autocomplete="current-password">`
+- Offer alternatives: passkey, SSO, email magic link
+- AA allows object recognition or personal content as alternatives
+- AAA (3.3.9) prohibits even those: only password managers, passkeys, or federated login
+
 ## Manual Testing Checklist
 
 Automated tools catch approximately 30-50% of accessibility issues. Manual testing is mandatory for every feature that changes UI.
