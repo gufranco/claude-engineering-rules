@@ -205,8 +205,8 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 <prioritized list, grouped by severity>
 ```
 
-10. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths (auth, data writes, error handling) is a blocking finding.
-11. **Fix mode** (if `--fix`): present report first, wait for confirmation. Generate tests following `rules/testing.md`: AAA pattern, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
+1. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths (auth, data writes, error handling) is a blocking finding.
+2. **Fix mode** (if `--fix`): present report first, wait for confirmation. Generate tests following `rules/testing.md`: AAA pattern, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
 
 ### 30 QA Rules Reference
 

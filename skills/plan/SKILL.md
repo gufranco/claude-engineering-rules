@@ -169,8 +169,8 @@ Create and manage Architecture Decision Records. ADRs capture context, alternati
 ### Risks
 ```
 
-4. Show draft, incorporate feedback, write file.
-5. For supersession: update original status to `superseded by ADR-NNN`, link from new ADR.
+1. Show draft, incorporate feedback, write file.
+2. For supersession: update original status to `superseded by ADR-NNN`, link from new ADR.
 
 ### Rules
 
