@@ -63,7 +63,7 @@ run_test "blocks fork bomb" \
 
 run_test "handles malformed JSON gracefully" \
     "${HOOKS}/dangerous-command-blocker.py" \
-    "${FIXTURES}/malformed-json.json" 0
+    "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
 echo "=== Conventional Commits ==="
@@ -90,7 +90,7 @@ run_test "allows valid heredoc commit" \
 
 run_test "handles malformed JSON gracefully" \
     "${HOOKS}/conventional-commits.sh" \
-    "${FIXTURES}/malformed-json.json" 0
+    "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
 echo "=== Secret Scanner ==="
@@ -111,7 +111,7 @@ run_test "allows commit when no staged files have secrets" \
 
 run_test "handles malformed JSON gracefully" \
     "${HOOKS}/secret-scanner.py" \
-    "${FIXTURES}/malformed-json.json" 0
+    "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
 echo "=== Smart Formatter ==="
@@ -208,7 +208,7 @@ run_test "ignores non-Write/Edit tools" \
 
 run_test "handles malformed JSON gracefully" \
     "${HOOKS}/env-file-guard.sh" \
-    "${FIXTURES}/malformed-json.json" 0
+    "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
 echo "=== GH Token Guard ==="
