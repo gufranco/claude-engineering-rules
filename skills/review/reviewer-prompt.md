@@ -4,7 +4,7 @@
 
 Apply the checklist to every review. Go through every applicable category. Do not skip sections because the change "looks small" or "is just a refactor."
 
-**Checklist** (`../../checklists/checklist.md`): 50 categories covering code-level quality (1-17), architecture, resilience, and infrastructure (18-49), and clean room verification (50). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-49 apply when relevant to the system type. Category 50 applies when external sources were consulted.
+**Checklist** (`../../checklists/checklist.md`): 52 categories covering code-level quality (1-17), architecture, resilience, and infrastructure (18-49), clean room verification (50), deployment verification (51), and design quality (52). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-52 apply when relevant to the system type.
 
 For every issue found, explain why it matters and provide a code example showing the fix.
 
@@ -23,6 +23,37 @@ Write every comment as if you are a senior engineer mentoring a colleague. Be di
 Do not use prefix labels like `issue:`, `suggestion:`, or `nit:`. Just say what you mean. The severity should be obvious from the content.
 
 Code examples in review comments must comply with all project coding standards defined in `rules/code-style.md`. A fix suggestion that introduces a rule violation, like using `any` as a type, bare `catch` blocks, magic numbers, or inline string literal unions, is itself a review defect. Hold your own examples to the same standard as the code you are reviewing.
+
+### GitHub Suggestion Syntax
+
+When posting review comments on GitHub PRs and the fix is a direct code replacement, use GitHub's native `suggestion` block instead of a plain fenced code block. This gives the author a one-click "Apply suggestion" button in the PR UI.
+
+````
+```suggestion
+const userId = parseInt(req.params.userId, 10);
+```
+````
+
+The suggestion block replaces the exact lines targeted by the comment. The code inside must be the complete replacement, not a partial snippet. Multi-line suggestions must include every line in the range, including unchanged lines.
+
+Use `suggestion` blocks when:
+- The fix is a direct, unambiguous code replacement on the commented lines.
+- The replacement is self-contained and does not require changes to other files or distant lines.
+
+Use standard fenced code blocks when:
+- The fix spans multiple locations or files.
+- The example is illustrative rather than a drop-in replacement.
+- The suggestion needs surrounding context the author should adapt.
+
+For files containing triple backticks like Markdown, wrap the outer block in four backticks or use tildes:
+
+`````
+````suggestion
+```typescript
+const example = "value";
+```
+````
+`````
 
 ### Example comments
 

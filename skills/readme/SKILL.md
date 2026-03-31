@@ -1,6 +1,6 @@
 ---
 name: readme
-description: Generate a marketing-grade README and GitHub repo description by analyzing the project's actual codebase, infrastructure, and architecture.
+description: Generate a marketing-grade README and GitHub repo description by analyzing the project's actual codebase, infrastructure, and architecture. Use when user says "write a README", "generate README", "update README", "repo description", or wants a polished project README for open source or marketing purposes. Do NOT use for assessment READMEs (use /assessment, which has its own technical README template) or general documentation updates.
 ---
 
 Generate a visually striking, technically deep README.md and GitHub repository description that sells the project at first glance. The output should feel like a product landing page built entirely in Markdown: eye-catching hero section, visual feature grids, architecture diagrams, concrete metrics, and a quick start that's impossible to miss. Every claim must be grounded in the actual codebase. Never invent features.
@@ -480,6 +480,6 @@ Make the project's scope tangible with specific numbers. These are the most pers
 
 ## Related skills
 
-- `/commit` - Commit the README changes.
-- `/pr` - Create a PR with the README update.
+- `/ship commit` - Commit the README changes.
+- `/ship pr` - Create a PR with the README update.
 - `/assessment` - Audit the implementation for completeness before documenting it.

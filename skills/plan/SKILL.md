@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Plan implementations, record architecture decisions, and scaffold boilerplate. Subcommands: plan (default), adr, scaffold. Creates spec folders, manages ADRs, and generates files from existing project patterns.
+description: Plan implementations, record architecture decisions, and scaffold boilerplate. Subcommands: plan (default), adr, scaffold. Creates spec folders, manages ADRs, and generates files from existing project patterns. Use when user says "plan this", "how should I implement", "design this feature", "create an ADR", "scaffold a service", "architecture decision", or needs to think through an approach before coding. Do NOT use for code review (use /review), shipping (use /ship), or running tests (use /test).
 ---
 
 Unified planning skill for requirements gathering, architecture decisions, and code generation. Replaces standalone `/plan`, `/adr`, and `/scaffold` skills.
@@ -35,10 +35,38 @@ Gather requirements, search for existing solutions, evaluate trade-offs, and pro
 - `<description>`: start planning with the given task.
 - `--light`: abbreviated plan without references or trade-off analysis. Produces `plan.md` only.
 - `--resume`: continue from the most recent spec folder.
+- `--discover`: run a structured discovery session before planning (see Discovery Phase below).
+- `--auto`: run discovery, scope review, and engineering review automatically. Surface only decisions that need human input. Skip interactive approval between phases.
+
+### Discovery Phase (when `--discover` or `--auto` is passed)
+
+Before step 1, run a structured discovery session. Ask these six forcing questions, one at a time:
+
+1. **Problem.** What problem does this solve? Who has it today? How do they work around it?
+2. **User.** Who is the user? What is their workflow before and after this feature?
+3. **Success.** What does success look like? How will you measure it?
+4. **Scope.** What is the minimum viable scope? What can be deferred?
+5. **Risk.** What are the biggest risks? Technical, product, timeline.
+6. **Alternatives.** What existing solutions did you consider? Why are they insufficient?
+
+Record the answers in the spec folder's `decisions.md` under a "Discovery" heading.
+
+### Scope Review (when `--auto` is passed, runs after discovery)
+
+Challenge the scope with four lenses before proceeding to architecture:
+
+| Lens | Question |
+|------|----------|
+| Expansion | What is missing that users will expect? What adjacent features add outsized value? |
+| Selective expansion | Which additions have the best effort-to-impact ratio? |
+| Hold | Is the scope right as-is? Does every item justify its cost? |
+| Reduction | What can be cut without losing core value? What is nice-to-have masquerading as must-have? |
+
+Present the scope review findings. In `--auto` mode, only pause for user input if the review suggests changes. If the scope is clean across all four lenses, proceed.
 
 ### Process
 
-1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints?
+1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints? (Skip if discovery phase already covered this.)
 
 2. **Search for existing work** (parallel):
    - Grep codebase for related patterns.
@@ -73,6 +101,31 @@ Gather requirements, search for existing solutions, evaluate trade-offs, and pro
 8. **Present plan.** Wait for approval.
 
 9. **Hand off.** Confirm spec written. State first step. Suggest `/plan scaffold` if new files needed. Suggest `/plan adr` if architecture decision was made.
+
+### Research Discipline
+
+These rules apply during steps 2-4 and any research, spike, or exploration phase. They prevent context loss during long investigative sessions.
+
+**2-action rule.** After every two search, read, or browse operations, persist key findings to `references.md` in the spec folder before continuing. Do not accumulate findings only in context. Multimodal content like screenshots, PDF contents, or browser output must be captured as text immediately because it does not survive context compaction.
+
+**Read before decide.** Re-read `plan.md` before any major decision. After ~50 tool calls, the original goal drifts out of the attention window. Re-reading pushes it back in. This applies to implementation too: before starting a new phase, re-read the plan.
+
+**Never repeat failures.** If an action failed, the next action must be different. Track every failed attempt with its error in `decisions.md` using this format:
+
+| Attempt | What was tried | Error | Next action |
+|---------|---------------|-------|-------------|
+| 1 | ... | ... | ... |
+
+Failed approaches are valuable context. Keep them visible so the model updates its beliefs rather than retrying the same path.
+
+### 3-Strike Error Protocol
+
+When an approach fails during planning or research:
+
+1. **Strike 1: Diagnose and fix.** Read the error. Identify root cause. Apply a targeted fix.
+2. **Strike 2: Alternative approach.** Same error? Try a different method, tool, or data source. Never repeat the exact same failing action.
+3. **Strike 3: Broader rethink.** Question the assumptions behind the approach. Search for solutions. Consider updating the plan's approach entirely.
+4. **After 3 strikes: Escalate.** Explain what was tried, share the specific errors, and ask for guidance. Do not continue guessing.
 
 ---
 
@@ -172,6 +225,8 @@ Generate boilerplate by reading existing project patterns. No external generator
 
 ## Related skills
 
+- `/design` -- Design consultation before planning UI features.
 - `/review` -- Review code quality after implementing the plan.
 - `/ship` -- Ship the implementation.
+- `/deploy` -- Merge and deploy after shipping.
 - `/assessment` -- Audit completeness after plan execution.

@@ -20,7 +20,7 @@ Domain-specific standards live in `standards/` and are NOT loaded automatically.
 
 ## Core Principles
 
-Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (50 categories, 540 items).
+Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (52 categories, 594 items).
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.
@@ -200,7 +200,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Zero warnings (cat 17):** tool output clean? Suppression justified?
    - **Writing style (prose/docs/rules):** em dashes removed? No parentheses in prose? Check every documentation, rule, or comment block you write or modify.
 
-   These are quick-scan reminders for the most critical categories. All 50 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, and category 50 for clean room verification when external sources were consulted. Read the full checklist, not just this summary.
+   These are quick-scan reminders for the most critical categories. All 52 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification when external sources were consulted, category 51 for deployment verification, and category 52 for design quality. Read the full checklist, not just this summary.
 
    State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
 

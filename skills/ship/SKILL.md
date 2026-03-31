@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Ship code through the full delivery pipeline. Subcommands: commit, pr, release, checks, worktree. Handles semantic commits, pull requests with CI monitoring, tagged releases, pipeline diagnosis, and parallel worktree management.
+description: Ship code through the full delivery pipeline. Subcommands: commit, pr, release, checks, worktree. Handles semantic commits, pull requests with CI monitoring, tagged releases, pipeline diagnosis, and parallel worktree management. Use when user says "commit", "create a PR", "push", "release", "check CI", "pipeline status", "worktree", or wants to move code from working directory to production. Do NOT use for code review (use /review), running tests (use /test), or planning (use /plan).
 ---
 
 Unified delivery skill for getting code from working directory to production. Replaces standalone `/commit`, `/pr`, `/release`, `/checks`, and `/worktree` skills.
@@ -76,6 +76,7 @@ Create or update a pull request with a structured description. Supports GitHub a
 - `--assignee <user>`: assign PR (defaults to `@me`).
 - `--label <name>`: add label (repeatable).
 - `--no-pipeline`: skip CI monitoring after creation.
+- `--docs`: automatically update stale documentation without asking.
 - `update` or a PR number: update existing PR.
 
 ### Steps
@@ -92,8 +93,15 @@ Create or update a pull request with a structured description. Supports GitHub a
 10. **Build title and description**: detect PR template (`.github/PULL_REQUEST_TEMPLATE.md` or GitLab equivalent). Use What/How/Testing structure. Scale to PR size.
 11. **Create/update**: write body to temp file. `gh pr create --body-file` or `glab mr create --description-file`. Self-assign by default. Clean up temp file.
 12. Show PR URL.
-13. **Restore account** per `standards/borrow-restore.md`.
-14. Enter Pipeline Monitoring loop unless `--no-pipeline`.
+13. **Documentation staleness check.** Read project documentation files (README.md, CONTRIBUTING.md, docs/ directory) and cross-reference against the diff:
+    - New features without corresponding documentation.
+    - Removed features still documented.
+    - Changed APIs with stale examples.
+    - New environment variables not in `.env.example`.
+    - New CLI commands or scripts not documented.
+    If stale documentation is found, list the gaps and offer to update. If `--docs` flag is passed, update automatically without asking.
+14. **Restore account** per `standards/borrow-restore.md`.
+15. Enter Pipeline Monitoring loop unless `--no-pipeline`.
 
 ### PR Title
 
@@ -269,3 +277,4 @@ After CI passes, check for actionable review comments. Present findings. Offer t
 - `/review` -- Review code before or after creating a PR.
 - `/test` -- Run tests before shipping.
 - `/infra` -- Manage Docker/DB before shipping.
+- `/deploy` -- Merge and deploy after the PR is approved.

@@ -1,5 +1,24 @@
 # Code Style
 
+## Completeness (MANDATORY)
+
+Always choose the complete implementation. No half-measures, no TODOs, no "leave for later," no shortcuts. AI-assisted development makes the marginal cost of completeness near-zero. The 70-line difference between a full implementation and a 90% shortcut costs seconds to generate. There is no justification for shipping incomplete work.
+
+This applies to every scenario without exception:
+
+- Tests: write all test cases, all edge cases, all error paths. Never "add tests later"
+- Error handling: handle every error path. Never swallow, never punt
+- Validation: validate all inputs completely. Never skip "for now"
+- Edge cases: handle all of them. Never assume they will not happen
+- Documentation: update everything the change affects. Never leave stale docs
+- Accessibility: implement fully. Never "a11y pass later"
+- Migrations: write both up and down. Never skip the down migration
+- Cleanup: remove dead code, unused imports, stale references. Never leave debris
+
+When the scope of completeness crosses into multi-week rewrites or cross-cutting architectural changes, flag them as a separate task. But within the declared scope of the current task, every aspect must be finished to production quality. "Done" means done.
+
+## Fundamentals
+
 - DRY, SOLID, KISS, YAGNI, LoD, CQS, Pit of Success
 - Small functions (< 30 lines)
 - Meaningful names

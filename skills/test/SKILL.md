@@ -1,6 +1,6 @@
 ---
 name: test
-description: Run tests, load benchmarks, coverage analysis, linting, and security scanning. Subcommands absorb /perf for HTTP load testing with k6/wrk/hey/ab.
+description: Run tests, load benchmarks, coverage analysis, linting, and security scanning. Subcommands absorb /perf for HTTP load testing with k6/wrk/hey/ab. Use when user says "run tests", "check coverage", "lint", "benchmark", "load test", "perf test", or wants to execute the project's test suite with results. Do NOT use for QA analysis of test gaps (use /review qa), security auditing (use /audit), or writing test scenarios during planning (use /plan).
 ---
 
 Unified testing skill covering test execution, load testing, coverage, linting, and scanning. Replaces standalone `/test` and `/perf` skills.

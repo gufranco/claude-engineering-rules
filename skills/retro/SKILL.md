@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Session retrospective and codebase pattern discovery. Subcommands: retro (default) extracts corrections and preferences into durable config, discover extracts codebase conventions into rule files. Enhanced with self-improving agent lifecycle.
+description: Session retrospective and codebase pattern discovery. Subcommands: retro (default) extracts corrections and preferences into durable config, discover extracts codebase conventions into rule files. Enhanced with self-improving agent lifecycle. Use when user says "retro", "what did we learn", "save preferences", "discover patterns", "extract conventions", or after a significant multi-step session with corrections worth persisting.
 ---
 
 Unified learning skill for extracting patterns from conversations and codebases. Replaces standalone `/retro` and `/discover` skills. Enhanced with the self-improving agent lifecycle from alirezarezvani/claude-skills: capture, flag for promotion, graduate to rules.

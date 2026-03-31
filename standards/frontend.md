@@ -14,6 +14,20 @@
 
 Prefer system font stacks or self-hosted fonts via `next/font`. Never load fonts from external CDNs: it adds a blocking request and leaks user data.
 
+### Avoiding Distributional Convergence
+
+When generating new frontend code, Claude defaults to statistically average design choices from training data: Inter, Roboto, system fonts, purple gradients on white backgrounds, flat solid-color layouts. This produces generic interfaces that look indistinguishable from other AI-generated output.
+
+To counter this when building new frontends:
+
+- Choose distinctive fonts, not defaults. Avoid Inter, Roboto, Open Sans, Lato, and Arial for display text. Prefer fonts with character: editorial serifs (Playfair Display, Crimson Pro), technical sans (IBM Plex, Source Sans 3), distinctive choices (Bricolage Grotesque, Newsreader), or code-aesthetic monospace (JetBrains Mono, Fira Code) for technical interfaces.
+- Use extreme weight contrasts: 100/200 vs 800/900, not 400 vs 600. Size jumps of 3x or more for hierarchy, not 1.5x.
+- Commit to a bold color direction. Dominant colors with sharp accents produce stronger designs than timid, evenly-distributed palettes.
+- Create background depth. Layer CSS gradients, geometric patterns, noise textures, or contextual effects instead of flat solid colors.
+- Vary across generations. Each new project gets a different aesthetic direction. If the previous output used Space Grotesk with a dark theme, the next one should not.
+
+This guidance applies when creating new UIs, not when working within an existing design system that specifies its own fonts and colors.
+
 ## Spacing
 
 Use Tailwind's spacing scale consistently. Pick one vertical rhythm and stick with it.
@@ -241,6 +255,206 @@ Use a headless or pre-built component library for all interactive UI elements. N
 | No layout shift | Set explicit dimensions on images, fonts, and dynamic content |
 | CSS-only where possible | Prefer Tailwind utilities over runtime CSS-in-JS |
 | Tree-shakeable imports | Import specific components, not entire libraries |
+
+## Web Performance
+
+### Budgets
+
+| Resource | Limit | Rationale |
+|----------|-------|-----------|
+| Total page weight | < 1.5 MB | Loads in ~4s on 3G |
+| JavaScript (compressed) | < 300 KB | Main thread blocking above this threshold degrades INP |
+| CSS (compressed) | < 100 KB | Render-blocking; keep critical CSS < 14 KB inlined |
+| Above-fold images | < 500 KB total | Directly impacts LCP |
+| Fonts | < 100 KB total | Avoid FOUT/FOIT; use variable fonts for multiple weights |
+| Third-party scripts | < 200 KB total | Each script competes for main thread time |
+
+### Metric Targets
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| TTFB | < 800ms | CDN, edge caching, optimized backend |
+| LCP | < 2.5s | 75th percentile, field data |
+| FCP | < 1.8s | Critical CSS inlined, fonts non-blocking |
+| INP | < 200ms | 75th percentile, field data |
+| CLS | < 0.1 | 75th percentile, field data |
+| TBT | < 200ms | Lab measurement |
+| TTI | < 3.8s | Lab measurement |
+
+### Resource Loading
+
+- Preconnect to required origins: `<link rel="preconnect" href="https://domain.com">`
+- Preload LCP image: `<link rel="preload" href="/hero.avif" as="image" fetchpriority="high">`
+- Preload critical fonts: `<link rel="preload" href="/font.woff2" as="font" type="font/woff2" crossorigin>`
+- Inline critical CSS (< 14 KB) for above-fold content
+- Defer non-critical CSS with preload + onload pattern
+- `defer` on non-essential scripts, `async` for independent scripts
+- `type="module"` for ES modules (deferred by default)
+
+### Image Optimization
+
+| Format | Use for | Browser support |
+|--------|---------|----------------|
+| AVIF | Photos, best compression | 92%+ |
+| WebP | Photos, fallback for AVIF | 97%+ |
+| PNG | Graphics with transparency | Universal |
+| SVG | Icons, logos, illustrations | Universal |
+
+LCP image attributes: `fetchpriority="high"`, `loading="eager"`, `decoding="sync"`, explicit `width`/`height` or `aspect-ratio`.
+
+Below-fold images: `loading="lazy"`, `decoding="async"`.
+
+Responsive images use `<picture>` with AVIF > WebP > JPEG fallback chain and multiple `srcset` breakpoints (400w, 800w, 1200w typical).
+
+### Font Loading
+
+| Strategy | When to use |
+|----------|------------|
+| `font-display: swap` | Primary fonts. Show content immediately, swap when loaded |
+| `font-display: optional` | Non-critical fonts. Skip if slow, prevents layout shift |
+| `size-adjust` + `ascent-override` + `descent-override` | Match fallback metrics to web font to prevent CLS during swap |
+| Variable fonts | When multiple weights are needed. Single file for weight range 100-900 |
+
+System font stack as fallback: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`.
+
+### JavaScript Optimization
+
+- Route-based code splitting: `lazy(() => import('./Dashboard'))`
+- Component-based splitting for heavy UI: `lazy(() => import('./HeavyChart'))`
+- Tree shaking: import specific functions, not entire libraries
+- Virtualize lists > 100 items with `content-visibility: auto` and `contain-intrinsic-size`
+
+### Runtime Performance
+
+- Batch DOM reads before writes. Never interleave reads and writes in a loop
+- Debounce scroll/resize handlers (100ms typical)
+- `requestAnimationFrame` for visual updates synced with display refresh
+- `requestIdleCallback` for non-critical work (analytics, prefetch)
+- Break long tasks (> 50ms) with yielding: `await new Promise(r => setTimeout(r, 0))`
+
+### Third-Party Scripts
+
+- Load with `async`: `<script async src="..."></script>`
+- Delay until interaction using IntersectionObserver or facade pattern (static placeholder until user engages)
+- Delay until DOMContentLoaded for non-critical integrations
+
+### Core Web Vitals Debugging
+
+```javascript
+import { onLCP, onINP, onCLS } from "web-vitals";
+onLCP(console.log);
+onINP(console.log);
+onCLS(console.log);
+```
+
+**LCP debugging**: identify the LCP element with `PerformanceObserver` for `largest-contentful-paint` entries. Common causes: slow TTFB, render-blocking CSS, unoptimized LCP image, client-side rendering delay.
+
+**INP debugging**: observe `event` entries with `durationThreshold: 16`. Break down into input delay (< 50ms), processing time (< 100ms), presentation delay (< 50ms).
+
+**CLS debugging**: observe `layout-shift` entries. Common causes: images without dimensions, web font FOUT, dynamically injected content above viewport, animations using `height`/`width`/`margin` instead of `transform`.
+
+### Framework-Specific Optimizations
+
+| Framework | LCP | INP | CLS |
+|-----------|-----|-----|-----|
+| Next.js | `<Image priority fill>` from `next/image` | `dynamic(() => import('./Heavy'), { ssr: false })` | `<Image>` handles dimensions automatically |
+| React | `<link rel="preload" fetchpriority="high">` | `useTransition` for expensive state updates, `React.memo` for stable subtrees | Always specify `width`/`height` on `<img>` |
+| Vue/Nuxt | `<NuxtImg preload loading="eager">` | Async components: `defineAsyncComponent(() => import('./Heavy.vue'))` | Bind `style="aspect-ratio: 16/9"` |
+
+### Caching
+
+| Resource | Cache-Control |
+|----------|--------------|
+| HTML | `no-cache, must-revalidate` |
+| Static assets (JS, CSS, images) | `public, max-age=31536000, immutable` |
+| API responses | `private, max-age=0, must-revalidate` |
+
+Use a CDN for global distribution. Enable Brotli compression (15-20% smaller than Gzip).
+
+### Measurement
+
+- Lab: Chrome DevTools Performance panel, Lighthouse CLI, WebPageTest
+- Field: Chrome User Experience Report (CrUX), Google Search Console, `web-vitals` library sent to analytics
+- Lighthouse CLI: `npx lighthouse https://example.com --output html --output-path report.html`
+
+## SEO
+
+Skip this section if the project is not a public-facing web application.
+
+### Title Tags
+
+- 50-60 characters. Google truncates at ~60
+- Primary keyword near the beginning
+- Unique for every page
+- Brand name at end unless homepage
+
+### Meta Descriptions
+
+- 150-160 characters
+- Include primary keyword naturally
+- Compelling call-to-action
+- Unique for every page
+
+### Heading Structure
+
+- Single `<h1>` per page representing the main topic
+- Logical hierarchy: never skip levels (H1 > H2 > H3, not H1 > H3)
+- Include keywords naturally
+
+### Canonical URLs
+
+Prevent duplicate content: `<link rel="canonical" href="https://example.com/page">`. Self-referencing canonical on the canonical URL itself.
+
+### Structured Data (JSON-LD)
+
+Add JSON-LD for the content type. Common schemas:
+
+| Content type | Schema |
+|-------------|--------|
+| Business/app | `Organization` with `name`, `url`, `logo`, `contactPoint` |
+| Blog post | `Article` with `headline`, `author`, `datePublished`, `dateModified` |
+| Product page | `Product` with `name`, `offers`, `aggregateRating` |
+| FAQ page | `FAQPage` with `mainEntity` array of `Question`/`Answer` |
+| Navigation | `BreadcrumbList` with `itemListElement` |
+
+Validate with Google Rich Results Test.
+
+### robots.txt
+
+```
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /private/
+Sitemap: https://example.com/sitemap.xml
+```
+
+### XML Sitemap
+
+- Maximum 50,000 URLs or 50 MB per sitemap file
+- Use sitemap index for larger sites
+- Include only canonical, indexable URLs
+- Update `lastmod` when content changes
+- Submit to Google Search Console
+
+### International SEO
+
+Use `hreflang` tags when serving content in multiple languages:
+
+```html
+<link rel="alternate" hreflang="en" href="https://example.com/page">
+<link rel="alternate" hreflang="pt-BR" href="https://example.com/pt-br/page">
+<link rel="alternate" hreflang="x-default" href="https://example.com/page">
+```
+
+Declare page language: `<html lang="en">`. Mark language changes inline: `<span lang="pt">texto</span>`.
+
+### Mobile SEO
+
+- Viewport: `<meta name="viewport" content="width=device-width, initial-scale=1">`
+- Body font size: 16px minimum
+- Tap targets: 48x48px minimum with 12px padding
 
 ## Tailwind Conventions
 

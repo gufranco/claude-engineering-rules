@@ -81,4 +81,4 @@ Apply `checklists/checklist.md` category 17 during every review. Warnings are bl
 
 ## Pre-Completion Checklist
 
-Run through `checklists/checklist.md`. All 50 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification.
+Run through `checklists/checklist.md`. All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.

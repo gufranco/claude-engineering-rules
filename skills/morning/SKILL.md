@@ -1,6 +1,6 @@
 ---
 name: morning
-description: Start-of-day dashboard with open PRs, pending reviews, notifications, and standup prep.
+description: Start-of-day dashboard with open PRs, pending reviews, notifications, and standup prep. Use when user says "good morning", "morning", "standup", "daily standup", "what's on my plate", "start of day", or wants a summary of pending work across GitHub and GitLab.
 ---
 
 Morning briefing that gives you a full picture of where things stand before you start coding. Covers your open PRs, reviews waiting for you, unread notifications, yesterday's activity, and local repo state. Queries all authenticated accounts on each platform, not just the active one. Can also review all pending PRs interactively after the briefing.
@@ -179,7 +179,7 @@ Flags can be combined: `/morning --all --review`.
     - "You have 2 PRs with failing CI. Run `/checks` to diagnose."
     - "PR #42 has been approved and CI is green. Ready to merge."
     - "You have 5 merged branches locally. Consider cleaning up with `git branch -d ...`."
-    - "You have uncommitted changes on `feature/auth`. Pick up where you left off or `/commit`."
+    - "You have uncommitted changes on `feature/auth`. Pick up where you left off or `/ship commit`."
 
     If there are pending reviews (non-draft PRs from step 6), always include this as a suggested action and ask:
 
@@ -270,6 +270,6 @@ Flags can be combined: `/morning --all --review`.
 ## Related skills
 
 - `/review` - Review a single specific PR with the same rigor. Use this when you want to review one PR outside of the morning routine.
-- `/checks` - Diagnose failing CI/CD pipelines on specific PRs.
-- `/pr` - Create or update PRs for branches with unpushed work.
-- `/commit` - Commit uncommitted changes found during the local state check.
+- `/ship checks` - Diagnose failing CI/CD pipelines on specific PRs.
+- `/ship pr` - Create or update PRs for branches with unpushed work.
+- `/ship commit` - Commit uncommitted changes found during the local state check.
