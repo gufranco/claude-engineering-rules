@@ -12,7 +12,6 @@ import glob
 import json
 import os
 import re
-import subprocess
 import sys
 
 CLAUDE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -209,7 +208,7 @@ def main():
         for m in all_mismatches:
             print(m)
         print(
-            f"\nUpdate these references to match the derived counts above."
+            "\nUpdate these references to match the derived counts above."
         )
         sys.exit(1)
     else:
