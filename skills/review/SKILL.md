@@ -51,11 +51,26 @@ When `--backend` or `--frontend` is passed, classify each file:
 3. **Get diff and context**: PR mode gets metadata and diff via `gh pr diff`/`glab mr diff`. Local mode detects base, fetches, diffs. Warn about uncommitted changes in local mode.
 4. **Apply scope filter** if `--backend` or `--frontend` passed.
 5. **Read context**: PR description, commit messages, every changed file in full, imported modules, existing review comments, verify PR description matches diff.
-6. **Blast radius analysis**: the diff is not the review boundary, the project is. For every changed file, trace outward to find code that depends on the change. Read every impacted file, not just the diff.
+6. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers (`package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`), import statements in changed files, directory names, and config files. Match signals against trigger keywords in the `on_demand` section. Load **every** matched standard file plus all `always_loaded` rules.
 
-   **6a. Identify what changed at the interface level.** Extract every modified export, function signature, type, interface, enum, route, database column, env var, config key, event name, and public API contract from the diff.
+   This makes the review aware of domain-specific best practices. A PR that adds a database migration is reviewed against `standards/database.md`. A PR that adds a GraphQL resolver is reviewed against `standards/graphql-api-design.md`. A PR that adds a queue consumer is reviewed against `standards/message-queues.md`.
 
-   **6b. Find all consumers.** For each changed interface, grep the entire project for:
+   Also load these rules for review context:
+   - `rules/verification.md`: when reviewing claims about test coverage or build success
+   - `rules/pre-flight.md`: when reviewing whether the author checked for existing solutions
+   - `rules/security.md`: security-specific criteria beyond the checklist categories
+   - `rules/writing-precision.md`: quality gate for review comments themselves
+   - `rules/code-style.md`: completeness, immutability, error classification, type conventions
+   - `rules/testing.md`: mock policy, AAA pattern, faker, deterministic tests
+
+   Before suggesting fixes that call library APIs, check `standards/llm-docs.md` for the library's documentation URL. Verify the API exists.
+
+   Record which standards were loaded for inclusion in the review verdict.
+7. **Blast radius analysis**: the diff is not the review boundary, the project is. For every changed file, trace outward to find code that depends on the change. Read every impacted file, not just the diff.
+
+   **7a. Identify what changed at the interface level.** Extract every modified export, function signature, type, interface, enum, route, database column, env var, config key, event name, and public API contract from the diff.
+
+   **7b. Find all consumers.** For each changed interface, grep the entire project for:
 
    | What changed | Search for |
    |-------------|-----------|
@@ -69,19 +84,19 @@ When `--backend` or `--frontend` is passed, classify each file:
    | Config key | All consumers of the config module |
    | CSS class or design token | All `className` references and Tailwind config |
 
-   **6c. Read every impacted file.** Read the full content of every consumer found in 6b, not just the import line. Verify the consumer still works correctly with the new interface. A function that changes its return type from `string` to `string | undefined` might have 40 callers that do not handle `undefined`.
+   **7c. Read every impacted file.** Read the full content of every consumer found in 7b, not just the import line. Verify the consumer still works correctly with the new interface. A function that changes its return type from `string` to `string | undefined` might have 40 callers that do not handle `undefined`.
 
-   **6d. Flag impact findings.** For each consumer that would break or behave differently after the change, record: the consumer file and line, what it expects, and how the change violates that expectation. These findings have the same severity as bugs found in the diff itself.
+   **7d. Flag impact findings.** For each consumer that would break or behave differently after the change, record: the consumer file and line, what it expects, and how the change violates that expectation. These findings have the same severity as bugs found in the diff itself.
 
-7. **Three explicit passes** (applied to the diff AND to impacted files from step 6):
-   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md` (1-14, 17, 18-52). Apply to changed files first, then to impacted consumer files where the change alters behavior.
-   - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 6 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
+8. **Three explicit passes** (applied to the diff AND to impacted files from step 7):
+   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md` (1-14, 17, 18-52). Additionally, for each standard loaded in step 6, verify that changed code follows the patterns in that standard. A database query that violates `standards/database.md` is a finding. A new API endpoint that ignores `standards/api-design.md` conventions is a finding. A queue consumer that ignores `standards/message-queues.md` error handling is a finding. Reference the specific standard in each finding. Apply to changed files first, then to impacted consumer files where the change alters behavior.
+   - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 7 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
-8. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply `../../checklists/checklist.md` category 8. If coverage is below threshold, flag it as a blocking finding.
-9. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply `../../checklists/checklist.md` category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
-10. **Check branch freshness, CI, test evidence, PR size** (parallel). Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
-11. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change.
-12. **Next steps**:
+9. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply `../../checklists/checklist.md` category 8. If coverage is below threshold, flag it as a blocking finding.
+10. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply `../../checklists/checklist.md` category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
+11. **Check branch freshness, CI, test evidence, PR size** (parallel). Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
+12. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a **Standards Applied** line listing all standards loaded in step 6 (e.g., "Standards applied: database.md, api-design.md, resilience.md"). This makes the review transparent about what was checked.
+13. **Next steps**:
     - **Own PR / local**: offer to fix issues. Convergence loop (max 5 iterations): fix, re-verify, re-audit. If 5 iterations are exhausted with findings still open, stop, list the remaining issues, and inform the author. Five iterations is enough for any reasonable convergence; remaining issues likely need a design change, not another fix pass.
     - **Someone else's PR**: offer to post inline comments. Show the exact payload first: each comment with file, line, body text, and suggestion blocks. Ask for confirmation before posting. `--post` skips the confirmation prompt but still shows the payload summary.
 
@@ -166,14 +181,20 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 ### Steps
 
 1. **Identify scope**: path argument or `git diff origin/<base>...HEAD --name-only`. Filter to implementation files.
-2. **Map behavior paths**: for each file, extract happy paths, input variations, validation failures, authorization paths, state transitions, error recovery, boundary values, concurrency, data integrity, side effects.
-3. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, `tests/`, `e2e/`. Map each `it()`/`test()` to behavior paths.
-4. **Cross-reference**: classify each path as Covered, Partial, Missing, or Untestable.
-5. **Risk assessment**: Critical (auth bypass, data loss, security), High (core feature broken, data corruption), Medium (non-core, graceful degradation), Low (cosmetic, unlikely edge case).
-6. **Run 30 QA rules**: functional correctness (1-6), error handling (7-12), security (13-18), data integrity (19-22), integration boundaries (23-26), edge cases and resilience (27-30).
-7. **PICT combinatorial testing** (if `--pict`): for functions with 3+ parameters, generate pairwise test combinations. List parameters and their values, produce a combinatorial matrix, show which combinations are untested.
-8. **Coverage delta** (if `--coverage`): look for `coverage/lcov.info` or `coverage/coverage-summary.json`. Parse to find uncovered lines in files under analysis. Map uncovered lines to behavior paths from step 2.
-9. **Generate report**:
+2. **Load domain-specific test standards.** Read `~/.claude/rules/index.yml` and match the project against test-related standards:
+   - If the project has Playwright or Cypress: load `standards/browser-testing.md` and check test patterns against it
+   - If the project has `.tftest.hcl` files or Terraform: load `standards/terraform-testing.md`
+   - If the project has axe-core, jest-axe, or pa11y dependencies: load `standards/accessibility-testing.md`
+   - Always load `rules/testing.md` for the base test methodology (AAA, mock policy, faker, coverage)
+   - Findings from these standards become QA findings with the same severity/rule citation format
+3. **Map behavior paths**: for each file, extract happy paths, input variations, validation failures, authorization paths, state transitions, error recovery, boundary values, concurrency, data integrity, side effects.
+4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, `tests/`, `e2e/`. Map each `it()`/`test()` to behavior paths.
+5. **Cross-reference**: classify each path as Covered, Partial, Missing, or Untestable.
+6. **Risk assessment**: Critical (auth bypass, data loss, security), High (core feature broken, data corruption), Medium (non-core, graceful degradation), Low (cosmetic, unlikely edge case).
+7. **Run 30 QA rules**: functional correctness (1-6), error handling (7-12), security (13-18), data integrity (19-22), integration boundaries (23-26), edge cases and resilience (27-30).
+8. **PICT combinatorial testing** (if `--pict`): for functions with 3+ parameters, generate pairwise test combinations. List parameters and their values, produce a combinatorial matrix, show which combinations are untested.
+9. **Coverage delta** (if `--coverage`): look for `coverage/lcov.info` or `coverage/coverage-summary.json`. Parse to find uncovered lines in files under analysis. Map uncovered lines to behavior paths from step 3.
+10. **Generate report**:
 
 ```
 ## QA Analysis Report
