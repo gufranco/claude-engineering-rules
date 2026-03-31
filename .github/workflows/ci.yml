@@ -26,7 +26,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install linters
-        run: pip install ruff
+        run: pip install ruff pyyaml
 
       - name: ShellCheck (Linux)
         if: runner.os == 'Linux'
@@ -64,22 +64,24 @@ jobs:
       - name: Validate index.yml paths
         run: |
           python3 -c "
-          import yaml, os, sys
+          import os, sys
           try:
-              with open('rules/index.yml') as f:
-                  idx = yaml.safe_load(f)
-              errors = 0
-              for section in ['always_loaded', 'on_demand']:
-                  for name, entry in (idx.get(section) or {}).items():
-                      path = entry.get('path', f'rules/{name}.md')
-                      if not os.path.exists(path):
-                          print(f'ERROR: {path} referenced in index.yml does not exist')
-                          errors += 1
-              if errors:
-                  sys.exit(1)
-              print('All index.yml paths valid')
+              import yaml
           except ImportError:
               print('PyYAML not installed, skipping path validation')
+              sys.exit(0)
+          with open('rules/index.yml') as f:
+              idx = yaml.safe_load(f)
+          errors = 0
+          for section in ['always_loaded', 'on_demand']:
+              for name, entry in (idx.get(section) or {}).items():
+                  path = entry.get('path', f'rules/{name}.md')
+                  if not os.path.exists(path):
+                      print(f'ERROR: {path} referenced in index.yml does not exist')
+                      errors += 1
+          if errors:
+              sys.exit(1)
+          print('All index.yml paths valid')
           "
 
       - name: Validate Markdown structure
