@@ -1,11 +1,51 @@
 #!/usr/bin/env bash
 # scope-guard.sh — Detect files modified outside declared scope.
 #
-# Stop hook that compares git-modified files against the scope declared
-# in the most recent .spec.md file's "Files to Create/Modify" section.
-# Non-blocking: shows a warning, never fails.
+# Two modes:
+# 1. Spec-based: compares git-modified files against a .spec.md file.
+# 2. Freeze mode: when ~/.claude/.freeze-scope exists, blocks all edits
+#    outside the frozen directory. Used by /investigate --freeze.
+#
+# Non-blocking in spec mode (warning only).
+# Blocking in freeze mode (exits non-zero to prevent edits).
 # Install per-project by adding to .claude/settings.json.
 
+FREEZE_FILE="${HOME}/.claude/.freeze-scope"
+
+# ── Freeze mode check ──────────────────────────────────────────────
+# Read tool input from stdin (PreToolUse hooks receive JSON on stdin)
+STDIN_INPUT=$(cat 2>/dev/null || true)
+
+if [[ -f "${FREEZE_FILE}" ]]; then
+  FROZEN_DIR=$(cat "${FREEZE_FILE}" 2>/dev/null)
+  if [[ -n "${FROZEN_DIR}" ]]; then
+    # Extract file_path from the tool input JSON
+    INPUT_FILE=""
+    if [[ -n "${STDIN_INPUT}" ]]; then
+      INPUT_FILE=$(echo "${STDIN_INPUT}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('input',{}).get('file_path',''))" 2>/dev/null || true)
+    fi
+
+    if [[ -n "${INPUT_FILE}" ]]; then
+      # Resolve to absolute path for comparison
+      RESOLVED_INPUT=$(cd "$(dirname "${INPUT_FILE}" 2>/dev/null)" && pwd)/$(basename "${INPUT_FILE}") 2>/dev/null || INPUT_FILE
+      RESOLVED_FROZEN=$(cd "${FROZEN_DIR}" 2>/dev/null && pwd) 2>/dev/null || FROZEN_DIR
+
+      case "${RESOLVED_INPUT}" in
+        "${RESOLVED_FROZEN}"/*) ;; # Inside frozen scope, allow
+        *)
+          echo ""
+          echo "FREEZE GUARD: Edit blocked. Scope is frozen to: ${FROZEN_DIR}"
+          echo "  Attempted edit: ${INPUT_FILE}"
+          echo "  Run /investigate --unfreeze to remove the restriction."
+          echo ""
+          exit 2
+          ;;
+      esac
+    fi
+  fi
+fi
+
+# ── Spec-based scope check ─────────────────────────────────────────
 PROJECT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
 
 # Find the most recent .spec.md file
