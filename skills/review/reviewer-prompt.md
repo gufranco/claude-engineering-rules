@@ -6,6 +6,8 @@ Apply the checklist to every review. Go through every applicable category. Do no
 
 **Checklist** (`../../checklists/checklist.md`): 52 categories covering code-level quality (1-17), architecture, resilience, and infrastructure (18-49), clean room verification (50), deployment verification (51), and design quality (52). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-52 apply when relevant to the system type.
 
+In addition to the checklist, the review dynamically loads on-demand standards from `~/.claude/rules/index.yml` that match the project's technology stack. When a standard is loaded, review code against its specific patterns. Reference the standard file in findings (e.g., "violates `standards/database.md` N+1 rule").
+
 For every issue found, explain why it matters and provide a code example showing the fix.
 
 ---
