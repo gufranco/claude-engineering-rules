@@ -34,8 +34,8 @@ CRITICAL_PATHS = [
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.git\b", "Deleting .git/ destroys repository history"),
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.env\b", "Deleting .env removes environment configuration"),
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.claude\b", "Deleting .claude/ removes Claude configuration"),
-    (r"\bgit\s+push\s+.*--force\s", "Use --force-with-lease instead of --force"),
-    (r"\bgit\s+push\s+.*-f\s", "Use --force-with-lease instead of -f"),
+    (r"\bgit\s+push\s+.*--force(\s|$)", "Use --force-with-lease instead of --force"),
+    (r"\bgit\s+push\s+.*-f(\s|$)", "Use --force-with-lease instead of -f"),
     (r"\bgit\s+reset\s+--hard\b", "git reset --hard discards uncommitted work"),
     (r"\bgit\s+clean\s+.*-f", "git clean -f permanently deletes untracked files"),
     (r"\bgit\s+checkout\s+\.\s*$", "git checkout . discards all unstaged changes"),
@@ -84,11 +84,11 @@ def main():
         except Exception:
             branch = ""
 
+        protected = re.compile(r"\b(main|master|develop)\b")
         targets_protected = (
-            re.search(r"\borigin\s+main\b", command)
-            or re.search(r"\borigin\s+master\b", command)
-            or re.search(r"\borigin\s+develop\b", command)
-            or (branch in ("main", "master", "develop") and not re.search(r"\borigin\s+\w", command))
+            re.search(r"\borigin\s+", command) and protected.search(command.split("origin", 1)[-1])
+        ) or (
+            branch in ("main", "master", "develop") and not re.search(r"\borigin\s+\w", command)
         )
         if targets_protected:
             print(

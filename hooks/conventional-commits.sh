@@ -34,23 +34,23 @@ fi
 MESSAGE=$(echo "${COMMAND}" | python3 -c "
 import re, sys
 cmd = sys.stdin.read()
-# Match heredoc format: cat <<'EOF' or cat <<EOF
-heredoc = re.search(r\"cat <<'?EOF'?\\n(.+?)\\nEOF\", cmd, re.DOTALL)
+# Match heredoc format: cat <<'DELIM' or cat <<DELIM
+# Use a backreference to match the correct closing delimiter, handling EOF in body
+heredoc = re.search(r\"cat <<'?(\w+)'?\\n(.+?)\\n\\s*\\1\", cmd, re.DOTALL)
 if heredoc:
-    print(heredoc.group(1).strip())
+    print(heredoc.group(2).strip())
     sys.exit(0)
 # Match -m with quotes
 m_flag = re.search(r'-m\s+[\x22\x27](.+?)[\x22\x27]', cmd)
 if m_flag:
     print(m_flag.group(1).strip())
     sys.exit(0)
-# Match -m with \$() substitution
+# Match -m with \$() substitution containing heredoc
 m_sub = re.search(r'-m\s+\"\\\$\\(cat <<', cmd)
 if m_sub:
-    # Heredoc inside -m, extract the content
-    content = re.search(r\"cat <<'?EOF'?\\n(.+?)\\n\\s*EOF\", cmd, re.DOTALL)
+    content = re.search(r\"cat <<'?(\w+)'?\\n(.+?)\\n\\s*\\1\", cmd, re.DOTALL)
     if content:
-        print(content.group(1).strip())
+        print(content.group(2).strip())
         sys.exit(0)
 " 2>/dev/null)
 
@@ -75,10 +75,10 @@ if ! echo "${SUBJECT}" | grep -qE "${PATTERN}"; then
     exit 2
 fi
 
-# Validate subject length (max 72 chars for subject line)
+# Validate subject length (max 50 chars for subject line, per git-workflow rule)
 SUBJECT_LENGTH=${#SUBJECT}
-if [[ "${SUBJECT_LENGTH}" -gt 72 ]]; then
-    echo "BLOCKED: Commit subject line is ${SUBJECT_LENGTH} characters (max 72)."
+if [[ "${SUBJECT_LENGTH}" -gt 50 ]]; then
+    echo "BLOCKED: Commit subject line is ${SUBJECT_LENGTH} characters (max 50)."
     echo ""
     echo "  Got: ${SUBJECT}"
     echo ""

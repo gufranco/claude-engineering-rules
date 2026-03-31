@@ -43,7 +43,7 @@ case "${BASENAME}" in
         echo "  If you need to document a new env var, update .env.example instead."
         exit 2
         ;;
-    .env.example|.env.template|.env.sample)
+    .env.example|.env.template|.env.sample|.env.defaults)
         exit 0
         ;;
     *) ;;
