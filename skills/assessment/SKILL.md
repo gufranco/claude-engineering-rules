@@ -232,12 +232,13 @@ This skill accepts optional arguments after `/assessment`:
 
 10. **Offer to fix.** After presenting the assessment, ask: "Want me to implement the missing patterns?" If yes, work through them by priority: all CRITICAL first, then HIGH, then MEDIUM. Within the same severity, prefer lower effort. Each fix gets its own commit.
 
-   **Cascading fix prediction.** Before implementing each fix, analyze what it could break:
-  - Would the fix change a function signature, breaking existing callers?
-  - Would the fix introduce a new dependency or startup requirement?
-  - Would the fix change error behavior that other code relies on?
-  - Would the fix require coordinated changes in files not part of the current finding?
-  - Would the fix behave differently across environments (dev vs production)?
+**Cascading fix prediction.** Before implementing each fix, analyze what it could break:
+
+- Would the fix change a function signature, breaking existing callers?
+- Would the fix introduce a new dependency or startup requirement?
+- Would the fix change error behavior that other code relies on?
+- Would the fix require coordinated changes in files not part of the current finding?
+- Would the fix behave differently across environments (dev vs production)?
 
    If any answer is yes, address the downstream effects in the same fix. Do not create fixes that introduce new problems for the convergence loop to catch. Front-loading this analysis reduces the number of convergence iterations.
 
@@ -274,16 +275,18 @@ This skill accepts optional arguments after `/assessment`:
 
    **For any fix involving transactions**, follow `../../checklists/checklist.md` category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
 
-   **If `--comments` was passed**, add an inline comment above each significant code change explaining:
-  - **What** pattern is being applied and **why** it matters here.
-  - **What would go wrong** without this pattern, using a concrete scenario.
+**If `--comments` was passed**, add an inline comment above each significant code change explaining:
 
-  Comment guidelines:
-  - Write comments as short, direct explanations. One to three lines per comment. No essays.
-  - Use the language's comment syntax. No doc-comment format unless it is a public API.
-  - Only comment on non-obvious decisions. Do not comment self-explanatory code like variable declarations or standard error handling.
-  - Focus on the "why", not the "what". The code shows what; the comment shows the reasoning.
-  - Sound like a human engineer, not a generated template. Vary phrasing. No labels like "Pattern:" or "Reason:".
+- **What** pattern is being applied and **why** it matters here.
+- **What would go wrong** without this pattern, using a concrete scenario.
+
+Comment guidelines:
+
+- Write comments as short, direct explanations. One to three lines per comment. No essays.
+- Use the language's comment syntax. No doc-comment format unless it is a public API.
+- Only comment on non-obvious decisions. Do not comment self-explanatory code like variable declarations or standard error handling.
+- Focus on the "why", not the "what". The code shows what; the comment shows the reasoning.
+- Sound like a human engineer, not a generated template. Vary phrasing. No labels like "Pattern:" or "Reason:".
 
    Example:
 
