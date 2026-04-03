@@ -66,6 +66,104 @@ run_test "handles malformed JSON gracefully" \
     "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
+echo "=== Dangerous Command Blocker: Privilege Escalation ==="
+
+run_test "blocks sudo rm -rf" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-sudo-rm.json" 2
+
+run_test "blocks reverse shell" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-reverse-shell.json" 2
+
+echo ""
+echo "=== Dangerous Command Blocker: Cloud CLI ==="
+
+run_test "blocks aws s3 bucket deletion" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-aws-s3-delete.json" 2
+
+run_test "blocks aws ec2 terminate" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-aws-ec2-terminate.json" 2
+
+run_test "blocks gcloud instance deletion" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-gcloud-delete.json" 2
+
+run_test "blocks az resource group deletion" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-az-group-delete.json" 2
+
+run_test "allows safe aws commands" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-safe-aws.json" 0
+
+echo ""
+echo "=== Dangerous Command Blocker: Containers and K8s ==="
+
+run_test "blocks docker privileged mode" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-docker-privileged.json" 2
+
+run_test "blocks kubectl delete namespace" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-kubectl-delete-ns.json" 2
+
+run_test "blocks helm uninstall" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-helm-uninstall.json" 2
+
+run_test "allows safe kubectl commands" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-safe-kubectl.json" 0
+
+run_test "allows safe docker commands" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-safe-docker.json" 0
+
+echo ""
+echo "=== Dangerous Command Blocker: Database CLI ==="
+
+run_test "blocks redis FLUSHALL" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-redis-flushall.json" 2
+
+run_test "blocks dropdb" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-dropdb.json" 2
+
+echo ""
+echo "=== Dangerous Command Blocker: IaC ==="
+
+run_test "blocks terraform destroy" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-terraform-destroy.json" 2
+
+run_test "blocks pulumi destroy" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-pulumi-destroy.json" 2
+
+run_test "allows safe terraform commands" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-safe-terraform.json" 0
+
+echo ""
+echo "=== Dangerous Command Blocker: SQL and Misc ==="
+
+run_test "blocks SQL DROP TABLE" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-sql-drop-table.json" 2
+
+run_test "blocks crontab -r" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-crontab-remove.json" 2
+
+run_test "blocks credential exfiltration via curl" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-curl-exfil.json" 2
+
+echo ""
 echo "=== Conventional Commits ==="
 
 run_test "allows valid conventional commit" \
@@ -211,6 +309,52 @@ run_test "handles malformed JSON gracefully" \
     "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
+echo "=== Env File Guard: Credential Files ==="
+
+run_test "blocks writing to .aws/credentials" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-aws-credentials.json" 2
+
+run_test "blocks writing to .kube/config" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-kube-config.json" 2
+
+run_test "blocks writing to .docker/config.json" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-docker-config.json" 2
+
+run_test "blocks writing to .npmrc" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-npmrc.json" 2
+
+run_test "blocks writing to .tfstate" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-tfstate.json" 2
+
+run_test "blocks writing to .tfvars" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-tfvars.json" 2
+
+run_test "blocks writing to .ssh key" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-ssh-key.json" 2
+
+run_test "blocks writing to service account JSON" \
+    "${HOOKS}/env-file-guard.sh" \
+    "${FIXTURES}/write-service-account.json" 2
+
+echo ""
+echo "=== Deslop Checker ==="
+
+run_test "handles typescript file without crashing" \
+    "${HOOKS}/deslop-checker.sh" \
+    "${FIXTURES}/write-typescript-file.json" 0
+
+run_test "handles hook directory file by skipping it" \
+    "${HOOKS}/deslop-checker.sh" \
+    "${FIXTURES}/write-hook-file.json" 0
+
+echo ""
 echo "=== GH Token Guard ==="
 
 run_test "allows gh with GH_TOKEN set" \
@@ -225,7 +369,7 @@ run_test "blocks gh auth switch" \
     "${HOOKS}/gh-token-guard.py" \
     "${FIXTURES}/bash-gh-auth-switch.json" 2
 
-run_test "allows gh auth token (exempt)" \
+run_test "allows gh auth token as exempt command" \
     "${HOOKS}/gh-token-guard.py" \
     "${FIXTURES}/bash-gh-auth-token.json" 0
 

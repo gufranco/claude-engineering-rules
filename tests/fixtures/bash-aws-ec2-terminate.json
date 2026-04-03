@@ -1,0 +1,1 @@
+{"tool_name":"Bash","input":{"command":"aws ec2 terminate-instances --instance-ids i-abc123"}}
