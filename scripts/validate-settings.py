@@ -75,13 +75,15 @@ def validate_hooks(data):
 
                 # Extract script path from command
                 # Commands look like: "python3 ~/.claude/hooks/foo.py" or "bash ~/.claude/hooks/bar.sh"
+                # In CI, ~/.claude/ is the repo root, not the user's home
                 parts = command.split()
                 for part in parts:
-                    expanded = os.path.expanduser(part)
-                    if expanded.startswith(os.path.expanduser("~/.claude/hooks/")):
-                        if not os.path.exists(expanded):
+                    if "~/.claude/" in part:
+                        relative = part.replace("~/.claude/", "")
+                        resolved = os.path.join(CLAUDE_DIR, relative)
+                        if not os.path.exists(resolved):
                             errors.append(
-                                f"  Hook script not found: {part} in {phase}"
+                                f"  Hook script not found: {part} (resolved to {relative}) in {phase}"
                             )
                         break
 
