@@ -86,4 +86,37 @@ if [[ "${SUBJECT_LENGTH}" -gt 50 ]]; then
     exit 2
 fi
 
+# Validate decision trailers format (optional, but must be correct when present)
+TRAILER_PATTERN='^(Rejected|Constraint|Risk): .+'
+REJECTED_PATTERN='^Rejected: .+ \| .+'
+
+while IFS= read -r trailer_line; do
+    [[ -z "${trailer_line}" ]] && continue
+
+    # Check if line looks like a trailer (Key: value)
+    if echo "${trailer_line}" | grep -qE '^(Rejected|Constraint|Risk):'; then
+        # Validate general trailer format
+        if ! echo "${trailer_line}" | grep -qE "${TRAILER_PATTERN}"; then
+            echo "BLOCKED: Malformed decision trailer."
+            echo ""
+            echo "  Got: ${trailer_line}"
+            echo ""
+            echo "  Expected: <Trailer>: <description>"
+            exit 2
+        fi
+
+        # Validate Rejected trailer has pipe separator
+        if echo "${trailer_line}" | grep -qE '^Rejected:'; then
+            if ! echo "${trailer_line}" | grep -qE "${REJECTED_PATTERN}"; then
+                echo "BLOCKED: Rejected trailer must include reason after pipe."
+                echo ""
+                echo "  Got: ${trailer_line}"
+                echo ""
+                echo "  Expected: Rejected: <alternative> | <reason>"
+                exit 2
+            fi
+        fi
+    fi
+done <<< "${MESSAGE}"
+
 exit 0

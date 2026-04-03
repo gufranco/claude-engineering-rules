@@ -42,14 +42,15 @@ Analyze all uncommitted changes and create semantic commits following the conven
    - Same feature/module together.
    - Unrelated changes in separate commits.
    - Tests go with the code they test.
-3. For each group: stage specific files (`git add <file>`, never `-A` or `.`), commit with format below.
-4. Run **in parallel**: `git status`, `git log --oneline` to verify.
-5. Push logic:
+3. **Slop check.** Before staging, run the `code-simplifier` agent on all files in the group. Present findings. If the user accepts fixes, apply them before staging. If the user skips, proceed without changes.
+4. For each group: stage specific files (`git add <file>`, never `-A` or `.`), commit with format below.
+5. Run **in parallel**: `git status`, `git log --oneline` to verify.
+6. Push logic:
    - `--push`: push immediately.
    - `--pipeline` without `--push`: ask "Push to remote and monitor pipeline?"
    - No flags: ask "Want me to push to remote?"
    - Check upstream: `git rev-parse --abbrev-ref @{upstream}`. Use `-u origin <branch>` if none.
-6. If `--pipeline`, enter the Pipeline Monitoring loop (see below).
+7. If `--pipeline`, enter the Pipeline Monitoring loop (see below).
 
 ### Commit Message Format
 
