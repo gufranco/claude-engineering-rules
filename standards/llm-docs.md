@@ -103,6 +103,14 @@ When implementing, debugging, or making decisions about a technology, check the 
 | Resend | [llms.txt](https://resend.com/docs/llms.txt) | [llms-full.txt](https://resend.com/docs/llms-full.txt) |
 | Upstash | [llms.txt](https://upstash.com/docs/llms.txt) | [llms-full.txt](https://upstash.com/docs/llms-full.txt) |
 
+## Security and Analysis
+
+| Technology | LLM Docs | Full Docs |
+|-----------|----------|-----------|
+| Semgrep | N/A | [Docs](https://semgrep.dev/docs/) |
+| Snyk | N/A | [Docs](https://docs.snyk.io/) |
+| Qdrant | N/A | [Docs](https://qdrant.tech/documentation/) |
+
 ## When to Fetch Docs
 
 - Before using an API you haven't verified in the current session

@@ -20,12 +20,13 @@ The value is not in any specific model. It is in the independence of the perspec
 
 Check for available providers in this order:
 
-1. **Ollama (local, preferred).** Check if Ollama MCP server is configured in `settings.json` or run `which ollama`. No API key required. No data leaves the machine.
+1. **Ollama (local, preferred).** Check if Ollama MCP server is configured in `settings.json` or run `which ollama`. No API key required. No data leaves the machine. Use model `qwen3-coder:30b` (primary) or `qwen3.5:9b` (fallback if primary is not pulled). Qwen3-Coder scores 69.6% on SWE-bench with only 3.3B active parameters via MoE architecture.
 2. **OpenAI.** Check for `OPENAI_API_KEY` in environment. If available, use the chat completions API.
-3. **Other providers.** Check for any other LLM MCP server configured in `settings.json`.
+3. **Perplexity.** Check if the `perplexity` MCP server is configured in `settings.json`. Use as a third fallback.
+4. **Other providers.** Check for any other LLM MCP server configured in `settings.json`.
 
 If no alternative model is available, stop and tell the user how to set one up:
-- Ollama: `brew install ollama && ollama pull llama3.1`
+- Ollama: `brew install ollama && ollama pull qwen3-coder:30b`
 - OpenAI: set `OPENAI_API_KEY` in the environment
 
 ## Process
