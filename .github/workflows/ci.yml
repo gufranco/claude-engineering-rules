@@ -11,12 +11,8 @@ permissions:
 
 jobs:
   lint:
-    name: Lint (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: Lint
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -28,16 +24,9 @@ jobs:
       - name: Install linters
         run: pip install ruff pyyaml
 
-      - name: ShellCheck (Linux)
-        if: runner.os == 'Linux'
+      - name: ShellCheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck --severity=warning --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
-
-      - name: ShellCheck (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install shellcheck
           shellcheck --severity=warning --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
 
       - name: Python lint
@@ -59,17 +48,12 @@ jobs:
           npx --yes markdownlint-cli2 "rules/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md"
 
       - name: Validate YAML
-        run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))" 2>/dev/null || python3 -c "import json; print('PyYAML not installed, skipping YAML validation')"
+        run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))"
 
       - name: Validate index.yml paths
         run: |
           python3 -c "
-          import os, sys
-          try:
-              import yaml
-          except ImportError:
-              print('PyYAML not installed, skipping path validation')
-              sys.exit(0)
+          import os, sys, yaml
           with open('rules/index.yml') as f:
               idx = yaml.safe_load(f)
           errors = 0
@@ -101,13 +85,18 @@ jobs:
           fi
           echo "All markdown files valid"
 
+      - name: Validate agent definitions
+        run: python3 scripts/validate-agents.py
+
+      - name: Validate settings.json
+        run: python3 scripts/validate-settings.py
+
+      - name: Validate command blocker patterns
+        run: python3 scripts/validate-patterns.py
+
   hooks:
-    name: Hook tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: Hook tests
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
