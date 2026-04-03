@@ -66,6 +66,37 @@ Present the scope review findings. In `--auto` mode, only pause for user input i
 
 ### Process
 
+0. **Context snapshot.** Before anything else, write `context.md` in the spec folder:
+
+   ```markdown
+   # Context Snapshot
+   **Created:** <YYYY-MM-DD HH:MM GMT>
+
+   ## Task
+   <Task statement from user input, verbatim>
+
+   ## Desired Outcome
+   <What success looks like, in one sentence>
+
+   ## Known Facts
+   - <Fact from user input or codebase>
+
+   ## Constraints
+   - <Time, tech, scope, or resource constraints>
+
+   ## Unknowns
+   - <Questions that need answers before implementation>
+
+   ## Codebase Touchpoints
+   - <Files or modules likely to change>
+
+   ## Branch State
+   - Branch: <current branch>
+   - Recent commits: <last 3 commit subjects>
+   ```
+
+   This snapshot prevents context drift in long sessions. Re-read `context.md` at the start of each phase (steps 1, 5, 8). If the task has evolved, update the snapshot before continuing.
+
 1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints? (Skip if discovery phase already covered this.)
 
 2. **Search for existing work** (parallel):

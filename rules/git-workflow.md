@@ -26,6 +26,35 @@
 - `Fixes #123`, `Closes #456`, `Refs #789`
 - **NEVER** add `Co-authored-by` lines referencing any AI
 
+## Decision Trailers (Optional)
+
+Commit messages may include trailers that record decision context. These are optional but must follow the correct format when present. The `conventional-commits.sh` hook validates format.
+
+```
+refactor(auth): replace session store with JWT
+
+Switched from server-side sessions to short-lived JWTs with refresh
+token rotation. Session store was a single point of failure.
+
+Rejected: Redis session store | added infrastructure dependency for a stateless service
+Constraint: tokens must be revocable within 15 minutes per compliance policy
+Risk: refresh token rotation adds complexity to the mobile client
+```
+
+| Trailer | Format | Purpose |
+|---------|--------|---------|
+| `Rejected` | `Rejected: <alternative> \| <reason>` | Documents an approach that was considered and discarded. The pipe separates what from why. Prevents future engineers from re-exploring dead ends |
+| `Constraint` | `Constraint: <description>` | Records a constraint that shaped the decision. External requirements, compliance rules, performance budgets |
+| `Risk` | `Risk: <description>` | Flags a known risk introduced by the change. Future engineers know what to watch for |
+
+Rules:
+
+- Trailers go in the footer section, after the body
+- Each trailer is one line
+- `Rejected` must include the pipe separator between alternative and reason
+- Multiple trailers of the same type are allowed
+- Do not add trailers to trivial commits (typos, formatting, config tweaks)
+
 ## Branch Naming
 
 ```
@@ -176,6 +205,8 @@ Every `git push` triggers a CI pipeline run. Pipeline runs consume paid runner m
 - The branch needs to be shared with another developer.
 
 **Batch CI fixes.** When CI fails with multiple issues, fix all of them locally before pushing. One push with all fixes, not one push per fix.
+
+**Agent push prohibition.** Subagents must never push to remote. Only the main orchestrator pushes, once, at the end of all work. Agent prompts must explicitly state: "Do not push." If an agent needs to verify CI, the orchestrator handles the push and monitoring after all agent work is collected and verified locally.
 
 ## Rollback Strategy
 
