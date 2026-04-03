@@ -7,6 +7,7 @@
 - Keep PRs small (< 400 lines ideally, max 1000)
 - One logical change per PR
 - Include before/after screenshots for UI changes
+- Verify visual identity consistency: new pages must match existing pages in layout structure, spacing tokens, component usage, badge patterns, loading states, and pagination. Reference the project's visual identity guide (CLAUDE.md) when one exists
 
 ## Review Comments
 

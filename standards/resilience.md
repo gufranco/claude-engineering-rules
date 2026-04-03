@@ -116,6 +116,37 @@ When an operation involves multiple steps or items:
 - Return detailed results: which items succeeded, which failed, and why
 - For multi-step workflows, ensure state is consistent after partial failure (compensating actions or saga pattern)
 
+## Non-Critical Dependency Fallback
+
+When a non-critical dependency is used inside a critical path, the critical path must survive the dependency's failure.
+
+Classify each dependency call by its criticality to the current request:
+
+| Classification | On failure | Examples |
+|---------------|-----------|---------|
+| Critical | Fail the request. Return error to caller | Auth token validation, payment processing, session lookup |
+| Non-critical | Return safe default. Log warning. Continue | Price enhancement, view counter, recommendation, analytics |
+
+**Rule: wrap non-critical dependency reads in try/catch with a safe default. Never let a non-critical feature crash a critical path.**
+
+```typescript
+// Bad: Redis failure crashes the API response
+const scores = await getRecommendationScores(userId);
+
+// Good: API responds without recommendations
+let scores: Map<string, number>;
+try {
+  scores = await getRecommendationScores(userId);
+} catch {
+  logger.warn("recommendation scores unavailable, returning defaults");
+  scores = new Map();
+}
+```
+
+Log every fallback activation at `warn` level. Silent fallbacks hide chronic dependency issues.
+
+See `standards/redis.md` "Non-Critical Redis Fallback" for Redis-specific patterns.
+
 ## Timeouts
 
 Every external call must have an explicit timeout:

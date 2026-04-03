@@ -65,6 +65,8 @@ Without explicit injection, a subagent will re-read files already processed, con
 - The specific files or paths relevant to the task, not their contents. Paths only.
 - Decisions already made that the agent must respect
 - The exact output format expected: bullet list, JSON schema, or file:line pairs
+- **Test requirements.** Every agent that writes production code must also write or update tests to maintain 95%+ coverage. State this explicitly in the prompt: "Write tests for all new methods. Target 95%+ coverage." Agents that are not told to test will not test.
+- **Quality gate commands.** Include the exact commands the agent must run before declaring done: typecheck, lint, format. Agents that are not told to verify will not verify.
 
 **What to never inject:**
 - Raw contents of large files. Send the path and let the agent read if needed.

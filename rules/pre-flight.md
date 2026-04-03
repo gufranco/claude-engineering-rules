@@ -114,6 +114,22 @@ Research is not a shortcut to skip. It is the most valuable time in the planning
 
 Do not present a plan until research is complete. If the user asks to start implementing before research is done, explain what remains and why it matters.
 
+### 1b-ii. Technology Selection is Deliberate
+
+Reference projects are sources of ideas and domain knowledge, not sources of technology decisions. When a reference project uses pgBoss, Kafka, or any specific tool, that is a data point, not a directive.
+
+Before adopting any technology from a reference:
+
+1. Check if the current project already solves the problem with an existing tool
+2. Evaluate the reference's choice against the current stack. Redis vs pgBoss, Prisma vs Knex, date-fns vs dayjs: compare on the merits, not on what the reference happened to use
+3. Prefer consistency with the existing stack over novelty. Adding a new tool has an ongoing maintenance cost
+
+### 1b-iii. Additive Planning
+
+Follow-up instructions from the user merge into the existing plan. They never replace it.
+
+When the user provides additional requirements after a plan is created, add them to the existing spec folder. Update `plan.md` with the new items integrated at the correct position in the task breakdown. Do not create a new spec folder or start over. The plan is a living document that grows as the user refines their requirements.
+
 ### 2. Architecture Fit
 
 Read the surrounding code. Confirm the new code fits the existing patterns, except when existing patterns violate `~/.claude/` rules. Rules always take priority.

@@ -14,6 +14,9 @@ This applies to every scenario without exception:
 - Accessibility: implement fully. Never "a11y pass later"
 - Migrations: write both up and down. Never skip the down migration
 - Cleanup: remove dead code, unused imports, stale references. Never leave debris
+- Seed data: new database models must include seed data for localhost development. Every entity type must have realistic records generated with `@faker-js/faker`. Never hardcode names, emails, or descriptions in seed files. The seed quantity must be configurable via an environment variable (e.g., `SEED_SCALE`)
+- Translations: new user-facing strings must be translated into ALL supported locales before delivery. No English-only UI text
+- Sorting: every table that displays backend data must support server-side sorting with URL-persisted state
 
 When the scope of completeness crosses into multi-week rewrites or cross-cutting architectural changes, flag them as a separate task. But within the declared scope of the current task, every aspect must be finished to production quality. "Done" means done.
 
@@ -34,7 +37,7 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **Validation infrastructure**: in NestJS projects, register validation globally via interceptor + method decorator, not per-parameter pipes. Controllers should have no validation imports or logic.
 - **Law of Demeter**: only call methods on direct dependencies: `this`, parameters, objects you create, and owned fields. Never chain through transitive objects like `order.getCustomer().getAddress().getCity()`. Each intermediate accessor is a coupling point. If you need data from a distant object, ask your direct collaborator to provide it
 - Prefer composition over inheritance
-- **No side effects at module level**: module/file scope runs on import. Keep it free of I/O, network calls, global state mutations, and event listener registration. All side effects belong inside explicitly called functions. A module that changes behavior just by being imported is a hidden coupling
+- **No side effects at module level**: module/file scope runs on import. Keep it free of I/O, network calls, global state mutations, and event listener registration. All side effects belong inside explicitly called functions. A module that changes behavior just by being imported is a hidden coupling. Common violations: creating a Redis/database connection at module level (`const redis = createClient()`), registering an event listener, starting a timer. If a module exports both pure functions and I/O functions, either split it into two modules or lazy-initialize the I/O resources inside the functions that need them
 - Use braces for all control structures
 - **Never swallow errors**: no empty catch; log with context, rethrow or handle
 - **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, document why
@@ -48,7 +51,8 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **Don't block the request-handling thread**: never run CPU-intensive work (image processing, compression, cryptographic operations on large inputs) or synchronous I/O on the thread that serves requests. Offload to a worker thread, background job, or separate process. A blocked request thread stalls all concurrent requests
 - **Pit of Success**: design APIs so the correct usage is the easiest path. Wrong usage should require deliberate effort. Accept `NonEmptyArray<T>` instead of `T[]` with a runtime check. Require dependencies in the constructor instead of exposing an `init()` the caller might forget. Use enums instead of magic strings. When a caller can misuse your API without the compiler stopping them, the API is a pit of failure
 - **DI only when needed**: dependency inversion (the SOLID principle: depend on abstractions, not concretions) is a design choice. DI containers are one implementation of that principle. Start with direct module imports. Only adopt a DI container when you genuinely need to swap implementations at runtime or in tests. DI containers add indirection, increase startup time, and make stack traces harder to follow. Most applications achieve dependency inversion through constructor parameters and interfaces without a container
-- **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM or query builder methods. If the ORM cannot express the operation, reconsider the approach. Raw SQL is only acceptable when the project has neither an ORM nor a query builder
+- **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. This includes `$queryRaw`, `$executeRaw`, `$queryRawUnsafe`, `$executeRawUnsafe` in Prisma, and equivalents in other ORMs. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM methods. If the ORM cannot express the operation, reconsider the approach or use a dedicated service (search engine, analytics DB). The only place SQL is acceptable is migration files. This applies to test files too: test setup and teardown must use ORM methods, not raw SQL to create indexes or alter constraints
+- **Service layer for data access**: routers, controllers, and API handlers must never import the ORM directly. All database operations go through service classes. This keeps the routing layer as a thin delegation layer and makes business logic independently testable
 
 ## TypeScript Type Constructs
 
@@ -152,6 +156,27 @@ Make the compiler catch mutations instead of relying on discipline alone. `reado
 - Use `ReadonlyMap<K, V>` and `ReadonlySet<T>` for collections used as lookups that must not grow or shrink
 - Enable `@typescript-eslint/prefer-readonly-parameter-types` to enforce readonly parameters automatically
 - Prefer `readonly` over `Object.freeze()`. `readonly` catches mutations at compile time with no cost. `Object.freeze()` is runtime, shallow only, and has overhead. Reserve `Object.freeze()` for runtime protection at trust boundaries where external code may bypass the type system
+
+## Delivery Path Consistency
+
+When the same business logic is served through multiple delivery paths (REST API, WebSocket push, background job, SSE stream, mobile push notification), the calculation must be identical across all paths. A price, a score, a permission check, or any derived value must produce the same result regardless of which path delivers it.
+
+**Rule: extract shared calculations into a single function. Every delivery path calls that function. No path reimplements the logic inline.**
+
+Common violations:
+
+| Violation | Consequence |
+|-----------|------------|
+| REST endpoint applies `baseVig + volumeVig`, WebSocket push applies only `volumeVig` | Users see different prices depending on how the data arrived |
+| API validates permissions with middleware, background job skips the check | Unauthorized actions succeed via the async path |
+| Web response formats dates as ISO 8601, mobile push formats as Unix timestamp | Client-side parsing breaks on one path |
+
+When adding a new delivery path for existing data:
+
+1. Find every transformation applied to the data in the existing path
+2. Extract any inline transformation into a named, tested function
+3. Call that function from both paths
+4. Add a test that asserts both paths produce identical output for the same input
 
 ## Data Safety
 
@@ -331,6 +356,31 @@ Use a date library for all date operations. Never use raw `Date` methods for for
 - `new Date()` for creating a timestamp to pass to a database ORM is acceptable since the ORM needs a Date object
 - For TypeScript projects, `date-fns` is the preferred library. For other languages, use the equivalent standard library
 - All date formatting must respect user locale or configurable format preferences, never hardcode a single format
+- Every `format()` call that renders user-visible text must receive the dynamic locale from the app's locale context, never a hardcoded locale import
+
+## Locale-Aware Components
+
+Calendars, date pickers, and any component that displays locale-sensitive content must bind to the app's dynamic locale. Never hardcode a single locale.
+
+- Import all supported locales (e.g., `enUS`, `ptBR`, `es` from `date-fns/locale`)
+- Use the app's locale hook (e.g., `useLocale()` from `next-intl`) to select the active locale at runtime
+- Pass the resolved locale to the component's `locale`, `culture`, or equivalent prop
+- Test every locale-aware component in at least two locales to verify month names, day names, and date formats change correctly
+
+## i18n Accent and Diacritical Marks
+
+Translation files must use correct diacritical marks for each language. Missing accents are bugs, not cosmetic issues. They change meaning, look unprofessional, and fail accessibility tools.
+
+| Language | Common errors | Correct form |
+|----------|--------------|-------------|
+| Portuguese | `cao` endings | `ção` (ação, função, configuração) |
+| Portuguese | `coes` endings | `ções` (ações, informações, notificações) |
+| Portuguese | Missing accents | título, código, número, usuário, técnico, horário, relatório |
+| Spanish | `cion` endings | `ción` (acción, información, configuración) |
+| Spanish | Wrong plural accent | `ciones` NOT `ciónes` (acciones, notificaciones, funciones) |
+| Spanish | Missing accents | página, código, número, técnico, período |
+
+Run accent verification on every translation file change. Automated tests must catch these patterns.
 
 ## Destructive Action Confirmation
 
