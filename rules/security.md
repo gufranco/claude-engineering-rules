@@ -112,3 +112,42 @@ Dependencies are attack surface. A compromised package runs with your code's per
 - **Audit regularly**: run `npm audit`, `pip audit`, or equivalent in CI. Block builds on critical/high vulnerabilities
 - **Minimize surface**: fewer dependencies = fewer attack vectors. Prefer native/stdlib when the alternative is a small package with deep transitive dependencies
 - **Monitor advisories**: subscribe to security advisories for your critical dependencies. Do not wait for a scheduled audit to learn about a zero-day
+
+## Hook Coverage
+
+Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangerous operations. They prevent accidental damage from model hallucination, not intentional bypass by a compromised agent.
+
+| Category | Level | Hook | Pattern Count |
+|----------|-------|------|--------------|
+| Filesystem destruction (rm, dd, mkfs, shred) | Block | dangerous-command-blocker | 15 |
+| Privilege escalation (sudo + destructive, setuid, sudoers) | Block | dangerous-command-blocker | 5 |
+| Reverse shells (bash, nc, socat, python, perl, ruby) | Block | dangerous-command-blocker | 8 |
+| Git destructive (force push, reset, filter-branch, reflog) | Block | dangerous-command-blocker | 13 |
+| Cloud CLI: AWS (S3, EC2, RDS, Lambda, EKS, IAM, +10 more) | Block | dangerous-command-blocker | 18 |
+| Cloud CLI: GCP (Compute, SQL, GKE, Functions, Run, Pub/Sub, Storage) | Block | dangerous-command-blocker | 9 |
+| Cloud CLI: Azure (VMs, SQL, AKS, WebApps, Storage, KeyVault, CosmosDB) | Block | dangerous-command-blocker | 9 |
+| Platform CLI (Vercel, Netlify, Firebase, Cloudflare, Fly.io, Heroku, Railway, Supabase) | Block | dangerous-command-blocker | 9 |
+| Container (Docker privileged/prune/rm, Podman, Compose down -v) | Block | dangerous-command-blocker | 9 |
+| Kubernetes (delete critical resources, drain, cordon, mass delete) | Block | dangerous-command-blocker | 6 |
+| Helm (uninstall, rollback) | Block | dangerous-command-blocker | 2 |
+| Database: Redis (FLUSHALL, FLUSHDB, CONFIG SET) | Block | dangerous-command-blocker | 4 |
+| Database: MongoDB (dropDatabase, dropCollection, deleteMany all) | Block | dangerous-command-blocker | 2 |
+| Database: PostgreSQL (dropdb, DROP DDL, pg_dump pipe) | Block | dangerous-command-blocker | 3 |
+| Database: MySQL (drop, TRUNCATE, DROP DDL) | Block | dangerous-command-blocker | 3 |
+| Database: SQLite (DROP, file deletion) | Block | dangerous-command-blocker | 2 |
+| IaC: Terraform/OpenTofu (destroy, auto-approve, state rm, taint, force-unlock) | Block | dangerous-command-blocker | 8 |
+| IaC: Pulumi (destroy, cancel, stack rm) | Block | dangerous-command-blocker | 3 |
+| IaC: Ansible (production playbook, ad-hoc on prod) | Block | dangerous-command-blocker | 2 |
+| IaC: CDK/Serverless/SAM/Copilot (destroy/remove/delete) | Block | dangerous-command-blocker | 4 |
+| SQL statements (DELETE no WHERE, TRUNCATE, DROP, UPDATE no WHERE, ALTER DROP, GRANT/REVOKE ALL) | Block | dangerous-command-blocker | 7 |
+| Secret exfiltration via commands (curl -d, scp, rsync credential files) | Block | dangerous-command-blocker | 3 |
+| Cron and systemd (crontab -r, systemctl stop/disable) | Block | dangerous-command-blocker | 2 |
+| Protected branch push (main, master, develop) | Block | dangerous-command-blocker | 1 |
+| Secrets in staged files (40+ API key patterns) | Block | secret-scanner | 40+ |
+| Env/credential file access (.env, .ssh, .aws, .gnupg, .kube, .tfstate, .pem, .key, .npmrc, .pypirc, .netrc) | Block | env-file-guard + permissions | 50+ |
+| Large file commits (>5MB) | Block | large-file-blocker | 1 |
+| gh/glab account safety (token guards) | Block | gh-token-guard, glab-token-guard | 2 |
+| Commit message format | Block | conventional-commits | 1 |
+| AI code patterns (slop) | Warn | deslop-checker | 6 |
+
+**Limitations:** hooks are advisory, not kernel-level enforcement. An agent could bypass a hook by using an equivalent command not covered by the patterns. For untrusted code execution, use container or VM isolation.

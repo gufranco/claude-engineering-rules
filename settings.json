@@ -47,9 +47,55 @@
       "Edit(./.env.ci)",
       "Edit(./.env.docker)",
       "Edit(./secrets/**)",
-      "Edit(./config/credentials.json)"
+      "Edit(./config/credentials.json)",
+      "Read(~/.ssh/**)",
+      "Write(~/.ssh/**)",
+      "Edit(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Write(~/.aws/**)",
+      "Edit(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Write(~/.gnupg/**)",
+      "Edit(~/.gnupg/**)",
+      "Read(~/.kube/config)",
+      "Write(~/.kube/config)",
+      "Edit(~/.kube/config)",
+      "Read(~/.docker/config.json)",
+      "Write(~/.docker/config.json)",
+      "Edit(~/.docker/config.json)",
+      "Read(~/.npmrc)",
+      "Write(~/.npmrc)",
+      "Edit(~/.npmrc)",
+      "Read(~/.pypirc)",
+      "Write(~/.pypirc)",
+      "Edit(~/.pypirc)",
+      "Read(~/.netrc)",
+      "Write(~/.netrc)",
+      "Edit(~/.netrc)",
+      "Read(./**/*.tfstate)",
+      "Write(./**/*.tfstate)",
+      "Edit(./**/*.tfstate)",
+      "Read(./**/*.tfvars)",
+      "Write(./**/*.tfvars)",
+      "Edit(./**/*.tfvars)",
+      "Read(./**/*-credentials.json)",
+      "Write(./**/*-credentials.json)",
+      "Edit(./**/*-credentials.json)",
+      "Read(./**/*.pem)",
+      "Write(./**/*.pem)",
+      "Edit(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Write(./**/*.key)",
+      "Edit(./**/*.key)",
+      "Read(./**/*id_rsa*)",
+      "Write(./**/*id_rsa*)",
+      "Edit(./**/*id_rsa*)",
+      "Read(./**/*id_ed25519*)",
+      "Write(./**/*id_ed25519*)",
+      "Edit(./**/*id_ed25519*)"
     ]
   },
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -145,6 +191,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/change-tracker.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/deslop-checker.sh"
           }
         ]
       },
@@ -158,6 +208,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/change-tracker.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/deslop-checker.sh"
           }
         ]
       },
@@ -171,6 +225,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/change-tracker.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/deslop-checker.sh"
           }
         ]
       }
@@ -470,6 +528,24 @@
     },
     "microsoft-learn": {
       "url": "https://learn.microsoft.com/api/mcp"
+    },
+    "semgrep": {
+      "command": "uvx",
+      "args": [
+        "semgrep-mcp"
+      ]
+    },
+    "qdrant": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-qdrant"
+      ],
+      "env": {
+        "QDRANT_URL": "http://localhost:6333",
+        "COLLECTION_NAME": "code-search",
+        "TOOL_STORE_DESCRIPTION": "Store code snippets, patterns, and architecture decisions for semantic retrieval",
+        "TOOL_FIND_DESCRIPTION": "Search for code patterns, implementations, or architectural decisions by describing what you need in natural language"
+      }
     }
   }
 }

@@ -61,8 +61,74 @@ esac
 
 # Block private key files
 case "${BASENAME}" in
-    *.pem|*.key|id_rsa|id_ed25519|id_ecdsa)
+    *.pem|*.key|id_rsa|id_ed25519|id_ecdsa|id_dsa)
         echo "BLOCKED: Cannot modify private key files."
+        echo "  File: ${FILE_PATH}"
+        exit 2
+        ;;
+    *) ;;
+esac
+
+# Block cloud and tool credential files
+case "${BASENAME}" in
+    credentials|config.json)
+        case "${FILE_PATH}" in
+            */.aws/credentials|*/.docker/config.json)
+                echo "BLOCKED: Cannot modify cloud/tool credential files."
+                echo "  File: ${FILE_PATH}"
+                exit 2
+                ;;
+        esac
+        ;;
+    .npmrc|.pypirc|.netrc|.pgpass|.mysql_history)
+        echo "BLOCKED: Cannot modify credential/auth config files."
+        echo "  File: ${FILE_PATH}"
+        exit 2
+        ;;
+    *) ;;
+esac
+
+# Block Kubernetes config
+case "${FILE_PATH}" in
+    */.kube/config)
+        echo "BLOCKED: Cannot modify Kubernetes config (contains cluster credentials)."
+        echo "  File: ${FILE_PATH}"
+        exit 2
+        ;;
+    *) ;;
+esac
+
+# Block Terraform state and variable files with secrets
+case "${BASENAME}" in
+    *.tfstate|*.tfstate.backup)
+        echo "BLOCKED: Cannot modify Terraform state files (contain infrastructure secrets)."
+        echo "  File: ${FILE_PATH}"
+        exit 2
+        ;;
+    *.tfvars|*.tfvars.json)
+        echo "BLOCKED: Cannot modify Terraform variable files (may contain secrets)."
+        echo "  File: ${FILE_PATH}"
+        echo ""
+        echo "  Use terraform.tfvars.example for documentation instead."
+        exit 2
+        ;;
+    *) ;;
+esac
+
+# Block GCP and generic credential JSON files
+case "${BASENAME}" in
+    *-credentials.json|*_credentials.json|service-account*.json)
+        echo "BLOCKED: Cannot modify credential JSON files."
+        echo "  File: ${FILE_PATH}"
+        exit 2
+        ;;
+    *) ;;
+esac
+
+# Block SSH and GPG directories
+case "${FILE_PATH}" in
+    */.ssh/*|*/.gnupg/*)
+        echo "BLOCKED: Cannot modify SSH/GPG configuration and keys."
         echo "  File: ${FILE_PATH}"
         exit 2
         ;;
