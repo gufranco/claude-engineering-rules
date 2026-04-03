@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 15 rules, 34 on-demand standards, 16 skills, 40 MCP servers, and 11 runtime hooks that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 15 rules, 36 on-demand standards, 16 skills, 42 MCP servers, and 12 runtime hooks that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**15** rules · **34** standards · **16** skills · **40** MCP servers · **11** hooks · **594** checklist items · **52** categories · **~9,000** lines of engineering standards
+**15** rules · **36** standards · **16** skills · **42** MCP servers · **12** hooks · **597** checklist items · **52** categories · **~9,000** lines of engineering standards
 
 <table>
 <tr>
@@ -50,7 +50,7 @@ Mandatory verification gates, pre-flight checks, response self-check for analyti
 <tr>
 <td width="50%" valign="top">
 
-### 594-Item Review Checklist
+### 597-Item Review Checklist
 
 Single unified checklist spanning 52 categories, from correctness and security to distributed systems, deployment verification, and design quality. Shared by completion gates, `/review`, and `/assessment`.
 
@@ -85,7 +85,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | 16 workflow skills (25 absorbed) | - | Yes |
 | 40 MCP server integrations | - | Yes |
 | Prompt injection guards | - | Yes |
-| 594-item review checklist (52 categories) | - | Yes |
+| 597-item review checklist (52 categories) | - | Yes |
 | Clean room plagiarism prevention | - | Yes |
 
 ## How It Works
@@ -150,7 +150,7 @@ These 15 rules are loaded into every conversation automatically.
 
 ### Standards (loaded on demand)
 
-These 34 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 36 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
@@ -218,15 +218,16 @@ These 34 standards live in `standards/` and are loaded only when the task matche
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
-| `dangerous-command-blocker.py` | PreToolUse (Bash) | Three-level protection: blocks catastrophic commands, protects critical paths, warns on suspicious patterns |
+| `dangerous-command-blocker.py` | PreToolUse (Bash) | Three-level protection across 14 categories: filesystem destruction, privilege escalation, reverse shells, git destructive, AWS/GCP/Azure cloud CLI, platform CLI (Vercel/Netlify/Firebase/Cloudflare/Fly.io/Heroku), Docker/Podman/Kubernetes/Helm, database CLI (Redis/MongoDB/PostgreSQL/MySQL/SQLite), IaC (Terraform/OpenTofu/Pulumi/Ansible/CDK/Serverless), SQL statements, secret exfiltration via commands, cron/systemd, and protected branch pushes |
 | `secret-scanner.py` | PreToolUse (Bash) | Scans staged files for 30+ secret patterns before any git commit |
 | `conventional-commits.sh` | PreToolUse (Bash) | Validates commit messages match conventional commit format |
 | `gh-token-guard.py` | PreToolUse (Bash) | Blocks `gh` commands without inline `GH_TOKEN` and blocks `gh auth switch` to prevent global account mutation |
 | `glab-token-guard.py` | PreToolUse (Bash) | Blocks `glab` commands without inline `GITLAB_TOKEN` and blocks `glab auth login` to prevent global config mutation |
 | `large-file-blocker.sh` | PreToolUse (Bash) | Blocks commits containing files over 5MB to prevent accidental binary commits |
-| `env-file-guard.sh` | PreToolUse (Write/Edit/MultiEdit) | Blocks modifications to `.env`, private keys, and files in secrets directories |
+| `env-file-guard.sh` | PreToolUse (Write/Edit/MultiEdit) | Blocks modifications to `.env` files, private keys (.pem, .key, id_rsa, id_ed25519), cloud credentials (.aws/credentials, .docker/config.json, .kube/config), package manager auth (.npmrc, .pypirc, .netrc), Terraform state (.tfstate, .tfvars), GCP service account JSON, SSH/GPG directories, and secrets/credentials directories |
 | `smart-formatter.sh` | PostToolUse (Edit/Write/MultiEdit) | Auto-formats files by extension using prettier, black, gofmt, rustfmt, rubocop, or shfmt |
 | `change-tracker.sh` | PostToolUse (Edit/Write/MultiEdit) | Logs every file modification with timestamps, auto-rotates at 2000 lines |
+| `deslop-checker.sh` | PostToolUse (Edit/Write/MultiEdit) | Warns on AI-generated code patterns: narration comments, debug artifacts, empty catches, boolean literal comparisons, contextless TODOs. Never blocks, only warns |
 
 #### Per-project hooks (opt-in)
 
@@ -234,6 +235,38 @@ These 34 standards live in `standards/` and are loaded only when the task matche
 |:-----|:--------|:-------------|
 | `scope-guard.sh` | Stop | Compares modified files against spec scope, warns on scope creep. Supports freeze mode (`~/.claude/.freeze-scope`) for directory-level edit restrictions during debugging |
 | `tdd-gate.sh` | PreToolUse (Edit/Write) | Blocks production code edits if no corresponding test file exists |
+
+### Custom Agents
+
+Specialized subagents in `agents/` handle recurring analysis tasks. Each agent follows the template in `agents/TEMPLATE.md` with standardized sections: identity, constraints, process, output contract, scenario handling, and final checklist.
+
+| Agent | Model | Purpose |
+|:------|:------|:--------|
+| `blast-radius` | Haiku | Trace all consumers of changed interfaces to identify the full impact of a code change |
+| `code-simplifier` | Haiku | Detect AI-generated code patterns (narration comments, dead code, debug artifacts) and suggest cleanups |
+| `coverage-analyzer` | Sonnet | Analyze test coverage gaps on changed files and generate missing test scenarios |
+| `dependency-analyzer` | Sonnet | Compare packages in a category using maintenance, community, security, size, and API quality criteria |
+| `migration-planner` | Haiku | Verify database migrations for idempotency, reversibility, ordering, and data loss risks |
+| `security-scanner` | Sonnet | Scan code for security vulnerabilities, secret leaks, and supply chain issues |
+| `test-scenario-generator` | Sonnet | Generate structured test scenarios with priority classification and requirement traceability |
+
+To create a new agent, copy `agents/TEMPLATE.md` and fill in each section. Key design rules from `rules/agent-usage.md`: agents must not spawn subagents, must specify exact output format, and must include a final checklist.
+
+### Decision Trailers
+
+Commit messages support optional trailers that record decision context. Validated by `conventional-commits.sh` when present.
+
+| Trailer | Format | Purpose |
+|:--------|:-------|:--------|
+| `Rejected` | `Rejected: <alternative> \| <reason>` | Documents a rejected approach with the reason |
+| `Constraint` | `Constraint: <description>` | Records a constraint that shaped the decision |
+| `Risk` | `Risk: <description>` | Flags a known risk introduced by the change |
+
+See `rules/git-workflow.md` "Decision Trailers" section for the full specification and examples.
+
+### Context Snapshots
+
+The `/plan` skill writes a `context.md` file in the spec folder before planning begins. This snapshot captures: task statement, desired outcome, known facts, constraints, unknowns, codebase touchpoints, and branch state. The snapshot is re-read at the start of each planning phase to prevent context drift in long sessions.
 
 ### Rule Index
 
@@ -243,7 +276,7 @@ These 34 standards live in `standards/` and are loaded only when the task matche
 
 One unified checklist covers all layers of quality:
 
-- **Unified checklist** (`checklists/checklist.md`): 594 items across 52 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification when external sources were consulted. Category 51 covers deployment verification: health endpoints, error rate baselines, rollback plans. Category 52 covers design quality: typography hierarchy, color contrast, spacing grid, focus states, loading and empty states.
+- **Unified checklist** (`checklists/checklist.md`): 597 items across 52 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification when external sources were consulted. Category 51 covers deployment verification: health endpoints, error rate baselines, rollback plans. Category 52 covers design quality: typography hierarchy, color contrast, spacing grid, focus states, loading and empty states.
 
 ## Workflows
 
@@ -303,7 +336,7 @@ Use `/test` to run specific test files during isolation. Use `/ship checks` if t
 
 3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
 
-The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 594-item checklist across 52 categories covering code quality, engineering architecture, deployment verification, and design quality.
+The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 597-item checklist across 52 categories covering code quality, engineering architecture, deployment verification, and design quality.
 
 ### Architecture Planning
 
@@ -405,7 +438,7 @@ The hooks, rules, and skills activate automatically.
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
-    checklist.md         # 594-item unified checklist across 52 categories
+    checklist.md         # 597-item unified checklist across 52 categories
   rules/                 # Tier 1: always loaded into every conversation (15 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
     agent-usage.md       # Agent parallelism budget and cascade prevention
@@ -458,6 +491,16 @@ The hooks, rules, and skills activate automatically.
     mobile-development.md # Framework selection, offline support, push notifications
     dashboard-design.md  # Metric grouping, SLO visualization, chart selection, RED method
     documentation-generation.md # OpenAPI, AsyncAPI, TypeDoc, docs-as-code, CI validation
+    redis.md             # Atomic operations, key design, TTL, connection management, fallback patterns
+  agents/                # Custom subagents for specialized delegation
+    TEMPLATE.md          # Reference template for creating new agents
+    blast-radius.md      # Trace all consumers of changed interfaces
+    code-simplifier.md   # Detect and fix AI-generated code patterns (slop)
+    coverage-analyzer.md # Test coverage gap analysis and scenario generation
+    dependency-analyzer.md # Compare and evaluate packages with structured criteria
+    migration-planner.md # Verify migration safety, idempotency, and ordering
+    security-scanner.md  # SAST + secret + supply chain scanning via Semgrep
+    test-scenario-generator.md # Generate test scenarios with priority classification
   skills/                # 16 skills (consolidated from 25+)
     assessment/          # Architecture completeness audit
     audit/               # Security audit and dependency management
@@ -479,6 +522,7 @@ The hooks, rules, and skills activate automatically.
     change-tracker.sh    # File modification logging
     conventional-commits.sh  # Commit message validation
     dangerous-command-blocker.py  # Catastrophic command prevention
+    deslop-checker.sh    # AI-generated code pattern detection (warns only)
     env-file-guard.sh    # Environment and secret file protection
     gh-token-guard.py    # GitHub multi-account token enforcement
     glab-token-guard.py  # GitLab multi-account token enforcement
@@ -489,12 +533,16 @@ The hooks, rules, and skills activate automatically.
     tdd-gate.sh          # Test-first enforcement (per-project)
   scripts/
     context-monitor.py   # Statusline: context usage, git, duration, cost
+    validate-agents.py   # Agent frontmatter validation (name, description, tools, model)
+    validate-counts.py   # Cross-file count reference sync
+    validate-patterns.py # Duplicate regex detection in command blocker
+    validate-settings.py # Settings.json deny rules and hook path validation
   tests/
-    test-hooks.sh        # Hook smoke tests (48 cases)
-    fixtures/            # JSON fixtures for hook testing
+    test-hooks.sh        # Hook smoke tests (78 cases)
+    fixtures/            # JSON fixtures for hook testing (63 fixtures)
   .github/
     workflows/
-      ci.yml             # Lint (shellcheck, ruff, markdownlint) + hook tests
+      ci.yml             # Lint, validation, hook tests (ubuntu-24.04)
 ```
 
 </details>
