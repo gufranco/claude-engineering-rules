@@ -57,9 +57,10 @@ Error classification and typed error returns: `rules/code-style.md`. Retry param
 
 - [ ] No shared mutable state without synchronization
 - [ ] No missing `await` on async calls
-- [ ] No fire-and-forget promises that should be awaited
+- [ ] No fire-and-forget promises that should be awaited. If intentionally fire-and-forget, attach `.catch()` to prevent unhandled rejections
 - [ ] No TOCTOU bugs: check-then-act sequences protected by database constraints, locks, or conditional writes
 - [ ] No unhandled promise rejections
+- [ ] Multi-command Redis operations use Lua scripts or `MULTI/EXEC`. Two sequential Redis commands (e.g., `INCRBY` then `EXPIRE`) are not atomic. See `standards/redis.md`
 
 ### 5. Data Integrity
 
@@ -245,7 +246,7 @@ See `rules/testing.md` for the full mock policy with rationale.
 - [ ] No ignored return values. Every non-void result used or explicitly discarded with justification
 - [ ] Preconditions asserted before irreversible operations and at trust boundaries
 - [ ] Single export per file. One module, one responsibility, one export
-- [ ] No module-level side effects: no I/O, network calls, global state mutations, or event listener registration at import time
+- [ ] No module-level side effects: no I/O, network calls, global state mutations, or event listener registration at import time. Redis/database connections created at module scope are a common violation. If a module exports both pure functions and I/O functions, split or lazy-init
 - [ ] Command-query separation: functions either change state or return data, never both
 - [ ] No raw SQL when the project has an ORM or query builder
 - [ ] Parse, don't validate: validation returns a typed value, not a boolean
@@ -330,6 +331,7 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 - [ ] Feature flag states consistent. If a flag guards behavior in one file, all related files respect the same flag
 - [ ] Env var completeness. Every env var referenced in code exists in `.env.example`, Docker Compose, CI/CD, and Terraform with matching names
 - [ ] Error type consistency. Domain error classes used across modules share a common base or discriminant, not ad-hoc strings
+- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic (pricing, permissions, formatting) is identical across all paths. No path reimplements the calculation inline. See `rules/code-style.md` "Delivery Path Consistency"
 
 ### 16. Cascading Fix Analysis
 
@@ -678,9 +680,10 @@ Reference: `standards/api-design.md`
 - [ ] Idle timeout configured to reclaim unused connections?
 - [ ] For serverless: connection proxy (RDS Proxy, PgBouncer) to prevent exhaustion from cold starts?
 - [ ] Graceful degradation: fallback behavior defined when a dependency is unavailable?
+- [ ] Non-critical Redis reads wrapped in try/catch with safe default? A price enhancement, view counter, or recommendation score must not crash the critical path if Redis is down. See `standards/redis.md` "Non-Critical Redis Fallback"
 - [ ] Health check readiness endpoint reflects dependency status?
 
-Reference: `standards/resilience.md` (Circuit Breakers, Timeouts), `standards/database.md` (Connection Management)
+Reference: `standards/resilience.md` (Circuit Breakers, Timeouts), `standards/database.md` (Connection Management), `standards/redis.md` (Non-Critical Redis Fallback)
 
 ### 36. Async Processing Resilience
 

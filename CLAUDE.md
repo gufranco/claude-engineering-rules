@@ -20,7 +20,7 @@ Domain-specific standards live in `standards/` and are NOT loaded automatically.
 
 ## Core Principles
 
-Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (52 categories, 594 items).
+Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (52 categories, 597 items).
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.
@@ -105,6 +105,7 @@ Not everyone reading instructions will have CLI knowledge. When writing steps fo
 - One thing unclear: investigate silently. Multiple things unclear: ask one blocking question. Three failed attempts: change approach or ask.
 - Multiple valid approaches: state trade-offs briefly, pick the most performant, say why.
 - When the user's request is ambiguous ("compress", "clean up", "simplify"), confirm the specific meaning before executing. The cost of one clarifying question is near zero. The cost of wrong-direction work is a full revert.
+- **Execute, don't ask.** When the user gives a list of tasks or says "do everything," execute them all sequentially without pausing to ask for confirmation between steps. The user's default answer is "yes, do it." Only stop for genuinely blocking ambiguity that would cause wrong-direction work, not for permission to continue.
 
 ## Anti-Hallucination
 

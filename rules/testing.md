@@ -79,6 +79,8 @@ Apply `checklists/checklist.md` category 17. A clean test run means zero failure
 - New code: 95%+ coverage
 - Changed files and files directly related to the changes: 95%+ coverage
 - Existing code: do not reduce coverage
+- **Coverage is a delivery gate.** No task is declared complete until every changed or related file meets 95%+ across statements, branches, functions, and lines. "Related" means files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files with fresh output. "It should pass" is not evidence.
+- **Agent-delegated work included.** When agents implement code, their deliverables must meet the same 95%+ threshold. The orchestrator must verify coverage after agent work completes, not assume it.
 
 ## Test Scenario Planning
 
@@ -164,6 +166,16 @@ Tests running in parallel must not compete for shared resources.
 - **Database schemas**: use per-test or per-worker schemas, unique database names, or transactional rollback to prevent test data collisions
 - **File system**: use OS-provided temp directories with unique prefixes per test. Clean up in `afterEach`
 - **Environment variables**: restore originals after each test. Leaked changes cause order-dependent failures
+
+## Responsive and Viewport Testing
+
+Every page and component must render correctly on the smallest supported viewport. A layout that works on desktop but breaks on mobile is a bug.
+
+- Test on 320px width (iPhone SE) as the minimum. If it works at 320px, it works everywhere
+- E2E tests must include at least one mobile viewport test per page using Playwright's `page.setViewportSize({ width: 375, height: 667 })`
+- Verify: no horizontal overflow, no truncated buttons, no overlapping elements, no unreadable text
+- Tables must either scroll horizontally or collapse into a card layout on mobile
+- Page headers must stack vertically on mobile (`flex-col gap-4 sm:flex-row`)
 
 ## Benchmark Methodology
 

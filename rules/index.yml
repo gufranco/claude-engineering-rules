@@ -93,7 +93,12 @@ on_demand:
   database:
     path: standards/database.md
     description: Schema rules, query optimization, isolation levels, safe migrations, locking, connection management, NoSQL key design
-    triggers: [database, sql, migration, schema, query, index, transaction, postgres, dynamo, mongo, redis]
+    triggers: [database, sql, migration, schema, query, index, transaction, postgres, dynamo, mongo]
+
+  redis:
+    path: standards/redis.md
+    description: Redis atomic operations (Lua scripts, MULTI/EXEC), key design, TTL management, connection management, pub/sub, non-critical fallback patterns
+    triggers: [redis, incrby, expire, lua, pub/sub, publish, subscribe, ttl, redis key, volume, counter, rate limit]
 
   distributed-systems:
     path: standards/distributed-systems.md
@@ -209,6 +214,11 @@ on_demand:
     path: standards/i18n-l10n.md
     description: Text externalization, pluralization with ICU MessageFormat, number/date/currency formatting, RTL support, locale detection, translation workflow, pseudo-localization testing
     triggers: [i18n, l10n, locale, translation, rtl, pluralization, intl, internationalization, localization, icu, message format, right-to-left]
+
+  i18n-regional-variants:
+    path: standards/i18n-regional-variants.md
+    description: Regional language variant enforcement with dictionary-based verification. en-US vs en-GB, pt-BR vs pt-PT, es-MX vs es-ES vocabulary, spelling, and grammar differences. Flagged word lists, cspell and nspell integration
+    triggers: [regional variant, pt-BR, pt-PT, en-US, en-GB, es-ES, es-MX, british, american, brazilian, european portuguese, latin american spanish, accent, diacritical, hunspell, cspell, dictionary]
 
   data-pipelines:
     path: standards/data-pipelines.md
