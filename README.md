@@ -316,117 +316,576 @@ One unified checklist covers all layers of quality:
 
 ## Workflows
 
-Step-by-step guides for common engineering tasks. Each workflow references the specific skills and rules involved.
+Step-by-step guides for every engineering scenario. Each workflow shows which skills, rules, and agents are involved.
 
-### New Feature
+### 1. New Feature: From Idea to Production
 
-1. **Plan.** Run `/plan` with a description of the feature. This searches for existing solutions in the codebase, open PRs, and branches. It gathers references from similar code, matches relevant rules, evaluates alternatives, and creates a spec folder with the implementation plan.
+**When:** you receive a feature request, ticket, or decide to build something new.
 
-2. **Scaffold.** If the feature involves new files, run `/plan scaffold <type> <name>` to generate boilerplate that matches existing project patterns. Types: endpoint, service, component, module, model, controller, middleware, hook.
+```
+/plan --discover "add user notifications with email and push"
+```
 
-3. **Implement.** Follow the spec's task breakdown. Work through each step, running `/test` after each meaningful change to catch regressions early.
+1. **Discovery.** `/plan --discover` asks 6 forcing questions: what problem, who is the user, what does success look like, minimum scope, risks, and alternatives considered. Answers go into `specs/<date>-<slug>/decisions.md`.
 
-4. **Test.** Run `/test --coverage` to verify coverage meets the 95% threshold for new and changed code. Add missing tests for edge cases and error paths.
+2. **Research.** The plan skill searches the codebase, open PRs, closed PRs, and branches for existing solutions. It also searches for community packages that already solve the problem. Findings go into `references.md`.
 
-5. **QA.** Run `/review qa` to analyze the feature from a QA perspective. This maps all behavior paths, cross-references existing tests, and reports coverage gaps. Use `--fix` to auto-generate missing tests.
+3. **Plan.** The skill evaluates 2-3 approaches with trade-offs, creates a spec folder with `plan.md`, `decisions.md`, `references.md`, and `context.md`. Review the plan before proceeding.
 
-6. **Commit.** Run `/ship commit` to create conventional commits. Use `--push` to push immediately, or `--push --pipeline` to push and monitor CI until all checks pass.
+4. **Scaffold.** If the feature needs new files:
+   ```
+   /plan scaffold service notification
+   /plan scaffold endpoint notifications
+   ```
+   This reads 2-3 existing examples of the same type, matches naming, export style, imports, and generates skeleton files with `TODO` placeholders.
 
-7. **PR.** Run `/ship pr` to create a pull request with a structured description. CI monitoring runs by default.
+5. **Implement.** Follow the spec's task breakdown. After each meaningful change, verify it works:
+   ```
+   /test
+   ```
 
-8. **Self-review.** Run `/review --local` before requesting human review to catch issues early.
+6. **Test coverage.** Verify 95%+ coverage on all changed and related files:
+   ```
+   /test --coverage
+   ```
 
-### Bug Fix
+7. **QA analysis.** Map all behavior paths and find coverage gaps:
+   ```
+   /review qa --fix
+   ```
+   The `--fix` flag auto-generates missing tests after presenting the analysis.
 
-1. **Reproduce.** Trigger the bug reliably. If you can't reproduce it, gather more data before proceeding.
+8. **Self-review.** Catch issues before anyone else sees the code:
+   ```
+   /review --local
+   ```
+   This runs the full 57-category checklist against your local changes, including blast radius analysis on consumers of changed interfaces.
 
-2. **Isolate.** Find the minimal failing case. Follow the four-phase process from `rules/debugging.md`: reproduce, isolate, root cause, fix+verify.
+9. **Commit and push.**
+   ```
+   /ship commit --push --pipeline
+   ```
+   Groups changes into logical commits, pushes, and monitors CI until all checks pass. Diagnoses and fixes failures automatically (max 3 retry cycles).
 
-3. **Test first.** Write a test that fails due to the bug. This proves the bug exists and prevents future regressions.
+10. **Create PR.**
+    ```
+    /ship pr
+    ```
+    Generates a structured PR description (What/How/Testing), checks for stale documentation, and monitors the pipeline.
 
-4. **Fix.** Address the root cause, not the symptom. One change at a time.
+11. **Deploy.** After PR approval:
+    ```
+    /deploy land
+    /deploy canary
+    ```
+    Merges the PR, waits for deployment, then monitors the live app for 10 minutes checking for console errors and performance regressions.
 
-5. **Verify.** Run `/test` to confirm the new test passes and no existing tests broke. Demonstrate the fix using the original reproduction steps.
+**Rules involved:** `pre-flight.md`, `code-style.md`, `testing.md`, `git-workflow.md`, `verification.md`
+**Agents used:** `coverage-analyzer`, `blast-radius`, `test-scenario-generator`
 
-6. **Ship.** Run `/ship commit --push --pipeline` to commit, push, and verify CI passes.
+### 2. Bug Fix: From Report to Resolution
 
-### Debugging
+**When:** a bug is reported, a test fails, or you notice unexpected behavior.
 
-Follow the four-phase process defined in `rules/debugging.md`:
+```
+/investigate "users receive duplicate notifications after password reset"
+```
 
-1. **Reproduce.** Can you trigger it reliably? Record exact inputs, environment, and steps.
+1. **Reproduce.** `/investigate` starts the four-phase debugging process. It asks you to reproduce the bug reliably. If it is intermittent, it looks for timing, concurrency, or state dependencies.
 
-2. **Isolate.** Binary search the problem space. Comment out halves of the system until the failure disappears. Check recent changes with `git log --oneline -20`. Use `git bisect` if the bug exists on a branch but not on main.
+2. **Isolate.** The skill performs binary search: comments out halves of the system until the failure disappears. Checks `git log` for recent changes, uses `git bisect` if the bug exists on a branch but not on main.
 
-3. **Root cause.** Explain WHY it happens, not just WHERE. Verify your theory by predicting what will happen with a specific test input, then running it. If the prediction is wrong, discard the theory and start over.
+3. **Root cause.** State a hypothesis, predict what a test input will produce, run it. If the prediction is wrong, discard the theory entirely. The 3-strike protocol applies: after 3 failed fix attempts, the skill escalates with a structured summary of what was tried.
 
-4. **Fix and verify.** Fix the cause, write a test that captures it, run the full suite. Check for the same pattern elsewhere in the codebase and fix all instances.
+4. **Freeze scope (optional).** To prevent accidentally modifying unrelated files during debugging:
+   ```
+   /investigate --freeze
+   ```
+   This restricts edits to the module under investigation. Run `/investigate --unfreeze` when done.
 
-Use `/test` to run specific test files during isolation. Use `/ship checks` if the issue manifests in CI but not locally.
+5. **Test first.** Write a test that fails due to the bug:
+   ```
+   /test src/notifications/notification.service.test.ts
+   ```
 
-### Code Review
+6. **Fix.** Address the root cause, not the symptom. One change at a time.
 
-1. **Review a PR.** Run `/review <PR-number>` to review a pull request. Use `--backend` or `--frontend` to focus scope on large PRs.
+7. **Verify.** Run the full test suite, not just the fixed test:
+   ```
+   /test
+   ```
 
-2. **Review local changes.** Run `/review --local` to review your own uncommitted changes before creating a PR.
+8. **Ship.**
+   ```
+   /ship commit --push --pipeline
+   ```
+   The commit message references the fix: `fix(notifications): prevent duplicate sends on password reset`.
 
-3. **Post comments.** Add `--post` to automatically post review comments to the PR after your approval.
+**Rules involved:** `debugging.md` (four phases + 3-strike protocol), `testing.md`, `verification.md`
 
-The review skill runs three passes: per-file analysis, cross-file consistency, and cascading fix analysis. It checks against the 629-item checklist across 57 categories covering code quality, engineering architecture, deployment verification, and design quality.
+### 3. Code Review: Reviewing Someone Else's PR
 
-### Architecture Planning
+**When:** you are asked to review a pull request.
 
-1. **Plan.** Run `/plan` for the feature or system change. This produces a spec folder with the implementation plan, trade-off analysis, decisive tests for each approach, and references to existing code patterns.
+```
+/review 142
+```
 
-2. **Record decisions.** For significant decisions like database choice, service boundaries, or auth strategy, run `/plan adr new <title>` to create an Architecture Decision Record. ADRs capture the context, alternatives considered, and reasoning so future engineers understand WHY.
+1. **Scope detection.** The review skill categorizes the diff into scope signals (SCOPE_FRONTEND, SCOPE_BACKEND, SCOPE_AUTH, SCOPE_MIGRATIONS, etc.) to prioritize which specialist checks to apply.
 
-3. **Audit completeness.** After implementation, run `/assessment` to verify the implementation against architectural patterns, resilience requirements, security standards, and operational readiness.
+2. **Standard loading.** Based on the project's technology stack and the diff content, the skill loads relevant standards from `index.yml`. A PR that adds a database migration loads `standards/database.md` and `standards/zero-downtime-deployments.md`.
 
-### Establishing Project Standards
+3. **Blast radius.** For every changed interface, the skill traces all consumers in the project. A changed function signature that has 40 callers is flagged if callers were not updated.
 
-1. **Discover.** Run `/retro discover` in a project to extract existing conventions into rule files. The skill scans the codebase, identifies recurring patterns, and walks through each one: asking why the pattern exists, drafting a concise rule, and creating the file after your confirmation.
+4. **Three-pass review.** Pass 1: per-file analysis against all 57 checklist categories. Pass 2: cross-file consistency. Pass 3: cascading fix analysis for every issue found.
 
-2. **Focus areas.** Use `/retro discover --area src/api` to focus on a specific module. Use `--output project` to write rules to the project's CLAUDE.md instead of global `rules/`.
+5. **Confidence scoring.** Each finding gets a confidence score 1-10. Findings below 5 are suppressed. Findings 5-6 show with a caveat.
 
-3. **Iterate.** As the project evolves, run `/retro discover` again to capture new conventions. Run `/retro` after significant sessions to capture workflow-level patterns. Use `/retro --curate` to clean up stale memory and `/retro --promote` to graduate useful patterns to rules.
+6. **Verdict.** APPROVE, REQUEST_CHANGES, or COMMENT with blast radius summary and list of standards applied.
 
-### Daily Routine
+7. **Post comments.** After your review, post inline comments directly to the PR:
+   ```
+   /review 142 --post
+   ```
 
-1. **Morning.** Run `/morning` for a briefing: open PRs, pending reviews, notifications, and repo state. Add `--review` to jump straight into reviewing pending PRs smallest-first.
+**For large PRs**, focus on one area:
+```
+/review 142 --backend
+/review 142 --frontend
+```
 
-2. **Work.** Use the feature, bug fix, or debugging workflow above. For tasks touching 3+ files, start with `/plan`.
+**Rules involved:** all 25 rules loaded, all matched standards from `index.yml`
+**Agents used:** `blast-radius`, `pr-reviewer`, `performance-profiler` (if SCOPE_BACKEND), `accessibility-auditor` (if SCOPE_FRONTEND)
 
-3. **End of day.** Run `/retro` after significant sessions to capture corrections, preferences, and patterns as durable configuration updates.
+### 4. Self-Review: Checking Your Own Code Before Delivery
 
-### Security Audit
+**When:** you finished implementing and want to verify quality before creating a PR.
 
-Run `/audit` to perform a multi-layer security scan:
+```
+/review --local
+```
 
-- `/audit deps`: dependency vulnerabilities
-- `/audit secrets`: secret detection in code and git history
-- `/audit docker`: Dockerfile best practices
-- `/audit code`: code-level security patterns
-- `/audit scan`: deep scanning with trivy/snyk/gitleaks
-- `/audit image <name>`: Docker image vulnerability analysis
+1. This reviews your local branch diff against the base branch using the same 57-category checklist as a PR review.
 
-No arguments runs all layers. Findings are prioritized by severity.
+2. The fix-first heuristic classifies findings as AUTO-FIX (dead code, N+1, stale comments) or ASK (security, design decisions). AUTO-FIX issues are fixed directly.
 
-### Dependency Management
+3. After fixing, run QA analysis to verify test coverage:
+   ```
+   /review qa
+   ```
 
-1. **Audit.** Run `/audit deps` to check for known vulnerabilities in dependencies.
-2. **Outdated.** Run `/audit deps outdated` to list packages with available updates.
-3. **Update.** Run `/audit deps update <package>` to update a specific dependency with full verification.
-4. **Deep scan.** Run `/audit scan` to use trivy, snyk, or gitleaks for deeper analysis when available.
+4. For frontend changes, add a design audit:
+   ```
+   /review design
+   ```
+   This checks typography, color contrast, spacing, responsiveness, accessibility, and AI-pattern detection with 0-10 dimension scoring.
 
-### Release
+### 5. Full Application Assessment
 
-Run `/ship release` to create a tagged release with an auto-generated changelog from conventional commits. The skill detects the version bump from commit types: breaking changes bump major, features bump minor, fixes bump patch. Use `--dry-run` to preview without creating the release.
+**When:** you want to audit the entire implementation for architectural completeness, before an interview submission, or before declaring a project production-ready.
 
-### Infrastructure
+```
+/assessment
+```
 
-1. **Terraform.** Run `/infra terraform` for infrastructure changes. The skill validates before planning, plans before applying, and requires explicit approval before any apply or destroy.
-2. **Docker.** Run `/infra docker` for container operations. The skill detects Colima profiles and uses per-command `--context` flags to avoid polluting global Docker state.
-3. **Database.** Run `/infra db` for migrations, container management, and data operations. The skill detects your ORM and suggests your shell functions instead of raw Docker commands.
+1. **Requirement gathering.** The skill searches the entire project for requirement documents (README, INSTRUCTIONS, BRIEF, ASSIGNMENT) and asks if you have additional context from email, job postings, or external sources.
+
+2. **Company research (interview context).** If you provide a company name, it searches their engineering blog, GitHub org, tech talks, and Glassdoor interview reviews to understand what patterns they value.
+
+3. **Build verification.** Runs build, lint, typecheck, and tests with coverage. A failing build is CRITICAL.
+
+4. **Planted defect hunting.** Reads the code with suspicion, looking for intentional bugs and anti-patterns.
+
+5. **Technology discovery.** Scans the project for technology signals and loads all matching standards from `index.yml`. A project using PostgreSQL + GraphQL + Redis loads `database.md`, `graphql-api-design.md`, and `redis.md`.
+
+6. **57-category audit.** Every applicable category is checked. Findings are classified as PRESENT, PARTIAL, or MISSING with severity (CRITICAL/HIGH/MEDIUM/LOW) and effort (S/M/L/XL).
+
+7. **Fix and converge.** After presenting findings: "Want me to implement the missing patterns?" The skill fixes issues by priority (CRITICAL first), re-verifies after each batch, and loops up to 20 iterations until clean.
+
+**Focus areas for targeted assessment:**
+```
+/assessment --focus security
+/assessment --focus resilience
+/assessment --focus api
+/assessment --focus frontend
+/assessment --focus events
+/assessment --focus auth
+/assessment --focus deploy
+```
+
+**Rules involved:** all 25 rules, all matched standards, full 57-category checklist
+**Agents used:** `security-scanner`, `coverage-analyzer`, `red-team`, `documentation-checker`
+
+### 6. Debugging: Systematic Investigation
+
+**When:** something is broken and you need to find the root cause.
+
+```
+/investigate "API returns 500 on POST /orders when items array has more than 50 elements"
+```
+
+The skill follows `rules/debugging.md` four-phase process with the 3-strike error protocol:
+
+1. **Reproduce.** Find the minimal reproduction case. Record exact input, environment, and steps.
+
+2. **Isolate.** Binary search the problem space. Check `git log --oneline -20` and `git diff HEAD~5`. If the bug exists on a branch but not on main, use `git bisect`.
+
+3. **Root cause.** Explain WHY, not WHERE. Predict what a specific input will do, run it, compare. Wrong prediction means wrong theory: discard it entirely and start fresh.
+
+4. **Fix and verify.** One change at a time. Write a test that fails without the fix and passes with it. Run the full test suite.
+
+**Strike protocol:**
+- Strike 1: diagnose the error, apply a targeted fix
+- Strike 2: same error? Try a completely different approach
+- Strike 3: question the assumptions. Search docs and community
+- After 3 strikes: escalate with a structured summary of all attempts
+
+**CI-only failures:**
+```
+/ship checks
+```
+Fetches failed CI logs, diagnoses each failure, and suggests fixes. Use when the issue manifests in CI but passes locally.
+
+### 7. Architecture Planning
+
+**When:** starting a project, planning a major feature, or making a significant technical decision.
+
+```
+/plan --discover --auto "migrate authentication from sessions to JWT with refresh tokens"
+```
+
+1. **Discovery.** `--discover` runs 6 forcing questions before any planning starts.
+
+2. **Scope review.** `--auto` challenges the scope with four lenses: expansion (what is missing), selective expansion (best ROI additions), hold (is scope right), reduction (what can be cut).
+
+3. **Research.** Searches codebase, PRs, branches, and community packages for existing solutions.
+
+4. **Alternatives.** Evaluates 2-3 approaches with trade-offs, decisive tests, stop signals, and pivot triggers.
+
+5. **Spec folder.** Creates `specs/<date>-<slug>/` with `plan.md`, `decisions.md`, `references.md`, and `context.md`.
+
+**Record architecture decisions:**
+```
+/plan adr new "Replace session store with JWT"
+```
+Creates an ADR in `docs/adr/` documenting context, decision, alternatives, and consequences.
+
+**Generate boilerplate from existing patterns:**
+```
+/plan scaffold service payment
+/plan scaffold endpoint invoices
+/plan scaffold component DataTable
+```
+
+### 8. Daily Routine
+
+**When:** starting your workday.
+
+```
+/morning
+```
+
+1. **Open PRs.** Shows your open PRs with CI status and review state.
+2. **Pending reviews.** Lists PRs waiting for your review, sorted by age.
+3. **Notifications.** GitHub and GitLab notifications summary.
+4. **Standup prep.** Summarizes what you did yesterday based on commits and PR activity.
+
+**Jump straight into reviews:**
+```
+/morning --review
+```
+Reviews pending PRs smallest-first, one by one.
+
+**End of day:**
+```
+/retro
+```
+Captures corrections, preferences, and patterns from the session as durable configuration updates.
+
+### 9. Security Audit
+
+**When:** before a release, after adding dependencies, or as a periodic check.
+
+```
+/audit
+```
+
+Runs all layers: dependencies, secrets, Docker, code patterns, and deep scanning. Findings are prioritized by severity.
+
+**Targeted audits:**
+
+| Command | What it checks |
+|:--------|:---------------|
+| `/audit deps` | Known vulnerabilities in dependencies |
+| `/audit deps outdated` | Packages with available updates |
+| `/audit deps update lodash` | Update a specific package with verification |
+| `/audit secrets` | Secrets in code and git history |
+| `/audit docker` | Dockerfile security best practices |
+| `/audit code` | Code patterns: injection, XSS, SSRF |
+| `/audit scan` | Deep scan with trivy/snyk/gitleaks |
+| `/audit image myapp:latest` | Docker image vulnerability analysis |
+| `/audit threat` | STRIDE threat modeling |
+
+**Rules involved:** `security.md` (OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain)
+**Agents used:** `security-scanner`, `red-team`
+
+### 10. Dependency Management
+
+**When:** updating packages, evaluating new dependencies, or responding to vulnerability alerts.
+
+1. **Check vulnerabilities:**
+   ```
+   /audit deps
+   ```
+
+2. **Check for outdated packages:**
+   ```
+   /audit deps outdated
+   ```
+
+3. **Update a specific package:**
+   ```
+   /audit deps update express
+   ```
+   Runs tests after the update, verifies no breakage.
+
+4. **Evaluate a new package before adding:**
+   Ask Claude to compare options. The `dependency-analyzer` agent compares the top 3-5 packages in a category using maintenance activity, community size, vulnerabilities, bundle size, and API quality.
+
+### 11. Release
+
+**When:** all planned changes are merged to main and you are ready to cut a release.
+
+```
+/ship release --dry-run
+```
+
+Preview the release first. The skill detects the version bump from commit types: `BREAKING CHANGE` or `!` bumps major, `feat` bumps minor, `fix`/`perf` bumps patch.
+
+```
+/ship release
+```
+
+Tags the release, generates a changelog grouped by type (Features, Bug Fixes, Performance, Breaking Changes), and creates a GitHub/GitLab release.
+
+### 12. Infrastructure Operations
+
+**When:** managing Docker containers, Terraform resources, or database migrations.
+
+**Docker:**
+```
+/infra docker
+```
+Shows container status. Detects Colima profiles. Uses per-command `--context` flags to avoid polluting global Docker state.
+
+**Terraform:**
+```
+/infra terraform
+```
+Validates before planning, plans before applying. Requires explicit approval before any apply or destroy. Never auto-approves.
+
+**Database migrations:**
+```
+/infra db
+```
+Detects your ORM (Prisma, Knex, TypeORM). Runs migrations, manages database containers, handles seed data.
+
+### 13. Design Consultation
+
+**When:** starting a new UI, exploring visual approaches, or building a design system.
+
+**Consultation with research:**
+```
+/design consult "admin dashboard for order management"
+```
+Researches similar designs, proposes component hierarchy, color palette, typography, spacing, and produces `DESIGN.md`.
+
+**Compare multiple approaches:**
+```
+/design variants
+```
+Generates 3-5 visual approaches with trade-offs for accessibility, performance, and complexity.
+
+**Scaffold a design system:**
+```
+/design system
+```
+
+### 14. Cross-Model Code Review
+
+**When:** you want an independent perspective from a different AI model.
+
+```
+/second-opinion --mode gate
+```
+
+| Mode | What it does |
+|:-----|:-------------|
+| `gate` | Pass/fail decision. Binary quality check |
+| `adversarial` | Actively tries to break the code. Finds edge cases |
+| `consult` | Open-ended discussion about the approach |
+
+Uses Ollama (local, no API key needed) by default. Also supports OpenAI and other providers. Findings from both models are cross-referenced: overlapping issues have high confidence, unique issues per model warrant investigation.
+
+### 15. Incident Response
+
+**When:** a production incident occurs and you need to document it.
+
+```
+/incident
+```
+
+Gathers incident context: error logs, timeline, affected systems. Generates a blameless postmortem following the template in `standards/observability.md`: summary, impact, timeline, root cause, contributing factors, action items with owners.
+
+### 16. Parallel Development with Worktrees
+
+**When:** you need to work on multiple tasks simultaneously without branch switching.
+
+```
+/ship worktree init "fix auth bug | add notification feature | update docs"
+```
+
+Creates three isolated worktrees, each with its own branch. Work in any of them without affecting the others.
+
+**Ship from a worktree:**
+```
+/ship worktree deliver
+```
+Commits, pushes, and creates a PR from the current worktree.
+
+**Check status of all worktrees:**
+```
+/ship worktree check
+```
+
+**Clean up merged worktrees:**
+```
+/ship worktree cleanup
+```
+
+### 17. Establishing Project Standards
+
+**When:** joining a new project and want to capture its conventions, or when a project has matured and patterns should be codified.
+
+1. **Discover existing patterns:**
+   ```
+   /retro discover
+   ```
+   Scans the codebase for recurring patterns: naming conventions, file structure, error handling style, test patterns. For each pattern found, the skill asks why it exists and creates a rule after your confirmation.
+
+2. **Focus on a specific area:**
+   ```
+   /retro discover --area src/api
+   ```
+
+3. **Write to project-level config instead of global:**
+   ```
+   /retro discover --output project
+   ```
+
+4. **Clean up stale memory:**
+   ```
+   /retro --curate
+   ```
+
+5. **Graduate useful patterns to rules:**
+   ```
+   /retro --promote
+   ```
+
+### 18. CI Pipeline Diagnosis
+
+**When:** CI fails and you need to understand why.
+
+```
+/ship checks
+```
+
+Fetches failed job logs from GitHub Actions or GitLab CI, diagnoses each failure with the error, relevant log excerpt, and suggested fix. Searches for existing fixes in the source branch, open PRs, and remote branches before suggesting new ones.
+
+```
+/ship checks 142
+```
+Check a specific PR by number.
+
+### 19. Color Palette Generation
+
+**When:** starting a frontend project and need an accessible color system.
+
+```
+/palette
+```
+
+Generates an OKLCH color palette with WCAG AA contrast verification, ready for Tailwind CSS and shadcn/ui. Outputs CSS custom properties and Tailwind config values.
+
+### 20. README Generation
+
+**When:** the project needs a professional README.
+
+```
+/readme
+```
+
+Scans the entire project: code structure, dependencies, infrastructure, CI/CD, environment variables, scripts, license, and visual assets. Generates a README with hero section, metrics bar, feature grid, architecture diagram, quick start, and project structure.
+
+### 21. Test Execution and Load Testing
+
+**When:** running tests, checking coverage, or load testing an endpoint.
+
+| Command | What it does |
+|:--------|:-------------|
+| `/test` | Run the full test suite |
+| `/test src/api` | Run tests matching a path |
+| `/test --coverage` | Run with coverage reporting, verify 95%+ |
+| `/test --watch` | Run in watch mode during development |
+| `/test lint` | Run linters |
+| `/test scan` | Security vulnerability scanning |
+| `/test ci` | Simulate CI locally with `act` |
+| `/test perf https://localhost:3000/api/users` | Load test an endpoint with k6/wrk/hey |
+| `/test stubs src/services/payment.service.ts` | Generate test stubs for uncovered code |
+
+### 22. Post-Deploy Verification
+
+**When:** code has been deployed and you want to verify it is working.
+
+```
+/deploy canary
+```
+
+Monitors the live application for a configurable duration:
+- Checks for new console errors
+- Compares error rate against pre-deploy baseline
+- Monitors performance metrics against baseline
+- Suggests rollback if regression detected
+
+### Workflow Decision Guide
+
+Not sure which workflow to use? Find your scenario:
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "I need to build X" | Workflow 1: New Feature |
+| "Something is broken" | Workflow 2: Bug Fix |
+| "Can you review this PR?" | Workflow 3: Code Review |
+| "Is my code ready to ship?" | Workflow 4: Self-Review |
+| "Is this project production-ready?" | Workflow 5: Full Assessment |
+| "Why is this failing?" | Workflow 6: Debugging |
+| "How should I implement this?" | Workflow 7: Architecture Planning |
+| "What do I do first today?" | Workflow 8: Daily Routine |
+| "Are we secure?" | Workflow 9: Security Audit |
+| "Any vulnerable dependencies?" | Workflow 10: Dependency Management |
+| "Time to release" | Workflow 11: Release |
+| "Need to manage Docker/Terraform/DB" | Workflow 12: Infrastructure |
+| "Need a UI design" | Workflow 13: Design Consultation |
+| "Want a second opinion" | Workflow 14: Cross-Model Review |
+| "Production is down" | Workflow 15: Incident Response |
+| "Need to work on 3 things at once" | Workflow 16: Parallel Development |
+| "New project, need to set standards" | Workflow 17: Project Standards |
+| "CI is failing" | Workflow 18: Pipeline Diagnosis |
+| "Need a color palette" | Workflow 19: Color Palette |
+| "README is outdated" | Workflow 20: README Generation |
+| "Run tests or load test" | Workflow 21: Test Execution |
+| "Just deployed, is it working?" | Workflow 22: Post-Deploy |
 
 ## Quick Start
 
