@@ -145,6 +145,6 @@ Return `429 Too Many Requests` with a `Retry-After` header. Never reveal whether
 
 ## Related Standards
 
-- `standards/security.md`: 
+- `standards/secrets-management.md`: Secrets Management
 - `standards/api-design.md`: API Design
 - `standards/privacy-engineering.md`: Privacy Engineering
