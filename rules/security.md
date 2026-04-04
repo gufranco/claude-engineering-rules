@@ -12,6 +12,37 @@
 
 Apply `checklists/checklist.md` category 33 (Security and Access Control). The full auth verification items live there.
 
+## OAuth 2.1 and Token Management
+
+- PKCE is mandatory for all OAuth flows. Use S256 code challenge method. Generate code verifiers with `crypto.randomBytes(32)`
+- Access tokens: 15-minute maximum lifetime, RS256 signing, validate `aud` and `iss` claims on every request. Store in memory only, never localStorage
+- Refresh tokens: httpOnly + secure + sameSite cookies. Rotate after each use. Invalidate previous token immediately. Track token family for replay detection
+- Short-lived access tokens with refresh token rotation reduce exposure window and blocklist size
+
+## Passkeys and FIDO2
+
+- Set `userVerification: 'required'`
+- Validate authenticator counter increment on every authentication. Counter regression indicates a cloned authenticator
+- Support multiple passkeys per user for backup
+- Use synced passkeys for convenience, device-bound for high-security flows
+
+## Password Policy (NIST 800-63B)
+
+- Minimum 12 characters, no maximum below 64
+- No complexity requirements (uppercase, special chars, numbers)
+- No periodic rotation requirements
+- Check against HaveIBeenPwned breach database on creation and change
+- Hash with Argon2id (`timeCost: 3, memoryCost: 65536, parallelism: 4`) or bcrypt with saltRounds >= 12
+
+## Auth Rate Limits
+
+| Endpoint | Limit | Lockout |
+|----------|-------|---------|
+| Login attempts | 5 failures | 15-minute lockout per account |
+| Password resets | 3 per hour | Per email address |
+| Token refreshes | 10 per minute | Per user |
+| Account creation | 3 per hour | Per IP address |
+
 ## Auth Delegation
 
 Prefer specialized identity providers (Auth0, Cognito, Clerk, Keycloak) over custom auth. Auth flows have too many moving parts: password hashing, token lifecycle, session management, MFA, rate limiting, account recovery. A single mistake creates a vulnerability.
@@ -100,6 +131,17 @@ Short-lived access tokens (5-15 minutes) with refresh token rotation reduce the 
 - In VMs and bare metal: create a service account with only the permissions the application needs
 - File system: application must own only its working directory. System dirs, config outside the app, and other users' data must be inaccessible
 
+## Secrets Management
+
+Environment variables are insufficient for production secrets. A single compromised transitive package can read the full process environment.
+
+- Use dynamic secrets with TTL-based rotation: HashiCorp Vault, Infisical, or OpenBao
+- For Kubernetes: use External Secrets Operator to sync secrets from external stores into native Kubernetes Secrets
+- Never store static long-lived secrets in production environment variables
+- Automate rotation: define rotation schedules per secret type, trigger rotation on suspected compromise
+- Emergency revocation procedure: document how to revoke and rotate all secrets within 1 hour
+- Environment isolation: separate secret stores for dev, staging, and production
+
 ## Supply Chain Security
 
 Dependencies are attack surface. A compromised package runs with your code's permissions.
@@ -112,6 +154,9 @@ Dependencies are attack surface. A compromised package runs with your code's per
 - **Audit regularly**: run `npm audit`, `pip audit`, or equivalent in CI. Block builds on critical/high vulnerabilities
 - **Minimize surface**: fewer dependencies = fewer attack vectors. Prefer native/stdlib when the alternative is a small package with deep transitive dependencies
 - **Monitor advisories**: subscribe to security advisories for your critical dependencies. Do not wait for a scheduled audit to learn about a zero-day
+- **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format
+- **Artifact signing**: sign build artifacts with Sigstore (cosign) for provenance verification
+- **SLSA compliance**: target SLSA Level 2 minimum for customer-facing services (hosted builds with signed provenance)
 
 ## Hook Coverage
 

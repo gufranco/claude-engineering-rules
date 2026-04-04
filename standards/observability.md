@@ -188,3 +188,15 @@ When production breaks:
 - **Root cause**: the actual cause, not the trigger
 - **Contributing factors**: what made detection or recovery slower
 - **Action items**: concrete tasks with owners and due dates. Not "be more careful"
+
+## OpenTelemetry Integration
+
+- Initialize the OpenTelemetry SDK before importing any instrumented libraries. Late initialization loses early execution spans
+- Follow semantic conventions for attribute naming: `http.method`, `http.status_code`, `db.system`, `db.statement`. Use snake_case. Prefix application-specific attributes with `app.`
+- Include trace ID and span ID in every log record for correlation
+- Use composite sampling in production: keep 100% of error traces, probabilistically sample normal traffic at 5-10%
+- Generate metrics before sampling to maintain accuracy regardless of sample rate
+- Avoid high-cardinality attributes on every span: user IDs and session tokens increase storage cost. Add only where context is needed
+- Use W3C Trace Context as the default propagation format
+- Deploy an OpenTelemetry Collector rather than sending telemetry directly from applications. The Collector provides buffering, retry, and credential isolation
+- Verify span closure: every opened span must be closed. Unclosed spans leak resources

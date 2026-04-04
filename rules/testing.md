@@ -209,3 +209,26 @@ Snapshot tests serialize output and compare it against a stored reference. They 
 - Use inline snapshots when the output is short enough to read in the test file. External `.snap` files are harder to review
 - Never snapshot non-deterministic values. Strip or mask timestamps, UUIDs, and random tokens before comparing
 - When a snapshot test fails during refactoring, check if it must be an explicit assertion instead. If the test name does not describe a specific behavior, convert it
+
+## Contract Testing
+
+When services communicate across network boundaries with independent deployment cadences, use consumer-driven contract testing.
+
+- The consumer defines expected interactions and generates a contract file
+- The provider verifies against the contract in its own CI pipeline
+- Use a contract broker for sharing contracts between services
+- Run `can-i-deploy` checks in CI before deploying any service update
+- Contract tests replace exhaustive E2E tests for service interaction verification
+- Use contract testing when: microservices with multiple consumers, independent release cadences
+- Use integration testing when: monolithic application, tightly coupled services, single deployment unit
+
+## Performance Regression Testing
+
+Detect performance regressions before they reach production.
+
+- Establish baselines for API latency, page load time, and bundle size
+- Compare before/after on every PR. Alert on p95 latency increase >10% or bundle size increase >5%
+- Use median (p50) for primary reporting, not mean. GC pauses and outliers distort the mean
+- Report p50, p95, and p99 with runtime version and date
+- Verify benchmarks exercise the intended code path. Silent errors produce misleading "fast" results
+- Use realistic data sizes. Micro-benchmarks with 10 items do not predict behavior with 10,000 items

@@ -153,3 +153,26 @@ Only include links for actions available in the current state.
 - Accept an array of operations
 - Return per-item results with individual status codes
 - Never let one failure abort the entire batch
+
+## API Versioning
+
+- Use URI path versioning as the default: `/v1/users`, `/v2/users`
+- Deprecation timeline: 6-month announcement, 12-month migration support, 18-24 month removal
+- Include `Deprecation` header (RFC 9745) and `Sunset` header (RFC 8594) on deprecated endpoints
+- Monitor consumption per version before removing support. Never sunset a version with active consumers above threshold
+
+## Rate Limiting
+
+- Return standard headers on every response: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`
+- Always return HTTP 429 for rate-limited requests
+- Implement tiered limits per API key: different rates for different consumer tiers
+- Use resource-based per-endpoint rates: file uploads at 10/min, reads at 1000/min, writes at 100/min
+- Consider dynamic rate limiting: reduce limits when CPU exceeds 80% or error rate exceeds 5%
+
+## Backend for Frontend
+
+- Use a BFF when multiple frontends have different data shape requirements
+- One BFF per frontend platform, owned by the frontend team that consumes it
+- The BFF holds secrets that frontends cannot securely store. Frontend apps never see API keys for third-party services
+- The BFF is a translation layer: orchestration, transformation, protocol translation. Never business logic
+- Single frontend with simple needs: direct API calls, no BFF needed
