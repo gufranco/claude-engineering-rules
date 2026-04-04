@@ -90,3 +90,7 @@ docker --context <name> logs --tail=100 <container>
 Before running commands, verify the target Colima profile is running with `colima list`. If the profile is stopped, suggest starting it with `colima start --profile <name>` or the user's custom function. Do not send commands to a context whose backend is not running.
 
 If Colima is not installed or the runtime is Docker Desktop or native, this section does not apply. Only handle Colima contexts when Colima is the detected runtime.
+
+## Related Standards
+
+- `standards/infrastructure.md`: Infrastructure

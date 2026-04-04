@@ -149,3 +149,8 @@ Set function timeouts with a 20% buffer above the expected maximum execution tim
 | Logging sensitive data | Privacy and compliance violation | Sanitize before logging |
 | Ignoring retry behavior | Duplicate processing | Implement idempotent handlers |
 | Hard-coded region | Single point of failure | Multi-region with failover |
+
+## Related Standards
+
+- `standards/api-gateway.md`: API Gateway and BFF
+- `standards/observability.md`: Observability

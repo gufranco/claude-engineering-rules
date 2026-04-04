@@ -178,3 +178,8 @@ Classify all data at creation time. The classification drives encryption, access
 | Restricted | Passwords, government IDs, health data | At rest + in transit + app-level | Named individuals | Minimum necessary |
 
 Never store restricted data without encryption. Never log confidential or restricted data, even in debug mode.
+
+## Related Standards
+
+- `standards/authentication.md`: Authentication
+- `standards/database.md`: Database

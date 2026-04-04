@@ -145,3 +145,11 @@ Track how far behind each consumer is from the latest event in the stream.
 | Processing latency p99 | Above 500ms | Profile consumer, check downstream dependencies |
 
 Expose lag as a metric in the observability stack. Consumer lag is the primary indicator of event-driven system health.
+
+## Related Standards
+
+- `standards/message-queues.md`: queue topology, consumer patterns, DLQ handling
+- `standards/resilience.md`: retry with backoff, idempotency, circuit breakers
+- `standards/distributed-systems.md`: consistency models, saga coordination, schema evolution
+- `standards/database.md`: transaction isolation, expand-contract migrations
+- `standards/observability.md`: consumer lag monitoring, trace correlation

@@ -107,3 +107,9 @@ gRPC uses HTTP/2 with long-lived connections. L4 load balancers send all request
 | L7 proxy (Envoy, linkerd) | When clients cannot do client-side balancing (browser, legacy) |
 
 Never use L4 load balancers alone for gRPC. All traffic goes to one backend.
+
+## Related Standards
+
+- `standards/api-design.md`: API Design
+- `standards/distributed-systems.md`: Distributed Systems
+- `standards/resilience.md`: Resilience

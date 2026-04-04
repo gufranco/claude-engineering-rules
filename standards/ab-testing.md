@@ -64,3 +64,8 @@ When testing multiple variables simultaneously (headline + image + CTA):
 - Ship the winning variant. Remove the losing variant code and the experiment flag. Dead experiment code is technical debt
 - If the result is inconclusive, decide: extend the experiment, accept the null result, or redesign
 - Feed learnings back into the next experiment. A/B testing is iterative
+
+## Related Standards
+
+- `standards/feature-flags.md`: Feature Flags
+- `standards/observability.md`: Observability

@@ -75,3 +75,9 @@ Mobile apps must handle network unavailability gracefully.
 - **E2E tests**: Detox (React Native) or Maestro for full device automation
 - **Device matrix**: test on at least 3 screen sizes (small phone, large phone, tablet) and 2 OS versions (current, minimum supported)
 - **Performance tests**: measure startup time, scroll performance, and memory on a low-end device. CI should fail if metrics regress
+
+## Related Standards
+
+- `standards/frontend.md`: Frontend Design
+- `standards/authentication.md`: Authentication
+- `standards/performance-budgets.md`: Performance Budgets

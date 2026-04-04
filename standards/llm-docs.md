@@ -117,3 +117,7 @@ When implementing, debugging, or making decisions about a technology, check the 
 - When an error suggests a breaking change or deprecated method
 - When choosing between multiple patterns for a library
 - When the user asks about a technology listed above
+
+## Related Standards
+
+- `standards/api-design.md`: API Design

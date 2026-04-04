@@ -65,3 +65,8 @@ Display SLOs as burn-rate alerts, not raw uptime percentages.
 | Raw counter display | Numbers always go up, no useful signal | Use rate() or irate() to show per-second changes |
 | No baseline | Cannot tell if current values are normal | Add week-over-week comparison or static baseline annotation |
 | Dashboard sprawl | Hundreds of dashboards, nobody knows which to use | Curate a home dashboard per team. Archive unused dashboards |
+
+## Related Standards
+
+- `standards/observability.md`: Observability
+- `standards/sre-practices.md`: SRE Practices

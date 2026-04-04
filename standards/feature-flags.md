@@ -575,3 +575,9 @@ Rules:
 | Already has a mature platform team and wants full control | Custom implementation. Only when the team can commit to maintaining SDKs, cache, audit, and cleanup automation |
 
 **Default rule**: do not build a custom flag system until the team has outgrown a managed solution or has a hard constraint that no vendor satisfies. The evaluation engine is the easy part. The SDKs, caching, audit trail, targeting UI, and cleanup automation are where the real cost lives.
+
+## Related Standards
+
+- `standards/ab-testing.md`: A/B Testing
+- `standards/observability.md`: Observability
+- `standards/distributed-systems.md`: Distributed Systems

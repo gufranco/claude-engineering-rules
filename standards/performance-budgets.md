@@ -179,3 +179,8 @@ Track performance metrics continuously, not just during development.
 | JS bundle size | Build | Above 80% of budget |
 | Total page weight | Build | Above 80% of budget |
 | Time to First Byte | RUM | Above 800ms p75 |
+
+## Related Standards
+
+- `standards/frontend.md`: Frontend Design
+- `standards/observability.md`: Observability

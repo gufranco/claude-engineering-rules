@@ -182,3 +182,8 @@ await provider
 | Post-deploy | Tag the deployed version with the environment name |
 
 A consumer PR that publishes a new contract does not block the provider. The provider verifies on its own schedule. But deployment is blocked until both sides verify.
+
+## Related Standards
+
+- `standards/api-design.md`: API Design
+- `standards/distributed-systems.md`: Distributed Systems

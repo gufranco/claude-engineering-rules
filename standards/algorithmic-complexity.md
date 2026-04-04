@@ -185,3 +185,8 @@ Time gets measured. Space gets forgotten. Then the OOM kill arrives.
 - **WeakMap / WeakRef**: for caches keyed by objects. Entries are GC'd when the key is GC'd
 - **Pool and reuse**: for expensive objects (buffers, connections), reuse from a pool instead of allocating per request
 - **Pagination at every boundary**: database queries, API responses, file reads. Never load "all" without a limit
+
+## Related Standards
+
+- `standards/database.md`: Database
+- `standards/caching.md`: Caching

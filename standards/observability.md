@@ -200,3 +200,9 @@ When production breaks:
 - Use W3C Trace Context as the default propagation format
 - Deploy an OpenTelemetry Collector rather than sending telemetry directly from applications. The Collector provides buffering, retry, and credential isolation
 - Verify span closure: every opened span must be closed. Unclosed spans leak resources
+
+## Related Standards
+
+- `standards/sre-practices.md`: SRE Practices
+- `standards/opentelemetry.md`: OpenTelemetry
+- `standards/dashboard-design.md`: Dashboard Design

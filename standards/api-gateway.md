@@ -181,3 +181,9 @@ If the BFF grows beyond data aggregation and formatting, business logic is leaki
 | Observability | Built-in metrics, tracing integration, access logging |
 
 Common options: Kong, Envoy, AWS API Gateway, Traefik, NGINX. Evaluate against the project's specific needs rather than defaulting to the most popular option.
+
+## Related Standards
+
+- `standards/api-design.md`: API Design
+- `standards/resilience.md`: Resilience
+- `standards/authentication.md`: Authentication

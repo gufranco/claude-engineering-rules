@@ -290,3 +290,7 @@ terraform test -verbose
 - Use mock providers for unit tests whenever possible. Reserve apply-mode tests for behaviors that require real infrastructure responses
 - Name test files descriptively: `validation_unit_test.tftest.hcl`, not `test1.tftest.hcl`
 - Test conditional resource creation for every `count` or `for_each` that depends on a variable
+
+## Related Standards
+
+- `standards/infrastructure.md`: Infrastructure

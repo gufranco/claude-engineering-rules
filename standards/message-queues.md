@@ -658,3 +658,9 @@ it("must process events for the same order in sequence order", async () => {
 | Already running Redis, simple queuing needs | Redis Streams | No additional infrastructure, good enough for moderate throughput |
 | Multi-region, global ordering | Kafka with MirrorMaker or Confluent Cluster Linking | Cross-region replication with ordering preservation |
 | Serverless, event-driven, AWS Lambda | SQS | Native Lambda event source mapping, built-in batch and DLQ support |
+
+## Related Standards
+
+- `standards/event-driven-architecture.md`: Event-Driven Architecture
+- `standards/resilience.md`: Resilience
+- `standards/distributed-systems.md`: Distributed Systems
