@@ -15,7 +15,18 @@
       "Bash",
       "NotebookEdit",
       "Read(/tmp/**)",
-      "Read(/private/tmp/**)"
+      "Read(/private/tmp/**)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status)",
+      "Bash(git status *)",
+      "Bash(git branch *)",
+      "Bash(git remote *)",
+      "Bash(git show *)",
+      "Bash(pnpm run *)",
+      "Bash(pnpm exec *)",
+      "Bash(npm run *)",
+      "Bash(npx *)"
     ],
     "deny": [
       "Read(./.env)",
@@ -92,10 +103,14 @@
       "Edit(./**/*id_rsa*)",
       "Read(./**/*id_ed25519*)",
       "Write(./**/*id_ed25519*)",
-      "Edit(./**/*id_ed25519*)"
+      "Edit(./**/*id_ed25519*)",
+      "Read(**/node_modules/**)"
     ]
   },
   "model": "opus[1m]",
+  "includeGitInstructions": false,
+  "autoUpdatesChannel": "stable",
+  "showThinkingSummaries": true,
   "hooks": {
     "PreToolUse": [
       {
@@ -118,6 +133,7 @@
       },
       {
         "matcher": "Bash",
+        "if": "Bash(git commit *)",
         "hooks": [
           {
             "type": "command",
@@ -240,6 +256,10 @@
           {
             "type": "command",
             "command": "if command -v osascript >/dev/null 2>&1; then osascript -e 'display notification \"Response complete\" with title \"Claude Code\"'; elif command -v notify-send >/dev/null 2>&1; then notify-send 'Claude Code' 'Response complete'; fi"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/notify-webhook.sh"
           }
         ]
       }
@@ -248,6 +268,9 @@
   "statusLine": {
     "type": "command",
     "command": "python3 ~/.claude/scripts/context-monitor.py"
+  },
+  "worktree": {
+    "symlinkDirectories": ["node_modules"]
   },
   "outputStyle": "Explanatory",
   "language": "english",

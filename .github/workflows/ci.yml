@@ -94,6 +94,12 @@ jobs:
       - name: Validate command blocker patterns
         run: python3 scripts/validate-patterns.py
 
+      - name: Validate skill definitions
+        run: python3 scripts/validate-skills.py
+
+      - name: Validate cross-references
+        run: python3 scripts/validate-cross-refs.py
+
   hooks:
     name: Hook tests
     runs-on: ubuntu-24.04

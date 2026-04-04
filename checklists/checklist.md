@@ -973,3 +973,60 @@ Apply to frontend changes. Reference: `/review design` subcommand, `standards/fr
 - [ ] Component renders correctly at mobile, tablet, and desktop breakpoints
 - [ ] Touch targets at least 44x44px on mobile viewports
 - [ ] No AI-pattern defaults accepted without intentional customization (generic fonts, stock layouts, placeholder gradients)
+
+### 53. LLM Trust Boundary
+
+Apply when code processes, stores, or acts on LLM-generated output. Reference: `rules/code-style.md` LLM Output Trust Boundary section.
+
+- [ ] LLM-generated values validated for format and shape before database write
+- [ ] LLM output sanitized before vector database insertion to prevent stored prompt injection
+- [ ] LLM-generated URLs validated against allowlist before server-side fetch to prevent SSRF
+- [ ] Tool output shape verified against expected schema before acting on results
+- [ ] No raw LLM output stored in user-visible fields without sanitization
+- [ ] Prompts listing tools match what is actually wired up, no stale references
+- [ ] Word or token limits stated in prompts are consistent across all references
+
+### 54. Performance Budget
+
+Apply to frontend changes and API endpoints. Reference: `standards/frontend.md` Core Web Vitals section, `standards/performance-budgets.md`.
+
+- [ ] LCP under 2.0s, INP under 150ms, CLS under 0.05
+- [ ] JavaScript bundle under 300KB compressed
+- [ ] All images, videos, and iframes have explicit `width` and `height` attributes
+- [ ] LCP image has `fetchpriority="high"`
+- [ ] No layout shifts from elements without dimensions
+- [ ] No synchronous DOM manipulation in event handlers
+- [ ] API endpoint latency within defined p95 target
+
+### 55. Zero-Downtime Deployment
+
+Apply to database migrations and deployment changes. Reference: `standards/database.md` Expand-Contract section, `standards/zero-downtime-deployments.md`.
+
+- [ ] Database migrations use expand-contract pattern, never combining both in one deploy
+- [ ] Schema changes are backward-compatible with the previous application version
+- [ ] Canary verification performed after deployment
+- [ ] Rollback plan documented with specific commands
+- [ ] Progressive delivery uses feature flags for gradual rollout
+
+### 56. Supply Chain Security
+
+Apply when adding or updating dependencies. Reference: `rules/security.md` Supply Chain section.
+
+- [ ] SBOM generated on CI build in SPDX or CycloneDX format
+- [ ] Build artifacts signed for provenance verification
+- [ ] Lockfile committed with integrity checking enabled
+- [ ] `npm ci` or `pnpm install --frozen-lockfile` used in CI, not `npm install`
+- [ ] Package names double-checked for typosquatting
+- [ ] Scoped registries configured for private packages to prevent dependency confusion
+- [ ] SLSA compliance level documented for the service
+
+### 57. Event-Driven Architecture
+
+Apply when implementing message-based or event-driven systems. Reference: `standards/event-driven-architecture.md`.
+
+- [ ] All event handlers are idempotent with deduplication by event ID
+- [ ] Event schemas versioned with backward-compatible handlers
+- [ ] Partition keys use aggregate or entity IDs for ordering guarantees
+- [ ] Failed events routed to dead-letter queues, never silently dropped
+- [ ] Consumer lag monitored with alerts when exceeding threshold
+- [ ] Outbox pattern used for transactional event publishing

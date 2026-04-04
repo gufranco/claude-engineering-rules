@@ -108,7 +108,8 @@ def main():
         sys.exit(0)
 
     # Skip TEMPLATE.md
-    agent_files = [f for f in agent_files if os.path.basename(f) != "TEMPLATE.md"]
+    skip_files = {"TEMPLATE.md", "_shared-principles.md"}
+    agent_files = [f for f in agent_files if os.path.basename(f) not in skip_files]
 
     all_errors = []
     for filepath in agent_files:
