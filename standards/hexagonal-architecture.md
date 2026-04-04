@@ -107,3 +107,8 @@ The domain layer is the functional core: pure functions and types, testable with
 | Use case returns HTTP status | Application layer knows about HTTP | Return Result with domain error. Adapter maps to HTTP |
 | Adapter contains business logic | Logic is untestable without infrastructure | Move logic to domain service, keep adapter as a thin mapper |
 | Shared adapter across ports | Creates coupling between unrelated ports | One adapter per port. Shared infrastructure (db connection) is injected, not shared at the adapter level |
+
+## Related Standards
+
+- `standards/ddd-tactical-patterns.md`: DDD Tactical Patterns
+- `standards/database.md`: Database

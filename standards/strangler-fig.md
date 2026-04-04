@@ -177,3 +177,8 @@ After all routes are migrated and stable:
 6. Update documentation to reflect the new system as the sole system.
 
 Do not rush decommissioning. A premature shutdown when an undiscovered route still depends on the legacy system causes an outage.
+
+## Related Standards
+
+- `standards/zero-downtime-deployments.md`: Zero-Downtime Deployments
+- `standards/database.md`: Database

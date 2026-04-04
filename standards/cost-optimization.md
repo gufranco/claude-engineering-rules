@@ -356,3 +356,8 @@ Rules:
 - Never auto-renew commitments. Traffic patterns change. Re-evaluate the workload before renewing.
 - When utilization drops below 90%, investigate immediately. A commitment at 80% utilization means 20% is wasted.
 - Track commitment coverage as a dashboard metric visible to the entire engineering org.
+
+## Related Standards
+
+- `standards/infrastructure.md`: Infrastructure
+- `standards/sre-practices.md`: SRE Practices

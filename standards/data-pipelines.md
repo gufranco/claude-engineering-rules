@@ -77,3 +77,8 @@ Alert on: lag exceeding SLA, error rate above threshold, missed scheduled runs, 
 | ELT | Load raw data, transform in the target | When the target is a data warehouse with strong compute (BigQuery, Snowflake, Redshift) |
 
 **Default rule**: prefer ELT when loading into a data warehouse. Raw data in the warehouse enables ad-hoc analysis without re-running the pipeline.
+
+## Related Standards
+
+- `standards/event-driven-architecture.md`: Event-Driven Architecture
+- `standards/observability.md`: Observability

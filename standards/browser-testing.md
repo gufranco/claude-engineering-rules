@@ -279,3 +279,9 @@ export default defineConfig({
 - Retry flaky tests in CI but never locally. Flaky tests must be fixed, not retried indefinitely.
 - Capture traces on failure for debugging. Traces include DOM snapshots, network requests, and console logs.
 - Run with a single worker in CI if tests share external resources (database, API). Parallel locally.
+
+## Related Standards
+
+- `standards/frontend.md`: Frontend Design
+- `standards/accessibility-testing.md`: Accessibility Testing
+- `standards/performance-budgets.md`: Performance Budgets

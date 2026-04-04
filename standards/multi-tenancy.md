@@ -529,3 +529,9 @@ When tenants need custom branding:
 - Validate asset URLs (logos, favicons) at upload time: format, dimensions, file size
 - Serve tenant assets from a CDN with the tenant ID in the path to prevent cache collisions
 - Default theme must always be present. A tenant with no custom branding must see a coherent default, not broken styles
+
+## Related Standards
+
+- `standards/database.md`: Database
+- `standards/authentication.md`: Authentication
+- `standards/observability.md`: Observability

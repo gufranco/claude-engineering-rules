@@ -766,3 +766,9 @@ type User {
 - Every deprecated field must include a `reason` that names the replacement
 - Schema CI must fail if a deprecated field is removed before its announced date
 - Run `graphql-inspector` or equivalent in CI to detect breaking changes against the production schema
+
+## Related Standards
+
+- `standards/api-design.md`: API Design
+- `standards/caching.md`: Caching
+- `standards/authentication.md`: Authentication

@@ -78,3 +78,8 @@ For message-based APIs (Kafka topics, RabbitMQ exchanges, WebSocket channels):
 | Code examples | doctest (Python), rustdoc --test (Rust) | Examples that no longer compile or produce wrong output |
 | Spelling | cspell, aspell | Typos in documentation |
 | API/code sync | Compare OpenAPI spec against route definitions | Drift between docs and implementation |
+
+## Related Standards
+
+- `standards/api-design.md`: API Design
+- `standards/graphql-api-design.md`: GraphQL API Design

@@ -208,3 +208,8 @@ securityContext:
 - `allowPrivilegeEscalation: false` prevents `setuid` binaries from gaining root.
 - Drop all capabilities, then add back only what is needed.
 - `seccompProfile: RuntimeDefault` restricts available syscalls to a safe subset.
+
+## Related Standards
+
+- `standards/infrastructure.md`: Infrastructure
+- `standards/secrets-management.md`: Secrets Management

@@ -143,3 +143,8 @@ Structure CI to leverage the orchestrator's dependency graph.
 4. Cache `node_modules` and `.turbo` between CI runs.
 
 Never run `pnpm -r build` or iterate over packages manually. The orchestrator handles parallelism, ordering, and caching.
+
+## Related Standards
+
+- `standards/infrastructure.md`: Infrastructure
+- `standards/typescript-5x.md`: TypeScript 5.x Patterns

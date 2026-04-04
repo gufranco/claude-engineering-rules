@@ -149,3 +149,8 @@ Start with neverthrow. Move to Effect when you need its runtime features (struct
 | Mixing throw and Result | Callers don't know which error channel to handle | One convention per layer. Domain uses Result, adapters convert |
 | Ignoring the error track | `.map()` chains with no error handling at the end | Every pipeline must terminate with `match` or equivalent |
 | Over-engineering simple code | Single operation wrapped in a 5-step pipeline | Use Result directly for simple cases. Railway is for composition |
+
+## Related Standards
+
+- `standards/ddd-tactical-patterns.md`: DDD Tactical Patterns
+- `standards/resilience.md`: Resilience

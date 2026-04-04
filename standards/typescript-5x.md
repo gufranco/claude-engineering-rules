@@ -210,3 +210,7 @@ Process for each TypeScript upgrade:
 3. Enable every new flag.
 4. Fix all resulting errors. Do not disable the flag.
 5. Commit the tsconfig change with the fixes.
+
+## Related Standards
+
+- `standards/frontend.md`: Frontend Design

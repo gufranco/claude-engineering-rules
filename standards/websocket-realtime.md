@@ -746,3 +746,9 @@ export default function (): void {
   check(res, { "status is 101": (r) => r && r.status === 101 });
 }
 ```
+
+## Related Standards
+
+- `standards/resilience.md`: Resilience
+- `standards/api-design.md`: API Design
+- `standards/distributed-systems.md`: Distributed Systems

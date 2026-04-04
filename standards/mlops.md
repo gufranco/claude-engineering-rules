@@ -67,3 +67,8 @@ Models degrade over time as the real-world distribution shifts away from trainin
 - **Test serving infrastructure**: load test the endpoint, verify latency and throughput under expected load
 - **Test rollback**: verify that reverting to the previous model version works and serves correct predictions
 - **Test training/serving parity**: compute features through both paths on the same input, verify they match
+
+## Related Standards
+
+- `standards/observability.md`: Observability
+- `standards/data-pipelines.md`: Data Pipelines

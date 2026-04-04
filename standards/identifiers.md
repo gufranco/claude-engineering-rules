@@ -409,3 +409,8 @@ Never change a primary key in-place on a live table.
 - **NanoID with `non-secure` mode in production.** Uses `Math.random()`, which is not cryptographically secure.
 - **SERIAL instead of BIGSERIAL in PostgreSQL.** INT overflow on growing tables requires downtime to fix.
 - **Storing UUIDs as `VARCHAR(36)` when a native `UUID` type exists.** Wastes storage (36 bytes vs 16 bytes) and reduces index performance.
+
+## Related Standards
+
+- `standards/database.md`: Database
+- `standards/distributed-systems.md`: Distributed Systems

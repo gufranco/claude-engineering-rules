@@ -272,3 +272,8 @@ Entry/exit actions reduce duplication when multiple transitions lead to the same
 | Missing terminal states | Order can be cancelled but there is no Cancelled state | Explicitly model all end states |
 | Implicit transitions | State changes without going through the machine | All state changes go through the transition function |
 | No guard validation | Transition succeeds even when preconditions are not met | Add guard conditions and test them |
+
+## Related Standards
+
+- `standards/ddd-tactical-patterns.md`: DDD Tactical Patterns
+- `standards/event-driven-architecture.md`: Event-Driven Architecture

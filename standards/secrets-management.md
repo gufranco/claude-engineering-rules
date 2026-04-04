@@ -142,3 +142,8 @@ Before every release:
 4. Production secrets are dynamic or on automated rotation.
 5. Emergency revocation runbook is current and tested.
 6. Access policies follow least privilege.
+
+## Related Standards
+
+- `standards/container-security.md`: Container Security
+- `standards/infrastructure.md`: Infrastructure

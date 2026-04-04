@@ -142,3 +142,9 @@ Aggressive rate limiting on authentication endpoints prevents credential stuffin
 Use a sliding window counter, not a fixed window. Fixed windows allow burst attacks at window boundaries.
 
 Return `429 Too Many Requests` with a `Retry-After` header. Never reveal whether an account exists through rate limit responses. The response shape and timing must be identical for existing and non-existing accounts.
+
+## Related Standards
+
+- `standards/security.md`: 
+- `standards/api-design.md`: API Design
+- `standards/privacy-engineering.md`: Privacy Engineering

@@ -164,3 +164,9 @@ Before every production deployment:
 4. Alert thresholds are set for automated rollback.
 5. Feature flags are configured for gradual rollout if applicable.
 6. Communication is sent to stakeholders if the change is user-visible.
+
+## Related Standards
+
+- `standards/database.md`: Database
+- `standards/infrastructure.md`: Infrastructure
+- `standards/feature-flags.md`: Feature Flags

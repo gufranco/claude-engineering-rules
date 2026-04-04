@@ -138,3 +138,9 @@ Toil is manual, repetitive, automatable work that scales with service size. Trac
 - Target: less than 30% of a team's time on toil.
 - If toil exceeds 30%, it becomes the top priority ahead of feature work.
 - Automate the highest-frequency toil first, not the most annoying.
+
+## Related Standards
+
+- `standards/observability.md`: Observability
+- `standards/dashboard-design.md`: Dashboard Design
+- `standards/resilience.md`: Resilience

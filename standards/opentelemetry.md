@@ -204,3 +204,9 @@ Choose the correct metric instrument for each measurement.
 - Counters reset on process restart. Use a rate function in queries to handle resets.
 - Histograms use configurable bucket boundaries. Set boundaries based on expected value ranges.
 - Use exponential histograms for latency measurements when supported. They adapt bucket boundaries automatically.
+
+## Related Standards
+
+- `standards/observability.md`: Observability
+- `standards/sre-practices.md`: SRE Practices
+- `standards/distributed-systems.md`: Distributed Systems

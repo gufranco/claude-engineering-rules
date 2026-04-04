@@ -503,3 +503,9 @@ Flag these patterns during `/review design`. They signal template-generated UI t
 - Consistent shadow scale: `shadow-sm` for subtle, `shadow-md` for cards, `shadow-lg` for modals
 - Avoid `@apply` in CSS files. Write utilities in JSX. Exception: base styles in `@layer base`
 - Group responsive variants left-to-right: `text-sm md:text-base lg:text-lg`
+
+## Related Standards
+
+- `standards/accessibility-testing.md`: Accessibility Testing
+- `standards/performance-budgets.md`: Performance Budgets
+- `standards/browser-testing.md`: Browser Testing
