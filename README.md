@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 16 skills, 42 MCP servers, 15 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 30 skills, 42 MCP servers, 15 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**25** rules · **51** standards · **16** skills · **42** MCP servers · **15** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
+**25** rules · **51** standards · **30** skills · **42** MCP servers · **15** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -36,7 +36,7 @@ Universal rules load automatically. Domain-specific standards load on demand, ma
 
 ### Slash-Command Skills
 
-`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/infra`, and 6 more. 25 workflows consolidated into 16 skills with subcommands. Each skill orchestrates multi-step workflows with a single command.
+`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/infra`, and 6 more. 25 workflows consolidated into 30 skills with subcommands. Each skill orchestrates multi-step workflows with a single command.
 
 </td>
 <td width="50%" valign="top">
@@ -216,7 +216,7 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 
 ### Skills
 
-16 skills with subcommands, consolidating 25+ workflows.
+30 skills with subcommands, consolidating 25+ workflows.
 
 | Skill | Subcommands | What it does |
 |:------|:------------|:-------------|
@@ -236,6 +236,20 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 | `/incident` | -- | Incident context gathering and blameless postmortem generation |
 | `/readme` | -- | README generation by analyzing the actual codebase |
 | `/palette` | -- | Accessible OKLCH color palette generation for Tailwind CSS and shadcn/ui |
+| `/checkpoint` | `save`, `resume`, `list` | Save and resume working state across sessions: git state, decisions, remaining work |
+| `/health` | -- | Code quality dashboard: typecheck + lint + test + coverage + dead code, weighted 0-10 score with trends |
+| `/fix-issue` | `<number>` | Fix a GitHub issue by number: fetch, analyze, search codebase, implement with tests, commit referencing the issue |
+| `/learn` | `show`, `search`, `add`, `prune`, `export`, `stats` | Operational learnings manager: confidence-scored, decaying insights across sessions |
+| `/guard` | `<directory>`, `off` | Combined safety: directory freeze + destructive command warnings + scope enforcement |
+| `/cso` | `daily` (default), `comprehensive` | Chief Security Officer: OWASP Top 10, STRIDE threat modeling, secrets archaeology, supply chain audit |
+| `/benchmark` | `api`, `bundle`, `--save` | Performance regression detection: API latency, bundle size, query time with baselines |
+| `/pr-summary` | `<number>` | PR summary with reviewer suggestions based on file ownership from git history |
+| `/document-release` | -- | Post-ship documentation sync: finds stale, missing, or outdated docs relative to the latest diff |
+| `/explain` | `<path>`, `--depth shallow\|deep` | Code explanation with Mermaid diagrams, data flow tracing, pattern identification |
+| `/session-log` | `export` | Session activity logger: files changed, tests run, commits made, decisions taken |
+| `/migrate` | `<from> <to>` | Framework/library migration: detect usage, plan migration, apply incrementally with testing |
+| `/office-hours` | -- | Pre-code brainstorming: 6 forcing questions, produces design document, no code |
+| `/canary` | `<duration>`, `<url>` | Post-deploy monitoring: HTTP checks every 30s, compare against baseline, suggest rollback |
 
 ### Hooks
 
@@ -1030,21 +1044,35 @@ The hooks, rules, and skills activate automatically.
     scope-drift-detector.md # Scope drift detection against plan.md
     security-scanner.md  # SAST + secret + supply chain scanning via Semgrep
     test-scenario-generator.md # Generate test scenarios with priority classification
-  skills/                # 16 skills (consolidated from 25+)
+  skills/                # 30 skills
     assessment/          # Architecture completeness audit
     audit/               # Security audit and dependency management
+    benchmark/           # Performance regression detection
+    canary/              # Post-deploy monitoring
+    checkpoint/          # Save and resume session state
+    cso/                 # Chief Security Officer audit (STRIDE/OWASP)
     deploy/              # Post-merge deployment and monitoring
     design/              # Design consultation and variant exploration
+    document-release/    # Post-ship documentation sync
+    explain/             # Code explanation with diagrams
+    fix-issue/           # Fix GitHub issue by number
+    guard/               # Combined safety mode
+    health/              # Code quality dashboard with scoring
     incident/            # Incident response and postmortems
     infra/               # Docker, Terraform, database operations
     investigate/         # Systematic debugging with hypothesis testing
+    learn/               # Operational learnings manager
+    migrate/             # Framework and library migration
     morning/             # Start-of-day dashboard
+    office-hours/        # Pre-code brainstorming
     palette/             # OKLCH color palette generation
     plan/                # Planning, ADRs, scaffolding
+    pr-summary/          # PR summary with reviewer suggestions
     readme/              # README generation
     retro/               # Session retrospective and codebase discovery
     review/              # Code review, QA analysis, design audit
     second-opinion/      # Cross-model code review
+    session-log/         # Session activity logger
     ship/                # Delivery: commit, pr, release, checks, worktree
     test/                # Test execution, load testing, coverage, linting
   hooks/
