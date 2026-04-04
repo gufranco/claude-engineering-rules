@@ -119,6 +119,10 @@ Retry-After: 30
 
 - `Reset` is a Unix timestamp
 - `Retry-After` only on 429 responses, in seconds
+- Always return HTTP 429 for rate-limited requests
+- Implement tiered limits per API key: different rates for different consumer tiers
+- Use resource-based per-endpoint rates: file uploads at 10/min, reads at 1000/min, writes at 100/min
+- Consider dynamic rate limiting: reduce limits when CPU exceeds 80% or error rate exceeds 5%
 
 ## Request and Response Conventions
 
@@ -160,14 +164,6 @@ Only include links for actions available in the current state.
 - Deprecation timeline: 6-month announcement, 12-month migration support, 18-24 month removal
 - Include `Deprecation` header (RFC 9745) and `Sunset` header (RFC 8594) on deprecated endpoints
 - Monitor consumption per version before removing support. Never sunset a version with active consumers above threshold
-
-## Rate Limiting
-
-- Return standard headers on every response: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`
-- Always return HTTP 429 for rate-limited requests
-- Implement tiered limits per API key: different rates for different consumer tiers
-- Use resource-based per-endpoint rates: file uploads at 10/min, reads at 1000/min, writes at 100/min
-- Consider dynamic rate limiting: reduce limits when CPU exceeds 80% or error rate exceeds 5%
 
 ## Backend for Frontend
 
