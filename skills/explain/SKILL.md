@@ -103,7 +103,7 @@ When `--depth shallow` is specified, run only steps 1-3. Skip data flow tracing,
 | File | Line | Suggestion | Rule |
 |------|------|-----------|------|
 | <path> | <line> | <what to change> | <rule reference> |
-(or "No improvements needed.")
+| | | No improvements needed. | |
 ```
 
 ## Rules
