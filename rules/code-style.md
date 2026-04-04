@@ -396,6 +396,32 @@ Form submissions where the user deliberately filled fields and clicks "Save" do 
 
 Never use the native browser `confirm()` or `window.confirm()`. Use the framework's dialog component (AlertDialog in shadcn/ui, Modal in other UI libraries).
 
+## LLM Output Trust Boundary
+
+When code processes output from LLMs, treat it as untrusted external input.
+
+- Validate format and shape of all LLM-generated values before writing to the database
+- Sanitize LLM output before inserting into vector databases to prevent stored prompt injection
+- Allowlist URLs before server-side fetching of LLM-generated URLs to prevent SSRF
+- Verify tool output shape matches expected schema before acting on it
+- Never store raw LLM output in user-visible fields without sanitization
+
+## TypeScript 5.x Patterns
+
+- Use `using` / `await using` for resource management instead of manual try/finally. Implement `Symbol.dispose` / `Symbol.asyncDispose` on classes that manage connections, file handles, or sessions
+- Use `NoInfer<T>` on fallback parameters in generic functions to prevent type widening from the default value
+- Enable `verbatimModuleSyntax` in all new projects. Require explicit `import type` declarations
+- Enable every new strictness flag when upgrading TypeScript versions
+
+## Bisect-Friendly Commits
+
+Structure commits for easy `git bisect`:
+
+- Separate rename/move operations from behavior changes
+- Separate test infrastructure from test implementations
+- Each commit must independently compile and pass tests
+- Never mix formatting changes with logic changes
+
 ## Code Examples
 
 Every code snippet in any output must follow all rules. A code example that violates a rule is a defect. If a fix suggestion introduces a violation, the suggestion itself is a review defect.

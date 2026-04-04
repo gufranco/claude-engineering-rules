@@ -41,6 +41,23 @@ No fixes without root cause investigation first. Guessing wastes more time than 
 - Check for other places where the same pattern exists. Fix them all.
 - Run the full test suite, not just the affected test.
 
+## 3-Strike Error Protocol
+
+When an approach fails during debugging or implementation:
+
+1. **Strike 1: Diagnose and fix.** Read the error. Identify root cause. Apply a targeted fix.
+2. **Strike 2: Alternative approach.** Same error? Try a different method, tool, or data source. Never repeat the exact same failing action.
+3. **Strike 3: Broader rethink.** Question the assumptions behind the approach. Search for solutions in docs, issues, or community.
+4. **After 3 strikes: Escalate.** Explain what was tried, share the specific errors, and ask for guidance. Do not continue guessing.
+
+Track failed attempts with a structured table:
+
+| Attempt | What was tried | Error | Next action |
+|---------|---------------|-------|-------------|
+| 1 | ... | ... | ... |
+
+Failed approaches are valuable context. They prevent the model from retrying identical failing commands, which is the single most expensive failure mode in long sessions.
+
 ## Multi-Component Debugging
 
 When the issue spans multiple services or layers:

@@ -136,6 +136,15 @@ Add error handling at every system boundary.
 Test edge cases: null inputs, empty strings, zero values, max lengths.
 ```
 
+## Shareable Text
+
+Text the user will copy into Slack, email, or other tools must survive the paste without losing structure.
+
+- Use flat prose, bold labels, and bullet lists. Never use Markdown tables in shareable text. Tables render as broken plaintext outside Markdown-aware contexts.
+- Tables are fine in terminal output, code review findings, README files, and rule files where Markdown renders natively.
+- After generating any text the user might share, ask: "Want me to copy this to your clipboard with Slack formatting?"
+- When copying for Slack: replace `**bold**` with `*bold*`, keep backtick code spans, use `pbcopy` on macOS.
+
 ## Self-Test Gate
 
 After writing any text, read it back and verify:

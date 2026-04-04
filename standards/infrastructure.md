@@ -271,3 +271,19 @@ Active-active introduces data replication complexity. Every write must reach bot
 - **Reserved capacity**: for stable, predictable workloads. Savings Plans or Reserved Instances provide 30-60% savings.
 - **Spot / preemptible instances**: for fault-tolerant workloads (batch processing, CI runners, stateless workers). 60-90% savings with interruption risk.
 - **Right-sizing**: review instance types quarterly. Most services are over-provisioned after the initial launch.
+
+## Zero-Downtime Deployment Strategies
+
+| Strategy | Best for | Rollback speed | Cost |
+|----------|----------|----------------|------|
+| Blue-Green | Infrastructure updates | Instant (traffic switch) | High (2x environments) |
+| Canary | Application code changes | Fast (redirect traffic) | Medium |
+| Rolling | Container workloads | Moderate (batch reversion) | Low |
+
+Rules:
+
+- Blue-Green: maintain two identical environments, instant traffic switch, simple rollback
+- Canary: start with 1-5% traffic, monitor error rates and latency, gradually increase. Automated rollback on regression
+- Rolling: sequential batch updates across instances. Orchestrator manages the update order
+- Progressive delivery: combine deployment strategies with feature flags to control who accesses features, not just when code deploys
+- Database migrations must be backward-compatible with the previous application version

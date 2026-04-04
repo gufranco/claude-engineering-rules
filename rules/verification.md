@@ -80,6 +80,27 @@ This check applies to analytical output: reviews, assessments, incident analyses
 
 When code has platform-specific branches (architecture checks, OS detection, conditional package lists), never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
 
+## Post-Deploy Verification
+
+After any deployment to a shared environment:
+
+1. Monitor the live application for 10 minutes after deploy
+2. Check for new console errors or warnings
+3. Compare error rate against pre-deploy baseline
+4. Verify key user flows: login, core feature, critical path
+5. Compare performance metrics against baseline
+6. If regression detected: trigger rollback and investigate
+
+## Confidence Scoring
+
+When presenting verification findings or review results, assign a confidence score of 1-10:
+
+- 7-10: display normally, high confidence
+- 5-6: display with a caveat explaining uncertainty
+- Below 5: suppress from output, investigate further before reporting
+
+A low-confidence finding that turns out to be real is a calibration learning. Track these to improve scoring accuracy.
+
 ## Partial Completion
 
 If you cannot verify everything:

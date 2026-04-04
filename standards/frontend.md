@@ -456,6 +456,45 @@ Declare page language: `<html lang="en">`. Mark language changes inline: `<span 
 - Body font size: 16px minimum
 - Tap targets: 48x48px minimum with 12px padding
 
+## Core Web Vitals Performance Budget
+
+| Metric | Target | Buffer below threshold |
+|--------|--------|----------------------|
+| LCP | Under 2.0s | 2.5s threshold |
+| INP | Under 150ms | 200ms threshold |
+| CLS | Under 0.05 | 0.1 threshold |
+
+Resource budgets:
+
+| Resource | Limit |
+|----------|-------|
+| JavaScript | Under 300KB compressed |
+| CSS | Under 80KB compressed |
+| Hero image | Under 200KB |
+| Total page weight | Under 1.5MB |
+| Third-party scripts | Maximum 5 |
+
+Rules:
+
+- Set `width` and `height` on all images, videos, and iframes. Missing dimensions are the primary CLS cause globally
+- Use `fetchpriority="high"` on LCP images. Preload LCP resources
+- Break long tasks using `scheduler.yield()`. Never perform synchronous DOM manipulation in event handlers
+- Set CI alerts at 80% of thresholds: INP >160ms, LCP >2.0s, CLS >0.08
+- Optimize for CrUX real user data, not Lighthouse synthetic scores
+
+## AI Slop Detection
+
+When reviewing AI-generated frontend code, check for these telltale patterns:
+
+- Purple/blue gradient backgrounds with no design rationale
+- 3-column feature grids with icons in colored circles
+- Centered-everything layout with no visual hierarchy
+- Uniform bubbly border-radius on all elements
+- Generic hero section with stock copy like "Transform Your Workflow"
+- Identical card components repeated without variation
+
+Flag these patterns during `/review design`. They signal template-generated UI that lacks intentional design decisions.
+
 ## Tailwind Conventions
 
 - Use semantic color tokens (`bg-background`, `text-foreground`, `text-muted-foreground`) not raw colors

@@ -237,6 +237,17 @@ Every migration must be safe to run more than once. Assume the migration might b
 - Use `IF EXISTS` for `DROP` statements
 - Never assume a clean slate. Another migration, manual intervention, or partial deploy might have created the object already
 
+## CHANGELOG Writing
+
+When a project has a CHANGELOG.md:
+
+- Write for users, not contributors. Lead with what the user can now DO
+- Internal refactors and contributor-facing changes go in a separate "Internal" section
+- Each entry should make someone think "I want to try that"
+- Use past tense for completed work: "Added", "Fixed", "Removed"
+- Group by: Added, Changed, Fixed, Removed, Security
+- Never list commit hashes or PR numbers as the primary content
+
 ## Ignored Artifacts
 
 Build output directories must never be committed:

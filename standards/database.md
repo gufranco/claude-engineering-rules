@@ -176,6 +176,23 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 - Use dev or test environments for experimentation and data exploration
 - When modifying production data, always wrap in a transaction and verify before committing
 
+## Expand-Contract Migrations
+
+Use the expand-contract pattern for zero-downtime schema changes:
+
+1. **Expand**: add new columns or tables without removing old ones. Both old and new code must work
+2. **Migrate**: backfill data from old structure to new. Verify data integrity
+3. **Contract**: remove deprecated columns or tables only after all consumers use the new structure
+
+Never combine expand and contract in a single deployment. The old application version must still work after the migration runs.
+
+## Connection Pooling
+
+- Use PgBouncer in transaction mode for PostgreSQL: 1000 client connections sharing ~20 server connections
+- Connection limit formula per process: `(CPU_COUNT * 2) + 1`
+- For Prisma with PgBouncer: use `directUrl` for migrations since PgBouncer does not support named prepared statements
+- Configure connection timeouts: acquisition timeout, idle timeout, and maximum lifetime
+
 ## Naming
 
 - Tables: `plural_snake_case`
