@@ -50,9 +50,9 @@ Mandatory verification gates, pre-flight checks, response self-check for analyti
 <tr>
 <td width="50%" valign="top">
 
-### 597-Item Review Checklist
+### 629-Item Review Checklist
 
-Single unified checklist spanning 57 categories, from correctness and security to distributed systems, deployment verification, and design quality. Shared by completion gates, `/review`, and `/assessment`.
+Single unified checklist spanning 57 categories, from correctness and security to distributed systems, deployment verification, design quality, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, and event-driven architecture. Shared by completion gates, `/review`, and `/assessment`.
 
 </td>
 <td width="50%" valign="top">
@@ -147,6 +147,16 @@ These 25 rules are loaded into every conversation automatically.
 | `gitlab-accounts` | Multi-account safety for `glab` CLI: require inline `GITLAB_TOKEN` and `GITLAB_HOST`, block `glab auth login` |
 | `agent-usage` | Agent and parallelism budget: inline-first policy, two-agent concurrency cap, cascade prevention, context injection rules, result size management |
 | `clean-room` | Clean room implementation: 30+ verification checks across structural, naming, logic, config, license, documentation, and output independence. Similarity thresholds, safe/unsafe boundaries, per-source process |
+| `context-management` | Context compaction at 60%, preservation rules after compaction, plan re-reading every ~50 tool calls, subagent context isolation |
+| `ai-guardrails` | Treat AI output as junior dev code, plan before generating, multi-agent validation, never commit unexplainable code, track AI-specific defect rates |
+| `changelog` | User-facing changelog entries, lead with what users can do, separate internal changes, version tagging convention |
+| `hook-authoring` | Hook performance budget under 500ms, exit codes, stdin JSON parsing, testing with fixtures, graceful error handling |
+| `skill-authoring` | Skill frontmatter fields, allowed-tools scoping, sensitive flag, preamble pattern, context fork, supporting file conventions |
+| `mcp-security` | MCP server scoping to specific agents, credential isolation, output shape validation, 5-6 active server limit for performance |
+| `performance` | Core Web Vitals budgets, API latency targets (p50/p95/p99), database query time limits, JS/CSS bundle size limits, image optimization |
+| `privacy` | Data minimization, retention policies with automated deletion, right to erasure, consent recording, pseudonymization, audit trail |
+| `session-hygiene` | Session naming with `-n`, checkpoint before risky operations, `/rewind` as save points, multi-session awareness, proactive compaction |
+| `cost-awareness` | Token cost estimation before agent spawning, model tier selection (Haiku for read-only), redundant read avoidance, CI pipeline cost awareness |
 
 ### Standards (loaded on demand)
 
@@ -188,6 +198,21 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 | `mobile-development` | Framework selection, navigation, offline support, performance optimization, push notifications, app store compliance |
 | `dashboard-design` | Purpose-driven dashboards, layout principles, metric grouping with RED method, SLO visualization, chart selection |
 | `documentation-generation` | OpenAPI generation from code, AsyncAPI for events, GraphQL schema docs, TypeDoc, documentation-as-code, CI validation |
+| `event-driven-architecture` | CQRS, event sourcing, outbox pattern, saga choreography and orchestration, event versioning, idempotent handlers, partition key strategy, DLQ routing |
+| `authentication` | OAuth 2.1 with PKCE, passkeys/FIDO2, token lifecycle, NIST 800-63B passwords, MFA, session management, auth rate limits |
+| `monorepo` | pnpm workspaces, Turborepo/Nx task orchestration, workspace protocol, changeset versioning, per-package builds, cache targets |
+| `contract-testing` | Consumer-driven contracts with Pact, can-i-deploy CI gate, provider verification, contract versioning |
+| `sre-practices` | SLIs from real user metrics, SLOs as operational targets, error budgets, burn rate alerts, change freeze policy, postmortem cadence |
+| `performance-budgets` | Core Web Vitals targets, resource budgets for JS/CSS/images, CI alerts at 80% threshold, code splitting, fetchpriority |
+| `zero-downtime-deployments` | Blue-green, canary, rolling strategies, expand-contract database migrations, progressive delivery with feature flags |
+| `secrets-management` | Dynamic secrets with TTL rotation, External Secrets Operator for K8s, secret scanning, rotation automation, emergency revocation |
+| `container-security` | Non-root containers, minimal base images, multi-stage builds, no secrets in layers, image scanning, SLSA provenance, cosign |
+| `opentelemetry` | SDK init order, semantic conventions, composite sampling, Collector deployment, trace-log correlation, W3C Trace Context |
+| `privacy-engineering` | Pseudonymization, data retention automation, right to erasure, consent management, dark pattern avoidance, privacy impact assessment |
+| `serverless-edge` | Stateless design, cold start optimization, concurrency limits, edge functions for auth/routing/geo, timeout budgets |
+| `api-gateway` | Gateway vs BFF decision framework, cross-cutting concerns at gateway, protocol translation, circuit breaking at gateway level |
+| `strangler-fig` | Incremental legacy migration through facade/proxy, request routing by migration status, data consistency during transition |
+| `typescript-5x` | using/await using for resource management, NoInfer, verbatimModuleSyntax, regex syntax checking, inferred type predicates |
 
 ### Skills
 
@@ -287,7 +312,7 @@ The `/plan` skill writes a `context.md` file in the spec folder before planning 
 
 One unified checklist covers all layers of quality:
 
-- **Unified checklist** (`checklists/checklist.md`): 629 items across 57 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification when external sources were consulted. Category 51 covers deployment verification: health endpoints, error rate baselines, rollback plans. Category 52 covers design quality: typography hierarchy, color contrast, spacing grid, focus states, loading and empty states.
+- **Unified checklist** (`checklists/checklist.md`): 629 items across 57 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification. Category 51 covers deployment verification. Category 52 covers design quality. Category 53 covers LLM trust boundary: output validation before storage, sanitization for vector DBs, URL allowlisting. Category 54 covers performance budgets: Core Web Vitals targets, bundle sizes, image dimensions. Category 55 covers zero-downtime deployment: expand-contract migrations, backward compatibility, canary verification. Category 56 covers supply chain security: SBOM generation, artifact signing, lockfile integrity, typosquatting prevention. Category 57 covers event-driven architecture: idempotent handlers, event deduplication, schema versioning, DLQ routing.
 
 ## Workflows
 
@@ -467,6 +492,16 @@ The hooks, rules, and skills activate automatically.
     testing.md           # Integration-first, strict mocks, fake data, snapshots
     verification.md      # Evidence-based completion gates
     writing-precision.md # Precision gate for all text output
+    context-management.md # Context compaction and preservation
+    ai-guardrails.md     # AI output review and trust boundaries
+    changelog.md         # Changelog writing standards
+    hook-authoring.md    # Hook performance and testing conventions
+    skill-authoring.md   # Skill frontmatter and structure conventions
+    mcp-security.md      # MCP server scoping and credential isolation
+    performance.md       # Core Web Vitals and API latency budgets
+    privacy.md           # Data minimization, retention, erasure
+    session-hygiene.md   # Session naming, checkpoints, multi-session
+    cost-awareness.md    # Token cost, model selection, CI cost
   standards/             # Tier 2: loaded on demand when task matches triggers
     accessibility-testing.md   # WCAG compliance, axe-core, Lighthouse, ARIA, contrast
     algorithmic-complexity.md  # Data structures, sorting, anti-patterns, space complexity
@@ -503,7 +538,22 @@ The hooks, rules, and skills activate automatically.
     dashboard-design.md  # Metric grouping, SLO visualization, chart selection, RED method
     documentation-generation.md # OpenAPI, AsyncAPI, TypeDoc, docs-as-code, CI validation
     redis.md             # Atomic operations, key design, TTL, connection management, fallback patterns
-  agents/                # Custom subagents for specialized delegation (16 agents)
+    event-driven-architecture.md # CQRS, event sourcing, outbox, saga
+    authentication.md    # OAuth 2.1, passkeys, NIST 800-63B, MFA
+    monorepo.md          # pnpm workspaces, Turborepo, changesets
+    contract-testing.md  # Consumer-driven contracts with Pact
+    sre-practices.md     # SLIs, SLOs, error budgets, burn rate alerts
+    performance-budgets.md # Core Web Vitals, resource budgets, CI alerts
+    zero-downtime-deployments.md # Blue-green, canary, expand-contract
+    secrets-management.md # Dynamic secrets, rotation, External Secrets Operator
+    container-security.md # Non-root, distroless, image scanning, SLSA
+    opentelemetry.md     # SDK init, semantic conventions, sampling, Collector
+    privacy-engineering.md # Pseudonymization, retention, erasure, consent
+    serverless-edge.md   # Stateless design, cold starts, edge functions
+    api-gateway.md       # Gateway vs BFF, circuit breaking, protocol translation
+    strangler-fig.md     # Incremental legacy migration through facade
+    typescript-5x.md     # using/await using, NoInfer, verbatimModuleSyntax
+  agents/                # Custom subagents for specialized delegation (15 agents)
     _shared-principles.md # Shared principles fragment referenced by all agents
     TEMPLATE.md          # Reference template for creating new agents
     accessibility-auditor.md # Accessibility review with WCAG 2.1 AA criteria
@@ -560,9 +610,11 @@ The hooks, rules, and skills activate automatically.
     validate-counts.py   # Cross-file count reference sync
     validate-patterns.py # Duplicate regex detection in command blocker
     validate-settings.py # Settings.json deny rules and hook path validation
+    validate-skills.py   # Skill definition validation
+    validate-cross-refs.py # Cross-reference integrity between index, agents, standards
   tests/
     test-hooks.sh        # Hook smoke tests (78 cases)
-    fixtures/            # JSON fixtures for hook testing (63 fixtures)
+    fixtures/            # JSON fixtures for hook testing (62 fixtures)
   .github/
     workflows/
       ci.yml             # Lint, validation, hook tests (ubuntu-24.04)
@@ -574,7 +626,7 @@ The hooks, rules, and skills activate automatically.
 
 ### MCP Servers
 
-40 MCP servers configured in `settings.json`, organized into three groups:
+42 MCP servers configured in `settings.json`, organized into three groups:
 
 **Stdio servers (no config needed):** Context7, Playwright, Memory, Sequential Thinking, Docker, Lighthouse, Ollama, Filesystem
 
@@ -584,13 +636,16 @@ The hooks, rules, and skills activate automatically.
 
 ### Permissions
 
-Sensitive files are explicitly denied from read, write, and edit access:
+76 deny rules protect sensitive files from read, write, and edit access:
 
-- `.env`, `.env.local`, `.env.production`
-- `secrets/**`
-- `config/credentials.json`
+- `.env` variants (8 patterns: `.env`, `.env.local`, `.env.production`, `.env.development`, `.env.staging`, `.env.testing`, `.env.ci`, `.env.docker`)
+- Home directory credentials (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.kube/config`, `~/.docker/config.json`, `~/.npmrc`, `~/.pypirc`, `~/.netrc`)
+- Project secrets (`secrets/**`, `config/credentials.json`, `*-credentials.json`, `*.pem`, `*.key`, `*id_rsa*`, `*id_ed25519*`, `*.tfstate`, `*.tfvars`)
+- `node_modules` (read denied to prevent context pollution)
 
-The `env-file-guard.sh` hook provides an additional runtime layer that blocks modifications to `.env` files, private keys, and files in secrets directories, even if the deny rules are bypassed.
+The `env-file-guard.sh` hook provides an additional runtime layer that blocks modifications to all protected paths, even if the deny rules are bypassed.
+
+Granular Bash permissions allow common read-only operations without prompting: `git diff`, `git log`, `git status`, `git branch`, `git remote`, `pnpm run`, `npm run`, `npx`.
 
 ### Statusline
 
