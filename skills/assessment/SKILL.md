@@ -52,7 +52,7 @@ This skill accepts optional arguments after `/assessment`:
 
    Match signals against trigger keywords in the `on_demand` section of the index. Load **every** matched standard file. Also load **all** `always_loaded` rules.
 
-   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 52-category checklist. A project using PostgreSQL loads `standards/database.md`. A project with GraphQL loads `standards/graphql-api-design.md`. A project with Terraform loads `standards/terraform-testing.md`. Every applicable standard is loaded, no exceptions.
+   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 57-category checklist. A project using PostgreSQL loads `standards/database.md`. A project with GraphQL loads `standards/graphql-api-design.md`. A project with Terraform loads `standards/terraform-testing.md`. Every applicable standard is loaded, no exceptions.
 
    Additionally, load these rules for use during fix and convergence phases:
    - `rules/pre-flight.md`: verify interfaces before implementing fixes
@@ -61,9 +61,14 @@ This skill accepts optional arguments after `/assessment`:
    - `rules/documentation.md`: preservation rules when updating project docs
    - `rules/git-workflow.md`: commit format during fix phase
    - `rules/debugging.md`: 4-phase process when diagnosing planted defects in step 6
-   - `rules/security.md`: security criteria beyond the checklist categories
-   - `rules/code-style.md`: completeness, immutability, error classification, type conventions
-   - `rules/testing.md`: mock policy, AAA pattern, faker, deterministic tests, coverage
+   - `rules/security.md`: security criteria beyond the checklist categories, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
+   - `rules/code-style.md`: completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x patterns
+   - `rules/testing.md`: mock policy, AAA pattern, faker, deterministic tests, coverage, contract testing, performance regression
+   - `rules/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
+   - `rules/privacy.md`: data minimization, retention, erasure, consent, pseudonymization
+   - `rules/ai-guardrails.md`: when code processes LLM output, validate trust boundaries
+   - `rules/context-management.md`: context preservation guidance for long assessment sessions
+   - `rules/cost-awareness.md`: when assessing infrastructure choices, evaluate cost implications
 
    Before coding any fix that calls a library API, check `standards/llm-docs.md` for the library's documentation URL. Fetch the docs and verify the API exists. Never guess API signatures.
 
@@ -120,6 +125,11 @@ This skill accepts optional arguments after `/assessment`:
    | Replaces existing system | Migration, rewrite, platform change | 44 |
    | Has infrastructure config | Terraform, CloudFormation, Pulumi, Dockerfiles, K8s manifests | 45, 47, 48 |
    | Uses cloud services | AWS/GCP/Azure resources, managed services | 45, 46, 49 |
+   | Processes LLM output | AI-generated content stored or acted on | 53 |
+   | Has frontend with metrics | Web app with user-facing pages | 54 |
+   | Deploys to production | CI/CD pipeline, deployment config | 55 |
+   | Has dependencies | package.json, go.mod, requirements.txt | 56 |
+   | Uses events or queues | Message brokers, event handlers, pub/sub | 57 |
 
    If `--focus` was provided, only check categories in that area and force-load the corresponding standards:
    - `security`: categories 33, 34. Standards: `security.md`
@@ -141,7 +151,17 @@ This skill accepts optional arguments after `/assessment`:
    - `i18n`: categories 7. Standards: `i18n-l10n.md`
    - `grpc`: categories 20, 34. Standards: `grpc-services.md`
    - `docs`: categories 14. Standards: `documentation-generation.md`
-   - `frontend`: categories 7, 52. Standards: `frontend.md`, `accessibility-testing.md`, `browser-testing.md`
+   - `frontend`: categories 7, 52, 54. Standards: `frontend.md`, `accessibility-testing.md`, `browser-testing.md`, `performance-budgets.md`
+   - `events`: categories 18, 27, 36, 57. Standards: `event-driven-architecture.md`, `message-queues.md`
+   - `auth`: categories 33. Standards: `authentication.md`
+   - `deploy`: categories 51, 55. Standards: `zero-downtime-deployments.md`, `infrastructure.md`
+   - `supply-chain`: categories 56. Standards: `container-security.md`, `secrets-management.md`
+   - `observability`: categories 32, 37. Standards: `observability.md`, `opentelemetry.md`, `sre-practices.md`, `dashboard-design.md`
+   - `privacy`: categories 33. Standards: `privacy-engineering.md`
+   - `llm`: categories 53. Standards: none, use `rules/ai-guardrails.md` and `rules/code-style.md` LLM Trust Boundary
+   - `serverless`: categories 20, 35. Standards: `serverless-edge.md`
+   - `monorepo`: categories 13, 15. Standards: `monorepo.md`
+   - `typescript`: categories 1. Standards: `typescript-5x.md`
    - `all` (default): all applicable categories and all matched standards from step 4
 
    **Superset detection.** If the codebase uses a language that has a widely adopted superset offering stronger type safety or tooling, ask the user whether they want to convert. This is especially valuable in interview contexts where using the superset demonstrates engineering rigor.
@@ -172,7 +192,7 @@ This skill accepts optional arguments after `/assessment`:
 
    This logic is language-agnostic. The principle is: every dependency must have full type support in the target superset. If it doesn't, either find types, find an alternative that has types, or write the types yourself.
 
-8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against `../../checklists/checklist.md`: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, and category 52 for design quality. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
+8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against `../../checklists/checklist.md`: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, and category 57 for event-driven architecture. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
 
    **Standard-based audit.** For every standard loaded in step 4, check whether the project follows the patterns described in that standard. Each standard contains specific, actionable rules. A project that uses a database but ignores `standards/database.md` connection pooling guidance is a finding. A REST API that ignores `standards/api-design.md` pagination conventions is a finding. Treat standard violations the same as checklist violations: assign status (PRESENT/PARTIAL/MISSING), severity, and effort. Reference the specific standard file in each finding.
 
@@ -183,7 +203,7 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 52 checklist categories, also assess:
+   In addition to the 57 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
@@ -313,7 +333,7 @@ Comment guidelines:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate `../../checklists/checklist.md`? Run all 52 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
+       - Did any fix violate `../../checklists/checklist.md`? Run all 57 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
        - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
@@ -355,7 +375,7 @@ Comment guidelines:
 
 ## Assessment Checklist Categories
 
-The full 52-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 6 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted, category 51 (Deployment Verification) when the project deploys, and category 52 (Design Quality) when a frontend is present.
+The full 57-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted, category 51 (Deployment Verification) when the project deploys, category 52 (Design Quality) when a frontend is present, category 53 (LLM Trust Boundary) when code processes LLM output, category 54 (Performance Budget) for frontend, category 55 (Zero-Downtime Deployment) for production deploys, category 56 (Supply Chain) for dependency changes, and category 57 (Event-Driven) for message-based systems.
 
 ## Output Format
 
@@ -387,7 +407,7 @@ The full 52-category checklist lives in `../../checklists/checklist.md` (shared 
 | Output verification | PASS / FAIL / N/A | [Expected vs actual results] |
 
 ## Classification
-[System traits detected and which applicable categories from the 52-category checklist apply]
+[System traits detected and which applicable categories from the 57-category checklist apply]
 
 ## Standards Applied
 
