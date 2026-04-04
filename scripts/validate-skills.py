@@ -3,7 +3,6 @@
 
 import os
 import sys
-import re
 
 SKILLS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "skills")
 ERRORS = []
