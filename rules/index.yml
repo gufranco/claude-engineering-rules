@@ -67,6 +67,46 @@ always_loaded:
     description: Clean room implementation process to avoid plagiarism and legal exposure when using external projects as reference or inspiration
     triggers: [clean room, plagiarism, copyright, license, reference, inspiration, external source, derivative, similar, copy]
 
+  context-management:
+    description: Context compaction timing at 60%, preservation rules after compaction, plan re-reading cadence, subagent context isolation
+    triggers: [context, compact, compaction, plan, re-read, session, context window, token budget]
+
+  ai-guardrails:
+    description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
+    triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
+
+  changelog:
+    description: User-facing changelog entries, lead with actions, separate internal changes, version tagging convention
+    triggers: [changelog, release notes, version, what's new, release]
+
+  hook-authoring:
+    description: Hook performance budget under 500ms, exit codes, stdin JSON parsing, testing with fixtures, graceful error handling
+    triggers: [hook, PreToolUse, PostToolUse, exit code, stdin, blocker, guard]
+
+  skill-authoring:
+    description: Skill frontmatter fields, allowed-tools scoping, sensitive flag, CLAUDE_SKILL_DIR, $ARGUMENTS variable, preamble pattern
+    triggers: [skill, frontmatter, allowed-tools, sensitive, preamble, CLAUDE_SKILL_DIR, $ARGUMENTS]
+
+  mcp-security:
+    description: MCP server scoping to specific agents, credential isolation, output validation, performance limits of 5-6 active servers
+    triggers: [mcp, mcp server, mcpServers, tool search, mcp security, mcp scope]
+
+  performance:
+    description: Core Web Vitals budgets, API latency targets, database query limits, JS and CSS bundle budgets, image optimization rules
+    triggers: [performance, lcp, inp, cls, core web vitals, bundle size, latency, p50, p95, p99, image, dom, reflow]
+
+  privacy:
+    description: Data minimization, retention policies, right to erasure, consent recording, audit trail, pseudonymization, GDPR and LGPD compliance
+    triggers: [privacy, gdpr, lgpd, ccpa, retention, erasure, consent, pseudonymization, personal data, pii]
+
+  session-hygiene:
+    description: Session naming, checkpoints before risky operations, /rewind for experimentation, multi-session awareness, proactive compaction
+    triggers: [session, checkpoint, rewind, session name, multi-session, session boundary, end of session]
+
+  cost-awareness:
+    description: Token cost estimation for agent spawning, model selection by task, redundant read avoidance, CI pipeline cost, rate budget sequencing
+    triggers: [cost, token, token cost, model selection, haiku, sonnet, opus, pipeline cost, rate budget, redundant read]
+
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
 
 on_demand:
@@ -249,3 +289,78 @@ on_demand:
     path: standards/documentation-generation.md
     description: OpenAPI generation from code, AsyncAPI for events, GraphQL schema docs, TypeDoc, documentation-as-code, versioning, CI validation
     triggers: [openapi, asyncapi, swagger, typedoc, docs generation, api docs, schema docs, docusaurus, mkdocs, documentation site]
+
+  event-driven-architecture:
+    path: standards/event-driven-architecture.md
+    description: CQRS, event sourcing, outbox pattern, saga choreography and orchestration, event versioning, idempotent handlers, partition keys, DLQ routing
+    triggers: [cqrs, event sourcing, outbox, saga, event, event-driven, choreography, orchestration, domain event, event store]
+
+  authentication:
+    path: standards/authentication.md
+    description: OAuth 2.1 with PKCE, passkeys and FIDO2, token lifecycle, NIST 800-63B passwords, MFA, session management, auth rate limits
+    triggers: [oauth, pkce, passkey, fido2, token, refresh token, jwt, mfa, two-factor, passwordless, auth flow]
+
+  monorepo:
+    path: standards/monorepo.md
+    description: pnpm workspaces, Turborepo and Nx task orchestration, workspace protocol, changeset versioning, per-package builds, cache targets
+    triggers: [monorepo, workspace, turborepo, nx, changeset, pnpm workspace, lerna, workspace protocol, mono repo]
+
+  contract-testing:
+    path: standards/contract-testing.md
+    description: Consumer-driven contracts with Pact, can-i-deploy CI gate, provider verification, contract versioning
+    triggers: [contract test, pact, consumer-driven, provider verification, can-i-deploy, contract broker, service contract]
+
+  sre-practices:
+    path: standards/sre-practices.md
+    description: SLIs from real user metrics, SLOs as operational targets, error budgets, burn rate alerts, change freeze policy, postmortem cadence
+    triggers: [sre, sli, slo, error budget, burn rate, change freeze, site reliability, operational target, availability target]
+
+  performance-budgets:
+    path: standards/performance-budgets.md
+    description: Core Web Vitals targets, resource budgets for JS and CSS and images, CI alerts at 80% threshold, code splitting, fetchpriority
+    triggers: [performance budget, resource budget, bundle budget, page weight, code splitting, fetchpriority, scheduler.yield]
+
+  zero-downtime-deployments:
+    path: standards/zero-downtime-deployments.md
+    description: Blue-green, canary, rolling deployment strategies, expand-contract database migrations, progressive delivery with feature flags
+    triggers: [blue-green, canary, rolling, zero downtime, expand-contract, progressive delivery, deployment strategy]
+
+  secrets-management:
+    path: standards/secrets-management.md
+    description: Dynamic secrets with TTL rotation, External Secrets Operator, secret scanning, rotation automation, emergency revocation
+    triggers: [vault, infisical, dynamic secret, secret rotation, external secrets, secret scanning, hashicorp, openbao]
+
+  container-security:
+    path: standards/container-security.md
+    description: Non-root containers, minimal base images, multi-stage builds, no secrets in layers, image scanning, SLSA provenance, cosign
+    triggers: [container security, dockerfile, distroless, multi-stage, image scanning, trivy, grype, cosign, non-root, slsa]
+
+  opentelemetry:
+    path: standards/opentelemetry.md
+    description: SDK init order, semantic conventions, composite sampling, Collector deployment, trace-log correlation, W3C Trace Context
+    triggers: [opentelemetry, otel, semantic convention, trace, span, collector, sampling, trace context, w3c]
+
+  privacy-engineering:
+    path: standards/privacy-engineering.md
+    description: Pseudonymization, data retention automation, right to erasure, consent management, dark pattern avoidance, privacy impact assessment
+    triggers: [pseudonymization, data retention, right to erasure, consent, dark pattern, privacy impact, dsar, data subject]
+
+  serverless-edge:
+    path: standards/serverless-edge.md
+    description: Stateless design, cold start optimization, concurrency limits, edge functions for auth and routing, timeout budgets
+    triggers: [serverless, lambda, edge function, cold start, concurrency, cloud function, vercel edge, cloudflare worker]
+
+  api-gateway:
+    path: standards/api-gateway.md
+    description: Gateway vs BFF decision framework, cross-cutting concerns at gateway, protocol translation, circuit breaking
+    triggers: [api gateway, bff, backend for frontend, gateway, kong, envoy, istio, service mesh]
+
+  strangler-fig:
+    path: standards/strangler-fig.md
+    description: Incremental legacy migration through facade and proxy, request routing by migration status, data consistency during transition
+    triggers: [strangler fig, legacy migration, facade, proxy, incremental migration, legacy modernization, dual write]
+
+  typescript-5x:
+    path: standards/typescript-5x.md
+    description: using and await using for resource management, NoInfer, verbatimModuleSyntax, regex syntax checking, inferred type predicates
+    triggers: [typescript 5, using, await using, NoInfer, verbatimModuleSyntax, symbol.dispose, ts 5, typescript pattern]
