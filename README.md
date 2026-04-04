@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 30 skills, 42 MCP servers, 15 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 15 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**25** rules · **51** standards · **30** skills · **42** MCP servers · **15** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
+**25** rules · **51** standards · **40** skills · **42** MCP servers · **15** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -36,7 +36,7 @@ Universal rules load automatically. Domain-specific standards load on demand, ma
 
 ### Slash-Command Skills
 
-`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/infra`, and 6 more. 25 workflows consolidated into 30 skills with subcommands. Each skill orchestrates multi-step workflows with a single command.
+`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/infra`, and 6 more. 25 workflows consolidated into 40 skills with subcommands. Each skill orchestrates multi-step workflows with a single command.
 
 </td>
 <td width="50%" valign="top">
@@ -216,7 +216,7 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 
 ### Skills
 
-30 skills with subcommands, consolidating 25+ workflows.
+40 skills with subcommands, consolidating 25+ workflows.
 
 | Skill | Subcommands | What it does |
 |:------|:------------|:-------------|
@@ -250,6 +250,16 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 | `/migrate` | `<from> <to>` | Framework/library migration: detect usage, plan migration, apply incrementally with testing |
 | `/office-hours` | -- | Pre-code brainstorming: 6 forcing questions, produces design document, no code |
 | `/canary` | `<duration>`, `<url>` | Post-deploy monitoring: HTTP checks every 30s, compare against baseline, suggest rollback |
+| `/onboard` | -- | Codebase onboarding: architecture map, entry points, tech stack, patterns, "Start Here" guide |
+| `/refactor` | `<path>`, `--plan-only` | Guided refactoring: identifies candidates, executes incrementally with tests between steps |
+| `/hotfix` | `<description>` | Emergency production fix: branch from tag, minimal fix, expedited ship, backport to main |
+| `/tech-debt` | `<path>`, `--critical` | Tech debt triage: scans TODO/FIXME/HACK, categorizes by impact, estimates effort |
+| `/resolve` | -- | Merge conflict resolution: explains both sides, suggests resolution, verifies after |
+| `/weekly` | `<N>`, `--sprint` | Sprint/week summary: commits, PRs, issues, velocity metrics, carry-over items |
+| `/profile` | `<path>`, `--db`, `--api` | Performance profiling: N+1 queries, missing indexes, O(n^2), bottleneck ranking |
+| `/cleanup` | `branches`, `prs`, `worktrees`, `--dry-run` | Stale branch/PR/worktree cleanup with confirmation per item |
+| `/setup` | -- | Interactive project setup: .env config, Docker services, migrations, seeds, verification |
+| `/breaking-change` | `<endpoint>`, `--plan-only` | API breaking change: find consumers, deprecation plan, migration guide, version side-by-side |
 
 ### Hooks
 
@@ -872,6 +882,214 @@ Monitors the live application for a configurable duration:
 - Monitors performance metrics against baseline
 - Suggests rollback if regression detected
 
+### 23. Onboarding to a New Codebase
+
+**When:** you join a new project or clone an unfamiliar repository.
+
+```
+/onboard
+```
+
+1. Scans the project: detects language, framework, runtime, package manager, dependencies
+2. Maps the directory structure with purpose annotations for each top-level directory
+3. Identifies entry points: main files, route definitions, CLI entry
+4. Generates a Mermaid architecture diagram showing modules and relationships
+5. Detects patterns: repository, service layer, middleware, event handlers, state machines
+6. Reads existing docs: README, CONTRIBUTING, ARCHITECTURE
+7. Outputs a structured "Start Here" guide: What This Project Does, Tech Stack, Architecture, Key Patterns, How to Run, How to Test, Where to Start Reading, Conventions to Follow
+
+Follow up with `/retro discover` to capture the project's conventions as enforceable rules.
+
+### 24. Refactoring
+
+**When:** code works but needs structural improvement: long functions, deep nesting, duplicated logic, oversized files.
+
+```
+/refactor src/services/order.service.ts
+```
+
+1. Identifies candidates: functions >30 lines, nesting >3 levels, duplicated blocks, files >300 lines, circular imports
+2. Runs tests to establish a green baseline. Aborts if tests fail
+3. Presents candidates ranked by impact
+4. Executes each refactoring as a separate commit with tests between steps
+5. If tests fail after a step, reverts that step and tries a different approach
+6. Final verification: full test suite, lint, typecheck, build
+
+**Plan only, no execution:**
+```
+/refactor --plan-only
+```
+
+**Rules:** never change behavior, never combine refactoring with feature work in the same commit.
+
+### 25. Hotfix for Production
+
+**When:** production is broken and you need an emergency fix bypassing the normal workflow.
+
+```
+/hotfix "payment webhook returning 500 for subscription renewals"
+```
+
+1. Finds the latest release tag
+2. Creates `hotfix/<description>` branch from that tag
+3. Implements the minimal fix with a reproducing test
+4. Runs only the affected test files for speed
+5. Pushes and creates a PR targeting the release branch
+6. After merge: cherry-picks to main, verifies tests, tags a patch release
+
+**Rules:** minimal change only, no refactoring, no scope creep. Backport to main must happen the same day.
+
+### 26. Technical Debt Triage
+
+**When:** debt has accumulated and you need to prioritize what to fix.
+
+```
+/tech-debt
+```
+
+1. Greps the codebase for `TODO`, `FIXME`, `HACK`, `XXX`, `WORKAROUND`, `DEBT`, `@deprecated`
+2. Categorizes each item: "blocks future work", "slows development", "cosmetic"
+3. Estimates effort: S/M/L/XL
+4. Checks git blame for age: items older than 6 months get a staleness flag
+5. Outputs a prioritized table with file:line, category, effort, age, and description
+
+**Critical items only:**
+```
+/tech-debt --critical
+```
+
+### 27. Merge Conflict Resolution
+
+**When:** your branch has conflicts with main after rebase or merge.
+
+```
+/resolve
+```
+
+1. Detects all conflicted files from `git status`
+2. For each conflict: reads git log for both branches to understand the intent of each change
+3. Explains what each side was trying to do
+4. Suggests resolution: auto-merge when changes are in different areas, take one side when it supersedes, manual merge when both intents must be preserved
+5. Applies the resolution
+6. Runs tests after all conflicts are resolved
+7. If tests fail: re-resolves the specific conflict that caused the failure
+8. Continues the interrupted operation: `git rebase --continue` or `git merge --continue`
+
+**Rules:** never lose functionality from either side, always test after resolution.
+
+### 28. Sprint/Week Summary
+
+**When:** preparing for sprint review, standup, or weekly summary.
+
+```
+/weekly
+```
+
+1. Aggregates commits, merged PRs, and closed issues from the past 7 days
+2. Calculates metrics: commits, PRs merged, issues closed, lines changed
+3. Groups by type: features, bug fixes, maintenance, tests
+4. Lists carry-over: open PRs and unfinished issues
+5. Outputs a summary formatted for Slack or team docs
+
+**Custom time range:**
+```
+/weekly 14
+```
+
+### 29. Performance Profiling
+
+**When:** something is slow and you need to find the bottleneck.
+
+```
+/profile
+```
+
+Scans for common bottlenecks across four categories:
+
+| Category | What it finds |
+|:---------|:-------------|
+| Database | N+1 queries, missing indexes, full table scans, missing connection pooling |
+| API | Synchronous external calls, missing caching, unbounded responses |
+| Frontend | Large bundles, unoptimized images, blocking resources, excessive re-renders |
+| General | O(n^2) algorithms, allocations in loops, synchronous I/O on request paths |
+
+**Focus on a specific area:**
+```
+/profile --db
+/profile --api
+/profile src/services/
+```
+
+Each finding includes file:line, issue description, estimated impact, and a concrete fix.
+
+### 30. Stale Branch and PR Cleanup
+
+**When:** the repository has accumulated old branches and forgotten PRs.
+
+```
+/cleanup
+```
+
+1. Finds branches with no commits in 30+ days
+2. Finds merged branches that were not deleted
+3. Lists open PRs older than 14 days with no recent activity
+4. Lists draft PRs older than 7 days
+5. Finds orphaned worktrees
+6. Presents everything in a table with suggested actions
+7. Deletes or closes approved items with confirmation per item
+
+**Preview without deleting:**
+```
+/cleanup --dry-run
+```
+
+**Target a specific area:**
+```
+/cleanup branches
+/cleanup prs
+/cleanup worktrees
+```
+
+### 31. Project Environment Setup
+
+**When:** setting up a project for the first time on your machine.
+
+```
+/setup
+```
+
+1. Detects the project type from manifest files
+2. Checks prerequisites: runtime version, package manager, Docker
+3. Installs dependencies
+4. Reads `.env.example`, prompts for each missing value in `.env`
+5. Detects required services from docker-compose.yml: PostgreSQL, Redis, MongoDB
+6. Offers to start services via `docker compose up -d`
+7. Runs database migrations and seeds
+8. Starts the application and verifies the health endpoint
+9. Reports: Setup Complete with what was configured and how to access the app
+
+**Rules:** never overwrite existing `.env`, always check if services are already running.
+
+### 32. API Breaking Change Management
+
+**When:** you need to change an API that has consumers.
+
+```
+/breaking-change /api/users/:id
+```
+
+1. Identifies all consumers of the changing interface using the blast-radius agent
+2. Classifies consumers: internal, cross-repo, external
+3. Generates a deprecation plan: Phase 1 (add new version alongside old), Phase 2 (monitor and notify), Phase 3 (remove old version at sunset date)
+4. Implements Phase 1: creates the new endpoint, adds `Deprecation` and `Sunset` headers to the old one
+5. Drafts a migration guide with code examples
+6. Creates a tracking issue listing all consumers and their migration status
+
+**Plan without implementing:**
+```
+/breaking-change /api/users/:id --plan-only
+```
+
 ### Workflow Decision Guide
 
 Not sure which workflow to use? Find your scenario:
@@ -900,6 +1118,16 @@ Not sure which workflow to use? Find your scenario:
 | "README is outdated" | Workflow 20: README Generation |
 | "Run tests or load test" | Workflow 21: Test Execution |
 | "Just deployed, is it working?" | Workflow 22: Post-Deploy |
+| "Just joined this project" | Workflow 23: Onboarding |
+| "This code needs restructuring" | Workflow 24: Refactoring |
+| "Prod is broken, fix NOW" | Workflow 25: Hotfix |
+| "What tech debt do we have?" | Workflow 26: Tech Debt Triage |
+| "Merge conflicts after rebase" | Workflow 27: Conflict Resolution |
+| "What did we ship this week?" | Workflow 28: Sprint Summary |
+| "Why is this endpoint slow?" | Workflow 29: Performance Profiling |
+| "Too many stale branches" | Workflow 30: Cleanup |
+| "First time running this project" | Workflow 31: Environment Setup |
+| "Need to change an API with consumers" | Workflow 32: Breaking Change |
 
 ## Quick Start
 
@@ -1044,7 +1272,7 @@ The hooks, rules, and skills activate automatically.
     scope-drift-detector.md # Scope drift detection against plan.md
     security-scanner.md  # SAST + secret + supply chain scanning via Semgrep
     test-scenario-generator.md # Generate test scenarios with priority classification
-  skills/                # 30 skills
+  skills/                # 40 skills
     assessment/          # Architecture completeness audit
     audit/               # Security audit and dependency management
     benchmark/           # Performance regression detection
@@ -1056,25 +1284,35 @@ The hooks, rules, and skills activate automatically.
     document-release/    # Post-ship documentation sync
     explain/             # Code explanation with diagrams
     fix-issue/           # Fix GitHub issue by number
+    cleanup/             # Stale branch and PR cleanup
     guard/               # Combined safety mode
     health/              # Code quality dashboard with scoring
+    hotfix/              # Emergency production fix
     incident/            # Incident response and postmortems
     infra/               # Docker, Terraform, database operations
     investigate/         # Systematic debugging with hypothesis testing
     learn/               # Operational learnings manager
     migrate/             # Framework and library migration
     morning/             # Start-of-day dashboard
+    onboard/             # Codebase onboarding guide
     office-hours/        # Pre-code brainstorming
     palette/             # OKLCH color palette generation
     plan/                # Planning, ADRs, scaffolding
     pr-summary/          # PR summary with reviewer suggestions
+    profile/             # Performance profiling and bottleneck detection
     readme/              # README generation
+    refactor/            # Guided refactoring with behavior preservation
+    resolve/             # Merge conflict resolution
     retro/               # Session retrospective and codebase discovery
     review/              # Code review, QA analysis, design audit
     second-opinion/      # Cross-model code review
     session-log/         # Session activity logger
+    setup/               # Interactive project environment setup
     ship/                # Delivery: commit, pr, release, checks, worktree
+    tech-debt/           # Technical debt triage and prioritization
     test/                # Test execution, load testing, coverage, linting
+    weekly/              # Sprint and week summary with metrics
+    breaking-change/     # API breaking change management
   hooks/
     change-tracker.sh    # File modification logging
     compact-context-saver.sh # Context preservation across compaction
