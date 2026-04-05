@@ -56,7 +56,7 @@ git log --oneline -5 MERGE_HEAD -- <file>
 
 If this is a rebase, use `REBASE_HEAD` instead of `MERGE_HEAD`.
 
-4. State what each side intended: "Our branch added input validation to the login handler. Their branch refactored the handler to use a service layer."
+State what each side intended: "Our branch added input validation to the login handler. Their branch refactored the handler to use a service layer."
 
 #### 3c. Choose a resolution strategy
 
