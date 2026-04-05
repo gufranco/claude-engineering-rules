@@ -112,6 +112,92 @@
   "autoUpdatesChannel": "stable",
   "showThinkingSummaries": true,
   "hooks": {
+    "Elicitation": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/change-tracker.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/deslop-checker.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/change-tracker.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/deslop-checker.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/change-tracker.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/deslop-checker.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -194,57 +280,35 @@
             "command": "bash ~/.claude/hooks/env-file-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
       }
     ],
-    "PostToolUse": [
+    "SessionEnd": [
       {
-        "matcher": "Edit",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/smart-formatter.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/change-tracker.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/deslop-checker.sh"
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
           }
         ]
-      },
+      }
+    ],
+    "SessionStart": [
       {
-        "matcher": "MultiEdit",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/smart-formatter.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/change-tracker.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/deslop-checker.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/smart-formatter.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/change-tracker.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/deslop-checker.sh"
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
           }
         ]
       }
@@ -262,6 +326,48 @@
             "command": "bash ~/.claude/hooks/notify-webhook.sh"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/gufranco/.tmux/plugins/kodama-revamped-tmux/src/hooks/hook-handler.sh"
+          }
+        ]
       }
     ]
   },
@@ -270,7 +376,9 @@
     "command": "python3 ~/.claude/scripts/context-monitor.py"
   },
   "worktree": {
-    "symlinkDirectories": ["node_modules"]
+    "symlinkDirectories": [
+      "node_modules"
+    ]
   },
   "outputStyle": "Explanatory",
   "language": "english",
