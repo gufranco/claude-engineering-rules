@@ -125,7 +125,7 @@ When `--backend` or `--frontend` is passed, classify each file:
 
 ### Posting Comments via Pending Review
 
-When posting review comments on a GitHub PR, always use the pending review API to batch all comments into a single notification.
+When posting review comments on a GitHub PR, always use the pending review API to batch all comments into a single notification. Use a JSON file with `--input` to avoid shell escaping issues with markdown, tables, and code blocks in comment bodies.
 
 **Step 1: Get the latest commit SHA.**
 
@@ -133,37 +133,47 @@ When posting review comments on a GitHub PR, always use the pending review API t
 gh pr view <PR_NUMBER> --json commits --jq '.commits[-1].oid'
 ```
 
-**Step 2: Create a PENDING review with all comments.**
+**Step 2: Write the review payload to a JSON file.**
+
+```json
+{
+  "commit_id": "<COMMIT_SHA>",
+  "event": "REQUEST_CHANGES",
+  "body": "Overall review summary",
+  "comments": [
+    {
+      "path": "src/auth.ts",
+      "line": 20,
+      "body": "Comment text with optional ```suggestion\nblock\n```"
+    },
+    {
+      "path": "src/auth.ts",
+      "line": 35,
+      "body": "Second comment"
+    }
+  ]
+}
+```
+
+Write the file with `cat <<'EOF' > /tmp/review-payload.json` (single-quoted delimiter to prevent shell expansion). Clean up after posting.
+
+**Step 3: Submit the review in a single API call.**
 
 ```bash
 gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews \
   -X POST \
-  -f commit_id="<COMMIT_SHA>" \
-  -f 'comments[][path]=src/auth.ts' \
-  -F 'comments[][line]=20' \
-  -f 'comments[][side]=RIGHT' \
-  -f 'comments[][body]=Comment text with optional suggestion block' \
-  -f 'comments[][path]=src/auth.ts' \
-  -F 'comments[][line]=35' \
-  -f 'comments[][side]=RIGHT' \
-  -f 'comments[][body]=Second comment' \
-  --jq '{id, state}'
+  --input /tmp/review-payload.json \
+  --jq '{id: .id, state: .state}'
 ```
 
-**Step 3: Submit the review with the appropriate event type.**
+This creates and submits the review in one step. No separate "create PENDING then submit" flow needed.
 
-```bash
-gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews/<REVIEW_ID>/events \
-  -X POST \
-  -f event="REQUEST_CHANGES" \
-  -f body="Overall review summary"
-```
-
-**Syntax rules:**
-- Single quotes around parameters containing `[]`: `'comments[][path]'`
-- `-f` for string values, `-F` for numeric values like line numbers
-- `side=RIGHT` for added/modified lines, `side=LEFT` for deleted lines
-- For multi-line suggestions, add `start_line` with `-F`
+**JSON payload rules:**
+- `line` is the line number in the file (new version). Do not use `side` or `position`, they are not valid on this endpoint
+- `event` in the top-level object sets the review type directly
+- `body` at the top level is the review summary. `body` inside each comment is the inline comment text
+- For multi-line comments, add `start_line` alongside `line`
+- Always clean up the temp file after posting: `rm /tmp/review-payload.json`
 
 **Event type mapping:**
 
@@ -173,7 +183,7 @@ gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews/<REVIEW_ID>/events \
 | Blocking issues that must be fixed | `REQUEST_CHANGES` |
 | Neutral feedback, questions | `COMMENT` |
 
-Never post comments individually. Even a single comment goes through the pending review flow. This prevents notification spam and allows reviewing your own comments before they become public.
+Never post comments individually. Even a single comment goes through the JSON file flow. This prevents notification spam and avoids shell escaping failures with complex markdown.
 
 ### Review Standards
 
