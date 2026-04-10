@@ -35,6 +35,19 @@ Never append descriptions or colons: `// Act`, not `// Act: do something`. If a 
 
 No other comments are permitted anywhere in a test body. No inline comments between statements, no section labels, no explanatory notes. The three markers are the complete comment budget for a test. If a line between `// Arrange` and `// Act` needs a comment to make sense, the test setup is too complex: extract a helper or split the test.
 
+## Assertion Specificity
+
+Use the most specific assertion available. Vague assertions pass when they should fail.
+
+| Avoid | Use instead | Why |
+|-------|-------------|-----|
+| `toBeTruthy()` | `toBeDefined()`, `toBe(true)`, or `toEqual(expected)` | `toBeTruthy()` passes for `1`, `"any string"`, `[]`, `{}`. It does not verify the value is what you expect |
+| `toBeFalsy()` | `toBeUndefined()`, `toBeNull()`, `toBe(false)` | Same problem in reverse |
+| `toEqual(expect.anything())` | `toEqual(expect.objectContaining({...}))` | Asserts nothing about shape |
+| `expect(arr.length).toBeGreaterThan(0)` | `expect(arr).toHaveLength(expectedCount)` | Verifies exact count, not just "some" |
+
+When asserting on objects returned from services, assert specific field values, not just existence. `expect(result.data.status).toBe('COMPLETED')` is a real test. `expect(result.data).toBeTruthy()` is not.
+
 ## Test Data
 
 Use a fake data generator to produce test data. Never use hardcoded static values like `"test@example.com"`, `"John Doe"`, or `"password123"` in test setup.
@@ -157,6 +170,19 @@ Tag tests for selective execution. Fast feedback during development, full verifi
 | `@smoke` | Post-deploy | Critical path verification |
 
 Use the test runner's native tagging: Jest `--testPathPattern`, Vitest `--reporter`, pytest `-m`, Go build tags, JUnit `@Tag`. Keep the taxonomy flat; three to five tags are enough for most projects.
+
+## Test Environment Sync
+
+When changing environment variable schemas, validation rules, or defaults, update ALL environment files in the same commit. A mismatch between the env schema and `.env.test` causes mass test failures that look like code bugs.
+
+| Change | Files to update |
+|--------|----------------|
+| Add/remove env var in validation schema | `.env.example`, `.env.test`, CI workflow env section, Docker Compose env section |
+| Change env var default | `.env.test` if tests relied on the old default |
+| Change env var from optional to required | `.env.test` must provide a value |
+| Remove env var | Grep all `.env*` files and CI configs for references |
+
+When changing the database schema (Prisma, migrations), push to both dev and test databases before running tests. Use the connection string from `.env.test`, not a manually constructed one.
 
 ## Test Resource Isolation
 
