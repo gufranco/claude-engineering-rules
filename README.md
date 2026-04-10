@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 15 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**25** rules · **51** standards · **40** skills · **42** MCP servers · **15** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
+**25** rules · **51** standards · **40** skills · **42** MCP servers · **16** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -20,7 +20,7 @@
 
 ### Runtime Guardrails
 
-Fifteen hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account token safety for `gh` and `glab`, auto-format code, track every file change, send webhook notifications, preserve context across compaction, and log tool failures.
+Sixteen hooks intercept tool calls in real time: block dangerous commands, scan for secrets, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account token safety for `gh` and `glab`, rewrite CLI commands through RTK for token savings, auto-format code, track every file change, send webhook notifications, preserve context across compaction, and log tool failures.
 
 </td>
 <td width="50%" valign="top">
@@ -105,6 +105,7 @@ graph LR
         B3[GLab Token Guard]
         E2[Large File Blocker]
         F2[Env File Guard]
+        R[RTK Rewrite]
     end
     subgraph Claude Code
         E[CLAUDE.md Rules]
@@ -115,8 +116,8 @@ graph LR
         H[Smart Formatter]
         I[Change Tracker]
     end
-    A --> B & C & D & B2 & B3 & E2 & F2
-    B & C & D & B2 & B3 & E2 & F2 --> E
+    A --> B & C & D & B2 & B3 & E2 & F2 & R
+    B & C & D & B2 & B3 & E2 & F2 & R --> E
     E --> F
     F --> G
     G --> H & I
@@ -274,6 +275,7 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 | `glab-token-guard.py` | PreToolUse (Bash) | Blocks `glab` commands without inline `GITLAB_TOKEN` and blocks `glab auth login` to prevent global config mutation |
 | `large-file-blocker.sh` | PreToolUse (Bash) | Blocks commits containing files over 5MB to prevent accidental binary commits |
 | `env-file-guard.sh` | PreToolUse (Write/Edit/MultiEdit) | Blocks modifications to `.env` files, private keys (.pem, .key, id_rsa, id_ed25519), cloud credentials (.aws/credentials, .docker/config.json, .kube/config), package manager auth (.npmrc, .pypirc, .netrc), Terraform state (.tfstate, .tfvars), GCP service account JSON, SSH/GPG directories, and secrets/credentials directories |
+| `rtk-rewrite.sh` | PreToolUse (Bash) | Rewrites CLI commands to use RTK for 60-90% token savings on dev operations. Delegates to `rtk rewrite` for all rewrite logic. Gracefully skips when RTK is not installed |
 | `smart-formatter.sh` | PostToolUse (Edit/Write/MultiEdit) | Auto-formats files by extension using prettier, black, gofmt, rustfmt, rubocop, or shfmt |
 | `change-tracker.sh` | PostToolUse (Edit/Write/MultiEdit) | Logs every file modification with timestamps, auto-rotates at 2000 lines |
 | `deslop-checker.sh` | PostToolUse (Edit/Write/MultiEdit) | Warns on AI-generated code patterns: narration comments, debug artifacts, empty catches, boolean literal comparisons, contextless TODOs. Never blocks, only warns |
@@ -1138,6 +1140,8 @@ Not sure which workflow to use? Find your scenario:
 | Claude Code | Latest | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) |
 | Git | >= 2.0 | Pre-installed on macOS |
 | Python 3 | >= 3.8 | Pre-installed on macOS |
+| jq | >= 1.6 | `brew install jq` |
+| RTK | >= 0.23.0 | `cargo install rtk` or see [rtk-ai/rtk](https://github.com/rtk-ai/rtk) |
 
 ### Setup
 
@@ -1172,6 +1176,7 @@ The hooks, rules, and skills activate automatically.
 ```
 ~/.claude/
   CLAUDE.md              # Core engineering rules (~255 lines)
+  RTK.md                 # RTK token-optimized CLI proxy documentation
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
@@ -1325,6 +1330,8 @@ The hooks, rules, and skills activate automatically.
     failure-logger.py    # Failed tool call logging
     large-file-blocker.sh # Large binary commit prevention
     notify-webhook.sh    # Response completion webhook notification
+    rtk-rewrite.sh       # CLI command rewriting for RTK token savings
+    .rtk-hook.sha256     # Integrity hash for rtk-rewrite.sh
     scope-guard.sh       # Spec scope enforcement (per-project)
     secret-scanner.py    # Pre-commit secret scanning
     smart-formatter.sh   # Auto-formatting by extension
