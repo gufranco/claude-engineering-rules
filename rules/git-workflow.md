@@ -95,6 +95,29 @@ Detect the correct commands from the project's package manager, lockfile, and sc
 - **Formatter and linter are not always the same tool.** Many projects have a `lint` script that runs ESLint (or equivalent) without invoking Prettier. Running `pnpm lint` in that case does not satisfy step 1. Always check whether the lint script includes the formatter. If it does not, run `prettier --check` (or the equivalent check-mode command) as a separate explicit step. A Prettier failure caught only by CI forces an extra commit and an extra pipeline run.
 - **When a format check fails for `package.json` and the project uses `prettier-plugin-packagejson`**, do not guess the field order manually. The plugin applies its own schema-based ordering that is not alphabetical. Run `prettier --write package.json` locally with the project's exact plugin version installed and read the result. One local run gives the correct format. Repeated manual attempts without running the formatter do not.
 
+## Schema and Environment Sync (MANDATORY)
+
+When a commit changes the database schema or environment variable configuration, these additional steps are required before committing.
+
+**Database schema changes (Prisma, migrations):**
+
+1. Push to the dev database: `npx prisma db push`
+2. Push to the test database using the connection string from `.env.test`, not a manually constructed URL
+3. Regenerate the Prisma client: `npx prisma generate`
+4. Run the full test suite to verify no regressions
+5. Add new models to the test cleanup order in `test/setup.ts`
+
+**Environment variable changes (add, remove, rename, change default):**
+
+1. Update `.env.example` with the new variable and a placeholder value
+2. Update `.env.test` to provide a test-appropriate value
+3. Update `.env.local` if it exists
+4. Grep all CI workflow files for references to the changed variable
+5. Grep all Docker Compose files for references
+6. Run the full test suite. Env schema mismatches cause mass test failures that look like code bugs
+
+**Running containers are not updated by file changes.** If you change `docker-compose.yml` or `docker-compose.test.yml`, the running containers still use the old configuration. Either restart the containers or keep the change backward-compatible with running instances.
+
 ## CI/CD Monitoring (MANDATORY)
 
 After ANY push:

@@ -23,9 +23,9 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 ## Fundamentals
 
 - DRY, SOLID, KISS, YAGNI, LoD, CQS, Pit of Success
-- Small functions (< 30 lines)
+- Small functions (< 30 lines). Small files (< 500 lines). When a file exceeds 500 lines, extract sections into separate files. A 3,000-line page file is unreviewable and unmaintainable
 - Meaningful names
-- No magic numbers
+- No magic numbers or magic strings. Extract any literal used more than once to a named constant. API model names, rate limits, timeouts, thresholds, and configuration values all belong in a centralized config object or constants file, not scattered as inline literals
 - Single export per file
 - For functions with many arguments, pass one options object. Return objects.
 - File order: main export first, then subcomponents, helpers, static content, types
@@ -42,6 +42,7 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **Never swallow errors**: no empty `catch`, no `catch {}`, no `catch { /* comment */ }`. Every catch must log the error with context (entity ID, operation name) using the project's logger, then either rethrow or return a typed error. "The operation is best-effort" is not an excuse: log the failure so it can be diagnosed in production
 - **Fire-and-forget side effects must have error logging**: when using `void promise` to satisfy `no-floating-promises`, always append `.catch((error: unknown) => logger.error({ err: error }, 'description'))`. A void promise without `.catch()` silently drops errors. This applies to activity logging, touchpoint triggers, notification sends, and any async side effect that runs outside the main request path
 - **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, document why
+- **Use the project logger, never console**: `console.log`, `console.error`, `console.warn`, and `console.info` must not appear in production code. Use the project's structured logger (Pino, Winston, etc.) which provides log levels, JSON formatting, and context. The only exceptions are Next.js error boundaries (`error.tsx`) where the logger may not be available
 - **No deep nesting**: max 3 levels of indentation. Guard clauses and early returns to flatten control flow
 - **Flat control flow**: avoid recursion unless the data structure is inherently recursive, like trees or graphs. Prefer iterative solutions with explicit bounds. Recursion hides stack growth, making resource usage unpredictable and stack overflows hard to diagnose. When recursion is necessary, always add a depth limit
 - **Strong typing**: explicit types for parameters, return values, and public interfaces. Never `any`, use `unknown` and narrow. Enable maximum strictness (see "Maximum Compiler and Checker Strictness" section below). When modifying a file that already uses `any`, replace it with proper types in the code you touch. Existing violations are not permission to add more
@@ -55,6 +56,26 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **No `Record<string, unknown>` for ORM queries**: never use `Record<string, unknown>` or `Record<string, any>` for Prisma `where`, `data`, or `orderBy` clauses. Use the generated types: `Prisma.WorkOrderWhereInput`, `Prisma.InvoiceUpdateInput`, etc. `Record<string, unknown>` bypasses the type system and hides field renames, removed columns, and type mismatches. If the filter is built dynamically, use a typed builder function that returns the correct Prisma input type
 - **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. This includes `$queryRaw`, `$executeRaw`, `$queryRawUnsafe`, `$executeRawUnsafe` in Prisma, and equivalents in other ORMs. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM methods. If the ORM cannot express the operation, reconsider the approach or use a dedicated service (search engine, analytics DB). The only place SQL is acceptable is migration files. This applies to test files too: test setup and teardown must use ORM methods, not raw SQL to create indexes or alter constraints
 - **Service layer for data access**: routers, controllers, and API handlers must never import the ORM directly. All database operations go through service classes. This keeps the routing layer as a thin delegation layer and makes business logic independently testable
+
+## Prisma Schema Completeness
+
+Every new Prisma model must include these fields and annotations before the PR is opened. Missing any of these is a review-blocking issue.
+
+| Requirement | Rule |
+|-------------|------|
+| `createdAt` | `DateTime @default(now())` on every model |
+| `updatedAt` | `DateTime @updatedAt` on every model that can be modified after creation. Append-only models (audit logs, event logs, feed items) are exempt |
+| `companyId` index | `@@index([companyId])` on every model with a `companyId` field. Without this, every tenant-scoped query does a full table scan |
+| Compound indexes | Add `@@index([companyId, status])` and `@@index([companyId, createdAt])` when the model will be filtered by status or sorted by date |
+| Foreign key indexes | Every `@relation` field needs an `@@index` unless it is already covered by a `@@unique` |
+
+When adding a new model, run this checklist before committing:
+
+1. Does it have `createdAt` and `updatedAt`?
+2. Does it have `@@index([companyId])` if it has a `companyId` field?
+3. Do all `@relation` fields have indexes?
+4. Is the model in the test cleanup order in `test/setup.ts`?
+5. Does the seed file create records for this model?
 
 ## TypeScript Type Constructs
 
@@ -274,6 +295,8 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 - Validate semantically, not just syntactically: positive monetary values, valid date ranges, enum membership
 - Validate both input and output schemas at system boundaries
 - **Parse, don't validate**: validation that returns `boolean` is wasteful. The caller still holds untyped data and downstream functions cannot trust it without re-checking. Instead, parse into a typed value. `parseEmail(input: string): Result<Email, ValidationError>` returns a branded `Email` type. After this point, every function that accepts `Email` is guaranteed valid input with zero re-validation. Combine Zod's `.transform()` + `.brand()` to parse and brand in a single step
+- **String ID fields must reject empty strings**: every required `z.string()` field that represents an identifier (fields ending in `Id`, or named `entityType`, `entityId`, `recordType`, `recordId`, etc.) must have `.min(1)`. An empty string passes `z.string()` but creates corrupt data when used as a foreign key or lookup value. Optional ID fields use `z.string().min(1).optional()`
+- **Monetary and quantity fields must be positive**: `z.number().positive()` or `z.coerce.number().positive()` for any field representing money, counts, ratings, or quantities. Zero or negative values in these fields indicate a bug, not a valid state
 
 ## File Naming
 
