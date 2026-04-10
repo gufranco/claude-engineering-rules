@@ -4,6 +4,7 @@
     "commit": "",
     "pr": ""
   },
+  "includeGitInstructions": false,
   "permissions": {
     "allow": [
       "Read",
@@ -108,9 +109,6 @@
     ]
   },
   "model": "opus[1m]",
-  "includeGitInstructions": false,
-  "autoUpdatesChannel": "stable",
-  "showThinkingSummaries": true,
   "hooks": {
     "PostToolUse": [
       {
@@ -186,7 +184,6 @@
       },
       {
         "matcher": "Bash",
-        "if": "Bash(git commit *)",
         "hooks": [
           {
             "type": "command",
@@ -247,6 +244,15 @@
             "command": "bash ~/.claude/hooks/env-file-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/rtk-rewrite.sh"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -265,17 +271,28 @@
       }
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "python3 ~/.claude/scripts/context-monitor.py"
-  },
   "worktree": {
     "symlinkDirectories": [
       "node_modules"
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 ~/.claude/scripts/context-monitor.py"
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
   "outputStyle": "Explanatory",
   "language": "english",
+  "effortLevel": "high",
+  "autoUpdatesChannel": "stable",
+  "showThinkingSummaries": true,
   "mcpServers": {
     "context7": {
       "command": "npx",
@@ -572,5 +589,8 @@
         "TOOL_FIND_DESCRIPTION": "Search for code patterns, implementations, or architectural decisions by describing what you need in natural language"
       }
     }
+  },
+  "enabledPlugins": {
+    "caveman@caveman": true
   }
 }

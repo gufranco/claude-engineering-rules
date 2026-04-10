@@ -33,6 +33,7 @@ ide/
 # Plugins and telemetry
 plugins/
 telemetry/
+.caveman-active
 
 # Logs
 changes.log

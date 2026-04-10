@@ -255,3 +255,5 @@ After significant multi-step work or sessions with corrections, run `/retro`. Ca
 ## Claude Configuration Documentation
 
 `claude/README.md` documents the full setup. When modifying any file inside `claude/`, update `README.md` in the same task.
+
+@RTK.md
