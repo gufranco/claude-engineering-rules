@@ -280,6 +280,9 @@
     "type": "command",
     "command": "python3 ~/.claude/scripts/context-monitor.py"
   },
+  "enabledPlugins": {
+    "caveman@caveman": true
+  },
   "extraKnownMarketplaces": {
     "caveman": {
       "source": {
@@ -290,7 +293,6 @@
   },
   "outputStyle": "Explanatory",
   "language": "english",
-  "effortLevel": "high",
   "autoUpdatesChannel": "stable",
   "showThinkingSummaries": true,
   "mcpServers": {
@@ -590,7 +592,5 @@
       }
     }
   },
-  "enabledPlugins": {
-    "caveman@caveman": true
-  }
+  "effortLevel": "high"
 }

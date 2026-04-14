@@ -22,6 +22,7 @@ history.jsonl
 
 # Caches
 cache/
+image-cache/
 stats-cache.json
 mcp-needs-auth-cache.json
 policy-limits.json
