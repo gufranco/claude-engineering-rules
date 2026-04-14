@@ -107,6 +107,10 @@ always_loaded:
     description: Token cost estimation for agent spawning, model selection by task, redundant read avoidance, CI pipeline cost, rate budget sequencing
     triggers: [cost, token, token cost, model selection, haiku, sonnet, opus, pipeline cost, rate budget, redundant read]
 
+  licensing:
+    description: SPDX-License-Identifier headers, SPDX-FileCopyrightText, license expressions (AND/OR/WITH), REUSE.toml, .license sidecar files, snippet tags, LICENSES/ directory, license compatibility, CI enforcement
+    triggers: [license, spdx, license header, copyright, reuse, sbom, license identifier, licensing, spdx expression, reuse.toml, license compatibility, snippet, copyleft, permissive]
+
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
 
 on_demand:

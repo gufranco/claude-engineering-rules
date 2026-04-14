@@ -20,7 +20,7 @@ Domain-specific standards live in `standards/` and are NOT loaded automatically.
 
 ## Core Principles
 
-Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (57 categories, 629 items).
+Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (58 categories, 649 items).
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.
@@ -202,7 +202,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Zero warnings (cat 17):** tool output clean? Suppression justified?
    - **Writing style (prose/docs/rules):** em dashes removed? No parentheses in prose? Check every documentation, rule, or comment block you write or modify.
 
-   These are quick-scan reminders for the most critical categories. All 57 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification when external sources were consulted, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, and category 57 for event-driven architecture. Read the full checklist, not just this summary.
+   These are quick-scan reminders for the most critical categories. All 58 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification when external sources were consulted, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, and category 58 for licensing and SPDX compliance. Read the full checklist, not just this summary.
 
    State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
 
@@ -257,3 +257,6 @@ After significant multi-step work or sessions with corrections, run `/retro`. Ca
 `claude/README.md` documents the full setup. When modifying any file inside `claude/`, update `README.md` in the same task.
 
 @RTK.md
+# graphify
+- **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
+When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.

@@ -1030,3 +1030,37 @@ Apply when implementing message-based or event-driven systems. Reference: `stand
 - [ ] Failed events routed to dead-letter queues, never silently dropped
 - [ ] Consumer lag monitored with alerts when exceeding threshold
 - [ ] Outbox pattern used for transactional event publishing
+
+### 58. Licensing and SPDX Compliance
+
+Apply when creating or modifying source files. Reference: `rules/licensing.md`.
+
+**File Headers:**
+- [ ] Every new source file has `SPDX-FileCopyrightText` and `SPDX-License-Identifier` on the first comment lines
+- [ ] Modified files that lack the header receive one in the same commit
+- [ ] SPDX identifier matches the project's root LICENSE file
+- [ ] `SPDX-FileCopyrightText` format used, not bare `Copyright (c)`
+- [ ] C headers and assembly use `/* */` block comments, not `//`
+- [ ] Shebang scripts place the SPDX header on line 2, not line 1
+
+**Uncommentable Files:**
+- [ ] Binary files (images, fonts, PDFs) have `.license` sidecar files
+- [ ] JSON, .env, and other commentless formats covered by REUSE.toml or sidecar
+- [ ] Generated files and build artifacts excluded (covered by .gitignore)
+
+**License Expressions:**
+- [ ] GNU licenses use `-only` or `-or-later` suffix, never bare identifiers
+- [ ] License expressions are single-line, no line breaks mid-expression
+- [ ] AND/OR/WITH operators use correct case (all upper or all lower)
+- [ ] Parentheses used when precedence override is needed
+
+**Third-Party and Mixed Licensing:**
+- [ ] Third-party vendored files preserve their original license headers
+- [ ] Snippet tags (SPDX-SnippetBegin/End) used when a file section has a different license
+- [ ] License compatibility verified when mixing permissive and copyleft code
+- [ ] LICENSES/ directory contains full text for every referenced license identifier
+
+**Configuration and CI:**
+- [ ] REUSE.toml used for bulk licensing, not deprecated `.reuse/dep5`
+- [ ] `reuse lint` passes in CI when REUSE compliance is adopted
+- [ ] CI workflow configured (GitHub Actions `fsfe/reuse-action@v6` or equivalent)
