@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 26 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 17 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**26** rules · **51** standards · **40** skills · **42** MCP servers · **16** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
+**26** rules · **60** standards · **40** skills · **42** MCP servers · **16** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -27,7 +27,7 @@ Sixteen hooks intercept tool calls in real time: block dangerous commands, scan 
 
 ### Two-Tier Rule Loading
 
-Universal rules load automatically. Domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Cuts auto-loaded context from ~135KB to ~50KB per conversation.
+Universal rules load automatically. Domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
 
 </td>
 </tr>
@@ -129,7 +129,7 @@ graph LR
 
 ### Rules (always loaded)
 
-These 26 rules are loaded into every conversation automatically.
+These 17 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -147,25 +147,25 @@ These 26 rules are loaded into every conversation automatically.
 | `github-accounts` | Multi-account safety for `gh` CLI: require inline `GH_TOKEN`, block `gh auth switch`, account mapping by remote URL |
 | `gitlab-accounts` | Multi-account safety for `glab` CLI: require inline `GITLAB_TOKEN` and `GITLAB_HOST`, block `glab auth login` |
 | `agent-usage` | Agent and parallelism budget: inline-first policy, two-agent concurrency cap, cascade prevention, context injection rules, result size management |
-| `clean-room` | Clean room implementation: 30+ verification checks across structural, naming, logic, config, license, documentation, and output independence. Similarity thresholds, safe/unsafe boundaries, per-source process |
 | `context-management` | Context compaction at 60%, preservation rules after compaction, plan re-reading every ~50 tool calls, subagent context isolation |
 | `ai-guardrails` | Treat AI output as junior dev code, plan before generating, multi-agent validation, never commit unexplainable code, track AI-specific defect rates |
-| `changelog` | User-facing changelog entries, lead with what users can do, separate internal changes, version tagging convention |
-| `hook-authoring` | Hook performance budget under 500ms, exit codes, stdin JSON parsing, testing with fixtures, graceful error handling |
-| `skill-authoring` | Skill frontmatter fields, allowed-tools scoping, sensitive flag, preamble pattern, context fork, supporting file conventions |
-| `mcp-security` | MCP server scoping to specific agents, credential isolation, output shape validation, 5-6 active server limit for performance |
 | `performance` | Core Web Vitals budgets, API latency targets (p50/p95/p99), database query time limits, JS/CSS bundle size limits, image optimization |
-| `privacy` | Data minimization, retention policies with automated deletion, right to erasure, consent recording, pseudonymization, audit trail |
-| `session-hygiene` | Session naming with `-n`, checkpoint before risky operations, `/rewind` as save points, multi-session awareness, proactive compaction |
-| `cost-awareness` | Token cost estimation before agent spawning, model tier selection (Haiku for read-only), redundant read avoidance, CI pipeline cost awareness |
-| `licensing` | SPDX-License-Identifier headers, SPDX-FileCopyrightText, license expressions (AND/OR/WITH), sidecar `.license` files, snippet tags, REUSE.toml, LICENSES/ directory, license compatibility, CI enforcement with `fsfe/reuse-action` |
 
 ### Standards (loaded on demand)
 
-These 51 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
+These 60 standards live in `standards/` and are loaded only when the task matches their domain. `rules/index.yml` maps each standard to trigger keywords for automatic matching.
 
 | Standard | What it covers |
 |:---------|:---------------|
+| `changelog` | User-facing changelog entries, lead with what users can do, separate internal changes, version tagging convention |
+| `clean-room` | Clean room implementation: 30+ verification checks across structural, naming, logic, config, license, documentation, and output independence |
+| `cost-awareness` | Token cost estimation before agent spawning, model tier selection (Haiku for read-only), redundant read avoidance, CI pipeline cost awareness |
+| `hook-authoring` | Hook performance budget under 500ms, exit codes, stdin JSON parsing, testing with fixtures, graceful error handling |
+| `licensing` | SPDX-License-Identifier headers, SPDX-FileCopyrightText, license expressions (AND/OR/WITH), sidecar `.license` files, REUSE.toml, license compatibility, CI enforcement |
+| `mcp-security` | MCP server scoping to specific agents, credential isolation, output shape validation, 5-6 active server limit for performance |
+| `privacy` | Data minimization, retention policies with automated deletion, right to erasure, consent recording, pseudonymization, audit trail |
+| `session-hygiene` | Session naming with `-n`, checkpoint before risky operations, `/rewind` as save points, multi-session awareness, proactive compaction |
+| `skill-authoring` | Skill frontmatter fields, allowed-tools scoping, sensitive flag, preamble pattern, context fork, supporting file conventions |
 | `infrastructure` | IaC principles, networking, container orchestration, CI/CD pipeline design, cloud architecture, DORA metrics |
 | `distributed-systems` | Consistency models, saga pattern, outbox, distributed locking, event ordering, schema evolution, zero-downtime deploys |
 | `frontend` | Typography, spacing, WCAG AA contrast, responsive design, accessibility, component patterns, performance |
@@ -481,7 +481,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 /review 142 --frontend
 ```
 
-**Rules involved:** all 26 rules loaded, all matched standards from `index.yml`
+**Rules involved:** all 17 rules loaded, all matched standards from `index.yml`
 **Agents used:** `blast-radius`, `pr-reviewer`, `performance-profiler` (if SCOPE_BACKEND), `accessibility-auditor` (if SCOPE_FRONTEND)
 
 ### 4. Self-Review: Checking Your Own Code Before Delivery
@@ -540,7 +540,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 /assessment --focus deploy
 ```
 
-**Rules involved:** all 26 rules, all matched standards, full 58-category checklist
+**Rules involved:** all 17 rules, all matched standards, full 58-category checklist
 **Agents used:** `security-scanner`, `coverage-analyzer`, `red-team`, `documentation-checker`
 
 ### 6. Debugging: Systematic Investigation
@@ -1182,10 +1182,9 @@ The hooks, rules, and skills activate automatically.
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
     checklist.md         # 649-item unified checklist across 58 categories
-  rules/                 # Tier 1: always loaded into every conversation (26 rules)
+  rules/                 # Tier 1: always loaded into every conversation (17 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
     agent-usage.md       # Agent parallelism budget and cascade prevention
-    clean-room.md        # Clean room implementation and plagiarism prevention
     code-review.md       # PR authoring, review style, tech debt
     code-style.md        # DRY/SOLID, immutability, FP patterns, TypeScript conventions
     debugging.md         # Four-phase debugging process
@@ -1194,7 +1193,6 @@ The hooks, rules, and skills activate automatically.
     github-accounts.md   # GitHub multi-account safety
     gitlab-accounts.md   # GitLab multi-account safety
     language.md          # Response language enforcement
-    licensing.md         # SPDX-License-Identifier headers and compliance
     pre-flight.md        # Pre-implementation verification gates
     security.md          # Secrets, auth, encryption, supply chain
     testing.md           # Integration-first, strict mocks, fake data, snapshots
@@ -1202,15 +1200,8 @@ The hooks, rules, and skills activate automatically.
     writing-precision.md # Precision gate for all text output
     context-management.md # Context compaction and preservation
     ai-guardrails.md     # AI output review and trust boundaries
-    changelog.md         # Changelog writing standards
-    hook-authoring.md    # Hook performance and testing conventions
-    skill-authoring.md   # Skill frontmatter and structure conventions
-    mcp-security.md      # MCP server scoping and credential isolation
     performance.md       # Core Web Vitals and API latency budgets
-    privacy.md           # Data minimization, retention, erasure
-    session-hygiene.md   # Session naming, checkpoints, multi-session
-    cost-awareness.md    # Token cost, model selection, CI cost
-  standards/             # Tier 2: loaded on demand when task matches triggers
+  standards/             # Tier 2: loaded on demand when task matches triggers (60 standards)
     accessibility-testing.md   # WCAG compliance, axe-core, Lighthouse, ARIA, contrast
     algorithmic-complexity.md  # Data structures, sorting, anti-patterns, space complexity
     api-design.md        # REST conventions, pagination, versioning
