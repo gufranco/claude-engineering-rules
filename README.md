@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 25 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 26 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**25** rules · **51** standards · **40** skills · **42** MCP servers · **16** hooks · **24** agents · **629** checklist items · **57** categories · **~15,000** lines of engineering standards
+**26** rules · **51** standards · **40** skills · **42** MCP servers · **16** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -50,9 +50,9 @@ Mandatory verification gates, pre-flight checks, response self-check for analyti
 <tr>
 <td width="50%" valign="top">
 
-### 629-Item Review Checklist
+### 649-Item Review Checklist
 
-Single unified checklist spanning 57 categories, from correctness and security to distributed systems, deployment verification, design quality, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, and event-driven architecture. Shared by completion gates, `/review`, and `/assessment`.
+Single unified checklist spanning 58 categories, from correctness and security to distributed systems, deployment verification, design quality, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance. Shared by completion gates, `/review`, and `/assessment`.
 
 </td>
 <td width="50%" valign="top">
@@ -85,7 +85,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | 16 workflow skills (25 absorbed) | - | Yes |
 | 42 MCP server integrations | - | Yes |
 | Prompt injection guards | - | Yes |
-| 629-item review checklist (57 categories) | - | Yes |
+| 649-item review checklist (58 categories) | - | Yes |
 | Clean room plagiarism prevention | - | Yes |
 
 ## How It Works
@@ -129,7 +129,7 @@ graph LR
 
 ### Rules (always loaded)
 
-These 25 rules are loaded into every conversation automatically.
+These 26 rules are loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -158,6 +158,7 @@ These 25 rules are loaded into every conversation automatically.
 | `privacy` | Data minimization, retention policies with automated deletion, right to erasure, consent recording, pseudonymization, audit trail |
 | `session-hygiene` | Session naming with `-n`, checkpoint before risky operations, `/rewind` as save points, multi-session awareness, proactive compaction |
 | `cost-awareness` | Token cost estimation before agent spawning, model tier selection (Haiku for read-only), redundant read avoidance, CI pipeline cost awareness |
+| `licensing` | SPDX-License-Identifier headers, SPDX-FileCopyrightText, license expressions (AND/OR/WITH), sidecar `.license` files, snippet tags, REUSE.toml, LICENSES/ directory, license compatibility, CI enforcement with `fsfe/reuse-action` |
 
 ### Standards (loaded on demand)
 
@@ -223,7 +224,7 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 |:------|:------------|:-------------|
 | `/ship` | `commit`, `pr`, `release`, `checks`, `worktree` | Full delivery pipeline: semantic commits, PRs with CI monitoring, tagged releases, pipeline diagnosis, parallel worktrees. Auto-checks documentation staleness on PR creation |
 | `/deploy` | `land` (default), `canary` | Post-merge deployment: merge PR, verify deployment health, canary monitoring for errors and regressions |
-| `/review` | `code` (default), `qa`, `design` | Three-pass code review with 57-category checklist, 30-rule QA analysis with PICT and coverage delta, visual/UX/accessibility audit with 0-10 dimension scoring |
+| `/review` | `code` (default), `qa`, `design` | Three-pass code review with 58-category checklist, 30-rule QA analysis with PICT and coverage delta, visual/UX/accessibility audit with 0-10 dimension scoring |
 | `/audit` | `deps`, `secrets`, `docker`, `code`, `scan`, `image`, `threat` | Multi-layer security audit, dependency management with trivy/snyk/gitleaks, STRIDE threat modeling |
 | `/test` | `perf`, `lint`, `scan`, `ci`, `stubs` | Test execution, load testing (k6/wrk/hey/ab), coverage, linting, security scanning, test stub generation |
 | `/plan` | `adr`, `scaffold` | Structured planning with spec folders, discovery phase (`--discover`), automated multi-phase review (`--auto`), Architecture Decision Records, boilerplate generation |
@@ -232,7 +233,7 @@ These 51 standards live in `standards/` and are loaded only when the task matche
 | `/second-opinion` | `--mode gate/adversarial/consult` | Cross-model code review via Ollama (local), OpenAI, or other providers. Catches single-model blind spots |
 | `/infra` | `docker`, `terraform`, `db` | Container orchestration (Colima-aware), IaC workflows with safety gates, database migrations with ORM detection |
 | `/retro` | `discover`, `--curate`, `--promote` | Session retrospective, codebase pattern extraction, memory curation, rule graduation (self-improving agent lifecycle) |
-| `/assessment` | -- | Architecture completeness audit against the full 57-category checklist |
+| `/assessment` | -- | Architecture completeness audit against the full 58-category checklist |
 | `/morning` | -- | Start-of-day dashboard: open PRs, pending reviews, notifications, standup prep |
 | `/incident` | -- | Incident context gathering and blameless postmortem generation |
 | `/readme` | -- | README generation by analyzing the actual codebase |
@@ -338,7 +339,7 @@ The `/plan` skill writes a `context.md` file in the spec folder before planning 
 
 One unified checklist covers all layers of quality:
 
-- **Unified checklist** (`checklists/checklist.md`): 629 items across 57 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification. Category 51 covers deployment verification. Category 52 covers design quality. Category 53 covers LLM trust boundary: output validation before storage, sanitization for vector DBs, URL allowlisting. Category 54 covers performance budgets: Core Web Vitals targets, bundle sizes, image dimensions. Category 55 covers zero-downtime deployment: expand-contract migrations, backward compatibility, canary verification. Category 56 covers supply chain security: SBOM generation, artifact signing, lockfile integrity, typosquatting prevention. Category 57 covers event-driven architecture: idempotent handlers, event deduplication, schema versioning, DLQ routing.
+- **Unified checklist** (`checklists/checklist.md`): 649 items across 58 categories. Single source of truth shared by completion gates (self-review during implementation), `/review`, and `/assessment`. Categories 1-17 cover code-level quality: correctness, security, error handling, concurrency, data integrity, algorithmic performance, frontend performance, testing, code quality and design, naming, architecture patterns, backward compatibility, dependencies, documentation, cross-file consistency, cascading fix analysis, and zero warnings. Categories 18-49 cover architecture and infrastructure: idempotency, atomicity, error classification, caching, consistency models, back pressure, saga coordination, event ordering, schema evolution, observability, security, API design, deployment readiness, graceful degradation, data modeling, capacity planning, testability, cost awareness, multi-tenancy, migration strategy, infrastructure as code, networking, container orchestration, CI/CD, and cloud architecture. Category 50 covers clean room verification. Category 51 covers deployment verification. Category 52 covers design quality. Category 53 covers LLM trust boundary: output validation before storage, sanitization for vector DBs, URL allowlisting. Category 54 covers performance budgets: Core Web Vitals targets, bundle sizes, image dimensions. Category 55 covers zero-downtime deployment: expand-contract migrations, backward compatibility, canary verification. Category 56 covers supply chain security: SBOM generation, artifact signing, lockfile integrity, typosquatting prevention. Category 57 covers event-driven architecture: idempotent handlers, event deduplication, schema versioning, DLQ routing. Category 58 covers licensing and SPDX compliance: per-file license identifiers, SPDX-FileCopyrightText, license expressions, sidecar files, snippet tags, REUSE.toml, license compatibility, CI enforcement.
 
 ## Workflows
 
@@ -385,7 +386,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
    ```
    /review --local
    ```
-   This runs the full 57-category checklist against your local changes, including blast radius analysis on consumers of changed interfaces.
+   This runs the full 58-category checklist against your local changes, including blast radius analysis on consumers of changed interfaces.
 
 9. **Commit and push.**
    ```
@@ -463,7 +464,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 
 3. **Blast radius.** For every changed interface, the skill traces all consumers in the project. A changed function signature that has 40 callers is flagged if callers were not updated.
 
-4. **Three-pass review.** Pass 1: per-file analysis against all 57 checklist categories. Pass 2: cross-file consistency. Pass 3: cascading fix analysis for every issue found.
+4. **Three-pass review.** Pass 1: per-file analysis against all 58 checklist categories. Pass 2: cross-file consistency. Pass 3: cascading fix analysis for every issue found.
 
 5. **Confidence scoring.** Each finding gets a confidence score 1-10. Findings below 5 are suppressed. Findings 5-6 show with a caveat.
 
@@ -480,7 +481,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 /review 142 --frontend
 ```
 
-**Rules involved:** all 25 rules loaded, all matched standards from `index.yml`
+**Rules involved:** all 26 rules loaded, all matched standards from `index.yml`
 **Agents used:** `blast-radius`, `pr-reviewer`, `performance-profiler` (if SCOPE_BACKEND), `accessibility-auditor` (if SCOPE_FRONTEND)
 
 ### 4. Self-Review: Checking Your Own Code Before Delivery
@@ -491,7 +492,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 /review --local
 ```
 
-1. This reviews your local branch diff against the base branch using the same 57-category checklist as a PR review.
+1. This reviews your local branch diff against the base branch using the same 58-category checklist as a PR review.
 
 2. The fix-first heuristic classifies findings as AUTO-FIX (dead code, N+1, stale comments) or ASK (security, design decisions). AUTO-FIX issues are fixed directly.
 
@@ -524,7 +525,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 
 5. **Technology discovery.** Scans the project for technology signals and loads all matching standards from `index.yml`. A project using PostgreSQL + GraphQL + Redis loads `database.md`, `graphql-api-design.md`, and `redis.md`.
 
-6. **57-category audit.** Every applicable category is checked. Findings are classified as PRESENT, PARTIAL, or MISSING with severity (CRITICAL/HIGH/MEDIUM/LOW) and effort (S/M/L/XL).
+6. **58-category audit.** Every applicable category is checked. Findings are classified as PRESENT, PARTIAL, or MISSING with severity (CRITICAL/HIGH/MEDIUM/LOW) and effort (S/M/L/XL).
 
 7. **Fix and converge.** After presenting findings: "Want me to implement the missing patterns?" The skill fixes issues by priority (CRITICAL first), re-verifies after each batch, and loops up to 20 iterations until clean.
 
@@ -539,7 +540,7 @@ Step-by-step guides for every engineering scenario. Each workflow shows which sk
 /assessment --focus deploy
 ```
 
-**Rules involved:** all 25 rules, all matched standards, full 57-category checklist
+**Rules involved:** all 26 rules, all matched standards, full 58-category checklist
 **Agents used:** `security-scanner`, `coverage-analyzer`, `red-team`, `documentation-checker`
 
 ### 6. Debugging: Systematic Investigation
@@ -1180,8 +1181,8 @@ The hooks, rules, and skills activate automatically.
   settings.json          # Permissions, hooks, MCP servers, statusline
   .markdownlint.json     # Markdownlint configuration for CI
   checklists/
-    checklist.md         # 629-item unified checklist across 57 categories
-  rules/                 # Tier 1: always loaded into every conversation (25 rules)
+    checklist.md         # 649-item unified checklist across 58 categories
+  rules/                 # Tier 1: always loaded into every conversation (26 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
     agent-usage.md       # Agent parallelism budget and cascade prevention
     clean-room.md        # Clean room implementation and plagiarism prevention
@@ -1193,6 +1194,7 @@ The hooks, rules, and skills activate automatically.
     github-accounts.md   # GitHub multi-account safety
     gitlab-accounts.md   # GitLab multi-account safety
     language.md          # Response language enforcement
+    licensing.md         # SPDX-License-Identifier headers and compliance
     pre-flight.md        # Pre-implementation verification gates
     security.md          # Secrets, auth, encryption, supply chain
     testing.md           # Integration-first, strict mocks, fake data, snapshots

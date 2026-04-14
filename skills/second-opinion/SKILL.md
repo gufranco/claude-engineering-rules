@@ -139,6 +139,6 @@ Present the response to the user as-is, prefixed with the model name, so the use
 
 ## Related skills
 
-- `/review` -- Primary code review with 57-category checklist.
+- `/review` -- Primary code review with 58-category checklist.
 - `/audit` -- Security-focused audit with vulnerability scanning.
 - `/review qa` -- QA analysis for test coverage gaps.

@@ -154,7 +154,7 @@ Dependencies are attack surface. A compromised package runs with your code's per
 - **Audit regularly**: run `npm audit`, `pip audit`, or equivalent in CI. Block builds on critical/high vulnerabilities
 - **Minimize surface**: fewer dependencies = fewer attack vectors. Prefer native/stdlib when the alternative is a small package with deep transitive dependencies
 - **Monitor advisories**: subscribe to security advisories for your critical dependencies. Do not wait for a scheduled audit to learn about a zero-day
-- **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format
+- **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format. Per-file SPDX-License-Identifier headers improve SBOM accuracy. See `rules/licensing.md`
 - **Artifact signing**: sign build artifacts with Sigstore (cosign) for provenance verification
 - **SLSA compliance**: target SLSA Level 2 minimum for customer-facing services (hosted builds with signed provenance)
 

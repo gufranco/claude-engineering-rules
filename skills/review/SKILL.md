@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 57-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. Do NOT use for full architecture assessment (use /assessment), security scanning (use /audit), or shipping code (use /ship).
+description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 58-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. Do NOT use for full architecture assessment (use /assessment), security scanning (use /audit), or shipping code (use /ship).
 ---
 
 Unified review skill covering code quality, QA analysis, and visual design audit. Replaces standalone `/review`, `/qa`, and `/design-review` skills.
@@ -22,7 +22,7 @@ If no subcommand is given, default to `code`.
 Review a pull request, merge request, or local branch changes with rigorous, detail-oriented analysis. Every line of the diff is scrutinized for correctness, security, performance, maintainability, and adherence to best practices.
 
 Use two references:
-1. `../../checklists/checklist.md` for all 57 quality categories.
+1. `../../checklists/checklist.md` for all 58 quality categories.
 2. `reviewer-prompt.md` in this directory for comment format and examples.
 
 ### Arguments
@@ -112,7 +112,7 @@ When `--backend` or `--frontend` is passed, classify each file:
    **7d. Flag impact findings.** For each consumer that would break or behave differently after the change, record: the consumer file and line, what it expects, and how the change violates that expectation. These findings have the same severity as bugs found in the diff itself.
 
 9. **Three explicit passes** (applied to the diff AND to impacted files from step 8):
-   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md` (1-17, 18-57). This includes the new categories: 53 (LLM Trust Boundary) when code processes AI output, 54 (Performance Budget) for frontend changes, 55 (Zero-Downtime Deployment) for migration and deploy changes, 56 (Supply Chain) for dependency changes, and 57 (Event-Driven) for queue and event handler changes. Additionally, for each standard loaded in step 6, verify that changed code follows the patterns in that standard. A database query that violates `standards/database.md` is a finding. A new API endpoint that ignores `standards/api-design.md` conventions is a finding. A queue consumer that ignores `standards/message-queues.md` error handling is a finding. An auth change that ignores `standards/authentication.md` is a finding. A migration that violates `standards/zero-downtime-deployments.md` expand-contract pattern is a finding. Reference the specific standard in each finding. Apply to changed files first, then to impacted consumer files where the change alters behavior. Use scope signals from step 7 to prioritize depth.
+   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md` (1-17, 18-58). This includes the extended categories: 53 (LLM Trust Boundary) when code processes AI output, 54 (Performance Budget) for frontend changes, 55 (Zero-Downtime Deployment) for migration and deploy changes, 56 (Supply Chain) for dependency changes, 57 (Event-Driven) for queue and event handler changes, and 58 (Licensing) for new or modified source files. Additionally, for each standard loaded in step 6, verify that changed code follows the patterns in that standard. A database query that violates `standards/database.md` is a finding. A new API endpoint that ignores `standards/api-design.md` conventions is a finding. A queue consumer that ignores `standards/message-queues.md` error handling is a finding. An auth change that ignores `standards/authentication.md` is a finding. A migration that violates `standards/zero-downtime-deployments.md` expand-contract pattern is a finding. Reference the specific standard in each finding. Apply to changed files first, then to impacted consumer files where the change alters behavior. Use scope signals from step 7 to prioritize depth.
    - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 8 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
 10. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply `../../checklists/checklist.md` category 8. If coverage is below threshold, flag it as a blocking finding.
@@ -371,7 +371,7 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - Always present the full review before posting comments.
 - Never approve a PR with failing tests, stale branch, or missing test evidence.
 - Always restore account per `standards/borrow-restore.md`.
-- Apply all 57 checklist categories, not just 1-52. Categories 53-57 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, and event-driven architecture.
+- Apply all 58 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
 - When the diff touches authentication, load `standards/authentication.md` and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
 - When the diff adds or modifies dependencies, apply category 56 (Supply Chain): check for typosquatting, verify lockfile integrity, check for known vulnerabilities.
 - When the diff includes database migrations, apply category 55 (Zero-Downtime Deployment): verify expand-contract pattern, backward compatibility with previous app version.
