@@ -280,18 +280,7 @@
     "type": "command",
     "command": "python3 ~/.claude/scripts/context-monitor.py"
   },
-  "enabledPlugins": {
-    "caveman@caveman": true
-  },
-  "extraKnownMarketplaces": {
-    "caveman": {
-      "source": {
-        "source": "github",
-        "repo": "JuliusBrussee/caveman"
-      }
-    }
-  },
-  "outputStyle": "Explanatory",
+  "outputStyle": "Concise",
   "language": "english",
   "autoUpdatesChannel": "stable",
   "showThinkingSummaries": true,
