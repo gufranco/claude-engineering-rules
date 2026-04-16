@@ -6,7 +6,9 @@ Apply the checklist to every review. Go through every applicable category. Do no
 
 **Checklist** (`../../checklists/checklist.md`): 58 categories covering code-level quality (1-17), architecture, resilience, and infrastructure (18-49), clean room verification (50), deployment verification (51), design quality (52), LLM trust boundary (53), performance budget (54), zero-downtime deployment (55), supply chain security (56), event-driven architecture (57), and licensing compliance (58). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-58 apply when relevant to the system type and scope signals.
 
-In addition to the checklist, the review dynamically loads on-demand standards from `~/.claude/rules/index.yml` that match the project's technology stack. When a standard is loaded, review code against its specific patterns. Reference the standard file in findings (e.g., "violates `standards/database.md` N+1 rule").
+In addition to the checklist, the review dynamically loads on-demand standards from `~/.claude/rules/index.yml` that match the project's technology stack. When a standard is loaded, review code against its specific patterns.
+
+**Internal references stay internal.** The checklist, rules, and standards inform what to check. Review comments must never reference these files. State the engineering reason directly. See `rules/code-review.md` "No Internal Config Leakage" section.
 
 For every issue found, explain why it matters and provide a code example showing the fix.
 
@@ -24,7 +26,7 @@ Write every comment as if you are a senior engineer mentoring a colleague. Be di
 
 Do not use prefix labels like `issue:`, `suggestion:`, or `nit:`. Just say what you mean. The severity should be obvious from the content.
 
-Code examples in review comments must comply with all project coding standards defined in `rules/code-style.md`. A fix suggestion that introduces a rule violation, like using `any` as a type, bare `catch` blocks, magic numbers, or inline string literal unions, is itself a review defect. Hold your own examples to the same standard as the code you are reviewing.
+Code examples in review comments must comply with all project coding standards. A fix suggestion that introduces a violation, like using `any` as a type, bare `catch` blocks, magic numbers, or inline string literal unions, is itself a review defect. Hold your own examples to the same standard as the code you are reviewing.
 
 ### GitHub Suggestion Syntax
 
@@ -106,8 +108,8 @@ This function has three branches: success, validation error, and database error.
 The test only covers the success case. If someone refactors the error handling
 later, there's no test to catch a regression.
 
-Add tests for the other two paths. Use faker for test data and real database
-connections per `rules/testing.md` mock policy:
+Add tests for the other two paths. Use faker for test data and a real database
+connection instead of mocks:
 
 ```typescript
 it('should return 400 when email format is invalid', async () => {

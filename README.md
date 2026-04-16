@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 17 rules, 51 on-demand standards, 40 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 17 rules, 60 on-demand standards, 42 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**26** rules · **60** standards · **40** skills · **42** MCP servers · **16** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
+**17** rules · **60** standards · **42** skills · **42** MCP servers · **16** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -1185,7 +1185,7 @@ The hooks, rules, and skills activate automatically.
   rules/                 # Tier 1: always loaded into every conversation (17 rules)
     index.yml            # Rule catalog with trigger keywords for both tiers
     agent-usage.md       # Agent parallelism budget and cascade prevention
-    code-review.md       # PR authoring, review style, tech debt
+    code-review.md       # PR authoring, review style, tech debt, no-config-leakage rule
     code-style.md        # DRY/SOLID, immutability, FP patterns, TypeScript conventions
     debugging.md         # Four-phase debugging process
     documentation.md     # Documentation preservation during skill execution
@@ -1338,7 +1338,7 @@ The hooks, rules, and skills activate automatically.
     validate-skills.py   # Skill definition validation
     validate-cross-refs.py # Cross-reference integrity between index, agents, standards
   tests/
-    test-hooks.sh        # Hook smoke tests (78 cases)
+    test-hooks.sh        # Hook smoke tests (79 cases)
     fixtures/            # JSON fixtures for hook testing (62 fixtures)
   .github/
     workflows/

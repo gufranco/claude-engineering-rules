@@ -15,6 +15,35 @@ Write review comments the way a human colleague would. No prefix labels, no stru
 
 If something needs to be fixed, say it. If you have a question, ask it. If something looks good, say so briefly. Each comment must be its own thought, written naturally, not items from a checklist.
 
+### No Internal Config Leakage (MANDATORY)
+
+Every review comment, PR description, PR comment, Slack message, and any other externally-visible text must read as if a human engineer wrote it from experience. The reader has no access to our internal configuration and must never learn it exists.
+
+**Never reference, cite, or mention:**
+
+- `~/.claude/`, `rules/`, `checklists/`, `standards/`, `skills/`
+- File names like `checklist.md`, `code-style.md`, `testing.md`, `database.md`
+- Phrases like "per our rules", "per our standards", "category 17", "checklist item 3"
+- Rule-sourced phrasing that implies a codified checklist: "this violates rule X", "standard Y requires"
+
+**Instead, state the engineering reason directly:**
+
+```
+# Bad: leaks internal config
+This violates `rules/testing.md` mock policy. Per `checklists/checklist.md`
+category 8, mocking internal services is a blocking issue.
+
+# Good: same knowledge, human voice
+These tests mock internal services instead of using a real database.
+A test that verifies mock wiring proves the mock works, not the code.
+If someone reverts the fix, all five tests still pass. That is zero
+regression protection for a security fix.
+```
+
+This applies to the initial generation, not as a post-hoc rewrite. Comments must be clean from the first draft. Requiring a second pass to "humanize" is a process failure.
+
+The internal config informs what to check. The review comment explains why using engineering reasoning. The reader sees the reasoning, never the source.
+
 ## Test Evidence (MANDATORY)
 
 Every behavior-changing PR must have passing test evidence. CI pipeline passing is sufficient. Only request manual output when CI doesn't exist, doesn't run tests, or hasn't executed.
