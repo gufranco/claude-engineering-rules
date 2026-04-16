@@ -12,8 +12,8 @@ always_loaded:
     triggers: [style, typescript, type, enum, interface, immutable, validation, zod, dto, tsconfig, strict, compiler, strictness]
 
   code-review:
-    description: PR authoring, review comment style, test evidence, branch freshness, tech debt tracking, ADRs
-    triggers: [review, pr, pull request, code review, adr, tech debt]
+    description: PR authoring, review comment style, test evidence, branch freshness, tech debt tracking, ADRs, no-config-leakage rule for external output
+    triggers: [review, pr, pull request, code review, adr, tech debt, external output, config leakage]
 
   debugging:
     description: Four-phase debugging process, multi-component tracing, common traps to avoid
@@ -37,7 +37,7 @@ always_loaded:
 
   security:
     description: Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security
-    triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls]
+    triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls, pentest, penetration, exploit, vulnerability, ssrf, idor, xxe, ssti, rce]
 
   testing:
     description: Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot guidelines
