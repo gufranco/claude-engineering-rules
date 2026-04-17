@@ -5,8 +5,8 @@
 <br>
 <br>
 
-[![CI](https://img.shields.io/github/actions/workflow/status/your-username/claude-engineering-rules/ci.yml?style=flat-square&label=CI)](https://github.com/your-username/claude-engineering-rules/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/your-username/claude-engineering-rules?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/ci.yml?style=flat-square&label=CI)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/gufranco/claude-engineering-rules?style=flat-square)](LICENSE)
 
 </div>
 
@@ -1191,7 +1191,7 @@ Not sure which workflow to use? Find your scenario:
 ### Setup
 
 ```bash
-git clone git@github.com:your-username/claude-engineering-rules.git
+git clone git@github.com:gufranco/claude-engineering-rules.git
 ```
 
 Symlink or copy the contents into `~/.claude/`:
