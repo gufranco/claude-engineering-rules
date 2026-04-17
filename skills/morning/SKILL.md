@@ -50,7 +50,7 @@ Flags can be combined: `/morning --all --review`.
 
 3. **If `--review` was passed, skip to step 12.** (Steps 4-5 will be executed as part of step 12 to gather the review queue.)
 
-4. **If `--standup` was passed, skip to step 8.**
+4. **If `--standup` was passed, skip to step 8.** (Steps 5-9 will be skipped.)
 
 5. **Your open PRs.** For **each account** discovered in step 2, switch to that account, fetch PRs, then move to the next. Aggregate results from all accounts.
    - **Switching context:**
@@ -65,7 +65,7 @@ Flags can be combined: `/morning --all --review`.
      - GitHub: `gh search prs --author @me --state open --limit 20 --json repository,number,title,url,createdAt,updatedAt`.
      - GitLab: `glab mr list --author @me --state opened` (repo-scoped, glab does not support cross-repo search).
    - For each PR, extract and display:
-     - Account label (e.g. `gufranco` or `alice-work`) so the user knows which identity owns it.
+     - Account label (e.g. `personal` or `work`) so the user knows which identity owns it.
      - PR number and title.
      - CI status: passing, failing, or pending.
      - Review status: approved, changes requested, awaiting review.
@@ -113,17 +113,23 @@ Flags can be combined: `/morning --all --review`.
      - Pending reviews from step 6 (or re-fetch across all accounts if `--standup` skipped step 6).
      - If on a feature branch with unpushed commits: `git log --oneline origin/<current-branch>..HEAD 2>/dev/null`. If the remote branch doesn't exist, show all commits on the branch vs the default branch.
 
-9. **Local repo state.** Quick health check of the working directory:
+9. **CI/CD health and dependency vulnerabilities.** Run these **in parallel**:
+   - **Failed pipelines:** For each account, fetch the most recent run on the current branch. GitHub: `GH_TOKEN=$(gh auth token --user <login>) gh run list --branch <branch> --limit 5 --json status,conclusion,name,url`. Report any run with `conclusion: failure` or `conclusion: cancelled`. Show the workflow name and the failure URL.
+   - **Stale PRs:** `GH_TOKEN=... gh pr list --author @me --state open --json number,title,updatedAt`. Flag any PR with no activity in the last 7 days as stale.
+   - **Dependency vulnerabilities:** if `package.json` exists, run `npm audit --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); v=d.get('vulnerabilities',{}); highs=[k for k,x in v.items() if x['severity'] in ('high','critical')]; print(f'{len(highs)} high/critical: {highs[:5]}') if highs else print('No high/critical vulnerabilities')"`. If `poetry.lock` or `Pipfile.lock` exists, run `pip audit --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); v=[x for x in d if x.get('vulns')]; print(f'{len(v)} vulnerable packages') if v else print('No vulnerabilities')"`. Skip silently if neither file exists.
+   - Report a compact summary. No output when everything is healthy.
+
+10. **Local repo state.** Quick health check of the working directory:
    - Uncommitted changes: from step 1's `git status` output. Show a summary (X files modified, Y untracked).
    - Unpushed commits on the current branch: `git log --oneline @{upstream}..HEAD 2>/dev/null`. If no upstream, note the branch hasn't been pushed.
    - Stale local branches: `git branch --merged origin/HEAD 2>/dev/null` to find branches already merged into the default branch that could be cleaned up. If `origin/HEAD` is not set, try `origin/main`, then `origin/master`. Only mention this if there are 3 or more stale branches.
 
-10. **Present the briefing.** Use this format:
+11. **Present the briefing.** Use this format:
 
     ```
     ## Good morning
 
-    **Accounts:** <list of accounts queried, e.g. "gufranco, gfranco-onyxodds (github.com)">
+    **Accounts:** <list of accounts queried, e.g. "personal, work (github.com)">
     **Repo:** <owner/repo or "none (cross-repo mode)">
     **Branch:** <current branch or "N/A">
     **Date:** <today's date, weekday>

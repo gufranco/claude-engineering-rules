@@ -85,7 +85,7 @@ on_demand:
   github-accounts:
     path: standards/github-accounts.md
     description: Multi-account safety for gh CLI, require inline GH_TOKEN on every gh invocation, never gh auth switch, account mapping by remote URL
-    triggers: [github, gh, gh auth, multi-account, gufranco, gfranco-onyxodds, onyxodds, push, gh pr, gh repo, gh api, gh run]
+    triggers: [github, gh, gh auth, multi-account, push, gh pr, gh repo, gh api, gh run]
 
   gitlab-accounts:
     path: standards/gitlab-accounts.md

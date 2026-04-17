@@ -1,18 +1,18 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 17 rules, 60 on-demand standards, 42 skills, 42 MCP servers, 16 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 17 rules, 60 on-demand standards, 42 skills, 42 MCP servers, 21 runtime hooks, and 24 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
 
-[![CI](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/ci.yml?style=flat-square&label=CI)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/gufranco/claude-engineering-rules?style=flat-square)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/your-username/claude-engineering-rules/ci.yml?style=flat-square&label=CI)](https://github.com/your-username/claude-engineering-rules/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/your-username/claude-engineering-rules?style=flat-square)](LICENSE)
 
 </div>
 
 ---
 
-**17** rules · **60** standards · **42** skills · **42** MCP servers · **16** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
+**17** rules · **60** standards · **42** skills · **42** MCP servers · **21** hooks · **24** agents · **649** checklist items · **58** categories · **~15,000** lines of engineering standards
 
 <table>
 <tr>
@@ -269,7 +269,8 @@ These 60 standards live in `standards/` and are loaded only when the task matche
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
-| `dangerous-command-blocker.py` | PreToolUse (Bash) | Three-level protection across 14 categories: filesystem destruction, privilege escalation, reverse shells, git destructive, AWS/GCP/Azure cloud CLI, platform CLI (Vercel/Netlify/Firebase/Cloudflare/Fly.io/Heroku), Docker/Podman/Kubernetes/Helm, database CLI (Redis/MongoDB/PostgreSQL/MySQL/SQLite), IaC (Terraform/OpenTofu/Pulumi/Ansible/CDK/Serverless), SQL statements, secret exfiltration via commands, cron/systemd, and protected branch pushes |
+| `dangerous-command-blocker.py` | PreToolUse (Bash) | Four-level protection: safe cleanup allowlist (node_modules, dist, .next pass through), catastrophic hard-block (rm -rf /, reverse shells, mkfs), critical-path block (git filter-branch, AWS/GCP/Azure/platform CLI deletions, database CLI drops, IaC destroy), recoverable confirm-request (git reset --hard, git clean, helm rollback — warns Claude to confirm with user), and suspicious warn (wildcard rm, sudo, docker exec) |
+| `prompt-scope-guard.py` | UserPromptSubmit | Warns when prompts appear overly broad: "fix everything", "review the whole codebase", "do it all". Advisory only, never blocks |
 | `secret-scanner.py` | PreToolUse (Bash) | Scans staged files for 30+ secret patterns before any git commit |
 | `conventional-commits.sh` | PreToolUse (Bash) | Validates commit messages match conventional commit format |
 | `gh-token-guard.py` | PreToolUse (Bash) | Blocks `gh` commands without inline `GH_TOKEN` and blocks `gh auth switch` to prevent global account mutation |
@@ -281,7 +282,7 @@ These 60 standards live in `standards/` and are loaded only when the task matche
 | `change-tracker.sh` | PostToolUse (Edit/Write/MultiEdit) | Logs every file modification with timestamps, auto-rotates at 2000 lines |
 | `deslop-checker.sh` | PostToolUse (Edit/Write/MultiEdit) | Warns on AI-generated code patterns: narration comments, debug artifacts, empty catches, boolean literal comparisons, contextless TODOs. Never blocks, only warns |
 | `notify-webhook.sh` | Stop | Sends a POST to `CLAUDE_NOTIFY_WEBHOOK` when a response completes. Slack and Discord compatible. Silent no-op if env var is unset |
-| `compact-context-saver.sh` | PreCompact/PostCompact | Saves git status before compaction, restores it after. Prevents context loss across compaction events |
+| `compact-context-saver.sh` | SessionStart/PreCompact/PostCompact | Saves git status and branch before compaction, restores it after. Also runs on session start to surface preserved context from the previous session |
 | `failure-logger.py` | PostToolUseFailure | Logs failed tool calls to `~/.claude/telemetry/failures.jsonl` with timestamp, tool name, error, and file path |
 
 #### Per-project hooks (opt-in)
@@ -290,6 +291,49 @@ These 60 standards live in `standards/` and are loaded only when the task matche
 |:-----|:--------|:-------------|
 | `scope-guard.sh` | Stop | Compares modified files against spec scope, warns on scope creep. Supports freeze mode (`~/.claude/.freeze-scope`) for directory-level edit restrictions during debugging |
 | `tdd-gate.sh` | PreToolUse (Edit/Write) | Blocks production code edits if no corresponding test file exists |
+
+#### Hook execution order
+
+Hooks fire in a deterministic sequence around every tool call:
+
+```mermaid
+graph TD
+    A[User submits prompt] --> B[UserPromptSubmit hooks]
+    B --> C{Tool call requested}
+    C --> D[PreToolUse hooks]
+    D -->|exit 2 = block| E[Tool blocked, error returned]
+    D -->|exit 0 = allow| F[Tool executes]
+    F -->|success| G[PostToolUse hooks]
+    F -->|failure| H[PostToolUseFailure hooks]
+    G --> I[Next tool call or end]
+    H --> I
+    I -->|final response| J[Stop hooks]
+    K[Session opens] --> L[SessionStart hooks]
+    M[Context compaction triggered] --> N[PreCompact hooks]
+    N --> O[Compaction runs]
+    O --> P[PostCompact hooks]
+```
+
+A hook that exits 2 blocks the tool call and returns its stdout as the error message to Claude. Exit 0 allows it. Exit codes 1 and 3+ are treated as non-blocking errors. Stderr output is always passed through to the terminal but does not block.
+
+#### settings.json field reference
+
+| Field | Type | Description |
+|:------|:-----|:------------|
+| `model` | string | Default model: `opus`, `sonnet`, or `haiku`. Overridden per-session with `/model` |
+| `outputStyle` | string | Response verbosity: `Concise` or `Auto` |
+| `language` | string | Response language (e.g. `english`) |
+| `autoUpdatesChannel` | string | Update channel: `stable` or `beta` |
+| `showThinkingSummaries` | boolean | Show extended thinking summaries in responses |
+| `includeGitInstructions` | boolean | Inject git status into every conversation context |
+| `attribution.commit` | string | Co-author trailer added to commits. Empty string disables |
+| `attribution.pr` | string | Attribution text added to PR descriptions. Empty string disables |
+| `permissions.allow` | string[] | Tool calls that are auto-approved without prompting |
+| `permissions.deny` | string[] | Tool calls that are always blocked |
+| `hooks` | object | Hook definitions keyed by event type (see above) |
+| `worktree.symlinkDirectories` | string[] | Directories symlinked into git worktrees instead of copied |
+| `statusLine` | object | Command to run for the status bar: `{ type: "command", command: "..." }` |
+| `mcpServers` | object | MCP server definitions. Each key is the server name, value is `{ command, args, env }` or `{ url }` |
 
 ### Custom Agents
 
@@ -1147,7 +1191,7 @@ Not sure which workflow to use? Find your scenario:
 ### Setup
 
 ```bash
-git clone git@github.com:gufranco/claude-engineering-rules.git
+git clone git@github.com:your-username/claude-engineering-rules.git
 ```
 
 Symlink or copy the contents into `~/.claude/`:

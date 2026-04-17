@@ -11,19 +11,21 @@ Before running any `gh` command:
 
 ```bash
 # Correct: token scoped to this command only
-GH_TOKEN=$(gh auth token --user gufranco) gh repo create gufranco/my-repo --private
+GH_TOKEN=$(gh auth token --user <account>) gh repo create <account>/my-repo --private
 
 # Wrong: changes global state, breaks other terminals
-gh auth switch --user gufranco
-gh repo create gufranco/my-repo --private
+gh auth switch --user <account>
+gh repo create <account>/my-repo --private
 ```
 
 ## Account Mapping
 
+Infer the account from the git remote URL. If the remote is ambiguous or absent, ask the user which account to use.
+
 | Remote URL pattern | Account |
 |---|---|
-| `gufranco` | `gufranco` |
-| `gfranco-onyxodds` or `onyxodds` | `gfranco-onyxodds` |
+| Matches personal remote | Personal account |
+| Matches work/org remote | Work account |
 | No remote or ambiguous | Ask the user |
 
 ## Rules
