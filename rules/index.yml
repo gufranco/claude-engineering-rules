@@ -11,17 +11,6 @@ always_loaded:
     description: DRY/SOLID/KISS, immutability, TypeScript conventions, error classification, data safety, enums, validation, maximum compiler and checker strictness
     triggers: [style, typescript, type, enum, interface, immutable, validation, zod, dto, tsconfig, strict, compiler, strictness]
 
-  code-review:
-    description: PR authoring, review comment style, test evidence, branch freshness, tech debt tracking, ADRs, no-config-leakage rule for external output
-    triggers: [review, pr, pull request, code review, adr, tech debt, external output, config leakage]
-
-  debugging:
-    description: Four-phase debugging process, multi-component tracing, common traps to avoid
-    triggers: [debug, bug, error, trace, reproduce, isolate, root cause, stack trace]
-
-  documentation:
-    description: Preserve existing valid information when skills or automated processes modify documentation files
-    triggers: [readme, docs, documentation, changelog, guide, skill output, merge]
 
   git-workflow:
     description: Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy
@@ -51,34 +40,58 @@ always_loaded:
     description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
     triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description, code comment, error message]
 
-  github-accounts:
-    description: Multi-account safety for gh CLI, require inline GH_TOKEN, block gh auth switch, account mapping by remote URL
-    triggers: [github, gh, gh auth, multi-account, token]
-
-  gitlab-accounts:
-    description: Multi-account safety for glab CLI, require inline GITLAB_TOKEN and GITLAB_HOST, block glab auth login
-    triggers: [gitlab, glab, glab auth, multi-account, token]
-
-  agent-usage:
-    description: Agent and parallelism budget rules, prefer inline tool calls over spawning agents, max two concurrent agents, rate budget awareness
-    triggers: [agent, spawn, parallel, subagent, rate limit, rate budget, parallelize, concurrent agents]
-
-  context-management:
-    description: Context compaction timing at 60%, preservation rules after compaction, plan re-reading cadence, subagent context isolation
-    triggers: [context, compact, compaction, plan, re-read, session, context window, token budget]
-
   ai-guardrails:
     description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
     triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
 
-  performance:
-    description: Core Web Vitals budgets, API latency targets, database query limits, JS and CSS bundle budgets, image optimization rules
-    triggers: [performance, lcp, inp, cls, core web vitals, bundle size, latency, p50, p95, p99, image, dom, reflow]
-
 
 # ── Tier 2: On demand (standards/) ──────────────────────────────────
+#
+# Moved from always_loaded (were in rules/, now in standards/):
+#   performance, documentation, context-management, code-review,
+#   debugging, agent-usage, github-accounts, gitlab-accounts
 
 on_demand:
+  performance:
+    path: standards/performance.md
+    description: Core Web Vitals budgets, API latency targets, database query limits, JS and CSS bundle budgets, image optimization, DOM rendering rules
+    triggers: [performance, lcp, inp, cls, core web vitals, bundle size, latency, p50, p95, p99, image, dom, reflow, lighthouse, bundle, frontend perf]
+
+  documentation:
+    path: standards/documentation.md
+    description: Preserve existing valid information when skills or automated processes modify documentation files. Merge, do not replace. Count items before and after migration.
+    triggers: [readme, docs, documentation, changelog, guide, skill output, merge docs, update readme, modify docs]
+
+  context-management:
+    path: standards/context-management.md
+    description: Compact at 60%, preserve modified files and decisions after compaction, re-read plan.md every 50 tool calls, subagent context isolation
+    triggers: [context, compact, compaction, plan, re-read, session, context window, token budget, 60%]
+
+  code-review:
+    path: standards/code-review.md
+    description: PR authoring, review comment style, no-config-leakage rule, test evidence, branch freshness, tech debt tracking, ADRs, zero warnings gate
+    triggers: [review, pr, pull request, code review, adr, tech debt, external output, config leakage, open pr, create pr, submit pr, merge pr, approve]
+
+  debugging:
+    path: standards/debugging.md
+    description: Four-phase debugging (reproduce, isolate, root cause, fix), 3-strike protocol, multi-component tracing, common traps
+    triggers: [debug, bug, error, trace, reproduce, isolate, root cause, stack trace, fix bug, broken, not working, failing, crash, exception]
+
+  agent-usage:
+    path: standards/agent-usage.md
+    description: Agent and parallelism budget rules, prefer inline tool calls over spawning agents, max two concurrent agents, cascade prevention, context injection rules
+    triggers: [agent, spawn, parallel, subagent, rate limit, rate budget, parallelize, concurrent agents, background agent, worktree agent]
+
+  github-accounts:
+    path: standards/github-accounts.md
+    description: Multi-account safety for gh CLI, require inline GH_TOKEN on every gh invocation, never gh auth switch, account mapping by remote URL
+    triggers: [github, gh, gh auth, multi-account, gufranco, gfranco-onyxodds, onyxodds, push, gh pr, gh repo, gh api, gh run]
+
+  gitlab-accounts:
+    path: standards/gitlab-accounts.md
+    description: Multi-account safety for glab CLI, require inline GITLAB_TOKEN and GITLAB_HOST on every glab invocation, never glab auth login
+    triggers: [gitlab, glab, glab auth, multi-account, glab mr, glab repo, glab api, gitlab token]
+
   changelog:
     path: standards/changelog.md
     description: User-facing changelog entries, lead with actions, separate internal changes, version tagging convention
