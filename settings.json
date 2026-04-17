@@ -108,7 +108,7 @@
       "Read(**/node_modules/**)"
     ]
   },
-  "model": "opus[1m]",
+  "model": "opus",
   "hooks": {
     "PostToolUse": [
       {
@@ -159,6 +159,36 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/deslop-checker.sh"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/file-size-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/import-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/file-size-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/import-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/skill-usage-tracker.py"
           }
         ]
       }
@@ -187,7 +217,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/conventional-commits.sh"
+            "command": "bash ~/.claude/hooks/conventional-commits.sh",
+            "if": "Bash(git commit *)"
           }
         ]
       },
@@ -269,6 +300,61 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/prompt-scope-guard.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/compact-context-saver.sh pre"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/failure-logger.py"
+          }
+        ]
+      }
     ]
   },
   "worktree": {
@@ -339,9 +425,6 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/Users/gufranco/Dropbox",
-        "/Users/gufranco/Workspace",
-        "/Users/gufranco/Docker",
         "/tmp"
       ]
     },
@@ -580,6 +663,5 @@
         "TOOL_FIND_DESCRIPTION": "Search for code patterns, implementations, or architectural decisions by describing what you need in natural language"
       }
     }
-  },
-  "effortLevel": "high"
+  }
 }
