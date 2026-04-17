@@ -2,11 +2,11 @@
 
 ## Core Principle
 
-Treat all AI-generated code as junior developer output. It compiles, it looks plausible, it often has subtle design flaws. 62% of AI-generated code contains design issues that pass syntax checks but fail under real-world conditions. Never trust, always verify.
+Treat all AI-generated code as junior developer output. It compiles, it looks plausible, it often has subtle design flaws. Never trust, always verify.
 
 ## Plan Before Generating
 
-Never generate code without a plan. The cost of planning is near zero. The cost of refactoring wrong-direction code is high.
+Never generate code without a plan.
 
 1. State the approach in plain language.
 2. Identify the files that will change.
@@ -15,8 +15,6 @@ Never generate code without a plan. The cost of planning is near zero. The cost 
 
 ## Small Chunks, Always
 
-Generate code in small, reviewable units. A 500-line generation is unreviable. A 50-line generation is verifiable.
-
 | Chunk size | Reviewability | Risk |
 |-----------|--------------|------|
 | Under 50 lines | High | Low |
@@ -24,8 +22,6 @@ Generate code in small, reviewable units. A 500-line generation is unreviable. A
 | Over 150 lines | Low | High, split required |
 
 ## Review Every Generation
-
-Before committing any AI-generated code, verify:
 
 | Check | What to look for |
 |-------|-----------------|
@@ -39,15 +35,13 @@ Before committing any AI-generated code, verify:
 
 ## Never Commit Code You Cannot Explain
 
-If you cannot explain what a generated block does line by line, do not commit it. Read it, trace the logic, verify the data flow. "It works" is not understanding. Understanding means you can predict what happens with unexpected input.
+If you cannot explain what a generated block does line by line, do not commit it. "It works" is not understanding.
 
 ## Multi-Agent Validation
 
-When agents generate code, the orchestrator must review the output with the same rigor as any other code change. Agent output is not pre-validated. Run the full self-review loop from the completion gates.
+When agents generate code, the orchestrator must review the output with the same rigor as any other code change. Agent output is not pre-validated.
 
 ## AI-Specific Defect Patterns
-
-Track these patterns. They recur across AI-generated code.
 
 | Pattern | Description |
 |---------|------------|
@@ -66,5 +60,3 @@ When AI-generated code causes a defect in review or production, record:
 - Which AI-specific pattern it matched
 - Whether the self-review loop would have caught it
 - What check was missing or skipped
-
-Use these records to tighten the review process over time.
