@@ -7,13 +7,11 @@
 - Keep PRs small (< 400 lines ideally, max 1000)
 - One logical change per PR
 - Include before/after screenshots for UI changes
-- Verify visual identity consistency: new pages must match existing pages in layout structure, spacing tokens, component usage, badge patterns, loading states, and pagination. Reference the project's visual identity guide (CLAUDE.md) when one exists
+- Verify visual identity consistency: new pages must match existing pages in layout structure, spacing tokens, component usage, badge patterns, loading states, and pagination
 
 ## Review Comments
 
 Write review comments the way a human colleague would. No prefix labels, no structured templates. Just say what you mean directly.
-
-If something needs to be fixed, say it. If you have a question, ask it. If something looks good, say so briefly. Each comment must be its own thought, written naturally, not items from a checklist.
 
 ### No Internal Config Leakage (MANDATORY)
 
@@ -40,10 +38,6 @@ If someone reverts the fix, all five tests still pass. That is zero
 regression protection for a security fix.
 ```
 
-This applies to the initial generation, not as a post-hoc rewrite. Comments must be clean from the first draft. Requiring a second pass to "humanize" is a process failure.
-
-The internal config informs what to check. The review comment explains why using engineering reasoning. The reader sees the reasoning, never the source.
-
 ## Test Evidence (MANDATORY)
 
 Every behavior-changing PR must have passing test evidence. CI pipeline passing is sufficient. Only request manual output when CI doesn't exist, doesn't run tests, or hasn't executed.
@@ -56,11 +50,9 @@ Before approving any PR, check if the branch is behind the base branch. If it is
 - Request fresh test evidence after the rebase
 - If there are merge conflicts, request resolution and new evidence
 
-A PR with passing tests on stale code proves nothing about the merged result.
-
 ## Documentation (README) - MANDATORY
 
-Every task completion MUST include a README check. If the change affects how someone uses or sets up the project, update the README:
+Every task completion MUST include a README check. Update the README when the change affects:
 
 - New environment variables
 - New API endpoints
@@ -73,8 +65,6 @@ Every task completion MUST include a README check. If the change affects how som
 
 ## Technical Debt
 
-Not all tech debt is bad. Intentional debt taken with a plan to repay is a valid engineering trade-off. Untracked debt that accumulates silently is the problem.
-
 **When reviewing or completing work:**
 
 - If you introduce a shortcut or known limitation, document it with a `TODO(debt):` comment explaining what the ideal solution is and why it wasn't done now
@@ -83,10 +73,6 @@ Not all tech debt is bad. Intentional debt taken with a plan to repay is a valid
 
 ### Architecture Decision Records (ADR)
 
-For non-trivial architecture decisions, record the decision so future engineers understand WHY, not just WHAT.
-
-Format:
-
 ```
 # ADR-NNN: <Title>
 
@@ -94,21 +80,16 @@ Format:
 **Date**: YYYY-MM-DD
 
 ## Context
-What is the problem or situation that requires a decision?
-
 ## Decision
-What was decided and why this option over the alternatives?
-
 ## Consequences
-What are the trade-offs? What becomes easier? What becomes harder?
 ```
 
-Store ADRs in a `docs/adr/` directory in the repository. Number them sequentially. Never delete a superseded ADR, mark it as superseded and link to the replacement.
+Store in `docs/adr/`. Number sequentially. Never delete superseded ADRs, mark them as superseded and link to the replacement.
 
 ## Zero Warnings (MANDATORY)
 
-Apply `checklists/checklist.md` category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
+Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" with deprecation warnings or non-fatal annotations is not passing.
 
 ## Pre-Completion Checklist
 
-Run through `checklists/checklist.md`. All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.
+Run through `checklists/checklist.md`. All categories apply during implementation as a self-review loop.

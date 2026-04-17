@@ -2,7 +2,7 @@
 
 ## Compaction Timing
 
-Compact at 60% context usage, not 95%. At 95%, the conversation is already degraded: the model forgets earlier decisions, re-reads files it already processed, and produces inconsistent output. Proactive compaction preserves coherence.
+Compact at 60% context usage, not 95%.
 
 ## What to Preserve After Compaction
 
@@ -19,22 +19,22 @@ Every compaction must retain these items. If any is lost, the session is broken.
 
 ## Plan Re-reading
 
-Re-read `plan.md` from the spec folder every 50 tool calls. Context degrades gradually. By the time 50 tool calls have passed, the model's recall of the original plan is unreliable. A fresh read costs almost nothing compared to wrong-direction work.
+Re-read `plan.md` from the spec folder every 50 tool calls.
 
 ## Subagent Context Isolation
 
-Subagents start with zero context. They do not inherit the main session's memory. Every subagent prompt must include:
+Every subagent prompt must include:
 
 - File paths relevant to the task, not file contents
 - Decisions already made that the agent must respect
 - The exact output format expected
 - Quality gate commands to run before declaring done
 
-Never send raw file contents, full conversation history, or vague instructions. The agent reads what it needs.
+Never send raw file contents, full conversation history, or vague instructions.
 
 ## SessionStart Compact Hook
 
-When a session starts with a compacted context from a previous session, verify the preserved state before continuing:
+When a session starts with a compacted context from a previous session:
 
 1. Read the list of modified files. Confirm they exist and contain the expected changes.
 2. Check the current branch matches the preserved branch name.
@@ -42,8 +42,6 @@ When a session starts with a compacted context from a previous session, verify t
 4. Do not trust preserved test results. Re-run if code has changed since.
 
 ## Context Budget Awareness
-
-Every tool call consumes context. Wasteful patterns to avoid:
 
 | Pattern | Cost | Alternative |
 |---------|------|-------------|

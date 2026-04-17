@@ -1,6 +1,6 @@
 # GitHub Multi-Account Safety
 
-Multiple GitHub accounts are configured. The `gh` CLI uses a global active account that any terminal can change at any time. Never rely on `gh auth switch`. Never call `gh auth switch`.
+Never rely on `gh auth switch`. Never call `gh auth switch`.
 
 ## Account Detection
 
@@ -30,5 +30,5 @@ gh repo create gufranco/my-repo --private
 
 - Every `gh` invocation must have `GH_TOKEN=` prefixed. No exceptions.
 - Never run `gh auth switch`. It mutates global state shared across all terminals.
-- When running multiple `gh` commands in a loop, set `GH_TOKEN` once with `export` at the top of the script, not per command.
+- When running multiple `gh` commands in a loop, set `GH_TOKEN` once with `export` at the top of the script.
 - If the account cannot be inferred from the remote URL or user instructions, ask before proceeding.
