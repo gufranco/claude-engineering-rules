@@ -1,6 +1,6 @@
 # GitLab Multi-Account Safety
 
-Never rely on the global `glab` config. Never call `glab auth login` during a session.
+Multiple GitLab instances or accounts may be configured. The `glab` CLI resolves the active host and token from its config file, which any terminal can change. Never rely on the global config. Never call `glab auth login` to switch accounts during a session.
 
 ## Account Detection
 

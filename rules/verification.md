@@ -9,10 +9,10 @@ No completion claims without fresh verification evidence. Previous runs, cached 
 Before declaring any task complete:
 
 1. **Identify** what proves the claim. What command, test, or check would fail if the work were wrong?
-2. **Run** it. In the current session, right now
-3. **Read** the output. The full output, not just the exit code
-4. **Verify** the output matches the expected result
-5. **Only then** claim the task is done
+2. **Run** it. In the current session, right now.
+3. **Read** the output. The full output, not just the exit code.
+4. **Verify** the output matches the expected result.
+5. **Only then** claim the task is done.
 
 ## What Counts as Evidence
 
@@ -30,7 +30,7 @@ Before declaring any task complete:
 
 ## Zero Warnings as Verification Requirement
 
-Apply `checklists/checklist.md` category 17 during every verification. A tool run that produces warnings is a failing verification. Scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`. If any appear, fix and re-run.
+Apply `checklists/checklist.md` category 17 during every verification. "Zero errors" is not "clean". A tool run that produces warnings is a failing verification. Scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`. If any appear, fix and re-run.
 
 ## Common Failures to Catch
 
@@ -39,8 +39,8 @@ Apply `checklists/checklist.md` category 17 during every verification. A tool ru
 - "Build succeeds" based on no syntax errors, without actually building
 - "Fixed the bug" based on the fix looking correct, without reproducing
 - Conflating "no errors" with "works correctly" (silent failures)
-- "CI passed" but ignoring deprecation warnings or non-fatal annotations
-- Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. Always use `grep -E "passed|failed"` to capture full result counts, or read the exit code. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
+- "CI passed" but ignoring deprecation warnings or non-fatal annotations in the run output
+- Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. `tail -20` on a run with 50+ failures shows only the summary line, hiding every failure. Always use `grep -E "passed|failed"` to capture the full result counts, or read the exit code. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
 
 ## Verification by Task Type
 
@@ -54,14 +54,15 @@ Apply `checklists/checklist.md` category 17 during every verification. A tool ru
 
 **Dependency changes**: lockfile committed, tests pass, build succeeds. No version conflicts.
 
-**Scheduled jobs (cron, pg_cron, CloudWatch):**
-- Before finalizing any interval, verify that job execution time fits within it. Query historical run times from `cron.job_run_details` for pg_cron or CloudWatch Logs for AWS. If execution time exceeds the interval, jobs queue behind a lock
-- On first deploy with no history, set the interval to at minimum 2x the expected duration
-- After the first full cycle completes, confirm all jobs reached a succeeded status with no overlap
+**Scheduled jobs, such as cron, pg_cron, and CloudWatch, add:**
+
+- Before finalizing any interval, verify that job execution time fits within it. Query historical run times from the job's run history table: `cron.job_run_details` for pg_cron, CloudWatch Logs for AWS. If execution time exceeds the interval, jobs queue behind a lock and pile up.
+- If no history exists on first deploy, set a conservative interval: at minimum 2x the expected duration. Tighten after observing actual run times.
+- After the first full cycle completes, confirm via the run history that all jobs reached a succeeded status with no overlap.
 
 ## Response Self-Check
 
-Before presenting analysis, recommendations, or findings:
+Before presenting analysis, recommendations, or findings, verify your own output against these categories.
 
 | Category | What to look for |
 |----------|-----------------|
@@ -69,11 +70,15 @@ Before presenting analysis, recommendations, or findings:
 | Source drift | Does your summary say something stronger or different than the code actually shows? |
 | Logic gaps | Does every "therefore" or "because" follow from evidence, not assumption? |
 | Internal contradictions | Does any part of your response contradict another part? |
-| Uncritical agreement | Did you accept the user's framing without scrutiny? |
+| Uncritical agreement | Did you accept the user's framing without scrutiny? If the user said "this is simple," did you verify that? |
+
+Walk through each finding or recommendation. If any came from inference rather than source, verify it or label it as unverified.
+
+This check applies to analytical output: reviews, assessments, incident analyses, architecture recommendations. It complements the command-based verification above, which covers code changes.
 
 ## Cross-Platform Verification
 
-When code has platform-specific branches, never validate on a single platform and assume the others work. Each platform branch needs independent verification.
+When code has platform-specific branches (architecture checks, OS detection, conditional package lists), never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
 
 ## Post-Deploy Verification
 
@@ -89,31 +94,17 @@ After any deployment to a shared environment:
 ## Confidence Scoring
 
 When presenting verification findings or review results, assign a confidence score of 1-10:
-- 7-10: display normally
+
+- 7-10: display normally, high confidence
 - 5-6: display with a caveat explaining uncertainty
 - Below 5: suppress from output, investigate further before reporting
 
-## Multi-Task Completion Sweep (MANDATORY)
-
-When executing a batch of tasks from a spec, plan, or "do everything" instruction, a final sweep is required before declaring the batch complete.
-
-**Required steps before declaring a batch done:**
-
-1. Re-read the original task list, spec, or plan from its source file. Do not rely on memory
-2. For each item: run its verification command or grep
-3. Produce a count: N done, M pending. Only declare done if M = 0
-4. If any item is pending, implement it before closing. Do not report partial completion as completion
-
-**This rule applies whenever:**
-- The user says "do everything", "all of them", "todos", or equivalent
-- A plan.md or spec defines a numbered list of items
-- A previous session's summary lists items as pending
-- Context compaction occurred mid-batch
-
-**The final response must state the count explicitly: "N/N items verified." If that count is absent, the sweep did not run.**
+A low-confidence finding that turns out to be real is a calibration learning. Track these to improve scoring accuracy.
 
 ## Partial Completion
 
-- State what was verified and what was not
-- Explain why full verification was not possible
-- Never round up. 80% done is not done
+If you cannot verify everything:
+
+- State what was verified and what was not.
+- Explain why full verification was not possible.
+- Never round up. 80% done is not done.
