@@ -118,6 +118,7 @@ This skill accepts optional arguments after `/assessment`:
    | Handles variable load | Public API, webhook receiver, batch processor | 23, 25, 40 |
    | Stores data | Database reads/writes, file storage | 19, 30, 31, 39, 40 |
    | Has auth/user data | Login, signup, roles, PII | 33 |
+   | Handles payments or balances | Payment endpoints, balance operations, betting, e-commerce transactions | 33, 34, 19 |
    | Exposes an API | REST/GraphQL endpoints | 34 |
    | Runs in production | Deployed service, not a script or CLI | 32, 35, 37, 38, 42 |
    | Has testable logic | Business rules, domain logic, state machines | 41 |
@@ -132,7 +133,7 @@ This skill accepts optional arguments after `/assessment`:
    | Uses events or queues | Message brokers, event handlers, pub/sub | 57 |
 
    If `--focus` was provided, only check categories in that area and force-load the corresponding standards:
-   - `security`: categories 33, 34. Standards: `security.md`
+   - `security`: categories 33, 34. Standards: `security.md`. Also read `~/.claude/skills/security-patterns.md` and check every applicable pattern against the implementation: injection (raw query, second-order, ORM operator, command), auth (JWT weakness, session cookies, auth state, OAuth code atomicity), authorization (IDOR, mass assignment), race conditions (read-modify-write, find-then-update, transaction isolation, lock fail-open, lock TTL, missing idempotency, retry without idempotency), web security (CORS, unvalidated redirect, GraphQL depth/batching), and the financial platform checklist if payments or balances are present
    - `resilience`: categories 20, 23, 24, 25, 35, 36, 38. Standards: `resilience.md`, `caching.md`
    - `api`: categories 18, 34. Standards: `api-design.md`
    - `data`: categories 19, 21, 22, 30, 31, 39. Standards: `database.md`, `identifiers.md`

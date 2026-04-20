@@ -31,6 +31,20 @@ import subprocess
 import sys
 
 # ---------------------------------------------------------------------------
+# Safe cleanup commands. Bypass all checks — these are harmless.
+# ---------------------------------------------------------------------------
+SAFE_CLEANUP = [
+    r"\brm\s+(-[a-zA-Z]*\s+)*node_modules(/|$|\s*$)",    # rm -rf node_modules
+    r"\brm\s+(-[a-zA-Z]*\s+)*dist(/|$|\s*$)",             # rm -rf dist
+    r"\brm\s+(-[a-zA-Z]*\s+)*\.next(/|$|\s*$)",           # rm -rf .next
+    r"\brm\s+(-[a-zA-Z]*\s+)*\.nuxt(/|$|\s*$)",           # rm -rf .nuxt
+    r"\brm\s+(-[a-zA-Z]*\s+)*build(/|$|\s*$)",            # rm -rf build
+    r"\brm\s+(-[a-zA-Z]*\s+)*coverage(/|$|\s*$)",         # rm -rf coverage
+    r"\brm\s+(-[a-zA-Z]*\s+)*\.turbo(/|$|\s*$)",          # rm -rf .turbo
+    r"\brm\s+(-[a-zA-Z]*\s+)*out(/|$|\s*$)",              # rm -rf out
+]
+
+# ---------------------------------------------------------------------------
 # Level 1: Catastrophic commands. Always block. No legitimate use case.
 # ---------------------------------------------------------------------------
 CATASTROPHIC = [
@@ -83,9 +97,6 @@ CRITICAL_PATHS = [
     # --- Git destructive ---
     (r"\bgit\s+push\s+.*--force(\s|$)", "Use --force-with-lease instead of --force"),
     (r"\bgit\s+push\s+.*\s-f(\s|$)", "Use --force-with-lease instead of -f"),
-    (r"\bgit\s+reset\s+--hard\b", "git reset --hard discards uncommitted work"),
-    (r"\bgit\s+clean\s+.*-f", "git clean -f permanently deletes untracked files"),
-    (r"\bgit\s+checkout\s+\.\s*$", "git checkout . discards all unstaged changes"),
     (r"\bgit\s+filter-branch\b", "git filter-branch rewrites history destructively"),
     (r"\bgit\s+reflog\s+expire\b", "git reflog expire removes recovery points"),
     (r"\bgit\s+push\s+.*\borigin\s+:", "git push origin :ref deletes a remote branch"),
@@ -93,7 +104,6 @@ CRITICAL_PATHS = [
     (r"\bgit\s+update-ref\s+-d\b", "git update-ref -d deletes a ref"),
     (r"\bgit\s+replace\b", "git replace rewrites object history"),
     (r"\bgit\s+gc\s+.*--prune=now", "git gc --prune=now immediately removes unreachable objects"),
-    (r"\bgit\s+stash\s+drop\s+--all", "git stash drop --all removes all stashed changes"),
 
     # --- AWS destructive ---
     (r"\baws\s+s3\s+rb\b", "AWS S3 bucket deletion"),
@@ -172,7 +182,6 @@ CRITICAL_PATHS = [
 
     # --- Helm destructive ---
     (r"\bhelm\s+uninstall\b", "Helm release uninstallation"),
-    (r"\bhelm\s+rollback\b", "Helm release rollback changes live deployment"),
 
     # --- Redis destructive ---
     (r"\bredis-cli\s+.*\bFLUSHALL\b", "Redis FLUSHALL destroys all data in all databases"),
@@ -201,7 +210,6 @@ CRITICAL_PATHS = [
     # --- Terraform destructive ---
     (r"\bterraform\s+destroy\b", "Terraform destroy removes all managed infrastructure"),
     (r"\bterraform\s+apply\s+.*-auto-approve", "Terraform apply without manual review"),
-    (r"\bterraform\s+state\s+rm\b", "Terraform state rm removes resources from tracking"),
     (r"\bterraform\s+taint\b", "Terraform taint marks resources for forced recreation"),
     (r"\bterraform\s+force-unlock\b", "Terraform force-unlock breaks state locking"),
     (r"\bterraform\s+import\b.*-allow-missing-config",
@@ -211,7 +219,6 @@ CRITICAL_PATHS = [
 
     # --- Pulumi destructive ---
     (r"\bpulumi\s+destroy\b", "Pulumi destroy removes all managed infrastructure"),
-    (r"\bpulumi\s+cancel\b", "Pulumi cancel aborts an in-progress update"),
     (r"\bpulumi\s+stack\s+rm\b", "Pulumi stack removal"),
 
     # --- Ansible destructive ---
@@ -252,6 +259,32 @@ CRITICAL_PATHS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Level 2.5: Recoverable operations. Ask (warn via stderr) but allow.
+# These commands are destructive but have recovery paths (reflog, restart,
+# rollback). Claude should confirm with the user before proceeding.
+# ---------------------------------------------------------------------------
+RECOVERABLE = [
+    (r"\bgit\s+reset\s+--hard\b",
+     "git reset --hard discards uncommitted work. Recovery: git reflog. Confirm with the user before running."),
+    (r"\bgit\s+clean\s+.*-f",
+     "git clean -f permanently deletes untracked files with no recovery. Confirm the path is correct."),
+    (r"\bgit\s+checkout\s+\.\s*$",
+     "git checkout . discards all unstaged changes. Recovery: only if changes were staged. Confirm with the user."),
+    (r"\bgit\s+stash\s+drop\s+--all",
+     "git stash drop --all removes all stashed changes. Confirm the user no longer needs them."),
+    (r"\bdocker\s+system\s+prune\b(?!.*-a)",
+     "docker system prune removes unused containers, networks, and images. Confirm before running."),
+    (r"\bkubectl\s+rollout\s+restart\b",
+     "kubectl rollout restart causes a rolling restart of the workload. Confirm this is intentional."),
+    (r"\bhelm\s+rollback\b",
+     "helm rollback changes the live deployment to a previous release. Confirm the target revision."),
+    (r"\bterraform\s+state\s+rm\b",
+     "terraform state rm removes a resource from state tracking without destroying it. Confirm the resource name."),
+    (r"\bpulumi\s+cancel\b",
+     "pulumi cancel aborts an in-progress update. Confirm the update should be cancelled."),
+]
+
+# ---------------------------------------------------------------------------
 # Level 3: Suspicious patterns. Warn but allow.
 # ---------------------------------------------------------------------------
 SUSPICIOUS = [
@@ -278,6 +311,9 @@ SUSPICIOUS = [
     (r"\bdocker\s+stop\b", "docker stop halts a running container"),
     (r"\bnpm\s+publish\b", "npm publish pushes a package to the registry"),
     (r"\bgit\s+tag\s+-d\b", "git tag -d deletes a local tag"),
+    (r"\bgit\s+reset\s+--hard\b", "git reset --hard, confirm with user first"),
+    (r"\bgit\s+clean\s+.*-f", "git clean -f, confirm the working directory is correct"),
+    (r"\bgit\s+checkout\s+\.\s*$", "git checkout . discards unstaged changes, confirm first"),
 ]
 
 
@@ -291,6 +327,11 @@ def main():
     if not command:
         sys.exit(0)
 
+    # Safe cleanup allowlist: bypass all checks
+    for pattern in SAFE_CLEANUP:
+        if re.search(pattern, command):
+            sys.exit(0)
+
     # Level 1: Catastrophic
     for pattern in CATASTROPHIC:
         if re.search(pattern, command):
@@ -302,6 +343,16 @@ def main():
         if re.search(pattern, command):
             print(f"BLOCKED: {reason}\nCommand: {command}")
             sys.exit(2)
+
+    # Level 2.5: Recoverable operations — ask the user, do not block
+    for pattern, guidance in RECOVERABLE:
+        if re.search(pattern, command):
+            print(
+                f"CONFIRM REQUIRED: {guidance}\nCommand: {command}\n"
+                "Ask the user to confirm before running this command.",
+                file=sys.stderr,
+            )
+            break
 
     # Level 2.5: Protected branch push detection
     if re.search(r"\bgit\s+push\b", command) and not re.search(r"--force", command):

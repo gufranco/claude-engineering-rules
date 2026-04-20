@@ -35,8 +35,9 @@ MESSAGE=$(echo "${COMMAND}" | python3 -c "
 import re, sys
 cmd = sys.stdin.read()
 # Match heredoc format: cat <<'DELIM' or cat <<DELIM
-# Use a backreference to match the correct closing delimiter, handling EOF in body
-heredoc = re.search(r\"cat <<'?(\w+)'?\\n(.+?)\\n\\s*\\1\", cmd, re.DOTALL)
+# Closing delimiter must appear at the start of a line (bash rule), preventing
+# a word like EOF inside the body from being mistaken for the closing delimiter.
+heredoc = re.search(r\"cat <<'?(\w+)'?\\n(.+?)\\n^\\1\\s*$\", cmd, re.DOTALL | re.MULTILINE)
 if heredoc:
     print(heredoc.group(2).strip())
     sys.exit(0)
