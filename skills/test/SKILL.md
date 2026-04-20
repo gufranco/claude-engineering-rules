@@ -158,7 +158,7 @@ Detect flaky tests by running the full suite multiple times and tracking which t
 Skip these tests immediately by applying `.skip` or `xit` — they pollute CI signal.
 ```
 
-6. For each flaky test, suggest likely root causes: shared mutable state, hardcoded ports, timing, unseeded random, missing database cleanup.
+1. For each flaky test, suggest likely root causes: shared mutable state, hardcoded ports, timing, unseeded random, missing database cleanup.
 
 ### Rules
 

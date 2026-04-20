@@ -17,10 +17,10 @@ Place the identifier as the first possible comment line in the file. For scripts
 | CSS | `/* SPDX-License-Identifier: MIT */` | Block comment |
 | SQL | `-- SPDX-License-Identifier: MIT` | SQL comment |
 | reStructuredText | `.. SPDX-License-Identifier: MIT` | RST comment |
-| Markdown | Not required. Documentation, not source code |
-| JSON, JSONC | Not possible. Use REUSE.toml or `.license` sidecar |
-| Generated files | Not required. Machine-generated output is excluded |
-| Binary files (images, fonts, PDFs) | Not possible. Use `.license` sidecar file |
+| Markdown | N/A | Documentation, not source code |
+| JSON, JSONC | N/A | Use REUSE.toml or `.license` sidecar |
+| Generated files | N/A | Machine-generated output is excluded |
+| Binary files (images, fonts, PDFs) | N/A | Use `.license` sidecar file |
 
 The expression must be on a single line. No line breaks in the middle of the expression.
 
