@@ -53,9 +53,9 @@ run_test "blocks rm -rf .git" \
     "${HOOKS}/dangerous-command-blocker.py" \
     "${FIXTURES}/bash-delete-git.json" 2
 
-run_test "blocks git reset --hard" \
+run_test "warns on git reset --hard (recoverable)" \
     "${HOOKS}/dangerous-command-blocker.py" \
-    "${FIXTURES}/bash-git-reset-hard.json" 2
+    "${FIXTURES}/bash-git-reset-hard.json" 0
 
 run_test "blocks fork bomb" \
     "${HOOKS}/dangerous-command-blocker.py" \

@@ -46,7 +46,7 @@ def check_memory_file(path: Path) -> None:
         )
 
     # Check for empty body
-    lines = [l.strip() for l in content.split("\n") if l.strip() and not l.startswith("---") and not l.startswith("#")]
+    lines = [line.strip() for line in content.split("\n") if line.strip() and not line.startswith("---") and not line.startswith("#")]
     if len(lines) < 2:
         WARNINGS.append(f"{path}: nearly empty — may be a stub or failed write")
 
