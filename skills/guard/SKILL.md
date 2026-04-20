@@ -20,7 +20,7 @@ Guard mode enables three protections simultaneously:
 
 | Protection | What it does |
 |-----------|-------------|
-| **Freeze** | Restricts file edits to the specified directory. Writes to `~/.claude/.freeze-scope` with the frozen path. The `scope-guard.sh` hook enforces the boundary. |
+| **Freeze** | Restricts file edits to the specified directory. Writes to `~/.claude/.freeze-scope` with the frozen path. Enforcement relies on the agent respecting the freeze file. |
 | **Careful** | Warns before any destructive command: `rm`, `git reset`, `DROP`, `DELETE`, and patterns covered by the dangerous-command-blocker hook. |
 | **Scope** | If a `plan.md` exists in the project's spec folder, compares every file edit against the planned file list. Warns when editing files not in the plan. |
 
@@ -34,7 +34,7 @@ Guard mode enables three protections simultaneously:
 
 3. **Write the freeze scope.** Create `~/.claude/.freeze-scope` with the absolute path.
 
-4. **Verify the hook.** Check that `../../hooks/scope-guard.sh` exists. If it does not, warn that freeze enforcement requires the hook to be configured.
+4. **Confirm activation.** State the frozen directory path and that edits outside it will be rejected.
 
 5. **Check for plan.md.** Search for a spec folder with a `plan.md`:
    - Check `.claude/specs/*/plan.md` in the project root.

@@ -11,7 +11,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 
 - No arguments: interactive mode. Ask what the problem is.
 - `<description>`: start investigating the described issue.
-- `--freeze <path>`: restrict all file edits to the specified directory for the duration of the investigation. Uses the freeze-scope mechanism in `../../hooks/scope-guard.sh`.
+- `--freeze <path>`: restrict all file edits to the specified directory for the duration of the investigation. Uses the freeze-scope mechanism in `../../hooks/guard/` skill.
 - `--unfreeze`: remove any active freeze scope and exit.
 
 ## Process
