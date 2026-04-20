@@ -272,6 +272,60 @@ Active-active introduces data replication complexity. Every write must reach bot
 - **Spot / preemptible instances**: for fault-tolerant workloads (batch processing, CI runners, stateless workers). 60-90% savings with interruption risk.
 - **Right-sizing**: review instance types quarterly. Most services are over-provisioned after the initial launch.
 
+## Alternative Orchestrators
+
+Kubernetes is not the only option. Choose the orchestrator that matches your operational complexity and team size.
+
+| Orchestrator | Best fit | Managed options |
+|-------------|----------|----------------|
+| Kubernetes | Large teams, complex microservices, multi-cloud | EKS, GKE, AKS |
+| Amazon ECS | AWS-only workloads, teams without Kubernetes expertise | ECS on Fargate |
+| HashiCorp Nomad | Multi-runtime (containers + VMs + binaries), hybrid cloud, simpler ops | Self-managed |
+| Docker Swarm | Single-node or small cluster, minimal config overhead | None (deprecated path) |
+
+**ECS-specific guidance:**
+
+- Task definitions replace Pod specs. One container per task for simple services, multiple for sidecar patterns (log router, service mesh proxy).
+- Use Fargate for serverless container execution. Eliminates node management.
+- Service discovery via AWS Cloud Map or Application Load Balancer target groups.
+- IAM task roles replace Kubernetes service accounts for cloud resource permissions.
+- ECS Exec replaces `kubectl exec` for debugging: `aws ecs execute-command --cluster <cluster> --task <id> --command /bin/sh`.
+
+**Nomad-specific guidance:**
+
+- Job files replace Kubernetes manifests. Jobs contain task groups, which contain tasks.
+- Supports Docker, Podman, raw exec (binary), Java, and QEMU drivers in the same cluster.
+- Consul integration provides service discovery and health checking without a separate Ingress controller.
+- Vault integration provides secrets injection directly into task environments at runtime.
+- Multi-region federation with `nomad namespace` and region routing. No need for separate clusters per region.
+- Use `nomad job plan` before `nomad job run` to preview scheduler decisions (equivalent to `kubectl apply --dry-run`).
+
+**When not to use Kubernetes:**
+
+- Team has fewer than 10 engineers: operational burden exceeds benefit.
+- Workload is a single service or a small number of services: ECS or Nomad serves better.
+- Strict budget constraints: Kubernetes control plane costs add up, especially on managed providers.
+- Hybrid workloads (VMs, binaries, containers together): Nomad handles this natively.
+
+## Regional Compliance
+
+Cloud region selection affects compliance, data residency, and latency simultaneously.
+
+| Region constraint | Regulation | Practical requirement |
+|-------------------|-----------|----------------------|
+| EU data must stay in EU | GDPR | Choose `eu-west-*`, `eu-central-*`, `europe-west*`. No replication to US regions without a legal basis (SCCs or adequacy decision) |
+| Brazilian personal data | LGPD | `sa-east-1` (AWS São Paulo) or equivalent. Cross-border transfer requires consent or treaty basis |
+| India financial data | RBI guidelines | Data must reside in India. `ap-south-1` (Mumbai) or equivalent |
+| China operations | MLPS / Cybersecurity Law | Requires ICP license. Use separate China region (cn-north-1, cn-northwest-1) with separate account |
+| Healthcare data (US) | HIPAA | Sign a BAA with the cloud provider. Use covered regions only |
+
+Rules:
+
+- Determine residency requirements before choosing regions, not after launch.
+- Tag data with its origin jurisdiction at ingestion. This enables automated residency enforcement.
+- For multi-region architectures, define which data types can replicate cross-border and which cannot. Enforce this at the replication config level, not just in application code.
+- When a service uses a CDN, verify that cached content does not violate residency rules. CDN edge nodes may be in restricted jurisdictions.
+
 ## Zero-Downtime Deployment Strategies
 
 | Strategy | Best for | Rollback speed | Cost |

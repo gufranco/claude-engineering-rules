@@ -151,12 +151,16 @@ For APIs with complex state transitions, include links:
 
 Only include links for actions available in the current state.
 
+Include hypermedia links only when clients genuinely use them to discover and drive state transitions at runtime. REST Level 3 adds response size, documentation complexity, and client parsing logic without benefit for most JSON APIs where clients are built against a known schema. Apply HATEOAS only when the client must discover valid transitions dynamically and the set of transitions cannot be embedded in the client at build time.
+
 ## Bulk Operations
 
 - Use a dedicated endpoint: `POST /users/bulk`
 - Accept an array of operations
-- Return per-item results with individual status codes
-- Never let one failure abort the entire batch
+- Enforce a maximum batch size of 100-500 items. Reject requests that exceed the limit with 400 and a clear message stating the maximum
+- Return per-item results with individual status codes. Never abort the entire batch on a single failure
+- Partial failure response shape: `{ "succeeded": [...ids], "failed": [{ "id": "...", "error": { "code": "...", "message": "..." } }] }`
+- Return 207 Multi-Status when the batch contains a mix of successes and failures. Return 200 only when all items succeed
 
 ## API Versioning
 

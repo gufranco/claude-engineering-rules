@@ -111,12 +111,37 @@ When implementing, debugging, or making decisions about a technology, check the 
 | Snyk | N/A | [Docs](https://docs.snyk.io/) |
 | Qdrant | N/A | [Docs](https://qdrant.tech/documentation/) |
 
+## Version Migration and Deprecation Paths
+
+When migrating between major versions or working with deprecated APIs, fetch the official migration guide before making changes.
+
+| Migration | Migration Guide URL |
+|-----------|-------------------|
+| TypeScript 4.x → 5.x | https://www.typescriptlang.org/docs/handbook/release-notes/overview.html |
+| Node.js LTS upgrades | https://nodejs.org/en/about/previous-releases |
+| React 17 → 18 | https://react.dev/blog/2022/03/08/react-18-upgrade-guide |
+| React 18 → 19 | https://react.dev/blog/2024/04/25/react-19-upgrade-guide |
+| Next.js major upgrades | https://nextjs.org/docs/upgrading |
+| NestJS major upgrades | https://docs.nestjs.com/migration-guide |
+| Prisma migrations | https://www.prisma.io/docs/guides/upgrade-guides |
+| Express v4 → v5 | https://expressjs.com/en/guide/migrating-5.html |
+| Python 3.x upgrades | https://docs.python.org/3/whatsnew/ |
+| Go upgrades | https://go.dev/doc/devel/release |
+
+**Rules for migration work:**
+
+- Fetch the migration guide before reading or modifying any code in the affected area.
+- Never assume API compatibility between major versions. Verify each method, decorator, and import path against the target version's docs.
+- When a deprecated API is detected in code, fetch the replacement API docs and confirm the replacement behavior before editing.
+- After migration, run the type checker and full test suite. Do not declare migration complete without clean output.
+
 ## When to Fetch Docs
 
 - Before using an API you haven't verified in the current session
 - When an error suggests a breaking change or deprecated method
 - When choosing between multiple patterns for a library
 - When the user asks about a technology listed above
+- Before migrating between major versions of any framework or runtime
 
 ## Related Standards
 

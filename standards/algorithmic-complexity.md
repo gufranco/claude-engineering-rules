@@ -186,6 +186,32 @@ Time gets measured. Space gets forgotten. Then the OOM kill arrives.
 - **Pool and reuse**: for expensive objects (buffers, connections), reuse from a pool instead of allocating per request
 - **Pagination at every boundary**: database queries, API responses, file reads. Never load "all" without a limit
 
+## Graph Algorithms
+
+| Algorithm | Time complexity | Space | Notes |
+|:----------|:----------------|:-----:|:------|
+| BFS | O(V + E) | O(V) | Shortest path in unweighted graphs. Explores neighbors level by level |
+| DFS | O(V + E) | O(V) | Cycle detection, topological sort. Can be iterative with an explicit stack |
+| Dijkstra | O((V + E) log V) with min-heap | O(V) | Shortest path with non-negative weights. Negative edges require Bellman-Ford |
+| Bellman-Ford | O(V * E) | O(V) | Handles negative weights, detects negative cycles |
+| Floyd-Warshall | O(V^3) | O(V^2) | All-pairs shortest path. Only practical for small graphs (V < 500) |
+| Topological sort | O(V + E) | O(V) | DAG dependency resolution. Kahn's algorithm or DFS-based |
+| Union-Find | O(α(n)) amortized | O(V) | Connected components, cycle detection. α is the inverse Ackermann function, effectively O(1) |
+
+V = vertices, E = edges. For sparse graphs E ≈ V; for dense graphs E ≈ V^2.
+
+**Selection guide:**
+
+| Need | Algorithm |
+|:-----|:----------|
+| Shortest path, unweighted | BFS |
+| Shortest path, non-negative weights | Dijkstra |
+| Shortest path, negative weights | Bellman-Ford |
+| All-pairs shortest path | Floyd-Warshall |
+| Topological ordering | Kahn's (BFS-based) or DFS post-order |
+| Connected components | Union-Find or BFS/DFS |
+| Cycle detection | DFS with coloring (directed) or Union-Find (undirected) |
+
 ## Related Standards
 
 - `standards/database.md`: Database

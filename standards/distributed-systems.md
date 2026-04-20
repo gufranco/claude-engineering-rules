@@ -32,7 +32,7 @@ Every read in a distributed system returns data with some staleness guarantee. K
 | Read-your-writes | A client always sees its own writes, may not see others' | Medium | User profile updates, form submissions, settings |
 | Causal | If A caused B, everyone sees A before B | Medium | Comment threads, collaborative editing |
 
-**Default rule**: choose the weakest model your use case tolerates. Strong consistency everywhere kills scalability. When using eventual consistency with a cache layer, align cache TTL with the staleness tolerance. See `standards/caching.md` for invalidation strategies.
+**Default rule**: choose the weakest model your use case tolerates. Strong consistency everywhere kills scalability. When using eventual consistency with a cache layer, align cache TTL with the staleness tolerance. Cache invalidation strategies must match the chosen consistency model. See `standards/caching.md` for cache-specific patterns.
 
 ### Read-Your-Writes in Practice
 
@@ -196,6 +196,21 @@ Events and messages outlive the code that created them. Consumers and producers 
 - Include a `schemaVersion` field in every event and message
 - Consumers must handle at least the current and previous version
 - When a breaking change is unavoidable, publish on a new topic and migrate consumers
+
+## Distributed Transaction Anti-Pattern
+
+Distributed transactions (2PC, XA) across independent services are an anti-pattern. They couple services at the protocol level, require all participants to be available simultaneously to commit, and create a single point of failure in the transaction coordinator. Any participant that becomes unavailable blocks the entire transaction indefinitely.
+
+Use sagas with compensating actions for long-running flows that span service boundaries. See the Saga Pattern section above.
+
+## Lock-Free Coordination
+
+When ordering or concurrency control is needed without a centralized lock:
+
+- **Version vectors**: each replica maintains a counter per writer. A write increments only the local counter. Comparing two version vectors reveals which state is causally newer, concurrent, or dominated. Use when per-replica state must be tracked without coordination.
+- **Lamport clocks**: a logical clock incremented on every send and advanced to `max(local, received) + 1` on every receive. Provides causal ordering across processes without global synchronization. All events that causally precede event A will have a lower Lamport timestamp. The reverse is not guaranteed: a higher timestamp does not imply causality.
+
+Both approaches trade the simplicity of a single authoritative clock for the ability to operate without coordination. Prefer them over distributed locks when the workload is read-heavy or when coordination overhead is the bottleneck.
 
 ## Zero-Downtime Deployments
 

@@ -140,6 +140,35 @@ Rules:
 
 Start with neverthrow. Move to Effect when you need its runtime features (structured concurrency, layers, telemetry). Do not adopt Effect for simple Result chaining.
 
+## Error Propagation Semantics
+
+In a pipeline, an error in step N short-circuits steps N+1 through the end. The error value is passed as-is to the final error handler. Intermediate steps never see errors from earlier steps unless explicitly mapped.
+
+```
+[step1] → ok → [step2] → err → ✗ [step3] ✗ [step4] → [handleError]
+                          ↑
+                    short-circuit here
+```
+
+Rules:
+- The error type at the end of the pipeline is the union of all error types each step can produce
+- Use `mapErr` at step boundaries to reclassify errors before they reach the final handler
+- Never inspect an error inside a pipeline step to branch logic: use `match` at the boundary instead
+
+## Observable and Stream Patterns
+
+Observable and Stream patterns extend Result pipelines to asynchronous sequences. Where a Result carries one value or one error, an Observable carries a sequence of values and can terminate with an error.
+
+```typescript
+// RxJS: catchError maps stream-level failures
+source$.pipe(
+  switchMap((id) => fromResultAsync(fetchOrder(id))),  // bridge async Result into stream
+  catchError((error) => of(err(toOrderError(error)))), // map stream errors to typed errors
+);
+```
+
+Use `Result.fromPromise` (or the neverthrow equivalent) to bridge a single async operation into a Result. Use Observable pipelines when the delivery is an ongoing sequence (WebSocket messages, SSE events, polling intervals).
+
 ## Anti-Patterns
 
 | Anti-pattern | Problem | Fix |
