@@ -18,6 +18,7 @@ Unified testing skill covering test execution, load testing, coverage, linting, 
 | `/test ci` | Simulate CI locally with `act` |
 | `/test perf <url>` | Load test an HTTP endpoint |
 | `/test stubs <path>` | Generate test stubs for uncovered code |
+| `/test flaky` | Detect flaky tests by running the suite multiple times |
 
 ---
 
@@ -118,6 +119,52 @@ Load test HTTP endpoints. Auto-detects the best available tool.
 1. Flag: p99 > 1s, error rate > 1%.
 2. **Compare mode**: run once, wait for user signal, run again. Side-by-side comparison with percentage changes.
 3. Clean up temp files.
+
+---
+
+## flaky
+
+Detect flaky tests by running the full suite multiple times and tracking which tests have inconsistent results.
+
+### Steps
+
+1. Detect the test runner and build the test command with no watch mode.
+2. Run the suite 5 times in sequence, capturing pass/fail status for each test.
+3. Track per-test consistency: a test is flaky if it fails in at least 1 run and passes in at least 1 run.
+4. Classify by flake rate:
+   - Fail rate > 5%: quarantine candidate (flag immediately, never merge until fixed).
+   - Fail rate 1-5%: intermittent (investigate root cause before next release).
+   - Fail rate < 1%: monitor (log, watch in future runs).
+5. Report results:
+
+```
+## Flaky Test Report: <date>
+
+### Summary
+- Suite runs: 5
+- Total tests: <N>
+- Consistently passing: <N>
+- Flaky (inconsistent): <N>
+- Consistently failing: <N>
+
+### Flaky Tests
+
+| Test | Fail Rate | Category | Root Cause Hint |
+|------|----------|---------|-----------------|
+| <test name> | 2/5 (40%) | quarantine | timing dependency suspected |
+
+### Quarantine Candidates
+
+Skip these tests immediately by applying `.skip` or `xit` — they pollute CI signal.
+```
+
+6. For each flaky test, suggest likely root causes: shared mutable state, hardcoded ports, timing, unseeded random, missing database cleanup.
+
+### Rules
+
+- Never run this against production endpoints.
+- If the test suite takes more than 60 seconds per run, reduce to 3 runs and note the limitation.
+- Do not apply `.skip` automatically. Present the list and wait for approval.
 
 ---
 
