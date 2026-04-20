@@ -219,36 +219,6 @@ run_test "handles nonexistent file gracefully" \
     "${FIXTURES}/edit-nonexistent-file.json" 0
 
 echo ""
-echo "=== Change Tracker ==="
-
-run_test "logs file modification for Write tool" \
-    "${HOOKS}/change-tracker.sh" \
-    "${FIXTURES}/write-tool-input.json" 0
-
-run_test "handles nonexistent file gracefully" \
-    "${HOOKS}/change-tracker.sh" \
-    "${FIXTURES}/edit-nonexistent-file.json" 0
-
-echo ""
-echo "=== TDD Gate ==="
-
-run_test "allows editing test files" \
-    "${HOOKS}/tdd-gate.sh" \
-    "${FIXTURES}/edit-test-file.json" 0
-
-run_test "allows editing config files" \
-    "${HOOKS}/tdd-gate.sh" \
-    "${FIXTURES}/edit-config-file.json" 0
-
-run_test "blocks production code without matching test" \
-    "${HOOKS}/tdd-gate.sh" \
-    "${FIXTURES}/edit-production-code.json" 2
-
-run_test "ignores non-Edit tool calls" \
-    "${HOOKS}/tdd-gate.sh" \
-    "${FIXTURES}/bash-safe-command.json" 0
-
-echo ""
 echo "=== Large File Blocker ==="
 
 run_test "allows safe commands" \
@@ -344,17 +314,6 @@ run_test "blocks writing to service account JSON" \
     "${FIXTURES}/write-service-account.json" 2
 
 echo ""
-echo "=== Deslop Checker ==="
-
-run_test "handles typescript file without crashing" \
-    "${HOOKS}/deslop-checker.sh" \
-    "${FIXTURES}/write-typescript-file.json" 0
-
-run_test "handles hook directory file by skipping it" \
-    "${HOOKS}/deslop-checker.sh" \
-    "${FIXTURES}/write-hook-file.json" 0
-
-echo ""
 echo "=== GH Token Guard ==="
 
 run_test "allows gh with GH_TOKEN set" \
@@ -394,15 +353,6 @@ run_test "blocks glab auth login" \
 
 run_test "allows non-glab commands" \
     "${HOOKS}/glab-token-guard.py" \
-    "${FIXTURES}/bash-safe-command.json" 0
-
-echo ""
-echo "=== Scope Guard ==="
-
-# scope-guard runs as a Stop hook and reads git state, not stdin tool input.
-# It always exits 0 (non-blocking), so we verify it doesn't crash.
-run_test "exits cleanly outside a git repo" \
-    "${HOOKS}/scope-guard.sh" \
     "${FIXTURES}/bash-safe-command.json" 0
 
 echo ""

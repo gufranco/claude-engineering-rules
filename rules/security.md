@@ -193,6 +193,5 @@ Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangero
 | Large file commits (>5MB) | Block | large-file-blocker | 1 |
 | gh/glab account safety (token guards) | Block | gh-token-guard, glab-token-guard | 2 |
 | Commit message format | Block | conventional-commits | 1 |
-| AI code patterns (slop) | Warn | deslop-checker | 6 |
 
 **Limitations:** hooks are advisory, not kernel-level enforcement. An agent could bypass a hook by using an equivalent command not covered by the patterns. For untrusted code execution, use container or VM isolation.

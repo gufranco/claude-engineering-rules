@@ -57,7 +57,7 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 - [ ] Audit `checklists/checklist.md` — add items for new OWASP entries or updated CWE classifications
 - [ ] Review each skill in `skills/` — check subcommand examples against current Claude Code behavior
 - [ ] Run each skill with `--help` equivalent and verify it matches the documentation in README.md
-- [ ] Check `/pentest` skill checklists (BB-* and WB-*) for new vulnerability classes
+- [ ] Check `skills/security-patterns.md` for new OWASP entries, CWE updates, or emerging vulnerability classes
 
 ### Security review
 

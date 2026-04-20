@@ -55,12 +55,46 @@ def validate_deny_rules(data):
     return errors
 
 
+KNOWN_HOOK_PHASES = {
+    "PreToolUse",
+    "PostToolUse",
+    "Stop",
+    "Notification",
+    "UserPromptSubmit",
+    "SessionStart",
+    "PreCompact",
+    "PostCompact",
+    "PostToolUseFailure",
+}
+
+
+def validate_mcpservers(data):
+    """Validate mcpServers entries have required fields."""
+    errors = []
+    servers = data.get("mcpServers", {})
+    for name, cfg in servers.items():
+        if not isinstance(cfg, dict):
+            errors.append(f"  mcpServers.{name}: must be an object")
+            continue
+        has_command = "command" in cfg
+        has_url = "url" in cfg
+        if not has_command and not has_url:
+            errors.append(
+                f"  mcpServers.{name}: must have either 'command' or 'url'"
+            )
+        if has_command and not isinstance(cfg.get("args", []), list):
+            errors.append(
+                f"  mcpServers.{name}: 'args' must be a list when 'command' is set"
+            )
+    return errors
+
+
 def validate_hooks(data):
     """Validate hook configurations."""
     errors = []
     hooks = data.get("hooks", {})
 
-    for phase in ("PreToolUse", "PostToolUse", "Stop", "Notification"):
+    for phase in KNOWN_HOOK_PHASES:
         for hook_group in hooks.get(phase, []):
             matcher = hook_group.get("matcher", "")
             if matcher not in KNOWN_MATCHERS:
@@ -101,15 +135,17 @@ def main():
     all_errors = []
     all_errors.extend(validate_deny_rules(data))
     all_errors.extend(validate_hooks(data))
+    all_errors.extend(validate_mcpservers(data))
 
     deny_count = len(data.get("permissions", {}).get("deny", []))
     hook_count = sum(
         len(hg.get("hooks", []))
-        for phase in ("PreToolUse", "PostToolUse", "Stop", "Notification")
+        for phase in KNOWN_HOOK_PHASES
         for hg in data.get("hooks", {}).get(phase, [])
     )
+    mcp_count = len(data.get("mcpServers", {}))
 
-    print(f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands")
+    print(f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands, {mcp_count} MCP servers")
 
     if all_errors:
         print(f"\nFAILED: {len(all_errors)} error(s) found:\n")
