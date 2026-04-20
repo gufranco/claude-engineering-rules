@@ -1,0 +1,68 @@
+=== Compact Context Snapshot ===
+Timestamp: 2026-04-20 22:27:20 GMT
+Branch: main
+
+Modified files:
+ M .github/workflows/ci.yml
+ M README.md
+ M agents/TEMPLATE.md
+ M agents/accessibility-auditor.md
+ M agents/api-reviewer.md
+ M agents/blast-radius.md
+ D agents/code-simplifier.md
+ D agents/coverage-analyzer.md
+ D agents/dependency-analyzer.md
+ M agents/documentation-checker.md
+ M agents/i18n-validator.md
+ M agents/migration-planner.md
+ D agents/performance-profiler.md
+ D agents/pr-reviewer.md
+ M agents/red-team.md
+ M agents/scope-drift-detector.md
+ D agents/security-scanner.md
+ M agents/test-scenario-generator.md
+ M docs/maintenance.md
+ D hooks/change-tracker.sh
+ M hooks/conventional-commits.sh
+ M hooks/dangerous-command-blocker.py
+ D hooks/deslop-checker.sh
+ D hooks/failure-logger.py
+ D hooks/scope-guard.sh
+ D hooks/tdd-gate.sh
+ M rules/security.md
+ M scripts/validate-settings.py
+ M settings.json
+ M skills/assessment/SKILL.md
+ M skills/audit/SKILL.md
+ D skills/cso/SKILL.md
+ M skills/guard/SKILL.md
+ M skills/investigate/SKILL.md
+ M skills/review/SKILL.md
+ M skills/test/SKILL.md
+ M standards/algorithmic-complexity.md
+ M standards/api-design.md
+ M standards/borrow-restore.md
+ M standards/caching.md
+ M standards/database.md
+ M standards/ddd-tactical-patterns.md
+ M standards/distributed-systems.md
+ M standards/hexagonal-architecture.md
+ M standards/identifiers.md
+ M standards/infrastructure.md
+ M standards/llm-docs.md
+ M standards/observability.md
+ M standards/railway-oriented-programming.md
+ M standards/resilience.md
+ M standards/state-machines.md
+ M tests/test-hooks.sh
+?? .compact-context
+?? checkpoints/20260414-044500.md
+?? checkpoints/20260414-055000.md
+?? scripts/hook-benchmark.sh
+?? scripts/mcp-health-check.sh
+?? scripts/stale-memory-detector.py
+?? scripts/validate-checklist-counts.py
+?? skills/graphify/.graphify_version
+?? skills/graphify/SKILL.md
+?? skills/security-patterns.md
+?? tests/fixtures/edit-production-code-with-test.json
