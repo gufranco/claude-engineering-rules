@@ -91,6 +91,33 @@ Before running commands, verify the target Colima profile is running with `colim
 
 If Colima is not installed or the runtime is Docker Desktop or native, this section does not apply. Only handle Colima contexts when Colima is the detected runtime.
 
+## Docker Desktop Multi-Context
+
+Docker Desktop exposes a single context per installation. Users rarely have multiple Docker Desktop instances, but they may switch contexts between Docker Desktop and remote Docker hosts.
+
+- Detect the active context: `docker context show`.
+- If the user's project has a `.envrc` or `.env` with `DOCKER_CONTEXT`, use that value.
+- Pass `--context <name>` on every Docker command, same as the Colima flow.
+- Never run `docker context use` globally.
+
+## Podman
+
+Podman is daemonless and does not use Docker contexts. Each Podman command targets the local Podman socket directly.
+
+- Verify Podman is installed: `which podman`.
+- Use `podman` as a drop-in replacement for `docker` on commands that do not require Compose. For Compose, use `podman-compose` or `docker compose` with `DOCKER_HOST` pointed at the Podman socket.
+- When both Docker and Podman are installed, prefer the one the user's project already uses. Check for `docker-compose.yml` (Docker) vs Podman socket in `.envrc`.
+- Podman runs as a non-root user by default. Do not prepend `sudo`. If a command requires elevated privileges, ask the user before proceeding.
+
+## Terraform Backend Switching
+
+Never change the active Terraform backend globally. Different projects use different backends (local, S3, GCS, Terraform Cloud) and different workspaces.
+
+- Always run Terraform commands from the correct working directory where `terraform.tf` or `backend.tf` declares the backend.
+- Never run `terraform init -reconfigure` without asking. Reconfiguring migrates state, which can cause data loss if the wrong backend is targeted.
+- When switching between workspaces, use `terraform workspace select <name>` and verify with `terraform workspace show` before running `plan` or `apply`.
+- Each project environment (dev, staging, production) must have its own workspace or separate state file. Never run production plans from a dev workspace.
+
 ## Related Standards
 
 - `standards/infrastructure.md`: Infrastructure

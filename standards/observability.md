@@ -159,6 +159,7 @@ Define reliability targets before building monitoring. Without them, alerts are 
 - SLOs must be based on SLIs, not gut feeling. Measure first, then set targets
 - SLOs should be slightly stricter than SLAs. If the SLA is 99.95%, the SLO might be 99.97%
 - **Error budget** = 100% minus SLO. A 99.9% SLO means 0.1% error budget, roughly 43 minutes of downtime per month. When the budget is spent, prioritize reliability over features
+- **Feature-level SLOs**: define SLOs per critical feature, not only per service. A checkout endpoint and a background reporting endpoint have fundamentally different reliability requirements. Set targets where 100% is achievable within the infrastructure budget. A feature SLO tighter than the underlying service SLO is meaningless without independent capacity.
 
 ## Alerting Conventions
 
@@ -200,6 +201,69 @@ When production breaks:
 - Use W3C Trace Context as the default propagation format
 - Deploy an OpenTelemetry Collector rather than sending telemetry directly from applications. The Collector provides buffering, retry, and credential isolation
 - Verify span closure: every opened span must be closed. Unclosed spans leak resources
+
+## Dashboard Design
+
+Two complementary methods for structuring dashboards:
+
+- **USE method** (resources: CPU, memory, disk, network): Utilization (how busy), Saturation (how much work is queued), Errors (error rate). Apply to every resource the service depends on.
+- **RED method** (services and endpoints): Rate (requests per second), Errors (error rate), Duration (latency distribution). Apply to every service and every endpoint.
+
+Four golden signals (Google SRE model): latency, traffic, errors, saturation. When in doubt, build your first dashboard around these four.
+
+Dashboard structure rules:
+- Top row: the single most important signal for the on-call to answer "is this service healthy?"
+- Second row: RED metrics per endpoint
+- Third row: USE metrics per dependency (database, cache, queue)
+- Bottom rows: detailed breakdowns for debugging
+
+## Cost Allocation Monitoring
+
+Tag every cloud resource with at minimum: `team`, `service`, and `environment`. Without tags, cost spikes cannot be attributed to a cause or a team.
+
+- Configure billing dashboards to show per-service cost over time
+- Alert when per-service monthly cost deviates more than 20% from the rolling 4-week baseline. A sudden spike indicates a runaway process, an unexpected traffic pattern, or a misconfigured resource
+- Export cost data to the same observability platform as metrics so cost and performance can be correlated in the same query
+
+## OpenTelemetry SDK Initialization Order
+
+The SDK must be initialized before any instrumented library is imported. Importing a library before the SDK initializes it means the auto-instrumentation patches run against uninstrumented code, producing incomplete or missing traces.
+
+**Correct order:**
+
+```typescript
+// 1. Initialize the SDK first — before any other import
+import './instrumentation'   // or: import { NodeSDK } from '@opentelemetry/sdk-node'
+
+// 2. Then import libraries that the SDK auto-instruments
+import express from 'express'
+import { PrismaClient } from '@prisma/client'
+import Redis from 'ioredis'
+```
+
+**Initialization file (`instrumentation.ts`):**
+
+```typescript
+import { NodeSDK } from '@opentelemetry/sdk-node'
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+
+const sdk = new NodeSDK({
+  traceExporter: new OTLPTraceExporter(),
+  instrumentations: [getNodeAutoInstrumentations()],
+})
+
+sdk.start()
+
+// Graceful shutdown
+process.on('SIGTERM', () => sdk.shutdown())
+```
+
+**Rules:**
+
+- Never import instrumented libraries at module level before the SDK starts. Move them inside functions, use lazy imports, or restructure entry points so the SDK file is the first import.
+- The Collector is the only valid telemetry destination from application code. Never send traces, metrics, or logs directly to a backend (Jaeger, Zipkin, Prometheus). Configure the SDK to export to `localhost:4317` (OTLP gRPC) or `localhost:4318` (OTLP HTTP). The Collector handles routing, sampling, batching, and backend switching.
+- Use the OTLP exporter in all environments, including local development. Run a local Collector via Docker to replicate the production telemetry path.
 
 ## Related Standards
 

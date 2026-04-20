@@ -107,6 +107,12 @@ For calls to external services that may be degraded:
 
 Track: failure count, failure rate, response time. Trip on sustained failure, not a single error. For database-specific failures (deadlocks, lock timeouts), apply the same circuit breaker pattern. See `standards/database.md` Connection Management for retry-worthy transient errors.
 
+**Error-type thresholds**: use separate counters per error class. A spike in timeouts must not trip the circuit for 5xx errors, and vice versa. Set independent thresholds for: connection refused, timeout, and 5xx. A mixed spike trips on the most severe class that crosses its own threshold.
+
+**Request hedging**: when a request to a primary instance exceeds the p95 latency threshold, send a duplicate request to a backup instance in parallel. Use whichever responds first and cancel the other. Apply only to idempotent reads. Hedging trades bandwidth for tail-latency reduction.
+
+**Timeout jitter**: add ±10-20% random jitter to timeout values. Synchronized timeouts cause all callers to retry at the same moment after a transient slowdown, recreating the spike that caused the timeout in the first place.
+
 ## Partial Failure
 
 When an operation involves multiple steps or items:
@@ -156,7 +162,7 @@ Every external call must have an explicit timeout:
 - Queue operations: visibility timeout aligned with processing time
 - Background jobs: execution timeout with cleanup
 
-Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns. See `standards/database.md` Transactions section for statement timeout configuration.
+Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns. Database connection and query timeout values: see `standards/database.md` for per-query-type limits and statement timeout configuration.
 
 ## Back Pressure
 

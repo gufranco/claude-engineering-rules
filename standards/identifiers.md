@@ -410,6 +410,18 @@ Never change a primary key in-place on a live table.
 - **SERIAL instead of BIGSERIAL in PostgreSQL.** INT overflow on growing tables requires downtime to fix.
 - **Storing UUIDs as `VARCHAR(36)` when a native `UUID` type exists.** Wastes storage (36 bytes vs 16 bytes) and reduces index performance.
 
+## Collision Detection
+
+ULIDs and UUIDs have negligible collision probability at any realistic scale. Use a database UNIQUE constraint as the authoritative collision guard. On a constraint violation, retry with a new ID (max 3 retries, then surface an error). Do not implement application-level pre-insert uniqueness checks: they introduce TOCTOU races.
+
+## ID Reuse
+
+Never reuse IDs after deletion. A soft-deleted record's ID can appear in foreign keys, audit logs, or caches. Mark deleted records as deleted; do not reclaim the ID. Even if the row is hard-deleted, the ID may survive in audit trails, event streams, or external system references.
+
+## Clock Skew
+
+Distributed systems generate IDs on different nodes with clock drift of 1-100ms. ULIDs tolerate up to 2^10 IDs per millisecond before the random component overflows. For stricter ordering guarantees, use a centralized sequence or logical clocks. For systems where drift is unacceptable, use Snowflake or TSID with a single authoritative clock source, or accept that ID order is approximate rather than strict.
+
 ## Related Standards
 
 - `standards/database.md`: Database

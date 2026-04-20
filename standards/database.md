@@ -3,13 +3,13 @@
 ## Schema Rules
 
 - Always: `created_at`, `updated_at`
-- Soft delete: `deleted_at` (nullable). In event-driven systems, publish a domain event on soft delete so downstream consumers can react. See `standards/distributed-systems.md` Saga Pattern for cross-service consistency
+- Soft delete: `deleted_at` (nullable). In event-driven systems, soft-delete events must still be published so downstream consumers can invalidate their caches and update projections. Do not suppress the delete event just because the record remains in the database. See `standards/distributed-systems.md` Saga Pattern for cross-service consistency.
 - Dates in UTC
 
 ## Query Optimization
 
 - No `SELECT *`: specify columns
-- No N+1: use include/eager loading, or batch loading (`WHERE id IN (...)`) for cases where eager loading causes cartesian explosion
+- No N+1: use include/eager loading, or batch loading (`WHERE id IN (...)`) for cases where eager loading causes cartesian explosion. Batch patterns as alternative to eager loading: use `findMany` with explicit ID list when the relationship is optional or varies per query. Batch loads are preferable when eager loading would over-fetch.
 - Pagination for lists
 - Indexes for WHERE, JOIN, ORDER BY
 - Filter at the database level, not in application code
@@ -108,6 +108,8 @@ Daily partitions keyed on UTC date break when the consumer's "day" does not alig
 
 **Default rule**: use query-time boundaries. Only pre-aggregate when you have measured that query-time computation is too slow for your volume. Never assume all consumers are in UTC.
 
+**Leap seconds and DST transitions**: these can cause timestamp ambiguity or collisions. A DST fallback creates a 1-hour window where wall-clock times repeat; a leap second inserts an extra second that some systems represent as `23:59:60`, which most parsers reject. Store timestamps as UTC Unix milliseconds (`bigint`) to avoid both issues entirely. Use the OS-provided `tzdata` package rather than a bundled copy in your application or container so that DST rule updates reach production via OS patching, not a code deployment.
+
 ### NoSQL Key Design
 
 For DynamoDB, Cassandra, and similar:
@@ -160,7 +162,8 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 - Use connection pooling. Never open a connection per request
 - Set pool size based on expected concurrency, not a guess. Too large wastes resources, too small causes contention
 - Configure idle timeout to reclaim unused connections
-- Handle connection errors gracefully: retry on transient failures (deadlocks, lock timeouts), fail fast on auth errors. See `standards/resilience.md` for error classification and retry strategies
+- Handle connection errors gracefully: retry on transient failures (deadlocks, lock timeouts), fail fast on auth errors. Classify transaction failures using the error classification in `standards/resilience.md`.
+- Timeout values (acquisition timeout, idle timeout, statement timeout) must align with the circuit breaker thresholds in `standards/resilience.md`.
 - For serverless: use a connection proxy (RDS Proxy, PgBouncer) to avoid connection exhaustion from cold starts
 
 ## Locking Strategy

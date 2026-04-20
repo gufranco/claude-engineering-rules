@@ -169,6 +169,25 @@ function transition(
 }
 ```
 
+## Nested States
+
+Nested states model hierarchical behavior. A sub-state inherits transitions from its parent state. Use nesting to avoid duplicating transitions across sibling states.
+
+```typescript
+// Without nesting: cancel must be repeated on every substep
+{ from: 'shipping.awaitingPickup', event: 'cancel', to: 'cancelled' },
+{ from: 'shipping.inTransit',      event: 'cancel', to: 'cancelled' },
+{ from: 'shipping.outForDelivery', event: 'cancel', to: 'cancelled' },
+
+// With nesting: cancel is defined once on the parent state
+{ from: 'shipping', event: 'cancel', to: 'cancelled' },
+```
+
+Rules:
+- Sub-states inherit all transitions defined on their parent
+- A sub-state transition takes precedence over the parent's transition for the same event
+- Nesting depth beyond two levels is a signal to reconsider the domain model
+
 ## XState
 
 For complex state machines with hierarchical states, parallel regions, or delayed transitions, use XState instead of hand-rolling.
