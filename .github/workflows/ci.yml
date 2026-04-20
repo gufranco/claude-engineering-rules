@@ -116,3 +116,6 @@ jobs:
 
       - name: Run hook smoke tests
         run: bash tests/test-hooks.sh
+
+      - name: Hook performance check
+        run: bash scripts/hook-benchmark.sh --threshold 500
