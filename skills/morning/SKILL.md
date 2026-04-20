@@ -120,9 +120,9 @@ Flags can be combined: `/morning --all --review`.
    - Report a compact summary. No output when everything is healthy.
 
 10. **Local repo state.** Quick health check of the working directory:
-   - Uncommitted changes: from step 1's `git status` output. Show a summary (X files modified, Y untracked).
-   - Unpushed commits on the current branch: `git log --oneline @{upstream}..HEAD 2>/dev/null`. If no upstream, note the branch hasn't been pushed.
-   - Stale local branches: `git branch --merged origin/HEAD 2>/dev/null` to find branches already merged into the default branch that could be cleaned up. If `origin/HEAD` is not set, try `origin/main`, then `origin/master`. Only mention this if there are 3 or more stale branches.
+    - Uncommitted changes: from step 1's `git status` output. Show a summary (X files modified, Y untracked).
+    - Unpushed commits on the current branch: `git log --oneline @{upstream}..HEAD 2>/dev/null`. If no upstream, note the branch hasn't been pushed.
+    - Stale local branches: `git branch --merged origin/HEAD 2>/dev/null` to find branches already merged into the default branch that could be cleaned up. If `origin/HEAD` is not set, try `origin/main`, then `origin/master`. Only mention this if there are 3 or more stale branches.
 
 11. **Present the briefing.** Use this format:
 

@@ -206,7 +206,7 @@ Before dispatching subagents, print a timing estimate:
 - Estimate time: ~45s per agent batch (they run in parallel, so total ≈ 45s × ceil(agents/parallel_limit))
 - Print: "Semantic extraction: ~N files → X agents, estimated ~Ys"
 
-**Step B0 - Check extraction cache first**
+### Step B0: Check extraction cache first
 
 Before dispatching any subagents, check which files already have cached extraction results:
 
@@ -230,11 +230,11 @@ print(f'Cache: {len(all_files)-len(uncached)} files hit, {len(uncached)} files n
 
 Only dispatch subagents for files listed in `graphify-out/.graphify_uncached.txt`. If all files are cached, skip to Part C directly.
 
-**Step B1 - Split into chunks**
+### Step B1: Split into chunks
 
 Load files from `graphify-out/.graphify_uncached.txt`. Split into chunks of 20-25 files each. Each image gets its own chunk (vision needs separate context). When splitting, group files from the same directory together so related artifacts land in the same chunk and cross-file relationships are more likely to be extracted.
 
-**Step B2 - Dispatch ALL subagents in a single message**
+### Step B2: Dispatch ALL subagents in a single message
 
 Call the Agent tool multiple times IN THE SAME RESPONSE - one call per chunk. This is the only way they run in parallel. If you make one Agent call, wait, then make another, you are doing it sequentially and defeating the purpose.
 
@@ -303,7 +303,7 @@ Output exactly this JSON (no other text):
 {"nodes":[{"id":"filestem_entityname","label":"Human Readable Name","file_type":"code|document|paper|image","source_file":"relative/path","source_location":null,"source_url":null,"captured_at":null,"author":null,"contributor":null}],"edges":[{"source":"node_id","target":"node_id","relation":"calls|implements|references|cites|conceptually_related_to|shares_data_with|semantically_similar_to|rationale_for","confidence":"EXTRACTED|INFERRED|AMBIGUOUS","confidence_score":1.0,"source_file":"relative/path","source_location":null,"weight":1.0}],"hyperedges":[{"id":"snake_case_id","label":"Human Readable Label","nodes":["node_id1","node_id2","node_id3"],"relation":"participate_in|implement|form","confidence":"EXTRACTED|INFERRED","confidence_score":0.75,"source_file":"relative/path"}],"input_tokens":0,"output_tokens":0}
 ```
 
-**Step B3 - Collect, cache, and merge**
+### Step B3: Collect, cache, and merge
 
 Wait for all subagents. For each result:
 - Check that `graphify-out/.graphify_chunk_NN.json` exists on disk — this is the success signal
@@ -720,7 +720,7 @@ Graph complete. Outputs in PATH_TO_DIR/graphify-out/
   obsidian/             - Obsidian vault (only if --obsidian was given)
 ```
 
-If graphify saved you time, consider supporting it: https://github.com/sponsors/safishamsi
+If graphify saved you time, consider supporting it: <https://github.com/sponsors/safishamsi>
 
 Replace PATH_TO_DIR with the actual absolute path of the directory that was processed.
 
@@ -920,7 +920,7 @@ Two traversal modes - choose based on the question:
 
 | Mode | Flag | Best for |
 |------|------|----------|
-| BFS (default) | _(none)_ | "What is X connected to?" - broad context, nearest neighbors first |
+| BFS (default) | *none* | "What is X connected to?" - broad context, nearest neighbors first |
 | DFS | `--dfs` | "How does X reach Y?" - trace a specific chain or dependency path |
 
 First check the graph exists:

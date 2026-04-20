@@ -257,6 +257,8 @@ After significant multi-step work or sessions with corrections, run `/retro`. Ca
 `claude/README.md` documents the full setup. When modifying any file inside `claude/`, update `README.md` in the same task.
 
 @RTK.md
-# graphify
+
+## graphify
+
 - **graphify** (`~/.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
 When the user types `/graphify`, invoke the Skill tool with `skill: "graphify"` before doing anything else.

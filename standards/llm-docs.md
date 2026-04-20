@@ -117,16 +117,16 @@ When migrating between major versions or working with deprecated APIs, fetch the
 
 | Migration | Migration Guide URL |
 |-----------|-------------------|
-| TypeScript 4.x → 5.x | https://www.typescriptlang.org/docs/handbook/release-notes/overview.html |
-| Node.js LTS upgrades | https://nodejs.org/en/about/previous-releases |
-| React 17 → 18 | https://react.dev/blog/2022/03/08/react-18-upgrade-guide |
-| React 18 → 19 | https://react.dev/blog/2024/04/25/react-19-upgrade-guide |
-| Next.js major upgrades | https://nextjs.org/docs/upgrading |
-| NestJS major upgrades | https://docs.nestjs.com/migration-guide |
-| Prisma migrations | https://www.prisma.io/docs/guides/upgrade-guides |
-| Express v4 → v5 | https://expressjs.com/en/guide/migrating-5.html |
-| Python 3.x upgrades | https://docs.python.org/3/whatsnew/ |
-| Go upgrades | https://go.dev/doc/devel/release |
+| TypeScript 4.x to 5.x | <https://www.typescriptlang.org/docs/handbook/release-notes/overview.html> |
+| Node.js LTS upgrades | <https://nodejs.org/en/about/previous-releases> |
+| React 17 to 18 | <https://react.dev/blog/2022/03/08/react-18-upgrade-guide> |
+| React 18 to 19 | <https://react.dev/blog/2024/04/25/react-19-upgrade-guide> |
+| Next.js major upgrades | <https://nextjs.org/docs/upgrading> |
+| NestJS major upgrades | <https://docs.nestjs.com/migration-guide> |
+| Prisma migrations | <https://www.prisma.io/docs/guides/upgrade-guides> |
+| Express v4 to v5 | <https://expressjs.com/en/guide/migrating-5.html> |
+| Python 3.x upgrades | <https://docs.python.org/3/whatsnew/> |
+| Go upgrades | <https://go.dev/doc/devel/release> |
 
 **Rules for migration work:**
 
