@@ -199,13 +199,30 @@ parse_reset_time() {
 ################################################################################
 # Detect rate limit menu
 #
-# Returns 0 if the /rate-limit-options menu is showing.
+# Returns 0 if the Claude Code rate limit menu is showing.
+# Only checks the last 15 lines to avoid matching old output that scrolled up.
+#
+# Exact UI strings from Claude Code:
+#   "Claude usage limit reached. Your limit will reset at ..."
+#   "5-hour limit reached - resets ..."
+#   Menu: "Stop and wait for limit to reset"
 ################################################################################
 detect_rate_limit_menu() {
   local content="$1"
+  local recent
+  recent=$(echo "$content" | tail -15)
 
-  echo "$content" | grep -qiE \
-    'limit reached|rate.?limit|usage limit|What do you want to do|Stop and wait'
+  # Primary: the exact Claude Code rate limit message
+  if echo "$recent" | grep -qiE 'Claude usage limit reached|hour limit reached'; then
+    return 0
+  fi
+
+  # Secondary: the menu option text (specific enough to avoid false positives)
+  if echo "$recent" | grep -qiF 'Stop and wait for limit to reset'; then
+    return 0
+  fi
+
+  return 1
 }
 
 ################################################################################
@@ -213,21 +230,16 @@ detect_rate_limit_menu() {
 #
 # Returns 0 if Claude paused due to the per-turn tool call limit.
 # Only checks the last 10 lines to avoid false positives from earlier output.
+#
+# Exact UI string from Claude Code:
+#   "Claude reached its tool-use limit for this turn"
 ################################################################################
 detect_pause_turn() {
   local content="$1"
   local tail_content
   tail_content=$(echo "$content" | tail -10)
 
-  # Strong signal: the server-enforced tool-use limit message
-  if echo "$tail_content" | grep -qiE 'tool.?use limit|reached.*(its|the) .* limit.*(for this|this) turn'; then
-    return 0
-  fi
-
-  # Weaker signal: Claude asking permission to continue (last 5 lines only)
-  local prompt_area
-  prompt_area=$(echo "$content" | tail -5)
-  if echo "$prompt_area" | grep -qiE 'May I continue\?|Would you like me to continue\?|Shall I continue\?|Should I continue\?|want me to proceed\?|shall I proceed\?|should I proceed\?|want me to go ahead\?'; then
+  if echo "$tail_content" | grep -qiF 'reached its tool-use limit for this turn'; then
     return 0
   fi
 
@@ -282,15 +294,13 @@ handle_rate_limit() {
   # Sleep until reset
   sleep "$wait_seconds"
 
-  # Verify rate limit is still showing before sending continue
-  content=$(capture_pane)
-  if detect_rate_limit_menu "$content" || echo "$content" | grep -qiE 'limit.*reset|waiting.*reset|stop.*wait'; then
-    log "Rate limit still showing after wait. Sending Continue."
-    tmux send-keys -t "$PANE" "Continue" Enter 2>/dev/null || true
-    notify "Rate limit reset. Resuming session."
-  else
-    log "Rate limit screen gone (user manually continued). Skipping."
-  fi
+  # After the wait, send Continue regardless. If the user already resumed
+  # manually, typing "Continue" into an active prompt is harmless (Claude
+  # treats it as a normal message). Not sending it risks leaving a session
+  # stuck forever if nobody is at the keyboard.
+  log "Wait complete. Sending Continue."
+  tmux send-keys -t "$PANE" "Continue" Enter 2>/dev/null || true
+  notify "Rate limit wait complete. Resuming session."
 }
 
 ################################################################################
@@ -306,7 +316,7 @@ handle_pause_turn() {
 # Cooldown tracker (prevent sending Continue multiple times for the same pause)
 ################################################################################
 LAST_ACTION_TIME=0
-ACTION_COOLDOWN=15
+ACTION_COOLDOWN=30
 
 should_act() {
   local now
