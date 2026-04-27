@@ -62,6 +62,16 @@ Error classification and typed error returns: `rules/code-style.md`. Retry param
 - [ ] No unhandled promise rejections
 - [ ] Multi-command Redis operations use Lua scripts or `MULTI/EXEC`. Two sequential Redis commands (e.g., `INCRBY` then `EXPIRE`) are not atomic. See `standards/redis.md`
 
+#### Concurrent actor timeline (MANDATORY for write paths)
+
+Do not check these items abstractly. For each write path, identify every actor that can trigger it and trace the interleaving.
+
+- [ ] **All concurrent actors identified.** For every write path, list every source that can trigger it: user request, webhook delivery, webhook retry, cron job, queue consumer, another service. Two actors from the same source (two webhook deliveries with different timestamps) count as distinct actors
+- [ ] **Timeline drawn for 2+ concurrent actors.** Pick the two most likely concurrent actors and trace their execution step by step. At each step where one actor reads or writes shared state, ask: "what if the other actor just wrote to this same row/key/resource?" If any interleaving produces incorrect state (double bonus, orphaned token, lost update), the code needs a lock, transaction, or constraint
+- [ ] **Every read-then-write in the same lock/transaction scope.** If a function reads a value, makes a decision, and writes based on that decision, the read and write must be inside the same transaction or protected by a row-level lock. An application-level check (`if exists, skip`) without a database constraint or `FOR UPDATE` is a TOCTOU race
+- [ ] **Multi-step mutations protected against interleaving.** If a function does void-then-create, delete-then-insert, or any sequence of writes that must happen together, verify a single actor cannot interleave between the steps. A per-entity mutex (Redis lock keyed on user ID) or an interactive database transaction spanning all steps prevents interleaving
+- [ ] **`Promise.all` with shared mutable state flagged.** Arrays, objects, or counters mutated from concurrent promises via `.push()`, `count++`, or property assignment are not safe. Use `Promise.allSettled` and classify results afterwards, or process sequentially when the item count is small
+
 ### 5. Data Integrity
 
 - [ ] **Idempotent:** every write operation safe to execute twice with the same input. If not naturally idempotent, a guard prevents duplicate effects
@@ -70,6 +80,12 @@ Error classification and typed error returns: `rules/code-style.md`. Retry param
 - [ ] Validation present at every system boundary: not just syntactic but semantic (positive amounts, valid date ranges, enum membership)
 - [ ] Database constraints match application-level validation: unique constraints, foreign keys, check constraints
 - [ ] Async processors have DLQ, partial batch failure reporting, dedup by message ID, and monitoring
+
+#### Schema verification (MANDATORY, do not skip)
+
+- [ ] **Every application-level uniqueness check has a DB constraint.** For every `findFirst`/`findUnique` + `create` pattern, read the actual schema file (Prisma schema, migration SQL, or ORM model definition) and verify a corresponding `@@unique`, `UNIQUE INDEX`, or `UNIQUE` constraint exists on the same columns. An application check without a DB constraint is a race condition. Never assume a constraint exists because the code checks for it
+- [ ] **Every application-level NOT NULL check has a DB constraint.** If the code throws when a field is null, the column must be `NOT NULL` in the schema. An application check without a DB constraint allows corrupt data from other code paths (migrations, manual SQL, other services)
+- [ ] **Batch transactions use interactive mode for dependent writes.** `$transaction([...])` (batch array) executes independent statements. If statement B depends on statement A succeeding (e.g., detach token then delete bonus), use `$transaction(async (tx) => { ... })` (interactive) so a failure in A prevents B from executing. Batch mode + dependent writes = partial corruption on failure
 
 ### 6. Algorithmic Performance
 
@@ -401,6 +417,16 @@ Only apply categories relevant to the system type. A CLI tool does not need cach
 - [ ] Dedup window (TTL) exceeds maximum retry/redelivery time?
 - [ ] POST endpoints that create resources support `Idempotency-Key` header?
 
+#### Idempotency key trace-through (MANDATORY for webhooks, event handlers, and async processors)
+
+Do not check these items by reading the code in isolation. Trace the key from source to storage to retry.
+
+- [ ] **Key derivation traced.** What exact input produces the idempotency key? Write it down: "key = f(timestamp, body)" or "key = header value". If the key is derived from request metadata (timestamp, nonce, signature), it changes on every retry by the external system. This is a broken idempotency mechanism that only catches network-level duplicates, not application-level retries
+- [ ] **Key stability across retries verified.** Simulate the external system retrying: does the retry produce the same key? If the external system re-signs with a new timestamp, the derived key changes. If the external system sends a stable idempotency header, verify the code uses it. If neither is guaranteed, the idempotency key must be derived from semantically stable fields (email + sorted promotion codes, user ID + action type + date) not from transport metadata
+- [ ] **Key-consumed-before-completion recovery verified.** If the idempotency key is stored in Redis/DB before the protected operation completes, trace what happens when the operation fails after key storage: (a) Is the key deleted on transient failure so retries can proceed? (b) Is the key preserved on permanent failure to prevent re-execution? (c) If the external system retries with a different key (transport-derived), does the retry bypass the consumed key entirely?
+- [ ] **Multi-step mutation atomicity verified.** If the idempotent operation has multiple steps (void old data, create new data), are all steps in a single transaction? If step 2 fails after step 1 succeeded, is the state recoverable? A consumed idempotency key + partially completed mutation = permanently corrupted state if retries are blocked
+- [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys (different timestamps, different request IDs), do they both pass the dedup check? If yes, is there a secondary guard (per-entity mutex, database constraint) that prevents double-processing?
+
 Reference: `rules/code-style.md` (Data Safety), `standards/resilience.md` (Idempotency, Deduplication)
 
 ### 19. Atomicity and Transactions
@@ -637,6 +663,16 @@ Reference: `standards/observability.md`
 
 #### Supply chain
 - [ ] Dependencies locked with exact versions? Lockfile committed? Audit in CI?
+
+#### Webhook and external callback handlers
+- [ ] Signing secrets validated at application startup with a loud failure (crash or block the route), not silently read at request time. A missing or empty secret that silently rejects all deliveries is a silent outage
+- [ ] Timestamp validation rejects future timestamps, not just old ones. `Math.abs(now - timestamp)` allows pre-signed requests with future timestamps. Use directional check: `now - timestamp` must be >= 0 and <= window
+- [ ] Signature comparison uses constant-time function (`timingSafeEqual`, `hmac.compare`). Length check before `timingSafeEqual` is acceptable only when the expected length is fixed and publicly known (e.g., HMAC-SHA256 always produces 64 hex chars)
+- [ ] Input canonicalization applied before processing. Emails lowercased and trimmed. Promotion codes normalized. Case-sensitive database lookups with non-canonical input produce false negatives
+- [ ] Rate limiting on webhook endpoints. An attacker with a compromised signing secret can generate valid requests at high volume. Without rate limiting, they can exhaust Redis memory (long TTL idempotency keys), DB connection pool, or downstream API quotas
+- [ ] Webhook path exemptions from auth middleware use exact match or prefix match. Trailing slashes, query strings, and encoded path segments must not bypass the exemption (fail closed is acceptable, fail open is not)
+- [ ] Per-entity mutex for multi-step mutations triggered by external events. When a webhook voids old data and creates new data for the same user, a per-user lock (Redis lock keyed on user ID) spanning the entire sequence prevents concurrent deliveries from interleaving
+- [ ] Response codes designed for the external system's retry behavior. Return 200 for known non-errors (user not found, already processed) to prevent unnecessary retries. Return 5xx only for genuinely transient failures. Document which conditions return which codes
 
 #### Infrastructure security
 - [ ] IAM follows least privilege? Service accounts scoped per service, no shared credentials across services.
