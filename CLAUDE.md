@@ -20,7 +20,7 @@ Domain-specific standards live in `standards/` and are NOT loaded automatically.
 
 ## Core Principles
 
-Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (58 categories, 649 items).
+Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (58 categories, 670 items).
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.

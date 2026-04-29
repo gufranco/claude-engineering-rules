@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 9 rules, 68 on-demand standards, 40 skills, 36 MCP servers, 11 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 10 rules, 69 on-demand standards, 40 skills, 36 MCP servers, 17 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**9** rules · **68** standards · **40** skills · **36** MCP servers · **11** hooks · **9** agents · **649** checklist items · **58** categories · **25,000+** lines of engineering configuration
+**10** rules · **69** standards · **40** skills · **36** MCP servers · **17** hooks · **9** agents · **670** checklist items · **58** categories · **25,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -27,7 +27,7 @@ Eleven hooks intercept tool calls in real time: block destructive commands acros
 
 ### Two-Tier Rule Loading
 
-9 universal rules load automatically. 68 domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
+10 universal rules load automatically. 68 domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
 
 </td>
 </tr>
@@ -81,7 +81,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Multi-account token safety | No | Inline token required for `gh` and `glab` |
 | Integration-first test policy | No | Real DB, strict mock ban, AAA pattern |
 | Pre-flight verification | No | Duplicate check, architecture fit, interface verification |
-| On-demand domain standards | No | 68 standards, ~51KB saved per conversation |
+| On-demand domain standards | No | 69 standards, ~51KB saved per conversation |
 | Workflow automation | No | 40 skills with subcommands |
 | MCP server integrations | No | 36 servers: GitHub, Slack, Sentry, Linear, Figma, and more |
 | Code review checklist | No | 649 items across 58 categories |
@@ -124,7 +124,7 @@ graph LR
 
 ### Rules (always loaded)
 
-9 rules in [`rules/`](rules/), loaded into every conversation automatically.
+10 rules in [`rules/`](rules/), loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -135,12 +135,13 @@ graph LR
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check, no claim without fresh evidence |
 | [`writing-precision`](rules/writing-precision.md) | Precision gate for all text: concrete over abstract, examples over vague instructions |
 | [`pre-flight`](rules/pre-flight.md) | Duplicate check, market research, architecture fit, interface verification |
+| [`surgical-edits`](rules/surgical-edits.md) | Every changed line traces to the request, cleanup boundaries, diff self-test |
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
 
 ### Standards (loaded on demand)
 
-68 standards in [`standards/`](standards/), loaded only when the task matches trigger keywords from [`rules/index.yml`](rules/index.yml).
+69 standards in [`standards/`](standards/), loaded only when the task matches trigger keywords from [`rules/index.yml`](rules/index.yml).
 
 Covers: API design, authentication, caching, database, distributed systems, frontend, GraphQL, gRPC, hexagonal architecture, i18n, infrastructure, message queues, microservices, monorepo, observability, privacy, resilience, serverless, state machines, Terraform testing, TypeScript 5.x, WebSocket, and 40+ more.
 
@@ -193,7 +194,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 
 ### Hooks
 
-11 hooks in [`hooks/`](hooks/), intercepting tool calls at runtime.
+17 hooks in [`hooks/`](hooks/), intercepting tool calls at runtime.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
@@ -202,6 +203,12 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | [`conventional-commits.sh`](hooks/conventional-commits.sh) | PreToolUse (Bash) | Validates commit messages match conventional commit format |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse (Bash) | Requires inline `GH_TOKEN`, blocks `gh auth switch` |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse (Bash) | Requires inline `GITLAB_TOKEN`, blocks `glab auth login` |
+| [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse (Bash) | Blocks `docker context use <name>`. Forces `--context <name>` or `DOCKER_CONTEXT=<name>` per call |
+| [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse (Bash) | Blocks `kubectl config use-context` and `kubectx <name>`. Forces `--context <name>` or `KUBECONFIG=<file>` per call |
+| [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse (Bash) | Blocks `aws configure set` without `--profile <name>` |
+| [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse (Bash) | Blocks `gcloud config set` and `gcloud config configurations activate` without `--configuration=<name>` |
+| [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse (Bash) | Blocks `terraform workspace select` and `new`. Forces `TF_WORKSPACE=<name>` per call |
+| [`mise-global-guard.py`](hooks/mise-global-guard.py) | PreToolUse (Bash) | Blocks `mise use --global` and `mise unuse --global`. Forces project-local `.mise.toml` or `mise exec` |
 | [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse (Bash) | Blocks commits with files over 5MB |
 | [`env-file-guard.sh`](hooks/env-file-guard.sh) | PreToolUse (Write/Edit) | Blocks `.env`, private keys, cloud credentials, Terraform state |
 | [`rtk-rewrite.sh`](hooks/rtk-rewrite.sh) | PreToolUse (Bash) | Rewrites CLI commands through RTK for 60-90% token savings |
@@ -294,17 +301,17 @@ The hooks, rules, and skills activate automatically.
   RTK.md                 # RTK token-optimized CLI proxy documentation
   settings.json          # Permissions, hooks, MCP servers, statusline
   checklists/
-    checklist.md         # 649-item unified checklist across 58 categories
-  rules/                 # Always loaded (9 rules)
+    checklist.md         # 670-item unified checklist across 58 categories
+  rules/                 # Always loaded (10 rules)
     index.yml            # Rule + standard catalog with trigger keywords
-  standards/             # Loaded on demand (68 standards)
+  standards/             # Loaded on demand (69 standards)
   agents/                # Custom subagents (9 agents)
     TEMPLATE.md          # Agent template
   skills/                # 40 skills with SKILL.md each
-  hooks/                 # 11 runtime hooks
+  hooks/                 # 17 runtime hooks
   scripts/               # Validation, benchmarking, statusline
   tests/
-    test-hooks.sh        # Hook smoke tests (63 fixtures)
+    test-hooks.sh        # Hook smoke tests (94 fixtures)
   .github/
     workflows/
       ci.yml             # Lint, validation, hook tests (ubuntu-24.04)
@@ -368,7 +375,7 @@ The testing rule prioritizes integration tests with real databases and services.
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 68 standards total ~14,000 lines. Loading all of them into every conversation would consume ~51KB of context window. Instead, `rules/index.yml` maps each standard to trigger keywords. When a task matches (e.g., "add a database migration" triggers `database.md`), only the relevant standards load. Most conversations need 2-5 standards, saving 90%+ of the context budget.
+The 69 standards total ~14,000 lines. Loading all of them into every conversation would consume ~51KB of context window. Instead, `rules/index.yml` maps each standard to trigger keywords. When a task matches (e.g., "add a database migration" triggers `database.md`), only the relevant standards load. Most conversations need 2-5 standards, saving 90%+ of the context budget.
 
 </details>
 

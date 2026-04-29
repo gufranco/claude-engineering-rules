@@ -2,6 +2,21 @@
 
 All notable changes to this Claude Code configuration are documented here.
 
+## 2026-04-29
+
+### Added
+
+- Multi-account CLI safety: parallel terminals targeting different accounts no longer break when one terminal would have switched global state. 6 new PreToolUse hooks hard-block the global-mutation commands and force the per-command form: `docker-context-guard`, `kubectl-context-guard`, `aws-profile-guard`, `gcloud-config-guard`, `terraform-workspace-guard`, `mise-global-guard`
+- `standards/multi-account-cli.md`: canonical doc for the per-command pattern across 8 CLIs (gh, glab, docker, kubectl, aws, gcloud, terraform workspace, mise) with detection order, anti-pattern table, and a recipe for adding new tools
+- 30 new test fixtures covering blocked and allowed scenarios for every new hook
+
+### Changed
+
+- `gh-token-guard` and `glab-token-guard` error messages now point at `standards/multi-account-cli.md`
+- `standards/borrow-restore.md`: rewritten for `mise`, the user's runtime version manager. mise resolves per-project from `.mise.toml`/`.tool-versions` and never mutates a shared "active version", so the borrow-restore fallback is no longer needed for any tool in the toolchain
+- `skills/setup`: detects mise via `.mise.toml`/`.tool-versions`/legacy compat files, runs `mise install` + `mise current` once before per-runtime checks
+- `skills/assessment`: version manager and CI sections feature mise as Recommended; legacy nvm/asdf/pyenv accepted for compat
+
 ## 2026-04-04
 
 ### Added
