@@ -36,6 +36,8 @@ Before committing any AI-generated code, verify:
 | Dead code | Did the generation include unused imports, unreachable branches, or vestigial logic? |
 | Naming | Do names match the domain language used in the rest of the codebase? |
 | Duplication | Does the generated code duplicate logic that already exists elsewhere? |
+| Over-engineering | If 200 lines could be 50, rewrite. Would a senior engineer call this overcomplicated? |
+| Surgical scope | Every changed line traces to the request. No adjacent "improvements". See `rules/surgical-edits.md` |
 
 ## Never Commit Code You Cannot Explain
 
