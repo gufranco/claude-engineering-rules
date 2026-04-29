@@ -192,6 +192,12 @@ Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangero
 | Env/credential file access (.env, .ssh, .aws, .gnupg, .kube, .tfstate, .pem, .key, .npmrc, .pypirc, .netrc) | Block | env-file-guard + permissions | 50+ |
 | Large file commits (>5MB) | Block | large-file-blocker | 1 |
 | gh/glab account safety (token guards) | Block | gh-token-guard, glab-token-guard | 2 |
+| Docker context global switch (`docker context use`) | Block | docker-context-guard | 1 |
+| Kubernetes context global switch (`kubectl config use-context`, `kubectx <name>`) | Block | kubectl-context-guard | 2 |
+| AWS profile global write (`aws configure set` without `--profile`) | Block | aws-profile-guard | 1 |
+| gcloud config global write (`gcloud config set`, `gcloud config configurations activate`) | Block | gcloud-config-guard | 2 |
+| Terraform workspace global switch (`terraform workspace select` and `new`) | Block | terraform-workspace-guard | 2 |
+| mise global tool mutation (`mise use --global`, `mise unuse --global`) | Block | mise-global-guard | 2 |
 | Commit message format | Block | conventional-commits | 1 |
 
 **Limitations:** hooks are advisory, not kernel-level enforcement. An agent could bypass a hook by using an equivalent command not covered by the patterns. For untrusted code execution, use container or VM isolation.

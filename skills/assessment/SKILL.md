@@ -80,17 +80,18 @@ This skill accepts optional arguments after `/assessment`:
    - **Tests**: run the test suite with coverage (`pnpm test -- --coverage`, `pytest --cov`, `go test -cover`, etc.). Record pass/fail count and coverage percentage.
    - **Runtime and language version**: check the language and runtime version the project uses. **Always upgrade to the latest stable LTS version.** If the project runs on a managed platform with version constraints (AWS Lambda, Google Cloud Functions, Azure Functions, Vercel, Heroku, etc.), use the latest stable version available on that platform. Check the platform's documentation to confirm which versions are supported. Update **all** version references: config files, CI pipelines, Dockerfiles, IaC templates (`Runtime` in SAM/CloudFormation/Terraform), and README. Verify the project builds and passes tests after the upgrade.
 
-     **Runtime version pinning is mandatory.** The project must use a version manager config file so every developer and CI environment uses the same version. Add the appropriate file if missing:
+     **Runtime version pinning is mandatory.** The project must use a version manager config file so every developer and CI environment uses the same version. Prefer `mise` (single tool for every ecosystem, reads legacy files for compatibility). Add the appropriate file if missing:
 
-     | Ecosystem | Version manager | Config file |
-     |:----------|:----------------|:------------|
-     | Node.js | nvm, fnm, volta, asdf | `.nvmrc` or `.node-version` |
-     | Python | pyenv, asdf | `.python-version` |
-     | Ruby | rbenv, rvm, asdf | `.ruby-version` |
-     | Go | goenv, asdf | `go.mod` `go` directive |
-     | Rust | rustup | `rust-toolchain.toml` |
-     | Java | sdkman, asdf | `.sdkmanrc` or `.java-version` |
-     | Multi-language | asdf, mise | `.tool-versions` |
+     | Ecosystem | Recommended | Also accepted | Config file |
+     |:----------|:------------|:--------------|:------------|
+     | Multi-language (preferred default) | mise | asdf | `.mise.toml` (mise canonical), `.tool-versions` (asdf-compatible, also read by mise) |
+     | Node.js | mise | fnm, volta, nvm | `.mise.toml`, `.tool-versions`, `.node-version`, `.nvmrc` |
+     | Python | mise | pyenv | `.mise.toml`, `.tool-versions`, `.python-version` |
+     | Ruby | mise | rbenv, rvm | `.mise.toml`, `.tool-versions`, `.ruby-version` |
+     | Go | mise | goenv | `go.mod` `go` directive, `.mise.toml`, `.tool-versions` |
+     | Rust | rustup | mise (with rust plugin) | `rust-toolchain.toml` |
+     | Java | mise | sdkman | `.mise.toml`, `.tool-versions`, `.sdkmanrc`, `.java-version` |
+     | Terraform | mise | tfenv | `.mise.toml`, `.tool-versions`, `.terraform-version` |
 
      Also set `engines` in `package.json` (Node.js), `requires-python` in `pyproject.toml` (Python), or the equivalent for other ecosystems. This enforces the version constraint in the package manager, not just the version manager.
 
@@ -222,7 +223,7 @@ This skill accepts optional arguments after `/assessment`:
 
      | Tool type | Purpose | Examples by ecosystem |
      |:----------|:--------|:---------------------|
-     | Runtime version manager | Pin runtime version for all developers and CI | `.nvmrc` / `.node-version` (Node.js), `.python-version` (Python), `.ruby-version` (Ruby), `rust-toolchain.toml` (Rust), `.tool-versions` (multi-language) |
+     | Runtime version manager | Pin runtime version for all developers and CI | Prefer `mise` with `.mise.toml` (or `.tool-versions` for asdf compatibility). Legacy files mise still reads: `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, `.terraform-version`. Rust uses `rust-toolchain.toml` |
      | EditorConfig | Consistent formatting across editors | `.editorconfig` with language-appropriate indent style/size, charset, end of line, trailing whitespace, final newline |
      | Formatter | Deterministic code formatting | JS/TS: Prettier. Python: Black, Ruff format. Go: gofmt. Rust: rustfmt. Ruby: RuboCop. Java: google-java-format. Elixir: mix format |
      | Linter | Static analysis, code quality | JS/TS: ESLint (strictest config). Python: Ruff, Flake8, Pylint. Go: golangci-lint. Rust: Clippy. Ruby: RuboCop. Java: Checkstyle, SpotBugs |
@@ -280,7 +281,7 @@ This skill accepts optional arguments after `/assessment`:
    4. **Build**: compile the project (`npm run build`, `pnpm build`, `go build`, `cargo build`, etc.).
    5. **Test with coverage**: run the full test suite with coverage reporting (`npm test -- --coverage`, `pytest --cov`, `go test -cover`, etc.).
 
-   Pin the runtime version in the pipeline to match the project's version manager config (`.nvmrc`, `.python-version`, etc.). Use caching for dependencies to speed up runs. Set `fail-fast: true` so the pipeline stops at the first failure.
+   Pin the runtime version in the pipeline to match the project's version manager config. Prefer `.mise.toml` or `.tool-versions` so a single `mise install` step pins every runtime. Legacy file fallbacks: `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, `.terraform-version`, `rust-toolchain.toml`. Use caching for dependencies to speed up runs. Set `fail-fast: true` so the pipeline stops at the first failure.
 
    For GitHub Actions, use the latest stable action versions: `actions/checkout@v4`, `actions/setup-node@v4` (or equivalent for other runtimes), `actions/cache@v4`. Use matrix strategy only when the project needs to support multiple runtime versions.
 

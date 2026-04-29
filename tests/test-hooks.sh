@@ -356,6 +356,152 @@ run_test "allows non-glab commands" \
     "${FIXTURES}/bash-safe-command.json" 0
 
 echo ""
+echo "=== Docker Context Guard ==="
+
+run_test "blocks docker context use" \
+    "${HOOKS}/docker-context-guard.py" \
+    "${FIXTURES}/bash-docker-context-use.json" 2
+
+run_test "allows docker --context flag" \
+    "${HOOKS}/docker-context-guard.py" \
+    "${FIXTURES}/bash-docker-context-flag.json" 0
+
+run_test "allows DOCKER_CONTEXT env" \
+    "${HOOKS}/docker-context-guard.py" \
+    "${FIXTURES}/bash-docker-context-env.json" 0
+
+run_test "allows docker context ls" \
+    "${HOOKS}/docker-context-guard.py" \
+    "${FIXTURES}/bash-docker-context-ls.json" 0
+
+run_test "allows bare docker commands" \
+    "${HOOKS}/docker-context-guard.py" \
+    "${FIXTURES}/bash-docker-bare.json" 0
+
+echo ""
+echo "=== Kubectl Context Guard ==="
+
+run_test "blocks kubectl config use-context" \
+    "${HOOKS}/kubectl-context-guard.py" \
+    "${FIXTURES}/bash-kubectl-use-context.json" 2
+
+run_test "allows kubectl --context flag" \
+    "${HOOKS}/kubectl-context-guard.py" \
+    "${FIXTURES}/bash-kubectl-context-flag.json" 0
+
+run_test "allows kubectl config current-context" \
+    "${HOOKS}/kubectl-context-guard.py" \
+    "${FIXTURES}/bash-kubectl-current.json" 0
+
+run_test "blocks kubectx <name>" \
+    "${HOOKS}/kubectl-context-guard.py" \
+    "${FIXTURES}/bash-kubectx-switch.json" 2
+
+run_test "allows bare kubectx (list)" \
+    "${HOOKS}/kubectl-context-guard.py" \
+    "${FIXTURES}/bash-kubectx-list.json" 0
+
+run_test "allows KUBECONFIG env" \
+    "${HOOKS}/kubectl-context-guard.py" \
+    "${FIXTURES}/bash-kubectl-kubeconfig.json" 0
+
+echo ""
+echo "=== AWS Profile Guard ==="
+
+run_test "blocks aws configure set without --profile" \
+    "${HOOKS}/aws-profile-guard.py" \
+    "${FIXTURES}/bash-aws-configure-set-default.json" 2
+
+run_test "allows aws configure set with --profile" \
+    "${HOOKS}/aws-profile-guard.py" \
+    "${FIXTURES}/bash-aws-configure-set-profile.json" 0
+
+run_test "allows aws --profile flag" \
+    "${HOOKS}/aws-profile-guard.py" \
+    "${FIXTURES}/bash-aws-with-profile.json" 0
+
+run_test "allows AWS_PROFILE env" \
+    "${HOOKS}/aws-profile-guard.py" \
+    "${FIXTURES}/bash-aws-bare-readonly.json" 0
+
+run_test "allows bare aws read-only" \
+    "${HOOKS}/aws-profile-guard.py" \
+    "${FIXTURES}/bash-aws-without-profile.json" 0
+
+echo ""
+echo "=== Gcloud Config Guard ==="
+
+run_test "blocks gcloud config set account" \
+    "${HOOKS}/gcloud-config-guard.py" \
+    "${FIXTURES}/bash-gcloud-set-account.json" 2
+
+run_test "blocks gcloud config set project" \
+    "${HOOKS}/gcloud-config-guard.py" \
+    "${FIXTURES}/bash-gcloud-set-project.json" 2
+
+run_test "blocks gcloud config configurations activate" \
+    "${HOOKS}/gcloud-config-guard.py" \
+    "${FIXTURES}/bash-gcloud-activate-config.json" 2
+
+run_test "allows gcloud --configuration flag" \
+    "${HOOKS}/gcloud-config-guard.py" \
+    "${FIXTURES}/bash-gcloud-with-config-flag.json" 0
+
+run_test "allows gcloud config configurations list" \
+    "${HOOKS}/gcloud-config-guard.py" \
+    "${FIXTURES}/bash-gcloud-config-list.json" 0
+
+echo ""
+echo "=== Terraform Workspace Guard ==="
+
+run_test "blocks terraform workspace select" \
+    "${HOOKS}/terraform-workspace-guard.py" \
+    "${FIXTURES}/bash-terraform-workspace-select.json" 2
+
+run_test "allows TF_WORKSPACE env" \
+    "${HOOKS}/terraform-workspace-guard.py" \
+    "${FIXTURES}/bash-terraform-workspace-env.json" 0
+
+run_test "allows terraform workspace list" \
+    "${HOOKS}/terraform-workspace-guard.py" \
+    "${FIXTURES}/bash-terraform-workspace-list.json" 0
+
+run_test "allows terraform workspace show" \
+    "${HOOKS}/terraform-workspace-guard.py" \
+    "${FIXTURES}/bash-terraform-workspace-show.json" 0
+
+echo ""
+echo "=== Mise Global Guard ==="
+
+run_test "blocks mise use --global" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-use-global.json" 2
+
+run_test "blocks mise use -g" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-use-g-short.json" 2
+
+run_test "blocks mise unuse --global" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-unuse-global.json" 2
+
+run_test "allows mise use (project-local)" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-use-local.json" 0
+
+run_test "allows mise install" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-install.json" 0
+
+run_test "allows mise exec" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-exec.json" 0
+
+run_test "allows mise current" \
+    "${HOOKS}/mise-global-guard.py" \
+    "${FIXTURES}/bash-mise-current.json" 0
+
+echo ""
 echo "=== Results ==="
 echo "  Passed: ${PASS}"
 echo "  Failed: ${FAIL}"
