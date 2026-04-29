@@ -1,8 +1,10 @@
 # Borrow and Restore
 
+> **First, read `standards/multi-account-cli.md`.** That is the canonical doc for multi-account CLI safety. Borrow-and-restore is a strict fallback for the few tools that have no per-command flag or env var. Most CLIs (`gh`, `glab`, `docker`, `kubectl`, `aws`, `gcloud`, `terraform` workspace, `helm`) support per-command forms and never need this pattern.
+
 ## The Pattern
 
-When a tool maintains global mutable state and you need to temporarily change it, follow this sequence:
+When a tool maintains global mutable state and **has no per-command alternative**, follow this sequence:
 
 1. **Read** the current state. Record it.
 2. **Switch** to the required state.
@@ -13,41 +15,24 @@ This is the CLI equivalent of a `try/finally` block. The restore step is not opt
 
 ## When to Apply
 
-Apply this pattern whenever you use a tool that has a single global "active context" that persists across commands. Changing it affects every subsequent command in the terminal, not just yours.
-
-## Prefer Per-Command Context
-
-Some tools support passing the context as a flag on each command instead of switching the global state. When available, this is strictly better: no global mutation, no restore step, no risk to parallel sessions.
-
-| Tool | Per-command flag | Example |
-|:-----|:-----------------|:--------|
-| Docker | `--context <name>` | `docker --context colima-myproject compose ps` |
-| `kubectl` | `--context <name>` | `kubectl --context prod get pods` |
-| `aws` | `--profile <name>` | `aws --profile company-prod s3 ls` |
-
-**Default rule**: if a tool supports per-command context, use it. Only fall back to borrow-and-restore when the tool has no per-command option.
+Apply this pattern only when the tool has no per-command flag or env var. If the tool supports per-command context (the majority do), use that instead. See `standards/multi-account-cli.md` for the full list of CLIs that have per-command forms.
 
 ## Tools That Need Borrow-and-Restore
 
-These tools have no per-command alternative. The global switch + restore pattern is required.
+No CLI in the user's current toolchain requires this pattern. Every tool the user runs supports either a per-command form (see `standards/multi-account-cli.md`) or per-project config files that resolve on every invocation without global mutation.
 
-| Tool | Global state | Read current | Switch | Restore |
-|:-----|:-------------|:-------------|:-------|:--------|
-| `gh` | Active GitHub account | `gh auth status` | `gh auth switch --user <login>` | Same switch back |
-| `glab` | Active GitLab instance | `glab auth status` | Switch to target instance | Same switch back |
-| `nvm` | Active Node.js version | `nvm current` | `nvm use <version>` | Same use back |
-| Terraform | Active workspace | `terraform workspace show` | `terraform workspace select <name>` | Same select back |
+Specifically:
 
-Not all of these will be relevant in every project. Only apply the pattern when the tool is actually used and multiple contexts exist.
+- Runtime version managers: the user runs `mise`. mise resolves the active version from project config (`.mise.toml`, `.tool-versions`, `.nvmrc`, `.node-version`, `.python-version`, `.ruby-version`, `.terraform-version`) on every shell entry and every `mise exec` call. There is no shared global "active version" that another terminal can change. Older managers like `nvm`, `rvm`, and `pyenv` do mutate a shell-global active version, but they are not in use here.
+- Multi-account CLIs (`gh`, `glab`, `docker`, `kubectl`, `aws`, `gcloud`, `terraform` workspace, `helm`): all use per-command forms. See `standards/multi-account-cli.md`.
+
+Borrow-and-restore stays in the toolbox only for the rare case of a future CLI that has neither a per-command flag, an env var, nor a project config file. If you find such a tool, document it here before using the pattern.
 
 ## How to Detect the Correct Context
 
-You need a way to determine which context the current project expects. In order of preference:
+For account and context detection, follow the order in `standards/multi-account-cli.md` (env var, project config, git remote, ask). The same order applies when borrow-and-restore is the only option.
 
-1. **Environment variable.** The project's `.env` or `.envrc` may set the expected context (e.g., `DOCKER_CONTEXT=colima-myproject`, `AWS_PROFILE=company-prod`, `KUBECONFIG=...`). Check these first.
-2. **Project config file.** Some tools have project-level config: `.terraform/environment` for workspaces, `.nvmrc` for Node version, `.ruby-version` for Ruby.
-3. **Convention.** If the project repo name or directory name matches a known context pattern, use it. This is the weakest signal, only use it as a last resort.
-4. **Current state.** If none of the above exist, assume the current context is correct. Do not guess.
+For runtime versions under mise, prefer `.mise.toml` and `.tool-versions` for new projects. mise still reads `.nvmrc`, `.node-version`, `.python-version`, `.ruby-version`, and `.terraform-version` for compatibility with legacy projects, so existing files do not need migration. Run `mise current` to see what mise resolved for the working directory.
 
 ## Rules
 
@@ -57,48 +42,6 @@ You need a way to determine which context the current project expects. In order 
 - **Announce the switch.** When switching context, tell the user what you switched from and to. Silent switches are confusing.
 - **Skip if unnecessary.** If the current context already matches the required one, do not switch and do not restore. No-op is always safe.
 - **Do not switch if you cannot determine the target.** If there's no signal (env var, config file, convention) telling you which context to use, work with whatever is currently active. Guessing is worse than asking.
-
-## Docker Context Resolution
-
-Docker supports `--context` as a per-command flag, so never use `docker context use` to switch globally. The user may have multiple projects open in different terminals, each targeting a different Colima profile. A global switch would break the other sessions.
-
-### Colima naming convention
-
-Colima creates a Docker context for each profile:
-
-- Default profile: context name is `colima`
-- Named profile: context name is `colima-<profile>`
-
-When Colima is the runtime and multiple profiles exist, the Docker context determines which Colima VM receives the commands. Wrong context means commands hit the wrong set of containers.
-
-### Detection order
-
-1. `DOCKER_CONTEXT` env var in `.env` or `.envrc`.
-2. `DOCKER_HOST` env var pointing to a specific Colima socket (e.g., `unix:///Users/<user>/.colima/<profile>/docker.sock`). Extract the profile name from the socket path to derive the context name.
-3. If neither exists, do not pass `--context`. Use whatever context is currently active.
-
-### Usage
-
-Once the expected context is determined, pass it on every Docker command:
-
-```
-docker --context <name> ps
-docker --context <name> compose up -d
-docker --context <name> logs --tail=100 <container>
-```
-
-Before running commands, verify the target Colima profile is running with `colima list`. If the profile is stopped, suggest starting it with `colima start --profile <name>` or the user's custom function. Do not send commands to a context whose backend is not running.
-
-If Colima is not installed or the runtime is Docker Desktop or native, this section does not apply. Only handle Colima contexts when Colima is the detected runtime.
-
-## Docker Desktop Multi-Context
-
-Docker Desktop exposes a single context per installation. Users rarely have multiple Docker Desktop instances, but they may switch contexts between Docker Desktop and remote Docker hosts.
-
-- Detect the active context: `docker context show`.
-- If the user's project has a `.envrc` or `.env` with `DOCKER_CONTEXT`, use that value.
-- Pass `--context <name>` on every Docker command, same as the Colima flow.
-- Never run `docker context use` globally.
 
 ## Podman
 
@@ -115,9 +58,10 @@ Never change the active Terraform backend globally. Different projects use diffe
 
 - Always run Terraform commands from the correct working directory where `terraform.tf` or `backend.tf` declares the backend.
 - Never run `terraform init -reconfigure` without asking. Reconfiguring migrates state, which can cause data loss if the wrong backend is targeted.
-- When switching between workspaces, use `terraform workspace select <name>` and verify with `terraform workspace show` before running `plan` or `apply`.
+- For workspace selection, use `TF_WORKSPACE=<name> terraform ...` per command. See `standards/multi-account-cli.md`. Never run `terraform workspace select` directly.
 - Each project environment (dev, staging, production) must have its own workspace or separate state file. Never run production plans from a dev workspace.
 
 ## Related Standards
 
-- `standards/infrastructure.md`: Infrastructure
+- `standards/multi-account-cli.md`: Per-command CLI safety, the canonical doc for multi-account isolation.
+- `standards/infrastructure.md`: Infrastructure.

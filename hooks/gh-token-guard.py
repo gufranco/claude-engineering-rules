@@ -52,7 +52,8 @@ def main():
             "BLOCKED: gh auth switch changes the global active account "
             "and affects all terminals.\n"
             "Use GH_TOKEN=$(gh auth token --user <account>) gh <command> instead.\n"
-            "Check the git remote to determine the correct account."
+            "Check the git remote to determine the correct account.\n"
+            "See: standards/multi-account-cli.md"
         )
         sys.exit(2)
 
@@ -78,6 +79,7 @@ def main():
         "Prefix with: GH_TOKEN=$(gh auth token --user <account>) gh ...\n"
         "Or export it: export GH_TOKEN=$(gh auth token --user <account>)\n"
         "Check git remote get-url origin to determine the correct account.\n"
+        "See: standards/multi-account-cli.md\n"
         f"Command: {command}"
     )
     sys.exit(2)

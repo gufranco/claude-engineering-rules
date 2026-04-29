@@ -34,13 +34,13 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
    - `docker-compose.yml` or `compose.yml`: containerized services.
    - If multiple manifest files exist, report all detected project types.
 
-2. **Check prerequisites.** For each detected project type, verify the required runtime is installed:
-   - Node.js: `node --version`. Check against the `.node-version`, `.nvmrc`, or `engines` field in `package.json`.
-   - Go: `go version`.
-   - Rust: `rustc --version` and `cargo --version`.
-   - Python: `python3 --version`. Check against `.python-version` or `pyproject.toml` requires-python.
+2. **Check prerequisites.** For each detected project type, verify the required runtime is installed. If `mise` is available (`which mise`) and the project has a `.mise.toml`, `.tool-versions`, `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, or `.terraform-version` file, run `mise install` once to install every pinned runtime, then `mise current` to verify resolution. After that, the per-runtime checks below confirm the right version is active:
+   - Node.js: `node --version`. Compare against `.node-version`, `.nvmrc`, `.tool-versions`, `.mise.toml`, or the `engines` field in `package.json`.
+   - Go: `go version`. Compare against `.tool-versions` or `.mise.toml`.
+   - Rust: `rustc --version` and `cargo --version`. Compare against `rust-toolchain.toml`.
+   - Python: `python3 --version`. Compare against `.python-version`, `.tool-versions`, `.mise.toml`, or `pyproject.toml` requires-python.
    - Docker: `docker --version` and `docker compose version`.
-   - If a prerequisite is missing, report it and stop. Do not attempt to install runtimes.
+   - If a prerequisite is missing and `mise` cannot resolve it, report it and stop. Do not install runtimes manually.
 
 3. **Install dependencies.**
    - Node.js with pnpm: `pnpm install`.

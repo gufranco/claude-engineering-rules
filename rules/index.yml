@@ -24,6 +24,10 @@ always_loaded:
     description: Pre-implementation verification gates for duplicates, architecture fit, interface verification, scope agreement
     triggers: [planning, pre-flight, scope, interface, duplicate, architecture fit]
 
+  surgical-edits:
+    description: Every changed line traces to the user's request, no adjacent improvements, cleanup boundaries for orphan removal, diff self-test
+    triggers: [edit, surgical, diff, refactor, cleanup, scope creep, adjacent, orphan, dead code]
+
   security:
     description: Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security
     triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls, pentest, penetration, exploit, vulnerability, ssrf, idor, xxe, ssti, rce]
@@ -84,13 +88,18 @@ on_demand:
 
   github-accounts:
     path: standards/github-accounts.md
-    description: Multi-account safety for gh CLI, require inline GH_TOKEN on every gh invocation, never gh auth switch, account mapping by remote URL
+    description: Multi-account safety for gh CLI, require inline GH_TOKEN on every gh invocation, never gh auth switch, account mapping by remote URL. See multi-account-cli for the cross-cutting pattern.
     triggers: [github, gh, gh auth, multi-account, push, gh pr, gh repo, gh api, gh run]
 
   gitlab-accounts:
     path: standards/gitlab-accounts.md
-    description: Multi-account safety for glab CLI, require inline GITLAB_TOKEN and GITLAB_HOST on every glab invocation, never glab auth login
+    description: Multi-account safety for glab CLI, require inline GITLAB_TOKEN and GITLAB_HOST on every glab invocation, never glab auth login. See multi-account-cli for the cross-cutting pattern.
     triggers: [gitlab, glab, glab auth, multi-account, glab mr, glab repo, glab api, gitlab token]
+
+  multi-account-cli:
+    path: standards/multi-account-cli.md
+    description: Cross-cutting per-command safety pattern for multi-account CLIs (gh, glab, docker, kubectl, aws, gcloud, terraform workspace, mise, helm). Detection order, anti-pattern command list, hook coverage, recipe for adding new tools.
+    triggers: [multi-account, account switch, account isolation, docker context, kubectl context, aws profile, gcloud config, terraform workspace, mise, mise use, helm context, gh auth, glab auth, parallel terminal, global switch, colima profile]
 
   changelog:
     path: standards/changelog.md
@@ -144,8 +153,8 @@ on_demand:
 
   borrow-restore:
     path: standards/borrow-restore.md
-    description: Safe global state management for CLI tools with context switching and guaranteed restore
-    triggers: [docker, kubectl, terraform, gh, context, workspace, profile, switch]
+    description: Fallback pattern for any rare CLI that has no per-command form, no env var, and no project config. No tool in the current toolchain needs it (mise resolves per-project; multi-account CLIs have per-command forms). Kept as a documented escape hatch. Also includes Podman and Terraform backend guidance.
+    triggers: [borrow, restore, fallback, no per-command flag, podman, terraform backend, mise, node version, runtime version manager]
 
   caching:
     path: standards/caching.md

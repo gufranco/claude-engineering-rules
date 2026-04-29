@@ -52,7 +52,8 @@ def main():
             "BLOCKED: glab auth login changes the global config "
             "and affects all terminals.\n"
             "Use GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab <command> instead.\n"
-            "Check the git remote to determine the correct instance."
+            "Check the git remote to determine the correct instance.\n"
+            "See: standards/multi-account-cli.md"
         )
         sys.exit(2)
 
@@ -78,6 +79,7 @@ def main():
         "Prefix with: GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab ...\n"
         "Or export them: export GITLAB_TOKEN=<token> GITLAB_HOST=<host>\n"
         "Check git remote get-url origin to determine the correct instance.\n"
+        "See: standards/multi-account-cli.md\n"
         f"Command: {command}"
     )
     sys.exit(2)

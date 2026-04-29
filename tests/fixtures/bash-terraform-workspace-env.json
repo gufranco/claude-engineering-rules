@@ -1,0 +1,1 @@
+{"tool_name": "Bash", "input": {"command": "TF_WORKSPACE=prod terraform plan"}}
