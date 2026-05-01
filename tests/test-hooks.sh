@@ -534,7 +534,9 @@ echo "=== Git Author Guard ==="
 LOCAL_OVERRIDE_REPO="/tmp/git-author-guard-fixture-local-override"
 PLACEHOLDER_COMMIT_REPO="/tmp/git-author-guard-fixture-placeholder-commit"
 NO_IDENTITY_REPO="/tmp/git-author-guard-fixture-no-identity"
-trap 'rm -rf "${LOCAL_OVERRIDE_REPO}" "${PLACEHOLDER_COMMIT_REPO}" "${NO_IDENTITY_REPO}"' EXIT
+RESOLVED_REPO="/tmp/git-author-guard-fixture-resolved"
+RESOLVED_HOME="/tmp/git-author-guard-fixture-resolved-home"
+trap 'rm -rf "${LOCAL_OVERRIDE_REPO}" "${PLACEHOLDER_COMMIT_REPO}" "${NO_IDENTITY_REPO}" "${RESOLVED_REPO}" "${RESOLVED_HOME}"' EXIT
 
 # Repo with a [user] block in .git/config (local override).
 rm -rf "${LOCAL_OVERRIDE_REPO}"
@@ -552,6 +554,16 @@ GIT_COMMITTER_NAME="Placeholder" GIT_COMMITTER_EMAIL="placeholder@example.com" \
 # Repo with no identity at all (no local override, runner forces empty global).
 rm -rf "${NO_IDENTITY_REPO}"
 git init -q "${NO_IDENTITY_REPO}"
+
+# Repo with a resolvable identity via a controlled HOME-scoped git config.
+rm -rf "${RESOLVED_REPO}" "${RESOLVED_HOME}"
+git init -q "${RESOLVED_REPO}"
+mkdir -p "${RESOLVED_HOME}"
+cat > "${RESOLVED_HOME}/.gitconfig" <<EOF
+[user]
+    name = Resolved
+    email = resolved@valid.test
+EOF
 
 run_test "blocks commit with env override on command line" \
     "${HOOKS}/git-author-guard.py" \
@@ -575,9 +587,18 @@ else
     FAIL=$((FAIL + 1))
 fi
 
-run_test "allows commit with resolved identity" \
-    "${HOOKS}/git-author-guard.py" \
-    "${FIXTURES}/bash-git-commit-resolved-identity.json" 0
+echo -n "  "
+ACTUAL_RESOLVED=0
+HOME="${RESOLVED_HOME}" GIT_CONFIG_GLOBAL="${RESOLVED_HOME}/.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+    "${HOOKS}/git-author-guard.py" < "${FIXTURES}/bash-git-commit-resolved-identity.json" \
+    >/dev/null 2>&1 || ACTUAL_RESOLVED=$?
+if [[ "${ACTUAL_RESOLVED}" -eq 0 ]]; then
+    echo "PASS: allows commit with resolved identity (exit 0)"
+    PASS=$((PASS + 1))
+else
+    echo "FAIL: allows commit with resolved identity (expected 0, got ${ACTUAL_RESOLVED})"
+    FAIL=$((FAIL + 1))
+fi
 
 run_test "allows clean push" \
     "${HOOKS}/git-author-guard.py" \
