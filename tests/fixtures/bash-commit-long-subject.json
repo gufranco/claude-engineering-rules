@@ -1,6 +1,6 @@
 {
   "tool_name": "Bash",
-  "input": {
+  "tool_input": {
     "command": "git commit -m \"feat(authentication): add comprehensive OAuth2 login flow with Google and GitHub SSO providers and session management\""
   }
 }

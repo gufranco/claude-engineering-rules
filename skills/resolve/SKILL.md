@@ -1,8 +1,8 @@
 ---
 name: resolve
 description: Guided merge conflict resolution with verification. Shows each conflict with context from both branches, suggests resolution based on understanding both changes, verifies tests pass after resolution, and checks that no functionality was lost. Use when user says "resolve conflicts", "merge conflict", "fix conflicts", "rebase failed", "conflict resolution", or has merge conflicts to resolve. Do NOT use for general debugging (use /investigate), code review (use /review), or git workflow questions.
+sensitive: true
 ---
-
 Interactive conflict resolution that understands the intent behind each side of a conflict. Resolves conflicts one at a time with test verification after all conflicts are resolved.
 
 ## Arguments

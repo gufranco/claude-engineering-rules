@@ -1,8 +1,8 @@
 ---
 name: breaking-change
 description: API breaking change management. Identifies all consumers of a changing API, generates a deprecation plan with timeline, creates the new API version alongside the old one, adds deprecation headers, and drafts a migration guide. Use when user says "breaking change", "deprecate API", "API migration", "version the API", "consumer migration", "sunset endpoint", or needs to change an API that has consumers. Do NOT use for non-breaking API changes, code review (use /review), or general planning (use /plan).
+sensitive: true
 ---
-
 Breaking change management that finds every consumer of the changing interface, creates the new version alongside the old one, adds deprecation signals, and drafts a migration guide. Ensures both versions work simultaneously during the transition period.
 
 ## When to use

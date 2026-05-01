@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "db/migrations/0001_init.sql",
+    "content": "CREATE TABLE users (id BIGSERIAL PRIMARY KEY, email TEXT NOT NULL);"
+  }
+}

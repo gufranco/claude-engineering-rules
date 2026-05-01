@@ -90,11 +90,21 @@ def validate_agent(filepath):
     elif isinstance(tools, list) and len(tools) == 0:
         errors.append(f"  {rel_path}: 'tools' list is empty")
 
-    # Check body contains cascade prevention
+    # Check body contains cascade prevention and push prohibition.
+    # Use file:line citations so agents can be audited quickly.
     body = content.split("---", 2)[-1] if content.count("---") >= 2 else ""
+    body_offset = content.find(body) if body else 0
+    body_line_start = content[:body_offset].count("\n") + 1
+
     if "Do not spawn subagents" not in body:
         errors.append(
-            f"  {rel_path}: missing 'Do not spawn subagents' constraint in body"
+            f"  {rel_path}:{body_line_start}: body missing 'Do not spawn subagents' constraint"
+        )
+
+    if not re.search(r"do not push", body, re.IGNORECASE):
+        errors.append(
+            f"  {rel_path}:{body_line_start}: body missing 'Do not push' prohibition "
+            f"(orchestrator pushes; agents must not)"
         )
 
     return errors

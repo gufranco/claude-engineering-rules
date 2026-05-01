@@ -1,6 +1,6 @@
 {
   "tool_name": "Edit",
-  "input": {
+  "tool_input": {
     "file_path": "/tmp/test-project/src/user.service.test.ts"
   }
 }

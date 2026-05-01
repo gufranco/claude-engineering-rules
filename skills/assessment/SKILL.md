@@ -1,8 +1,8 @@
 ---
 name: assessment
 description: Architecture completeness audit for an implementation. Finds missing patterns, planted defects, and opportunities to stand out. Use when user says "assess", "what am I missing", "interview prep", "take-home review", "check my architecture", "pre-submission audit", or wants to verify an implementation covers all engineering patterns before declaring it done. Do NOT use for diff-based code review (use /review), security-only audits (use /audit), or running tests (use /test).
+sensitive: true
 ---
-
 Perform an architecture completeness audit on an implementation. Unlike `/review` which checks diffs for correctness, this skill reads the full implementation and identifies **what's missing**: architectural patterns, resilience strategies, security measures, API contracts, and design decisions that should be present but aren't.
 
 Designed for self-assessment before submitting work, whether in an interview, a take-home, or before declaring a feature complete.
@@ -52,7 +52,7 @@ This skill accepts optional arguments after `/assessment`:
 
    Match signals against trigger keywords in the `on_demand` section of the index. Load **every** matched standard file. Also load **all** `always_loaded` rules.
 
-   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 58-category checklist. A project using PostgreSQL loads `standards/database.md`. A project with GraphQL loads `standards/graphql-api-design.md`. A project with Terraform loads `standards/terraform-testing.md`. Every applicable standard is loaded, no exceptions.
+   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 68-category checklist. A project using PostgreSQL loads `standards/database.md`. A project with GraphQL loads `standards/graphql-api-design.md`. A project with Terraform loads `standards/terraform-testing.md`. Every applicable standard is loaded, no exceptions.
 
    Additionally, load these rules for use during fix and convergence phases:
    - `rules/pre-flight.md`: verify interfaces before implementing fixes
@@ -205,7 +205,7 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 58 checklist categories, also assess:
+   In addition to the 68 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
@@ -335,7 +335,7 @@ Comment guidelines:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate `../../checklists/checklist.md`? Run all 58 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
+       - Did any fix violate `../../checklists/checklist.md`? Run all 68 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
        - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
@@ -377,7 +377,7 @@ Comment guidelines:
 
 ## Assessment Checklist Categories
 
-The full 58-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted, category 51 (Deployment Verification) when the project deploys, category 52 (Design Quality) when a frontend is present, category 53 (LLM Trust Boundary) when code processes LLM output, category 54 (Performance Budget) for frontend, category 55 (Zero-Downtime Deployment) for production deploys, category 56 (Supply Chain) for dependency changes, category 57 (Event-Driven) for message-based systems, and category 58 (Licensing) for new or modified source files.
+The full 68-category checklist lives in `../../checklists/checklist.md` (shared with completion gates and `/review`). Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Category 50 (Clean Room) applies when external sources were consulted, category 51 (Deployment Verification) when the project deploys, category 52 (Design Quality) when a frontend is present, category 53 (LLM Trust Boundary) when code processes LLM output, category 54 (Performance Budget) for frontend, category 55 (Zero-Downtime Deployment) for production deploys, category 56 (Supply Chain) for dependency changes, category 57 (Event-Driven) for message-based systems, and category 58 (Licensing) for new or modified source files.
 
 ## Output Format
 
@@ -409,7 +409,7 @@ The full 58-category checklist lives in `../../checklists/checklist.md` (shared 
 | Output verification | PASS / FAIL / N/A | [Expected vs actual results] |
 
 ## Classification
-[System traits detected and which applicable categories from the 58-category checklist apply]
+[System traits detected and which applicable categories from the 68-category checklist apply]
 
 ## Standards Applied
 

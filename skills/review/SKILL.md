@@ -1,8 +1,8 @@
 ---
 name: review
-description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 58-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. Do NOT use for full architecture assessment (use /assessment), security scanning (use /audit), or shipping code (use /ship).
+description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 68-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. Do NOT use for full architecture assessment (use /assessment), security scanning (use /audit), or shipping code (use /ship).
+sensitive: true
 ---
-
 Unified review skill covering code quality, QA analysis, and visual design audit. Replaces standalone `/review`, `/qa`, and `/design-review` skills.
 
 ## Subcommand Routing
@@ -22,7 +22,7 @@ If no subcommand is given, default to `code`.
 Review a pull request, merge request, or local branch changes with rigorous, detail-oriented analysis. Every line of the diff is scrutinized for correctness, security, performance, maintainability, and adherence to best practices.
 
 Use two references:
-1. `../../checklists/checklist.md` for all 58 quality categories.
+1. `../../checklists/checklist.md` for all 68 quality categories.
 2. `reviewer-prompt.md` in this directory for comment format and examples.
 
 ### Arguments
@@ -410,7 +410,7 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - Always present the full review before posting comments.
 - Never approve a PR with failing tests, stale branch, or missing test evidence.
 - Always restore account per `standards/borrow-restore.md`.
-- Apply all 58 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
+- Apply all 68 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
 - When the diff touches authentication, load `standards/authentication.md` and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
 - When the diff adds or modifies dependencies, apply category 56 (Supply Chain): check for typosquatting, verify lockfile integrity, check for known vulnerabilities.
 - When the diff includes database migrations, apply category 55 (Zero-Downtime Deployment): verify expand-contract pattern, backward compatibility with previous app version.

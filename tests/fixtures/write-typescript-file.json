@@ -1,1 +1,6 @@
-{"tool_name":"Write","input":{"file_path":"/tmp/project/src/app.ts"}}
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/tmp/project/src/app.ts"
+  }
+}

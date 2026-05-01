@@ -1,8 +1,8 @@
 ---
 name: incident
 description: Gather incident context and generate a blameless postmortem from the template in observability rules. Use when user says "postmortem", "incident report", "outage report", "what happened", "write a post-mortem", or needs to document an incident with timeline, root cause, and action items.
+sensitive: true
 ---
-
 Gather incident data from multiple sources, like recent deploys, error spikes, affected services, and recent changes, and produce a structured blameless postmortem following the template in `standards/observability.md`. Can also help during active incidents by collecting diagnostic information.
 
 ## When to use

@@ -1,8 +1,8 @@
 ---
 name: setup
 description: Interactive project environment setup. Reads .env.example, prompts for missing values, detects required services and offers to start them via Docker, runs migrations, seeds the database, and verifies the app starts successfully. Use when user says "setup", "set up the project", "configure environment", "first time setup", "get this running", "initialize", or is setting up a project for the first time. Do NOT use for infrastructure management (use /infra), deployment (use /deploy), or README generation (use /readme).
+sensitive: true
 ---
-
 First-time project setup that detects the stack, installs dependencies, configures the environment, starts required services, runs database migrations and seeds, and verifies the application starts. Interactive: prompts for missing environment values and confirms before starting services.
 
 ## When to use

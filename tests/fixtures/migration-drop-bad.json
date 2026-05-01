@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "prisma/migrations/20260101120000_drop_legacy/migration.sql",
+    "content": "DROP TABLE legacy_users;"
+  }
+}

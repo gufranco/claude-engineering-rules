@@ -1,1 +1,6 @@
-{"tool_name": "Bash", "input": {"command": "docker --context colima-projectA ps"}}
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "docker --context colima-projectA ps"
+  }
+}

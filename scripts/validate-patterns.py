@@ -17,13 +17,42 @@ import sys
 CLAUDE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BLOCKER_PATH = os.path.join(CLAUDE_DIR, "hooks", "dangerous-command-blocker.py")
 
-PATTERN_LISTS = ["CATASTROPHIC", "CRITICAL_PATHS", "SUSPICIOUS"]
+# Lists treated as known and required. Other ALL_CAPS list assignments are
+# discovered automatically so the validator follows the hook source instead of
+# a hand-maintained allowlist.
+KNOWN_LISTS = {"CATASTROPHIC", "CRITICAL_PATHS", "SUSPICIOUS", "SAFE_CLEANUP"}
+
+
+def discover_pattern_lists(tree: ast.AST) -> set[str]:
+    discovered: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if not isinstance(target, ast.Name):
+                continue
+            name = target.id
+            if not name.isupper():
+                continue
+            if not isinstance(node.value, ast.List):
+                continue
+            for elt in node.value.elts:
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                    discovered.add(name)
+                    break
+                if isinstance(elt, ast.Tuple) and elt.elts:
+                    first = elt.elts[0]
+                    if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                        discovered.add(name)
+                        break
+    return discovered
 
 
 def extract_patterns(source):
-    """Extract all regex pattern strings from the blocker source."""
     tree = ast.parse(source)
-    patterns = {}
+    discovered = discover_pattern_lists(tree)
+    pattern_lists = sorted(discovered)
+    patterns: dict[str, list[str]] = {}
 
     for node in ast.walk(tree):
         if not isinstance(node, ast.Assign):
@@ -31,19 +60,18 @@ def extract_patterns(source):
         for target in node.targets:
             if not isinstance(target, ast.Name):
                 continue
-            if target.id not in PATTERN_LISTS:
+            if target.id not in pattern_lists:
                 continue
 
             list_name = target.id
             patterns[list_name] = []
-
             if not isinstance(node.value, ast.List):
                 continue
 
             for elt in node.value.elts:
                 if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                     patterns[list_name].append(elt.value)
-                elif isinstance(elt, ast.Tuple) and len(elt.elts) >= 1:
+                elif isinstance(elt, ast.Tuple) and elt.elts:
                     first = elt.elts[0]
                     if isinstance(first, ast.Constant) and isinstance(first.value, str):
                         patterns[list_name].append(first.value)
@@ -64,7 +92,14 @@ def main():
     all_patterns = []
     total = 0
 
-    for list_name in PATTERN_LISTS:
+    discovered_names = sorted(patterns.keys())
+    missing_required = KNOWN_LISTS - set(discovered_names)
+    if missing_required:
+        all_errors.append(
+            f"  Required pattern list(s) missing from blocker: {sorted(missing_required)}"
+        )
+
+    for list_name in discovered_names:
         pats = patterns.get(list_name, [])
         total += len(pats)
         print(f"  {list_name}: {len(pats)} patterns")

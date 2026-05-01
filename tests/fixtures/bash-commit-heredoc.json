@@ -1,6 +1,6 @@
 {
   "tool_name": "Bash",
-  "input": {
+  "tool_input": {
     "command": "git commit -m \"$(cat <<'EOF'\nfeat(auth): add SSO login\n\nAdd Google and GitHub OAuth2 providers.\nEOF\n)\""
   }
 }

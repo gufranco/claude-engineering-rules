@@ -1,1 +1,6 @@
-{"tool_name": "Bash", "input": {"command": "kubectl --context prod-cluster get pods"}}
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "kubectl --context prod-cluster get pods"
+  }
+}

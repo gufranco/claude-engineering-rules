@@ -15,7 +15,7 @@ COMMAND=$(echo "${INPUT}" | python3 -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
-    print(data.get('input', {}).get('command', ''))
+    print(data.get('tool_input', data.get('input', {})).get('command', ''))
 except:
     pass
 " 2>/dev/null)
@@ -86,6 +86,31 @@ if [[ "${SUBJECT_LENGTH}" -gt 50 ]]; then
     echo "  Keep the subject concise. Use the body for details."
     exit 2
 fi
+
+# Validate body line length (max 72 chars per line, per git-workflow rule).
+# Skip the subject (line 1) and lines that look like trailers, URLs, or code.
+LINE_NUM=0
+while IFS= read -r body_line; do
+    LINE_NUM=$((LINE_NUM + 1))
+    [[ "${LINE_NUM}" -le 1 ]] && continue
+    [[ -z "${body_line}" ]] && continue
+    # Skip trailers, URLs, indented code blocks
+    if echo "${body_line}" | grep -qE '^(Rejected|Constraint|Risk|Fixes|Closes|Refs|Co-authored-by|Signed-off-by|BREAKING CHANGE):'; then
+        continue
+    fi
+    if echo "${body_line}" | grep -qE '^(    |\t|https?://)'; then
+        continue
+    fi
+    BODY_LENGTH=${#body_line}
+    if [[ "${BODY_LENGTH}" -gt 72 ]]; then
+        echo "BLOCKED: Commit body line ${LINE_NUM} is ${BODY_LENGTH} characters (max 72)."
+        echo ""
+        echo "  Got: ${body_line}"
+        echo ""
+        echo "  Wrap body lines at 72 characters."
+        exit 2
+    fi
+done <<< "${MESSAGE}"
 
 # Validate decision trailers format (optional, but must be correct when present)
 TRAILER_PATTERN='^(Rejected|Constraint|Risk): .+'

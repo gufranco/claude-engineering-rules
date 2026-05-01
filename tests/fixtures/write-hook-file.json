@@ -1,1 +1,6 @@
-{"tool_name":"Write","input":{"file_path":"/tmp/project/hooks/my-hook.sh"}}
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/tmp/project/hooks/my-hook.sh"
+  }
+}

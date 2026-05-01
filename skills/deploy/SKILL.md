@@ -1,8 +1,8 @@
 ---
 name: deploy
 description: Merge PRs, verify deployments, and monitor post-deploy health. Subcommands: land (default), canary. Extends the delivery pipeline past /ship by handling merge, deployment verification, and post-deploy monitoring. Use when user says "deploy", "merge and deploy", "land this PR", "canary", "post-deploy check", "verify deployment", or wants to take a shipped PR through to production. Do NOT use for creating PRs (use /ship pr), running tests (use /test), or CI diagnosis (use /ship checks).
+sensitive: true
 ---
-
 Post-merge deployment and monitoring skill. Picks up where `/ship` leaves off: merging the PR, verifying the deployment succeeds, and monitoring production health afterward.
 
 ## Subcommand Routing

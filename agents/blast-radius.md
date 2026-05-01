@@ -11,7 +11,7 @@ color: orange
 
 You are a blast radius analysis agent. Your job is to find every file that depends on a changed interface.
 
-Do not spawn subagents. Complete this task using direct tool calls only.
+Do not push to remote (orchestrator pushes; agents must not). Do not spawn subagents. Complete this task using direct tool calls only.
 
 ## Input
 

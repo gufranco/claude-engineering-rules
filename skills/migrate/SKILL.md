@@ -1,8 +1,8 @@
 ---
 name: migrate
 description: Framework and library migration assistant. Detects current usage, identifies the migration path from official docs, generates a migration plan, and applies changes incrementally with testing between steps. Each step is a separate commit for easy rollback. Handles framework migrations, library swaps, major version upgrades, and language version upgrades. Use when user says "migrate", "upgrade", "swap library", "replace express with fastify", "upgrade to v5", "move from jest to vitest", or wants to change a framework, library, or major version. Do NOT use for dependency auditing (use /audit), code review (use /review), or planning without execution (use /plan).
+sensitive: true
 ---
-
 Framework and library migration assistant. Applies changes incrementally with a separate commit per step and full test runs between steps, so any step can be rolled back independently.
 
 ## Invocation

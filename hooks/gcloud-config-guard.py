@@ -52,7 +52,7 @@ def main() -> None:
     except (json.JSONDecodeError, EOFError):
         sys.exit(0)
 
-    command = data.get("input", {}).get("command", "")
+    command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:
         sys.exit(0)
 
