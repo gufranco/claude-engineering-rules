@@ -267,6 +267,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/git-author-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash ~/.claude/hooks/large-file-blocker.sh"
           }
         ]
