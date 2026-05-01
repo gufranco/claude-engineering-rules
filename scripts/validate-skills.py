@@ -71,7 +71,6 @@ def validate_skill(skill_dir: str) -> list[str]:
     declared = fields.get("sensitive", "false").lower() in {"true", "yes", "1"}
     if sensitive_match and not declared:
         line_num = body[:sensitive_match.start()].count("\n") + 1
-        offset = content.find(body) // 1
         absolute_line = content[:content.find(body)].count("\n") + line_num
         errors.append(
             f"  {rel}/SKILL.md:{absolute_line}: body mentions irreversible action "

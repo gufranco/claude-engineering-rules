@@ -6,7 +6,6 @@ validator runs on a clean machine without PyYAML.
 """
 
 import os
-import re
 import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
