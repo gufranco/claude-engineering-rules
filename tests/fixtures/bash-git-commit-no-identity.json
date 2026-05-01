@@ -1,0 +1,6 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "cd /tmp/git-author-guard-fixture-no-identity && git commit -m test"
+  }
+}

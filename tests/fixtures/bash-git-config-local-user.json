@@ -1,0 +1,6 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git config --local user.email alice@example.com"
+  }
+}
