@@ -59,6 +59,7 @@ SKIPPED_DOCS = (
     "/.claude/checklists/",
     "/.claude/hooks/",
     "/.claude/skills/",
+    "/.claude/specs/",
 )
 
 
