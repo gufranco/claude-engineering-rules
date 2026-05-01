@@ -21,6 +21,7 @@ These CLIs are covered. Each has a per-command form that bypasses global state, 
 | `terraform` workspace | `TF_WORKSPACE=<name> terraform ...` env | `terraform workspace select <name>` | `hooks/terraform-workspace-guard.py` |
 | `mise` | Project-local `.mise.toml` / `.tool-versions`, `mise exec <tool>@<version> -- ...`, `mise x <tool>@<version> -- ...` | `mise use --global <tool>@<version>`, `mise use -g <tool>@<version>` | `hooks/mise-global-guard.py` |
 | `helm` | `helm --kube-context <name> ...` | `kubectl config use-context` upstream | covered transitively via `kubectl-context-guard.py` |
+| `git` (author identity) | `~/.gitconfig` `includeIf "hasconfig:remote.*.url:..."` resolves identity per remote | `git config --local user.*`, `GIT_AUTHOR_EMAIL=` env on `git commit`, push of commits authored under a placeholder identity | `hooks/git-author-guard.py` |
 
 Niche CLIs not covered yet (vercel, netlify, fly, az, doctl, heroku, firebase, supabase) follow the same principle: prefer per-command tokens or flags. Add a hook when the user starts running them multi-account.
 
@@ -165,4 +166,5 @@ When the user starts running a new CLI multi-account, add coverage in five steps
 - `standards/github-accounts.md`: detailed per-command rules for `gh`.
 - `standards/gitlab-accounts.md`: detailed per-command rules for `glab`.
 - `standards/borrow-restore.md`: fallback pattern for tools without a per-command form.
+- `standards/git-identity.md`: author identity isolation for git, including the includeIf template and hook contract.
 - `standards/hook-authoring.md`: performance budget and exit-code semantics for new hooks.
