@@ -26,9 +26,19 @@ Cross-platform: works on macOS and Linux (Ubuntu).
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
+
+# Best-effort import of the shared audit log helper. Silent fallback keeps the
+# hook functional even if the script directory is not on sys.path.
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
 
 # ---------------------------------------------------------------------------
 # Safe cleanup commands. Bypass all checks — these are harmless.
@@ -63,6 +73,11 @@ CATASTROPHIC = [
     r">\s*/dev/[sh]d",                                      # write to raw disk
     r"\bshred\s+.*(/dev/|/boot/|/etc/)",                   # shred system paths
     r"\bwipefs\b.*(/dev/[sh]d|/dev/nvme)",                 # wipe filesystem signatures
+    r"\bdd\s+.*\bof=/dev/(disk|rdisk|loop|md|mapper)",     # dd to additional device classes
+    r"\bfind\s+[/~]\S*\s+.*-delete\b",                      # find / -delete or find ~ -delete
+    r"\bfind\s+[/~]\S*\s+.*-exec\s+rm\b",                   # find -exec rm on system roots
+    r"\bxargs\s+(-[a-zA-Z0]*\s+)*rm\s+(-[a-zA-Z]*[rRf])",  # xargs rm -rf pipelines
+    r"\btar\s+.*--absolute-(names|paths)\b.*\bx",           # tar extract with absolute paths
     # Remote code execution and reverse shells
     r"\bwget\b.*\|\s*(ba)?sh",                              # pipe remote script to shell
     r"\bcurl\b.*\|\s*(ba)?sh",                              # pipe remote script to shell
@@ -311,9 +326,6 @@ SUSPICIOUS = [
     (r"\bdocker\s+stop\b", "docker stop halts a running container"),
     (r"\bnpm\s+publish\b", "npm publish pushes a package to the registry"),
     (r"\bgit\s+tag\s+-d\b", "git tag -d deletes a local tag"),
-    (r"\bgit\s+reset\s+--hard\b", "git reset --hard, confirm with user first"),
-    (r"\bgit\s+clean\s+.*-f", "git clean -f, confirm the working directory is correct"),
-    (r"\bgit\s+checkout\s+\.\s*$", "git checkout . discards unstaged changes, confirm first"),
 ]
 
 
@@ -323,7 +335,7 @@ def main():
     except (json.JSONDecodeError, EOFError):
         sys.exit(0)
 
-    command = data.get("input", {}).get("command", "")
+    command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:
         sys.exit(0)
 
@@ -335,12 +347,17 @@ def main():
     # Level 1: Catastrophic
     for pattern in CATASTROPHIC:
         if re.search(pattern, command):
+            _audit(hook="dangerous-command-blocker", decision="block",
+                   level="catastrophic", pattern=pattern, command=command[:300])
             print(f"BLOCKED: Catastrophic command detected.\nCommand: {command}")
             sys.exit(2)
 
     # Level 2: Critical paths and destructive operations
     for pattern, reason in CRITICAL_PATHS:
         if re.search(pattern, command):
+            _audit(hook="dangerous-command-blocker", decision="block",
+                   level="critical", pattern=pattern, reason=reason,
+                   command=command[:300])
             print(f"BLOCKED: {reason}\nCommand: {command}")
             sys.exit(2)
 
@@ -374,6 +391,8 @@ def main():
             and not re.search(r"\borigin\s+\w", command)
         )
         if targets_protected:
+            _audit(hook="dangerous-command-blocker", decision="block",
+                   level="protected-branch", branch=branch, command=command[:300])
             print(
                 f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
                 "Use a feature branch and create a PR instead.\n"

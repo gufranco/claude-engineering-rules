@@ -15,7 +15,7 @@ import json, sys
 try:
     data = json.load(sys.stdin)
     tool = data.get('tool_name', '')
-    path = data.get('input', {}).get('file_path', '')
+    path = data.get('tool_input', data.get('input', {})).get('file_path', '')
     print(f'{tool}\n{path}')
 except Exception:
     pass
@@ -34,17 +34,19 @@ esac
 
 BASENAME=$(basename "${FILE_PATH}")
 
-# Block .env files (except .env.example and .env.template)
+# Block .env files. Whitelist documentation forms first, then block any
+# remaining .env* file by suffix match. Suffix matching catches .env.shared,
+# .env.team, .env.docker.local, .env.production.local, etc.
 case "${BASENAME}" in
-    .env|.env.local|.env.production|.env.staging|.env.development|.env.testing|.env.ci|.env.docker)
+    .env.example|.env.template|.env.sample|.env.defaults)
+        exit 0
+        ;;
+    .env|.env.*)
         echo "BLOCKED: Cannot modify ${BASENAME}. Environment files may contain secrets."
         echo "  File: ${FILE_PATH}"
         echo ""
         echo "  If you need to document a new env var, update .env.example instead."
         exit 2
-        ;;
-    .env.example|.env.template|.env.sample|.env.defaults)
-        exit 0
         ;;
     *) ;;
 esac

@@ -1,8 +1,8 @@
 ---
 name: infra
 description: Manage infrastructure for local development. Subcommands: docker, terraform, db. Covers container orchestration with Colima awareness, IaC workflows with safety gates, and database migrations with ORM detection. Use when user says "docker compose", "start containers", "terraform plan", "run migration", "create migration", "database setup", or needs to manage local dev infrastructure. Do NOT use for deploying to production (use CI/CD), security scanning (use /audit), or Terraform test patterns (check standards/terraform-testing.md).
+sensitive: true
 ---
-
 Unified infrastructure skill for local development. Replaces standalone `/docker`, `/terraform`, and `/db` skills.
 
 ## Subcommand Routing

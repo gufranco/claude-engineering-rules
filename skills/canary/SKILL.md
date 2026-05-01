@@ -1,8 +1,8 @@
 ---
 name: canary
 description: Post-deploy monitoring as a standalone skill. Checks HTTP status, response time, and response body validity at regular intervals, compares against a pre-deploy baseline, and produces a clean deploy report or a regression report with timestamps and evidence. Use when user says "canary", "monitor deploy", "watch production", "post-deploy check", "health monitor", or wants to monitor a URL or service after deployment. Do NOT use for merging PRs (use /deploy land), CI checks (use /ship checks), or incident reports (use /incident).
+sensitive: true
 ---
-
 Standalone post-deploy monitoring skill. Polls a target URL at regular intervals, checks for regressions against a baseline, and produces a report with evidence.
 
 ## Invocation

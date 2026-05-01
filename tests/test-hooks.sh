@@ -502,6 +502,33 @@ run_test "allows mise current" \
     "${FIXTURES}/bash-mise-current.json" 0
 
 echo ""
+echo "=== Migration Idempotency ==="
+
+run_test "blocks CREATE TABLE without IF NOT EXISTS" \
+    "${HOOKS}/migration-idempotency.py" \
+    "${FIXTURES}/migration-create-table-bad.json" 2
+
+run_test "allows CREATE TABLE IF NOT EXISTS" \
+    "${HOOKS}/migration-idempotency.py" \
+    "${FIXTURES}/migration-create-table-good.json" 0
+
+run_test "blocks DROP TABLE without IF EXISTS" \
+    "${HOOKS}/migration-idempotency.py" \
+    "${FIXTURES}/migration-drop-bad.json" 2
+
+run_test "blocks CREATE INDEX without CONCURRENTLY" \
+    "${HOOKS}/migration-idempotency.py" \
+    "${FIXTURES}/migration-create-index-blocking.json" 2
+
+run_test "allows CREATE INDEX CONCURRENTLY IF NOT EXISTS" \
+    "${HOOKS}/migration-idempotency.py" \
+    "${FIXTURES}/migration-create-index-concurrently.json" 0
+
+run_test "ignores DDL outside migration paths" \
+    "${HOOKS}/migration-idempotency.py" \
+    "${FIXTURES}/migration-non-migration-path.json" 0
+
+echo ""
 echo "=== Results ==="
 echo "  Passed: ${PASS}"
 echo "  Failed: ${FAIL}"

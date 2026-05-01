@@ -121,6 +121,11 @@ on_demand:
     description: Hook performance budget under 500ms, exit codes, stdin JSON parsing, testing with fixtures, graceful error handling
     triggers: [hook, PreToolUse, PostToolUse, exit code, stdin, blocker, guard]
 
+  rules-vs-standards:
+    path: standards/rules-vs-standards.md
+    description: Two-tier configuration taxonomy explaining when to add to rules/ (always loaded) vs standards/ (on demand), trigger design, splitting/merging criteria, MCP server triage
+    triggers: [rules, standards, taxonomy, tier, two-tier, on-demand, always-loaded, trigger, mcp triage, config layout, where to put, rule vs standard]
+
   licensing:
     path: standards/licensing.md
     description: SPDX-License-Identifier headers, SPDX-FileCopyrightText, license expressions (AND/OR/WITH), REUSE.toml, .license sidecar files, snippet tags, LICENSES/ directory, license compatibility, CI enforcement
@@ -400,3 +405,23 @@ on_demand:
     path: standards/typescript-5x.md
     description: using and await using for resource management, NoInfer, verbatimModuleSyntax, regex syntax checking, inferred type predicates
     triggers: [typescript 5, using, await using, NoInfer, verbatimModuleSyntax, symbol.dispose, ts 5, typescript pattern]
+
+  postgresql:
+    path: standards/postgresql.md
+    description: PostgreSQL-specific guidance, connection pools, transactions and isolation, indexes, vacuum and bloat, JSONB, replication, extensions
+    triggers: [postgres, postgresql, pgbouncer, pg_repack, pg_stat_statements, jsonb, vacuum, autovacuum, replication, pgcrypto, pg_trgm]
+
+  rust:
+    path: standards/rust.md
+    description: Rust strictness, ownership and lifetimes, error handling with thiserror and anyhow, async with Tokio, performance, unsafe with SAFETY comments, testing
+    triggers: [rust, cargo, clippy, tokio, anyhow, thiserror, lifetime, ownership, borrow checker, miri]
+
+  go:
+    path: standards/go.md
+    description: Go linting, error handling with errors.Is and errors.As, context propagation, concurrency with errgroup, slices and maps, generics, testing, build tags
+    triggers: [go, golang, gofmt, golangci-lint, staticcheck, errgroup, goroutine, channel, go.mod]
+
+  jvm:
+    path: standards/jvm.md
+    description: JVM languages, Java and Kotlin tooling, Gradle, strictness, null handling with JSpecify and Kotlin types, immutability, virtual threads, coroutines, JUnit 5, Spring constructor injection
+    triggers: [java, kotlin, jvm, gradle, maven, spring, junit, kotest, coroutine, virtual thread, jmh, mockito]

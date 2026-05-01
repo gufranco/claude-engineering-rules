@@ -1,1 +1,6 @@
-{"tool_name": "Bash", "input": {"command": "GITLAB_TOKEN=glpat-xxx GITLAB_HOST=gitlab.com glab mr list"}}
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "GITLAB_TOKEN=glpat-xxx GITLAB_HOST=gitlab.com glab mr list"
+  }
+}

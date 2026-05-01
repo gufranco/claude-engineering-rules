@@ -1,1 +1,6 @@
-{"tool_name":"Bash","input":{"command":"gcloud compute instances delete prod-vm --zone us-east1-b"}}
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "gcloud compute instances delete prod-vm --zone us-east1-b"
+  }
+}

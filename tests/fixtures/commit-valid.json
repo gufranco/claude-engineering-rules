@@ -1,6 +1,6 @@
 {
   "tool_name": "Bash",
-  "input": {
+  "tool_input": {
     "command": "git commit -m \"feat(auth): add SSO login with Google provider\""
   }
 }

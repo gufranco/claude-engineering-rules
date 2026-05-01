@@ -16,7 +16,7 @@ COMMAND=$(echo "${INPUT}" | python3 -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
-    print(data.get('input', {}).get('command', ''))
+    print(data.get('tool_input', data.get('input', {})).get('command', ''))
 except Exception:
     pass
 " 2>/dev/null)

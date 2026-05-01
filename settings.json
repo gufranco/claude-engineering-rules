@@ -1,519 +1,12 @@
 {
-  "$schema" : "https:\/\/json.schemastore.org\/claude-code-settings.json",
-  "attribution" : {
-    "commit" : "",
-    "pr" : ""
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "",
+    "pr": ""
   },
-  "autoUpdatesChannel" : "stable",
-  "effortLevel" : "high",
-  "hooks" : {
-    "PostCompact" : [
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/compact-context-saver.sh post",
-            "type" : "command"
-          }
-        ],
-        "matcher" : ""
-      }
-    ],
-    "PostToolUse" : [
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/smart-formatter.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Edit"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/smart-formatter.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "MultiEdit"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/smart-formatter.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Write"
-      }
-    ],
-    "PreCompact" : [
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/compact-context-saver.sh pre",
-            "type" : "command"
-          }
-        ],
-        "matcher" : ""
-      }
-    ],
-    "PreToolUse" : [
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/dangerous-command-blocker.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/secret-scanner.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/conventional-commits.sh",
-            "if" : "Bash(git commit *)",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/gh-token-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/glab-token-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/docker-context-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/kubectl-context-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/aws-profile-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/gcloud-config-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/terraform-workspace-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "python3 ~\/.claude\/hooks\/mise-global-guard.py",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/large-file-blocker.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/env-file-guard.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Write"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/env-file-guard.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Edit"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/env-file-guard.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "MultiEdit"
-      },
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/rtk-rewrite.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "Bash"
-      }
-    ],
-    "SessionStart" : [
-      {
-        "hooks" : [
-          {
-            "command" : "bash ~\/.claude\/hooks\/compact-context-saver.sh post",
-            "type" : "command"
-          }
-        ],
-        "matcher" : ""
-      }
-    ],
-    "Stop" : [
-      {
-        "hooks" : [
-          {
-            "command" : "if command -v osascript >\/dev\/null 2>&1; then osascript -e 'display notification \"Response complete\" with title \"Claude Code\"'; elif command -v notify-send >\/dev\/null 2>&1; then notify-send 'Claude Code' 'Response complete'; fi",
-            "type" : "command"
-          },
-          {
-            "command" : "bash ~\/.claude\/hooks\/notify-webhook.sh",
-            "type" : "command"
-          }
-        ],
-        "matcher" : ""
-      }
-    ],
-    "StopFailure" : [
-      {
-        "hooks" : [
-          {
-            "command" : "if command -v osascript >\/dev\/null 2>&1; then osascript -e 'display notification \"Rate limit hit. Auto-continue monitor is active.\" with title \"Claude Code\"'; elif command -v notify-send >\/dev\/null 2>&1; then notify-send 'Claude Code' 'Rate limit hit. Auto-continue monitor is active.'; fi",
-            "type" : "command"
-          }
-        ],
-        "matcher" : "rate_limit"
-      }
-    ]
-  },
-  "includeGitInstructions" : false,
-  "language" : "english",
-  "mcpServers" : {
-    "asana" : {
-      "url" : "https:\/\/mcp.asana.com\/v2\/mcp"
-    },
-    "atlassian" : {
-      "url" : "https:\/\/mcp.atlassian.com\/v1\/mcp"
-    },
-    "aws" : {
-      "args" : [
-        "-y",
-        "mcp-server-aws"
-      ],
-      "command" : "npx"
-    },
-    "brave-search" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-brave-search"
-      ],
-      "command" : "npx",
-      "env" : {
-        "BRAVE_API_KEY" : "${BRAVE_API_KEY}"
-      }
-    },
-    "cloudflare" : {
-      "args" : [
-        "-y",
-        "@cloudflare\/mcp-server-cloudflare"
-      ],
-      "command" : "npx",
-      "env" : {
-        "CLOUDFLARE_API_TOKEN" : "${CLOUDFLARE_API_TOKEN}"
-      }
-    },
-    "discord" : {
-      "args" : [
-        "-y",
-        "discord-mcp"
-      ],
-      "command" : "npx",
-      "env" : {
-        "DISCORD_TOKEN" : "${DISCORD_TOKEN}"
-      }
-    },
-    "docker" : {
-      "args" : [
-        "-y",
-        "mcp-server-docker"
-      ],
-      "command" : "npx"
-    },
-    "figma" : {
-      "url" : "https:\/\/mcp.figma.com\/mcp"
-    },
-    "filesystem" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-filesystem",
-        "\/tmp"
-      ],
-      "command" : "npx"
-    },
-    "firecrawl" : {
-      "args" : [
-        "-y",
-        "firecrawl-mcp"
-      ],
-      "command" : "npx",
-      "env" : {
-        "FIRECRAWL_API_KEY" : "${FIRECRAWL_API_KEY}"
-      }
-    },
-    "github" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-github"
-      ],
-      "command" : "npx",
-      "env" : {
-        "GITHUB_PERSONAL_ACCESS_TOKEN" : "${GITHUB_TOKEN}"
-      }
-    },
-    "gitlab" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-gitlab"
-      ],
-      "command" : "npx",
-      "env" : {
-        "GITLAB_PERSONAL_ACCESS_TOKEN" : "${GITLAB_TOKEN}"
-      }
-    },
-    "google-maps" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-google-maps"
-      ],
-      "command" : "npx",
-      "env" : {
-        "GOOGLE_MAPS_API_KEY" : "${GOOGLE_MAPS_API_KEY}"
-      }
-    },
-    "kubernetes" : {
-      "args" : [
-        "-y",
-        "mcp-server-kubernetes"
-      ],
-      "command" : "npx"
-    },
-    "langsmith" : {
-      "args" : [
-        "-y",
-        "langsmith-mcp-server"
-      ],
-      "command" : "npx",
-      "env" : {
-        "LANGSMITH_API_KEY" : "${LANGSMITH_API_KEY}"
-      }
-    },
-    "lighthouse" : {
-      "args" : [
-        "-y",
-        "lighthouse-mcp"
-      ],
-      "command" : "npx"
-    },
-    "linear" : {
-      "url" : "https:\/\/mcp.linear.app\/mcp"
-    },
-    "memory" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-memory"
-      ],
-      "command" : "npx"
-    },
-    "mermaid-chart" : {
-      "url" : "https:\/\/chatgpt.mermaid.ai\/anthropic\/mcp"
-    },
-    "notion" : {
-      "url" : "https:\/\/mcp.notion.com\/mcp"
-    },
-    "obsidian" : {
-      "args" : [
-        "-y",
-        "obsidian-mcp-server"
-      ],
-      "command" : "npx",
-      "env" : {
-        "OBSIDIAN_VAULT_PATH" : "${OBSIDIAN_VAULT_PATH}"
-      }
-    },
-    "ollama" : {
-      "args" : [
-        "-y",
-        "ollama-mcp-server"
-      ],
-      "command" : "npx"
-    },
-    "perplexity" : {
-      "args" : [
-        "-y",
-        "perplexity-mcp"
-      ],
-      "command" : "npx",
-      "env" : {
-        "PERPLEXITY_API_KEY" : "${PERPLEXITY_API_KEY}"
-      }
-    },
-    "playwright" : {
-      "args" : [
-        "-y",
-        "@playwright\/mcp@latest"
-      ],
-      "command" : "npx"
-    },
-    "postgres" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-postgres",
-        "postgresql:\/\/postgres:postgres@localhost:5454\/field_service"
-      ],
-      "command" : "npx"
-    },
-    "puppeteer" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-puppeteer"
-      ],
-      "command" : "npx"
-    },
-    "qdrant" : {
-      "args" : [
-        "mcp-server-qdrant"
-      ],
-      "command" : "uvx",
-      "env" : {
-        "COLLECTION_NAME" : "code-search",
-        "QDRANT_URL" : "http:\/\/localhost:6333",
-        "TOOL_FIND_DESCRIPTION" : "Search for code patterns, implementations, or architectural decisions by describing what you need in natural language",
-        "TOOL_STORE_DESCRIPTION" : "Store code snippets, patterns, and architecture decisions for semantic retrieval"
-      }
-    },
-    "redis" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-redis",
-        "redis:\/\/localhost:6379"
-      ],
-      "command" : "npx"
-    },
-    "resend" : {
-      "args" : [
-        "-y",
-        "mcp-server-resend"
-      ],
-      "command" : "npx",
-      "env" : {
-        "RESEND_API_KEY" : "${RESEND_API_KEY}"
-      }
-    },
-    "semgrep" : {
-      "args" : [
-        "semgrep-mcp"
-      ],
-      "command" : "uvx"
-    },
-    "sentry" : {
-      "url" : "https:\/\/mcp.sentry.dev\/mcp"
-    },
-    "sequential-thinking" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-sequential-thinking"
-      ],
-      "command" : "npx"
-    },
-    "slack" : {
-      "args" : [
-        "-y",
-        "@modelcontextprotocol\/server-slack"
-      ],
-      "command" : "npx",
-      "env" : {
-        "SLACK_BOT_TOKEN" : "${SLACK_BOT_TOKEN}",
-        "SLACK_TEAM_ID" : "${SLACK_TEAM_ID}"
-      }
-    },
-    "supabase" : {
-      "url" : "https:\/\/mcp.supabase.com\/mcp"
-    },
-    "todoist" : {
-      "args" : [
-        "-y",
-        "todoist-mcp-server"
-      ],
-      "command" : "npx",
-      "env" : {
-        "TODOIST_API_TOKEN" : "${TODOIST_API_TOKEN}"
-      }
-    },
-    "vercel" : {
-      "url" : "https:\/\/mcp.vercel.com"
-    }
-  },
-  "model" : "opus",
-  "outputStyle" : "Concise",
-  "permissions" : {
-    "allow" : [
+  "includeGitInstructions": false,
+  "permissions": {
+    "allow": [
       "Read",
       "Write",
       "Edit",
@@ -522,8 +15,8 @@
       "Skill",
       "Bash",
       "NotebookEdit",
-      "Read(\/tmp\/**)",
-      "Read(\/private\/tmp\/**)",
+      "Read(/tmp/**)",
+      "Read(/private/tmp/**)",
       "Bash(git diff *)",
       "Bash(git log *)",
       "Bash(git status)",
@@ -536,93 +29,933 @@
       "Bash(npm run *)",
       "Bash(npx *)"
     ],
-    "deny" : [
-      "Read(.\/.env)",
-      "Read(.\/.env.local)",
-      "Read(.\/.env.production)",
-      "Read(.\/.env.development)",
-      "Read(.\/.env.staging)",
-      "Read(.\/.env.testing)",
-      "Read(.\/.env.ci)",
-      "Read(.\/.env.docker)",
-      "Read(.\/secrets\/**)",
-      "Read(.\/config\/credentials.json)",
-      "Write(.\/.env)",
-      "Write(.\/.env.local)",
-      "Write(.\/.env.production)",
-      "Write(.\/.env.development)",
-      "Write(.\/.env.staging)",
-      "Write(.\/.env.testing)",
-      "Write(.\/.env.ci)",
-      "Write(.\/.env.docker)",
-      "Write(.\/secrets\/**)",
-      "Write(.\/config\/credentials.json)",
-      "Edit(.\/.env)",
-      "Edit(.\/.env.local)",
-      "Edit(.\/.env.production)",
-      "Edit(.\/.env.development)",
-      "Edit(.\/.env.staging)",
-      "Edit(.\/.env.testing)",
-      "Edit(.\/.env.ci)",
-      "Edit(.\/.env.docker)",
-      "Edit(.\/secrets\/**)",
-      "Edit(.\/config\/credentials.json)",
-      "Read(~\/.ssh\/**)",
-      "Write(~\/.ssh\/**)",
-      "Edit(~\/.ssh\/**)",
-      "Read(~\/.aws\/**)",
-      "Write(~\/.aws\/**)",
-      "Edit(~\/.aws\/**)",
-      "Read(~\/.gnupg\/**)",
-      "Write(~\/.gnupg\/**)",
-      "Edit(~\/.gnupg\/**)",
-      "Read(~\/.kube\/config)",
-      "Write(~\/.kube\/config)",
-      "Edit(~\/.kube\/config)",
-      "Read(~\/.docker\/config.json)",
-      "Write(~\/.docker\/config.json)",
-      "Edit(~\/.docker\/config.json)",
-      "Read(~\/.npmrc)",
-      "Write(~\/.npmrc)",
-      "Edit(~\/.npmrc)",
-      "Read(~\/.pypirc)",
-      "Write(~\/.pypirc)",
-      "Edit(~\/.pypirc)",
-      "Read(~\/.netrc)",
-      "Write(~\/.netrc)",
-      "Edit(~\/.netrc)",
-      "Read(.\/**\/*.tfstate)",
-      "Write(.\/**\/*.tfstate)",
-      "Edit(.\/**\/*.tfstate)",
-      "Read(.\/**\/*.tfvars)",
-      "Write(.\/**\/*.tfvars)",
-      "Edit(.\/**\/*.tfvars)",
-      "Read(.\/**\/*-credentials.json)",
-      "Write(.\/**\/*-credentials.json)",
-      "Edit(.\/**\/*-credentials.json)",
-      "Read(.\/**\/*.pem)",
-      "Write(.\/**\/*.pem)",
-      "Edit(.\/**\/*.pem)",
-      "Read(.\/**\/*.key)",
-      "Write(.\/**\/*.key)",
-      "Edit(.\/**\/*.key)",
-      "Read(.\/**\/*id_rsa*)",
-      "Write(.\/**\/*id_rsa*)",
-      "Edit(.\/**\/*id_rsa*)",
-      "Read(.\/**\/*id_ed25519*)",
-      "Write(.\/**\/*id_ed25519*)",
-      "Edit(.\/**\/*id_ed25519*)",
-      "Read(**\/node_modules\/**)"
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.production)",
+      "Read(./.env.development)",
+      "Read(./.env.staging)",
+      "Read(./.env.testing)",
+      "Read(./.env.ci)",
+      "Read(./.env.docker)",
+      "Read(./secrets/**)",
+      "Read(./config/credentials.json)",
+      "Write(./.env)",
+      "Write(./.env.local)",
+      "Write(./.env.production)",
+      "Write(./.env.development)",
+      "Write(./.env.staging)",
+      "Write(./.env.testing)",
+      "Write(./.env.ci)",
+      "Write(./.env.docker)",
+      "Write(./secrets/**)",
+      "Write(./config/credentials.json)",
+      "Edit(./.env)",
+      "Edit(./.env.local)",
+      "Edit(./.env.production)",
+      "Edit(./.env.development)",
+      "Edit(./.env.staging)",
+      "Edit(./.env.testing)",
+      "Edit(./.env.ci)",
+      "Edit(./.env.docker)",
+      "Edit(./secrets/**)",
+      "Edit(./config/credentials.json)",
+      "Read(~/.ssh/**)",
+      "Write(~/.ssh/**)",
+      "Edit(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Write(~/.aws/**)",
+      "Edit(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Write(~/.gnupg/**)",
+      "Edit(~/.gnupg/**)",
+      "Read(~/.kube/config)",
+      "Write(~/.kube/config)",
+      "Edit(~/.kube/config)",
+      "Read(~/.docker/config.json)",
+      "Write(~/.docker/config.json)",
+      "Edit(~/.docker/config.json)",
+      "Read(~/.npmrc)",
+      "Write(~/.npmrc)",
+      "Edit(~/.npmrc)",
+      "Read(~/.pypirc)",
+      "Write(~/.pypirc)",
+      "Edit(~/.pypirc)",
+      "Read(~/.netrc)",
+      "Write(~/.netrc)",
+      "Edit(~/.netrc)",
+      "Read(./**/*.tfstate)",
+      "Write(./**/*.tfstate)",
+      "Edit(./**/*.tfstate)",
+      "Read(./**/*.tfvars)",
+      "Write(./**/*.tfvars)",
+      "Edit(./**/*.tfvars)",
+      "Read(./**/*-credentials.json)",
+      "Write(./**/*-credentials.json)",
+      "Edit(./**/*-credentials.json)",
+      "Read(./**/*.pem)",
+      "Write(./**/*.pem)",
+      "Edit(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Write(./**/*.key)",
+      "Edit(./**/*.key)",
+      "Read(./**/*id_rsa*)",
+      "Write(./**/*id_rsa*)",
+      "Edit(./**/*id_rsa*)",
+      "Read(./**/*id_ed25519*)",
+      "Write(./**/*id_ed25519*)",
+      "Edit(./**/*id_ed25519*)",
+      "Read(**/node_modules/**)"
     ]
   },
-  "showThinkingSummaries" : true,
-  "statusLine" : {
-    "command" : "python3 ~\/.claude\/scripts\/context-monitor.py",
-    "type" : "command"
+  "model": "opus",
+  "hooks": {
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/compact-context-saver.sh pre"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/dangerous-command-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/secret-scanner.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/conventional-commits.sh",
+            "if": "Bash(git commit *)"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/gh-token-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/glab-token-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/docker-context-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/kubectl-context-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/aws-profile-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/gcloud-config-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/terraform-workspace-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mise-global-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/large-file-blocker.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/rtk-rewrite.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-prose-chars.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-prose-chars.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-prose-chars.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-prose-chars.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-attribution-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-attribution-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-attribution-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-attribution-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/prisma-raw-sql-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/prisma-raw-sql-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/prisma-raw-sql-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/console-log-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/console-log-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/console-log-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mock-internal-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mock-internal-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mock-internal-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mutation-method-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mutation-method-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mutation-method-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/as-any-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/as-any-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/as-any-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/internal-config-leakage.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/internal-config-leakage.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/internal-config-leakage.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/internal-config-leakage.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/migration-idempotency.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/migration-idempotency.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/migration-idempotency.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-phrases-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-phrases-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-phrases-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-phrases-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/redis-atomicity.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/redis-atomicity.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/redis-atomicity.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v osascript >/dev/null 2>&1; then osascript -e 'display notification \"Response complete\" with title \"Claude Code\"'; elif command -v notify-send >/dev/null 2>&1; then notify-send 'Claude Code' 'Response complete'; fi"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/notify-webhook.sh"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "rate_limit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v osascript >/dev/null 2>&1; then osascript -e 'display notification \"Rate limit hit. Auto-continue monitor is active.\" with title \"Claude Code\"'; elif command -v notify-send >/dev/null 2>&1; then notify-send 'Claude Code' 'Rate limit hit. Auto-continue monitor is active.'; fi"
+          }
+        ]
+      }
+    ]
   },
-  "worktree" : {
-    "symlinkDirectories" : [
+  "worktree": {
+    "symlinkDirectories": [
       "node_modules"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 ~/.claude/scripts/context-monitor.py"
+  },
+  "outputStyle": "Concise",
+  "language": "english",
+  "effortLevel": "medium",
+  "autoUpdatesChannel": "stable",
+  "showThinkingSummaries": true,
+  "mcpServers": {
+    "asana": {
+      "url": "https://mcp.asana.com/v2/mcp"
+    },
+    "atlassian": {
+      "url": "https://mcp.atlassian.com/v1/mcp"
+    },
+    "aws": {
+      "args": [
+        "-y",
+        "mcp-server-aws"
+      ],
+      "command": "npx"
+    },
+    "brave-search": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "command": "npx",
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+    "cloudflare": {
+      "args": [
+        "-y",
+        "@cloudflare/mcp-server-cloudflare"
+      ],
+      "command": "npx",
+      "env": {
+        "CLOUDFLARE_API_TOKEN": "${CLOUDFLARE_API_TOKEN}"
+      }
+    },
+    "discord": {
+      "args": [
+        "-y",
+        "discord-mcp"
+      ],
+      "command": "npx",
+      "env": {
+        "DISCORD_TOKEN": "${DISCORD_TOKEN}"
+      }
+    },
+    "docker": {
+      "args": [
+        "-y",
+        "mcp-server-docker"
+      ],
+      "command": "npx"
+    },
+    "figma": {
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "filesystem": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
+      "command": "npx"
+    },
+    "firecrawl": {
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "command": "npx",
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
+    "github": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "command": "npx",
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "gitlab": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-gitlab"
+      ],
+      "command": "npx",
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}"
+      }
+    },
+    "google-maps": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-google-maps"
+      ],
+      "command": "npx",
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "${GOOGLE_MAPS_API_KEY}"
+      }
+    },
+    "kubernetes": {
+      "args": [
+        "-y",
+        "mcp-server-kubernetes"
+      ],
+      "command": "npx"
+    },
+    "langsmith": {
+      "args": [
+        "-y",
+        "langsmith-mcp-server"
+      ],
+      "command": "npx",
+      "env": {
+        "LANGSMITH_API_KEY": "${LANGSMITH_API_KEY}"
+      }
+    },
+    "lighthouse": {
+      "args": [
+        "-y",
+        "lighthouse-mcp"
+      ],
+      "command": "npx"
+    },
+    "linear": {
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "memory": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "command": "npx"
+    },
+    "mermaid-chart": {
+      "url": "https://chatgpt.mermaid.ai/anthropic/mcp"
+    },
+    "notion": {
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "obsidian": {
+      "args": [
+        "-y",
+        "obsidian-mcp-server"
+      ],
+      "command": "npx",
+      "env": {
+        "OBSIDIAN_VAULT_PATH": "${OBSIDIAN_VAULT_PATH}"
+      }
+    },
+    "ollama": {
+      "args": [
+        "-y",
+        "ollama-mcp-server"
+      ],
+      "command": "npx"
+    },
+    "perplexity": {
+      "args": [
+        "-y",
+        "perplexity-mcp"
+      ],
+      "command": "npx",
+      "env": {
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+      }
+    },
+    "playwright": {
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "command": "npx"
+    },
+    "postgres": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@localhost:5454/field_service"
+      ],
+      "command": "npx"
+    },
+    "puppeteer": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "command": "npx"
+    },
+    "qdrant": {
+      "args": [
+        "mcp-server-qdrant"
+      ],
+      "command": "uvx",
+      "env": {
+        "COLLECTION_NAME": "code-search",
+        "QDRANT_URL": "http://localhost:6333",
+        "TOOL_FIND_DESCRIPTION": "Search for code patterns, implementations, or architectural decisions by describing what you need in natural language",
+        "TOOL_STORE_DESCRIPTION": "Store code snippets, patterns, and architecture decisions for semantic retrieval"
+      }
+    },
+    "redis": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-redis",
+        "redis://localhost:6379"
+      ],
+      "command": "npx"
+    },
+    "resend": {
+      "args": [
+        "-y",
+        "mcp-server-resend"
+      ],
+      "command": "npx",
+      "env": {
+        "RESEND_API_KEY": "${RESEND_API_KEY}"
+      }
+    },
+    "semgrep": {
+      "args": [
+        "semgrep-mcp"
+      ],
+      "command": "uvx"
+    },
+    "sentry": {
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "sequential-thinking": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "command": "npx"
+    },
+    "slack": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-slack"
+      ],
+      "command": "npx",
+      "env": {
+        "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+        "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+      }
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "todoist": {
+      "args": [
+        "-y",
+        "todoist-mcp-server"
+      ],
+      "command": "npx",
+      "env": {
+        "TODOIST_API_TOKEN": "${TODOIST_API_TOKEN}"
+      }
+    },
+    "vercel": {
+      "url": "https://mcp.vercel.com"
+    }
   }
 }

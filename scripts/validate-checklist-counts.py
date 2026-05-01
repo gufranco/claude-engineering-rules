@@ -18,7 +18,7 @@ def count_checklist_items(path: str) -> tuple[int, int]:
     with open(path) as f:
         content = f.read()
 
-    categories = len(re.findall(r"^##\s+Category\s+\d+", content, re.MULTILINE))
+    categories = len(re.findall(r"^###\s+\d+\.\s+", content, re.MULTILINE))
     items = len(re.findall(r"^- \[[ x]\]", content, re.MULTILINE))
     return categories, items
 

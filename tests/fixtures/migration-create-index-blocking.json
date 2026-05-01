@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "db/migrations/0002_index.sql",
+    "content": "CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);"
+  }
+}

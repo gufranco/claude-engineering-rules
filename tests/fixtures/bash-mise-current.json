@@ -1,1 +1,6 @@
-{"tool_name": "Bash", "input": {"command": "mise current"}}
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "mise current"
+  }
+}

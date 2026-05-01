@@ -14,7 +14,7 @@ FILE_PATH=$(echo "${INPUT}" | python3 -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
-    print(data.get('input', {}).get('file_path', ''))
+    print(data.get('tool_input', data.get('input', {})).get('file_path', ''))
 except:
     pass
 " 2>/dev/null)

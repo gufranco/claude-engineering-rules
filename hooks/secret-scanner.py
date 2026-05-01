@@ -36,11 +36,13 @@ SKIP_PATHS = {"node_modules/", "vendor/", ".git/", "dist/", "build/"}
 SECRET_PATTERNS = [
     ("AWS Access Key", r"AKIA[0-9A-Z]{16}"),
     ("AWS Secret Key", r"(?i)aws_secret_access_key\s*[=:]\s*[A-Za-z0-9/+=]{40}"),
+    ("Anthropic Admin Key", r"sk-ant-admin-[a-zA-Z0-9_-]{20,}"),
     ("Anthropic API Key", r"sk-ant-[a-zA-Z0-9_-]{20,}"),
     ("OpenAI API Key", r"sk-[a-zA-Z0-9]{20,}"),
     ("Google API Key", r"AIza[0-9A-Za-z_-]{35}"),
     ("Stripe Live Key", r"sk_live_[0-9a-zA-Z]{24,}"),
     ("Stripe Publishable", r"pk_live_[0-9a-zA-Z]{24,}"),
+    ("Stripe Restricted Key", r"rk_(?:live|test)_[0-9a-zA-Z]{24,}"),
     ("GitHub Token", r"gh[pousr]_[A-Za-z0-9_]{36,}"),
     ("GitHub Fine-Grained", r"github_pat_[A-Za-z0-9_]{22,}"),
     ("GitLab Token", r"glpat-[A-Za-z0-9_-]{20,}"),
@@ -49,6 +51,7 @@ SECRET_PATTERNS = [
     ("Discord Webhook", r"https://discord(?:app)?\.com/api/webhooks/\d+/[\w-]+"),
     ("Telegram Bot Token", r"\b\d{8,10}:[A-Za-z0-9_-]{35}\b"),
     ("Vercel Token", r"vercel_[A-Za-z0-9_-]{24,}"),
+    ("Vercel OAuth Token", r"\bv1\.[A-Za-z0-9]{40,}\b"),
     ("Supabase Key", r"sbp_[a-f0-9]{40}"),
     ("Hugging Face Token", r"hf_[A-Za-z0-9]{34,}"),
     ("Replicate Token", r"r8_[A-Za-z0-9]{20,}"),
@@ -136,7 +139,7 @@ def main():
     except (json.JSONDecodeError, EOFError):
         sys.exit(0)
 
-    command = data.get("input", {}).get("command", "")
+    command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command or not COMMIT_PATTERN.search(command):
         sys.exit(0)
 

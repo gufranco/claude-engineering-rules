@@ -1100,3 +1100,173 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 - [ ] REUSE.toml used for bulk licensing, not deprecated `.reuse/dep5`
 - [ ] `reuse lint` passes in CI when REUSE compliance is adopted
 - [ ] CI workflow configured (GitHub Actions `fsfe/reuse-action@v6` or equivalent)
+
+---
+
+### 59. Time Zone and Calendar Correctness
+
+**Storage:**
+- [ ] Timestamps stored in UTC at the database layer, never local time
+- [ ] Time zone offset captured separately when the user's local context matters
+- [ ] DST transitions handled by storing UTC and computing local on render
+
+**Comparison and Arithmetic:**
+- [ ] Date arithmetic crosses DST boundaries without producing 23-hour or 25-hour days
+- [ ] Calendar math (add 1 month, end of month) uses a date library, never raw arithmetic
+- [ ] Recurring schedules account for DST transitions at the user's location
+
+**Formatting:**
+- [ ] All user-facing dates render in the user's locale and time zone
+- [ ] System logs and audit trails render in UTC with explicit `Z` suffix
+- [ ] ISO 8601 used for machine-to-machine date interchange
+
+### 60. Numerical Precision
+
+**Money:**
+- [ ] Monetary amounts stored as integer minor units (cents), never floats
+- [ ] Currency code stored alongside every monetary amount
+- [ ] Rounding rule (banker's, half-up, truncate) explicit at every conversion
+
+**Floating Point:**
+- [ ] Float comparison uses an epsilon, never `==`
+- [ ] Sums of floats use Kahan summation when precision matters
+- [ ] Decimal types (`BigDecimal`, `Decimal`) used for tax, interest, and unit conversions
+
+**Integer Overflow:**
+- [ ] Counters and IDs sized to outlast the system (i64 or larger for monotonic counters)
+- [ ] Arithmetic on user-supplied integers checked for overflow at the boundary
+
+### 61. Internationalization Edge Cases
+
+**Text:**
+- [ ] String length measured in grapheme clusters, never UTF-16 code units, when displayed to users
+- [ ] Sorting uses locale-aware comparison, never byte order
+- [ ] Case conversion routes through Unicode (Turkish dotless i, German ß)
+
+**Bidirectional and RTL:**
+- [ ] UI mirrors correctly for Arabic, Hebrew, Persian
+- [ ] Bidirectional override characters stripped from user input
+- [ ] Mixed LTR/RTL strings render with explicit Unicode markers
+
+**Plural and Gender:**
+- [ ] Plural rules cover the locale (Russian has six plural forms, Arabic has six)
+- [ ] Gendered translations supplied for languages that require them
+
+### 62. Browser and Device Diversity
+
+**Browsers:**
+- [ ] Tested on the latest Chrome, Firefox, Safari, Edge
+- [ ] Mobile Safari and Chrome on Android verified for any responsive change
+- [ ] Polyfills loaded only for browsers that need them (no unnecessary payload)
+
+**Inputs:**
+- [ ] Touch events handled alongside mouse and keyboard
+- [ ] On-screen keyboard does not obscure focused input
+- [ ] Hardware keyboard shortcuts work without a mouse
+
+**Network:**
+- [ ] Slow 3G profile tested for critical path
+- [ ] Offline state degrades gracefully (cached UI, queued mutations)
+- [ ] Reconnection retries do not duplicate writes
+
+### 63. Backups and Recovery
+
+**Frequency:**
+- [ ] Backup interval matches the recovery point objective (RPO)
+- [ ] Continuous WAL archiving for any database with RPO under 1 hour
+- [ ] Application-level snapshots when database backup is insufficient
+
+**Verification:**
+- [ ] Backups restored to a clean environment at least monthly
+- [ ] Restore time tested against the recovery time objective (RTO)
+- [ ] Backup integrity (checksum or hash) verified before declaring success
+
+**Storage:**
+- [ ] Backups encrypted at rest
+- [ ] Off-site copies in a separate region or cloud account
+- [ ] Retention policy documented and enforced
+
+### 64. Disaster Recovery
+
+**Plan:**
+- [ ] DR plan exists and names a recovery owner per service
+- [ ] Tabletop exercise run every 6 months
+- [ ] Runbook for the last-known-good restore is current
+
+**Failover:**
+- [ ] Primary and secondary regions tested for failover end-to-end
+- [ ] DNS, certificates, and IAM roles function in the secondary region
+- [ ] Data replication lag monitored with alerts
+
+**Recovery:**
+- [ ] Application can boot from backup within RTO
+- [ ] Customer notification template ready for an extended outage
+- [ ] Post-incident review captures what was lost and why
+
+### 65. Capacity Planning
+
+**Forecast:**
+- [ ] Growth model exists for users, requests, and storage
+- [ ] Capacity headroom of at least 30% for traffic spikes
+- [ ] Load test confirms peak forecast plus 50% margin
+
+**Scaling Triggers:**
+- [ ] Auto-scaling rules tied to a leading indicator (queue depth, latency p95)
+- [ ] Scale-up faster than scale-down to avoid thrashing
+- [ ] Manual override available for unusual events
+
+**Cost vs Capacity:**
+- [ ] Reserved or committed capacity used for predictable baseline
+- [ ] On-demand capacity for spikes
+- [ ] Capacity unused at 50% review for downsizing
+
+### 66. Multi-Region
+
+**Data Locality:**
+- [ ] User data stored in the region matching their locale or compliance requirement
+- [ ] Cross-region replication topology documented
+- [ ] Read paths prefer local region; writes route to primary
+
+**Latency:**
+- [ ] Inter-region calls minimized; cross-region in the request path is rare
+- [ ] DNS routes users to the nearest healthy region
+- [ ] Cache layers regional, not global
+
+**Failover:**
+- [ ] Region failure does not lose committed writes (sync replication or accept RPO)
+- [ ] Read replicas in secondary regions stay current within RPO
+- [ ] Backups exist in a region separate from the primary
+
+### 67. Compliance and Audit Trail
+
+**Audit Log:**
+- [ ] Every sensitive action logged with actor, target, timestamp, IP, user agent
+- [ ] Logs append-only and tamper-evident (hash chain or write-once storage)
+- [ ] Retention period meets the regulatory requirement
+
+**Personal Data:**
+- [ ] Data subject access request fulfilled within the regulatory window
+- [ ] Right to erasure honored across primary, replicas, backups, analytics
+- [ ] Lawful basis recorded for every data category
+
+**Controls:**
+- [ ] Separation of duties: production access requires a second approver
+- [ ] Production data access logged and reviewed
+- [ ] Access reviews run quarterly
+
+### 68. Vendor and Third-Party Risk
+
+**Selection:**
+- [ ] Vendor evaluated on security posture, certifications (SOC 2, ISO 27001), uptime SLA
+- [ ] Data processing agreement signed before sending personal data
+- [ ] Sub-processor list reviewed and tracked
+
+**Operational:**
+- [ ] Vendor outage runbook documented (graceful degradation, fallback)
+- [ ] Vendor SLA metrics tracked against contractual targets
+- [ ] Renewal calendar prevents auto-renewal of underperforming vendors
+
+**Exit:**
+- [ ] Data export format documented and tested
+- [ ] Migration path to an alternative vendor estimated
+- [ ] Vendor lock-in (proprietary protocols, custom data formats) flagged in ADR

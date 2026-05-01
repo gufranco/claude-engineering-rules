@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 10 rules, 69 on-demand standards, 40 skills, 36 MCP servers, 17 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 10 rules, 74 on-demand standards, 40 skills, 36 MCP servers, 28 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **69** standards · **40** skills · **36** MCP servers · **17** hooks · **9** agents · **670** checklist items · **58** categories · **25,000+** lines of engineering configuration
+**10** rules · **74** standards · **40** skills · **36** MCP servers · **28** hooks · **9** agents · **758** checklist items · **68** categories · **25,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -50,9 +50,9 @@ Mandatory verification gates: every file path, import, and API call verified bef
 <tr>
 <td width="50%" valign="top">
 
-### 649-Item Review Checklist
+### 670-Item Review Checklist
 
-Single unified checklist spanning 58 categories: correctness, security, error handling, concurrency, data integrity, testing, architecture patterns, deployment verification, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
+Single unified checklist spanning 68 categories: correctness, security, error handling, concurrency, data integrity, testing, architecture patterns, deployment verification, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
 
 </td>
 <td width="50%" valign="top">
@@ -81,10 +81,10 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Multi-account token safety | No | Inline token required for `gh` and `glab` |
 | Integration-first test policy | No | Real DB, strict mock ban, AAA pattern |
 | Pre-flight verification | No | Duplicate check, architecture fit, interface verification |
-| On-demand domain standards | No | 69 standards, ~51KB saved per conversation |
+| On-demand domain standards | No | 73 standards, ~51KB saved per conversation |
 | Workflow automation | No | 40 skills with subcommands |
 | MCP server integrations | No | 36 servers: GitHub, Slack, Sentry, Linear, Figma, and more |
-| Code review checklist | No | 649 items across 58 categories |
+| Code review checklist | No | 758 items across 68 categories |
 | Clean room plagiarism prevention | No | 30+ checks across 7 independence sections |
 
 ## How It Works
@@ -141,7 +141,7 @@ graph LR
 
 ### Standards (loaded on demand)
 
-69 standards in [`standards/`](standards/), loaded only when the task matches trigger keywords from [`rules/index.yml`](rules/index.yml).
+73 standards in [`standards/`](standards/), loaded only when the task matches trigger keywords from [`rules/index.yml`](rules/index.yml).
 
 Covers: API design, authentication, caching, database, distributed systems, frontend, GraphQL, gRPC, hexagonal architecture, i18n, infrastructure, message queues, microservices, monorepo, observability, privacy, resilience, serverless, state machines, Terraform testing, TypeScript 5.x, WebSocket, and 40+ more.
 
@@ -162,7 +162,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | `/second-opinion` | `--mode gate/adversarial/consult` | Cross-model review via Ollama, OpenAI, or other providers |
 | `/infra` | `docker`, `terraform`, `db` | Container orchestration, IaC workflows, database migrations |
 | `/retro` | `discover`, `--curate`, `--promote` | Session retrospective, pattern extraction, rule graduation |
-| `/assessment` | -- | Architecture completeness audit against 58-category checklist |
+| `/assessment` | -- | Architecture completeness audit against 68-category checklist |
 | `/morning` | -- | Start-of-day dashboard: open PRs, pending reviews, standup prep |
 | `/incident` | -- | Incident context gathering, blameless postmortem |
 | `/guard` | `<directory>`, `off` | Directory freeze + destructive command warnings + scope enforcement |
@@ -301,14 +301,14 @@ The hooks, rules, and skills activate automatically.
   RTK.md                 # RTK token-optimized CLI proxy documentation
   settings.json          # Permissions, hooks, MCP servers, statusline
   checklists/
-    checklist.md         # 670-item unified checklist across 58 categories
+    checklist.md         # 758-item unified checklist across 68 categories
   rules/                 # Always loaded (10 rules)
     index.yml            # Rule + standard catalog with trigger keywords
-  standards/             # Loaded on demand (69 standards)
+  standards/             # Loaded on demand (73 standards)
   agents/                # Custom subagents (9 agents)
     TEMPLATE.md          # Agent template
   skills/                # 40 skills with SKILL.md each
-  hooks/                 # 17 runtime hooks
+  hooks/                 # 28 runtime hooks
   scripts/               # Validation, benchmarking, statusline
   tests/
     test-hooks.sh        # Hook smoke tests (94 fixtures)
@@ -375,7 +375,7 @@ The testing rule prioritizes integration tests with real databases and services.
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 69 standards total ~14,000 lines. Loading all of them into every conversation would consume ~51KB of context window. Instead, `rules/index.yml` maps each standard to trigger keywords. When a task matches (e.g., "add a database migration" triggers `database.md`), only the relevant standards load. Most conversations need 2-5 standards, saving 90%+ of the context budget.
+The 73 standards total ~14,000 lines. Loading all of them into every conversation would consume ~51KB of context window. Instead, `rules/index.yml` maps each standard to trigger keywords. When a task matches (e.g., "add a database migration" triggers `database.md`), only the relevant standards load. Most conversations need 2-5 standards, saving 90%+ of the context budget.
 
 </details>
 

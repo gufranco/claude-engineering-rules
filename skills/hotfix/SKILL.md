@@ -1,8 +1,8 @@
 ---
 name: hotfix
 description: Emergency production fix with expedited workflow. Creates a hotfix branch from the latest release tag, applies the minimal fix, runs critical tests, ships with expedited review, and backports to the main branch. Use when user says "hotfix", "production bug", "emergency fix", "prod is broken", "urgent fix", or needs to fix something in production immediately. Do NOT use for non-urgent bugs (use /investigate), feature work (use /plan), or general debugging (use /investigate).
+sensitive: true
 ---
-
 Expedited workflow for production emergencies. Prioritizes speed and minimal change over thoroughness. Every step is designed to get a safe fix deployed as fast as possible.
 
 ## Arguments

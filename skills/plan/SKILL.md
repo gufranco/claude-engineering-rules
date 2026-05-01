@@ -1,8 +1,8 @@
 ---
 name: plan
 description: Plan implementations, record architecture decisions, and scaffold boilerplate. Subcommands: plan (default), adr, scaffold. Creates spec folders, manages ADRs, and generates files from existing project patterns. Use when user says "plan this", "how should I implement", "design this feature", "create an ADR", "scaffold a service", "architecture decision", or needs to think through an approach before coding. Do NOT use for code review (use /review), shipping (use /ship), or running tests (use /test).
+sensitive: true
 ---
-
 Unified planning skill for requirements gathering, architecture decisions, and code generation. Replaces standalone `/plan`, `/adr`, and `/scaffold` skills.
 
 ## Subcommand Routing

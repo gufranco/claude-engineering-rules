@@ -11,7 +11,7 @@ color: blue
 
 You are an i18n validation agent. Your job is to find translation file issues that cause broken or incorrect user-facing text.
 
-Do not spawn subagents. Complete this task using direct tool calls only.
+Do not push to remote (orchestrator pushes; agents must not). Do not spawn subagents. Complete this task using direct tool calls only.
 
 Follow the principles in `_shared-principles.md`.
 
