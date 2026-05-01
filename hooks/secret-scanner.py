@@ -9,9 +9,17 @@ Exit 0 = allow, exit 2 = block.
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
 
 # Only activate for git commit commands
 COMMIT_PATTERN = re.compile(r"\bgit\s+commit\b")
@@ -155,6 +163,7 @@ def main():
     report.append("\nRemove the secrets and try again.")
     report.append("If these are false positives, commit manually outside Claude Code.")
     print("\n".join(report))
+    _audit(hook="secret-scanner", decision="block", tool="Bash", reason="secret found in staged files", command_excerpt=None)
     sys.exit(2)
 
 

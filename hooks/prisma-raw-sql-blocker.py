@@ -22,6 +22,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 PATTERN = re.compile(
     r"\.\$\s*(?:queryRaw|executeRaw|queryRawUnsafe|executeRawUnsafe|queryRawTyped)\b"
 )
@@ -74,6 +82,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("PRISMA_RAW_SQL_DISABLE") == "1":
+        _audit(hook="prisma-raw-sql-blocker", decision="bypass", bypass_env="PRISMA_RAW_SQL_DISABLE")
         return 0
 
     try:
@@ -108,6 +117,7 @@ def main() -> int:
         "Bypass (when there is genuinely no Prisma equivalent): set PRISMA_RAW_SQL_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="prisma-raw-sql-blocker", decision="block", tool=tool, reason="raw SQL outside migration", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 

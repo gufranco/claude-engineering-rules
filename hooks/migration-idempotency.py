@@ -22,6 +22,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 MIGRATION_PATH_HINTS = (
     "/migrations/",
     "/prisma/migrations/",
@@ -110,6 +118,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("MIGRATION_IDEMPOTENCY_DISABLE") == "1":
+        _audit(hook="migration-idempotency", decision="bypass", bypass_env="MIGRATION_IDEMPOTENCY_DISABLE")
         return 0
 
     try:
@@ -145,6 +154,7 @@ def main() -> int:
         "Bypass (rare, e.g., baseline migration): set MIGRATION_IDEMPOTENCY_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="migration-idempotency", decision="block", tool=tool, reason="non-idempotent migration", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 

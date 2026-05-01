@@ -30,6 +30,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 TS_EXTS = (".ts", ".tsx", ".mts", ".cts")
 
 PATTERNS = [
@@ -104,6 +112,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("AS_ANY_DISABLE") == "1":
+        _audit(hook="as-any-blocker", decision="bypass", bypass_env="AS_ANY_DISABLE")
         return 0
 
     try:
@@ -142,6 +151,7 @@ def main() -> int:
         "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="as-any-blocker", decision="block", tool=tool, reason="TypeScript any usage", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 

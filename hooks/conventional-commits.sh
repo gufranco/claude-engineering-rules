@@ -9,6 +9,11 @@
 
 set -euo pipefail
 
+_audit_block() {
+    python3 "$HOME/.claude/scripts/audit_log.py" --hook conventional-commits \
+        --decision block --tool Bash --reason "$1" --command "${COMMAND:-}" 2>/dev/null || true
+}
+
 INPUT=$(cat)
 
 COMMAND=$(echo "${INPUT}" | python3 -c "
@@ -73,6 +78,7 @@ if ! echo "${SUBJECT}" | grep -qE "${PATTERN}"; then
     echo "  Expected: <type>(<scope>): <subject>"
     echo "  Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert"
     echo "  Example: feat(auth): add SSO login with Google provider"
+    _audit_block "subject not conventional format"
     exit 2
 fi
 
@@ -84,6 +90,7 @@ if [[ "${SUBJECT_LENGTH}" -gt 50 ]]; then
     echo "  Got: ${SUBJECT}"
     echo ""
     echo "  Keep the subject concise. Use the body for details."
+    _audit_block "subject too long"
     exit 2
 fi
 
@@ -108,6 +115,7 @@ while IFS= read -r body_line; do
         echo "  Got: ${body_line}"
         echo ""
         echo "  Wrap body lines at 72 characters."
+        _audit_block "body line too long"
         exit 2
     fi
 done <<< "${MESSAGE}"
@@ -128,6 +136,7 @@ while IFS= read -r trailer_line; do
             echo "  Got: ${trailer_line}"
             echo ""
             echo "  Expected: <Trailer>: <description>"
+            _audit_block "malformed decision trailer"
             exit 2
         fi
 
@@ -139,6 +148,7 @@ while IFS= read -r trailer_line; do
                 echo "  Got: ${trailer_line}"
                 echo ""
                 echo "  Expected: Rejected: <alternative> | <reason>"
+                _audit_block "Rejected trailer missing pipe"
                 exit 2
             fi
         fi

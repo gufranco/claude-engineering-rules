@@ -40,6 +40,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
 # Bounded log walk on push.
 PUSH_LOG_LIMIT = 200
 
@@ -142,6 +149,8 @@ def is_inside_repo(cwd: Path) -> bool:
 
 def block(message: str) -> None:
     sys.stderr.write(message + "\n")
+    _audit(hook="git-author-guard", decision="block", tool="Bash",
+           reason=message.split("\n", 1)[0][:120])
     sys.exit(2)
 
 
@@ -261,6 +270,8 @@ def main() -> None:
         sys.stderr.write(
             "git-author-guard: bypass active (GIT_AUTHOR_GUARD_DISABLE=1)\n"
         )
+        _audit(hook="git-author-guard", decision="bypass",
+               bypass_env="GIT_AUTHOR_GUARD_DISABLE")
         sys.exit(0)
 
     try:

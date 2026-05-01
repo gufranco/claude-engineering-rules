@@ -45,6 +45,9 @@ if [[ -n "${LARGE_FILES}" ]]; then
     echo ""
     echo "Remove large files from staging with: git reset HEAD <file>"
     echo "Consider using .gitignore or Git LFS for large files."
+    python3 "$HOME/.claude/scripts/audit_log.py" --hook large-file-blocker \
+        --decision block --tool Bash --reason "staged file exceeds size limit" \
+        --command "${COMMAND:-}" 2>/dev/null || true
     exit 2
 fi
 

@@ -31,6 +31,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 JS_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rb")
 
 SKIP_SUFFIXES = (
@@ -127,6 +135,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("REDIS_ATOMICITY_DISABLE") == "1":
+        _audit(hook="redis-atomicity", decision="bypass", bypass_env="REDIS_ATOMICITY_DISABLE")
         return 0
 
     try:
@@ -165,6 +174,7 @@ def main() -> int:
         "Bypass (when sequencing is intentional and safe): set REDIS_ATOMICITY_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="redis-atomicity", decision="block", tool=tool, reason="non-atomic redis sequence", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 

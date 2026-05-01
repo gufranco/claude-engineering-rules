@@ -13,6 +13,7 @@ Unified learning skill for extracting patterns from conversations and codebases.
 | `/retro discover` | Extract codebase conventions into rule files |
 | `/retro --curate` | Review and clean up memory files |
 | `/retro --promote` | Graduate memory entries to rules/CLAUDE.md |
+| `/retro --hooks` | Mine `~/.claude/logs/hooks.log` for block patterns and propose upstream fixes |
 
 ---
 
@@ -150,6 +151,51 @@ Graduate memory entries that represent universal patterns to `~/.claude/rules/` 
 4. Write rules, remove promoted memory entries, update `~/.claude/README.md`.
 
 ---
+
+## --hooks (block-pattern mining)
+
+Mine the structured audit log written by every blocking hook in `~/.claude/hooks/` and propose upstream fixes. Hooks are the last line of defense; every block represents a near-miss the model should have avoided. The goal is to feed that signal back into rules, skills, CLAUDE.md, or agent definitions so the model self-corrects before the hook fires.
+
+### When to use
+
+- Inline pointer printed by `retro-pointer.py` at session end shows blocks accumulated.
+- Periodic review of repeat offenders across sessions.
+- After any session where you noticed hooks firing more than once.
+
+### Steps
+
+1. **Locate the audit log.** Default: `~/.claude/logs/hooks.log` (JSONL, one event per line). Read the cursor file `~/.claude/logs/.retro-cursor` if it exists; resume from that byte offset. If absent, start from the beginning of the current file. Also consider rotated `hooks.log.1` for the previous window.
+
+2. **Parse and filter.** Each line is JSON with shape: `{ts, session_id, cwd, hook, decision, level, tool, command_excerpt, reason, bypass_env}`. Filter to `decision in {"block", "bypass"}`. Skip malformed lines silently.
+
+3. **Cluster.** Group events by `(hook, reason)`. For each cluster record: count, distinct sessions, distinct cwds, sample `command_excerpt` (first 3 unique).
+
+4. **Rank.** Sort clusters by count descending. Present top 10. Single-occurrence blocks are noise unless they map to a clear behavioral fix; skip them by default.
+
+5. **Diagnose each cluster.** For every cluster, answer:
+
+   | Question | If yes |
+   |---------|--------|
+   | Is there an existing rule covering this? | Why was it not respected? Vague language, buried, no example? Strengthen it |
+   | Is this a missing rule? | Draft one in `rules/` and update `rules/index.yml` |
+   | Is it skill-specific (e.g., always blocks during `/ship`)? | Update that skill's checklist or pre-flight |
+   | Is the hook itself overzealous? | Propose loosening the pattern, never weaken without explicit user approval |
+
+6. **Present findings.** Table: hook, reason, count, sessions, proposed action, target file. Wait for approval per cluster, or "All".
+
+7. **Apply.** Write the proposed edits using the same conventions as `/retro` default mode. Update `README.md` if `~/.claude/` files changed.
+
+8. **Advance the cursor.** After successful application (or explicit "skip"), write the new byte offset to `~/.claude/logs/.retro-cursor`. Never advance on failure: a re-run must replay the same events.
+
+9. **Verify.** Re-read modified files. Confirm no contradictions with existing rules.
+
+### Rules
+
+- Never propose disabling a hook to silence noise. The hook is correct by definition; the upstream config is what changes.
+- Bypass events (`decision=bypass`) deserve scrutiny too: a frequently bypassed hook signals a workflow gap.
+- Redact any value matching the secret patterns in `scripts/audit_log.py` before quoting `command_excerpt` back to the user. The audit logger redacts on write, but treat the field as untrusted.
+- Cursor file is advisory. If it points past the file end (after rotation), reset to 0.
+- One-shot mode: when invoked with `--dry-run`, show proposals and skip both writes and cursor advance.
 
 ## Rules
 

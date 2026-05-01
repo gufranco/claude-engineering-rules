@@ -81,6 +81,63 @@ echo 'not json' | ./dangerous-command-blocker.sh
 # Expected: exit code 0 (graceful fallthrough)
 ```
 
+## Audit Emission (MANDATORY for blocking hooks)
+
+Every hook that can block (exit 2) or accept a bypass env var must emit a structured event to `~/.claude/logs/hooks.log` via `scripts/audit_log.py`. This feeds the `/retro --hooks` workflow that proposes upstream fixes (rules, skills, CLAUDE.md) so the model self-corrects before the hook fires next time. Hooks are the last line of defense, not the only one.
+
+### What to emit
+
+Required fields (auto-filled by the helper when omitted): `ts`, `session_id`, `cwd`, `hook`, `decision`, `tool`, `reason`, `command_excerpt`. Optional: `bypass_env`, `level`.
+
+| Decision | When |
+|---------|------|
+| `block` | Before every `exit 2` / `sys.exit(2)` |
+| `bypass` | When a bypass env var is honored and the hook returns 0 |
+| `allow` | Optional; do not emit on the happy path. Reserved for hooks that want to record a non-blocking observation |
+
+### Python hooks
+
+```python
+import os, sys
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit
+except Exception:
+    def _audit(**_fields): return None
+
+# before sys.exit(2)
+_audit(hook="my-hook", decision="block", tool=tool,
+       reason="short stable label", command_excerpt=command[:240])
+sys.exit(2)
+```
+
+The import block must be defensive: if the module fails to load, the hook keeps blocking. Audit emission is best-effort and never the reason a hook fails.
+
+### Shell hooks
+
+Call the Python CLI form. Wrap in `|| true` so logging failures never alter the exit code.
+
+```bash
+python3 "$HOME/.claude/scripts/audit_log.py" --hook my-hook \
+    --decision block --tool Bash --reason "short stable label" \
+    --command "${COMMAND:-}" 2>/dev/null || true
+exit 2
+```
+
+Define a `_audit_block` helper at the top of the file when the hook has multiple `exit 2` sites.
+
+### Reason field discipline
+
+`reason` is the cluster key in `/retro --hooks`. Keep it stable, short, and machine-friendly: lowercase, hyphen or space separated, under 80 chars. Do not interpolate user input into the reason; that goes in `command_excerpt`. A reason that varies per call defeats clustering.
+
+| Good | Bad |
+|------|-----|
+| `subject not conventional format` | `commit message "fix stuff" rejected` |
+| `aws configure set without --profile` | `aws configure set region=us-east-1 had no profile flag` |
+| `private key write blocked` | `cannot write /Users/x/.ssh/id_rsa` |
+
+Secrets in `command_excerpt` are redacted on write by `audit_log.py`. Treat that as defense in depth, not an excuse to log raw credentials.
+
 ## Rules
 
 - Never use `set -e` in hooks. A failed grep match returns exit code 1, which would terminate the hook and produce an unexpected exit code.
@@ -90,3 +147,4 @@ echo 'not json' | ./dangerous-command-blocker.sh
 - Test every new pattern against both positive matches and negative matches before deploying.
 - Hooks must work without external dependencies beyond standard Unix tools: bash, grep, jq, sed, awk.
 - When matching commands, account for path prefixes, extra whitespace, and quoted arguments.
+- Every blocking hook must emit a structured audit event before `exit 2`. See "Audit Emission" above.

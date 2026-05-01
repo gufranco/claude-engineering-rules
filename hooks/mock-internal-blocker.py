@@ -25,6 +25,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 JS_TEST = (".test.ts", ".test.tsx", ".test.js", ".test.jsx",
            ".spec.ts", ".spec.tsx", ".spec.js", ".spec.jsx")
 PY_TEST_DIR = ("/tests/", "/test/", "_test.py", "/__tests__/")
@@ -112,6 +120,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("MOCK_INTERNAL_DISABLE") == "1":
+        _audit(hook="mock-internal-blocker", decision="bypass", bypass_env="MOCK_INTERNAL_DISABLE")
         return 0
 
     try:
@@ -149,6 +158,7 @@ def main() -> int:
         "Bypass (rare): set MOCK_INTERNAL_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="mock-internal-blocker", decision="block", tool=tool, reason="internal infrastructure mock", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 

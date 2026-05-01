@@ -35,6 +35,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 EM_DASH = "\u2014"
 
 BOX_DRAWING_RE = re.compile(r"[\u2500-\u257F]")
@@ -101,6 +109,7 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 def main() -> int:
     if os.environ.get("BANNED_PROSE_CHARS_DISABLE") == "1":
+        _audit(hook="banned-prose-chars", decision="bypass", bypass_env="BANNED_PROSE_CHARS_DISABLE")
         return 0
 
     try:
@@ -135,6 +144,7 @@ def main() -> int:
         "set BANNED_PROSE_CHARS_DISABLE=1 in the environment.",
         file=sys.stderr,
     )
+    _audit(hook="banned-prose-chars", decision="block", tool=tool, reason="banned prose character", command_excerpt=" | ".join(all_findings)[:240] if all_findings else None)
     return 2
 
 
