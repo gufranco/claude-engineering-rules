@@ -391,14 +391,19 @@ def main():
             and not re.search(r"\borigin\s+\w", command)
         )
         if targets_protected:
-            _audit(hook="dangerous-command-blocker", decision="block",
-                   level="protected-branch", branch=branch, command=command[:300])
-            print(
-                f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
-                "Use a feature branch and create a PR instead.\n"
-                f"Command: {command}"
-            )
-            sys.exit(2)
+            if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1":
+                _audit(hook="dangerous-command-blocker", decision="bypass",
+                       level="protected-branch", branch=branch, command=command[:300])
+            else:
+                _audit(hook="dangerous-command-blocker", decision="block",
+                       level="protected-branch", branch=branch, command=command[:300])
+                print(
+                    f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
+                    "Use a feature branch and create a PR instead.\n"
+                    "Bypass (rare, e.g. personal config repo): ALLOW_PROTECTED_BRANCH_PUSH=1.\n"
+                    f"Command: {command}"
+                )
+                sys.exit(2)
 
     # Level 3: Suspicious (warn via stderr, allow)
     for pattern, reason in SUSPICIOUS:
