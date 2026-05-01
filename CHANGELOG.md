@@ -2,6 +2,14 @@
 
 All notable changes to this Claude Code configuration are documented here.
 
+## 2026-05-01
+
+### Added
+
+- Git author identity isolation: a per-remote identity resolution pattern in the user gitconfig via `includeIf "hasconfig:remote.*.url:..."` plus a `git-author-guard` PreToolUse hook that blocks commits with no resolved identity, env-injected author overrides, local `user.*` writes, and pushes carrying placeholder authors. Bypass via `GIT_AUTHOR_GUARD_DISABLE=1`
+- New standard documenting the three-layer pattern (declarative gitconfig, defensive hook, documentary standard) with placeholder identities
+- 10 new test fixtures and a dedicated section in the hook smoke test runner covering commit, push, and config mutation paths
+
 ## 2026-04-29
 
 ### Added

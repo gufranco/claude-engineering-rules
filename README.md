@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **74** standards · **40** skills · **36** MCP servers · **28** hooks · **9** agents · **758** checklist items · **68** categories · **25,000+** lines of engineering configuration
+**10** rules · **74** standards · **40** skills · **36** MCP servers · **29** hooks · **9** agents · **758** checklist items · **68** categories · **25,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -209,6 +209,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse (Bash) | Blocks `gcloud config set` and `gcloud config configurations activate` without `--configuration=<name>` |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse (Bash) | Blocks `terraform workspace select` and `new`. Forces `TF_WORKSPACE=<name>` per call |
 | [`mise-global-guard.py`](hooks/mise-global-guard.py) | PreToolUse (Bash) | Blocks `mise use --global` and `mise unuse --global`. Forces project-local `.mise.toml` or `mise exec` |
+| [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse (Bash) | Blocks commits with no resolved identity, env-injected author overrides, local user.* writes, and pushes carrying placeholder authors |
 | [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse (Bash) | Blocks commits with files over 5MB |
 | [`env-file-guard.sh`](hooks/env-file-guard.sh) | PreToolUse (Write/Edit) | Blocks `.env`, private keys, cloud credentials, Terraform state |
 | [`rtk-rewrite.sh`](hooks/rtk-rewrite.sh) | PreToolUse (Bash) | Rewrites CLI commands through RTK for 60-90% token savings |
