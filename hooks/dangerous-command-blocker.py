@@ -391,7 +391,8 @@ def main():
             and not re.search(r"\borigin\s+\w", command)
         )
         if targets_protected:
-            if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1":
+            inline_bypass = re.search(r"\bALLOW_PROTECTED_BRANCH_PUSH=1\b", command)
+            if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1" or inline_bypass:
                 _audit(hook="dangerous-command-blocker", decision="bypass",
                        level="protected-branch", branch=branch, command=command[:300])
             else:
