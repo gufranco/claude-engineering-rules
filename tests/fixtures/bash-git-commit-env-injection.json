@@ -1,0 +1,6 @@
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "GIT_AUTHOR_EMAIL=alice@example.com git commit -m test"
+  }
+}

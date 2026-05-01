@@ -529,6 +529,81 @@ run_test "ignores DDL outside migration paths" \
     "${FIXTURES}/migration-non-migration-path.json" 0
 
 echo ""
+echo "=== Git Author Guard ==="
+
+LOCAL_OVERRIDE_REPO="/tmp/git-author-guard-fixture-local-override"
+PLACEHOLDER_COMMIT_REPO="/tmp/git-author-guard-fixture-placeholder-commit"
+NO_IDENTITY_REPO="/tmp/git-author-guard-fixture-no-identity"
+trap 'rm -rf "${LOCAL_OVERRIDE_REPO}" "${PLACEHOLDER_COMMIT_REPO}" "${NO_IDENTITY_REPO}"' EXIT
+
+# Repo with a [user] block in .git/config (local override).
+rm -rf "${LOCAL_OVERRIDE_REPO}"
+git init -q "${LOCAL_OVERRIDE_REPO}"
+git -C "${LOCAL_OVERRIDE_REPO}" config --local user.email "override@example.com"
+git -C "${LOCAL_OVERRIDE_REPO}" config --local user.name "Override"
+
+# Repo with a placeholder author email on HEAD (drives the push test).
+rm -rf "${PLACEHOLDER_COMMIT_REPO}"
+git init -q "${PLACEHOLDER_COMMIT_REPO}"
+GIT_AUTHOR_NAME="Placeholder" GIT_AUTHOR_EMAIL="placeholder@example.com" \
+GIT_COMMITTER_NAME="Placeholder" GIT_COMMITTER_EMAIL="placeholder@example.com" \
+    git -C "${PLACEHOLDER_COMMIT_REPO}" commit --allow-empty -q -m "placeholder commit"
+
+# Repo with no identity at all (no local override, runner forces empty global).
+rm -rf "${NO_IDENTITY_REPO}"
+git init -q "${NO_IDENTITY_REPO}"
+
+run_test "blocks commit with env override on command line" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-commit-env-injection.json" 2
+
+run_test "blocks commit when local [user] block overrides identity" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-commit-local-override.json" 2
+
+# This case must run with empty global config so user.email resolves to empty.
+echo -n "  "
+ACTUAL_NO_ID=0
+HOME="${NO_IDENTITY_REPO}" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+    "${HOOKS}/git-author-guard.py" < "${FIXTURES}/bash-git-commit-no-identity.json" \
+    >/dev/null 2>&1 || ACTUAL_NO_ID=$?
+if [[ "${ACTUAL_NO_ID}" -eq 2 ]]; then
+    echo "PASS: blocks commit when user.email is unset (exit 2)"
+    PASS=$((PASS + 1))
+else
+    echo "FAIL: blocks commit when user.email is unset (expected 2, got ${ACTUAL_NO_ID})"
+    FAIL=$((FAIL + 1))
+fi
+
+run_test "allows commit with resolved identity" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-commit-resolved-identity.json" 0
+
+run_test "allows clean push" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-push-clean.json" 0
+
+run_test "blocks push when commit has placeholder author" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-push-placeholder.json" 2
+
+run_test "blocks git config --local user.email" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-config-local-user.json" 2
+
+run_test "allows git config --global user.email" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-config-global-user.json" 0
+
+run_test "blocks unscoped git config user.email" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-config-user-email-no-scope.json" 2
+
+run_test "allows git config --get user.email" \
+    "${HOOKS}/git-author-guard.py" \
+    "${FIXTURES}/bash-git-config-get-user.json" 0
+
+echo ""
 echo "=== Results ==="
 echo "  Passed: ${PASS}"
 echo "  Failed: ${FAIL}"
