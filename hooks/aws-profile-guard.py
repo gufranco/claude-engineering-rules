@@ -17,8 +17,16 @@ Exit 0 = allow, exit 2 = block.
 """
 
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
 
 
 # `aws configure set ...` — writes to AWS config. Block when no --profile.
@@ -52,6 +60,9 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
+        _audit(hook="aws-profile-guard", decision="block", tool="Bash",
+               reason="aws configure set without --profile",
+               command_excerpt=command)
         sys.exit(2)
 
     sys.exit(0)

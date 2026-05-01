@@ -11,8 +11,16 @@ Exit 0 = allow, exit 2 = block.
 """
 
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
 
 
 # Patterns that indicate a gh CLI invocation
@@ -55,6 +63,7 @@ def main():
             "Check the git remote to determine the correct account.\n"
             "See: standards/multi-account-cli.md"
         )
+        _audit(hook="gh-token-guard", decision="block", tool="Bash", reason="gh CLI without explicit GH_TOKEN", command_excerpt=command[:240])
         sys.exit(2)
 
     # Skip if no gh command present
@@ -82,6 +91,7 @@ def main():
         "See: standards/multi-account-cli.md\n"
         f"Command: {command}"
     )
+    _audit(hook="gh-token-guard", decision="block", tool="Bash", reason="gh CLI without explicit GH_TOKEN", command_excerpt=command[:240])
     sys.exit(2)
 
 

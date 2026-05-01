@@ -672,6 +672,10 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/notify-webhook.sh"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/retro-pointer.py"
           }
         ]
       }

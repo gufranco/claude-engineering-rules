@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 40 skills, 36 MCP servers, 29 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 40 skills, 36 MCP servers, 30 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **75** standards · **40** skills · **36** MCP servers · **29** hooks · **9** agents · **758** checklist items · **68** categories · **25,000+** lines of engineering configuration
+**10** rules · **75** standards · **40** skills · **36** MCP servers · **30** hooks · **9** agents · **758** checklist items · **68** categories · **25,000+** lines of engineering configuration
 
 <table>
 <tr>

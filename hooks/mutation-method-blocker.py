@@ -32,6 +32,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 JS_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
 
 SKIP_SEGMENTS = (
@@ -125,6 +133,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("MUTATION_METHOD_DISABLE") == "1":
+        _audit(hook="mutation-method-blocker", decision="bypass", bypass_env="MUTATION_METHOD_DISABLE")
         return 0
 
     try:
@@ -164,6 +173,7 @@ def main() -> int:
         "Bypass (rare, e.g., performance-critical hot path): set MUTATION_METHOD_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="mutation-method-blocker", decision="block", tool=tool, reason="mutating array method", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 

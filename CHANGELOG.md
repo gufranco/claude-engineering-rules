@@ -6,6 +6,7 @@ All notable changes to this Claude Code configuration are documented here.
 
 ### Added
 
+- Hook block feedback loop: every blocking hook now emits a structured JSONL event to `logs/hooks.log` via `scripts/audit_log.py` (with secret redaction, file locking, and 5 MiB rotation). New `retro-pointer.py` Stop hook surfaces a one-line summary at session end when blocks accumulated. `/retro --hooks` mines the log to cluster repeat offenders and propose upstream fixes in rules, skills, or CLAUDE.md so the model self-corrects before the hook fires next time. Hook authoring standard updated with mandatory audit emission patterns for both Python and shell hooks
 - Git author identity isolation: a per-remote identity resolution pattern in the user gitconfig via `includeIf "hasconfig:remote.*.url:..."` plus a `git-author-guard` PreToolUse hook that blocks commits with no resolved identity, env-injected author overrides, local `user.*` writes, and pushes carrying placeholder authors. Bypass via `GIT_AUTHOR_GUARD_DISABLE=1`
 - New standard documenting the three-layer pattern (declarative gitconfig, defensive hook, documentary standard) with placeholder identities
 - 10 new test fixtures and a dedicated section in the hook smoke test runner covering commit, push, and config mutation paths

@@ -31,6 +31,14 @@ import os
 import re
 import sys
 
+sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+try:
+    from audit_log import record as _audit  # type: ignore
+except Exception:  # pragma: no cover
+    def _audit(**_fields):  # type: ignore
+        return None
+
+
 PUBLISHING_BASH_PATTERNS = [
     re.compile(r"\bgh\s+(?:pr|issue|api|release|gist)\b"),
     re.compile(r"\bglab\s+(?:mr|issue|api|release)\b"),
@@ -111,6 +119,7 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("CONFIG_LEAKAGE_DISABLE") == "1":
+        _audit(hook="internal-config-leakage", decision="bypass", bypass_env="CONFIG_LEAKAGE_DISABLE")
         return 0
 
     try:
@@ -145,6 +154,7 @@ def main() -> int:
         "Bypass (when writing about the config itself): set CONFIG_LEAKAGE_DISABLE=1.",
         file=sys.stderr,
     )
+    _audit(hook="internal-config-leakage", decision="block", tool=tool, reason="claude config leakage", command_excerpt=" | ".join(findings)[:240] if findings else None)
     return 2
 
 
