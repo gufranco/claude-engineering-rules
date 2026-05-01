@@ -101,6 +101,11 @@ on_demand:
     description: Cross-cutting per-command safety pattern for multi-account CLIs (gh, glab, docker, kubectl, aws, gcloud, terraform workspace, mise, helm). Detection order, anti-pattern command list, hook coverage, recipe for adding new tools.
     triggers: [multi-account, account switch, account isolation, docker context, kubectl context, aws profile, gcloud config, terraform workspace, mise, mise use, helm context, gh auth, glab auth, parallel terminal, global switch, colima profile]
 
+  git-identity:
+    path: standards/git-identity.md
+    description: Author identity isolation for git. Identity resolves through includeIf hasconfig in the user gitconfig per remote URL. The git author guard hook blocks commits, pushes, and config mutations that would use a missing, locally overridden, or placeholder identity.
+    triggers: [git identity, git author, user.email, user.name, git commit identity, includeIf, hasconfig, gitconfig, author leak, contributor]
+
   changelog:
     path: standards/changelog.md
     description: User-facing changelog entries, lead with actions, separate internal changes, version tagging convention
