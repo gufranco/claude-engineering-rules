@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+# Suppress audit log emission during smoke runs so synthetic fixture
+# events do not pollute the real-signal log mined by `/retro --hooks`.
+export CLAUDE_HOOK_AUDIT_DISABLE=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FIXTURES="${SCRIPT_DIR}/fixtures"
 HOOKS="${SCRIPT_DIR}/../hooks"

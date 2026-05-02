@@ -348,7 +348,8 @@ def main():
     for pattern in CATASTROPHIC:
         if re.search(pattern, command):
             _audit(hook="dangerous-command-blocker", decision="block",
-                   level="catastrophic", pattern=pattern, command=command[:300])
+                   level="catastrophic", reason=f"catastrophic: {pattern}",
+                   pattern=pattern, command=command[:300])
             print(f"BLOCKED: Catastrophic command detected.\nCommand: {command}")
             sys.exit(2)
 
@@ -394,10 +395,15 @@ def main():
             inline_bypass = re.search(r"\bALLOW_PROTECTED_BRANCH_PUSH=1\b", command)
             if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1" or inline_bypass:
                 _audit(hook="dangerous-command-blocker", decision="bypass",
-                       level="protected-branch", branch=branch, command=command[:300])
+                       level="protected-branch",
+                       reason=f"protected branch push ({branch or 'main'})",
+                       bypass_env="ALLOW_PROTECTED_BRANCH_PUSH",
+                       branch=branch, command=command[:300])
             else:
                 _audit(hook="dangerous-command-blocker", decision="block",
-                       level="protected-branch", branch=branch, command=command[:300])
+                       level="protected-branch",
+                       reason=f"protected branch push ({branch or 'main'})",
+                       branch=branch, command=command[:300])
                 print(
                     f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
                     "Use a feature branch and create a PR instead.\n"
