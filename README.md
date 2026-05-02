@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 40 skills, 36 MCP servers, 30 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 40 skills, 36 MCP servers, 32 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **75** standards · **40** skills · **36** MCP servers · **30** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
+**10** rules · **75** standards · **40** skills · **36** MCP servers · **32** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -20,7 +20,7 @@
 
 ### Runtime Guardrails
 
-Thirty hooks intercept tool calls in real time: block destructive commands across 150+ patterns, scan for secrets from 40+ providers, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account safety for `gh`/`glab`/`docker`/`kubectl`/`aws`/`gcloud`/`terraform`/`mise`, validate git author identity, ban TypeScript `any`, raw SQL, mutation methods and console.log in production code, rewrite CLI commands through RTK for 60-90% token savings, and auto-format code on every edit.
+Thirty-two hooks intercept tool calls in real time: block destructive commands across 150+ patterns, scan for secrets from 40+ providers, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account safety for `gh`/`glab`/`docker`/`kubectl`/`aws`/`gcloud`/`terraform`/`mise`, validate git author identity, keep `settings.json` free of project- and machine-specific data, lock the assistant to English regardless of input language, ban TypeScript `any`, raw SQL, mutation methods and console.log in production code, rewrite CLI commands through RTK for 60-90% token savings, and auto-format code on every edit.
 
 </td>
 <td width="50%" valign="top">
@@ -194,7 +194,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 
 ### Hooks
 
-30 hooks in [`hooks/`](hooks/), intercepting tool calls at runtime. Every blocking hook also emits a structured JSONL event to `logs/hooks.log` so `/retro --hooks` can mine repeat offenders and propose upstream fixes in rules, skills, or `CLAUDE.md`.
+32 hooks in [`hooks/`](hooks/), intercepting tool calls at runtime. Every blocking hook also emits a structured JSONL event to `logs/hooks.log` so `/retro --hooks` can mine repeat offenders and propose upstream fixes in rules, skills, or `CLAUDE.md`.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
@@ -224,6 +224,8 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse (Write/Edit) | Blocks `.push()` and `.sort()` in JS/TS |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse (Write/Edit) | Blocks Prisma raw query escape hatches outside migrations |
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse (Write/Edit) | Forces atomic Redis sequences via Lua/MULTI |
+| [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse (Write/Edit/MultiEdit) | Blocks settings.json edits that introduce inline credentials, absolute home paths, or blocklisted project identifiers |
+| [`english-only-reminder.sh`](hooks/english-only-reminder.sh) | UserPromptSubmit | Injects a system-reminder forcing English assistant output regardless of input language |
 | [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse (Edit/Write) | Auto-formats by extension: prettier, black, gofmt, rustfmt, shfmt |
 | [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated, pointing to `/retro --hooks` |
@@ -321,7 +323,7 @@ The hooks, rules, and skills activate automatically.
   agents/                # Custom subagents (9 agents)
     TEMPLATE.md          # Agent template
   skills/                # 40 skills with SKILL.md each
-  hooks/                 # 30 runtime hooks
+  hooks/                 # 32 runtime hooks
   logs/                  # JSONL audit log written by blocking hooks
   scripts/               # Validation, benchmarking, statusline
   tests/

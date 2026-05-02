@@ -31,7 +31,7 @@ if ! echo "${COMMAND}" | grep -qE '\bgit\s+commit\b'; then
 fi
 
 # Skip amend, merge, and squash commits (they reuse existing messages)
-if echo "${COMMAND}" | grep -qE '\-\-amend|\-\-no-edit|\-\-squash'; then
+if echo "${COMMAND}" | grep -qE -- '--amend|--no-edit|--squash'; then
     exit 0
 fi
 

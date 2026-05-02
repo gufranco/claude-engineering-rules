@@ -210,5 +210,8 @@ Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangero
 | Banned conversational phrases in PR/commit/MD (openers, closers, hedges, fluff) | Block | banned-phrases-blocker | ~40 phrases |
 | Non-atomic Redis sequences (INCR+EXPIRE, GET+SET) outside Lua/MULTI | Block | redis-atomicity | 4 |
 | Commit message format | Block | conventional-commits | 1 |
+| settings.json hygiene (inline credentials, absolute home paths, blocklisted project tokens) | Block | settings-hygiene | 3 categories |
+| Assistant language drift (force English on every user prompt via system-reminder injection) | Inject | english-only-reminder | 1 |
+| Session-end summary pointing to /retro --hooks when blocks accumulated | Inform | retro-pointer | 1 |
 
 **Limitations:** hooks are advisory, not kernel-level enforcement. An agent could bypass a hook by using an equivalent command not covered by the patterns. For untrusted code execution, use container or VM isolation.
