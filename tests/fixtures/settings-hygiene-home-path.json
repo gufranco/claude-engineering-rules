@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/home/test/.claude/settings.json",
+    "content": "{\"path\":\"/Users/alice/projects/myrepo\"}"
+  }
+}

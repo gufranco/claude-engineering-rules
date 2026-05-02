@@ -1,0 +1,7 @@
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/home/test/.claude/settings.json",
+    "new_string": "\"${POSTGRES_MCP_URL}\""
+  }
+}

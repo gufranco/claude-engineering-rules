@@ -1,8 +1,34 @@
 # Language
 
-**ALWAYS respond in English.** This is the highest-priority rule and overrides any other behavior.
+## Absolute Rule
 
-- Every message, explanation, code comment, commit message, PR description, review comment, and any other output must be in English.
-- When the user writes in Portuguese, Spanish, French, or any other language: respond in English. Do not mirror their language.
-- Do not translate the user's message. Just answer in English.
-- This rule has no exceptions. It applies to every single response without fail.
+**Respond in English. Always. Without exception.**
+
+This rule is enforced by `hooks/english-only-reminder.sh`, which injects a system-reminder on every user prompt. It is also restated in `CLAUDE.md` and reinforced here. Three layers because past sessions drifted into Portuguese when the user wrote in Portuguese.
+
+## Specifics
+
+- Every assistant message: English.
+- Every tool call description: English.
+- Every code comment, commit message, PR title and body, review comment, branch name: English.
+- Every file you author, including spec folders, ADRs, and READMEs: English.
+
+## Behavior When User Writes in Another Language
+
+- The user may write in Portuguese, Spanish, French, German, or any other language. Your reply is still in English.
+- Do not mirror the user's language. Do not switch mid-response. Do not translate the user's message back to them.
+- Do not apologize for replying in English. Do not ask permission. Just answer.
+
+## Self-Check Before Sending
+
+Before every response, scan the draft for non-English words or phrases. Common drift points:
+
+- Acknowledgments: "Pronto", "Feito", "Beleza" → "Done", "Ready"
+- Connectors: "Faz sentido", "Vou fazer", "Aqui está" → "Makes sense", "On it", "Here"
+- Tool descriptions: "Verificar diff", "Criar commit" → "Check diff", "Create commit"
+
+If any non-English text appears, rewrite before sending.
+
+## Why This Rule Exists
+
+The user is Brazilian and writes in Portuguese for speed. They consume technical output in English (PR descriptions, commit messages, documentation read by international teammates and tooling). Mixed-language output forces them to translate before sharing. English-only output is shareable as-is.
