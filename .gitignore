@@ -21,6 +21,7 @@ paste-cache/
 session-env/
 history.jsonl
 .compact-context
+.settings-hygiene-blocklist
 
 # Caches
 cache/

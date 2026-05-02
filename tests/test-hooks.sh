@@ -629,6 +629,32 @@ run_test "allows git config --get user.email" \
     "${FIXTURES}/bash-git-config-get-user.json" 0
 
 echo ""
+echo "=== Settings Hygiene ==="
+
+run_test "allows clean settings.json edit (env var reference)" \
+    "${HOOKS}/settings-hygiene.py" \
+    "${FIXTURES}/settings-hygiene-clean.json" 0
+
+run_test "blocks inline credential in connection string" \
+    "${HOOKS}/settings-hygiene.py" \
+    "${FIXTURES}/settings-hygiene-inline-credential.json" 2
+
+run_test "blocks absolute home path" \
+    "${HOOKS}/settings-hygiene.py" \
+    "${FIXTURES}/settings-hygiene-home-path.json" 2
+
+run_test "ignores files that are not settings.json" \
+    "${HOOKS}/settings-hygiene.py" \
+    "${FIXTURES}/settings-hygiene-non-settings.json" 0
+
+echo ""
+echo "=== English-Only Reminder ==="
+
+run_test "emits system-reminder injection (always exit 0)" \
+    "${HOOKS}/english-only-reminder.sh" \
+    "${FIXTURES}/english-only-reminder.json" 0
+
+echo ""
 echo "=== Results ==="
 echo "  Passed: ${PASS}"
 echo "  Failed: ${FAIL}"

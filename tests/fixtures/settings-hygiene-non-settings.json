@@ -1,0 +1,7 @@
+{
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/home/test/some/random.json",
+    "content": "{\"db\":\"postgresql://user:literal@host/db\"}"
+  }
+}
