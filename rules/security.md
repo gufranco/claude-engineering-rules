@@ -173,8 +173,10 @@ Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangero
 | Cloud CLI: Azure (VMs, SQL, AKS, WebApps, Storage, KeyVault, CosmosDB) | Block | dangerous-command-blocker | 9 |
 | Platform CLI (Vercel, Netlify, Firebase, Cloudflare, Fly.io, Heroku, Railway, Supabase) | Block | dangerous-command-blocker | 9 |
 | Container (Docker privileged/prune/rm, Podman, Compose down -v) | Block | dangerous-command-blocker | 9 |
-| Kubernetes (delete critical resources, drain, cordon, mass delete) | Block | dangerous-command-blocker | 6 |
-| Helm (uninstall, rollback) | Block | dangerous-command-blocker | 2 |
+| Kubernetes (delete critical resources, drain, cordon, mass delete, clusterrolebinding create/patch) | Block | dangerous-command-blocker | 8 |
+| Helm (uninstall, rollback, install/upgrade with TLS verify disabled) | Block | dangerous-command-blocker | 3 |
+| Package publishing (twine upload, python -m twine, poetry publish) | Block | dangerous-command-blocker | 3 |
+| Registry pivot (npm/pnpm/yarn registry, pip global.index-url) | Block | dangerous-command-blocker | 4 |
 | Database: Redis (FLUSHALL, FLUSHDB, CONFIG SET) | Block | dangerous-command-blocker | 4 |
 | Database: MongoDB (dropDatabase, dropCollection, deleteMany all) | Block | dangerous-command-blocker | 2 |
 | Database: PostgreSQL (dropdb, DROP DDL, pg_dump pipe) | Block | dangerous-command-blocker | 3 |
