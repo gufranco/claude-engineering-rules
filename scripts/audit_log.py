@@ -86,6 +86,8 @@ def _rotate_if_needed() -> None:
 
 def record(**fields: Any) -> None:
     """Append a JSON line to the audit log. Never raises."""
+    if os.environ.get("CLAUDE_HOOK_AUDIT_DISABLE") == "1":
+        return
     try:
         os.makedirs(LOG_DIR, exist_ok=True)
         _rotate_if_needed()
