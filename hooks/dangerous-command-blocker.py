@@ -74,7 +74,7 @@ CATASTROPHIC = [
     r"\bshred\s+.*(/dev/|/boot/|/etc/)",                   # shred system paths
     r"\bwipefs\b.*(/dev/[sh]d|/dev/nvme)",                 # wipe filesystem signatures
     r"\bdd\s+.*\bof=/dev/(disk|rdisk|loop|md|mapper)",     # dd to additional device classes
-    r"\bfind\s+[/~]\S*\s+.*-delete\b",                      # find / -delete or find ~ -delete
+    r"\bfind(\s+(\.{1,2}\S*|[/~]\S*))?\s+[^|;&]*-delete\b",  # find with -delete on /, ~, ., .., or no path
     r"\bfind\s+[/~]\S*\s+.*-exec\s+rm\b",                   # find -exec rm on system roots
     r"\bxargs\s+(-[a-zA-Z0]*\s+)*rm\s+(-[a-zA-Z]*[rRf])",  # xargs rm -rf pipelines
     r"\btar\s+.*--absolute-(names|paths)\b.*\bx",           # tar extract with absolute paths
@@ -304,7 +304,6 @@ RECOVERABLE = [
 # ---------------------------------------------------------------------------
 SUSPICIOUS = [
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\*", "rm with wildcard, double-check the path"),
-    (r"\bfind\b.*-delete\b", "find -delete permanently removes matched files"),
     (r"\bxargs\s+rm\b", "xargs rm can delete unexpected files"),
     (r">\s*/etc/", "Writing to /etc/ modifies system configuration"),
     (r"\bkillall\b", "killall terminates all processes with that name"),

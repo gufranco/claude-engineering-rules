@@ -80,6 +80,14 @@ run_test "blocks reverse shell" \
     "${HOOKS}/dangerous-command-blocker.py" \
     "${FIXTURES}/bash-reverse-shell.json" 2
 
+run_test "blocks find . -delete (cwd recursive)" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-find-delete-cwd.json" 2
+
+run_test "blocks find on relative path with -delete" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-find-delete-relative.json" 2
+
 echo ""
 echo "=== Dangerous Command Blocker: Cloud CLI ==="
 
