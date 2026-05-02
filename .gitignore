@@ -20,6 +20,7 @@ backups/
 paste-cache/
 session-env/
 history.jsonl
+.compact-context
 
 # Caches
 cache/
