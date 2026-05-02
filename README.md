@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **75** standards · **40** skills · **36** MCP servers · **30** hooks · **9** agents · **758** checklist items · **68** categories · **25,000+** lines of engineering configuration
+**10** rules · **75** standards · **40** skills · **36** MCP servers · **30** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -20,14 +20,14 @@
 
 ### Runtime Guardrails
 
-Eleven hooks intercept tool calls in real time: block destructive commands across 150+ patterns, scan for secrets from 40+ providers, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account token safety for GitHub and GitLab, rewrite CLI commands through RTK for 60-90% token savings, and auto-format code on every edit.
+Thirty hooks intercept tool calls in real time: block destructive commands across 150+ patterns, scan for secrets from 40+ providers, enforce conventional commits, prevent large file commits, guard environment files, enforce multi-account safety for `gh`/`glab`/`docker`/`kubectl`/`aws`/`gcloud`/`terraform`/`mise`, validate git author identity, ban TypeScript `any`, raw SQL, mutation methods and console.log in production code, rewrite CLI commands through RTK for 60-90% token savings, and auto-format code on every edit.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
 
-10 universal rules load automatically. 68 domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
+10 universal rules load automatically. 75 domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
 
 </td>
 </tr>
@@ -50,9 +50,9 @@ Mandatory verification gates: every file path, import, and API call verified bef
 <tr>
 <td width="50%" valign="top">
 
-### 670-Item Review Checklist
+### 758-Item Review Checklist
 
-Single unified checklist spanning 68 categories: correctness, security, error handling, concurrency, data integrity, testing, architecture patterns, deployment verification, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
+Single unified review list spanning 68 topics: correctness, security, error handling, concurrency, data integrity, testing, architecture patterns, deployment verification, LLM trust boundary, performance budgets, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
 
 </td>
 <td width="50%" valign="top">
@@ -81,7 +81,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Multi-account token safety | No | Inline token required for `gh` and `glab` |
 | Integration-first test policy | No | Real DB, strict mock ban, AAA pattern |
 | Pre-flight verification | No | Duplicate check, architecture fit, interface verification |
-| On-demand domain standards | No | 73 standards, ~51KB saved per conversation |
+| On-demand domain standards | No | 75 standards, ~51KB saved per conversation |
 | Workflow automation | No | 40 skills with subcommands |
 | MCP server integrations | No | 36 servers: GitHub, Slack, Sentry, Linear, Figma, and more |
 | Code review checklist | No | 758 items across 68 categories |
@@ -141,7 +141,7 @@ graph LR
 
 ### Standards (loaded on demand)
 
-73 standards in [`standards/`](standards/), loaded only when the task matches trigger keywords from [`rules/index.yml`](rules/index.yml).
+75 standards in [`standards/`](standards/), loaded only when the task matches trigger keywords from [`rules/index.yml`](rules/index.yml).
 
 Covers: API design, authentication, caching, database, distributed systems, frontend, GraphQL, gRPC, hexagonal architecture, i18n, infrastructure, message queues, microservices, monorepo, observability, privacy, resilience, serverless, state machines, Terraform testing, TypeScript 5.x, WebSocket, and 40+ more.
 
@@ -194,7 +194,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 
 ### Hooks
 
-17 hooks in [`hooks/`](hooks/), intercepting tool calls at runtime.
+30 hooks in [`hooks/`](hooks/), intercepting tool calls at runtime. Every blocking hook also emits a structured JSONL event to `logs/hooks.log` so `/retro --hooks` can mine repeat offenders and propose upstream fixes in rules, skills, or `CLAUDE.md`.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
@@ -213,8 +213,20 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse (Bash) | Blocks commits with files over 5MB |
 | [`env-file-guard.sh`](hooks/env-file-guard.sh) | PreToolUse (Write/Edit) | Blocks `.env`, private keys, cloud credentials, Terraform state |
 | [`rtk-rewrite.sh`](hooks/rtk-rewrite.sh) | PreToolUse (Bash) | Rewrites CLI commands through RTK for 60-90% token savings |
+| [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse (Bash/Write/Edit) | Blocks AI co-author trailers in commits and PRs |
+| [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse (Write/Edit) | Blocks TypeScript `as any`, `: any`, generic `any` |
+| [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse (Bash/Write/Edit) | Blocks ~40 conversational fluff phrases in PRs, commits, docs |
+| [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse (Write/Edit/Bash) | Blocks em dashes, parentheses in prose, emojis, ASCII art |
+| [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse (Write/Edit) | Blocks `console.log/warn/error` in non-test code |
+| [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse (Bash/Write/Edit) | Prevents internal config references from leaking into external output |
+| [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse (Write/Edit) | Forces `IF NOT EXISTS` / `IF EXISTS` on DDL in migration files |
+| [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse (Write/Edit) | Blocks mocking own services, DB, Redis, queues in tests |
+| [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse (Write/Edit) | Blocks `.push()` and `.sort()` in JS/TS |
+| [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse (Write/Edit) | Blocks Prisma raw query escape hatches outside migrations |
+| [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse (Write/Edit) | Forces atomic Redis sequences via Lua/MULTI |
 | [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse (Edit/Write) | Auto-formats by extension: prettier, black, gofmt, rustfmt, shfmt |
 | [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
+| [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated, pointing to `/retro --hooks` |
 | [`compact-context-saver.sh`](hooks/compact-context-saver.sh) | SessionStart/PreCompact/PostCompact | Preserves git status and branch across context compaction |
 
 ### Custom Agents
@@ -305,11 +317,12 @@ The hooks, rules, and skills activate automatically.
     checklist.md         # 758-item unified checklist across 68 categories
   rules/                 # Always loaded (10 rules)
     index.yml            # Rule + standard catalog with trigger keywords
-  standards/             # Loaded on demand (73 standards)
+  standards/             # Loaded on demand (75 standards)
   agents/                # Custom subagents (9 agents)
     TEMPLATE.md          # Agent template
   skills/                # 40 skills with SKILL.md each
-  hooks/                 # 28 runtime hooks
+  hooks/                 # 30 runtime hooks
+  logs/                  # JSONL audit log written by blocking hooks
   scripts/               # Validation, benchmarking, statusline
   tests/
     test-hooks.sh        # Hook smoke tests (94 fixtures)
@@ -376,7 +389,7 @@ The testing rule prioritizes integration tests with real databases and services.
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 73 standards total ~14,000 lines. Loading all of them into every conversation would consume ~51KB of context window. Instead, `rules/index.yml` maps each standard to trigger keywords. When a task matches (e.g., "add a database migration" triggers `database.md`), only the relevant standards load. Most conversations need 2-5 standards, saving 90%+ of the context budget.
+The 75 standards total ~14,000 lines. Loading all of them into every conversation would consume ~51KB of context window. Instead, `rules/index.yml` maps each standard to trigger keywords. When a task matches (e.g., "add a database migration" triggers `database.md`), only the relevant standards load. Most conversations need 2-5 standards, saving 90%+ of the context budget.
 
 </details>
 
