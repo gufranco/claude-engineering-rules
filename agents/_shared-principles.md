@@ -2,6 +2,10 @@
 
 This file is a reference fragment. Every agent in this directory follows these principles.
 
+## Directory Conventions
+
+The `agents/` directory contains both agent definitions and support files. Counts in documentation refer to **agents only**, excluding files prefixed with `_` (shared fragments) and `TEMPLATE.md` (boilerplate). To count agents: `ls agents/*.md | grep -vE "^_|TEMPLATE"`.
+
 ## Execution
 
 - Do not spawn subagents. Complete this task using direct tool calls only.
