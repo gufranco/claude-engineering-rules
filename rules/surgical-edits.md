@@ -45,6 +45,17 @@ When a rule from `~/.claude/` would expand the diff into unchanged code:
 
 Rules are not retroactive. They govern code you write or touch.
 
+## Tiebreaker with Completeness
+
+The Completeness rule in `rules/code-style.md` and this rule are both mandatory but operate on different axes. Completeness sets the **depth** of work inside a scope; surgical edits set the **width** of that scope.
+
+- Inside the requested scope, every aspect must be finished to production quality. No TODOs, no half-measures, no missing tests, no skipped error paths.
+- Outside the requested scope, do not touch code, even if it would be more "complete" overall.
+
+Example. The user asks: "Add a `cancel` method to the order service." Completeness applies to the `cancel` method itself: validation, error paths, tests, idempotency, audit log. Surgical edits forbid retrofitting the existing `submit` method that has none of those, even though it lives in the same file.
+
+When the request is genuinely too narrow to be safe (a fix that introduces a vulnerability without an accompanying check), surface the missing piece as a question. Do not expand the diff unilaterally.
+
 ## When This Rule Does Not Apply
 
 - The user explicitly asks for a refactor, cleanup, formatting pass, or sweeping change.

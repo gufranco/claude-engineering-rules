@@ -197,6 +197,30 @@ CRITICAL_PATHS = [
 
     # --- Helm destructive ---
     (r"\bhelm\s+uninstall\b", "Helm release uninstallation"),
+    (r"\bhelm\s+(install|upgrade)\b.*--insecure-skip-tls-verify",
+     "Helm install/upgrade with TLS verification disabled"),
+
+    # --- Privilege escalation via Kubernetes RBAC ---
+    (r"\bkubectl\s+create\s+clusterrolebinding\b",
+     "Creating a clusterrolebinding grants cluster-wide privileges"),
+    (r"\bkubectl\s+patch\s+clusterrolebinding\b",
+     "Patching a clusterrolebinding alters cluster-wide privileges"),
+
+    # --- Package publishing ---
+    (r"\btwine\s+upload\b", "twine upload publishes a package to PyPI"),
+    (r"\bpython3?\s+-m\s+twine\s+upload\b",
+     "python -m twine upload publishes a package to PyPI"),
+    (r"\bpoetry\s+publish\b", "poetry publish releases the package to a registry"),
+
+    # --- Registry pivot ---
+    (r"\bnpm\s+config\s+set\s+registry\b",
+     "npm registry change redirects all package fetches"),
+    (r"\bpnpm\s+config\s+set\s+registry\b",
+     "pnpm registry change redirects all package fetches"),
+    (r"\byarn\s+config\s+set\s+(npmRegistryServer|registry)\b",
+     "yarn registry change redirects all package fetches"),
+    (r"\bpip\s+config\s+set\s+global\.index-url\b",
+     "pip index URL change redirects all package fetches"),
 
     # --- Redis destructive ---
     (r"\bredis-cli\s+.*\bFLUSHALL\b", "Redis FLUSHALL destroys all data in all databases"),

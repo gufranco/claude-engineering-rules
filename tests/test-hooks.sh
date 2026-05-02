@@ -88,6 +88,30 @@ run_test "blocks find on relative path with -delete" \
     "${HOOKS}/dangerous-command-blocker.py" \
     "${FIXTURES}/bash-find-delete-relative.json" 2
 
+run_test "blocks twine upload" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-twine-upload.json" 2
+
+run_test "blocks poetry publish" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-poetry-publish.json" 2
+
+run_test "blocks npm registry pivot" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-npm-registry.json" 2
+
+run_test "blocks pip index pivot" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-pip-index.json" 2
+
+run_test "blocks kubectl clusterrolebinding create" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-kubectl-clusterrolebinding.json" 2
+
+run_test "blocks helm with TLS verify disabled" \
+    "${HOOKS}/dangerous-command-blocker.py" \
+    "${FIXTURES}/bash-helm-insecure.json" 2
+
 echo ""
 echo "=== Dangerous Command Blocker: Cloud CLI ==="
 
