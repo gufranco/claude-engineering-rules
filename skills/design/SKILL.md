@@ -66,24 +66,38 @@ Research design patterns in the ecosystem, propose a component hierarchy, and pr
    | Animation | Transitions, duration, easing. Respect `prefers-reduced-motion` |
    | Responsiveness | Mobile-first breakpoints and layout changes |
 
-5. **Write DESIGN.md.** Save to the project root or spec folder:
+5. **Write DESIGN.md using the canonical 8-section schema.** Save to the project root or spec folder. Sections must appear in this order. Missing a section is a defect.
 
    ```markdown
    # Design: <feature name>
 
-   ## Requirements
-   <What the user needs to accomplish>
+   ## 1. Context
+   <What is the surrounding situation? What triggered this design? What does the reader need to know to understand the rest?>
 
-   ## Component Hierarchy
-   <Tree of components with their responsibilities>
+   ## 2. Goals
+   <What this design must achieve. Measurable when possible.>
 
-   ## Layout
-   <Grid/flex strategy, responsive behavior>
+   ## 3. Non-Goals
+   <What this design explicitly does not address. Bounds the scope.>
 
-   ## Design Tokens Used
-   <Colors, spacing, typography from the existing system>
+   ## 4. Constraints
+   <Technical, product, regulatory, time, or resource limits that shaped the design.>
 
-   ## States
+   ## 5. Options Considered
+   <At least two alternatives, each with trade-offs. Includes the option that was rejected.>
+
+   | Option | Pros | Cons | Rejected because |
+   |--------|------|------|-----------------|
+   | A | ... | ... | (chosen) |
+   | B | ... | ... | ... |
+
+   ## 6. Decision
+   <The chosen approach. Component hierarchy, layout, tokens, states, accessibility, animation, responsiveness.>
+
+   ### Component Hierarchy
+   ### Layout
+   ### Design Tokens Used
+   ### States
    | State | Visual treatment | Content |
    |-------|-----------------|---------|
    | Empty | ... | ... |
@@ -91,16 +105,29 @@ Research design patterns in the ecosystem, propose a component hierarchy, and pr
    | Error | ... | ... |
    | Success | ... | ... |
 
-   ## Accessibility
-   <ARIA, keyboard, screen reader considerations>
+   ### Accessibility
+   <ARIA, keyboard, screen reader behavior>
 
-   ## Decisions
-   | Decision | Chosen | Alternative | Rationale |
-   |----------|--------|------------|-----------|
-   | ... | ... | ... | ... |
+   ## 7. Consequences
+   <What follows from the decision. Both positive outcomes and downsides accepted.>
+
+   ## 8. Open Questions
+   <Anything unresolved that needs validation, user input, or follow-up. Empty if none.>
    ```
 
-6. **Present for approval.** Wait for user feedback before implementation begins.
+6. **Run the 5-dimension self-critique.** Before presenting, score the draft on each lens. State the score, the reasoning, and any fix made.
+
+   | Lens | Question |
+   |------|----------|
+   | Clarity | Could a reader unfamiliar with the project follow this without asking? |
+   | Completeness | Are all 8 sections present? Every state covered? Every option weighed? |
+   | Feasibility | Can this be built with the project's current stack and team? |
+   | Reversibility | If this design proves wrong, how hard is it to undo? Flag one-way doors. |
+   | Blast radius | What breaks if this design is wrong? Who is affected, and how widely? |
+
+   If any lens scores below 7 of 10, fix the gap before presenting. Document the score line in DESIGN.md under "Open Questions" only when the gap is acknowledged but deferred.
+
+7. **Present for approval.** Wait for user feedback before implementation begins.
 
 ---
 
