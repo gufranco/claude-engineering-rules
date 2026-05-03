@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 40 skills, 36 MCP servers, 32 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 41 skills, 36 MCP servers, 32 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **75** standards · **40** skills · **36** MCP servers · **32** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
+**10** rules · **75** standards · **41** skills · **36** MCP servers · **32** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -34,9 +34,9 @@ Thirty-two hooks intercept tool calls in real time: block destructive commands a
 <tr>
 <td width="50%" valign="top">
 
-### 40 Slash-Command Skills
+### 41 Slash-Command Skills
 
-`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/investigate`, and 34 more. Each skill orchestrates multi-step workflows with a single command: delivery pipelines, three-pass code review, STRIDE threat modeling, systematic debugging with 3-strike escalation, and architecture planning with spec folders.
+`/ship`, `/review`, `/test`, `/audit`, `/plan`, `/investigate`, `/research`, and 34 more. Each skill orchestrates multi-step workflows with a single command: delivery pipelines, three-pass code review, STRIDE threat modeling, systematic debugging with 3-strike escalation, multi-source external research with cited synthesis, and architecture planning with spec folders.
 
 </td>
 <td width="50%" valign="top">
@@ -147,7 +147,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 
 ### Skills
 
-40 skills in [`skills/`](skills/). Each has a `SKILL.md` with full documentation.
+41 skills in [`skills/`](skills/). Each has a `SKILL.md` with full documentation.
 
 | Skill | Subcommands | What it does |
 |:------|:------------|:-------------|
@@ -158,6 +158,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | `/test` | `perf`, `lint`, `scan`, `ci`, `stubs` | Test execution, load testing, coverage, security scanning |
 | `/plan` | `adr`, `scaffold` | Structured planning with spec folders, ADRs, scaffolding |
 | `/investigate` | `--freeze` | Systematic debugging with hypothesis testing, 3-strike limit |
+| `/research` | `vs`, `--quick`, `--deep`, `--resume` | Multi-source external research, entity resolution, parallel fan-out, clustered synthesis with inline citations |
 | `/design` | `consult`, `variants`, `system` | Design consultation, variant exploration, design system |
 | `/second-opinion` | `--mode gate/adversarial/consult` | Cross-model review via Ollama, OpenAI, or other providers |
 | `/infra` | `docker`, `terraform`, `db` | Container orchestration, IaC workflows, database migrations |
@@ -264,6 +265,8 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | "What did we ship this week?" | `/weekly` |
 | "Prod is broken, fix NOW" | `/hotfix` |
 | "Just joined this project" | `/onboard` |
+| "What does the community say about X" | `/research X` |
+| "X vs Y, which is better" | `/research X vs Y` |
 | "This code needs restructuring" | `/refactor` |
 | "Need a second opinion" | `/second-opinion --mode adversarial` |
 

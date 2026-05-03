@@ -51,6 +51,8 @@ Before step 1, run a structured discovery session. Ask these six forcing questio
 
 Record the answers in the spec folder's `decisions.md` under a "Discovery" heading.
 
+**Optional research step.** If the task touches a domain with active community discussion, public competitors, or external prior art, run `/research <topic>` and link the output in the spec folder's `references.md`. The research skill enforces entity resolution, citation discipline, and confidence scoring. This step is user-initiated, not automatic. Skip when the task is purely internal.
+
 ### Scope Review (when `--auto` is passed, runs after discovery)
 
 Challenge the scope with four lenses before proceeding to architecture:

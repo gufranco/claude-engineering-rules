@@ -34,6 +34,8 @@ When planning features, improvement roadmaps, or new modules, research existing 
 
 **When this gate applies:** any new feature, workflow, integration, or UX pattern. Does not apply to bug fixes, config changes, or purely internal refactors.
 
+**Execution:** delegate the research run to the `/research` skill. This file documents WHAT to cover, the skill documents HOW. Run `/research <topic>` for a single-domain scan or `/research <A> vs <B>` for a head-to-head. The skill enforces entity resolution, query planning, parallel fan-out, cross-source clustering, citation discipline, and confidence scoring. Save the resulting report under the spec folder's `references.md`. The categories, extraction shape, cross-reference matrix, validation principle, and depth-by-task-size tables below remain authoritative inputs to the skill's query plan.
+
 #### Research scope
 
 Search every category. Do not stop after finding 2-3 results. The goal is to understand how the entire market solves the problem, then extract the best patterns.
