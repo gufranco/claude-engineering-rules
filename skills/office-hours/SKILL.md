@@ -11,6 +11,8 @@ Pre-code brainstorming skill. Asks six forcing questions one at a time to clarif
 |-----------|--------|
 | `/office-hours` | Start a brainstorming session with six questions |
 | `/office-hours <topic>` | Start with a specific topic pre-loaded |
+| `/office-hours --update-docs` | Brainstorm and, alongside the design doc, propose updates to existing project docs that touch the topic |
+| `/office-hours <topic> --update-docs` | Same with topic pre-loaded |
 
 ---
 
