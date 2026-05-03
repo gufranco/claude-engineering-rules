@@ -48,8 +48,24 @@ always_loaded:
     description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
     triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
 
+  memory-supersede:
+    description: Supersede-not-delete chain for project and feedback memories, frontmatter pointers, chain depth limit, reference memories may be deleted
+    triggers: [memory, supersede, supersedes, superseded_by, auto-memory, memory chain, memory update, memory archive]
 
-# ── Tier 2: On demand (standards/) ──────────────────────────────────
+
+# Tier 1b: Language-specific (rules/lang/)
+#
+# Loaded when the active task names a specific language. New language
+# guidance goes here; existing flat language standards remain in standards/
+# until superseded by entries in this subdir.
+
+lang:
+  _placeholder:
+    path: rules/lang/README.md
+    description: Index for language-specific rules. Populated as new entries arrive.
+    triggers: [lang readme, language rules index]
+
+# Tier 2: On demand (standards/)
 #
 # Moved from always_loaded (were in rules/, now in standards/):
 #   performance, documentation, context-management, code-review,
