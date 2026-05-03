@@ -33,7 +33,9 @@ Pre-code brainstorming skill. Asks six forcing questions one at a time to clarif
 
 3. **Synthesize the answers.** After all six questions are answered, produce the design document. Do not ask additional questions unless the answers contain contradictions that need resolution.
 
-4. **Present the design document.** Output the structured document as shown below.
+4. **If `--update-docs` was passed, scan project docs.** Read README.md, CONTRIBUTING.md, and any file under `docs/` whose path or title matches the topic keywords. Identify sections that will become stale, missing, or contradictory once the feature ships. Record findings under a "Doc Updates" section appended to the design document. Each finding lists: file path, current text excerpt, proposed change, reason. Do not edit the docs in this skill: propose only. The user runs `/document-release` or applies edits manually after approval.
+
+5. **Present the design document.** Output the structured document as shown below.
 
 ### Output
 
@@ -90,6 +92,11 @@ Each criterion must be verifiable: a test, a metric, or an observable behavior.>
 - [ ] Validate with <stakeholder> by <date or milestone>
 - [ ] Create implementation plan with `/plan`
 - [ ] <Any other preparatory step>
+
+### Doc Updates (only when `--update-docs` was passed)
+| File | Current excerpt | Proposed change | Reason |
+|------|----------------|-----------------|--------|
+| <path> | <quote> | <new text> | <why this section becomes stale> |
 ```
 
 ## Rules
