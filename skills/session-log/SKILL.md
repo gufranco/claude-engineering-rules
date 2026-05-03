@@ -85,6 +85,26 @@ When `/session-log export` is invoked:
 - Write the output to a file named `session-log-<YYYY-MM-DD-HHMM>.md` in the project root.
 - Confirm the file path after writing.
 
+## Session Boundary Heuristics
+
+A session boundary is a moment where short-term context should be flushed to long-term memory before it is lost to compaction or session end. The skill writes a memory entry whenever a boundary is detected, instead of waiting for an explicit save.
+
+| Trigger | Detection signal | Action |
+|---------|-----------------|--------|
+| Idle gap | More than 30 minutes between the last assistant turn and the next user turn | Write a project memory summarizing the in-progress task and any open decisions |
+| Topic shift | The user's new prompt has no shared keywords with the previous 5 turns and introduces a different domain (different repo, feature area, or skill family) | Write a project memory closing out the previous topic |
+| Pre-compaction | A `compact-context-saver` event fires or the assistant detects context near the 60% threshold | Write a feedback memory if any corrections happened, plus a project memory of the current task state |
+| Explicit handoff | The user says "I'll be back later", "save this for tomorrow", "let's pick up next session", or equivalent in any language | Write both a project memory and a checkpoint reference |
+| Task completion | A multi-step task ends with verified evidence (build green, PR merged, deploy confirmed) | Write a project memory marking the task done with the final state |
+
+When a boundary fires:
+
+1. Generate a one-paragraph summary of the current task state, open decisions, and unresolved questions.
+2. Save as a project memory using the auto-memory format from `~/.claude/CLAUDE.md`.
+3. Update `MEMORY.md` to point to the new entry.
+4. If the trigger was topic shift or idle gap, do not interrupt the user with a status message: write silently.
+5. If the trigger was explicit handoff or pre-compaction, briefly tell the user the memory was saved and where.
+
 ## Rules
 
 - All timestamps in GMT.
