@@ -82,6 +82,16 @@ on_demand:
     description: Preserve existing valid information when skills or automated processes modify documentation files. Merge, do not replace. Count items before and after migration.
     triggers: [readme, docs, documentation, changelog, guide, skill output, merge docs, update readme, modify docs]
 
+  ai-vocabulary:
+    path: standards/ai-vocabulary.md
+    description: Canonical glossary for AI coding terminology. Tokens, context windows, hallucination, sycophancy, handoffs, supersede chains. Use to prevent synonym drift across PRs, ADRs, and rule files.
+    triggers: [vocabulary, glossary, terminology, hallucination, sycophancy, handoff, context window, token, attention, parametric, contextual, ai term, ai jargon, ai dictionary]
+
+  design-md-template:
+    path: standards/design-md-template.md
+    description: Canonical structure for DESIGN.md, the per-project design system document. Mission, brand, style foundations, accessibility, writing tone, component expectations, quality gates.
+    triggers: [design.md, design system, design tokens, style foundations, brand, typography tokens, color tokens, spacing scale, design quality gates]
+
   context-management:
     path: standards/context-management.md
     description: Compact at 60%, preserve modified files and decisions after compaction, re-read plan.md every 50 tool calls, subagent context isolation
