@@ -124,7 +124,7 @@ graph LR
 
 ### Rules (always loaded)
 
-10 rules in [`rules/`](rules/), loaded into every conversation automatically.
+11 rules in [`rules/`](rules/), loaded into every conversation automatically.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -138,6 +138,7 @@ graph LR
 | [`surgical-edits`](rules/surgical-edits.md) | Every changed line traces to the request, cleanup boundaries, diff self-test |
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
+| `memory-supersede` | Supersede-not-delete chain for project and feedback memories, frontmatter pointers, chain depth limit |
 
 ### Standards (loaded on demand)
 
@@ -147,7 +148,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 
 ### Skills
 
-41 skills in [`skills/`](skills/). Each has a `SKILL.md` with full documentation.
+42 skills in [`skills/`](skills/). Each has a `SKILL.md` with full documentation.
 
 | Skill | Subcommands | What it does |
 |:------|:------------|:-------------|
@@ -156,7 +157,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | `/review` | `code`, `qa`, `design` | Three-pass code review, QA analysis, visual/accessibility audit |
 | `/audit` | `deps`, `secrets`, `docker`, `code`, `scan`, `image`, `threat`, `daily`, `comprehensive` | Security audit, STRIDE/OWASP threat modeling, supply chain |
 | `/test` | `perf`, `lint`, `scan`, `ci`, `stubs` | Test execution, load testing, coverage, security scanning |
-| `/plan` | `adr`, `scaffold` | Structured planning with spec folders, ADRs, scaffolding |
+| `/plan` | `adr`, `scaffold`, `to-issues` | Structured planning with spec folders, ADRs, scaffolding, plan-to-issues export |
 | `/investigate` | `--freeze` | Systematic debugging with hypothesis testing, 3-strike limit |
 | `/research` | `vs`, `--quick`, `--deep`, `--resume` | Multi-source external research, entity resolution, parallel fan-out, clustered synthesis with inline citations |
 | `/design` | `consult`, `variants`, `system` | Design consultation, variant exploration, design system |
@@ -177,7 +178,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | `/breaking-change` | `--plan-only` | API breaking change management with deprecation plan |
 | `/migrate` | `<from> <to>` | Framework/library migration with incremental testing |
 | `/tech-debt` | `--critical` | TODO/FIXME/HACK scanning with prioritization |
-| `/cleanup` | `branches`, `prs`, `worktrees` | Stale branch/PR/worktree cleanup |
+| `/cleanup` | `branches`, `prs`, `worktrees`, `--apply` | Stale branch/PR/worktree cleanup, dry-run by default |
 | `/setup` | -- | Interactive project environment setup |
 | `/resolve` | -- | Merge conflict resolution with verification |
 | `/weekly` | `<N>`, `--sprint` | Sprint/week summary with delivery metrics |
@@ -190,7 +191,8 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | `/canary` | `<duration>`, `<url>` | Post-deploy HTTP monitoring |
 | `/learn` | `show`, `search`, `add` | Operational learnings manager across sessions |
 | `/session-log` | `export` | Session activity logger for handoff |
-| `/office-hours` | -- | Pre-code brainstorming with forcing questions |
+| `/office-hours` | `--update-docs` | Pre-code brainstorming with forcing questions, optional doc-update proposals |
+| `/caveman` | `off`, `<question>` | Brevity mode toggle, under 50 words, no bullets or tables |
 | `/graphify` | -- | Input to knowledge graph with clustering |
 
 ### Hooks
@@ -231,6 +233,17 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated, pointing to `/retro --hooks` |
 | [`compact-context-saver.sh`](hooks/compact-context-saver.sh) | SessionStart/PreCompact/PostCompact | Preserves git status and branch across context compaction |
+
+#### Hook Profile
+
+The shared helper `hooks/_profile.py` reads two env vars to gate which hooks run:
+
+| Env var | Values | Effect |
+|---------|--------|--------|
+| `CLAUDE_HOOK_PROFILE` | `minimal`, `standard` (default), `strict` | `minimal` runs only critical security hooks. `strict` enables hooks that opt in via `require_strict=True` |
+| `CLAUDE_DISABLED_HOOKS` | CSV list of hook names | Each name short-circuits that hook regardless of profile |
+
+Per-hook bypass env vars (e.g. `ALLOW_PROTECTED_BRANCH_PUSH=1`) keep working and override the profile gate.
 
 ### Custom Agents
 
