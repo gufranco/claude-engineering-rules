@@ -23,6 +23,11 @@ allowed-tools:
 | `description` | Yes | What the skill does, used for matching when the user references it |
 | `allowed-tools` | No | Restrict which tools the skill can use. Omit for full access |
 | `sensitive` | No | Set to `true` for destructive skills. Requires explicit user confirmation before execution |
+| `mode` | No | Operating mode hint for skills with multiple stances. Values: `read-only`, `mutating`, `interactive`. Used by reviewers to spot scope mismatches |
+| `scenario` | No | Free-text tag describing the situation the skill targets (e.g. `incident-response`, `pre-commit`, `daily-standup`). Used for grouping in skill listings |
+| `fidelity` | No | Output fidelity expectation. Values: `terse` (under 100 words), `standard` (default), `verbose` (deep walkthrough). Authors use this to set reader expectations |
+
+These optional fields are advisory metadata. They do not change runtime behavior. Existing skills are not retrofitted; add them only when authoring new skills where the distinction is meaningful.
 
 ## Allowed-Tools Scoping
 
