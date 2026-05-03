@@ -49,7 +49,7 @@ When agents generate code, the orchestrator must review the output with the same
 
 ## AI-Specific Defect Patterns
 
-Track these patterns. They recur across AI-generated code.
+Track these patterns. They recur across AI-generated code. For canonical definitions of terms like hallucination, sycophancy, and plausible drift, see `standards/ai-vocabulary.md`.
 
 | Pattern | Description |
 |---------|------------|
