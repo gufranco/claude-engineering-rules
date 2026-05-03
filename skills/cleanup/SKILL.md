@@ -23,13 +23,16 @@ Repository hygiene tool that finds stale branches, lingering PRs, merged branche
 
 This skill accepts optional arguments after `/cleanup`:
 
-- No arguments: full scan covering branches, PRs, and worktrees.
+- No arguments: full scan covering branches, PRs, and worktrees. **Default mode is dry-run.** No mutation happens without `--apply`.
 - `branches`: scan branches only.
 - `prs`: scan PRs only.
 - `worktrees`: scan worktrees only.
-- `--dry-run`: show what would be cleaned without deleting or closing anything.
+- `--dry-run`: explicit dry-run flag. Same as the default. Kept for clarity.
+- `--apply`: perform the cleanup. Required for any mutation. Without this flag, the skill prints the report and exits.
 
-Examples: `/cleanup branches`, `/cleanup prs --dry-run`, `/cleanup --dry-run`.
+Examples: `/cleanup branches` (dry-run), `/cleanup prs --apply`, `/cleanup --apply`.
+
+The two-phase flow exists because cleanup is destructive. Borrowed from the `keep-codex-fast` two-phase pattern: read the report, decide, then re-run with `--apply`.
 
 ## Steps
 
@@ -84,9 +87,9 @@ Examples: `/cleanup branches`, `/cleanup prs --dry-run`, `/cleanup --dry-run`.
    | /tmp/repo-auth | feature/auth | branch deleted |
    ```
 
-7. **If `--dry-run` was passed, stop here.** Print the report and exit without taking any action.
+7. **If `--apply` was NOT passed, stop here.** Default mode is dry-run. Print the report, remind the user to re-run with `--apply` to mutate, and exit.
 
-8. **Confirm and act.** For each category, ask the user which items to clean up. Accept "all", a comma-separated list of names or numbers, or "skip".
+8. **Confirm and act.** Only when `--apply` was passed. For each category, ask the user which items to clean up. Accept "all", a comma-separated list of names or numbers, or "skip".
 
    - Merged branches: `git branch -d <branch>`.
    - Stale branches: `git branch -D <branch>` with a warning that this force-deletes an unmerged branch.
