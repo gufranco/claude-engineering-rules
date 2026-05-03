@@ -1,6 +1,6 @@
 <div align="center">
 
-<strong>Ship code that passes review the first time. 10 rules, 75 on-demand standards, 41 skills, 36 MCP servers, 32 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
+<strong>Ship code that passes review the first time. 11 rules, 77 on-demand standards, 45 skills, 36 MCP servers, 32 runtime hooks, and 9 custom agents that turn Claude Code into an opinionated engineering partner.</strong>
 
 <br>
 <br>
@@ -12,7 +12,7 @@
 
 ---
 
-**10** rules · **75** standards · **41** skills · **36** MCP servers · **32** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
+**11** rules · **77** standards · **45** skills · **36** MCP servers · **32** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -27,7 +27,7 @@ Thirty-two hooks intercept tool calls in real time: block destructive commands a
 
 ### Two-Tier Rule Loading
 
-10 universal rules load automatically. 75 domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
+11 universal rules load automatically. 77 domain-specific standards load on demand, matched by trigger keywords from `rules/index.yml`. Saves ~51KB of context per conversation by loading specialist standards only when triggered.
 
 </td>
 </tr>
@@ -81,7 +81,7 @@ This configuration turns Claude Code into an opinionated engineering partner. Ru
 | Multi-account token safety | No | Inline token required for `gh` and `glab` |
 | Integration-first test policy | No | Real DB, strict mock ban, AAA pattern |
 | Pre-flight verification | No | Duplicate check, architecture fit, interface verification |
-| On-demand domain standards | No | 75 standards, ~51KB saved per conversation |
+| On-demand domain standards | No | 77 standards, ~51KB saved per conversation |
 | Workflow automation | No | 40 skills with subcommands |
 | MCP server integrations | No | 36 servers: GitHub, Slack, Sentry, Linear, Figma, and more |
 | Code review checklist | No | 758 items across 68 categories |
@@ -338,7 +338,7 @@ The hooks, rules, and skills activate automatically.
   standards/             # Loaded on demand (75 standards)
   agents/                # Custom subagents (9 agents)
     TEMPLATE.md          # Agent template
-  skills/                # 40 skills with SKILL.md each
+  skills/                # 45 skills with SKILL.md each
   hooks/                 # 32 runtime hooks
   logs/                  # JSONL audit log written by blocking hooks
   scripts/               # Validation, benchmarking, statusline
