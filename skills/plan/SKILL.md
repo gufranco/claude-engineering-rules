@@ -14,6 +14,7 @@ Unified planning skill for requirements gathering, architecture decisions, and c
 | `/plan adr new <title>` | Create a new ADR |
 | `/plan adr supersede <number> <title>` | Supersede an existing ADR |
 | `/plan scaffold <type> <name>` | Generate boilerplate from project patterns |
+| `/plan to-issues` | Export the active spec folder's task breakdown to GitHub issues |
 
 If no subcommand is recognized, treat the argument as a plan description.
 
@@ -211,6 +212,43 @@ Create and manage Architecture Decision Records. ADRs capture context, alternati
 - At least two alternatives documented.
 - Status values: proposed, accepted, deprecated, superseded by ADR-NNN.
 - Title describes the decision, not the problem.
+
+---
+
+## to-issues
+
+Export the active spec folder's task breakdown to GitHub issues. One issue per task. Borrowed from the `mattpocock/skills` exporter pattern.
+
+### When to use
+
+- After a `/plan` run, when the work will be tracked in GitHub issues.
+- When handing off a plan to a teammate or queue.
+
+### Arguments
+
+- No arguments: read the most recent spec folder under `specs/` or `.claude/specs/`.
+- `<spec-folder>`: explicit path to the spec folder.
+- `--label <name>`: label to apply to every created issue. Repeatable.
+- `--milestone <name>`: milestone to assign to every issue.
+- `--dry-run`: print the issue payloads without creating them.
+
+### Steps
+
+1. **Resolve spec folder.** Default to the latest folder under `specs/` or `.claude/specs/`.
+2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue.
+3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per `standards/borrow-restore.md`.
+4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists. Borrowed from the deduplication pattern.
+5. **Build issue body.** Include: the task description, the spec folder path, a link to `plan.md`, and any phase grouping.
+6. **Create issues.** GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label>`. GitLab: equivalent `glab issue create`.
+7. **Print summary.** Table of created issues with URLs. Skipped (duplicate) issues listed separately.
+
+### Rules
+
+- Idempotent. Re-running must not create duplicates.
+- Issue title must include the task number from `plan.md` for traceability.
+- Body must link back to the spec folder so context is one click away.
+- Never create issues from a `--light` plan with no task breakdown.
+- Never push or commit. This subcommand only writes to the issue tracker.
 
 ---
 
