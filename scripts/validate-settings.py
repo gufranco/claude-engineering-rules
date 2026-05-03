@@ -97,10 +97,11 @@ def validate_hooks(data):
     for phase in KNOWN_HOOK_PHASES:
         for hook_group in hooks.get(phase, []):
             matcher = hook_group.get("matcher", "")
-            if matcher not in KNOWN_MATCHERS:
-                errors.append(
-                    f"  Unknown hook matcher '{matcher}' in {phase}"
-                )
+            for token in matcher.split("|") if matcher else [""]:
+                if token not in KNOWN_MATCHERS:
+                    errors.append(
+                        f"  Unknown hook matcher '{token}' in {phase}"
+                    )
 
             for hook in hook_group.get("hooks", []):
                 command = hook.get("command", "")
