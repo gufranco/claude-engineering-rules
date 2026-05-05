@@ -65,6 +65,11 @@ lang:
     description: Index for language-specific rules. Populated as new entries arrive.
     triggers: [lang readme, language rules index]
 
+  prisma-migrations:
+    path: rules/lang/prisma-migrations.md
+    description: Schema-vs-migration parity, index naming convention via map, prisma migrate diff verification, unmanaged-object bypass
+    triggers: [prisma, migration, migrations, schema.prisma, "@@index", "@@unique", "prisma migrate", "migrate diff", "migrate dev", "migrate deploy", drift, schema drift]
+
 # Tier 2: On demand (standards/)
 #
 # Moved from always_loaded (were in rules/, now in standards/):

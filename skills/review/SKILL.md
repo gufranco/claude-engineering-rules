@@ -78,7 +78,7 @@ When `--backend` or `--frontend` is passed, classify each file:
    | SCOPE_BACKEND | `.go`, `.py`, `.rs`, service files, handlers | API design, error handling, concurrency |
    | SCOPE_API | Route definitions, controllers, OpenAPI changes | API versioning, rate limiting, backward compatibility |
    | SCOPE_AUTH | Auth middleware, token handling, login/signup | OAuth 2.1, passkeys, rate limits, NIST 800-63B |
-   | SCOPE_MIGRATIONS | Migration files, schema changes | Expand-contract (cat 55), backward compatibility |
+   | SCOPE_MIGRATIONS | Migration files, schema changes | Schema-migration sync (cat 69), expand-contract (cat 55), backward compatibility |
    | SCOPE_EVENTS | Event handlers, queue consumers, publishers | Event-driven patterns (cat 57), idempotency, DLQ |
    | SCOPE_DEPS | package.json, go.mod, requirements.txt changes | Supply chain (cat 56), SBOM, typosquatting |
    | SCOPE_INFRA | Dockerfile, terraform, k8s manifests, CI config | Container security, zero-downtime (cat 55) |
@@ -135,6 +135,34 @@ When `--backend` or `--frontend` is passed, classify each file:
    | Concurrent requests with different idempotency keys | If the dedup key is derived from mutable request metadata (timestamp), two requests for the same logical operation get different keys and both proceed |
 
    **9c. Read the database schema.** For every application-level uniqueness check (`findFirst` then `create`, `SELECT` then `INSERT`), read the actual schema file and verify a corresponding `UNIQUE` constraint, `@@unique`, or `UNIQUE INDEX` exists. An application check without a DB constraint is a TOCTOU race that produces duplicates under concurrency. Never assume a constraint exists because the code checks for it.
+
+   **9c-bis. Schema-migration parity (MANDATORY when SCOPE_MIGRATIONS detected).** This gate exists because PR #1325 (onyxodds/onyx_fullstack) shipped a migration with 7 raw-SQL `CREATE INDEX` statements and zero matching `@@index` declarations in `schema.prisma`. The drift went undetected for 17 days. Reference rule: `~/.claude/rules/lang/prisma-migrations.md`. Reference checklist: category 69.
+
+   For every changed migration file, perform these checks in order. Skipping any of them is a review failure.
+
+   1. **Enumerate every DDL statement in the migration.** List `CREATE INDEX`, `CREATE UNIQUE INDEX`, `DROP INDEX`, `ALTER TABLE ADD COLUMN`, `ALTER TABLE DROP COLUMN`, `CREATE TABLE`, `DROP TABLE`. Extract the exact identifier name from each statement.
+   2. **For each enumerated DDL, grep `schema.prisma` for the matching declaration.** Report the result per item using this exact format:
+
+      ```
+      [PARITY OK]    CREATE INDEX "Game_homeTeam_sportsbook_search_idx" -> @@index([homeTeam], map: "Game_homeTeam_sportsbook_search_idx")
+      [PARITY MISS]  CREATE INDEX "Line_name_sportsbook_search_idx" -> NOT FOUND in schema.prisma (P0 BLOCKING)
+      ```
+
+   3. **Run `prisma migrate diff` and paste the full output.** Command:
+
+      ```bash
+      pnpm exec prisma migrate diff \
+        --from-schema-datamodel <schema.prisma path> \
+        --to-migrations <migrations dir> \
+        --exit-code
+      ```
+
+      Non-zero exit code is a P0 blocking finding. The exact diff output must appear in the review.
+   4. **If a fresh DB is available, run end-to-end verification.** `prisma migrate deploy` followed by `prisma migrate dev`. If the second command generates a follow-up migration, drift exists. Paste the generated migration in the review and flag as P0.
+   5. **Verify every index name uses an explicit `map:`.** Auto-generated Prisma names collide with raw-SQL names and cause the exact drift PR #1325 introduced. Names must follow `<Model>_<col>(_<col>)*_<purpose>_idx`.
+   6. **Verify any DDL without a schema counterpart is documented.** Extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. The migration file must contain a leading comment naming the unmanaged object class. Missing documentation is a P1 finding.
+
+   None of these steps can be skipped on the grounds that "the hook would have caught it." The hook is layer 2; the review skill is layer 4. Defense-in-depth means each layer runs every check independently.
 
    **9d. Model attacker capabilities (when SCOPE_AUTH, SCOPE_WEBHOOK, SCOPE_API detected).** Assume the attacker has: the signing secret (compromised dependency, leaked env var), the ability to send arbitrary requests at high volume, knowledge of the endpoint contract. For each assumption, trace what damage is possible.
 
