@@ -8,8 +8,10 @@ does not know any real email. It only verifies consistency:
 - Commit creation (`git commit`, `--amend`, `cherry-pick`, `rebase`,
   `revert`, `merge` with custom message): effective `user.email` is
   non-empty, no `[user]` block exists in the repository's `.git/config`,
-  and no inline `GIT_AUTHOR_EMAIL=` or `GIT_COMMITTER_EMAIL=` is set on
-  the same command line.
+  no inline `GIT_AUTHOR_EMAIL=`/`GIT_COMMITTER_EMAIL=` env override is
+  set, and no inline `-c user.email=`/`-c user.name=`/
+  `-c commit.gpgsign=`/`-c tag.gpgsign=` override is set on the same
+  command line.
 
 - Push (`git push`, `--force`, `--force-with-lease`): walks
   `git log --format=%ae @{push}..HEAD` (capped at 200 commits) and
@@ -57,13 +59,18 @@ PLACEHOLDER_EMAIL = re.compile(
 )
 
 # Commit-creation triggers. `merge` is included because a non-fast-forward
-# merge produces a commit with the local user as author.
+# merge produces a commit with the local user as author. The pattern
+# tolerates `git -c k=v ...` and `git -C <dir> ...` flags between `git`
+# and the subcommand.
 COMMIT_TRIGGERS = re.compile(
-    r"\bgit\s+(?:commit|cherry-pick|rebase|revert|merge)\b"
+    r"\bgit\b(?:\s+-(?:c\s+\S+|C\s+\S+|[a-zA-Z]+(?:=\S+)?))*\s+"
+    r"(?:commit|cherry-pick|rebase|revert|merge)\b"
 )
 
 # Push triggers. `--force-with-lease` and `--force` are inside `push`.
-PUSH_TRIGGER = re.compile(r"\bgit\s+push\b")
+PUSH_TRIGGER = re.compile(
+    r"\bgit\b(?:\s+-(?:c\s+\S+|C\s+\S+|[a-zA-Z]+(?:=\S+)?))*\s+push\b"
+)
 
 # `git config` writes to user.*: capture for analysis.
 CONFIG_USER_WRITE = re.compile(
@@ -76,6 +83,15 @@ CONFIG_READ_FLAGS = re.compile(r"--(?:get|get-all|get-regexp|list|show-origin|sh
 # Identity-overriding env injections on the same command line.
 ENV_AUTHOR_OVERRIDE = re.compile(
     r"\b(?:GIT_AUTHOR_EMAIL|GIT_COMMITTER_EMAIL|GIT_AUTHOR_NAME|GIT_COMMITTER_NAME)=\S+"
+)
+
+# Inline `git -c user.email=...` / `git -c user.name=...` overrides on the
+# command line. Identity must come from ~/.gitconfig resolution, never from
+# an inline override. Same rationale for `commit.gpgsign=false`: disables
+# signing required by the global config.
+INLINE_C_OVERRIDE = re.compile(
+    r"-c\s+(?:user\.(?:email|name)|commit\.gpgsign|tag\.gpgsign|gpg\.\w+)\s*=\s*\S+",
+    re.IGNORECASE,
 )
 
 # `cd <dir> && ...` prefix capture.
@@ -160,6 +176,17 @@ def check_commit(command: str, cwd: Path) -> None:
             "BLOCKED: identity override env var on the command line "
             "(GIT_AUTHOR_EMAIL/GIT_COMMITTER_EMAIL/NAME).\n"
             "Identity must come from ~/.gitconfig includeIf resolution.\n"
+            "See: standards/git-identity.md\n"
+            f"Command: {command}"
+        )
+
+    if INLINE_C_OVERRIDE.search(command):
+        block(
+            "BLOCKED: inline `-c user.email=`/`-c user.name=`/"
+            "`-c commit.gpgsign=`/`-c tag.gpgsign=` override on the "
+            "command line.\n"
+            "Identity and signing must come from ~/.gitconfig "
+            "includeIf resolution. Never override per-command.\n"
             "See: standards/git-identity.md\n"
             f"Command: {command}"
         )
