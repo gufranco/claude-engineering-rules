@@ -199,3 +199,56 @@ Clean use of the strategy pattern here. Each payment processor
 is independently testable and adding a new one doesn't touch
 existing code.
 ```
+
+## Schema-Migration Parity (when migration files are in scope)
+
+When the diff touches any file under `prisma/migrations/`, run the parity gate before approving. Skipping it is a review failure.
+
+For every DDL statement in every changed migration file, verify a matching declaration in the nearest `schema.prisma`. Mapping:
+
+| Migration SQL | Required in schema.prisma |
+|---------------|---------------------------|
+| `CREATE INDEX <name>` | `@@index([cols], map: "<name>")` |
+| `CREATE UNIQUE INDEX <name>` | `@@unique([cols], map: "<name>")` |
+| `ALTER TABLE ADD COLUMN <col>` | Field on the model |
+| `ALTER TABLE DROP COLUMN <col>` | Field removed from the model |
+| `DROP INDEX <name>` | `@@index` removed from the model |
+| `CREATE TABLE <name>` | `model <Name>` block |
+| `DROP TABLE <name>` | `model <Name>` block removed |
+
+Authoritative drift check (run when a fresh DB is available):
+
+```bash
+pnpm exec prisma migrate diff \
+  --from-schema-datamodel <schema.prisma path> \
+  --to-migrations <migrations dir> \
+  --exit-code
+```
+
+Non-zero exit is a P0 blocking finding. Paste the full output in the review.
+
+Unmanaged objects exempt from parity (PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, RLS policies) must have a leading comment in the migration file naming the unmanaged class. Missing documentation is P1.
+
+Example finding when parity is missing:
+
+````
+This migration creates `Game_homeTeam_sportsbook_search_idx` in raw SQL but `schema.prisma` has no matching `@@index` declaration on the Game model. Every developer who runs `prisma migrate dev` on a fresh DB will get a phantom drift migration trying to drop this index, because Prisma believes the index is unmanaged.
+
+Add the matching declaration:
+
+```prisma
+model Game {
+  // existing fields
+  @@index([homeTeam], map: "Game_homeTeam_sportsbook_search_idx")
+}
+```
+
+Then verify zero drift:
+
+```bash
+pnpm exec prisma migrate diff \
+  --from-schema-datamodel packages/database/prisma/schema.prisma \
+  --to-migrations packages/database/prisma/migrations \
+  --exit-code
+```
+````

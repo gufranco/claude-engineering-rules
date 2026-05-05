@@ -40,6 +40,70 @@ Do not push to remote (orchestrator pushes; agents must not). Do not spawn subag
 | Large table locks | High | `ALTER TABLE` on tables likely to be large (look for `ADD COLUMN` with `NOT NULL` and no `DEFAULT`, `ALTER COLUMN TYPE`) |
 | Index creation | Medium | `CREATE INDEX` without `CONCURRENTLY` on PostgreSQL (blocks writes) |
 | Raw SQL in ORM | High | Raw SQL strings in migration files when the ORM provides migration methods |
+| Schema-migration parity (Prisma) | Critical | Every DDL in migration SQL has a matching declaration in `schema.prisma`. See "Schema-Migration Parity" section below |
+
+## Schema-Migration Parity (Prisma)
+
+This check exists because a real PR shipped a migration with 7 raw-SQL `CREATE INDEX` statements and zero matching `@@index` entries in `schema.prisma`. The drift went undetected for 17 days because review caught the SQL, the schema file, and the test suite separately, but never compared them.
+
+For every Prisma migration in scope, perform this check.
+
+### Procedure
+
+1. **Locate the nearest `schema.prisma`** by walking up from the migration directory.
+2. **Enumerate every DDL statement** in each migration file. Build a list with the exact identifier names:
+   - `CREATE INDEX <name> ON <table>`
+   - `CREATE UNIQUE INDEX <name> ON <table>`
+   - `DROP INDEX <name>`
+   - `ALTER TABLE <table> ADD COLUMN <col>`
+   - `ALTER TABLE <table> DROP COLUMN <col>`
+   - `CREATE TABLE <name>`
+   - `DROP TABLE <name>`
+3. **For each DDL, find its counterpart in `schema.prisma`:**
+   - `CREATE INDEX <name>` requires `@@index([cols], map: "<name>")` on the model that maps to `<table>`.
+   - `CREATE UNIQUE INDEX <name>` requires `@@unique([cols], map: "<name>")`.
+   - `ALTER TABLE ADD COLUMN <col>` requires the field on the model.
+   - `ALTER TABLE DROP COLUMN <col>` requires the field absent from the model.
+   - `DROP INDEX <name>` requires the `@@index`/`@@unique` absent from the schema.
+   - `CREATE TABLE <name>` requires the corresponding `model` block.
+   - `DROP TABLE <name>` requires the `model` block absent.
+4. **Report every mismatch** as a Critical finding with the exact identifier name and the missing schema declaration.
+5. **Allowlist for unmanaged objects.** PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. If the migration creates these, expect no schema entry. Verify the migration file documents this with a leading comment naming the unmanaged class. Missing documentation is a Medium finding.
+
+### Worked Example
+
+Migration content:
+
+```sql
+CREATE INDEX IF NOT EXISTS "Game_homeTeam_sportsbook_search_idx" ON "Game" ("homeTeam");
+CREATE INDEX IF NOT EXISTS "Game_awayTeam_sportsbook_search_idx" ON "Game" ("awayTeam");
+CREATE INDEX IF NOT EXISTS "Game_league_sportsbook_search_idx"   ON "Game" ("league");
+CREATE INDEX IF NOT EXISTS "Game_sport_sportsbook_search_idx"    ON "Game" ("sport");
+CREATE INDEX IF NOT EXISTS "Line_name_sportsbook_search_idx"     ON "Line" ("name");
+CREATE INDEX IF NOT EXISTS "Line_marketName_sportsbook_search_idx" ON "Line" ("marketName");
+CREATE INDEX IF NOT EXISTS "Line_selection_sportsbook_search_idx" ON "Line" ("selection");
+```
+
+Required in `schema.prisma`:
+
+```prisma
+model Game {
+  // existing fields
+  @@index([homeTeam], map: "Game_homeTeam_sportsbook_search_idx")
+  @@index([awayTeam], map: "Game_awayTeam_sportsbook_search_idx")
+  @@index([league],   map: "Game_league_sportsbook_search_idx")
+  @@index([sport],    map: "Game_sport_sportsbook_search_idx")
+}
+
+model Line {
+  // existing fields
+  @@index([name],       map: "Line_name_sportsbook_search_idx")
+  @@index([marketName], map: "Line_marketName_sportsbook_search_idx")
+  @@index([selection],  map: "Line_selection_sportsbook_search_idx")
+}
+```
+
+The original PR had the migration but none of the `@@index` entries. Every one of the 7 indexes was a Critical parity finding. The follow-up PR added all 7 entries and verified `prisma migrate diff --exit-code` returns 0.
 
 ## Output Contract
 

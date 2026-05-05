@@ -1270,3 +1270,31 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 - [ ] Data export format documented and tested
 - [ ] Migration path to an alternative vendor estimated
 - [ ] Vendor lock-in (proprietary protocols, custom data formats) flagged in ADR
+
+### 69. Schema-Migration Sync (Prisma)
+
+Apply on every PR that adds, edits, or removes a file under `prisma/migrations/` or modifies `schema.prisma`. Reference rule: `~/.claude/rules/lang/prisma-migrations.md`.
+
+**Static parity (offline):**
+- [ ] Every `CREATE INDEX` in migration SQL has a matching `@@index([...], map: "<exact name>")` on the target model
+- [ ] Every `CREATE UNIQUE INDEX` has a matching `@@unique([...], map: "<exact name>")`
+- [ ] Every `ALTER TABLE ... ADD COLUMN` has the column declared as a field on the model with matching type and nullability
+- [ ] Every `ALTER TABLE ... DROP COLUMN` removes the corresponding field from the model
+- [ ] Every `DROP INDEX` removes the corresponding `@@index` from the model
+- [ ] Every `CREATE TABLE` has a matching `model` block; every `DROP TABLE` removes it
+- [ ] Every index name follows `<Model>_<col>(_<col>)*_<purpose>_idx` and is passed via explicit `map:`
+- [ ] Unmanaged objects (extensions, materialized views, triggers, GIN/GiST trgm indexes) are documented with a leading comment in the migration file explaining why no schema entry exists
+
+**Authoritative drift (requires DB):**
+- [ ] `prisma migrate diff --from-schema-datamodel <schema> --to-migrations <dir> --exit-code` returns 0
+- [ ] `prisma migrate dev` against a fresh DB after deploying all migrations produces no follow-up migration
+
+**Cross-checks:**
+- [ ] Migration timestamp is later than every migration on the base branch (cross-reference with `git-workflow.md` "Migration Ordering")
+- [ ] Migration file uses `IF NOT EXISTS` / `IF EXISTS` per `git-workflow.md` "Migration Idempotency"
+- [ ] If the migration creates indexes on tables with significant row counts, `CREATE INDEX CONCURRENTLY` is used
+- [ ] New model passes `code-style.md` "Prisma Schema Completeness" gate (createdAt, updatedAt, companyId index, FK indexes)
+
+**Verification evidence:**
+- [ ] Output of `prisma migrate diff --exit-code` pasted in PR description
+- [ ] If non-trivial schema change: screenshot or log of fresh-DB `prisma migrate dev` showing zero follow-up migrations
