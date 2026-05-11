@@ -167,11 +167,6 @@ on_demand:
     description: Token cost estimation for agent spawning, model selection by task, redundant read avoidance, CI pipeline cost, rate budget sequencing
     triggers: [cost, token, token cost, model selection, haiku, sonnet, opus, pipeline cost, rate budget, redundant read]
 
-  hook-authoring:
-    path: standards/hook-authoring.md
-    description: Hook performance budget under 500ms, exit codes, stdin JSON parsing, testing with fixtures, graceful error handling
-    triggers: [hook, PreToolUse, PostToolUse, exit code, stdin, blocker, guard]
-
   rules-vs-standards:
     path: standards/rules-vs-standards.md
     description: Two-tier configuration taxonomy explaining when to add to rules/ (always loaded) vs standards/ (on demand), trigger design, splitting/merging criteria, MCP server triage
@@ -197,11 +192,6 @@ on_demand:
     description: Session naming, checkpoints before risky operations, /rewind for experimentation, multi-session awareness, proactive compaction
     triggers: [session, checkpoint, rewind, session name, multi-session, session boundary, end of session]
 
-  skill-authoring:
-    path: standards/skill-authoring.md
-    description: Skill frontmatter fields, allowed-tools scoping, sensitive flag, CLAUDE_SKILL_DIR, $ARGUMENTS variable, preamble pattern
-    triggers: [skill, frontmatter, allowed-tools, sensitive, preamble, CLAUDE_SKILL_DIR, $ARGUMENTS]
-
   api-design:
     path: standards/api-design.md
     description: REST conventions, status codes, error format, pagination, versioning, deprecation, rate limiting, bulk operations
@@ -216,11 +206,6 @@ on_demand:
     path: standards/caching.md
     description: Cache strategies, invalidation, thundering herd prevention, warming, sizing, eviction policies
     triggers: [cache, redis, memcached, ttl, invalidation, cdn, lru, stale]
-
-  cost-optimization:
-    path: standards/cost-optimization.md
-    description: Cost allocation tagging, compute right-sizing, storage lifecycle policies, network cost reduction, database cost optimization, budget alerts, FinOps practices
-    triggers: [cost, finops, budget, savings plan, reserved instance, spot instance, right-sizing, tagging, cost allocation, cost optimization, lifecycle policy, unused resources]
 
   database:
     path: standards/database.md
@@ -302,11 +287,6 @@ on_demand:
     description: Data structure selection guide, sorting algorithm comparison, complexity analysis rules, common anti-patterns with hidden costs, space complexity awareness
     triggers: [performance, big-o, complexity, algorithm, data structure, sort, hash, heap, tree, map, set, queue, O(n), quadratic, optimization, memory, space complexity, oom, memory leak, unbounded growth, scaling issue]
 
-  multi-tenancy:
-    path: standards/multi-tenancy.md
-    description: Tenant isolation strategies, noisy neighbor prevention, data leakage prevention with RLS, tenant-scoped observability, tenant lifecycle, cross-tenant testing, per-tenant configuration
-    triggers: [multi-tenant, tenant, tenancy, tenant_id, isolation, noisy neighbor, rls, row-level security, tenant context, tenant onboarding, tenant offboarding, per-tenant]
-
   graphql-api-design:
     path: standards/graphql-api-design.md
     description: GraphQL schema design, query complexity limits, N+1 prevention with DataLoader, error handling with union types, field-level authorization, federation, subscriptions, persisted queries, schema evolution and deprecation lifecycle
@@ -322,11 +302,6 @@ on_demand:
     description: Terraform built-in test framework with .tftest.hcl files, plan vs apply mode, mock providers, parallel execution, expect_failures, state key isolation
     triggers: [terraform test, tftest, .tftest.hcl, terraform mock, terraform plan test, terraform integration test, terraform unit test, hcl test]
 
-  feature-flags:
-    path: standards/feature-flags.md
-    description: Flag types and lifecycle, evaluation performance with local cache, rollout strategies with automatic rollback, flag cleanup and expiration, testing both states, boundary evaluation pattern, observability, platform comparison
-    triggers: [feature flag, feature toggle, flag, toggle, rollout, canary, a/b test, experiment, kill switch, launchdarkly, unleash, flagsmith, growthbook, percentage rollout, flag cleanup]
-
   message-queues:
     path: standards/message-queues.md
     description: Topology patterns, message envelope format, consumer patterns, ordering guarantees, DLQ and error handling, backpressure, exactly-once processing, monitoring, testing, platform comparison
@@ -337,11 +312,6 @@ on_demand:
     description: Playwright test architecture, page objects, visual regression, accessibility tree testing, responsive testing, Core Web Vitals measurement, cookie management, CI configuration
     triggers: [browser, playwright, e2e, visual regression, screenshot, viewport, responsive, core web vitals, lighthouse, cwv, lcp, cls, inp, page object, axe, browser test]
 
-  grpc-services:
-    path: standards/grpc-services.md
-    description: gRPC service design, proto file conventions, error handling with status codes, deadlines, interceptors, health checking, reflection, load balancing for HTTP/2
-    triggers: [grpc, protobuf, proto, streaming, reflection, grpc-web, grpc health, interceptor, deadline, status code]
-
   i18n-l10n:
     path: standards/i18n-l10n.md
     description: Text externalization, pluralization with ICU MessageFormat, number/date/currency formatting, RTL support, locale detection, translation workflow, pseudo-localization testing
@@ -351,21 +321,6 @@ on_demand:
     path: standards/i18n-regional-variants.md
     description: Regional language variant enforcement with dictionary-based verification. en-US vs en-GB, pt-BR vs pt-PT, es-MX vs es-ES vocabulary, spelling, and grammar differences. Flagged word lists, cspell and nspell integration
     triggers: [regional variant, pt-BR, pt-PT, en-US, en-GB, es-ES, es-MX, british, american, brazilian, european portuguese, latin american spanish, accent, diacritical, hunspell, cspell, dictionary]
-
-  data-pipelines:
-    path: standards/data-pipelines.md
-    description: Batch, micro-batch, and streaming pipelines, idempotent processing, backfill strategy, data quality validation, error handling, ETL vs ELT
-    triggers: [etl, elt, pipeline, batch, streaming, backfill, data quality, data pipeline, ingestion, transformation, data warehouse]
-
-  mlops:
-    path: standards/mlops.md
-    description: Model lifecycle, experiment tracking, feature stores, model serving patterns, data and concept drift detection, training/serving parity testing
-    triggers: [ml, model, training, inference, feature store, drift, mlflow, experiment, mlops, machine learning, serving, prediction]
-
-  ab-testing:
-    path: standards/ab-testing.md
-    description: Experiment design, statistical rigor, power analysis, assignment and randomization, multivariate testing, analysis methodology, post-experiment documentation
-    triggers: [ab test, a/b test, experiment, multivariate, statistical significance, power analysis, p-value, conversion, variant, control group, treatment]
 
   mobile-development:
     path: standards/mobile-development.md
@@ -381,11 +336,6 @@ on_demand:
     path: standards/documentation-generation.md
     description: OpenAPI generation from code, AsyncAPI for events, GraphQL schema docs, TypeDoc, documentation-as-code, versioning, CI validation
     triggers: [openapi, asyncapi, swagger, typedoc, docs generation, api docs, schema docs, docusaurus, mkdocs, documentation site]
-
-  event-driven-architecture:
-    path: standards/event-driven-architecture.md
-    description: CQRS, event sourcing, outbox pattern, saga choreography and orchestration, event versioning, idempotent handlers, partition keys, DLQ routing
-    triggers: [cqrs, event sourcing, outbox, saga, event, event-driven, choreography, orchestration, domain event, event store]
 
   authentication:
     path: standards/authentication.md
@@ -436,21 +386,6 @@ on_demand:
     path: standards/privacy-engineering.md
     description: Pseudonymization, data retention automation, right to erasure, consent management, dark pattern avoidance, privacy impact assessment
     triggers: [pseudonymization, data retention, right to erasure, consent, dark pattern, privacy impact, dsar, data subject]
-
-  serverless-edge:
-    path: standards/serverless-edge.md
-    description: Stateless design, cold start optimization, concurrency limits, edge functions for auth and routing, timeout budgets
-    triggers: [serverless, lambda, edge function, cold start, concurrency, cloud function, vercel edge, cloudflare worker]
-
-  api-gateway:
-    path: standards/api-gateway.md
-    description: Gateway vs BFF decision framework, cross-cutting concerns at gateway, protocol translation, circuit breaking
-    triggers: [api gateway, bff, backend for frontend, gateway, kong, envoy, istio, service mesh]
-
-  strangler-fig:
-    path: standards/strangler-fig.md
-    description: Incremental legacy migration through facade and proxy, request routing by migration status, data consistency during transition
-    triggers: [strangler fig, legacy migration, facade, proxy, incremental migration, legacy modernization, dual write]
 
   typescript-5x:
     path: standards/typescript-5x.md
