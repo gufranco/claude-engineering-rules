@@ -1332,3 +1332,94 @@ def detect_vue_shallow_readonly_nested_write(
                 )
             )
     return results
+
+
+MOBX_ENFORCE_ACTIONS_PATTERN = re.compile(
+    r"enforceActions\s*:\s*['\"]always['\"]"
+)
+MOBX_OBSERVABLE_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
+    r"(?::\s*[^=]+)?\s*=\s*"
+    r"(?:observable|makeAutoObservable|makeObservable)\s*\("
+)
+
+
+def detect_mobx_observable_outside_action(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect MobX observable property writes outside an action scope
+    when `enforceActions: 'always'` is configured.
+
+    MobX strict mode requires every observable mutation to happen inside
+    `runInAction`, `action`, or a `flow` generator. With strict mode
+    enabled, a plain `store.count = 1` throws at runtime instead of
+    updating state. The detector activates only when the file or its
+    config sets `enforceActions: 'always'`, collects observable bindings
+    declared via `observable`, `makeAutoObservable`, or `makeObservable`,
+    and flags property writes on those bindings that sit outside an
+    unmatched `runInAction(` / `action(` / `flow(` paren scope.
+    """
+    if "mobx" not in text:
+        return []
+    if not re.search(r"['\"]mobx(?:-[\w/-]+)?['\"]", text):
+        return []
+    if not MOBX_ENFORCE_ACTIONS_PATTERN.search(text):
+        return []
+    names = {m.group("name") for m in MOBX_OBSERVABLE_DECL_PATTERN.finditer(text)}
+    if not names:
+        return []
+    lines = text.splitlines()
+    if not lines:
+        return []
+    fix_hint = (
+        "MobX strict mode (`enforceActions: 'always'`) requires every "
+        "observable mutation to flow through an action. Wrap the write in "
+        "`runInAction(() => { store.count = 1 })` or call an `action`-decorated "
+        "method. See "
+        "https://mobx.js.org/configuration.html#enforceactions for the strict "
+        "mode contract."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")"
+        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])+)"
+        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=|\+\+|--)"
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if MOBX_OBSERVABLE_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            lookback_start = max(0, lineno - 61)
+            between_lines = lines[lookback_start : lineno]
+            between = "\n".join(between_lines)
+            between_masked = strip_strings_comments(between) if between else ""
+            inside_action = False
+            if between_masked:
+                for opener in ("runInAction(", "action(", "flow("):
+                    idx = between_masked.rfind(opener)
+                    if idx < 0:
+                        continue
+                    scope_text = between_masked[idx:]
+                    opens = scope_text.count("(")
+                    closes = scope_text.count(")")
+                    if opens > closes:
+                        inside_action = True
+                        break
+            if inside_action:
+                continue
+            results.append(
+                _make_match(
+                    "mobx.observable-outside-action",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "chain": m.group("chain"),
+                        "confidence": "4",
+                    },
+                )
+            )
+    return results

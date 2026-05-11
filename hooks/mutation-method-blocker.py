@@ -265,6 +265,7 @@ from mutation_detectors_assignments import (
     detect_reflect_mutations,
     detect_static_block_mutation,
     detect_effect_ts_ref_value_assign,
+    detect_mobx_observable_outside_action,
     detect_nanostores_computed_write,
     detect_xstate_non_assign_context_write,
     detect_svelte_derived_reassign,
@@ -576,6 +577,7 @@ def _detect_all(
     matches.extend(detect_symbol_key_assignment(text, lang, file_path))
     matches.extend(detect_static_block_mutation(text, lang, file_path))
     matches.extend(detect_effect_ts_ref_value_assign(text, lang, file_path))
+    matches.extend(detect_mobx_observable_outside_action(text, lang, file_path))
     matches.extend(detect_nanostores_computed_write(text, lang, file_path))
     matches.extend(detect_svelte_derived_reassign(text, lang, file_path))
     matches.extend(detect_tanstack_store_state_write(text, lang, file_path))
@@ -774,6 +776,7 @@ def _filter_matches(
 
         if m.detector in {
             "effect-ts.ref-value-assign",
+            "mobx.observable-outside-action",
             "nanostores.computed-write",
             "svelte.derived-reassign",
             "tanstack.store-state-write",

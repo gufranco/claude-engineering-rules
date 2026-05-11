@@ -950,3 +950,108 @@ function bad() {
 
     # Assert
     assert "vue.shallow-readonly-nested-write" not in stderr
+
+
+MOBX_ENFORCE_ACTIONS_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "mobx-observable-direct-assign",
+        """import { observable, configure } from "mobx";
+configure({ enforceActions: "always" });
+const store = observable({ count: 0 });
+function bump() {
+  store.count = 1;
+}
+""",
+    ),
+    (
+        "mobx-makeAutoObservable-compound-assign",
+        """import { makeAutoObservable, configure } from "mobx";
+configure({ enforceActions: 'always' });
+const counter = makeAutoObservable({ count: 0 });
+function bump() {
+  counter.count += 1;
+}
+""",
+    ),
+    (
+        "mobx-makeObservable-increment",
+        """import { makeObservable, configure } from "mobx";
+configure({ enforceActions: "always" });
+const tracker = makeObservable({ hits: 0 });
+function bump() {
+  tracker.hits++;
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,snippet", MOBX_ENFORCE_ACTIONS_BLOCKED_FIXTURES, ids=lambda v: v
+)
+def test_mobx_observable_outside_action_blocks(name, snippet, run_hook):
+    # Arrange
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "mobx.observable-outside-action" in stderr, (
+        f"{name}: detector did not fire\n{stderr}"
+    )
+
+
+def test_mobx_runInAction_wrapped_allowed(run_hook):
+    # Arrange
+    snippet = """import { observable, runInAction, configure } from "mobx";
+configure({ enforceActions: "always" });
+const store = observable({ count: 0 });
+function bump() {
+  runInAction(() => {
+    store.count = 1;
+  });
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "mobx.observable-outside-action" not in stderr
+
+
+def test_mobx_without_enforce_actions_skipped(run_hook):
+    # Arrange
+    snippet = """import { observable } from "mobx";
+const store = observable({ count: 0 });
+function bump() {
+  store.count = 1;
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "mobx.observable-outside-action" not in stderr
+
+
+def test_mobx_action_callback_allowed(run_hook):
+    # Arrange
+    snippet = """import { observable, action, configure } from "mobx";
+configure({ enforceActions: "always" });
+const store = observable({ count: 0 });
+const bump = action(() => {
+  store.count = 1;
+});
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "mobx.observable-outside-action" not in stderr
