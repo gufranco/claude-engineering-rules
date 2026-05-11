@@ -60,13 +60,17 @@ def get_git_info(workspace):
     try:
         branch = subprocess.run(
             ["git", "-C", workspace, "branch", "--show-current"],
-            capture_output=True, text=True, timeout=3,
+            capture_output=True,
+            text=True,
+            timeout=3,
         )
         branch_name = branch.stdout.strip() or "detached"
 
         status = subprocess.run(
             ["git", "-C", workspace, "status", "--porcelain"],
-            capture_output=True, text=True, timeout=3,
+            capture_output=True,
+            text=True,
+            timeout=3,
         )
         dirty = "*" if status.stdout.strip() else ""
 
