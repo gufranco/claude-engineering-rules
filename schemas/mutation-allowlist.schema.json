@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/.claude/schemas/mutation-allowlist.schema.json",
+  "title": "Project-local mutation allowlist",
+  "description": "Schema for `<project-root>/.claude/mutation-allowlist.yml` (or .json). The hook merges these entries into the built-in allowlists at runtime. The schema is version-pinned: unknown fields produce a warning, never an error.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Always 1 for the v2.x hook series."
+    },
+    "framework_receivers": {
+      "type": "array",
+      "description": "Identifiers added to the framework-receiver allowlist (e.g. custom router objects whose `.push` method is non-mutating).",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+      },
+      "uniqueItems": true
+    },
+    "hot_path_segments": {
+      "type": "array",
+      "description": "Path segments that should be treated as hot-path directories (TypedArray / ArrayBuffer mutation auto-allowed).",
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "pattern": "^/.+/$"
+      },
+      "uniqueItems": true
+    },
+    "skip_segments": {
+      "type": "array",
+      "description": "Path segments that mark an out-of-scope file (e.g. `/legacy/` or `/vendor/`). Matched files are not analyzed.",
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "pattern": "^/.+/$"
+      },
+      "uniqueItems": true
+    },
+    "skip_suffixes": {
+      "type": "array",
+      "description": "File suffixes that mark an out-of-scope file (e.g. `.legacy.ts`).",
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "pattern": "^\\..+$"
+      },
+      "uniqueItems": true
+    },
+    "param_reassign_allowed_names": {
+      "type": "array",
+      "description": "Parameter names that may be reassigned without flagging (e.g. `acc`, `result`).",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+      },
+      "uniqueItems": true
+    },
+    "disable_detectors": {
+      "type": "array",
+      "description": "Detector tags to silence project-wide. Use sparingly; prefer line-level suppression. Detector tags follow the `category.specific` shape: `array.push`, `property.assignment`, etc.",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
+      },
+      "uniqueItems": true
+    },
+    "experimental_detectors": {
+      "type": "array",
+      "description": "Experimental detectors enabled project-wide via this config (equivalent to setting `MUTATION_METHOD_EXPERIMENTAL_<NAME>=1`).",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Z_]+$"
+      },
+      "uniqueItems": true
+    }
+  }
+}
