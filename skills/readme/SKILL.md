@@ -466,9 +466,38 @@ Make the project's scope tangible with specific numbers. These are the most pers
 - Use lowercase, hyphenated: `terraform`, `aws`, `multi-region`, `ecs-fargate`, `aurora-serverless`.
 - No generic tags like `code`, `project`, `awesome`.
 
+## File References (MANDATORY)
+
+Every file mentioned in the README must be a clickable Markdown link to the actual file in the repository. No exceptions.
+
+**Rule:** whenever a file name, path, or directory appears in the README, wrap it as `[file.ext](relative/path/to/file.ext)`. This applies to prose, tables, lists, FAQ answers, collapsible sections, and footnotes. The only places file names may appear unlinked are inside fenced code blocks (where Markdown links do not render) and in inline code spans that represent literal command output.
+
+**How to apply:**
+
+- Resolve the path relative to the README location. For a root-level README, paths are relative to repo root: `[package.json](package.json)`, `[src/api/users.ts](src/api/users.ts)`.
+- Directories link to the directory itself: `[src/services/](src/services/)`. GitHub renders directory links as folder views.
+- Verify every linked path exists before writing. A broken link is a defect, same severity as inventing a feature.
+- When the same file is mentioned multiple times in the same section, link only the first occurrence to avoid visual noise. Subsequent mentions can use plain code spans.
+- Inside Markdown tables, keep links intact: `\| [tsconfig.json](tsconfig.json) \| TypeScript compiler config \|`.
+- Inside the project structure tree (fenced code block), file names stay unlinked because Markdown links do not render inside code fences. Compensate by adding a linked summary line above or below the tree.
+
+**Examples:**
+
+```markdown
+Configuration lives in [.env.example](.env.example) and is validated at startup by [src/config/schema.ts](src/config/schema.ts).
+
+| File | Purpose |
+|:-----|:--------|
+| [Makefile](Makefile) | Task runner targets |
+| [docker-compose.yml](docker-compose.yml) | Local dev stack |
+```
+
+This rule is enforced during the self-check at the end of Phase 3. Re-scan the draft and confirm every file name carries a link before presenting to the user.
+
 ## Rules
 
 - **Evidence-based only.** Every feature, service, or capability mentioned must exist in the codebase. Read the actual files.
+- **Every file name is a link.** See the "File References" section above. Unlinked file names outside code blocks are a defect.
 - **No invented features.** If you didn't find it in the code, don't write about it.
 - **Verify commands.** Every setup command in Quick Start must work. Check that referenced scripts and Makefile targets exist.
 - **Check paths.** Every file path in the directory tree must exist. Use glob or ls to verify.
