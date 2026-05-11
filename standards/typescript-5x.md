@@ -211,6 +211,124 @@ Process for each TypeScript upgrade:
 4. Fix all resulting errors. Do not disable the flag.
 5. Commit the tsconfig change with the fixes.
 
+## ES2024+ and ES2026 Built-ins
+
+When `target` is ES2024 or higher, prefer non-mutating standard-library methods over polyfills, custom helpers, and old mutation-based idioms. The mutation-method-blocker hook (`~/.claude/hooks/mutation-method-blocker.py`) flags the mutating equivalents and points at the replacements below.
+
+### Set composition (ES2024)
+
+Set instances expose seven new composition methods. None mutate the receiver; each returns a new Set. Use them instead of building union/intersection logic by hand.
+
+```typescript
+const evens = new Set([2, 4, 6]);
+const squares = new Set([1, 4, 9, 16]);
+
+const both = evens.intersection(squares); // {4}
+const either = evens.union(squares); // {2, 4, 6, 1, 9, 16}
+const onlyEvens = evens.difference(squares); // {2, 6}
+const symDiff = evens.symmetricDifference(squares); // {2, 6, 1, 9, 16}
+const isSubset = new Set([2, 4]).isSubsetOf(evens); // true
+const isSupset = evens.isSupersetOf(new Set([2, 4])); // true
+const disjoint = evens.isDisjointFrom(new Set([7, 9])); // true
+```
+
+When the hook flags `set.add(v)` or `set.delete(v)`, prefer `set.union(new Set([v]))` and `set.difference(new Set([v]))` over `new Set([...set, v])` for clarity.
+
+### Iterator helpers (ES2024)
+
+Iterator instances now compose lazily: `map`, `filter`, `take`, `drop`, `flatMap`, `forEach`, `toArray`, `reduce`, `some`, `every`, `find`. Calls do not allocate intermediate arrays.
+
+```typescript
+const tripled = numbers.values()
+  .map((n) => n * 3)
+  .filter((n) => n > 5)
+  .take(3)
+  .toArray();
+```
+
+Use iterator helpers instead of `Array.from(generator).map(...).filter(...)` chains. The lazy chain skips the intermediate array allocation entirely.
+
+### Object.groupBy and Map.groupBy (ES2024)
+
+Static methods on `Object` and `Map` for grouping iterables by a discriminator function.
+
+```typescript
+const grouped = Object.groupBy([1, 2, 3, 4, 5], (n) =>
+  n % 2 === 0 ? 'even' : 'odd',
+);
+// { even: [2, 4], odd: [1, 3, 5] }
+
+const groupedMap = Map.groupBy(items, (item) => item.category);
+```
+
+`Object.groupBy` returns a null-prototype object. Use `Map.groupBy` when keys are not strings or when prototype-pollution safety is required.
+
+### Promise.withResolvers and Promise.try (ES2024)
+
+```typescript
+const { promise, resolve, reject } = Promise.withResolvers<number>();
+
+const safe = await Promise.try(() => maybeThrowingFunction());
+```
+
+`Promise.withResolvers` is the modern replacement for the manual `let resolve, reject; const p = new Promise(...)` dance. `Promise.try` wraps synchronous and asynchronous functions in a single Promise so callers do not need to remember whether the callee throws synchronously or returns a rejected promise.
+
+### Array.fromAsync (ES2024)
+
+Builds an array from an async iterable.
+
+```typescript
+const collected = await Array.fromAsync(asyncStream);
+```
+
+### RegExp.escape (ES2024)
+
+Escapes a string for safe use inside a regex literal.
+
+```typescript
+const pattern = new RegExp(RegExp.escape(userInput));
+```
+
+Replaces hand-rolled escape helpers and inline `replace(/[.*+?^${}()|[\]\\]/g, '\\$&')` patterns.
+
+### Atomics.pause and Error.isError (ES2024)
+
+```typescript
+await Atomics.pause(); // hint to the CPU during spin-wait
+
+if (Error.isError(value)) {
+  // typed-narrowed: value is Error
+}
+```
+
+`Error.isError` survives realm boundaries; prefer it over `instanceof Error` in worker, iframe, or vm contexts.
+
+### Float16Array (ES2024)
+
+The 12th TypedArray. Same allocation and slicing semantics as `Float32Array`, half the byte width. Useful for ML and graphics buffers.
+
+```typescript
+const halfPrecision = new Float16Array(1024);
+```
+
+### Temporal API (ES2026, Stage 4)
+
+Temporal reached Stage 4 on 2026-03-11 and ships natively in Chrome 144+, Firefox 139+, and Edge 144+. Use the polyfill (`@js-temporal/polyfill` or `temporal-polyfill`) on older runtimes.
+
+```typescript
+import { Temporal } from '@js-temporal/polyfill';
+
+const start = Temporal.PlainDate.from('2026-01-01');
+const next = start.with({ month: 2 });
+const later = start.add({ days: 7 });
+const dur = Temporal.Duration.from({ hours: 1, minutes: 30 });
+```
+
+Every Temporal value is immutable. Methods like `add`, `subtract`, `with`, `until`, `since`, and `round` return a new value. The mutation hook recognizes Temporal usage and switches its date-setter fix suggestions from date-fns to Temporal.PlainDate when Temporal is detected in the file.
+
+When introducing Temporal in a new module, prefer it over `Date` and over date-fns. Use date-fns only when interop with a legacy Date-based API is required.
+
 ## Related Standards
 
 - `standards/frontend.md`: Frontend Design
+- `~/.claude/rules/code-style.md` "ES2024+ Fix Suggestions" lists every mutating call and its non-mutating replacement.
