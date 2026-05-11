@@ -1205,6 +1205,36 @@ UINT8_BASE64_SETTER_PATTERN = re.compile(
     + r")\s*\("
 )
 
+MAP_UPSERT_METHODS: tuple[str, ...] = ("getOrInsert", "getOrInsertComputed")
+
+MAP_UPSERT_PATTERN = re.compile(
+    r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\.(?P<method>"
+    + "|".join(MAP_UPSERT_METHODS)
+    + r")\s*\("
+)
+
+ARRAYBUFFER_TRANSFER_METHODS: tuple[str, ...] = (
+    "transfer",
+    "transferToFixedLength",
+)
+
+ARRAYBUFFER_TRANSFER_PATTERN = re.compile(
+    r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\.(?P<method>"
+    + "|".join(ARRAYBUFFER_TRANSFER_METHODS)
+    + r")\s*\("
+)
+
+ARRAYBUFFER_RECEIVER_HINT = re.compile(
+    r"\bArrayBuffer\b|new\s+ArrayBuffer\s*\(|:\s*ArrayBuffer\b"
+)
+
+OBJECT_GROUPBY_PATTERN = re.compile(
+    r"\bObject\s*\.\s*groupBy\s*\("
+)
+GROUPBY_BUCKET_PUSH_PATTERN = re.compile(
+    r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\[\s*[^\]]+\]\s*\.push\s*\("
+)
+
 
 def detect_finalization_registry(
     text: str, lang: str | None, file_path: str
@@ -1334,6 +1364,141 @@ def detect_uint8_base64_setter(
                     raw,
                     fix_hint,
                     {"owner": owner, "method": method, "confidence": "5"},
+                )
+            )
+    return results
+
+
+def detect_map_upsert(text: str, lang: str | None, file_path: str) -> list[Match]:
+    """Detect `Map.prototype.getOrInsert` and `getOrInsertComputed` (Stage 4 Upsert).
+
+    The Upsert proposal adds two methods to `Map.prototype` that look like
+    queries but mutate the receiver: when the key is absent they insert
+    the default (or the result of the factory) before returning it.
+    Outside reducer or cache scopes this is an in-place mutation that
+    should be expressed as `new Map([...m, [k, v]])` to keep the original
+    untouched.
+    """
+    fix_hint = (
+        "Stage 4 `Map.prototype.getOrInsert(key, default)` and "
+        "`getOrInsertComputed(key, factory)` mutate the receiver when the key "
+        "is missing. For immutable callers use "
+        "`map.has(k) ? map.get(k) : default` over a fresh "
+        "`new Map([...map, [k, default]])`. Suppress with "
+        "`// claude-allow-mutation -- upsert into a local cache` for "
+        "memoization receivers."
+    )
+    iter_lines = _iter_lines(text)
+    if not any(MAP_UPSERT_PATTERN.search(masked) for _, _, masked in iter_lines):
+        return []
+    if not MAP_RECEIVER_HINT.search(text):
+        return []
+    results: list[Match] = []
+    for lineno, raw, line_masked in iter_lines:
+        for m in MAP_UPSERT_PATTERN.finditer(line_masked):
+            owner = m.group("owner") or ""
+            method = m.group("method")
+            detector = (
+                "collection.map.get-or-insert"
+                if method == "getOrInsert"
+                else "collection.map.get-or-insert-computed"
+            )
+            results.append(
+                _make_match(
+                    detector,
+                    lineno,
+                    m.start(),
+                    raw,
+                    fix_hint,
+                    {"owner": owner, "method": method, "confidence": "4"},
+                )
+            )
+    return results
+
+
+def detect_arraybuffer_transfer(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect `ArrayBuffer.prototype.transfer` / `transferToFixedLength`.
+
+    Both methods return a new buffer AND detach the receiver: after the
+    call `source.byteLength === 0` and every existing view over `source`
+    raises `TypeError` on access. This is a mutation of the receiver's
+    observable state even though the return value is fresh.
+    """
+    fix_hint = (
+        "`ArrayBuffer.prototype.transfer()` and `transferToFixedLength()` "
+        "detach the source buffer: `source.byteLength` becomes 0 and every "
+        "view over `source` raises on access. If you need a resized copy "
+        "without detaching, allocate a new buffer of the target size and "
+        "copy bytes with `new Uint8Array(target).set(new Uint8Array(source))`. "
+        "Suppress with `// @claude-allow-mutation -- ownership handoff` when "
+        "the detachment is the intent (worker postMessage transfer list, "
+        "zero-copy SAB resize)."
+    )
+    iter_lines = _iter_lines(text)
+    if not any(
+        ARRAYBUFFER_TRANSFER_PATTERN.search(masked) for _, _, masked in iter_lines
+    ):
+        return []
+    if not ARRAYBUFFER_RECEIVER_HINT.search(text):
+        return []
+    results: list[Match] = []
+    for lineno, raw, line_masked in iter_lines:
+        for m in ARRAYBUFFER_TRANSFER_PATTERN.finditer(line_masked):
+            owner = m.group("owner") or ""
+            method = m.group("method")
+            results.append(
+                _make_match(
+                    "arraybuffer.transfer"
+                    if method == "transfer"
+                    else "arraybuffer.transfer-to-fixed-length",
+                    lineno,
+                    m.start(),
+                    raw,
+                    fix_hint,
+                    {"owner": owner, "method": method, "confidence": "5"},
+                )
+            )
+    return results
+
+
+def detect_object_groupby_push(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect `Object.groupBy(...)` followed by `.push` on a bucket.
+
+    `Object.groupBy` returns a fresh record where each value is a fresh
+    array, but downstream code that calls `.push` on a bucket value
+    reverts to in-place mutation. Either materialize via spread or use
+    `Map.groupBy` plus an immutable reducer.
+    """
+    fix_hint = (
+        "`Object.groupBy(items, key)` returns a record whose buckets are "
+        "arrays. Pushing into a bucket mutates that array and breaks the "
+        "immutable contract of the helper. Use `Map.groupBy` plus a reducer "
+        "that produces fresh arrays, or compute the buckets with "
+        "`items.reduce((acc, x) => ({ ...acc, [k(x)]: [...(acc[k(x)] ?? []), x] }), {})`."
+    )
+    iter_lines = _iter_lines(text)
+    if not OBJECT_GROUPBY_PATTERN.search(text):
+        return []
+    if not any(
+        GROUPBY_BUCKET_PUSH_PATTERN.search(masked) for _, _, masked in iter_lines
+    ):
+        return []
+    results: list[Match] = []
+    for lineno, raw, line_masked in iter_lines:
+        for m in GROUPBY_BUCKET_PUSH_PATTERN.finditer(line_masked):
+            owner = m.group("owner") or ""
+            results.append(
+                _make_match(
+                    "object.group-by-bucket-push",
+                    lineno,
+                    m.start(),
+                    raw,
+                    fix_hint,
+                    {"owner": owner, "confidence": "3"},
                 )
             )
     return results
