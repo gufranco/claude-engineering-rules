@@ -1,0 +1,70 @@
+[run]
+branch = True
+parallel = True
+# Files explicitly under test. Add new files here when their test coverage
+# reaches >= 95%. Files outside this list are excluded via `omit` below
+# until they are migrated to the shared harness (plan.md 1.1.10 + per-cluster
+# follow-ups).
+source =
+    hooks
+    scripts
+omit =
+    # Untested hooks. Move out of this list as each is migrated to the
+    # shared harness with its own test module.
+    hooks/ai-attribution-blocker.py
+    hooks/anti-yolo.py
+    hooks/banned-phrases-blocker.py
+    hooks/banned-prose-chars.py
+    hooks/conventional-commits.py
+    hooks/dangerous-command-blocker.py
+    hooks/dependency-pinning.py
+    hooks/docker-context-guard.py
+    hooks/english-only-reminder.py
+    hooks/env-file-guard.py
+    hooks/gcloud-config-guard.py
+    hooks/gh-token-guard.py
+    hooks/git-author-guard.py
+    hooks/glab-token-guard.py
+    hooks/internal-config-leakage.py
+    hooks/kubectl-context-guard.py
+    hooks/large-file-blocker.py
+    hooks/migration-idempotency.py
+    hooks/mise-global-guard.py
+    hooks/mock-internal-blocker.py
+    hooks/prisma-raw-sql-blocker.py
+    hooks/redis-atomicity.py
+    hooks/retro-pointer.py
+    hooks/secret-scanner.py
+    hooks/settings-hygiene.py
+    hooks/terraform-workspace-guard.py
+    hooks/test_profile.py
+    hooks/aws-profile-guard.py
+    hooks/as-any-blocker.py
+    hooks/console-log-blocker.py
+    hooks/_profile.py
+    hooks/prisma-schema-sync.py
+    # Scripts not yet under test.
+    scripts/context-monitor.py
+    scripts/stale-memory-detector.py
+    scripts/validate-agents.py
+    scripts/validate-checklist-counts.py
+    scripts/validate-counts.py
+    scripts/validate-cross-refs.py
+    scripts/validate-patterns.py
+    scripts/validate-settings.py
+    scripts/validate-skills.py
+disable_warnings = include-ignored
+
+[report]
+fail_under = 95
+show_missing = True
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+[paths]
+source =
+    .

@@ -1,0 +1,124 @@
+name: Mutation method scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  scan:
+    name: Mutation scan (SARIF)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Make hook executable
+        run: chmod +x hooks/mutation-method-blocker.py
+
+      - name: Collect changed JS/TS files
+        id: collect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            base="origin/${{ github.base_ref }}"
+            git diff --name-only --diff-filter=AM "$base"...HEAD \
+              | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' \
+              > scan-targets.txt || true
+          else
+            git ls-files \
+              | grep -E '\.(ts|tsx|js|jsx|mjs|cjs)$' \
+              > scan-targets.txt || true
+          fi
+          count=$(wc -l < scan-targets.txt | tr -d ' ')
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Will scan $count file(s)"
+
+      - name: Run mutation-method-blocker (SARIF)
+        if: steps.collect.outputs.count != '0'
+        env:
+          MUTATION_METHOD_BATCH_MODE: "1"
+          MUTATION_METHOD_OUTPUT: "sarif"
+          MUTATION_METHOD_FAIL_THRESHOLD: "warning"
+        run: |
+          # Mutation hook exits non-zero when it finds blocking issues. Capture
+          # the exit code but do not fail the step: the SARIF artifact is the
+          # final word, uploaded to code scanning in the next step.
+          python3 hooks/mutation-method-blocker.py \
+            < scan-targets.txt \
+            > mutation-method-blocker.sarif \
+            || true
+          test -s mutation-method-blocker.sarif
+
+      - name: Upload SARIF to GitHub code scanning
+        if: steps.collect.outputs.count != '0'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: mutation-method-blocker.sarif
+          category: mutation-method-blocker
+
+      - name: Archive SARIF artifact
+        if: always() && steps.collect.outputs.count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-method-blocker-sarif
+          path: mutation-method-blocker.sarif
+          retention-days: 30
+
+  corpus:
+    name: Corpus benchmark (>=99% pass rate)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Make hook executable
+        run: chmod +x hooks/mutation-method-blocker.py
+
+      - name: Detect hook-related changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            base="origin/${{ github.base_ref }}"
+            changed=$(git diff --name-only "$base"...HEAD \
+              | grep -E '^(hooks/mutation-method-blocker\.py|scripts/(mutation_|corpus_).*\.py|tests/corpus/mutation-method-blocker/.*)$' \
+              || true)
+          else
+            changed="all"
+          fi
+          if [ -n "$changed" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run corpus validation
+        if: steps.changes.outputs.run == 'true'
+        run: |
+          python3 scripts/corpus_manage.py validate --fail-under 99.0

@@ -58,3 +58,26 @@ logs/
 *.bak
 *.orig
 *~
+
+################################################################################
+# Python tooling
+################################################################################
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+################################################################################
+# Node tooling (vscode-extension, jetbrains-plugin, eslint-plugin)
+################################################################################
+node_modules/
+*.tsbuildinfo
+.eslintcache
