@@ -318,7 +318,9 @@ MUTATIVE_CREATE_PATTERN = re.compile(
 REDUX_TOOLKIT_PATTERN = re.compile(
     r"\bcreateSlice\s*\(|builder\.addCase\s*\(|builder\.addMatcher\s*\(|extraReducers\s*[:=]"
 )
-PINIA_STORE_PATTERN = re.compile(r"\bdefineStore\s*\(")
+PINIA_STORE_PATTERN = re.compile(
+    r"\bdefineStore\s*\(|\.\$patch\s*\(\s*(?:\([^)]*\)|[a-zA-Z_$][\w$]*)\s*=>"
+)
 VUEX_MUTATIONS_PATTERN = re.compile(r"\bmutations\s*:\s*\{|new\s+Vuex\.Store\s*\(")
 MOBX_ACTION_PATTERN = re.compile(
     r"\b(?:runInAction|action)\s*\(|@action\b|"
