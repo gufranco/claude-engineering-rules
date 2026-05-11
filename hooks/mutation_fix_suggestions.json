@@ -554,6 +554,12 @@
       "fix": "TanStack `Store.state` is a read-only snapshot. Direct writes (`store.state.x = v`) bypass subscribers and break reactivity. Use `store.setState((prev) => ({ ...prev, x: v }))` so the subscription system observes the change. See https://tanstack.com/store/latest/docs/reference/store#setstate.",
       "stage": 4
     },
+    "xstate.non-assign-context-write": {
+      "category": "xstate",
+      "code": "MMB103",
+      "fix": "XState v5 enforces `assign(...)` as the only context mutation primitive. Direct writes like `context.x = v` from a non-assign action silently no-op because the callback receives an immutable snapshot. Wrap the update in `assign({ x: ({ context }) => v })` or `assign(({ context }) => ({ x: v }))`. See https://stately.ai/docs/actions#assign-action.",
+      "stage": 4
+    },
     "vue.shallow-readonly-nested-write": {
       "category": "vue",
       "code": "MMB099",

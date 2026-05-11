@@ -672,6 +672,67 @@ def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
     assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
 
 
+XSTATE_NON_ASSIGN_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "xstate-direct-context-write-in-action",
+        """import { setup } from "xstate";
+const machine = setup({
+  actions: {
+    increment: ({ context }) => {
+      context.count = context.count + 1;
+    },
+  },
+}).createMachine({ context: { count: 0 } });
+""",
+    ),
+    (
+        "xstate-direct-context-write-compound",
+        """import { setup } from "xstate";
+const machine = setup({
+  actions: {
+    bump: ({ context }) => {
+      context.count += 1;
+    },
+  },
+}).createMachine({ context: { count: 0 } });
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), XSTATE_NON_ASSIGN_BLOCKED_FIXTURES)
+def test_xstate_non_assign_context_write_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/machine.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: direct context write should block\n{stderr}"
+    assert "xstate.non-assign-context-write" in stderr or "MMB103" in stderr
+
+
+def test_xstate_assign_callback_context_write_allowed(run_hook):
+    # Arrange
+    snippet = """import { setup, assign } from "xstate";
+const machine = setup({
+  actions: {
+    increment: assign(({ context }) => ({
+      count: context.count + 1,
+    })),
+  },
+}).createMachine({ context: { count: 0 } });
+"""
+    payload = make_write_payload("/repo/src/machine.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "xstate.non-assign-context-write" not in stderr
+
+
 EFFECT_TS_REF_BLOCKED_FIXTURES: list[tuple[str, str]] = [
     (
         "effect-ts-ref-value-assign",

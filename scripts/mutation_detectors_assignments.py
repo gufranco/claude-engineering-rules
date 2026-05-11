@@ -1028,6 +1028,77 @@ def detect_svelte_derived_reassign(
     return results
 
 
+XSTATE_CONTEXT_ASSIGN_PATTERN = re.compile(
+    r"(?<![\w$.])context\."
+    r"(?P<chain>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])*)"
+    r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
+)
+XSTATE_ASSIGN_OPENER_PATTERN = re.compile(r"\bassign\s*\(")
+
+
+def detect_xstate_non_assign_context_write(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect `context.x = v` writes outside an `assign(...)` callback.
+
+    XState v5 enforces `assign(...)` as the only context mutation
+    primitive. Writing directly to `context` from a non-assign action
+    callback silently no-ops because the action receives an immutable
+    snapshot. The detector scans lines containing `context.<x> =` and
+    walks back to verify the hit sits inside an unmatched `assign(`
+    brace scope. Plain `assign` opener lines are skipped because the
+    callback's parameter destructuring rebinds `context` to a draft.
+    """
+    if "xstate" not in text:
+        return []
+    if not re.search(r"['\"]xstate(?:/[\w/-]+)?['\"]", text):
+        return []
+    if "context." not in text:
+        return []
+    lines = text.splitlines()
+    if not lines:
+        return []
+    fix_hint = (
+        "XState v5 enforces `assign(...)` as the only context mutation "
+        "primitive. Direct writes like `context.x = v` from a non-assign "
+        "action silently no-op because the callback receives an immutable "
+        "snapshot. Wrap the update in `assign({ x: ({ context }) => v })` "
+        "or `assign(({ context }) => ({ x: v }))`. See "
+        "https://stately.ai/docs/actions#assign-action."
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        m = XSTATE_CONTEXT_ASSIGN_PATTERN.search(masked)
+        if not m:
+            continue
+        lookback_start = max(0, lineno - 61)
+        between_lines = lines[lookback_start : lineno]
+        between = "\n".join(between_lines)
+        between_masked = strip_strings_comments(between) if between else ""
+        inside_assign = False
+        if between_masked:
+            last_assign = between_masked.rfind("assign(")
+            if last_assign >= 0:
+                scope_text = between_masked[last_assign:]
+                paren_opens = scope_text.count("(")
+                paren_closes = scope_text.count(")")
+                if paren_opens > paren_closes:
+                    inside_assign = True
+        if inside_assign:
+            continue
+        results.append(
+            _make_match(
+                "xstate.non-assign-context-write",
+                lineno,
+                m.start(),
+                raw,
+                fix_hint,
+                {"chain": m.group("chain"), "confidence": "3"},
+            )
+        )
+    return results
+
+
 EFFECT_TS_REF_DECL_PATTERN = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
     r"(?:yield\*?\s+)?"
