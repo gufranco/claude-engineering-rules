@@ -529,6 +529,12 @@
       "category": "web-api",
       "code": "MMB049",
       "fix": "URLSearchParams.sort mutates the instance. Use `new URLSearchParams([...params].toSorted(([a], [b]) => a.localeCompare(b)))`."
+    },
+    "svelte.derived-reassign": {
+      "category": "svelte",
+      "code": "MMB098",
+      "fix": "`$derived(...)` bindings are read-only. Reassigning them throws `state_unsafe_mutation` at runtime. Move the source of truth into a `$state(...)` binding and let `$derived` recompute, or wrap the computation in a function. See https://svelte.dev/docs/svelte/$derived.",
+      "stage": 4
     }
   }
 }

@@ -591,3 +591,38 @@ def test_svelte_state_raw_mutations_blocked(run_hook, label, snippet):
 
     # Assert
     assert code == 2, f"{label}: $state.raw mutation should block\n{stderr}"
+
+
+SVELTE_DERIVED_REASSIGN_FIXTURES: list[tuple[str, str]] = [
+    (
+        "svelte-derived-plain-reassign",
+        """let total = $state(0);
+let double = $derived(total * 2);
+function bad() {
+  double = 999;
+}
+""",
+    ),
+    (
+        "svelte-derived-compound-reassign",
+        """let count = $state(0);
+let triple = $derived(count * 3);
+function bump() {
+  triple += 1;
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), SVELTE_DERIVED_REASSIGN_FIXTURES)
+def test_svelte_derived_reassignment_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/lib/comp.svelte.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: $derived reassignment should block\n{stderr}"
+    assert "svelte.derived-reassign" in stderr or "MMB098" in stderr
