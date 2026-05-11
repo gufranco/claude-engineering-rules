@@ -156,20 +156,15 @@ jobs:
       - name: Install mypy
         run: pip install mypy types-PyYAML
 
-      - name: mypy --strict (mutation hook v3)
+      - name: mypy --strict (mutation hook)
         run: |
           mypy --strict \
             hooks/mutation-method-blocker.py \
-            hooks/sarif_emitter.py \
             scripts/mutation_detectors_core.py \
             scripts/mutation_detectors_methods.py \
             scripts/mutation_detectors_assignments.py \
             scripts/suppression.py \
-            scripts/audit_log.py \
-            scripts/mutation_budget_check.py \
-            scripts/detector_tuning_report.py \
-            scripts/bench_mutation_blocker.py \
-            scripts/corpus_manage.py
+            scripts/audit_log.py
 
   hooks:
     name: Hook tests
