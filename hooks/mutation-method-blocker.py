@@ -265,6 +265,7 @@ from mutation_detectors_assignments import (
     detect_reflect_mutations,
     detect_static_block_mutation,
     detect_svelte_derived_reassign,
+    detect_tanstack_store_state_write,
     detect_vue_shallow_readonly_nested_write,
     detect_symbol_key_assignment,
     filter_matches_in_canonical_static_blocks,
@@ -572,6 +573,7 @@ def _detect_all(
     matches.extend(detect_symbol_key_assignment(text, lang, file_path))
     matches.extend(detect_static_block_mutation(text, lang, file_path))
     matches.extend(detect_svelte_derived_reassign(text, lang, file_path))
+    matches.extend(detect_tanstack_store_state_write(text, lang, file_path))
     matches.extend(detect_vue_shallow_readonly_nested_write(text, lang, file_path))
     if is_full_file:
         matches.extend(detect_let_could_be_const(text, lang, file_path))
@@ -766,6 +768,7 @@ def _filter_matches(
 
         if m.detector in {
             "svelte.derived-reassign",
+            "tanstack.store-state-write",
             "vue.shallow-readonly-nested-write",
         }:
             survived.append(m)

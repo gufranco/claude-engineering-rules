@@ -536,6 +536,12 @@
       "fix": "`$derived(...)` bindings are read-only. Reassigning them throws `state_unsafe_mutation` at runtime. Move the source of truth into a `$state(...)` binding and let `$derived` recompute, or wrap the computation in a function. See https://svelte.dev/docs/svelte/$derived.",
       "stage": 4
     },
+    "tanstack.store-state-write": {
+      "category": "tanstack",
+      "code": "MMB100",
+      "fix": "TanStack `Store.state` is a read-only snapshot. Direct writes (`store.state.x = v`) bypass subscribers and break reactivity. Use `store.setState((prev) => ({ ...prev, x: v }))` so the subscription system observes the change. See https://tanstack.com/store/latest/docs/reference/store#setstate.",
+      "stage": 4
+    },
     "vue.shallow-readonly-nested-write": {
       "category": "vue",
       "code": "MMB099",
