@@ -1,0 +1,504 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_meta": {
+    "purpose": "Stable MMB codes mapped to detector tags and fix suggestions. Lookup is exact-key first, then category prefix. Dynamic codes like date.setMonth or typed-array.fill resolve via the category prefix entry (date.setter, typed-array).",
+    "version": "1.0.0",
+    "lookup_order": [
+      "exact_match",
+      "category_prefix"
+    ]
+  },
+  "exact": {
+    "array.push": {
+      "code": "MMB001",
+      "category": "array",
+      "fix": "Replace `arr.push(item)` with `[...arr, item]` or `Array.from({ length: arr.length + 1 }, (_, i) => i < arr.length ? arr[i] : item)`. ES2023 `arr.with(arr.length, item)` is read-only and does not extend; spread is the canonical replacement."
+    },
+    "array.pop": {
+      "code": "MMB002",
+      "category": "array",
+      "fix": "Replace `arr.pop()` with `arr.slice(0, -1)`. Use `arr.at(-1)` to read the last value without removing it."
+    },
+    "array.shift": {
+      "code": "MMB003",
+      "category": "array",
+      "fix": "Replace `arr.shift()` with `arr.slice(1)`. Use `arr.at(0)` or `arr[0]` to read the first value without removing it."
+    },
+    "array.unshift": {
+      "code": "MMB004",
+      "category": "array",
+      "fix": "Replace `arr.unshift(item)` with `[item, ...arr]`."
+    },
+    "array.splice": {
+      "code": "MMB005",
+      "category": "array",
+      "fix": "Replace `arr.splice(start, deleteCount, ...items)` with the ES2023 non-mutating `arr.toSpliced(start, deleteCount, ...items)`."
+    },
+    "array.sort": {
+      "code": "MMB006",
+      "category": "array",
+      "fix": "Replace `arr.sort(cmp)` with the ES2023 non-mutating `arr.toSorted(cmp)`."
+    },
+    "array.reverse": {
+      "code": "MMB007",
+      "category": "array",
+      "fix": "Replace `arr.reverse()` with the ES2023 non-mutating `arr.toReversed()`."
+    },
+    "array.fill": {
+      "code": "MMB008",
+      "category": "array",
+      "fix": "Replace `arr.fill(v)` with `Array.from({ length: arr.length }, () => v)`. For partial fills, prefer `arr.map((x, i) => i >= start && i < end ? v : x)`."
+    },
+    "array.copyWithin": {
+      "code": "MMB009",
+      "category": "array",
+      "fix": "`arr.copyWithin(target, start, end)` mutates in place. Build a new array with `[...arr.slice(0, target), ...arr.slice(start, end), ...arr.slice(target + (end - start))]` or use a helper. Most callers should reach for `Array.prototype.toSpliced` instead."
+    },
+    "collection.map.set": {
+      "code": "MMB011",
+      "category": "collection",
+      "fix": "Replace `map.set(k, v)` with `new Map([...map, [k, v]])`. Use Immer/Mutative if you are inside a state-managed scope (allowlisted by the hook)."
+    },
+    "collection.map.delete": {
+      "code": "MMB012",
+      "category": "collection",
+      "fix": "Replace `map.delete(k)` with `new Map([...map].filter(([key]) => key !== k))`."
+    },
+    "collection.map.clear": {
+      "code": "MMB013",
+      "category": "collection",
+      "fix": "Replace `map.clear()` with `new Map()`. If you must keep the same reference, the file likely belongs in a state-mgmt scope (Immer, Redux Toolkit, MobX)."
+    },
+    "collection.set.add": {
+      "code": "MMB014",
+      "category": "collection",
+      "fix": "Replace `set.add(v)` with `new Set([...set, v])`. ES2024 `set.union(new Set([v]))` is also non-mutating."
+    },
+    "collection.set.delete": {
+      "code": "MMB015",
+      "category": "collection",
+      "fix": "Replace `set.delete(v)` with `new Set([...set].filter(x => x !== v))` or `set.difference(new Set([v]))` (ES2024)."
+    },
+    "collection.set.clear": {
+      "code": "MMB016",
+      "category": "collection",
+      "fix": "Replace `set.clear()` with `new Set()`."
+    },
+    "collection.weakmap.set": {
+      "code": "MMB017",
+      "category": "collection",
+      "fix": "WeakMap entries cannot be enumerated, so producing a new WeakMap requires keeping the source keys somewhere else. Reconsider whether a Map fits your case, or move this code into a state-management scope where mutation is allowed."
+    },
+    "collection.weakmap.delete": {
+      "code": "MMB018",
+      "category": "collection",
+      "fix": "WeakMap mutation. See MMB017."
+    },
+    "collection.weakset.add": {
+      "code": "MMB019",
+      "category": "collection",
+      "fix": "WeakSet mutation. Same constraint as WeakMap: entries cannot be enumerated, so a non-mutating clone is impossible. Reconsider whether a Set fits, or move into a state-management scope."
+    },
+    "collection.weakset.delete": {
+      "code": "MMB020",
+      "category": "collection",
+      "fix": "WeakSet mutation. See MMB019."
+    },
+    "typed-array.set": {
+      "code": "MMB021",
+      "category": "typed-array",
+      "fix": "TypedArray mutation outside a hot-path directory (crypto/codec/image/audio/parser/wasm/...). Move into one of those directories or rebuild the buffer: `const next = new Uint8Array(buffer.length); next.set(...)` is also a mutation. Prefer constructing the buffer with the final contents in a single allocation."
+    },
+    "typed-array.fill": {
+      "code": "MMB022",
+      "category": "typed-array",
+      "fix": "Use a fresh allocation: `new Uint8Array(buffer.length).fill(0)` is allowed inside the constructor expression but not as a separate statement. Move binary buffer code into a hot-path directory if mutation is the domain norm."
+    },
+    "typed-array.sort": {
+      "code": "MMB023",
+      "category": "typed-array",
+      "fix": "TypedArrays do not have a non-mutating `toSorted` yet. Either move into a hot-path directory or copy first: `const sorted = new Float32Array(buffer); sorted.sort();` is still a mutation but on a private copy."
+    },
+    "typed-array.reverse": {
+      "code": "MMB024",
+      "category": "typed-array",
+      "fix": "TypedArrays do not have `toReversed` yet. Same guidance as MMB023."
+    },
+    "typed-array.copyWithin": {
+      "code": "MMB025",
+      "category": "typed-array",
+      "fix": "TypedArray mutation. Same guidance as MMB023."
+    },
+    "date.constructor-chain": {
+      "code": "MMB026",
+      "category": "date",
+      "fix": "`new Date(other.setX(...))` first mutates `other` and then constructs the new Date with the mutated time. Use `addX(other, n)` / `subX(other, n)` from date-fns, or `Temporal.PlainDate.from(d).with({ ... })` if the file already uses Temporal."
+    },
+    "object.assign": {
+      "code": "MMB028",
+      "category": "object-utility",
+      "fix": "`Object.assign(target, source)` mutates `target` unless target is a fresh `{}`. Use `{ ...target, ...source }` or `Object.assign({}, target, source)`."
+    },
+    "object.defineProperty": {
+      "code": "MMB029",
+      "category": "object-utility",
+      "fix": "`Object.defineProperty` mutates the target. Build a new object with the property included: `{ ...target, [key]: value }`. If you need accessor descriptors, use a class or factory."
+    },
+    "object.defineProperties": {
+      "code": "MMB030",
+      "category": "object-utility",
+      "fix": "`Object.defineProperties` mutates the target. Spread or `Object.fromEntries` the descriptors into a new object."
+    },
+    "object.setPrototypeOf": {
+      "code": "MMB031",
+      "category": "object-utility",
+      "fix": "`Object.setPrototypeOf` mutates the target's prototype chain. Use `Object.create(proto, props)` to construct a new object with the desired prototype."
+    },
+    "reflect.set": {
+      "code": "MMB032",
+      "category": "reflect",
+      "fix": "`Reflect.set(target, key, value)` mutates `target`. Use `{ ...target, [key]: value }`."
+    },
+    "reflect.defineProperty": {
+      "code": "MMB033",
+      "category": "reflect",
+      "fix": "`Reflect.defineProperty` mutates the target. See MMB029."
+    },
+    "reflect.deleteProperty": {
+      "code": "MMB034",
+      "category": "reflect",
+      "fix": "`Reflect.deleteProperty` mutates the target. Use destructuring rest: `const { [key]: _, ...rest } = target;`."
+    },
+    "reflect.setPrototypeOf": {
+      "code": "MMB035",
+      "category": "reflect",
+      "fix": "`Reflect.setPrototypeOf` mutates the prototype chain. See MMB031."
+    },
+    "delete-operator": {
+      "code": "MMB036",
+      "category": "delete",
+      "fix": "Replace `delete obj.prop` with destructuring rest: `const { prop, ...rest } = obj;` and use `rest`."
+    },
+    "property.assignment": {
+      "code": "MMB037",
+      "category": "property",
+      "fix": "Direct property assignment mutates the receiver. Use `{ ...obj, prop: value }`."
+    },
+    "property.compound": {
+      "code": "MMB038",
+      "category": "property",
+      "fix": "Compound assignment (`obj.x += 1`, `obj.x ||= y`) mutates the receiver. Use a new object: `{ ...obj, x: obj.x + 1 }`."
+    },
+    "property.compound-index": {
+      "code": "MMB039",
+      "category": "property",
+      "fix": "Compound assignment to an indexed element (`arr[i] += 1`) mutates the array. Use `arr.with(i, arr[i] + 1)` (ES2023)."
+    },
+    "property.computed": {
+      "code": "MMB040",
+      "category": "property",
+      "fix": "Computed property assignment (`obj[key] = v`) mutates the receiver. Use `{ ...obj, [key]: v }`."
+    },
+    "property.increment": {
+      "code": "MMB041",
+      "category": "property",
+      "fix": "Postfix increment (`obj.count++`) mutates the receiver. Use `{ ...obj, count: obj.count + 1 }`."
+    },
+    "property.increment-prefix": {
+      "code": "MMB042",
+      "category": "property",
+      "fix": "Prefix increment (`++obj.count`) mutates the receiver. See MMB041."
+    },
+    "global.assignment": {
+      "code": "MMB043",
+      "category": "global",
+      "fix": "Assignment to `globalThis.*`, `window.*`, `self.*`, or `process.env.*` mutates global state. Pass values explicitly through function parameters, module exports, or context objects."
+    },
+    "param.reassign": {
+      "code": "MMB044",
+      "category": "param",
+      "fix": "Reassigning a function parameter shadows the caller's value and breaks referential transparency. Introduce a local `const` with a derived name."
+    },
+    "let.could-be-const": {
+      "code": "MMB045",
+      "category": "let",
+      "fix": "This `let` is never reassigned. Change to `const`. If a conditional initial value is needed, use a ternary or `??` instead of a deferred assignment."
+    },
+    "web-api.url-search-params.append": {
+      "code": "MMB046",
+      "category": "web-api",
+      "fix": "URLSearchParams.append mutates the instance. Use `new URLSearchParams([...params, [k, v]])` to build a fresh query."
+    },
+    "web-api.url-search-params.set": {
+      "code": "MMB047",
+      "category": "web-api",
+      "fix": "URLSearchParams.set mutates the instance. Use `new URLSearchParams([...[...params].filter(([k]) => k !== key), [key, value]])` or build the entries array immutably and construct fresh."
+    },
+    "web-api.url-search-params.delete": {
+      "code": "MMB048",
+      "category": "web-api",
+      "fix": "URLSearchParams.delete mutates the instance. Use `new URLSearchParams([...params].filter(([k]) => k !== removed))` for a fresh query string."
+    },
+    "web-api.url-search-params.sort": {
+      "code": "MMB049",
+      "category": "web-api",
+      "fix": "URLSearchParams.sort mutates the instance. Use `new URLSearchParams([...params].toSorted(([a], [b]) => a.localeCompare(b)))`."
+    },
+    "web-api.headers.append": {
+      "code": "MMB050",
+      "category": "web-api",
+      "fix": "Headers.append mutates the instance. Use `new Headers([...headers, [name, value]])`. The Fetch API treats Headers as a mutable map by default; always work with a fresh instance to avoid shared-state bugs."
+    },
+    "web-api.headers.set": {
+      "code": "MMB051",
+      "category": "web-api",
+      "fix": "Headers.set mutates the instance. Filter the existing entries and append the new value: `new Headers([...[...headers].filter(([k]) => k.toLowerCase() !== name.toLowerCase()), [name, value]])`. Header names are case-insensitive."
+    },
+    "web-api.headers.delete": {
+      "code": "MMB052",
+      "category": "web-api",
+      "fix": "Headers.delete mutates the instance. Use `new Headers([...headers].filter(([k]) => k.toLowerCase() !== removed.toLowerCase()))`. Always lowercase both sides; HTTP header names are case-insensitive."
+    },
+    "web-api.form-data.append": {
+      "code": "MMB053",
+      "category": "web-api",
+      "fix": "FormData.append mutates the instance. Build a fresh FormData from the existing entries and the new field. When the API consumer requires a stable FormData reference (XHR.send keeps a pointer), suppress with `// @claude-allow-mutation -- <reason>`. Confidence: 3."
+    },
+    "web-api.form-data.set": {
+      "code": "MMB054",
+      "category": "web-api",
+      "fix": "FormData.set mutates the instance. Build a fresh FormData from the filtered entries plus the new value. Suppress with `// @claude-allow-mutation -- <reason>` when the consumer requires the same reference. Confidence: 3."
+    },
+    "web-api.form-data.delete": {
+      "code": "MMB055",
+      "category": "web-api",
+      "fix": "FormData.delete mutates the instance. Build a fresh FormData from the filtered entries. Suppress when the consumer keeps a pointer to the original. Confidence: 3."
+    },
+    "web-api.dataview.setInt8": {
+      "code": "MMB060",
+      "category": "binary-buffer",
+      "fix": "`DataView.setInt8` writes into the backing ArrayBuffer. When the call site is not in a codec hot path, allocate a fresh ArrayBuffer of the required size and DataView, then publish atomically."
+    },
+    "web-api.dataview.setUint8": {
+      "code": "MMB061",
+      "category": "binary-buffer",
+      "fix": "`DataView.setUint8` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setInt16": {
+      "code": "MMB062",
+      "category": "binary-buffer",
+      "fix": "`DataView.setInt16` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setUint16": {
+      "code": "MMB063",
+      "category": "binary-buffer",
+      "fix": "`DataView.setUint16` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setInt32": {
+      "code": "MMB064",
+      "category": "binary-buffer",
+      "fix": "`DataView.setInt32` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setUint32": {
+      "code": "MMB065",
+      "category": "binary-buffer",
+      "fix": "`DataView.setUint32` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setBigInt64": {
+      "code": "MMB066",
+      "category": "binary-buffer",
+      "fix": "`DataView.setBigInt64` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setBigUint64": {
+      "code": "MMB067",
+      "category": "binary-buffer",
+      "fix": "`DataView.setBigUint64` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setFloat32": {
+      "code": "MMB068",
+      "category": "binary-buffer",
+      "fix": "`DataView.setFloat32` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "web-api.dataview.setFloat64": {
+      "code": "MMB069",
+      "category": "binary-buffer",
+      "fix": "`DataView.setFloat64` mutates the ArrayBuffer. Prefer a fresh buffer outside codec hot paths."
+    },
+    "typed-array.uint8.set-with-offset": {
+      "code": "MMB070",
+      "category": "typed-array",
+      "fix": "`view.set(source, offset)` is the two-arg form: it copies into the receiver at a given byte offset. Common bugs: byte vs element offset confusion, source length overflow, source-destination aliasing. Prefer `Uint8Array.of(...)` or `new Uint8Array(buffer.slice(...))` and concatenate."
+    },
+    "shared-memory.atomics.store": {
+      "code": "MMB071",
+      "category": "shared-memory",
+      "fix": "`Atomics.store` writes to a SharedArrayBuffer view with sequential consistency. Confirm the ordering is intentional. Consider Atomics.compareExchange when concurrent writers race; consider a single-writer pattern with message-based publish for one-shot updates. Info-level signal."
+    },
+    "shared-memory.atomics.exchange": {
+      "code": "MMB072",
+      "category": "shared-memory",
+      "fix": "`Atomics.exchange` swaps and returns the previous value atomically. Audit ordering against the rest of the protocol."
+    },
+    "shared-memory.atomics.compareExchange": {
+      "code": "MMB073",
+      "category": "shared-memory",
+      "fix": "`Atomics.compareExchange` is the CAS primitive. Confirm the expected and replacement values; consider Atomics.compareExchange in a retry loop with a maximum iteration bound."
+    },
+    "shared-memory.atomics.add": {
+      "code": "MMB074",
+      "category": "shared-memory",
+      "fix": "`Atomics.add` is a lock-free increment on SAB. Audit the modular wraparound at the integer bit width."
+    },
+    "shared-memory.atomics.sub": {
+      "code": "MMB075",
+      "category": "shared-memory",
+      "fix": "`Atomics.sub` is a lock-free decrement on SAB."
+    },
+    "shared-memory.atomics.and": {
+      "code": "MMB076",
+      "category": "shared-memory",
+      "fix": "`Atomics.and` is a lock-free bitwise AND on SAB."
+    },
+    "shared-memory.atomics.or": {
+      "code": "MMB077",
+      "category": "shared-memory",
+      "fix": "`Atomics.or` is a lock-free bitwise OR on SAB."
+    },
+    "shared-memory.atomics.xor": {
+      "code": "MMB078",
+      "category": "shared-memory",
+      "fix": "`Atomics.xor` is a lock-free bitwise XOR on SAB."
+    },
+    "wasm.memory.grow": {
+      "code": "MMB079",
+      "category": "wasm",
+      "fix": "`WebAssembly.Memory.grow` extends linear memory and invalidates existing typed-array views over `memory.buffer`. After grow, recreate every view from the new buffer. Document pre-grow/post-grow boundaries; prefer coarse-step grows to amortize view recreation."
+    },
+    "proxy.trap.set": {
+      "code": "MMB080",
+      "category": "proxy",
+      "fix": "Mutating Proxy `set` trap exposes mutation to consumers. Prefer copy-on-write: the trap returns a new proxy wrapping the modified data. When the Proxy is genuinely a mutable facade, document the contract in JSDoc and suppress."
+    },
+    "proxy.trap.deleteProperty": {
+      "code": "MMB081",
+      "category": "proxy",
+      "fix": "Mutating Proxy `deleteProperty` trap. Prefer copy-on-write: return a new proxy with the key removed via destructuring rest."
+    },
+    "proxy.trap.defineProperty": {
+      "code": "MMB082",
+      "category": "proxy",
+      "fix": "Mutating Proxy `defineProperty` trap. Prefer copy-on-write: return a new proxy with the descriptor applied to a fresh target."
+    },
+    "proxy.trap.setPrototypeOf": {
+      "code": "MMB083",
+      "category": "proxy",
+      "fix": "Mutating Proxy `setPrototypeOf` trap. Prefer copy-on-write or refactor to a class hierarchy."
+    },
+    "weakref.deref-mutate.push": {
+      "code": "MMB084",
+      "category": "weakref",
+      "fix": "Mutating through `weakRef.deref()` is unsafe: the GC can collect the target between deref and the call. Hold a strong reference for the operation, or check `const target = weakRef.deref(); if (target) { ... }` and treat absence as a no-op. Prefer non-mutating ops on the dereferenced value."
+    },
+    "finalization-registry.construct": {
+      "code": "MMB085",
+      "category": "finalization",
+      "fix": "FinalizationRegistry callbacks run at unpredictable GC moments. Keep the callback side-effect-minimal. Never mutate shared application state from the callback; spec note: callbacks may not run at all if the registry is collected. Treat the callback as best-effort cleanup."
+    },
+    "async-iterable.for-await-push": {
+      "code": "MMB086",
+      "category": "async-iterable",
+      "stage": 4,
+      "fix": "Avoid `for await (const x of iter) { result.push(x) }`. Use `await Array.fromAsync(iter)` (ES2024) for a non-mutating materialization. For transformation, `await Array.fromAsync(iter, fn)` accepts a mapper in the same call."
+    },
+    "async-iterator.helper-collect": {
+      "code": "MMB087",
+      "category": "async-iterable",
+      "stage": 3,
+      "fix": "AsyncIterator helpers (Stage 3, TypeScript 5.7+ lib.es2025.iterator.async): `asyncIter.map(fn)`, `.filter(fn)`, `.take(n)`, `.toArray()`. Non-mutating and lazy. Prefer over `for await + push` once the runtime targets ES2025."
+    },
+    "uint8.set-from-base64": {
+      "code": "MMB088",
+      "category": "binary-buffer",
+      "stage": 3,
+      "fix": "Stage 3 `Uint8Array.prototype.setFromBase64` and `setFromHex` mutate the receiver. Prefer the static forms `Uint8Array.fromBase64(str)` and `Uint8Array.fromHex(str)` which return fresh instances."
+    },
+    "uint8.set-from-hex": {
+      "code": "MMB092",
+      "category": "binary-buffer",
+      "stage": 3,
+      "fix": "Stage 3 `Uint8Array.prototype.setFromHex` mutates the receiver. Prefer the static form `Uint8Array.fromHex(str)` which returns a fresh instance."
+    },
+    "pipeline-operator": {
+      "code": "MMB089",
+      "category": "syntax",
+      "stage": 2,
+      "fix": "The pipeline operator `|>` (Stage 2 hack-style) is a non-mutating composition. The hook recognizes it and does not flag the arguments. Use freely once the runtime supports it."
+    },
+    "iterator.range-replacement": {
+      "code": "MMB090",
+      "category": "syntax",
+      "stage": 2,
+      "fix": "`Array.from({ length: n }, (_, i) => i)` materializes a full array eagerly. Prefer `Iterator.range(0, n).toArray()` (Stage 2) for lazy iteration; many downstream operations never need the full array."
+    },
+    "promise.try-replacement": {
+      "code": "MMB091",
+      "category": "syntax",
+      "stage": 4,
+      "fix": "`Promise.resolve().then(fn)` is the legacy way to wrap a sync-or-async function in a Promise. Prefer `Promise.try(fn)` (ES2024): it wraps both throws and returns into a Promise without mutating intermediate state."
+    }
+  },
+  "by_category": {
+    "array": {
+      "code": "MMB000",
+      "fix": "Array prototype mutation. Use the ES2023 non-mutating equivalents (`toSorted`, `toReversed`, `toSpliced`, `with`) or spread into a new array."
+    },
+    "collection": {
+      "code": "MMB010",
+      "fix": "Map/Set/WeakMap/WeakSet mutation. Build a new collection with `new Map([...m, [k, v]])` / `new Set([...s, v])` and ES2024 set composition methods."
+    },
+    "typed-array": {
+      "code": "MMB020",
+      "fix": "TypedArray mutation outside a hot-path directory. Applies to Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float16Array (ES2024), Float32Array, Float64Array, BigInt64Array, and BigUint64Array. Move into crypto/codec/image/audio/parser/wasm/canvas/encoder/decoder/simd/webgl/pixel/hash/cipher, or rebuild the buffer through a fresh constructor (e.g., `new Float16Array(source).set(...)`)."
+    },
+    "date.setter": {
+      "code": "MMB027",
+      "fix": "Date setters mutate the receiver. Use date-fns immutable helpers (`addMonths`, `subMonths`, `setMonth(d, m)`) or, when the file already uses Temporal, `Temporal.PlainDate.from(d).with({ ... })`."
+    },
+    "date": {
+      "code": "MMB026",
+      "fix": "Date mutation. See MMB026 (constructor chain) or MMB027 (setter)."
+    },
+    "object-utility": {
+      "code": "MMB028",
+      "fix": "Object utility mutation (`Object.assign`, `Object.defineProperty`, `Object.setPrototypeOf`). Build a new object with spread."
+    },
+    "reflect": {
+      "code": "MMB032",
+      "fix": "Reflect mutation. Build a new object with spread or destructuring rest."
+    },
+    "delete": {
+      "code": "MMB036",
+      "fix": "`delete` operator mutates the receiver. Use destructuring rest."
+    },
+    "property": {
+      "code": "MMB037",
+      "fix": "Property assignment mutates the receiver. Use `{ ...obj, key: value }` or `arr.with(i, value)`."
+    },
+    "global": {
+      "code": "MMB043",
+      "fix": "Global state mutation. Pass values explicitly."
+    },
+    "param": {
+      "code": "MMB044",
+      "fix": "Parameter reassignment. Use a local `const`."
+    },
+    "let": {
+      "code": "MMB045",
+      "fix": "`let` never reassigned. Change to `const`."
+    },
+    "web-api": {
+      "code": "MMB046",
+      "fix": "Web API mutation (URLSearchParams, Headers, FormData). Build a fresh instance from the existing entries via `new URLSearchParams([...params, ...])`, `new Headers([...headers, ...])`, or `new FormData()` populated from filtered entries. FormData mutations may be suppressed when the API consumer requires a stable instance reference."
+    }
+  }
+}
