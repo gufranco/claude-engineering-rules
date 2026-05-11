@@ -1,0 +1,74 @@
+{
+  "name": "mutation-method-blocker-vscode",
+  "displayName": "Mutation Method Blocker",
+  "description": "Surfaces mutation-method-blocker findings inline in VS Code via LSP diagnostics.",
+  "version": "3.0.0",
+  "publisher": "anthropic",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "keywords": [
+    "immutability",
+    "typescript",
+    "javascript",
+    "lsp"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Mutation Method Blocker",
+      "properties": {
+        "mutationMethodBlocker.hookPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to mutation-method-blocker.py. When empty, the extension uses the bundled binary."
+        },
+        "mutationMethodBlocker.severity": {
+          "type": "string",
+          "enum": ["error", "warning", "note"],
+          "default": "warning",
+          "description": "Minimum confidence level surfaced as a VS Code diagnostic."
+        },
+        "mutationMethodBlocker.experimentalDetectors": {
+          "type": "array",
+          "default": [],
+          "items": { "type": "string" },
+          "description": "Names of MUTATION_METHOD_EXPERIMENTAL_* flags to enable."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "mutationMethodBlocker.scanFile",
+        "title": "Mutation Method Blocker: Scan current file"
+      },
+      {
+        "command": "mutationMethodBlocker.scanWorkspace",
+        "title": "Mutation Method Blocker: Scan workspace"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "pnpm run compile"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.86.0",
+    "typescript": "^5.4.0"
+  }
+}
