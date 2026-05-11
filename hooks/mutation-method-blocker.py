@@ -1048,7 +1048,7 @@ def _handle_cli_flags() -> int | None:
         sys.stdout.write(_json.dumps(payload, indent=2))
         sys.stdout.write("\n")
         return 0
-    return None
+    return None  # pragma: no cover
 
 
 def main() -> int:
