@@ -577,6 +577,12 @@
       "code": "MMB105",
       "fix": "Recoil is unmaintained as of 2024. Migrate to Jotai (atom-based, closest API), Zustand (store-based with simpler boilerplate), or Nanostores (tiny, framework-agnostic). See https://jotai.org/docs/migrations/from-recoil for a Recoil-to-Jotai mapping.",
       "stage": 4
+    },
+    "yjs.mutation-outside-transact": {
+      "category": "yjs",
+      "code": "MMB106",
+      "fix": "Yjs CRDT mutations belong inside a transaction. Wrap the write in `doc.transact(() => { ymap.set(key, value) })` so observers receive a single consolidated update and remote peers replicate the change atomically. See https://docs.yjs.dev/api/transactions.",
+      "stage": 4
     }
   }
 }

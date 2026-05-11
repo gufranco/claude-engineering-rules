@@ -161,17 +161,21 @@ export const useStore = create((set) => ({
 
 YJS_FIXTURES: list[tuple[str, str]] = [
     (
-        "yjs-array-push",
+        "yjs-array-push-in-transact",
         """const yArr = new Y.Array();
-yArr.push(['x']);
-yArr.delete(0);
+doc.transact(() => {
+  yArr.push(['x']);
+  yArr.delete(0);
+});
 """,
     ),
     (
-        "yjs-map-set",
+        "yjs-map-set-in-transact",
         """const yMap = new Y.Map();
-yMap.set('k', 'v');
-yMap.delete('k');
+doc.transact(() => {
+  yMap.set('k', 'v');
+  yMap.delete('k');
+});
 """,
     ),
 ]
@@ -1036,6 +1040,106 @@ function bump() {
 
     # Assert
     assert "mobx.observable-outside-action" not in stderr
+
+
+YJS_OUTSIDE_TRANSACT_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "yjs-map-set-outside-transact",
+        """import * as Y from "yjs";
+const yMap = new Y.Map();
+function bump() {
+  yMap.set("k", "v");
+}
+""",
+    ),
+    (
+        "yjs-array-push-outside-transact",
+        """import * as Y from "yjs";
+const yArr = new Y.Array();
+function add(item) {
+  yArr.push([item]);
+}
+""",
+    ),
+    (
+        "yjs-text-insert-outside-transact",
+        """import * as Y from "yjs";
+const yText = new Y.Text();
+function write() {
+  yText.insert(0, "hello");
+}
+""",
+    ),
+    (
+        "yjs-doc-getmap-outside-transact",
+        """import * as Y from "yjs";
+const doc = new Y.Doc();
+const yMap = doc.getMap("settings");
+function set() {
+  yMap.set("theme", "dark");
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,snippet", YJS_OUTSIDE_TRANSACT_BLOCKED_FIXTURES, ids=lambda v: v
+)
+def test_yjs_mutation_outside_transact_blocks(name, snippet, run_hook):
+    # Arrange
+    payload = make_write_payload("/repo/src/sync.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "yjs.mutation-outside-transact" in stderr, (
+        f"{name}: detector did not fire\n{stderr}"
+    )
+
+
+def test_yjs_mutation_inside_transact_allowed(run_hook):
+    # Arrange
+    snippet = """import * as Y from "yjs";
+const doc = new Y.Doc();
+const yMap = doc.getMap("settings");
+function update() {
+  doc.transact(() => {
+    yMap.set("theme", "dark");
+    yMap.set("font", "mono");
+  });
+}
+"""
+    payload = make_write_payload("/repo/src/sync.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "yjs.mutation-outside-transact" not in stderr
+
+
+def test_yjs_nested_transact_allowed(run_hook):
+    # Arrange
+    snippet = """import * as Y from "yjs";
+const doc = new Y.Doc();
+const yArr = new Y.Array();
+function bulk(items) {
+  doc.transact(() => {
+    for (const item of items) {
+      yArr.push([item]);
+    }
+  });
+}
+"""
+    payload = make_write_payload("/repo/src/sync.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "yjs.mutation-outside-transact" not in stderr
 
 
 RECOIL_DEPRECATION_FIXTURES: list[tuple[str, str]] = [
