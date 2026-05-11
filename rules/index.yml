@@ -8,8 +8,8 @@
 
 always_loaded:
   code-style:
-    description: DRY/SOLID/KISS, immutability, TypeScript conventions, error classification, data safety, enums, validation, maximum compiler and checker strictness
-    triggers: [style, typescript, type, enum, interface, immutable, validation, zod, dto, tsconfig, strict, compiler, strictness]
+    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits. TypeScript-specific guidance moved to rules/lang/typescript-types.md, rules/lang/typescript-immutability.md, and rules/lang/typescript-strict.md
+    triggers: [style, completeness, fundamentals, "command-query", cqs, "data safety", "delivery path", "defensive invariants", analyzability, validation, zod, dto, "removal safety", "locale-aware", i18n, accent, diacritical, "destructive action", "llm output", "trust boundary", "bisect"]
 
 
   git-workflow:
@@ -67,8 +67,23 @@ lang:
 
   prisma-migrations:
     path: rules/lang/prisma-migrations.md
-    description: Schema-vs-migration parity, index naming convention via map, prisma migrate diff verification, unmanaged-object bypass
-    triggers: [prisma, migration, migrations, schema.prisma, "@@index", "@@unique", "prisma migrate", "migrate diff", "migrate dev", "migrate deploy", drift, schema drift]
+    description: Schema-vs-migration parity, index naming convention via map, prisma migrate diff verification, unmanaged-object bypass, schema completeness (createdAt, updatedAt, companyId indexes, FK indexes)
+    triggers: [prisma, migration, migrations, schema.prisma, "@@index", "@@unique", "prisma migrate", "migrate diff", "migrate dev", "migrate deploy", drift, schema drift, createdAt, updatedAt, companyId]
+
+  typescript-types:
+    path: rules/lang/typescript-types.md
+    description: TypeScript type construct selection (interface vs type vs enum), discriminated unions with exhaustive matching, branded types for nominal typing, type state pattern for state machine transitions
+    triggers: [typescript, ts, tsx, type, interface, enum, brand, branded, discriminated, "discriminated union", "type state", "as const", "satisfies never", nominal, "ts-pattern"]
+
+  typescript-immutability:
+    path: rules/lang/typescript-immutability.md
+    description: Immutability rule for TypeScript (no push/pop/sort/splice, readonly ladder), mutation surface covered by mutation-method-blocker hook, DOM/Web API stance, withdrawn Records and Tuples proposal, ES2024+ non-mutating replacements (toSorted, toReversed, with, Set composition, iterator helpers, Object.groupBy), auto-allowed scopes, CI SARIF snippets, Date and Time handling with Temporal
+    triggers: [typescript, ts, tsx, immutable, immutability, mutation, mutating, mutability, readonly, freeze, splice, reverse, pop, shift, unshift, fill, copywithin, "map.set", "set.add", "object.assign", defineproperty, setprototypeof, delete, valtio, jotai, recoil, xstate, solid, nanostores, legendapp, tanstack, "effect-ts", temporal, composites, sarif, lsp, "language server", "vscode-extension", "jetbrains-plugin", "eslint-plugin", "pre-commit", husky, lefthook, biome, "toSorted", "toReversed", "toSpliced", "with", "groupBy", "Object.groupBy", "Map.groupBy", "structuredClone", "Records and Tuples", "@js-temporal", date, "date-fns", instant, plaindate, plaindatetime, zoneddatetime, duration, "url-search-params", urlsearchparams, headers, formdata, angular, "angular-signals", qwik, "qwik-signals", preact, "preact-signals", useformstate, useactionstate, useoptimistic, usereducer, usesyncexternalstore, "use server", "react server actions", "tc39-signals", "signal-polyfill", "effect-ref", "fp-ts", pipe, flow, "asynciterator", "async iterator", "iterator helpers", "for-await-push", "Array.fromAsync", "Promise.try", "Promise.withResolvers", "RegExp.escape", "Error.isError", "Atomics.pause", "Float16Array", "Uint8Array.fromBase64", "Uint8Array.fromHex", "pipeline-operator", "iterator.range", dataview, atomics, sharedarraybuffer, webassembly, wasm, "WebAssembly.Memory.grow", "WebAssembly.Memory.prototype.grow", "private field", "private-field", "#field", "symbol key", "symbol-key", "static block", "static-block", "static-initializer", proxy, "proxy trap", weakref, "weakref-deref", finalizationregistry, codemod, ts-morph, "whole-program", confidence, otel, "audit-log", "perf-budget", allowlist, "fix-suggestion", suppression, "claude-allow-mutation"]
+
+  typescript-strict:
+    path: rules/lang/typescript-strict.md
+    description: TypeScript compiler strictness (noUncheckedIndexedAccess, exactOptionalPropertyTypes, verbatimModuleSyntax), target/module settings to match runtime, TypeScript 5.x patterns (using/await using, NoInfer, Symbol.dispose)
+    triggers: [typescript, ts, tsxconfig, tsconfig, strict, compiler, strictness, "noUncheckedIndexedAccess", "exactOptionalPropertyTypes", "verbatimModuleSyntax", "noPropertyAccessFromIndexSignature", "noFallthroughCasesInSwitch", target, module, moduleResolution, "@tsconfig/node", using, "await using", "Symbol.dispose", "Symbol.asyncDispose", NoInfer, "ts 5", "typescript 5"]
 
 # Tier 2: On demand (standards/)
 #

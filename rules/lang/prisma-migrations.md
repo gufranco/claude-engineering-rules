@@ -81,9 +81,28 @@ Detection lag: 17 days. Detected only when a developer ran migrations on a clean
 
 Fix: PR #1559 added the seven `@@index` entries with explicit `map:` names and ran `prisma migrate diff --exit-code` to confirm zero drift.
 
+## Schema Completeness
+
+Every new Prisma model must include these fields and annotations before the PR is opened. Missing any of these is a review-blocking issue.
+
+| Requirement | Rule |
+|-------------|------|
+| `createdAt` | `DateTime @default(now())` on every model |
+| `updatedAt` | `DateTime @updatedAt` on every model that can be modified after creation. Append-only models (audit logs, event logs, feed items) are exempt |
+| `companyId` index | `@@index([companyId])` on every model with a `companyId` field. Without this, every tenant-scoped query does a full table scan |
+| Compound indexes | Add `@@index([companyId, status])` and `@@index([companyId, createdAt])` when the model will be filtered by status or sorted by date |
+| Foreign key indexes | Every `@relation` field needs an `@@index` unless it is already covered by a `@@unique` |
+
+When adding a new model, run this checklist before committing:
+
+1. Does it have `createdAt` and `updatedAt`?
+2. Does it have `@@index([companyId])` if it has a `companyId` field?
+3. Do all `@relation` fields have indexes?
+4. Is the model in the test cleanup order in `test/setup.ts`?
+5. Does the seed file create records for this model?
+
 ## Cross-References
 
-- `~/.claude/rules/code-style.md` "Prisma Schema Completeness" covers required fields and indexes per model.
 - `~/.claude/rules/git-workflow.md` "Migration Ordering" and "Migration Idempotency" cover timestamp ordering and `IF NOT EXISTS` requirements.
 - `~/.claude/rules/verification.md` "Database changes add" lists the verification gates.
 - `~/.claude/checklists/checklist.md` category "Schema-Migration Sync" is the per-PR checklist.

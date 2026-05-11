@@ -59,88 +59,11 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 
 ## Prisma Schema Completeness
 
-Every new Prisma model must include these fields and annotations before the PR is opened. Missing any of these is a review-blocking issue.
-
-| Requirement | Rule |
-|-------------|------|
-| `createdAt` | `DateTime @default(now())` on every model |
-| `updatedAt` | `DateTime @updatedAt` on every model that can be modified after creation. Append-only models (audit logs, event logs, feed items) are exempt |
-| `companyId` index | `@@index([companyId])` on every model with a `companyId` field. Without this, every tenant-scoped query does a full table scan |
-| Compound indexes | Add `@@index([companyId, status])` and `@@index([companyId, createdAt])` when the model will be filtered by status or sorted by date |
-| Foreign key indexes | Every `@relation` field needs an `@@index` unless it is already covered by a `@@unique` |
-
-When adding a new model, run this checklist before committing:
-
-1. Does it have `createdAt` and `updatedAt`?
-2. Does it have `@@index([companyId])` if it has a `companyId` field?
-3. Do all `@relation` fields have indexes?
-4. Is the model in the test cleanup order in `test/setup.ts`?
-5. Does the seed file create records for this model?
+Moved to `rules/lang/prisma-migrations.md` (Schema Completeness section). Triggered on demand by `prisma`, `schema.prisma`, `@@index`, `createdAt`, `updatedAt`, `companyId`, and related keywords.
 
 ## TypeScript Type Constructs
 
-| Construct | When to use |
-|-----------|------------|
-| `interface` | Object shapes: DTOs, props, service contracts. Prefer for public APIs |
-| `type` | Unions, intersections, mapped types, conditional types, tuples, function signatures |
-| `enum` (string) | Fixed domain values that need runtime existence: statuses, roles, categories |
-| `as const` object | Lookup tables with metadata, derive union types from keys/values |
-| Discriminated union | Sum types with a `kind`/`type` tag: model states, outcomes, domain events |
-| Branded type | Nominal distinction for structurally identical primitives: `UserId` vs `OrderId` |
-
-- `interface` for object shapes, `type` for the rest. Do not mix for the same purpose
-- Consistency within a codebase. If DTOs use `interface`, all DTOs use `interface`
-- Never alias a single primitive with `type`. Use a branded pattern if needed
-- Prefer `interface` when either works. Clearer error messages, supports declaration merging
-
-### Discriminated Unions
-
-Use discriminated unions to make illegal states unrepresentable. When fields depend on each other, model them as variants of a tagged union, not as optional fields on a flat interface.
-
-- Every variant must share a literal `kind`, `type`, or `tag` discriminant property
-- Exhaustive matching is mandatory. Use `satisfies never` in the default branch or a library like ts-pattern with `.exhaustive()`. Adding a new variant must produce compile errors at every unhandled match site
-- Avoid boolean blindness: when the caller needs to know WHY, return a discriminated union instead of a boolean
-- Prefer discriminated unions over class hierarchies for domain modeling. They compose with pattern matching, serialize trivially, and do not require `instanceof`
-
-### Branded Types
-
-Use branded types to prevent structurally identical values from being confused. A `UserId` and an `OrderId` are both strings, but passing one where the other is expected is a bug.
-
-```typescript
-type Brand<T, B extends string> = T & { readonly __brand: B };
-type UserId = Brand<string, 'UserId'>;
-type OrderId = Brand<string, 'OrderId'>;
-```
-
-- Zero runtime cost. The brand is a phantom property that exists only in the type system
-- Combine with Zod's `.brand()` for runtime validation and compile-time branding in one step
-- Use for: IDs, validated strings (Email, URL), units of measure (Seconds vs Milliseconds), monetary amounts with currency
-
-### Type State Pattern
-
-Encode state machine transitions in the type system. Each state is a distinct type. Methods on a state return the next valid state. Invalid transitions do not exist in the API.
-
-```typescript
-class DraftOrder {
-  submit(items: readonly OrderItem[]): SubmittedOrder { /* ... */ }
-  // no ship(), no cancel() — only submit is valid from draft
-}
-
-class SubmittedOrder {
-  ship(tracking: TrackingId): ShippedOrder { /* ... */ }
-  cancel(reason: string): CancelledOrder { /* ... */ }
-  // no submit() — can't submit twice
-}
-
-class ShippedOrder {
-  deliver(signature: string): DeliveredOrder { /* ... */ }
-  // no cancel() — shipped orders follow a return flow, not cancellation
-}
-```
-
-- Use when: order workflows, payment processing, document lifecycles, connection states, authentication flows
-- Different from discriminated unions: unions model "what states exist" as data. Type state models "what transitions are legal" through method availability. The compiler prevents invalid transitions, not runtime checks
-- Combine with branded types for state identifiers: `DraftOrderId` vs `ShippedOrderId` prevents passing the wrong order to the wrong function
+Moved to `rules/lang/typescript-types.md`. Covers `interface` vs `type` vs `enum` selection, discriminated unions with exhaustive matching, branded types, and the type state pattern. Triggered on demand by `typescript`, `type`, `interface`, `enum`, `brand`, `discriminated`, and related keywords.
 
 ## Command-Query Separation
 
@@ -153,32 +76,16 @@ A function either changes state (command, returns void) or returns data (query, 
 
 ## Immutability
 
-Immutable by default, mutable by exception. Every value starts as readonly. Mutability requires an explicit decision, not the other way around. This rule is absolute. Code review must reject any `.push()`, `.splice()`, `.sort()`, or `let` that could be `const`.
-
-### Behavioral Rules
+Cross-language baseline: immutable by default, mutable by exception. Every value starts as readonly. Mutability requires an explicit decision.
 
 - Never mutate function arguments. Copy, modify the copy, return it
-- `const` by default. `let` only when reassignment is genuinely needed (loop counters, accumulators that cannot be expressed functionally). Never `var`
-- Spread or `structuredClone` over in-place mutation: `{ ...obj, field: newValue }` for shallow updates, `structuredClone(obj)` when you need a true deep copy without structural sharing
-- Arrays: `[...arr, item]`, `.filter()`, `.map()`, `reduce()` over `.push()`, `.splice()`, `.sort()` on the original. Prefer ES2023 non-mutating methods when available: `.toSorted()`, `.toReversed()`, `.toSpliced()`, `.with(index, value)`
-- **`.push()` is banned.** Use spread `[...arr, item]` or `Array.from()`. The only exception is `router.push()` from Next.js/framework navigation, which is not an array mutation
-- **`.sort()` is banned.** Use `.toSorted()`. If the target does not support ES2023, spread first: `[...arr].sort()`
-- **`let` that could be `const`** is a code review failure. Use ternary, lookup maps, or `??` to avoid `let` with conditional assignment
+- `const` by default. Equivalent in Rust: bindings are immutable unless declared `mut`. In Go: prefer return values over receiver mutation. In Python: prefer dataclasses with `frozen=True`
+- Prefer copy-on-write over in-place mutation when the language offers a non-mutating alternative
 - State transitions produce new state, never mutate the previous one
 - Derive values with selectors or computed properties. Never cache derived values as mutable fields
-- Framework-internal mutation like Immer or MobX stays at the framework boundary. Everything else treats state as read-only
+- Framework-internal mutation (Immer, MobX, Redux Toolkit) stays at the framework boundary. Everything else treats state as read-only
 
-### Type-Level Enforcement (TypeScript)
-
-Make the compiler catch mutations instead of relying on discipline alone. `readonly` is compile-time only, zero runtime overhead.
-
-- Mark interface and type properties as `readonly` when the value must not change after construction
-- Use `as const` on object and array literals whose values are known at declaration time. This makes every property deeply readonly and narrows types to their literal values. Combine with `satisfies` to get both literal inference and type validation: `const ROUTES = { home: '/' } as const satisfies Record<string, string>`
-- Function parameters that accept arrays: use `readonly T[]` or `ReadonlyArray<T>`. This removes `.push()`, `.splice()`, `.sort()` from the type signature
-- Function parameters that accept objects: use `Readonly<T>` when the function must not modify the input
-- Use `ReadonlyMap<K, V>` and `ReadonlySet<T>` for collections used as lookups that must not grow or shrink
-- Enable `@typescript-eslint/prefer-readonly-parameter-types` to enforce readonly parameters automatically
-- Prefer `readonly` over `Object.freeze()`. `readonly` catches mutations at compile time with no cost. `Object.freeze()` is runtime, shallow only, and has overhead. Reserve `Object.freeze()` for runtime protection at trust boundaries where external code may bypass the type system
+TypeScript-specific rules (mutation surface, DOM/Web API stance, ES2024+ replacements, readonly type ladder, auto-allowed scopes, CI snippets, Three Legs of Data Integrity, date and time handling) live in `rules/lang/typescript-immutability.md`. Triggered on demand by `immutable`, `mutation`, `readonly`, `splice`, `sort`, `push`, `Map.set`, `Set.add`, `Date`, `Temporal`, and related keywords.
 
 ## Delivery Path Consistency
 
@@ -333,9 +240,7 @@ Stricter checks catch bugs at compile time instead of production. The cost of fi
 - When a new strictness flag becomes available in a toolchain update, enable it
 - Document any flag intentionally left disabled with the specific reason in the config file
 
-### TypeScript target and module settings
-
-For Node.js projects, `target` and `module`/`moduleResolution` must match the runtime version. Use the `@tsconfig/node{version}/tsconfig.json` base or set equivalent values manually. Running ES2024+ features through downlevel compilation when the runtime supports them natively adds overhead and hides bugs.
+TypeScript-specific strictness, target, and module settings live in `rules/lang/typescript-strict.md`. Triggered on demand by `tsconfig`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `target`, `moduleResolution`, and related keywords.
 
 ## Zero Warnings
 
@@ -367,21 +272,13 @@ A removal without a consumer search is a latent runtime error.
 
 ## Date and Time Handling
 
-Use a date library for all date operations. Never use raw `Date` methods for formatting, parsing, comparison, or arithmetic.
+Use a date library for all date operations. Never use raw `Date` methods for formatting, parsing, comparison, or arithmetic. For TypeScript projects, `Temporal` is preferred when available, `date-fns` is the fallback. For other languages, use the equivalent standard library.
 
-| Raw Date pattern | Preferred replacement |
-|-----------------|----------------------|
-| `new Date().getFullYear()` | `getYear(new Date())` from date-fns |
-| `date.toISOString()` | `formatISO(date)` from date-fns |
-| `new Date(isoString)` | `parseISO(isoString)` from date-fns |
-| `dateA < dateB` | `isBefore(dateA, dateB)` from date-fns |
-| `new Date(d.setMonth(...))` | `subMonths(d, n)` from date-fns |
-| `date.toLocaleDateString()` | `format(date, pattern)` from date-fns |
-
-- `new Date()` for creating a timestamp to pass to a database ORM is acceptable since the ORM needs a Date object
-- For TypeScript projects, `date-fns` is the preferred library. For other languages, use the equivalent standard library
 - All date formatting must respect user locale or configurable format preferences, never hardcode a single format
 - Every `format()` call that renders user-visible text must receive the dynamic locale from the app's locale context, never a hardcoded locale import
+- `new Date()` for creating a timestamp to pass to a database ORM is acceptable since the ORM needs a Date object
+
+The TypeScript-specific Temporal vs date-fns mapping table, mutation-blocker hook integration, and ES2026 timing details live in `rules/lang/typescript-immutability.md`.
 
 ## Locale-Aware Components
 
@@ -433,10 +330,7 @@ When code processes output from LLMs, treat it as untrusted external input.
 
 ## TypeScript 5.x Patterns
 
-- Use `using` / `await using` for resource management instead of manual try/finally. Implement `Symbol.dispose` / `Symbol.asyncDispose` on classes that manage connections, file handles, or sessions
-- Use `NoInfer<T>` on fallback parameters in generic functions to prevent type widening from the default value
-- Enable `verbatimModuleSyntax` in all new projects. Require explicit `import type` declarations
-- Enable every new strictness flag when upgrading TypeScript versions
+Moved to `rules/lang/typescript-strict.md`. Triggered on demand by `using`, `await using`, `Symbol.dispose`, `NoInfer`, `verbatimModuleSyntax`, and related keywords.
 
 ## Bisect-Friendly Commits
 
