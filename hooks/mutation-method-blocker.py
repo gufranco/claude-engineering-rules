@@ -267,6 +267,7 @@ from mutation_detectors_assignments import (
     detect_effect_ts_ref_value_assign,
     detect_mobx_observable_outside_action,
     detect_nanostores_computed_write,
+    detect_recoil_deprecation_pointer,
     detect_xstate_non_assign_context_write,
     detect_svelte_derived_reassign,
     detect_tanstack_store_state_write,
@@ -579,6 +580,7 @@ def _detect_all(
     matches.extend(detect_effect_ts_ref_value_assign(text, lang, file_path))
     matches.extend(detect_mobx_observable_outside_action(text, lang, file_path))
     matches.extend(detect_nanostores_computed_write(text, lang, file_path))
+    matches.extend(detect_recoil_deprecation_pointer(text, lang, file_path))
     matches.extend(detect_svelte_derived_reassign(text, lang, file_path))
     matches.extend(detect_tanstack_store_state_write(text, lang, file_path))
     matches.extend(detect_vue_shallow_readonly_nested_write(text, lang, file_path))
@@ -778,6 +780,7 @@ def _filter_matches(
             "effect-ts.ref-value-assign",
             "mobx.observable-outside-action",
             "nanostores.computed-write",
+            "recoil.deprecation-pointer",
             "svelte.derived-reassign",
             "tanstack.store-state-write",
             "vue.shallow-readonly-nested-write",

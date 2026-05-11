@@ -458,7 +458,6 @@ ALL_ALLOWED = (
     + YJS_FIXTURES
     + VALTIO_FIXTURES
     + JOTAI_FIXTURES
-    + RECOIL_FIXTURES
     + XSTATE_FIXTURES
     + SOLID_STORE_FIXTURES
     + NANOSTORES_FIXTURES
@@ -1037,6 +1036,85 @@ function bump() {
 
     # Assert
     assert "mobx.observable-outside-action" not in stderr
+
+
+RECOIL_DEPRECATION_FIXTURES: list[tuple[str, str]] = [
+    (
+        "recoil-named-import",
+        """import { atom } from "recoil";
+const counter = atom({ key: "counter", default: 0 });
+""",
+    ),
+    (
+        "recoil-namespace-import",
+        """import * as Recoil from "recoil";
+const a = Recoil.atom({ key: "k", default: 1 });
+""",
+    ),
+    (
+        "recoil-multi-import",
+        """import { atom, selector, useRecoilState } from 'recoil';
+const counter = atom({ key: 'counter', default: 0 });
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,snippet", RECOIL_DEPRECATION_FIXTURES, ids=lambda v: v
+)
+def test_recoil_deprecation_pointer_emitted(name, snippet, run_hook):
+    # Arrange
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "recoil.deprecation-pointer" in stderr, (
+        f"{name}: deprecation pointer not emitted\n{stderr}"
+    )
+
+
+def test_recoil_setter_mutations_remain_allowed(run_hook):
+    # Arrange
+    snippet = """import { atom, useRecoilState } from 'recoil';
+const counterState = atom({ key: 'counter', default: 0 });
+function Counter() {
+  const [count, setCount] = useRecoilState(counterState);
+  setCount(count + 1);
+}
+"""
+    payload = make_write_payload("/repo/src/state.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "recoil.deprecation-pointer" in stderr
+    forbidden = (
+        "array-mutation",
+        "collection-mutation",
+        "property-assignment",
+    )
+    for token in forbidden:
+        assert token not in stderr, (
+            f"Recoil setter mutation incorrectly flagged with {token}\n{stderr}"
+        )
+
+
+def test_recoil_deprecation_skipped_without_recoil_import(run_hook):
+    # Arrange
+    snippet = """import { atom } from "jotai";
+const counter = atom(0);
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "recoil.deprecation-pointer" not in stderr
 
 
 def test_mobx_action_callback_allowed(run_hook):

@@ -1334,6 +1334,47 @@ def detect_vue_shallow_readonly_nested_write(
     return results
 
 
+RECOIL_IMPORT_LINE_PATTERN = re.compile(
+    r"^\s*import\b[^;]*\bfrom\s+['\"]recoil['\"]"
+)
+
+
+def detect_recoil_deprecation_pointer(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Emit an info-level pointer when a file imports from `recoil`.
+
+    Recoil's last release shipped in early 2024 and Meta confirmed the
+    project is unmaintained. New code should migrate to Jotai, Zustand,
+    or Nanostores. The detector fires once at the first `from 'recoil'`
+    import line and emits an info-severity finding so authors get a
+    migration nudge without blocking the write.
+    """
+    if "recoil" not in text:
+        return []
+    fix_hint = (
+        "Recoil is unmaintained as of 2024. Migrate to Jotai (atom-based, "
+        "closest API), Zustand (store-based with simpler boilerplate), or "
+        "Nanostores (tiny, framework-agnostic). See "
+        "https://github.com/facebookexperimental/Recoil/issues for context "
+        "and https://jotai.org/docs/migrations/from-recoil for a "
+        "Recoil-to-Jotai mapping."
+    )
+    for lineno, raw, _masked in _iter_lines(text):
+        if RECOIL_IMPORT_LINE_PATTERN.match(raw):
+            return [
+                _make_match(
+                    "recoil.deprecation-pointer",
+                    lineno,
+                    0,
+                    raw,
+                    fix_hint,
+                    {"confidence": "1", "severity": "info"},
+                )
+            ]
+    return []
+
+
 MOBX_ENFORCE_ACTIONS_PATTERN = re.compile(
     r"enforceActions\s*:\s*['\"]always['\"]"
 )
