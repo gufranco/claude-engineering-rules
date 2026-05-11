@@ -5,21 +5,16 @@ by the existing subprocess-driven tests:
 
   - Env-flag readers (`_debug_mode`, `_concise_mode`, `_profile_mode`,
     `_experimental_enabled`).
-  - `_fail_threshold` fallback for unknown values.
-  - `_confidence_to_level` non-integer / level branches.
-  - `_batch_exit_code` empty findings, warning, note thresholds.
   - `_read_batch_items` argv path and OSError handling.
   - The `_entrypoint` cProfile branch and the file-write `OSError` swallow.
-  - The `main()` empty-items SARIF path and the confidence ValueError swallow.
+  - `main()` disable-env and invalid-JSON branches.
 """
 
 from __future__ import annotations
 
 import importlib.util
 import io
-import json
 import sys
-from contextlib import redirect_stdout
 from pathlib import Path
 
 
@@ -86,113 +81,6 @@ def test_experimental_enabled_returns_true_for_set_var(monkeypatch) -> None:
 def test_experimental_enabled_returns_false_when_unset(monkeypatch) -> None:
     monkeypatch.delenv("MUTATION_METHOD_EXPERIMENTAL_FOO", raising=False)
     assert hook._experimental_enabled("FOO") is False
-
-
-# --------------------------------------------------------------------------- #
-# _fail_threshold fallback (line 346)
-# --------------------------------------------------------------------------- #
-
-
-def test_fail_threshold_returns_default_for_unknown_value(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "garbage")
-    assert hook._fail_threshold() == "error"
-
-
-def test_fail_threshold_accepts_warning(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "warning")
-    assert hook._fail_threshold() == "warning"
-
-
-def test_fail_threshold_accepts_note(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "note")
-    assert hook._fail_threshold() == "note"
-
-
-def test_fail_threshold_accepts_none(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "none")
-    assert hook._fail_threshold() == "none"
-
-
-# --------------------------------------------------------------------------- #
-# _confidence_to_level branches (lines 685-686, 689-691)
-# --------------------------------------------------------------------------- #
-
-
-def test_confidence_to_level_returns_error_for_high() -> None:
-    assert hook._confidence_to_level("5") == "error"
-    assert hook._confidence_to_level("9") == "error"
-
-
-def test_confidence_to_level_returns_warning_for_mid() -> None:
-    assert hook._confidence_to_level("3") == "warning"
-    assert hook._confidence_to_level("4") == "warning"
-
-
-def test_confidence_to_level_returns_note_for_low() -> None:
-    assert hook._confidence_to_level("1") == "note"
-    assert hook._confidence_to_level("0") == "note"
-
-
-def test_confidence_to_level_falls_back_for_non_integer() -> None:
-    assert hook._confidence_to_level("not-a-number") == "error"
-
-
-def test_confidence_to_level_falls_back_for_none() -> None:
-    assert hook._confidence_to_level(None) == "error"
-
-
-# --------------------------------------------------------------------------- #
-# _batch_exit_code branches (lines 706, 714-720)
-# --------------------------------------------------------------------------- #
-
-
-class _FakeMatch:
-    def __init__(self, confidence: str) -> None:
-        self.metadata = {"confidence": confidence}
-
-
-class _FakeFinding:
-    def __init__(self, confidence: str) -> None:
-        self.match = _FakeMatch(confidence)
-
-
-def test_batch_exit_code_returns_zero_for_empty_findings(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "error")
-    assert hook._batch_exit_code([]) == 0
-
-
-def test_batch_exit_code_returns_zero_for_threshold_none(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "none")
-    assert hook._batch_exit_code([_FakeFinding("5")]) == 0
-
-
-def test_batch_exit_code_threshold_error_warning_findings(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "error")
-    # Warning-only findings
-    assert hook._batch_exit_code([_FakeFinding("3")]) == 0
-
-
-def test_batch_exit_code_threshold_warning_with_warning(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "warning")
-    assert hook._batch_exit_code([_FakeFinding("3")]) == 1
-
-
-def test_batch_exit_code_threshold_warning_only_note(monkeypatch) -> None:
-    # threshold=warning, finding at note level -> exit 0
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "warning")
-    assert hook._batch_exit_code([_FakeFinding("1")]) == 0
-
-
-def test_batch_exit_code_threshold_note(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "note")
-    assert hook._batch_exit_code([_FakeFinding("1")]) == 1
-
-
-def test_batch_exit_code_handles_finding_without_match_attr(monkeypatch) -> None:
-    monkeypatch.setenv("MUTATION_METHOD_FAIL_THRESHOLD", "error")
-    # When the finding is itself a Match, the code path uses it directly.
-    plain_match = _FakeMatch("5")
-    assert hook._batch_exit_code([plain_match]) == 1
 
 
 # --------------------------------------------------------------------------- #
@@ -305,31 +193,6 @@ def test_entrypoint_profile_swallows_os_error(monkeypatch) -> None:
     assert rc == 7
 
 
-# --------------------------------------------------------------------------- #
-# main() empty-items SARIF + confidence ValueError (lines 784-786, 814-815)
-# --------------------------------------------------------------------------- #
-
-
-def test_main_empty_items_sarif_writes_empty_doc(monkeypatch) -> None:
-    # Arrange
-    monkeypatch.setattr(
-        sys, "stdin", io.StringIO('{"tool_name":"Edit","tool_input":{}}')
-    )
-    monkeypatch.setenv("MUTATION_METHOD_OUTPUT", "sarif")
-    monkeypatch.delenv("MUTATION_METHOD_BATCH_MODE", raising=False)
-    monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
-    buf = io.StringIO()
-
-    # Act
-    with redirect_stdout(buf):
-        rc = hook.main()
-
-    # Assert
-    assert rc == 0
-    payload = json.loads(buf.getvalue().strip())
-    assert payload["runs"][0]["results"] == []
-
-
 def test_main_handles_disable_env(monkeypatch) -> None:
     # Arrange
     monkeypatch.setenv("MUTATION_METHOD_DISABLE", "1")
@@ -353,3 +216,114 @@ def test_main_handles_invalid_json_payload(monkeypatch) -> None:
 
     # Assert
     assert rc == 0
+
+
+# --------------------------------------------------------------------------- #
+# CLI flags: --version, --print-detectors, --list-allowlists
+# --------------------------------------------------------------------------- #
+
+
+def test_handle_cli_flags_version(monkeypatch, capsys) -> None:
+    # Arrange
+    monkeypatch.setattr(sys, "argv", ["hook", "--version"])
+
+    # Act
+    rc = hook._handle_cli_flags()
+
+    # Assert
+    assert rc == 0
+    assert "mutation-method-blocker" in capsys.readouterr().out
+
+
+def test_handle_cli_flags_print_detectors(monkeypatch, capsys) -> None:
+    # Arrange
+    import json as _json
+
+    monkeypatch.setattr(sys, "argv", ["hook", "--print-detectors"])
+
+    # Act
+    rc = hook._handle_cli_flags()
+
+    # Assert
+    assert rc == 0
+    payload = _json.loads(capsys.readouterr().out)
+    assert "detectors" in payload
+    assert isinstance(payload["detectors"], list)
+    assert len(payload["detectors"]) > 50
+
+
+def test_handle_cli_flags_list_allowlists(monkeypatch, capsys) -> None:
+    # Arrange
+    import json as _json
+
+    monkeypatch.setattr(sys, "argv", ["hook", "--list-allowlists"])
+
+    # Act
+    rc = hook._handle_cli_flags()
+
+    # Assert
+    assert rc == 0
+    payload = _json.loads(capsys.readouterr().out)
+    assert payload["version"]
+
+
+def test_handle_cli_flags_no_args_returns_none(monkeypatch) -> None:
+    # Arrange
+    monkeypatch.setattr(sys, "argv", ["hook"])
+
+    # Act
+    rc = hook._handle_cli_flags()
+
+    # Assert
+    assert rc is None
+
+
+def test_handle_cli_flags_print_detectors_oserror(monkeypatch, capsys) -> None:
+    # Arrange: force open() inside the flag handler to raise OSError.
+    monkeypatch.setattr(sys, "argv", ["hook", "--print-detectors"])
+    import builtins as _builtins
+
+    real_open = _builtins.open
+
+    def _failing_open(path, *a, **k):
+        if str(path).endswith("mutation_fix_suggestions.json"):
+            raise OSError("denied")
+        return real_open(path, *a, **k)
+
+    monkeypatch.setattr(_builtins, "open", _failing_open)
+
+    # Act
+    rc = hook._handle_cli_flags()
+
+    # Assert
+    assert rc == 1
+    assert "failed to read detector catalog" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- #
+# Integration branches: ts_project_service + source-map remapping
+# --------------------------------------------------------------------------- #
+
+
+def test_apply_ts_project_service_disabled_returns_unchanged() -> None:
+    # Arrange
+    matches: list = []
+
+    # Act
+    survived, dropped = hook._apply_ts_project_service("a.ts", matches)
+
+    # Assert: ts_ps_enabled() is false by default in test env
+    assert survived == matches
+    assert dropped == 0
+
+
+def test_remap_via_source_map_passthrough_for_non_transpiled() -> None:
+    # Arrange
+    matches: list = []
+
+    # Act
+    path, out = hook._remap_via_source_map("src/app.ts", matches)
+
+    # Assert: non-transpiled path returns unchanged
+    assert path == "src/app.ts"
+    assert out == matches

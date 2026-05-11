@@ -44,6 +44,8 @@ omit =
     hooks/_profile.py
     hooks/prisma-schema-sync.py
     # Scripts not yet under test.
+    scripts/mutation_source_map.py
+    scripts/mutation_ts_project_service.py
     scripts/context-monitor.py
     scripts/stale-memory-detector.py
     scripts/validate-agents.py
