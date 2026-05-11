@@ -239,6 +239,7 @@ from hook_io import block as _hio_block
 from mutation_allowlists import (
     JOTAI_CALLBACK_OPENER_PATTERN,
     collect_state_mgmt_receivers,
+    collect_svelte_state_raw_receivers,
     hit_uses_receiver,
     is_framework_receiver,
     is_hot_path,
@@ -666,6 +667,9 @@ def _is_inside_state_mgmt_scope(
     full_text = "\n".join(lines)
     yjs_receivers = {m.group(1) for m in _YJS_VAR_DECL_PATTERN.finditer(full_text)}
     hit_line = lines[hit_idx] if 0 <= hit_idx < len(lines) else ""
+    svelte_raw_receivers = collect_svelte_state_raw_receivers(full_text)
+    if svelte_raw_receivers and hit_uses_receiver(hit_line, svelte_raw_receivers):
+        return False, None
     if yjs_receivers:
         for name in yjs_receivers:
             if name and (f" {name}." in hit_line or hit_line.startswith(f"{name}.")):

@@ -24,6 +24,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from mutation_allowlists import (  # noqa: E402
     collect_state_mgmt_receivers,
+    collect_svelte_state_raw_receivers,
     is_in_state_mgmt_scope,
     is_state_mgmt_filename,
 )
@@ -506,3 +507,29 @@ def test_effect_ts_subscription_ref_recognized() -> None:
     # Assert
     assert scope is True
     assert label == "effect-ts"
+
+
+def test_svelte_state_raw_receivers_collected() -> None:
+    # Arrange
+    text = (
+        "let items = $state.raw([1, 2, 3]);\n"
+        "let active = $state(true);\n"
+        "let tags: string[] = $state.raw<string[]>([]);\n"
+    )
+
+    # Act
+    raw_receivers = collect_svelte_state_raw_receivers(text)
+
+    # Assert
+    assert raw_receivers == {"items", "tags"}
+
+
+def test_svelte_state_raw_empty_when_no_raw_decl() -> None:
+    # Arrange
+    text = "let count = $state(0);\nlet doubled = $derived(count * 2);\n"
+
+    # Act
+    raw_receivers = collect_svelte_state_raw_receivers(text)
+
+    # Assert
+    assert raw_receivers == set()
