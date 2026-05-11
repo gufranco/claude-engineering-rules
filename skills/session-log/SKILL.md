@@ -1,6 +1,7 @@
 ---
 name: session-log
 description: Session activity logger for handoff and standup. Shows what was done in the current session, including files changed, tests run, commits made, and decisions taken. Use when user says "session log", "what did we do", "session summary", "handoff notes", "standup notes", "export session", or wants a summary of current session activity for handoff or standup prep. Do NOT use for retrospectives (use /retro), checkpoints (use /checkpoint), or morning standup dashboard (use /morning).
+sensitive: true
 ---
 
 Session activity logger that builds a summary of what happened in the current session. Useful for handoff between developers, standup preparation, and session documentation.
