@@ -1,0 +1,28 @@
+{
+  "locale": "ja",
+  "blocked_header": "ブロック: インプレース変更を検出しました。ルール: ~/.claude/rules/code-style.md \"Immutability\"。",
+  "fix_references_header": "修正リファレンス:",
+  "fix_references": [
+    "配列: arr.toSorted / toReversed / toSpliced / with (ES2023) またはスプレッド構文を使用してください。",
+    "イテラブル: イテレータヘルパー (.map / .filter / .take / .drop / .toArray, ES2024) を使用してください。",
+    "グルーピング: arr.reduce + push の代わりに Object.groupBy(iter, fn) / Map.groupBy(iter, fn) (ES2024) を使用してください。",
+    "オブジェクト: { ...obj, prop: value } または分割代入の残余パターンを使用してください。",
+    "Map と Set: new Map([...m, [k, v]]) / new Set([...s, v]) を使用してください。Set のメソッド union / intersection / difference (ES2024) は非破壊的です。",
+    "Date: Temporal (ES2026, ネイティブまたは @js-temporal/polyfill) を推奨します。フォールバックとして date-fns (subMonths, addDays, setHours) を使用してください。",
+    "TypedArray のホットパス (crypto, codec, image, audio, parser, wasm, canvas, encoder, decoder, simd, webgl, pixel, hash, cipher, dsp, signal, fft, ml, tensor) は自動許可されます。",
+    "状態管理ライブラリ (Immer, Mutative, Redux Toolkit, Pinia, Vuex, MobX, Zustand+produce, Yjs, Valtio, Jotai, XState v5 assign, Solid stores, Nanostores, LegendApp, Tanstack Store, Effect-TS Data) は自動許可されます。",
+    "Vue 3.5 readonly() / shallowReadonly() と Svelte 5 $state runes は、レシーバが追跡対象の場合に自動許可されます。",
+    "フレームワークのナビゲーション (router.push, history.push, navigation.push) は自動許可されます。"
+  ],
+  "suppression_header": "抑制:",
+  "suppression_lines": [
+    "行単位: `// claude-allow-mutation -- <理由>` を追記します (理由は必須)。",
+    "ファイル単位: ファイル先頭に `// @claude-allow-mutation -- <理由>` を記述します。",
+    "標準的な ESLint および TypeScript のマーカーも認識されます。"
+  ],
+  "bypass_header": "バイパス用環境変数:",
+  "bypass_lines": [
+    "MUTATION_METHOD_DISABLE=1   完全な無効化 (まれに使用、監査ログ記録)。",
+    "MUTATION_METHOD_AST=0       正規表現のみのモード。"
+  ]
+}

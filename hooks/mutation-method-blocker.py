@@ -314,8 +314,10 @@ from suppression import (
     is_suppressed,
 )
 
-VERSION = "2.0.0"
-__version__ = "2.0.0"
+from mutation_version import VERSION as _MUTATION_VERSION
+
+VERSION = _MUTATION_VERSION
+__version__ = _MUTATION_VERSION
 PERF_BUDGET_MS = 200
 
 
@@ -1004,8 +1006,76 @@ def _read_batch_items() -> list[tuple[str, str, str, bool]]:
     return items
 
 
+def _handle_cli_flags() -> int | None:
+    """Handle introspection flags before the normal hook path.
+
+    Returns an exit code when a flag was consumed, otherwise None so
+    main() falls through to its standard payload-reading flow.
+    """
+    argv = sys.argv[1:]
+    if not argv:
+        return None
+    flag = argv[0]
+    if flag in ("--version", "-V"):
+        sys.stdout.write(f"mutation-method-blocker {VERSION}\n")
+        return 0
+    if flag == "--print-detectors":
+        import json as _json
+
+        try:
+            with open(
+                os.path.join(os.path.dirname(__file__), "mutation_fix_suggestions.json"),
+                encoding="utf-8",
+            ) as fh:
+                data = _json.load(fh)
+        except OSError as exc:
+            sys.stderr.write(f"failed to read detector catalog: {exc}\n")
+            return 1
+        codes: set[str] = set()
+        exact_map = data.get("exact", {}) if isinstance(data, dict) else {}
+        for entry in exact_map.values():
+            if isinstance(entry, dict) and entry.get("code"):
+                codes.add(str(entry["code"]))
+        cat_map = data.get("by_category", {}) if isinstance(data, dict) else {}
+        for entry in cat_map.values():
+            if isinstance(entry, dict) and entry.get("code"):
+                codes.add(str(entry["code"]))
+        sys.stdout.write(
+            _json.dumps({"version": VERSION, "detectors": sorted(codes)}, indent=2)
+        )
+        sys.stdout.write("\n")
+        return 0
+    if flag == "--list-allowlists":
+        import json as _json
+
+        sys.path.insert(
+            0,
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"),
+        )
+        try:
+            import mutation_allowlists as _aw
+        except ImportError as exc:
+            sys.stderr.write(f"failed to import allowlists: {exc}\n")
+            return 1
+        payload: dict[str, object] = {"version": VERSION}
+        for name in dir(_aw):
+            if name.startswith("_"):
+                continue
+            value = getattr(_aw, name)
+            if isinstance(value, (tuple, list, set, frozenset)) and not callable(value):
+                payload[name] = sorted(map(str, value))
+        sys.stdout.write(_json.dumps(payload, indent=2))
+        sys.stdout.write("\n")
+        return 0
+    return None
+
+
 def main() -> int:
     start_ts = time.perf_counter()
+
+    cli_exit = _handle_cli_flags()
+    if cli_exit is not None:
+        return cli_exit
 
     if os.environ.get("MUTATION_METHOD_DISABLE") == "1":
         _audit(
