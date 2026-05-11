@@ -583,6 +583,12 @@
       "code": "MMB106",
       "fix": "Yjs CRDT mutations belong inside a transaction. Wrap the write in `doc.transact(() => { ymap.set(key, value) })` so observers receive a single consolidated update and remote peers replicate the change atomically. See https://docs.yjs.dev/api/transactions.",
       "stage": 4
+    },
+    "automerge.direct-mutation": {
+      "category": "automerge",
+      "code": "MMB107",
+      "fix": "Automerge documents are frozen outside `Automerge.change`. Wrap the write in `doc = Automerge.change(doc, draft => { draft.foo = 1 })` so the mutation flows through the CRDT history and remote peers replicate the change. See https://automerge.org/docs/hello/.",
+      "stage": 4
     }
   }
 }

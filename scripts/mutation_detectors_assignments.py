@@ -1556,3 +1556,68 @@ def detect_mobx_observable_outside_action(
                 )
             )
     return results
+
+
+AUTOMERGE_DOC_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
+    r"(?::\s*[^=]+)?\s*=\s*"
+    r"(?:await\s+)?Automerge\."
+    r"(?:init|from|load|clone|change|emptyChange|applyChanges|merge)\s*\("
+)
+
+
+def detect_automerge_direct_mutation(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect direct property writes on an Automerge document binding.
+
+    Automerge documents are deeply frozen. The only legal mutation surface
+    is the proxy passed to the `Automerge.change(doc, draft => { ... })`
+    callback. Writing `doc.foo = 1` outside that callback either throws in
+    strict mode or silently no-ops on the frozen document, producing a
+    desync between local state and the CRDT history. The detector tracks
+    bindings produced by `Automerge.init`, `Automerge.from`, `Automerge.load`,
+    `Automerge.clone`, `Automerge.change`, `Automerge.emptyChange`,
+    `Automerge.applyChanges`, and `Automerge.merge`, then flags property
+    assignments on those bindings.
+    """
+    if "Automerge" not in text and "automerge" not in text:
+        return []
+    if not re.search(r"['\"]@?automerge(?:/[\w-]+)?['\"]", text):
+        return []
+    names = {m.group("name") for m in AUTOMERGE_DOC_DECL_PATTERN.finditer(text)}
+    if not names:
+        return []
+    fix_hint = (
+        "Automerge documents are frozen outside `Automerge.change`. Wrap the "
+        "write in `doc = Automerge.change(doc, draft => { draft.foo = 1 })` "
+        "so the mutation flows through the CRDT history and remote peers "
+        "replicate the change. See "
+        "https://automerge.org/docs/hello/ for the change-callback contract."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")"
+        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])+)"
+        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=|\+\+|--)"
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if AUTOMERGE_DOC_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            results.append(
+                _make_match(
+                    "automerge.direct-mutation",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "chain": m.group("chain"),
+                        "confidence": "4",
+                    },
+                )
+            )
+    return results
