@@ -626,3 +626,64 @@ def test_svelte_derived_reassignment_blocked(run_hook, label, snippet):
     # Assert
     assert code == 2, f"{label}: $derived reassignment should block\n{stderr}"
     assert "svelte.derived-reassign" in stderr or "MMB098" in stderr
+
+
+VUE_SHALLOW_READONLY_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "vue-shallow-readonly-nested-dot",
+        """import { shallowReadonly } from "vue";
+const state = shallowReadonly({ user: { name: "a" } });
+function bad() {
+  state.user.name = "b";
+}
+""",
+    ),
+    (
+        "vue-shallow-readonly-nested-compound",
+        """import { shallowReadonly } from "vue";
+const state = shallowReadonly({ counter: { value: 0 } });
+function bump() {
+  state.counter.value += 1;
+}
+""",
+    ),
+    (
+        "vue-shallow-readonly-nested-bracket",
+        """import { shallowReadonly } from "vue";
+const cfg = shallowReadonly({ map: { a: 1 } });
+function bad(key) {
+  cfg.map[key] = 2;
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), VUE_SHALLOW_READONLY_BLOCKED_FIXTURES)
+def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: nested write on shallowReadonly should block\n{stderr}"
+    assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
+
+
+def test_vue_shallow_readonly_top_level_not_flagged_by_new_detector(run_hook):
+    # Arrange
+    snippet = """import { shallowReadonly } from "vue";
+const state = shallowReadonly({ count: 0 });
+function bad() {
+  state.count = 1;
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "vue.shallow-readonly-nested-write" not in stderr

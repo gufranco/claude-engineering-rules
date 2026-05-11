@@ -1026,3 +1026,62 @@ def detect_svelte_derived_reassign(
             )
         )
     return results
+
+
+VUE_SHALLOW_READONLY_DECL_PATTERN = re.compile(
+    r"\b(?:let|const|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*shallowReadonly\s*\("
+)
+
+
+def detect_vue_shallow_readonly_nested_write(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect nested property writes against a Vue `shallowReadonly(...)` binding.
+
+    `shallowReadonly(obj)` freezes only the top level. `x.foo = v` triggers a
+    runtime warning, but `x.foo.bar = v` silently mutates the underlying
+    reactive object, defeating the contract. This detector fires on chains
+    of two or more property accesses ending in an assignment.
+    """
+    names = {
+        m.group("name") for m in VUE_SHALLOW_READONLY_DECL_PATTERN.finditer(text)
+    }
+    if not names:
+        return []
+    fix_hint = (
+        "`shallowReadonly(obj)` only freezes the top level. Nested writes "
+        "(`x.a.b = v`) silently mutate the underlying reactive object. Use "
+        "`readonly(obj)` for deep immutability, or rebuild the nested branch "
+        "with spread (`{ ...x, a: { ...x.a, b: v } }`) and assign the result "
+        "to a fresh ref. See https://vuejs.org/api/reactivity-advanced.html#shallowreadonly"
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")"
+        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])+)"
+        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if VUE_SHALLOW_READONLY_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            chain = m.group("chain")
+            access_count = chain.count(".") + chain.count("[")
+            if access_count < 2:
+                continue
+            results.append(
+                _make_match(
+                    "vue.shallow-readonly-nested-write",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "chain": chain,
+                        "confidence": "4",
+                    },
+                )
+            )
+    return results
