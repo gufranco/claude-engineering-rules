@@ -465,6 +465,9 @@ NANOSTORES_VAR_DECL_PATTERN = re.compile(
 SVELTE_RUNES_VAR_DECL_PATTERN = re.compile(
     r"\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*\$(?:state|derived)\s*[(<]"
 )
+SVELTE_STATE_RAW_VAR_DECL_PATTERN = re.compile(
+    r"\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*\$state\.raw\s*[(<]"
+)
 JOTAI_CALLBACK_OPENER_PATTERN = re.compile(r"\batomWithReducer\s*\(")
 
 SHADOW_REALM_IMPORT_PATTERN = re.compile(r"""['"]shadow-realm['"]""")
@@ -831,6 +834,16 @@ def is_framework_receiver(line: str, owner: str | None) -> bool:
     if PUSH_FRAMEWORK_PATTERN.search(line):
         return True
     return False
+
+
+def collect_svelte_state_raw_receivers(full_text: str) -> set[str]:
+    """Return variable names declared via `$state.raw(...)`.
+
+    `$state.raw` returns a non-proxied value: mutations on the receiver bypass
+    Svelte's reactivity and are surprising. Receivers listed here must NOT be
+    auto-allowed by the state-management scope, even inside a `.svelte` file.
+    """
+    return {m.group(1) for m in SVELTE_STATE_RAW_VAR_DECL_PATTERN.finditer(full_text)}
 
 
 def is_state_mgmt_filename(file_path: str) -> bool:

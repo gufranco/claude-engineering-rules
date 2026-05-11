@@ -559,3 +559,35 @@ def test_state_management_misuse_still_blocked(run_hook, label, snippet):
 
     # Assert
     assert code == 2, f"{label}: should have been blocked\n{stderr}"
+
+
+SVELTE_STATE_RAW_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "svelte-state-raw-push",
+        """let items = $state.raw<string[]>([]);
+function add(x) {
+  items.push(x);
+}
+""",
+    ),
+    (
+        "svelte-state-raw-sort",
+        """let list = $state.raw([3, 1, 2]);
+function sortAsc() {
+  list.sort();
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), SVELTE_STATE_RAW_BLOCKED_FIXTURES)
+def test_svelte_state_raw_mutations_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/lib/store.svelte.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: $state.raw mutation should block\n{stderr}"
