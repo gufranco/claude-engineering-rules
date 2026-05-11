@@ -1334,6 +1334,98 @@ def detect_vue_shallow_readonly_nested_write(
     return results
 
 
+YJS_CRDT_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
+    r"(?::\s*[^=]+)?\s*=\s*"
+    r"(?:new\s+Y\.(?:Array|Map|Text|XmlElement|XmlFragment|XmlText)\s*\(|"
+    r"[a-zA-Z_$][\w$]*\.get(?:Map|Array|Text|XmlFragment|XmlElement)\s*\()"
+)
+
+YJS_MUTATING_METHODS: tuple[str, ...] = (
+    "set",
+    "delete",
+    "clear",
+    "push",
+    "unshift",
+    "insert",
+    "applyDelta",
+    "format",
+)
+
+
+def detect_yjs_mutation_outside_transact(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect Yjs CRDT mutations that sit outside a `doc.transact(...)` scope.
+
+    Yjs bundles writes inside a transaction so observers receive a single
+    consolidated update. Mutating a Y.Map, Y.Array, or Y.Text outside a
+    transaction triggers one observer event per call and breaks the
+    atomic-update contract. The detector tracks bindings created via
+    `new Y.<Type>()` or `doc.get<Type>(...)` and flags mutating method
+    calls on those bindings when no unmatched `.transact(` opener
+    encloses the call.
+    """
+    if "yjs" not in text and "Y." not in text:
+        return []
+    names = {m.group("name") for m in YJS_CRDT_DECL_PATTERN.finditer(text)}
+    if not names:
+        return []
+    lines = text.splitlines()
+    if not lines:
+        return []
+    fix_hint = (
+        "Yjs CRDT mutations belong inside a transaction. Wrap the write in "
+        "`doc.transact(() => { ymap.set(key, value) })` so observers receive "
+        "a single consolidated update and remote peers replicate the change "
+        "atomically. See "
+        "https://docs.yjs.dev/api/transactions for the transaction contract."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    method_alt = "|".join(re.escape(m) for m in YJS_MUTATING_METHODS)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")\."
+        r"(?P<method>" + method_alt + r")\s*\("
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if YJS_CRDT_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            lookback_start = max(0, lineno - 61)
+            between_lines = lines[lookback_start : lineno]
+            between = "\n".join(between_lines)
+            between_masked = strip_strings_comments(between) if between else ""
+            inside_transact = False
+            if between_masked:
+                idx = between_masked.rfind(".transact(")
+                if idx < 0:
+                    idx = between_masked.rfind("Y.transact(")
+                if idx >= 0:
+                    scope_text = between_masked[idx:]
+                    opens = scope_text.count("(")
+                    closes = scope_text.count(")")
+                    if opens > closes:
+                        inside_transact = True
+            if inside_transact:
+                continue
+            results.append(
+                _make_match(
+                    "yjs.mutation-outside-transact",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "method": m.group("method"),
+                        "confidence": "4",
+                    },
+                )
+            )
+    return results
+
+
 RECOIL_IMPORT_LINE_PATTERN = re.compile(
     r"^\s*import\b[^;]*\bfrom\s+['\"]recoil['\"]"
 )
