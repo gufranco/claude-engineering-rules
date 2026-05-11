@@ -571,6 +571,12 @@
       "code": "MMB104",
       "fix": "MobX strict mode (`enforceActions: 'always'`) requires every observable mutation to flow through an action. Wrap the write in `runInAction(() => { store.count = 1 })` or call an `action`-decorated method. See https://mobx.js.org/configuration.html#enforceactions.",
       "stage": 4
+    },
+    "recoil.deprecation-pointer": {
+      "category": "recoil",
+      "code": "MMB105",
+      "fix": "Recoil is unmaintained as of 2024. Migrate to Jotai (atom-based, closest API), Zustand (store-based with simpler boilerplate), or Nanostores (tiny, framework-agnostic). See https://jotai.org/docs/migrations/from-recoil for a Recoil-to-Jotai mapping.",
+      "stage": 4
     }
   }
 }
