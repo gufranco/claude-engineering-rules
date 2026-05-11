@@ -1,0 +1,36 @@
+<idea-plugin>
+    <id>com.anthropic.mutationmethodblocker</id>
+    <name>Mutation Method Blocker</name>
+    <vendor email="claude-code@anthropic.com" url="https://github.com/onyxodds/dot-claude">Anthropic</vendor>
+
+    <description><![CDATA[
+        Surfaces mutation-method-blocker findings inline in JetBrains IDEs (WebStorm, IntelliJ IDEA Ultimate, PyCharm Professional with JS plugin).
+        The plugin spawns the Python hook in LSP output mode (MUTATION_METHOD_OUTPUT=lsp), parses the JSON diagnostics, and posts them as IDE inspections on the affected lines.
+    ]]></description>
+
+    <change-notes><![CDATA[
+        <h3>3.0.0</h3>
+        <ul>
+            <li>Initial scaffolding. Uses WebStorm 2024.1+ LSP support.</li>
+            <li>Reads MUTATION_METHOD_HOOK_PATH or falls back to the bundled hook.</li>
+        </ul>
+    ]]></change-notes>
+
+    <idea-version since-build="241" until-build="251.*"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>JavaScript</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+            language="TypeScript"
+            implementationClass="com.anthropic.mutationblocker.MutationMethodAnnotator"/>
+        <externalAnnotator
+            language="JavaScript"
+            implementationClass="com.anthropic.mutationblocker.MutationMethodAnnotator"/>
+        <projectConfigurable
+            instance="com.anthropic.mutationblocker.MutationMethodConfigurable"
+            displayName="Mutation Method Blocker"
+            id="com.anthropic.mutationblocker.configurable"/>
+    </extensions>
+</idea-plugin>
