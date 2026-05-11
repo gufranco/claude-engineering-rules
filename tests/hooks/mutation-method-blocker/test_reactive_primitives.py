@@ -276,6 +276,39 @@ def test_solid_store_with_produce_recognized() -> None:
     assert label in ("solid-produce", "solid-store")
 
 
+def test_solid_reconcile_distinct_from_produce() -> None:
+    # Arrange
+    text = (
+        'import { createStore, reconcile } from "solid-js/store";\n'
+        "const [state, setState] = createStore({ items: [] });\n"
+        "setState(reconcile(nextFromServer));\n"
+    )
+
+    # Act
+    scope, label = is_in_state_mgmt_scope(text, "comp.tsx")
+
+    # Assert
+    assert scope is True
+    assert label == "solid-reconcile"
+
+
+def test_solid_produce_label_when_both_present() -> None:
+    # Arrange
+    text = (
+        'import { createStore, produce, reconcile } from "solid-js/store";\n'
+        "const [state, setState] = createStore({ items: [] });\n"
+        "setState(produce(s => { s.items.push(item); }));\n"
+        "setState(reconcile(nextFromServer));\n"
+    )
+
+    # Act
+    scope, label = is_in_state_mgmt_scope(text, "comp.tsx")
+
+    # Assert
+    assert scope is True
+    assert label == "solid-produce"
+
+
 def test_tc39_signals_proposal_recognized() -> None:
     # Arrange
     text = (
