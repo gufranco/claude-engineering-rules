@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://anthropic.com/.claude/schemas/mutation-budget.schema.json",
+  "title": "Per-project mutation suppression budget",
+  "description": "Schema for `<project-root>/.claude/mutation-budget.yml` (or .json). Caps the number of `@claude-allow-mutation` markers a project can carry so suppression debt cannot grow silently. The `scripts/mutation_budget_check.py` script walks the project, counts markers per detector category, and exits non-zero when any cap is exceeded. CI invokes this script on every PR.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "total"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Always 1 for the v2.x hook series."
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum number of `@claude-allow-mutation` and `claude-allow-mutation` markers allowed across the entire project. Counted across `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs` files. Files inside `node_modules`, `dist`, `build`, `out`, `.next`, `.nuxt` are excluded by default."
+    },
+    "per_detector": {
+      "type": "object",
+      "description": "Optional per-category caps. Keys are detector prefixes (e.g. `array`, `collection`, `date`). The script reads the trailing `-- <reason>` of every marker and counts hits whose nearby line carries a detector hint. Caps default to the value of `total` when not specified.",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "include": {
+      "type": "array",
+      "description": "Glob patterns for files to include. When omitted, all `.js`/`.ts`/`.jsx`/`.tsx`/`.mjs`/`.cjs` files are scanned.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "exclude": {
+      "type": "array",
+      "description": "Glob patterns for files to exclude. Defaults: `**/node_modules/**`, `**/dist/**`, `**/build/**`, `**/out/**`, `**/.next/**`, `**/.nuxt/**`, `**/coverage/**`.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "grace_period_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 365,
+      "description": "Number of days a newly-added marker is exempt from the budget. Lets a team land emergency suppressions and pay them down within a window. The script reads `git blame` to age each marker; when git history is missing, the marker counts immediately."
+    },
+    "require_justification": {
+      "type": "boolean",
+      "default": true,
+      "description": "When true, the script fails for any marker missing the `-- <reason>` trailer. Mirrors the runtime hook's behavior."
+    },
+    "report_format": {
+      "type": "string",
+      "enum": ["text", "json", "sarif"],
+      "default": "text",
+      "description": "Output format. `text` for terminals, `json` for downstream tooling, `sarif` for GitHub code scanning upload."
+    }
+  }
+}
