@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -55,7 +56,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="docker-context-guard", decision="block", tool="Bash", reason="docker context use without scope", command_excerpt=command[:240])
+        _audit(
+            hook="docker-context-guard",
+            decision="block",
+            tool="Bash",
+            reason="docker context use without scope",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     sys.exit(0)

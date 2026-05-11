@@ -19,7 +19,9 @@ import time
 
 LOG_PATH = os.path.expanduser("~/.claude/logs/hooks.log")
 TAIL_BYTES = 64 * 1024
-MAX_AGE_SECONDS = 6 * 60 * 60  # only consider entries from last 6 hours when no session id
+MAX_AGE_SECONDS = (
+    6 * 60 * 60
+)  # only consider entries from last 6 hours when no session id
 
 
 def _session_id() -> str:
@@ -107,7 +109,13 @@ def main() -> int:
             parts.append(f"{blocks} block(s)")
         if bypasses:
             parts.append(f"{bypasses} bypass(es)")
-        msg = "[retro] " + " and ".join(parts) + " this session" + suffix + ". Run /retro to propose upstream fixes."
+        msg = (
+            "[retro] "
+            + " and ".join(parts)
+            + " this session"
+            + suffix
+            + ". Run /retro to propose upstream fixes."
+        )
         print(msg, file=sys.stderr)
         _mark_shown()
         return 0

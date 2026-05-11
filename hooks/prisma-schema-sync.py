@@ -31,11 +31,14 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
 
-MIGRATION_PATH_RE = re.compile(r"/prisma/migrations/[^/]+/migration\.sql$", re.IGNORECASE)
+MIGRATION_PATH_RE = re.compile(
+    r"/prisma/migrations/[^/]+/migration\.sql$", re.IGNORECASE
+)
 
 
 def is_prisma_migration(path: str) -> bool:
@@ -184,15 +187,15 @@ def analyze(sql: str, schema_text: str) -> list[str]:
         kind = "@@unique" if is_unique else "@@index"
         if name not in target:
             findings.append(
-                f"CREATE {'UNIQUE ' if is_unique else ''}INDEX \"{name}\" has no "
-                f"matching {kind}(map: \"{name}\") in schema.prisma"
+                f'CREATE {"UNIQUE " if is_unique else ""}INDEX "{name}" has no '
+                f'matching {kind}(map: "{name}") in schema.prisma'
             )
 
     for m in DROP_INDEX_RE.finditer(sql):
         name = m.group("name")
         if name in schema_idx or name in schema_unq:
             findings.append(
-                f"DROP INDEX \"{name}\" but schema.prisma still declares it; "
+                f'DROP INDEX "{name}" but schema.prisma still declares it; '
                 f"remove the matching @@index/@@unique entry"
             )
 
@@ -202,13 +205,13 @@ def analyze(sql: str, schema_text: str) -> list[str]:
         model_name = table_to_model.get(table)
         if model_name is None:
             findings.append(
-                f"ALTER TABLE \"{table}\" ADD COLUMN \"{col}\" but no model "
-                f"maps to table \"{table}\" in schema.prisma"
+                f'ALTER TABLE "{table}" ADD COLUMN "{col}" but no model '
+                f'maps to table "{table}" in schema.prisma'
             )
             continue
         if col not in models[model_name]["fields"]:
             findings.append(
-                f"ALTER TABLE \"{table}\" ADD COLUMN \"{col}\" has no matching "
+                f'ALTER TABLE "{table}" ADD COLUMN "{col}" has no matching '
                 f"field on model {model_name}"
             )
 
@@ -218,7 +221,7 @@ def analyze(sql: str, schema_text: str) -> list[str]:
         model_name = table_to_model.get(table)
         if model_name and col in models[model_name]["fields"]:
             findings.append(
-                f"ALTER TABLE \"{table}\" DROP COLUMN \"{col}\" but field still "
+                f'ALTER TABLE "{table}" DROP COLUMN "{col}" but field still '
                 f"present on model {model_name}; remove from schema.prisma"
             )
 
@@ -226,15 +229,14 @@ def analyze(sql: str, schema_text: str) -> list[str]:
         table = m.group("table")
         if table not in schema_tables:
             findings.append(
-                f"CREATE TABLE \"{table}\" but no model in schema.prisma maps "
-                f"to it"
+                f'CREATE TABLE "{table}" but no model in schema.prisma maps to it'
             )
 
     for m in DROP_TABLE_RE.finditer(sql):
         table = m.group("table")
         if table in schema_tables:
             findings.append(
-                f"DROP TABLE \"{table}\" but model {table_to_model[table]} still "
+                f'DROP TABLE "{table}" but model {table_to_model[table]} still '
                 f"present in schema.prisma; remove the model block"
             )
 
@@ -268,7 +270,11 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 def main() -> int:
     if os.environ.get("PRISMA_SCHEMA_SYNC_DISABLE") == "1":
-        _audit(hook="prisma-schema-sync", decision="bypass", bypass_env="PRISMA_SCHEMA_SYNC_DISABLE")
+        _audit(
+            hook="prisma-schema-sync",
+            decision="bypass",
+            bypass_env="PRISMA_SCHEMA_SYNC_DISABLE",
+        )
         return 0
 
     try:
@@ -309,7 +315,7 @@ def main() -> int:
         "Blocked: Prisma migration is out of sync with schema.prisma. "
         "Rule: ~/.claude/rules/lang/prisma-migrations.md.\n"
         + "\n".join(all_findings)
-        + "\n\nFix: every CREATE INDEX needs @@index(..., map: \"<name>\") on the model. "
+        + '\n\nFix: every CREATE INDEX needs @@index(..., map: "<name>") on the model. '
         "Every ADD COLUMN needs a model field. Every DROP must remove the schema entry too. "
         "Verify with: prisma migrate diff --from-schema-datamodel <schema> "
         "--to-migrations <dir> --exit-code\n"

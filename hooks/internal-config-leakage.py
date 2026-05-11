@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -51,13 +52,28 @@ PUBLISHING_BASH_PATTERNS = [
 
 LEAK_PATTERNS = [
     (re.compile(r"~/\.claude\b"), "~/.claude path reference"),
-    (re.compile(r"\.claude/(?:rules|standards|checklists|skills|hooks)/"), ".claude/<dir>/ reference"),
-    (re.compile(r"\b(?:rules|standards|checklists)/[a-z0-9_\-]+\.md\b"), "internal markdown reference"),
+    (
+        re.compile(r"\.claude/(?:rules|standards|checklists|skills|hooks)/"),
+        ".claude/<dir>/ reference",
+    ),
+    (
+        re.compile(r"\b(?:rules|standards|checklists)/[a-z0-9_\-]+\.md\b"),
+        "internal markdown reference",
+    ),
     (re.compile(r"\bchecklist\.md\b"), "checklist.md reference"),
     (re.compile(r"\brules/index\.yml\b"), "rules/index.yml reference"),
-    (re.compile(r"\bcategor(?:y|ies)\s*#?\s*\d+\b", re.IGNORECASE), "category number reference"),
-    (re.compile(r"\bcat\.?\s*\d+\b(?!\s*(?:bytes|MB|KB|GB|files|items))"), "cat <n> shorthand"),
-    (re.compile(r"checklist[s]?\s+(?:item|category)", re.IGNORECASE), "checklist item/category mention"),
+    (
+        re.compile(r"\bcategor(?:y|ies)\s*#?\s*\d+\b", re.IGNORECASE),
+        "category number reference",
+    ),
+    (
+        re.compile(r"\bcat\.?\s*\d+\b(?!\s*(?:bytes|MB|KB|GB|files|items))"),
+        "cat <n> shorthand",
+    ),
+    (
+        re.compile(r"checklist[s]?\s+(?:item|category)", re.IGNORECASE),
+        "checklist item/category mention",
+    ),
 ]
 
 SKIPPED_DOCS = (
@@ -96,7 +112,11 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
         c = tool_input.get("new_string", "")
         if isinstance(c, str):
             out.append((fp, "new_string", c))
-    elif tool == "MultiEdit" and fp.lower().endswith(".md") and not is_skipped_md_path(fp):
+    elif (
+        tool == "MultiEdit"
+        and fp.lower().endswith(".md")
+        and not is_skipped_md_path(fp)
+    ):
         for i, edit in enumerate(tool_input.get("edits", []) or []):
             if isinstance(edit, dict):
                 c = edit.get("new_string", "")
@@ -119,7 +139,11 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("CONFIG_LEAKAGE_DISABLE") == "1":
-        _audit(hook="internal-config-leakage", decision="bypass", bypass_env="CONFIG_LEAKAGE_DISABLE")
+        _audit(
+            hook="internal-config-leakage",
+            decision="bypass",
+            bypass_env="CONFIG_LEAKAGE_DISABLE",
+        )
         return 0
 
     try:
@@ -146,7 +170,7 @@ def main() -> int:
 
     print(
         "Blocked: internal Claude config leaking into external output. "
-        "Rule: ~/.claude/standards/code-review.md \"No Internal Config Leakage\".\n"
+        'Rule: ~/.claude/standards/code-review.md "No Internal Config Leakage".\n'
         + "\n".join(findings)
         + "\n\nFix: rewrite the message so it reads as if a human engineer wrote it. State the "
         "engineering reason directly. Never reference `~/.claude/`, rule files, checklist categories, "
@@ -154,7 +178,13 @@ def main() -> int:
         "Bypass (when writing about the config itself): set CONFIG_LEAKAGE_DISABLE=1.",
         file=sys.stderr,
     )
-    _audit(hook="internal-config-leakage", decision="block", tool=tool, reason="claude config leakage", command_excerpt=" | ".join(findings)[:240] if findings else None)
+    _audit(
+        hook="internal-config-leakage",
+        decision="block",
+        tool=tool,
+        reason="claude config leakage",
+        command_excerpt=" | ".join(findings)[:240] if findings else None,
+    )
     return 2
 
 

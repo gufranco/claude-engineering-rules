@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -82,7 +83,11 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("PRISMA_RAW_SQL_DISABLE") == "1":
-        _audit(hook="prisma-raw-sql-blocker", decision="bypass", bypass_env="PRISMA_RAW_SQL_DISABLE")
+        _audit(
+            hook="prisma-raw-sql-blocker",
+            decision="bypass",
+            bypass_env="PRISMA_RAW_SQL_DISABLE",
+        )
         return 0
 
     try:
@@ -103,21 +108,29 @@ def main() -> int:
             continue
         hits = find(text)
         if hits:
-            findings.append(f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}")
+            findings.append(
+                f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
+            )
 
     if not findings:
         return 0
 
     print(
         "Blocked: Prisma raw SQL is banned in application code. "
-        "Rule: ~/.claude/rules/code-style.md \"No raw SQL\".\n"
+        'Rule: ~/.claude/rules/code-style.md "No raw SQL".\n'
         + "\n".join(findings)
         + "\n\nFix: express the query using Prisma's typed methods "
         "(findMany, updateMany, createMany, etc.). Raw SQL is only allowed in migration files.\n"
         "Bypass (when there is genuinely no Prisma equivalent): set PRISMA_RAW_SQL_DISABLE=1.",
         file=sys.stderr,
     )
-    _audit(hook="prisma-raw-sql-blocker", decision="block", tool=tool, reason="raw SQL outside migration", command_excerpt=" | ".join(findings)[:240] if findings else None)
+    _audit(
+        hook="prisma-raw-sql-blocker",
+        decision="block",
+        tool=tool,
+        reason="raw SQL outside migration",
+        command_excerpt=" | ".join(findings)[:240] if findings else None,
+    )
     return 2
 
 

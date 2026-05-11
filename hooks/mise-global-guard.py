@@ -35,19 +35,16 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
 
 # `mise use --global ...` or `mise use -g ...` — writes to ~/.config/mise/config.toml
-MISE_USE_GLOBAL = re.compile(
-    r"\bmise\s+use\b[^|;&]*\s(?:--global\b|-g\b)"
-)
+MISE_USE_GLOBAL = re.compile(r"\bmise\s+use\b[^|;&]*\s(?:--global\b|-g\b)")
 
 # `mise unuse --global ...` or `mise unuse -g ...` — removes from global config
-MISE_UNUSE_GLOBAL = re.compile(
-    r"\bmise\s+unuse\b[^|;&]*\s(?:--global\b|-g\b)"
-)
+MISE_UNUSE_GLOBAL = re.compile(r"\bmise\s+unuse\b[^|;&]*\s(?:--global\b|-g\b)")
 
 
 def main() -> None:
@@ -72,7 +69,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="mise-global-guard", decision="block", tool="Bash", reason="mise global tool mutation", command_excerpt=command[:240])
+        _audit(
+            hook="mise-global-guard",
+            decision="block",
+            tool="Bash",
+            reason="mise global tool mutation",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     if MISE_UNUSE_GLOBAL.search(command):
@@ -85,7 +88,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="mise-global-guard", decision="block", tool="Bash", reason="mise global tool mutation", command_excerpt=command[:240])
+        _audit(
+            hook="mise-global-guard",
+            decision="block",
+            tool="Bash",
+            reason="mise global tool mutation",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     sys.exit(0)

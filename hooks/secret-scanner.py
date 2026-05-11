@@ -18,25 +18,53 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
+
 
 # Only activate for git commit commands
 COMMIT_PATTERN = re.compile(r"\bgit\s+commit\b")
 
 # Files to skip
 SKIP_EXTENSIONS = {
-    ".lock", ".lockb", ".sum", ".mod",
-    ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp",
-    ".woff", ".woff2", ".ttf", ".eot",
-    ".zip", ".tar", ".gz", ".bz2",
-    ".pdf", ".doc", ".docx",
+    ".lock",
+    ".lockb",
+    ".sum",
+    ".mod",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".svg",
+    ".webp",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".bz2",
+    ".pdf",
+    ".doc",
+    ".docx",
 }
 SKIP_FILES = {
-    ".env.example", ".env.template", ".env.sample",
-    "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
-    "bun.lock", "bun.lockb", "Cargo.lock", "go.sum",
-    "Gemfile.lock", "poetry.lock", "composer.lock",
+    ".env.example",
+    ".env.template",
+    ".env.sample",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "bun.lock",
+    "bun.lockb",
+    "Cargo.lock",
+    "go.sum",
+    "Gemfile.lock",
+    "poetry.lock",
+    "composer.lock",
 }
 SKIP_PATHS = {"node_modules/", "vendor/", ".git/", "dist/", "build/"}
 
@@ -55,7 +83,10 @@ SECRET_PATTERNS = [
     ("GitHub Fine-Grained", r"github_pat_[A-Za-z0-9_]{22,}"),
     ("GitLab Token", r"glpat-[A-Za-z0-9_-]{20,}"),
     ("Slack Token", r"xox[baprs]-[0-9a-zA-Z-]{10,}"),
-    ("Slack Webhook", r"https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[a-zA-Z0-9]+"),
+    (
+        "Slack Webhook",
+        r"https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[a-zA-Z0-9]+",
+    ),
     ("Discord Webhook", r"https://discord(?:app)?\.com/api/webhooks/\d+/[\w-]+"),
     ("Telegram Bot Token", r"\b\d{8,10}:[A-Za-z0-9_-]{35}\b"),
     ("Vercel Token", r"vercel_[A-Za-z0-9_-]{24,}"),
@@ -70,14 +101,23 @@ SECRET_PATTERNS = [
     ("SendGrid Key", r"SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}"),
     ("Twilio Key", r"SK[a-f0-9]{32}"),
     ("Mailgun Key", r"key-[a-zA-Z0-9]{32}"),
-    ("Heroku API Key", r"(?i)heroku.*[=:]\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"),
+    (
+        "Heroku API Key",
+        r"(?i)heroku.*[=:]\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    ),
     ("Private Key Header", r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
     ("JWT Token", r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+"),
     ("Generic Password", r"(?i)(?:password|passwd|pwd)\s*[=:]\s*['\"][^'\"]{8,}['\"]"),
-    ("Generic Secret", r"(?i)(?:secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{8,}['\"]"),
+    (
+        "Generic Secret",
+        r"(?i)(?:secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{8,}['\"]",
+    ),
     ("Database URL", r"(?:postgres|mysql|mongodb|redis)://[^\s'\"]+:[^\s'\"]+@"),
     ("Connection String", r"(?i)(?:server|data source)=[^;]+;.*(?:password|pwd)=[^;]+"),
-    ("Bearer Token", r"(?i)(?:authorization|bearer)\s*[:=]\s*bearer\s+[A-Za-z0-9_\-\.]+"),
+    (
+        "Bearer Token",
+        r"(?i)(?:authorization|bearer)\s*[:=]\s*bearer\s+[A-Za-z0-9_\-\.]+",
+    ),
     ("API Key Header", r"(?i)x-api-key\s*[:=]\s*[A-Za-z0-9_\-]{16,}"),
     ("Basic Auth", r"(?i)authorization\s*[:=]\s*basic\s+[A-Za-z0-9+/=]{10,}"),
 ]
@@ -103,7 +143,9 @@ def scan_staged_files():
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if result.returncode != 0:
             return []
@@ -120,7 +162,9 @@ def scan_staged_files():
         try:
             result = subprocess.run(
                 ["git", "diff", "--cached", "--", filepath],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             if result.returncode != 0:
                 continue
@@ -163,7 +207,13 @@ def main():
     report.append("\nRemove the secrets and try again.")
     report.append("If these are false positives, commit manually outside Claude Code.")
     print("\n".join(report))
-    _audit(hook="secret-scanner", decision="block", tool="Bash", reason="secret found in staged files", command_excerpt=None)
+    _audit(
+        hook="secret-scanner",
+        decision="block",
+        tool="Bash",
+        reason="secret found in staged files",
+        command_excerpt=None,
+    )
     sys.exit(2)
 
 

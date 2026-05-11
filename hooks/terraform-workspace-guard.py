@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -37,9 +38,7 @@ TF_WORKSPACE_SELECT = re.compile(
 )
 
 # `terraform workspace new <name>` — creates and switches to new workspace.
-TF_WORKSPACE_NEW = re.compile(
-    r"\bterraform\s+workspace\s+new\s+(?!--help\b|-h\b)\S+"
-)
+TF_WORKSPACE_NEW = re.compile(r"\bterraform\s+workspace\s+new\s+(?!--help\b|-h\b)\S+")
 
 
 def main() -> None:
@@ -65,7 +64,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="terraform-workspace-guard", decision="block", tool="Bash", reason="terraform workspace global switch", command_excerpt=command[:240])
+        _audit(
+            hook="terraform-workspace-guard",
+            decision="block",
+            tool="Bash",
+            reason="terraform workspace global switch",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     sys.exit(0)

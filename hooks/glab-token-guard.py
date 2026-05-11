@@ -19,29 +19,22 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
 
 # Patterns that indicate a glab CLI invocation
-GLAB_COMMAND = re.compile(
-    r"(?:^|&&|\|\||;|\|)\s*glab\s+"
-)
+GLAB_COMMAND = re.compile(r"(?:^|&&|\|\||;|\|)\s*glab\s+")
 
 # glab auth commands are exempt (needed to check status, get tokens)
-GLAB_AUTH_EXEMPT = re.compile(
-    r"(?:^|&&|\|\||;|\|)\s*glab\s+auth\s+"
-)
+GLAB_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\|)\s*glab\s+auth\s+")
 
 # GITLAB_TOKEN is set inline before the glab command
-GITLAB_TOKEN_SET = re.compile(
-    r"GITLAB_TOKEN=|export\s+GITLAB_TOKEN="
-)
+GITLAB_TOKEN_SET = re.compile(r"GITLAB_TOKEN=|export\s+GITLAB_TOKEN=")
 
 # glab auth login is always blocked (mutates global config)
-GLAB_AUTH_LOGIN = re.compile(
-    r"\bglab\s+auth\s+login\b"
-)
+GLAB_AUTH_LOGIN = re.compile(r"\bglab\s+auth\s+login\b")
 
 
 def main():
@@ -63,7 +56,13 @@ def main():
             "Check the git remote to determine the correct instance.\n"
             "See: standards/multi-account-cli.md"
         )
-        _audit(hook="glab-token-guard", decision="block", tool="Bash", reason="glab CLI without explicit GITLAB_TOKEN", command_excerpt=command[:240])
+        _audit(
+            hook="glab-token-guard",
+            decision="block",
+            tool="Bash",
+            reason="glab CLI without explicit GITLAB_TOKEN",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     # Skip if no glab command present
@@ -91,7 +90,13 @@ def main():
         "See: standards/multi-account-cli.md\n"
         f"Command: {command}"
     )
-    _audit(hook="glab-token-guard", decision="block", tool="Bash", reason="glab CLI without explicit GITLAB_TOKEN", command_excerpt=command[:240])
+    _audit(
+        hook="glab-token-guard",
+        decision="block",
+        tool="Bash",
+        reason="glab CLI without explicit GITLAB_TOKEN",
+        command_excerpt=command[:240],
+    )
     sys.exit(2)
 
 

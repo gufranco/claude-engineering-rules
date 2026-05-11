@@ -39,6 +39,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -49,11 +50,11 @@ BOX_DRAWING_RE = re.compile(r"[\u2500-\u257F]")
 
 EMOJI_RE = re.compile(
     "["
-    "\U0001F300-\U0001FAFF"  # symbols, pictographs, supplemental
-    "\U00002600-\U000027BF"  # misc symbols + dingbats
-    "\U0001F1E6-\U0001F1FF"  # regional indicator (flags)
-    "\U0000FE0F"             # variation selector-16 (emoji presentation)
-    "\U0000200D"             # zero-width joiner (used in compound emoji)
+    "\U0001f300-\U0001faff"  # symbols, pictographs, supplemental
+    "\U00002600-\U000027bf"  # misc symbols + dingbats
+    "\U0001f1e6-\U0001f1ff"  # regional indicator (flags)
+    "\U0000fe0f"  # variation selector-16 (emoji presentation)
+    "\U0000200d"  # zero-width joiner (used in compound emoji)
     "]"
 )
 
@@ -61,7 +62,7 @@ EMOJI_RE = re.compile(
 def _snippet(text: str, idx: int) -> str:
     start = max(0, idx - 40)
     end = min(len(text), idx + 41)
-    return text[start:end].replace("\n", "\u23CE")  # show newlines as a marker
+    return text[start:end].replace("\n", "\u23ce")  # show newlines as a marker
 
 
 def find_violations(text: str) -> list[tuple[str, str]]:
@@ -73,13 +74,13 @@ def find_violations(text: str) -> list[tuple[str, str]]:
 
     box_match = BOX_DRAWING_RE.search(text)
     if box_match:
-        findings.append(
-            ("box-drawing character", _snippet(text, box_match.start()))
-        )
+        findings.append(("box-drawing character", _snippet(text, box_match.start())))
 
     emoji_match = EMOJI_RE.search(text)
     if emoji_match:
-        findings.append(("emoji / decorative unicode", _snippet(text, emoji_match.start())))
+        findings.append(
+            ("emoji / decorative unicode", _snippet(text, emoji_match.start()))
+        )
 
     return findings
 
@@ -109,7 +110,11 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 def main() -> int:
     if os.environ.get("BANNED_PROSE_CHARS_DISABLE") == "1":
-        _audit(hook="banned-prose-chars", decision="bypass", bypass_env="BANNED_PROSE_CHARS_DISABLE")
+        _audit(
+            hook="banned-prose-chars",
+            decision="bypass",
+            bypass_env="BANNED_PROSE_CHARS_DISABLE",
+        )
         return 0
 
     try:
@@ -134,7 +139,7 @@ def main() -> int:
 
     print(
         "Blocked: payload contains characters banned by "
-        "~/.claude/rules/code-style.md \"Writing Style\".\n"
+        '~/.claude/rules/code-style.md "Writing Style".\n'
         + "\n".join(all_findings)
         + "\n\nFix:\n"
         "  - Replace em dashes with a period, comma, colon, or rewrite.\n"
@@ -144,7 +149,13 @@ def main() -> int:
         "set BANNED_PROSE_CHARS_DISABLE=1 in the environment.",
         file=sys.stderr,
     )
-    _audit(hook="banned-prose-chars", decision="block", tool=tool, reason="banned prose character", command_excerpt=" | ".join(all_findings)[:240] if all_findings else None)
+    _audit(
+        hook="banned-prose-chars",
+        decision="block",
+        tool=tool,
+        reason="banned prose character",
+        command_excerpt=" | ".join(all_findings)[:240] if all_findings else None,
+    )
     return 2
 
 
