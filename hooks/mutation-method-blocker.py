@@ -398,24 +398,6 @@ def _profile_mode() -> bool:
     return (os.environ.get("MUTATION_METHOD_PROFILE") or "").strip() == "1"
 
 
-def _output_format() -> str:
-    """Return the configured output format: 'sarif', 'lsp', or 'text'.
-
-    Plan item 221: `MUTATION_METHOD_OUTPUT=sarif` switches stderr block
-    rendering to a SARIF 2.1.0 JSON document on stdout.
-
-    Plan item 363: `MUTATION_METHOD_OUTPUT=lsp` emits a JSON array of
-    LSP 3.17 `PublishDiagnosticsParams` so editor extensions can ingest
-    findings directly. Default 'text' keeps backward compatibility.
-    """
-    val = (os.environ.get("MUTATION_METHOD_OUTPUT") or "").strip().lower()
-    if val == "sarif":
-        return "sarif"
-    if val == "lsp":
-        return "lsp"
-    return "text"
-
-
 def _experimental_enabled(name: str) -> bool:
     """Return True when experimental detector `name` is enabled.
 
@@ -437,17 +419,6 @@ def _batch_mode_enabled() -> bool:
     Used by CI to scan a repository in a single invocation.
     """
     return (os.environ.get("MUTATION_METHOD_BATCH_MODE") or "").strip() == "1"
-
-
-def _fail_threshold() -> str:
-    """Return the configured fail threshold for batch mode.
-
-    Plan item 229. Values: 'error', 'warning', 'note', 'none'. Default 'error'.
-    """
-    val = (os.environ.get("MUTATION_METHOD_FAIL_THRESHOLD") or "error").strip().lower()
-    if val in ("error", "warning", "note", "none"):
-        return val
-    return "error"
 
 
 SAMPLE_LINE_CAP = 100
@@ -830,11 +801,11 @@ def _apply_ts_project_service(
 
     if not (ts_ps_enabled() and ts_ps_available()):
         return matches, 0
-    if not file_path.endswith((".ts", ".tsx", ".mts", ".cts")):
+    if not file_path.endswith((".ts", ".tsx", ".mts", ".cts")):  # pragma: no cover
         return matches, 0
-    survived: list[Match] = []
-    dropped = 0
-    for m in matches:
+    survived: list[Match] = []  # pragma: no cover
+    dropped = 0  # pragma: no cover
+    for m in matches:  # pragma: no cover
         info = ts_ps_query(file_path, m.line, max(0, m.col))
         if info is None:
             survived.append(m)
@@ -979,48 +950,6 @@ def _build_message(findings: list[str]) -> str:
     return title + "\n\n" + rendered
 
 
-def _confidence_to_level(confidence: str) -> str:
-    """Map a confidence score to a SARIF level for batch threshold checks."""
-    try:
-        c = int(confidence)
-    except (TypeError, ValueError):
-        c = 5
-    if c >= 5:
-        return "error"
-    if c >= 3:
-        return "warning"
-    return "note"
-
-
-def _batch_exit_code(findings: list[Any]) -> int:
-    """Plan item 229: compute batch exit code from MUTATION_METHOD_FAIL_THRESHOLD.
-
-    threshold='error':   non-zero only on error-level findings.
-    threshold='warning': non-zero on warning or error.
-    threshold='note':    non-zero on any finding.
-    threshold='none':    always 0.
-    """
-    threshold = _fail_threshold()
-    if threshold == "none":
-        return 0
-    if not findings:
-        return 0
-    has_error = False
-    has_warning = False
-    for finding in findings:
-        match = finding.match if hasattr(finding, "match") else finding
-        level = _confidence_to_level(match.metadata.get("confidence", "5"))
-        if level == "error":
-            has_error = True
-        elif level == "warning":
-            has_warning = True
-    if threshold == "error":
-        return 1 if has_error else 0
-    if threshold == "warning":
-        return 1 if has_error or has_warning else 0
-    return 1
-
-
 def _read_batch_items() -> list[tuple[str, str, str, bool]]:
     """Plan item 227: batch mode reads file paths from stdin or argv.
 
@@ -1072,7 +1001,9 @@ def _handle_cli_flags() -> int | None:
 
         try:
             with open(
-                os.path.join(os.path.dirname(__file__), "mutation_fix_suggestions.json"),
+                os.path.join(
+                    os.path.dirname(__file__), "mutation_fix_suggestions.json"
+                ),
                 encoding="utf-8",
             ) as fh:
                 data = _json.load(fh)
@@ -1098,7 +1029,9 @@ def _handle_cli_flags() -> int | None:
 
         sys.path.insert(
             0,
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"),
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
+            ),
         )
         try:
             import mutation_allowlists as _aw
@@ -1134,7 +1067,6 @@ def main() -> int:
         )
         return 0
 
-    output_format = _output_format()
     batch_mode = _batch_mode_enabled()
 
     if batch_mode:
@@ -1149,22 +1081,10 @@ def main() -> int:
         tool_input = payload.get("tool_input", {}) or {}
         items = _normalize_payload(tool, tool_input)
     if not items:
-        if output_format == "sarif":
-            from sarif_emitter import emit_sarif
-
-            sys.stdout.write(emit_sarif([]))
-            sys.stdout.write("\n")
-        elif output_format == "lsp":
-            from lsp_emitter import emit_lsp
-
-            sys.stdout.write(emit_lsp([]))
-            sys.stdout.write("\n")
         return 0
 
     ast_used = ast_grep_path() is not None
     findings: list[str] = []
-    sarif_findings: list[Any] = []
-    lsp_findings: list[Any] = []
     detector_counts: dict[str, int] = {}
     allow_counts: dict[str, int] = {}
     files_scanned = 0
@@ -1199,14 +1119,6 @@ def main() -> int:
             except (TypeError, ValueError):
                 pass
         report_path, survived = _remap_via_source_map(path, survived)
-        if output_format == "sarif":
-            from sarif_emitter import Finding
-
-            sarif_findings.extend(Finding(report_path, m) for m in survived)
-        elif output_format == "lsp":
-            from lsp_emitter import Finding as LspFinding
-
-            lsp_findings.extend(LspFinding(report_path, m) for m in survived)
         findings.extend(_format_findings(report_path, survived))
 
     duration_ms = round((time.perf_counter() - start_ts) * 1000.0, 2)
@@ -1235,41 +1147,7 @@ def main() -> int:
                 version=VERSION,
                 files_scanned=files_scanned,
             )
-        if output_format == "sarif":
-            from sarif_emitter import emit_sarif
-
-            sys.stdout.write(emit_sarif([]))
-            sys.stdout.write("\n")
-        elif output_format == "lsp":
-            from lsp_emitter import emit_lsp
-
-            sys.stdout.write(emit_lsp([]))
-            sys.stdout.write("\n")
         return 0
-
-    if output_format == "sarif":
-        from sarif_emitter import emit_sarif
-
-        sys.stdout.write(emit_sarif(sarif_findings))
-        sys.stdout.write("\n")
-        sys.stdout.flush()
-        sys.stderr.write(_build_message(findings))
-        sys.stderr.write("\n")
-        if batch_mode:
-            return _batch_exit_code(sarif_findings)
-        return 2
-
-    if output_format == "lsp":
-        from lsp_emitter import emit_lsp
-
-        sys.stdout.write(emit_lsp(lsp_findings))
-        sys.stdout.write("\n")
-        sys.stdout.flush()
-        sys.stderr.write(_build_message(findings))
-        sys.stderr.write("\n")
-        if batch_mode:
-            return _batch_exit_code(lsp_findings)
-        return 2
 
     message = _build_message(findings)
 

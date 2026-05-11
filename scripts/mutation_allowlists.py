@@ -847,14 +847,16 @@ def is_framework_receiver(line: str, owner: str | None) -> bool:
     return False
 
 
-def collect_svelte_state_raw_receivers(full_text: str) -> set[str]:
+def collect_svelte_state_raw_receivers(full_text: str) -> frozenset[str]:
     """Return variable names declared via `$state.raw(...)`.
 
     `$state.raw` returns a non-proxied value: mutations on the receiver bypass
     Svelte's reactivity and are surprising. Receivers listed here must NOT be
     auto-allowed by the state-management scope, even inside a `.svelte` file.
     """
-    return {m.group(1) for m in SVELTE_STATE_RAW_VAR_DECL_PATTERN.finditer(full_text)}
+    return frozenset(
+        m.group(1) for m in SVELTE_STATE_RAW_VAR_DECL_PATTERN.finditer(full_text)
+    )
 
 
 def is_state_mgmt_filename(file_path: str) -> bool:
@@ -910,9 +912,9 @@ def is_in_state_mgmt_scope(window: str, file_path: str) -> tuple[bool, str | Non
     if SOLID_STORE_IMPORT_PATTERN.search(window) and SOLID_PRODUCE_PATTERN.search(
         window
     ):
-        if SOLID_RECONCILE_PATTERN.search(window) and not SOLID_PRODUCE_ONLY_PATTERN.search(
+        if SOLID_RECONCILE_PATTERN.search(
             window
-        ):
+        ) and not SOLID_PRODUCE_ONLY_PATTERN.search(window):
             return True, "solid-reconcile"
         return True, "solid-produce"
     if SOLID_STORE_IMPORT_PATTERN.search(window) and SOLID_STORE_USAGE_PATTERN.search(
