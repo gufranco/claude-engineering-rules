@@ -26,13 +26,20 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
 
 PATTERNS = [
-    re.compile(r"Co-authored-by:\s*.*\b(Claude|Anthropic|AI|GPT|Copilot|Cursor)\b", re.IGNORECASE),
-    re.compile(r"\bGenerated\s+(?:by|with)\s+(?:Claude|AI|GPT|Copilot|an?\s+AI)\b", re.IGNORECASE),
+    re.compile(
+        r"Co-authored-by:\s*.*\b(Claude|Anthropic|AI|GPT|Copilot|Cursor)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bGenerated\s+(?:by|with)\s+(?:Claude|AI|GPT|Copilot|an?\s+AI)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bAI[- ]assisted\b", re.IGNORECASE),
     re.compile(r"\bWritten\s+by\s+(?:Claude|AI|GPT)\b", re.IGNORECASE),
     re.compile(r"Authored[- ]by[- ]Claude", re.IGNORECASE),
@@ -99,7 +106,11 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 def main() -> int:
     if os.environ.get("AI_ATTRIBUTION_DISABLE") == "1":
-        _audit(hook="ai-attribution-blocker", decision="bypass", bypass_env="AI_ATTRIBUTION_DISABLE")
+        _audit(
+            hook="ai-attribution-blocker",
+            decision="bypass",
+            bypass_env="AI_ATTRIBUTION_DISABLE",
+        )
         return 0
 
     try:
@@ -131,7 +142,13 @@ def main() -> int:
         "Bypass (rare): set AI_ATTRIBUTION_DISABLE=1 in the environment.",
         file=sys.stderr,
     )
-    _audit(hook="ai-attribution-blocker", decision="block", tool=tool, reason="AI attribution detected", command_excerpt=" | ".join(findings)[:240] if findings else None)
+    _audit(
+        hook="ai-attribution-blocker",
+        decision="block",
+        tool=tool,
+        reason="AI attribution detected",
+        command_excerpt=" | ".join(findings)[:240] if findings else None,
+    )
     return 2
 
 

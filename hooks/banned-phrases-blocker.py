@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -41,31 +42,54 @@ PUBLISHING_BASH_PATTERNS = [
 ]
 
 OPENERS = [
-    "Great question!", "Sure!", "Absolutely!", "Of course!",
-    "That's a great point", "That is a great point",
-    "Perfect!", "Excellent!", "Wonderful!",
+    "Great question!",
+    "Sure!",
+    "Absolutely!",
+    "Of course!",
+    "That's a great point",
+    "That is a great point",
+    "Perfect!",
+    "Excellent!",
+    "Wonderful!",
 ]
 CLOSERS = [
     "Let me know if you need anything else",
     "Let me know if you have any questions",
-    "Hope this helps", "Hope that helps",
-    "Feel free to ask", "Feel free to reach out",
+    "Hope this helps",
+    "Hope that helps",
+    "Feel free to ask",
+    "Feel free to reach out",
     "Happy to help",
 ]
 HEDGES = [
-    "It's worth noting", "It is worth noting",
-    "It should be noted", "It's important to mention",
-    "It is important to mention", "It is important to note",
+    "It's worth noting",
+    "It is worth noting",
+    "It should be noted",
+    "It's important to mention",
+    "It is important to mention",
+    "It is important to note",
     "Keep in mind that",
 ]
 TRANSITIONS = [
-    "That said,", "With that in mind,", "Having said that,", "On that note,",
+    "That said,",
+    "With that in mind,",
+    "Having said that,",
+    "On that note,",
 ]
 FLUFF = [
-    "robust", "comprehensive", "seamless", "elegant",
-    "powerful", "streamlined", "cutting-edge", "leverage",
-    "best-in-class", "world-class", "game-changing",
-    "synergy", "synergies",
+    "robust",
+    "comprehensive",
+    "seamless",
+    "elegant",
+    "powerful",
+    "streamlined",
+    "cutting-edge",
+    "leverage",
+    "best-in-class",
+    "world-class",
+    "game-changing",
+    "synergy",
+    "synergies",
 ]
 
 
@@ -121,7 +145,11 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
         c = tool_input.get("new_string", "")
         if isinstance(c, str):
             out.append((fp, c))
-    elif tool == "MultiEdit" and fp.lower().endswith(".md") and not is_skipped_md_path(fp):
+    elif (
+        tool == "MultiEdit"
+        and fp.lower().endswith(".md")
+        and not is_skipped_md_path(fp)
+    ):
         for i, edit in enumerate(tool_input.get("edits", []) or []):
             if isinstance(edit, dict):
                 c = edit.get("new_string", "")
@@ -144,7 +172,11 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("BANNED_PHRASES_DISABLE") == "1":
-        _audit(hook="banned-phrases-blocker", decision="bypass", bypass_env="BANNED_PHRASES_DISABLE")
+        _audit(
+            hook="banned-phrases-blocker",
+            decision="bypass",
+            bypass_env="BANNED_PHRASES_DISABLE",
+        )
         return 0
 
     try:
@@ -171,7 +203,7 @@ def main() -> int:
 
     print(
         "Blocked: banned phrase detected in external output. "
-        "Rule: ~/.claude/CLAUDE.md \"Banned Phrases\".\n"
+        'Rule: ~/.claude/CLAUDE.md "Banned Phrases".\n'
         + "\n".join(findings)
         + "\n\nFix: rewrite without openers ('Great question!'), closers ('Let me know if'), "
         "hedges ('It's worth noting'), transitions ('That said,'), or fluff adjectives "
@@ -179,7 +211,13 @@ def main() -> int:
         "Bypass (when quoting someone else's text): set BANNED_PHRASES_DISABLE=1.",
         file=sys.stderr,
     )
-    _audit(hook="banned-phrases-blocker", decision="block", tool=tool, reason="banned phrase", command_excerpt=" | ".join(findings)[:240] if findings else None)
+    _audit(
+        hook="banned-phrases-blocker",
+        decision="block",
+        tool=tool,
+        reason="banned phrase",
+        command_excerpt=" | ".join(findings)[:240] if findings else None,
+    )
     return 2
 
 

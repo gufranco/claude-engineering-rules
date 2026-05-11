@@ -46,8 +46,10 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
+
 
 # Bounded log walk on push.
 PUSH_LOG_LIMIT = 200
@@ -73,12 +75,12 @@ PUSH_TRIGGER = re.compile(
 )
 
 # `git config` writes to user.*: capture for analysis.
-CONFIG_USER_WRITE = re.compile(
-    r"\bgit\s+config\b(?P<rest>[^|;&]*)"
-)
+CONFIG_USER_WRITE = re.compile(r"\bgit\s+config\b(?P<rest>[^|;&]*)")
 
 # Read-only `git config` flags.
-CONFIG_READ_FLAGS = re.compile(r"--(?:get|get-all|get-regexp|list|show-origin|show-scope)\b")
+CONFIG_READ_FLAGS = re.compile(
+    r"--(?:get|get-all|get-regexp|list|show-origin|show-scope)\b"
+)
 
 # Identity-overriding env injections on the same command line.
 ENV_AUTHOR_OVERRIDE = re.compile(
@@ -149,7 +151,9 @@ def has_local_user_block(cwd: Path) -> bool:
         if not line or line.startswith("#") or line.startswith(";"):
             continue
         if line.startswith("["):
-            in_user = line.lower().startswith("[user]") or line.lower().startswith('[user "')
+            in_user = line.lower().startswith("[user]") or line.lower().startswith(
+                '[user "'
+            )
             continue
         if in_user and ("=" in line):
             key = line.split("=", 1)[0].strip().lower()
@@ -165,8 +169,12 @@ def is_inside_repo(cwd: Path) -> bool:
 
 def block(message: str) -> None:
     sys.stderr.write(message + "\n")
-    _audit(hook="git-author-guard", decision="block", tool="Bash",
-           reason=message.split("\n", 1)[0][:120])
+    _audit(
+        hook="git-author-guard",
+        decision="block",
+        tool="Bash",
+        reason=message.split("\n", 1)[0][:120],
+    )
     sys.exit(2)
 
 
@@ -297,8 +305,11 @@ def main() -> None:
         sys.stderr.write(
             "git-author-guard: bypass active (GIT_AUTHOR_GUARD_DISABLE=1)\n"
         )
-        _audit(hook="git-author-guard", decision="bypass",
-               bypass_env="GIT_AUTHOR_GUARD_DISABLE")
+        _audit(
+            hook="git-author-guard",
+            decision="bypass",
+            bypass_env="GIT_AUTHOR_GUARD_DISABLE",
+        )
         sys.exit(0)
 
     try:

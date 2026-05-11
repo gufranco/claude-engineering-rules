@@ -33,14 +33,13 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
 
 # `gcloud config set <key> <value>` — writes to active configuration.
-GCLOUD_CONFIG_SET = re.compile(
-    r"\bgcloud\s+config\s+set\b"
-)
+GCLOUD_CONFIG_SET = re.compile(r"\bgcloud\s+config\s+set\b")
 
 # `gcloud config configurations activate <name>` — switches active config.
 GCLOUD_CONFIG_ACTIVATE = re.compile(
@@ -49,9 +48,7 @@ GCLOUD_CONFIG_ACTIVATE = re.compile(
 
 # `--configuration=<name>` flag scopes the write to a named configuration
 # instead of the active one. Allowed even on `gcloud config set`.
-GCLOUD_CONFIGURATION_FLAG = re.compile(
-    r"--configuration[\s=]\S+"
-)
+GCLOUD_CONFIGURATION_FLAG = re.compile(r"--configuration[\s=]\S+")
 
 
 def main() -> None:
@@ -76,10 +73,18 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="gcloud-config-guard", decision="block", tool="Bash", reason="gcloud config global mutation", command_excerpt=command[:240])
+        _audit(
+            hook="gcloud-config-guard",
+            decision="block",
+            tool="Bash",
+            reason="gcloud config global mutation",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
-    if GCLOUD_CONFIG_SET.search(command) and not GCLOUD_CONFIGURATION_FLAG.search(command):
+    if GCLOUD_CONFIG_SET.search(command) and not GCLOUD_CONFIGURATION_FLAG.search(
+        command
+    ):
         print(
             "BLOCKED: `gcloud config set ...` without "
             "`--configuration=<name>` writes to the active gcloud "
@@ -91,7 +96,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="gcloud-config-guard", decision="block", tool="Bash", reason="gcloud config global mutation", command_excerpt=command[:240])
+        _audit(
+            hook="gcloud-config-guard",
+            decision="block",
+            tool="Bash",
+            reason="gcloud config global mutation",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     sys.exit(0)

@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -38,9 +39,7 @@ KUBECTL_USE_CONTEXT = re.compile(
 KUBECTX_SWITCH = re.compile(
     r"(?:^|&&|\|\||;|\|)\s*kubectx\s+(?!--help\b|-h\b|--?$)[\w\.\-]+"
 )
-KUBECTX_PREVIOUS = re.compile(
-    r"(?:^|&&|\|\||;|\|)\s*kubectx\s+-\s*(?:&&|\|\||;|\||$)"
-)
+KUBECTX_PREVIOUS = re.compile(r"(?:^|&&|\|\||;|\|)\s*kubectx\s+-\s*(?:&&|\|\||;|\||$)")
 
 
 def main() -> None:
@@ -62,7 +61,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="kubectl-context-guard", decision="block", tool="Bash", reason="kubectl context global switch", command_excerpt=command[:240])
+        _audit(
+            hook="kubectl-context-guard",
+            decision="block",
+            tool="Bash",
+            reason="kubectl context global switch",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     if KUBECTX_SWITCH.search(command) or KUBECTX_PREVIOUS.search(command):
@@ -74,7 +79,13 @@ def main() -> None:
             "See: standards/multi-account-cli.md\n"
             f"Command: {command}"
         )
-        _audit(hook="kubectl-context-guard", decision="block", tool="Bash", reason="kubectl context global switch", command_excerpt=command[:240])
+        _audit(
+            hook="kubectl-context-guard",
+            decision="block",
+            tool="Bash",
+            reason="kubectl context global switch",
+            command_excerpt=command[:240],
+        )
         sys.exit(2)
 
     sys.exit(0)

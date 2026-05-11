@@ -35,18 +35,38 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
+
+
+try:
+    from suppression import line_or_prev_has_suppression  # type: ignore
+except Exception:  # pragma: no cover
+
+    def line_or_prev_has_suppression(  # type: ignore
+        lines, line_no, *, hook_marker=None
+    ):
+        return False
 
 
 JS_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rb")
 
 SKIP_SUFFIXES = (
-    ".test.ts", ".test.tsx", ".test.js", ".test.jsx",
-    ".spec.ts", ".spec.tsx", ".spec.js", ".spec.jsx",
+    ".test.ts",
+    ".test.tsx",
+    ".test.js",
+    ".test.jsx",
+    ".spec.ts",
+    ".spec.tsx",
+    ".spec.js",
+    ".spec.jsx",
 )
 SKIP_SEGMENTS = (
-    "/__tests__/", "/__test__/", "/test/", "/tests/",
+    "/__tests__/",
+    "/__test__/",
+    "/test/",
+    "/tests/",
     "/.claude/hooks/",
 )
 
@@ -112,11 +132,19 @@ def find(text: str) -> list[str]:
     for i, line in enumerate(lines):
         if not (INCR_LIKE.search(line) or GET_LIKE.search(line)):
             continue
+        if line_or_prev_has_suppression(
+            lines, i, hook_marker="@claude-allow-redis-atomicity"
+        ):
+            continue
         for j in range(i + 1, min(i + 1 + WINDOW_LINES, len(lines))):
-            window = "\n".join(lines[i:j + 1])
+            window = "\n".join(lines[i : j + 1])
             if ATOMIC_MARKERS.search(window):
                 break
             target = lines[j]
+            if line_or_prev_has_suppression(
+                lines, j, hook_marker="@claude-allow-redis-atomicity"
+            ):
+                break
             if INCR_LIKE.search(line) and EXPIRE_LIKE.search(target):
                 hits.append(
                     f"L{i + 1}->L{j + 1}: increment/setnx then expire (not atomic): "
@@ -135,7 +163,11 @@ def find(text: str) -> list[str]:
 
 def main() -> int:
     if os.environ.get("REDIS_ATOMICITY_DISABLE") == "1":
-        _audit(hook="redis-atomicity", decision="bypass", bypass_env="REDIS_ATOMICITY_DISABLE")
+        _audit(
+            hook="redis-atomicity",
+            decision="bypass",
+            bypass_env="REDIS_ATOMICITY_DISABLE",
+        )
         return 0
 
     try:
@@ -174,7 +206,13 @@ def main() -> int:
         "Bypass (when sequencing is intentional and safe): set REDIS_ATOMICITY_DISABLE=1.",
         file=sys.stderr,
     )
-    _audit(hook="redis-atomicity", decision="block", tool=tool, reason="non-atomic redis sequence", command_excerpt=" | ".join(findings)[:240] if findings else None)
+    _audit(
+        hook="redis-atomicity",
+        decision="block",
+        tool=tool,
+        reason="non-atomic redis sequence",
+        command_excerpt=" | ".join(findings)[:240] if findings else None,
+    )
     return 2
 
 

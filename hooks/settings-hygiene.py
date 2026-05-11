@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
 try:
     from audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
+
     def _audit(**_fields):  # type: ignore
         return None
 
@@ -99,7 +100,11 @@ def _check_string(s: str, blocklist: list[str]) -> str | None:
     cred_match = INLINE_CREDENTIAL_RE.search(s)
     if cred_match:
         password = cred_match.group("password")
-        if not password.startswith("${") and password not in {"", "<password>", "REPLACE_ME"}:
+        if not password.startswith("${") and password not in {
+            "",
+            "<password>",
+            "REPLACE_ME",
+        }:
             return (
                 "inline credential in connection string. "
                 f"Password literal `{password[:4]}...` should be `${{ENV_VAR}}`."
