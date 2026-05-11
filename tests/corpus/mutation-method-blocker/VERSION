@@ -1,0 +1,10 @@
+corpus_version: 1
+hook_version_min: 2.0.0
+last_regenerated: 2026-05-10
+fixture_count_target: 500
+schema:
+  - category: top-level directory under tests/corpus/mutation-method-blocker/
+  - subcategory: optional second-level directory
+  - file: .ts/.tsx/.js/.jsx fixture
+  - expectation: clean (no findings) | dirty (>=1 finding) per fixture name
+  - naming: clean.ts for negative cases, dirty.ts for positive cases
