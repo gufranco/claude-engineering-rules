@@ -367,6 +367,22 @@ def test_angular_linkedsignal_recognized() -> None:
     assert label == "angular-signals"
 
 
+def test_angular_resource_recognized() -> None:
+    # Arrange
+    text = (
+        'import { resource } from "@angular/core";\n'
+        "const userResource = resource({ loader: () => fetchUser() });\n"
+        "userResource.reload();\n"
+    )
+
+    # Act
+    scope, label = is_in_state_mgmt_scope(text, "user.component.ts")
+
+    # Assert
+    assert scope is True
+    assert label == "angular-signals"
+
+
 def test_signal_filename_allowlisted() -> None:
     # Arrange / Act / Assert
     assert is_state_mgmt_filename("src/state/user.signal.ts") is True
