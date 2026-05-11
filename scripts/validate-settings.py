@@ -79,9 +79,7 @@ def validate_mcpservers(data):
         has_command = "command" in cfg
         has_url = "url" in cfg
         if not has_command and not has_url:
-            errors.append(
-                f"  mcpServers.{name}: must have either 'command' or 'url'"
-            )
+            errors.append(f"  mcpServers.{name}: must have either 'command' or 'url'")
         if has_command and not isinstance(cfg.get("args", []), list):
             errors.append(
                 f"  mcpServers.{name}: 'args' must be a list when 'command' is set"
@@ -99,9 +97,7 @@ def validate_hooks(data):
             matcher = hook_group.get("matcher", "")
             for token in matcher.split("|") if matcher else [""]:
                 if token not in KNOWN_MATCHERS:
-                    errors.append(
-                        f"  Unknown hook matcher '{token}' in {phase}"
-                    )
+                    errors.append(f"  Unknown hook matcher '{token}' in {phase}")
 
             for hook in hook_group.get("hooks", []):
                 command = hook.get("command", "")
@@ -146,7 +142,9 @@ def main():
     )
     mcp_count = len(data.get("mcpServers", {}))
 
-    print(f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands, {mcp_count} MCP servers")
+    print(
+        f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands, {mcp_count} MCP servers"
+    )
 
     if all_errors:
         print(f"\nFAILED: {len(all_errors)} error(s) found:\n")

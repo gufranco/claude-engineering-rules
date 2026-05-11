@@ -46,10 +46,10 @@ def count_index_entries(section):
             if in_section:
                 if re.match(r"^[a-z]", line):
                     break
-                if re.match(r"^  [a-z]", line) and not line.strip().startswith(
-                    "path:"
-                ):
-                    if not line.strip().startswith("description:") and not line.strip().startswith("triggers:"):
+                if re.match(r"^  [a-z]", line) and not line.strip().startswith("path:"):
+                    if not line.strip().startswith(
+                        "description:"
+                    ) and not line.strip().startswith("triggers:"):
                         count += 1
         return count
     except FileNotFoundError:
@@ -144,7 +144,11 @@ def scan_file(filepath, counts):
         (r"all (\d+) quality categories", "checklist_categories", "quality categories"),
         (r"(?:all|full) (\d+) categories\b", "checklist_categories", "all categories"),
         (r"(\d+) checklist categories", "checklist_categories", "checklist categories"),
-        (r"(\d+) categories (?:covering|from|spanning|across)", "checklist_categories", "categories in context"),
+        (
+            r"(\d+) categories (?:covering|from|spanning|across)",
+            "checklist_categories",
+            "categories in context",
+        ),
     ]
 
     for line_num, line in enumerate(content.splitlines(), 1):
@@ -194,9 +198,7 @@ def main():
         "skills/review/reviewer-prompt.md",
         "checklists/*.md",
     ]:
-        files_to_scan.extend(
-            glob.glob(os.path.join(CLAUDE_DIR, pattern))
-        )
+        files_to_scan.extend(glob.glob(os.path.join(CLAUDE_DIR, pattern)))
 
     all_mismatches = []
     for filepath in sorted(set(files_to_scan)):
@@ -207,9 +209,7 @@ def main():
         print(f"FAILED: {len(all_mismatches)} stale reference(s) found:\n")
         for m in all_mismatches:
             print(m)
-        print(
-            "\nUpdate these references to match the derived counts above."
-        )
+        print("\nUpdate these references to match the derived counts above.")
         sys.exit(1)
     else:
         print("PASSED: All count references match source.")

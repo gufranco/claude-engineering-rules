@@ -121,9 +121,7 @@ def validate_agent_files() -> None:
 
         for field in ("name", "description", "tools"):
             if field not in meta:
-                ERRORS.append(
-                    f"agents/{filename}: missing required field '{field}'"
-                )
+                ERRORS.append(f"agents/{filename}: missing required field '{field}'")
 
 
 def validate_standard_files() -> None:

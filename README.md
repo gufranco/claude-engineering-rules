@@ -12,7 +12,7 @@
 
 ---
 
-**11** rules · **77** standards · **45** skills · **36** MCP servers · **32** hooks · **9** agents · **758** review items across **68** topics · **30,000+** lines of engineering configuration
+**11** rules · **77** standards · **45** skills · **36** MCP servers · **38** hooks · **9** agents · **774** review items across **69** topics · **30,000+** lines of engineering configuration
 
 <table>
 <tr>
@@ -164,7 +164,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | `/second-opinion` | `--mode gate/adversarial/consult` | Cross-model review via Ollama, OpenAI, or other providers |
 | `/infra` | `docker`, `terraform`, `db` | Container orchestration, IaC workflows, database migrations |
 | `/retro` | `discover`, `--curate`, `--promote` | Session retrospective, pattern extraction, rule graduation |
-| `/assessment` | -- | Architecture completeness audit against 68-category checklist |
+| `/assessment` | -- | Architecture completeness audit against 69-category checklist |
 | `/morning` | -- | Start-of-day dashboard: open PRs, pending reviews, standup prep |
 | `/incident` | -- | Incident context gathering, blameless postmortem |
 | `/guard` | `<directory>`, `off` | Directory freeze + destructive command warnings + scope enforcement |
@@ -224,7 +224,7 @@ Covers: API design, authentication, caching, database, distributed systems, fron
 | [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse (Bash/Write/Edit) | Prevents internal config references from leaking into external output |
 | [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse (Write/Edit) | Forces `IF NOT EXISTS` / `IF EXISTS` on DDL in migration files |
 | [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse (Write/Edit) | Blocks mocking own services, DB, Redis, queues in tests |
-| [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse (Write/Edit) | Blocks `.push()` and `.sort()` in JS/TS |
+| [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse (Write/Edit/MultiEdit) | Blocks 50+ in-place mutation patterns in JS/TS across 9 categories: array prototype (9 methods), bracket-string dispatch, `Map`/`Set`/`WeakMap`/`WeakSet` mutations (6), TypedArray prototype (5), property and index assignment plus compound (`+=` ×14) and increment, `Object.assign` with non-fresh target plus `defineProperty`/`defineProperties`/`setPrototypeOf` and the four `Reflect` mutators (8), `delete` operator, `Date` setters (15 methods), global mutation, parameter reassignment, and `let`-could-be-`const`. Recognizes URLSearchParams/Headers/FormData mutation. Auto-allows Immer, Mutative, Redux Toolkit, Pinia, MobX, Zustand+produce, Valtio, Jotai, Recoil (with deprecation hint), XState v5 `assign`, Solid stores, Nanostores, LegendApp State, Tanstack Store, Effect-TS Data, Vue 3.5 readonly, Svelte 5 `$state`, Yjs CRDTs, framework navigation, and TypedArray hot paths (`crypto`, `codec`, `image`, `audio`, `parser`, `wasm`, `canvas`, `encoder`, `decoder`, `simd`, `webgl`, `pixel`, `hash`, `cipher`, `dsp`, `signal`, `fft`, `ml`, `tensor`). Emits OASIS SARIF 2.1.0 with `MUTATION_METHOD_OUTPUT=sarif`. Confidence-scored 1-10 |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse (Write/Edit) | Blocks Prisma raw query escape hatches outside migrations |
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse (Write/Edit) | Forces atomic Redis sequences via Lua/MULTI |
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse (Write/Edit/MultiEdit) | Blocks settings.json edits that introduce inline credentials, absolute home paths, or blocklisted project identifiers |
@@ -260,6 +260,24 @@ Per-hook bypass env vars (e.g. `ALLOW_PROTECTED_BRANCH_PUSH=1`) keep working and
 | [`red-team`](agents/red-team.md) | Sonnet | Adversarial analysis: attack happy paths, exploit trust assumptions |
 | [`scope-drift-detector`](agents/scope-drift-detector.md) | Haiku | Compare diff against plan.md for unplanned scope |
 | [`test-scenario-generator`](agents/test-scenario-generator.md) | Sonnet | Test scenarios with priority classification and traceability |
+
+### Phase 33-40 Additions
+
+The mutation-method-blocker v3.0.0 expansion (Phases 33 through 40) added detector coverage, editor surfaces, conformance scaffolding, type-aware analysis, and operational tooling.
+
+| Area | What landed |
+|:-----|:------------|
+| Language rules | New on-demand files in [`rules/lang/`](rules/lang/): [`typescript-immutability.md`](rules/lang/typescript-immutability.md), [`typescript-types.md`](rules/lang/typescript-types.md), [`typescript-strict.md`](rules/lang/typescript-strict.md), [`prisma-migrations.md`](rules/lang/prisma-migrations.md) |
+| Detector additions | WebAssembly memory writes, `Atomics.store`/`Atomics.notify`, `DataView.set*`, private-field assignment (`#field = v`), symbol-key assignment, `static {}` initializer block mutations, AsyncIterator return/throw, Stage 3 features, `URLSearchParams`/`Headers`/`FormData` mutating methods, Date setters (16 methods) |
+| Reactive primitives | Svelte 5 `$state.raw` and `$derived` reassignment, Vue 3.5 `readonly()`/`shallowReadonly()` mutation, Effect-TS `Data.struct`/`Data.tagged`/`Data.tuple`, Nanostores, LegendApp State, Tanstack Store, Solid stores, Jotai/Recoil setters |
+| Editor integrations | [`vscode-extension/`](vscode-extension/) (LSP-backed diagnostics), [`jetbrains-plugin/`](jetbrains-plugin/) (ExternalAnnotator + Settings), [`eslint-plugin-mutation-method-blocker/`](eslint-plugin-mutation-method-blocker/) (SARIF-bridged ESLint processor), pre-commit.com / Husky / Lefthook / Biome hook docs |
+| Output formats | SARIF 2.1.0 (`MUTATION_METHOD_OUTPUT=sarif`), LSP 3.17 PublishDiagnosticsParams (`MUTATION_METHOD_OUTPUT=lsp`), default text. JSON Schemas in [`schemas/`](schemas/) |
+| Conformance & deep analysis | Whole-program tracker, ts-morph bridge, codemod, allowlist schema, confidence scoring, OTEL exporter, audit log compaction, perf budget v2 |
+| Source-map remapping | Findings against `dist/*`, `*.min.js`, `build/*`, and `.next/*` re-project to the original `src/*` line via sibling `.map` files. Best-effort, silent fallback to transpiled coordinates |
+| Suppression budget | Per-project caps at `<root>/.claude/mutation-budget.{yml,yaml,json}`. Total + per-detector limits, optional justification trailer requirement, CI enforcement via `scripts/mutation_budget_check.py` |
+| Detector tuning | Quarterly telemetry report `scripts/detector_tuning_report.py` reads audit log / OTel spans / SARIF directories, ranks detectors by allow ratio, p95 latency, and average confidence |
+| Type-aware detection | `MUTATION_METHOD_TS_PROJECT_SERVICE=1` opt-in spawns a Node helper (`scripts/ts_project_service.js`) backed by the TypeScript Project Service (TS 5.6+) to resolve `ReadonlyArray`/`ReadonlyMap`/`ReadonlySet` (skip), `URLSearchParams`/`Headers`/`FormData` (keep), and `TypedArray` subtypes (hot-path semantics) |
+| Docs | Migration guide [`docs/migrations/mutation-method-blocker-v1-to-v2.md`](docs/migrations/mutation-method-blocker-v1-to-v2.md), troubleshooting [`docs/guides/mutation-method-blocker-troubleshooting.md`](docs/guides/mutation-method-blocker-troubleshooting.md), add-detector and add-state-library guides, ADRs 001-005 |
 
 ### Workflow Decision Guide
 
@@ -323,6 +341,48 @@ Open Claude Code in any project and run:
 
 The hooks, rules, and skills activate automatically.
 
+### CI Integration
+
+Several runtime hooks double as static analyzers and can run inside CI as standalone scanners. The flagship is `mutation-method-blocker.py`, which emits OASIS SARIF 2.1.0 when `MUTATION_METHOD_OUTPUT=sarif` and reads file lists from stdin or argv when `MUTATION_METHOD_BATCH_MODE=1`.
+
+| Knob | Values | Purpose |
+|------|--------|---------|
+| `MUTATION_METHOD_OUTPUT` | `text` (default), `sarif`, `lsp` | Switches stdout from a Claude v2 envelope to SARIF JSON or LSP 3.17 PublishDiagnosticsParams |
+| `MUTATION_METHOD_BATCH_MODE` | `0` (default), `1` | Reads paths from argv or stdin instead of a Claude payload |
+| `MUTATION_METHOD_FAIL_THRESHOLD` | `error` (default), `warning`, `note`, `none` | Controls non-zero exit code in batch mode |
+| `MUTATION_METHOD_TS_PROJECT_SERVICE` | `0` (default), `1` | Spawns a Node helper using the TypeScript Project Service (TS 5.6+) for type-aware readonly / URLSearchParams / TypedArray detection. Falls back silently when Node or `typescript` is missing |
+| `MUTATION_METHOD_DEBUG` | `0` (default), `1` | Writes helper subprocess and source-map failures to stderr |
+
+`.github/workflows/mutation-method-scan.yml` is the reference workflow: collect changed JS/TS files, run the hook in batch + SARIF mode, upload to GitHub code scanning. Sample snippets for GitHub Actions, GitLab CI, and CircleCI live in the code-style guidance under "Mutation Surface". The pre-commit recipe is in `.pre-commit-hooks.yaml`.
+
+### Hook Telemetry
+
+Every blocking hook writes a structured JSON record to the shared audit log under `logs/hooks.log`. Three companion scripts turn that stream into something a human can act on:
+
+| Script | Role |
+|--------|------|
+| `scripts/audit_summarize.py` | Ad-hoc roll-up over a chosen window. Use for triaging recent activity |
+| `scripts/audit_log_summary.py` | Markdown digest with top detectors, suppressions, files, and p50/p95/p99 latency. Designed for daily run + email pipe |
+| `scripts/audit_log_compact.py` | Retention compaction: records older than `--retention-days` collapse into per-(hook, decision, day) summaries in `logs/hooks.summary.jsonl`, then drop from the live log |
+| `scripts/mutation_budget_check.py` | Enforces the per-project `.claude/mutation-budget.{yml,yaml,json}` cap on total + per-detector `@claude-allow-mutation` markers and optional justification trailers. Exit 0 in budget, 1 over, 2 invalid config |
+| `scripts/detector_tuning_report.py` | Quarterly cadence. Aggregates audit log / OTel span dump / SARIF directories and ranks detectors by allow ratio, p95 latency, and average confidence. Flags candidates with `allow_ratio > 0.5`, `p95 > 50ms`, or `avg_confidence < 3.0` |
+
+Suggested cron entries (replace the path prefix with your install location):
+
+```cron
+0 4 * * *  python3 <install>/scripts/audit_log_compact.py --retention-days 30
+0 7 * * *  python3 <install>/scripts/audit_log_summary.py --window 24h | mail -s "hook digest" $USER
+```
+
+Two opt-in env vars extend the pipeline beyond the local file:
+
+| Env var | Format | Effect |
+|---------|--------|--------|
+| `MUTATION_METHOD_OTEL_EXPORTER` | `console` or `otlp+http://host:port` | Emits one OpenTelemetry span per decision via `scripts/otel_exporter.py`. Soft-fails when `opentelemetry-api` is not installed |
+| `MUTATION_METHOD_PROFILE` | `1` | Wraps the hook in cProfile and writes the report to `logs/mutation_blocker_profile.txt`. Off by default |
+
+Audit records ship a `confidence_score` field (1-10). Below 5 means a low-signal heuristic match; 5-6 a regex match against a canonical detector; 7-10 an AST-confirmed call against a typed receiver. The same scale maps to SARIF severity: `>= 5` -> `error`, `3-4` -> `warning`, `<= 2` -> `note`.
+
 <details>
 <summary><strong>Project structure</strong></summary>
 
@@ -332,7 +392,7 @@ The hooks, rules, and skills activate automatically.
   RTK.md                 # RTK token-optimized CLI proxy documentation
   settings.json          # Permissions, hooks, MCP servers, statusline
   checklists/
-    checklist.md         # 758-item unified checklist across 68 categories
+    checklist.md         # 774-item unified checklist across 69 categories
   rules/                 # Always loaded (10 rules)
     index.yml            # Rule + standard catalog with trigger keywords
   standards/             # Loaded on demand (75 standards)

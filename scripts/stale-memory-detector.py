@@ -37,16 +37,18 @@ def check_memory_file(path: Path) -> None:
             WARNINGS.append(f"{path}: references non-existent file: {ref}")
 
     # Check for very old memory files (over 180 days)
-    age_days = (
-        __import__("time").time() - os.path.getmtime(path)
-    ) / 86400
+    age_days = (__import__("time").time() - os.path.getmtime(path)) / 86400
     if age_days > 180:
         WARNINGS.append(
             f"{path}: last modified {int(age_days)} days ago — consider reviewing for staleness"
         )
 
     # Check for empty body
-    lines = [line.strip() for line in content.split("\n") if line.strip() and not line.startswith("---") and not line.startswith("#")]
+    lines = [
+        line.strip()
+        for line in content.split("\n")
+        if line.strip() and not line.startswith("---") and not line.startswith("#")
+    ]
     if len(lines) < 2:
         WARNINGS.append(f"{path}: nearly empty — may be a stub or failed write")
 

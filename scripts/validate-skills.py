@@ -38,7 +38,7 @@ def parse_frontmatter(content: str):
         kv = re.match(r"^(\w[\w-]*):\s*(.*)$", line)
         if kv:
             fields[kv.group(1)] = kv.group(2).strip()
-    body = content[match.end():]
+    body = content[match.end() :]
     return fields, body
 
 
@@ -70,8 +70,8 @@ def validate_skill(skill_dir: str) -> list[str]:
     sensitive_match = SENSITIVE_TERMS.search(body)
     declared = fields.get("sensitive", "false").lower() in {"true", "yes", "1"}
     if sensitive_match and not declared:
-        line_num = body[:sensitive_match.start()].count("\n") + 1
-        absolute_line = content[:content.find(body)].count("\n") + line_num
+        line_num = body[: sensitive_match.start()].count("\n") + 1
+        absolute_line = content[: content.find(body)].count("\n") + line_num
         errors.append(
             f"  {rel}/SKILL.md:{absolute_line}: body mentions irreversible action "
             f"'{sensitive_match.group(0)}' but frontmatter is missing 'sensitive: true'"

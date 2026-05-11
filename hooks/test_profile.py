@@ -78,7 +78,9 @@ class ProfileSelectionTests(unittest.TestCase):
 class DisabledListTests(unittest.TestCase):
     def test_disabled_csv_short_circuits(self) -> None:
         with _EnvSandbox():
-            os.environ["CLAUDE_DISABLED_HOOKS"] = "conventional-commits,banned-phrases-blocker"
+            os.environ["CLAUDE_DISABLED_HOOKS"] = (
+                "conventional-commits,banned-phrases-blocker"
+            )
             self.assertFalse(_profile.should_run("conventional-commits"))
             self.assertFalse(_profile.should_run("banned-phrases-blocker"))
             self.assertTrue(_profile.should_run("dangerous-command-blocker"))
@@ -90,7 +92,9 @@ class DisabledListTests(unittest.TestCase):
 
     def test_disabled_list_handles_whitespace(self) -> None:
         with _EnvSandbox():
-            os.environ["CLAUDE_DISABLED_HOOKS"] = "  conventional-commits  ,  banned-phrases-blocker  "
+            os.environ["CLAUDE_DISABLED_HOOKS"] = (
+                "  conventional-commits  ,  banned-phrases-blocker  "
+            )
             self.assertFalse(_profile.should_run("conventional-commits"))
             self.assertFalse(_profile.should_run("banned-phrases-blocker"))
 
