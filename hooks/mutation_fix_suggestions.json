@@ -592,7 +592,7 @@
     },
     "async-iterator.return-throw": {
       "category": "async-iterator",
-      "code": "MMB098",
+      "code": "MMB108",
       "fix": "AsyncIterator `.return()` and `.throw()` terminate the iterator and mutate its internal state; every subsequent `.next()` resolves done. Prefer a `break` inside the `for await` loop or a try/finally that lets the runtime call the cleanup hooks. See https://github.com/tc39/proposal-async-iterator-helpers.",
       "stage": 3
     }

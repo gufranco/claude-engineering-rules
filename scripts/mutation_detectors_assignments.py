@@ -1073,7 +1073,7 @@ def detect_xstate_non_assign_context_write(
         if not m:
             continue
         lookback_start = max(0, lineno - 61)
-        between_lines = lines[lookback_start : lineno]
+        between_lines = lines[lookback_start:lineno]
         between = "\n".join(between_lines)
         between_masked = strip_strings_comments(between) if between else ""
         inside_assign = False
@@ -1177,9 +1177,7 @@ def detect_nanostores_computed_write(
         return []
     if not re.search(r"['\"]nanostores(?:/[\w/-]+)?['\"]", text):
         return []
-    names = {
-        m.group("name") for m in NANOSTORES_COMPUTED_DECL_PATTERN.finditer(text)
-    }
+    names = {m.group("name") for m in NANOSTORES_COMPUTED_DECL_PATTERN.finditer(text)}
     if not names:
         return []
     fix_hint = (
@@ -1291,9 +1289,7 @@ def detect_vue_shallow_readonly_nested_write(
     reactive object, defeating the contract. This detector fires on chains
     of two or more property accesses ending in an assignment.
     """
-    names = {
-        m.group("name") for m in VUE_SHALLOW_READONLY_DECL_PATTERN.finditer(text)
-    }
+    names = {m.group("name") for m in VUE_SHALLOW_READONLY_DECL_PATTERN.finditer(text)}
     if not names:
         return []
     fix_hint = (
@@ -1394,7 +1390,7 @@ def detect_yjs_mutation_outside_transact(
             continue
         for m in pattern.finditer(masked):
             lookback_start = max(0, lineno - 61)
-            between_lines = lines[lookback_start : lineno]
+            between_lines = lines[lookback_start:lineno]
             between = "\n".join(between_lines)
             between_masked = strip_strings_comments(between) if between else ""
             inside_transact = False
@@ -1427,9 +1423,7 @@ def detect_yjs_mutation_outside_transact(
     return results
 
 
-RECOIL_IMPORT_LINE_PATTERN = re.compile(
-    r"^\s*import\b[^;]*\bfrom\s+['\"]recoil['\"]"
-)
+RECOIL_IMPORT_LINE_PATTERN = re.compile(r"^\s*import\b[^;]*\bfrom\s+['\"]recoil['\"]")
 
 
 def detect_recoil_deprecation_pointer(
@@ -1468,9 +1462,7 @@ def detect_recoil_deprecation_pointer(
     return []
 
 
-MOBX_ENFORCE_ACTIONS_PATTERN = re.compile(
-    r"enforceActions\s*:\s*['\"]always['\"]"
-)
+MOBX_ENFORCE_ACTIONS_PATTERN = re.compile(r"enforceActions\s*:\s*['\"]always['\"]")
 MOBX_OBSERVABLE_DECL_PATTERN = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
     r"(?::\s*[^=]+)?\s*=\s*"
@@ -1525,7 +1517,7 @@ def detect_mobx_observable_outside_action(
             continue
         for m in pattern.finditer(masked):
             lookback_start = max(0, lineno - 61)
-            between_lines = lines[lookback_start : lineno]
+            between_lines = lines[lookback_start:lineno]
             between = "\n".join(between_lines)
             between_masked = strip_strings_comments(between) if between else ""
             inside_action = False

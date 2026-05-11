@@ -1228,9 +1228,7 @@ ARRAYBUFFER_RECEIVER_HINT = re.compile(
     r"\bArrayBuffer\b|new\s+ArrayBuffer\s*\(|:\s*ArrayBuffer\b"
 )
 
-OBJECT_GROUPBY_PATTERN = re.compile(
-    r"\bObject\s*\.\s*groupBy\s*\("
-)
+OBJECT_GROUPBY_PATTERN = re.compile(r"\bObject\s*\.\s*groupBy\s*\(")
 GROUPBY_BUCKET_PUSH_PATTERN = re.compile(
     r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\[\s*[^\]]+\]\s*\.push\s*\("
 )

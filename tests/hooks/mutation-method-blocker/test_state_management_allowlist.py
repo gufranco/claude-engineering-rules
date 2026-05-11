@@ -919,7 +919,9 @@ def test_tanstack_store_state_direct_write_blocked(run_hook, label, snippet):
     code, stderr = run_hook(payload)
 
     # Assert
-    assert code == 2, f"{label}: TanStack store.state direct write should block\n{stderr}"
+    assert code == 2, (
+        f"{label}: TanStack store.state direct write should block\n{stderr}"
+    )
     assert "tanstack.store-state-write" in stderr or "MMB100" in stderr
 
 
@@ -1166,9 +1168,7 @@ const counter = atom({ key: 'counter', default: 0 });
 ]
 
 
-@pytest.mark.parametrize(
-    "name,snippet", RECOIL_DEPRECATION_FIXTURES, ids=lambda v: v
-)
+@pytest.mark.parametrize("name,snippet", RECOIL_DEPRECATION_FIXTURES, ids=lambda v: v)
 def test_recoil_deprecation_pointer_emitted(name, snippet, run_hook):
     # Arrange
     payload = make_write_payload("/repo/src/store.ts", snippet)
