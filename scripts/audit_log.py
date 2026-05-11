@@ -19,6 +19,27 @@ Usage from a shell hook:
         --reason "file > 5MB" --command "$cmd"
 
 The function never raises. Logging is best-effort.
+
+Schema (spec 1.3.1):
+
+    hook                basename of the hook module emitting the record
+    decision            legacy decision label (block, allow, ...)
+    decision_class      normalized decision label, validated against
+                        `ALLOWED_DECISION_CLASSES`. When the caller passes an
+                        unknown class, the value is preserved under
+                        `original_decision_class` and the class is downgraded
+                        to "warn" so summarizers never see invalid values.
+    detector            legacy per-detector tag (free-form string)
+    detector_tag        normalized per-detector tag, truncated to
+                        `MAX_DETECTOR_TAG` characters
+    defect_pattern_tag  AI-defect taxonomy tag from rules/ai-guardrails.md,
+                        truncated to `MAX_DEFECT_PATTERN_TAG` characters
+    confidence_score    1-10 inclusive integer, clamped on write
+    reason              short human-readable reason
+    file_path           target file path when relevant
+    latency_ms          measured hook latency in milliseconds
+    suppressed          True when a suppression marker silenced a finding
+    command_excerpt     redacted, truncated command tail
 """
 
 from __future__ import annotations
@@ -37,6 +58,23 @@ LOG_PATH = os.path.join(LOG_DIR, "hooks.log")
 BACKUP_PATH = LOG_PATH + ".1"
 MAX_BYTES = 5 * 1024 * 1024
 MAX_EXCERPT = 240
+MAX_DETECTOR_TAG = 80
+MAX_DEFECT_PATTERN_TAG = 64
+
+ALLOWED_DECISION_CLASSES: frozenset[str] = frozenset(
+    {"block", "allow", "modify", "defer", "ask", "bypass", "warn", "budget_exceeded"}
+)
+
+DEFECT_PATTERN_TAGS: frozenset[str] = frozenset(
+    {
+        "plausible-hallucination",
+        "optimistic-error-handling",
+        "shallow-validation",
+        "copy-paste-drift",
+        "missing-cleanup",
+        "invented-api",
+    }
+)
 
 # High-precision token patterns. Subset of secret-scanner.py focused on
 # values that commonly appear in command lines or tool payloads.
@@ -55,7 +93,9 @@ _REDACT_PATTERNS = [
     re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+"),
     re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"),
     re.compile(r"(?:postgres|mysql|mongodb|redis)://[^\s'\"]+:[^\s'\"]+@"),
-    re.compile(r"(?i)(password|passwd|pwd|secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{6,}['\"]"),
+    re.compile(
+        r"(?i)(password|passwd|pwd|secret|token|api_key|apikey)\s*[=:]\s*['\"][^'\"]{6,}['\"]"
+    ),
 ]
 
 
@@ -84,6 +124,47 @@ def _rotate_if_needed() -> None:
         return
 
 
+def _normalize_schema(fields: dict[str, Any]) -> dict[str, Any]:
+    """Apply the structured-schema constraints from spec 1.3.1.
+
+    Caller-provided values that violate the schema are repaired in place
+    rather than dropped, so summarizers never see invalid records but
+    hooks still see their data round-trip when they read the log later.
+    """
+    out = dict(fields)
+
+    if "decision_class" in out:
+        dc = out["decision_class"]
+        if isinstance(dc, str) and dc in ALLOWED_DECISION_CLASSES:
+            pass
+        else:
+            out["original_decision_class"] = dc
+            out["decision_class"] = "warn"
+
+    if "confidence_score" in out:
+        try:
+            value = int(out["confidence_score"])
+            out["confidence_score"] = max(1, min(10, value))
+        except (TypeError, ValueError):
+            del out["confidence_score"]
+
+    if "detector_tag" in out:
+        dt = out["detector_tag"]
+        if isinstance(dt, str):
+            out["detector_tag"] = dt[:MAX_DETECTOR_TAG]
+        else:
+            del out["detector_tag"]
+
+    if "defect_pattern_tag" in out:
+        dpt = out["defect_pattern_tag"]
+        if isinstance(dpt, str):
+            out["defect_pattern_tag"] = dpt[:MAX_DEFECT_PATTERN_TAG]
+        else:
+            del out["defect_pattern_tag"]
+
+    return out
+
+
 def record(**fields: Any) -> None:
     """Append a JSON line to the audit log. Never raises."""
     if os.environ.get("CLAUDE_HOOK_AUDIT_DISABLE") == "1":
@@ -91,6 +172,7 @@ def record(**fields: Any) -> None:
     try:
         os.makedirs(LOG_DIR, exist_ok=True)
         _rotate_if_needed()
+        fields = _normalize_schema(fields)
         # Truncate command excerpts to keep lines bounded.
         if "command_excerpt" in fields and isinstance(fields["command_excerpt"], str):
             fields["command_excerpt"] = redact(fields["command_excerpt"])[:MAX_EXCERPT]
@@ -115,15 +197,35 @@ def record(**fields: Any) -> None:
 
 
 def _cli(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="Append a record to ~/.claude/logs/hooks.log")
+    parser = argparse.ArgumentParser(
+        description="Append a record to ~/.claude/logs/hooks.log"
+    )
     parser.add_argument("--hook", required=True)
-    parser.add_argument("--decision", required=True, choices=["block", "bypass", "warn", "allow"])
+    parser.add_argument(
+        "--decision", required=True, choices=["block", "bypass", "warn", "allow"]
+    )
     parser.add_argument("--level", default=None)
     parser.add_argument("--tool", default=None)
     parser.add_argument("--reason", default=None)
     parser.add_argument("--command", dest="command_excerpt", default=None)
     parser.add_argument("--bypass-env", dest="bypass_env", default=None)
     parser.add_argument("--session-id", dest="session_id", default=None)
+    parser.add_argument(
+        "--decision-class",
+        dest="decision_class",
+        default=None,
+        choices=sorted(ALLOWED_DECISION_CLASSES),
+    )
+    parser.add_argument("--detector-tag", dest="detector_tag", default=None)
+    parser.add_argument("--defect-pattern-tag", dest="defect_pattern_tag", default=None)
+    parser.add_argument(
+        "--confidence-score",
+        dest="confidence_score",
+        type=int,
+        default=None,
+    )
+    parser.add_argument("--file-path", dest="file_path", default=None)
+    parser.add_argument("--latency-ms", dest="latency_ms", type=int, default=None)
     args = parser.parse_args(argv)
     payload = {k: v for k, v in vars(args).items() if v is not None}
     record(**payload)
