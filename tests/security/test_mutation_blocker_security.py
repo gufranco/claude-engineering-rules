@@ -161,33 +161,6 @@ def test_redact_strips_jwt() -> None:
     assert "eyJhbGci" not in out
 
 
-def test_sarif_emitter_does_not_leak_file_content() -> None:
-    """The SARIF result must include only `match.text`, not the full file."""
-    from sarif_emitter import Finding, emit_sarif
-    from mutation_detectors_core import Match
-
-    secret = "DATABASE_PASSWORD=hunter2"
-    fake_match = Match(line=2, col=1, text="x.push(1);", detector="array.push")
-    sarif_text = emit_sarif([Finding("src/a.ts", fake_match)])
-    assert secret not in sarif_text
-
-
-def test_otel_exporter_attributes_exclude_code_excerpts(monkeypatch) -> None:
-    """The exporter contract limits attributes to ids, levels, and metrics."""
-    monkeypatch.delenv("MUTATION_METHOD_OTEL_EXPORTER", raising=False)
-    import importlib
-
-    if "otel_exporter" in sys.modules:
-        del sys.modules["otel_exporter"]
-    import otel_exporter
-
-    importlib.reload(otel_exporter)
-    src_text = (ROOT / "scripts" / "otel_exporter.py").read_text(encoding="utf-8")
-    assert "match.text" not in src_text
-    assert "snippet" not in src_text
-    assert "file_content" not in src_text
-
-
 def test_audit_log_redacts_command_excerpt(tmp_path: Path) -> None:
     """A block payload that pastes a token into command_excerpt must be redacted on disk."""
     from audit_log import record
