@@ -672,6 +672,58 @@ def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
     assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
 
 
+EFFECT_TS_REF_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "effect-ts-ref-value-assign",
+        """import { Effect, Ref } from "effect";
+const program = Effect.gen(function* () {
+  const ref = yield* Ref.make(0);
+  ref.value = 5;
+});
+""",
+    ),
+    (
+        "effect-ts-subscription-ref-value-assign",
+        """import { SubscriptionRef } from "effect";
+const ref = SubscriptionRef.make(0);
+function bad() {
+  ref.value = 5;
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), EFFECT_TS_REF_BLOCKED_FIXTURES)
+def test_effect_ts_ref_value_assign_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/program.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: Effect-TS Ref.value assignment should block\n{stderr}"
+    assert "effect-ts.ref-value-assign" in stderr or "MMB102" in stderr
+
+
+def test_effect_ts_ref_set_allowed(run_hook):
+    # Arrange
+    snippet = """import { Effect, Ref } from "effect";
+const program = Effect.gen(function* () {
+  const ref = yield* Ref.make(0);
+  yield* Ref.set(ref, 5);
+});
+"""
+    payload = make_write_payload("/repo/src/program.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "effect-ts.ref-value-assign" not in stderr
+
+
 NANOSTORES_COMPUTED_BLOCKED_FIXTURES: list[tuple[str, str]] = [
     (
         "nanostores-computed-set",

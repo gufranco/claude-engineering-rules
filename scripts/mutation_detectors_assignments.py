@@ -1028,6 +1028,64 @@ def detect_svelte_derived_reassign(
     return results
 
 
+EFFECT_TS_REF_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
+    r"(?:yield\*?\s+)?"
+    r"(?:Ref|SubscriptionRef|SynchronizedRef)\.make\s*\("
+)
+
+
+def detect_effect_ts_ref_value_assign(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect bare `ref.value = v` writes on Effect-TS Ref bindings.
+
+    Effect-TS Refs are opaque handles. They have no `.value` property.
+    Updates flow through `Ref.update`, `Ref.set`, `Ref.modify`, or their
+    SubscriptionRef / SynchronizedRef siblings, and must be `yield*`-ed
+    inside an `Effect.gen` generator. Writing `ref.value = v` is the
+    Vue/Preact-signals pattern leaking into an Effect-TS codebase. The
+    detector is import-gated on the Effect-TS package family.
+    """
+    if "effect" not in text:
+        return []
+    if not re.search(
+        r"['\"](?:effect|@effect/(?:io|core|data|stm)(?:/[\w/-]+)?)['\"]", text
+    ):
+        return []
+    names = {m.group("name") for m in EFFECT_TS_REF_DECL_PATTERN.finditer(text)}
+    if not names:
+        return []
+    fix_hint = (
+        "Effect-TS Ref bindings have no `.value` property. Updates go "
+        "through `Ref.update`, `Ref.set`, or `Ref.modify` and must be "
+        "`yield*`-ed inside an `Effect.gen` generator: "
+        "`yield* Ref.set(ref, next)`. See "
+        "https://effect.website/docs/state-management/ref."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")\.value"
+        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if EFFECT_TS_REF_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            results.append(
+                _make_match(
+                    "effect-ts.ref-value-assign",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {"name": m.group("name"), "confidence": "4"},
+                )
+            )
+    return results
+
+
 NANOSTORES_COMPUTED_DECL_PATTERN = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*computed\s*\("
 )
