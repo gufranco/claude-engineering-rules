@@ -535,6 +535,12 @@
       "code": "MMB098",
       "fix": "`$derived(...)` bindings are read-only. Reassigning them throws `state_unsafe_mutation` at runtime. Move the source of truth into a `$state(...)` binding and let `$derived` recompute, or wrap the computation in a function. See https://svelte.dev/docs/svelte/$derived.",
       "stage": 4
+    },
+    "vue.shallow-readonly-nested-write": {
+      "category": "vue",
+      "code": "MMB099",
+      "fix": "`shallowReadonly(obj)` only freezes the top level. Nested writes (`x.a.b = v`) silently mutate the underlying reactive object. Use `readonly(obj)` for deep immutability, or rebuild the nested branch with spread (`{ ...x, a: { ...x.a, b: v } }`) and assign the result to a fresh ref. See https://vuejs.org/api/reactivity-advanced.html#shallowreadonly.",
+      "stage": 4
     }
   }
 }
