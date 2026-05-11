@@ -264,6 +264,7 @@ from mutation_detectors_assignments import (
     detect_property_assignment,
     detect_reflect_mutations,
     detect_static_block_mutation,
+    detect_nanostores_computed_write,
     detect_svelte_derived_reassign,
     detect_tanstack_store_state_write,
     detect_vue_shallow_readonly_nested_write,
@@ -572,6 +573,7 @@ def _detect_all(
     matches.extend(detect_private_field_assignment(text, lang, file_path))
     matches.extend(detect_symbol_key_assignment(text, lang, file_path))
     matches.extend(detect_static_block_mutation(text, lang, file_path))
+    matches.extend(detect_nanostores_computed_write(text, lang, file_path))
     matches.extend(detect_svelte_derived_reassign(text, lang, file_path))
     matches.extend(detect_tanstack_store_state_write(text, lang, file_path))
     matches.extend(detect_vue_shallow_readonly_nested_write(text, lang, file_path))
@@ -767,6 +769,7 @@ def _filter_matches(
                 continue
 
         if m.detector in {
+            "nanostores.computed-write",
             "svelte.derived-reassign",
             "tanstack.store-state-write",
             "vue.shallow-readonly-nested-write",

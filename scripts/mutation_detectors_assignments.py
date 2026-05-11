@@ -1028,6 +1028,65 @@ def detect_svelte_derived_reassign(
     return results
 
 
+NANOSTORES_COMPUTED_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*computed\s*\("
+)
+
+
+def detect_nanostores_computed_write(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect mutating calls against a Nanostores computed binding.
+
+    Nanostores computed stores expose only read methods (subscribe,
+    listen, plus the read accessor). Calling write methods on a computed
+    binding bypasses the recompute contract and silently desynchronizes
+    downstream subscribers.
+    """
+    if "nanostores" not in text:
+        return []
+    if not re.search(r"['\"]nanostores(?:/[\w/-]+)?['\"]", text):
+        return []
+    names = {
+        m.group("name") for m in NANOSTORES_COMPUTED_DECL_PATTERN.finditer(text)
+    }
+    if not names:
+        return []
+    fix_hint = (
+        "Nanostores computed stores are read-only derived values. Only the "
+        "read accessors and subscription methods are public. Mutating "
+        "methods such as setKey or the value setter bypass the recompute "
+        "contract. Move the source-of-truth into an atom or map binding "
+        "and let computed recompute. See "
+        "https://github.com/nanostores/nanostores#computed-stores."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")\."
+        r"(?P<method>set|setKey|notify)\s*\("
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if NANOSTORES_COMPUTED_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            results.append(
+                _make_match(
+                    "nanostores.computed-write",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "method": m.group("method"),
+                        "confidence": "4",
+                    },
+                )
+            )
+    return results
+
+
 TANSTACK_STORE_DECL_PATTERN = re.compile(
     r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
     r"(?:new\s+Store\s*\(|createStore\s*\()"

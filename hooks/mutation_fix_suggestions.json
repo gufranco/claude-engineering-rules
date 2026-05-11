@@ -536,6 +536,12 @@
       "fix": "`$derived(...)` bindings are read-only. Reassigning them throws `state_unsafe_mutation` at runtime. Move the source of truth into a `$state(...)` binding and let `$derived` recompute, or wrap the computation in a function. See https://svelte.dev/docs/svelte/$derived.",
       "stage": 4
     },
+    "nanostores.computed-write": {
+      "category": "nanostores",
+      "code": "MMB101",
+      "fix": "Nanostores computed stores are read-only derived values. Only the read accessors and subscription methods are public. Mutating methods such as setKey or the value setter bypass the recompute contract. Move the source-of-truth into an atom or map binding and let computed recompute. See https://github.com/nanostores/nanostores#computed-stores.",
+      "stage": 4
+    },
     "tanstack.store-state-write": {
       "category": "tanstack",
       "code": "MMB100",
