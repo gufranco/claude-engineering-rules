@@ -4,6 +4,7 @@
 
 # Internal state (OAuth, sessions, feature flags)
 .claude.json
+.claude/
 .credentials.json
 
 # Session and conversation data
@@ -76,7 +77,7 @@ htmlcov/
 .nox/
 
 ################################################################################
-# Node tooling (vscode-extension, jetbrains-plugin, eslint-plugin)
+# Node tooling
 ################################################################################
 node_modules/
 *.tsbuildinfo
