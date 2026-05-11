@@ -672,6 +672,50 @@ def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
     assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
 
 
+def test_pinia_patch_callback_allows_state_mutation(run_hook):
+    # Arrange
+    snippet = """import { defineStore } from "pinia";
+const useCounter = defineStore("counter", {
+  state: () => ({ count: 0 }),
+});
+function bump() {
+  const counter = useCounter();
+  counter.$patch((state) => {
+    state.count += 1;
+  });
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code in (0, 1), f"$patch callback mutation should not block\n{stderr}"
+
+
+def test_pinia_patch_arrow_single_param_allowed(run_hook):
+    # Arrange
+    snippet = """import { defineStore } from "pinia";
+const useCounter = defineStore("counter", {
+  state: () => ({ items: [] }),
+});
+function add(item) {
+  const c = useCounter();
+  c.$patch(state => {
+    state.items.push(item);
+  });
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "array.push" not in stderr or code == 0
+
+
 XSTATE_NON_ASSIGN_BLOCKED_FIXTURES: list[tuple[str, str]] = [
     (
         "xstate-direct-context-write-in-action",
