@@ -1028,6 +1028,65 @@ def detect_svelte_derived_reassign(
     return results
 
 
+TANSTACK_STORE_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
+    r"(?:new\s+Store\s*\(|createStore\s*\()"
+)
+
+
+def detect_tanstack_store_state_write(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect direct writes against a TanStack `Store.state` property.
+
+    TanStack Store exposes `store.state` as a read-only snapshot. Updates
+    must go through `store.setState((prev) => next)`. Direct mutation like
+    `store.state.count = 1` silently bypasses subscribers and breaks
+    reactivity. The detector is import-gated to avoid false positives on
+    unrelated `store.state` shapes.
+    """
+    if "@tanstack/" not in text:
+        return []
+    if not re.search(r"['\"]@tanstack/(?:store|react-store|solid-store)['\"]", text):
+        return []
+    names = {m.group("name") for m in TANSTACK_STORE_DECL_PATTERN.finditer(text)}
+    if not names:
+        return []
+    fix_hint = (
+        "TanStack `Store.state` is a read-only snapshot. Direct writes "
+        "(`store.state.x = v`) bypass subscribers and break reactivity. "
+        "Use `store.setState((prev) => ({ ...prev, x: v }))` so the "
+        "subscription system observes the change. See "
+        "https://tanstack.com/store/latest/docs/reference/store#setstate."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")\.state"
+        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])*)"
+        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if TANSTACK_STORE_DECL_PATTERN.search(masked):
+            continue
+        for m in pattern.finditer(masked):
+            results.append(
+                _make_match(
+                    "tanstack.store-state-write",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "chain": m.group("chain"),
+                        "confidence": "4",
+                    },
+                )
+            )
+    return results
+
+
 VUE_SHALLOW_READONLY_DECL_PATTERN = re.compile(
     r"\b(?:let|const|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*shallowReadonly\s*\("
 )

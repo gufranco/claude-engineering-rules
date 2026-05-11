@@ -357,6 +357,10 @@ TANSTACK_STORE_IMPORT_PATTERN = re.compile(
     r"""['"]@tanstack/(?:store|react-store|solid-store)['"]"""
 )
 TANSTACK_STORE_USAGE_PATTERN = re.compile(r"\bnew\s+Store\s*\(|\bcreateStore\s*\(")
+TANSTACK_STORE_VAR_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
+    r"(?:new\s+Store\s*\(|createStore\s*\()"
+)
 EFFECT_DATA_IMPORT_PATTERN = re.compile(
     r"""['"](?:@effect/data|effect/Data|effect)['"]"""
 )

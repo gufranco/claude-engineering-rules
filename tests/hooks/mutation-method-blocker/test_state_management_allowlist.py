@@ -672,6 +672,58 @@ def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
     assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
 
 
+TANSTACK_STORE_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "tanstack-state-direct-write",
+        """import { Store } from "@tanstack/store";
+const store = new Store({ count: 0 });
+function bad() {
+  store.state.count = 1;
+}
+""",
+    ),
+    (
+        "tanstack-state-compound",
+        """import { createStore } from "@tanstack/react-store";
+const store = createStore({ count: 0 });
+function bump() {
+  store.state.count += 1;
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), TANSTACK_STORE_BLOCKED_FIXTURES)
+def test_tanstack_store_state_direct_write_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: TanStack store.state direct write should block\n{stderr}"
+    assert "tanstack.store-state-write" in stderr or "MMB100" in stderr
+
+
+def test_tanstack_setstate_callback_allowed(run_hook):
+    # Arrange
+    snippet = """import { Store } from "@tanstack/store";
+const store = new Store({ count: 0 });
+function bump() {
+  store.setState((prev) => ({ count: prev.count + 1 }));
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "tanstack.store-state-write" not in stderr
+
+
 def test_vue_shallow_readonly_top_level_not_flagged_by_new_detector(run_hook):
     # Arrange
     snippet = """import { shallowReadonly } from "vue";
