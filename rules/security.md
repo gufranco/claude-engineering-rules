@@ -205,7 +205,7 @@ Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangero
 | Prisma raw SQL ($queryRaw, $executeRaw, *Unsafe variants) outside migrations | Block | prisma-raw-sql-blocker | 3 |
 | console.log/warn/error/info/debug in production code (non-test, non-script) | Block | console-log-blocker | 1 |
 | Mocking internal infrastructure in tests (own services, db, redis, queues) | Block | mock-internal-blocker | 2 |
-| Array mutation: .push() and .sort() in JS/TS (router.push, stream.push exempt) | Block | mutation-method-blocker | 2 |
+| Array, collection, property/index, object utility, TypedArray, Date setter (16 methods), `delete`, global, parameter, `let`-could-be-`const`, DataView setter, two-arg Uint8Array.set, Atomics SAB write, WebAssembly Memory.grow, mutating Proxy trap, WeakRef.deref-then-mutate, FinalizationRegistry construction, private-field assignment (`#field = v`), symbol-key assignment, `static {}` block mutation, AsyncIterator return/throw, URLSearchParams/Headers/FormData mutating methods in JS/TS (Immer, Mutative, Redux Toolkit, Pinia, MobX, Zustand+produce, Valtio, Jotai, Recoil, XState v5 assign, Nanostores, LegendApp State, Tanstack Store, Solid stores, Effect-TS Data, Vue 3.5 readonly, Svelte 5 `$state`, Yjs CRDTs, framework navigation, TypedArray/WASM/codec hot paths exempt) | Block | mutation-method-blocker | 90+ |
 | TypeScript any type (as any, : any, generic with any) | Block | as-any-blocker | 5 |
 | Internal Claude config leakage in PR/commit/MD payloads | Block | internal-config-leakage | 8 |
 | Migration files missing IF NOT EXISTS / IF EXISTS on DDL | Block | migration-idempotency | 2 |
