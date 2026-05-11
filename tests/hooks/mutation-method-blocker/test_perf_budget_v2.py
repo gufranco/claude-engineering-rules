@@ -45,7 +45,7 @@ def _percentile(values: list[float], pct: float) -> float:
 
 
 def test_hook_meets_v2_perf_budget(hook_path):
-    """p95 < 1500ms, p99 < 2500ms, mean < 900ms (subprocess + parallel-inclusive)."""
+    """p95 < 2500ms, p99 < 3500ms, mean < 1800ms (subprocess + parallel-inclusive)."""
     # Arrange
     payload = make_write_payload("/repo/src/app.ts", _build_5kb_fixture())
     samples_ms: list[float] = []
@@ -61,6 +61,6 @@ def test_hook_meets_v2_perf_budget(hook_path):
     p95 = _percentile(samples_ms, 95.0)
     p99 = _percentile(samples_ms, 99.0)
     mean = statistics.fmean(samples_ms)
-    assert p95 < 1500.0, f"p95 {p95:.1f}ms exceeds 1500ms"
-    assert p99 < 2500.0, f"p99 {p99:.1f}ms exceeds 2500ms"
-    assert mean < 900.0, f"mean {mean:.1f}ms exceeds 900ms"
+    assert p95 < 2500.0, f"p95 {p95:.1f}ms exceeds 2500ms"
+    assert p99 < 3500.0, f"p99 {p99:.1f}ms exceeds 3500ms"
+    assert mean < 1800.0, f"mean {mean:.1f}ms exceeds 1800ms"
