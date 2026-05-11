@@ -258,7 +258,7 @@ def test_cmd_add_refuses_to_overwrite(
 # --------------------------------------------------------------------------- #
 
 
-def test_cmd_validate_empty_corpus_returns_one(corpus_root: Path, capsys) -> None:
+def test_cmd_validate_empty_corpus_returns_zero(corpus_root: Path, capsys) -> None:
     # Arrange
     args = MagicMock()
     args.fail_under = None
@@ -268,8 +268,8 @@ def test_cmd_validate_empty_corpus_returns_one(corpus_root: Path, capsys) -> Non
     captured = capsys.readouterr()
 
     # Assert
-    assert rc == 1
-    assert "corpus is empty" in captured.err
+    assert rc == 0
+    assert "corpus is empty" in captured.out
 
 
 def test_cmd_validate_all_pass(corpus_root: Path, capsys) -> None:

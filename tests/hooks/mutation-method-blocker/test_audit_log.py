@@ -12,11 +12,16 @@ avoiding pollution of the user's real audit log.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
 from conftest import make_edit_payload, make_write_payload, run_hook_subprocess
+
+_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(_ROOT / "scripts"))
+from mutation_version import VERSION as _MUTATION_VERSION  # noqa: E402
 
 
 @pytest.fixture
@@ -57,7 +62,7 @@ def test_block_emits_audit_record(hook_path, audit_home):
     block = block_records[0]
     assert block["hook"] == "mutation-method-blocker"
     assert block["tool"] == "Edit"
-    assert block["version"] == "2.0.0"
+    assert block["version"] == _MUTATION_VERSION
     assert "duration_ms" in block
     assert "ast_used" in block
     assert "detector" in block
@@ -85,7 +90,7 @@ def test_allow_emits_audit_record_when_files_scanned(hook_path, audit_home):
     allow = allow_records[0]
     assert allow["hook"] == "mutation-method-blocker"
     assert allow["tool"] == "Edit"
-    assert allow["version"] == "2.0.0"
+    assert allow["version"] == _MUTATION_VERSION
     assert "duration_ms" in allow
 
 
