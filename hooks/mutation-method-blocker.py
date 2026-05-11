@@ -264,6 +264,7 @@ from mutation_detectors_assignments import (
     detect_property_assignment,
     detect_reflect_mutations,
     detect_static_block_mutation,
+    detect_svelte_derived_reassign,
     detect_symbol_key_assignment,
     filter_matches_in_canonical_static_blocks,
 )
@@ -569,6 +570,7 @@ def _detect_all(
     matches.extend(detect_private_field_assignment(text, lang, file_path))
     matches.extend(detect_symbol_key_assignment(text, lang, file_path))
     matches.extend(detect_static_block_mutation(text, lang, file_path))
+    matches.extend(detect_svelte_derived_reassign(text, lang, file_path))
     if is_full_file:
         matches.extend(detect_let_could_be_const(text, lang, file_path))
     if _experimental_enabled("OPTIONAL_CHAIN_ASSIGN"):
@@ -759,6 +761,10 @@ def _filter_matches(
                     allow_reasons.get("param-allowlist", 0) + 1
                 )
                 continue
+
+        if m.detector == "svelte.derived-reassign":
+            survived.append(m)
+            continue
 
         in_scope, scope_label = _is_inside_state_mgmt_scope(lines, idx, file_path)
         if in_scope:

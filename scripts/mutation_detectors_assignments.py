@@ -973,3 +973,56 @@ def detect_static_block_mutation(
         if "}" in masked and class_depth > 0 and not in_static_block:
             block_count_by_class.append(class_block_count)
     return results
+
+
+SVELTE_DERIVED_DECL_PATTERN = re.compile(
+    r"\b(?:let|const|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*\$derived\s*[(<]"
+)
+
+
+def detect_svelte_derived_reassign(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect reassignment of a binding declared via Svelte 5 `$derived(...)`.
+
+    `$derived` returns a read-only reactive value. The runtime throws a
+    `state_unsafe_mutation` error when a derived binding is reassigned, but
+    the static signal here catches the bug at write-time. The declaration
+    site itself is excluded.
+    """
+    derived_names = {
+        m.group("name") for m in SVELTE_DERIVED_DECL_PATTERN.finditer(text)
+    }
+    if not derived_names:
+        return []
+    fix_hint = (
+        "`$derived(...)` bindings are read-only. Reassigning them throws "
+        "`state_unsafe_mutation` at runtime. Move the source of truth into a "
+        "`$state(...)` binding and let `$derived` recompute, or wrap the "
+        "computation in a function. See "
+        "https://svelte.dev/docs/svelte/$derived for the reactive contract."
+    )
+    pattern = re.compile(
+        r"^(?P<lead>\s*)(?P<name>"
+        + "|".join(re.escape(n) for n in derived_names)
+        + r")\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        if SVELTE_DERIVED_DECL_PATTERN.search(masked):
+            continue
+        m = pattern.match(masked)
+        if not m:
+            continue
+        name = m.group("name")
+        results.append(
+            _make_match(
+                "svelte.derived-reassign",
+                lineno,
+                m.start("name"),
+                raw,
+                fix_hint,
+                {"name": name, "confidence": "4"},
+            )
+        )
+    return results
