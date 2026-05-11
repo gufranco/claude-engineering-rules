@@ -37,13 +37,16 @@ sys.path.insert(
     ),
 )
 
-from mutation_detectors_core import Match  # noqa: E402
-from mutation_fix_lookup import detector_code_to_mmb  # noqa: E402
+from mutation_detectors_core import Match
+from mutation_fix_lookup import detector_code_to_mmb
+
+from mutation_version import SARIF_SCHEMA_VERSION as _SARIF_VERSION
+from mutation_version import VERSION as _MUTATION_VERSION
 
 SARIF_SCHEMA_URI = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
-SARIF_VERSION = "2.1.0"
+SARIF_VERSION = _SARIF_VERSION
 TOOL_NAME = "mutation-method-blocker"
-TOOL_VERSION = "2.3.0"
+TOOL_VERSION = _MUTATION_VERSION
 TOOL_INFO_URI = "https://github.com/onyxodds/dot-claude"
 RULE_DOC_BASE_URI = (
     "https://github.com/onyxodds/dot-claude/blob/main/rules/code-style.md#immutability"

@@ -42,12 +42,14 @@ sys.path.insert(
     ),
 )
 
-from mutation_detectors_core import Match  # noqa: E402
-from mutation_fix_lookup import detector_code_to_mmb  # noqa: E402
+from mutation_detectors_core import Match
+from mutation_fix_lookup import detector_code_to_mmb
+from mutation_version import LSP_SCHEMA_VERSION as _LSP_VERSION
+from mutation_version import VERSION as _MUTATION_VERSION
 
-LSP_VERSION = "3.17"
+LSP_VERSION = _LSP_VERSION
 TOOL_SOURCE = "mutation-method-blocker"
-TOOL_VERSION = "3.0.0"
+TOOL_VERSION = _MUTATION_VERSION
 RULE_DOC_BASE_URI = "https://github.com/onyxodds/dot-claude/blob/main/rules/lang/typescript-immutability.md"
 
 LSP_SEVERITY_ERROR = 1
