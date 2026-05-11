@@ -417,6 +417,8 @@ SOLID_RESOURCE_USAGE_PATTERN = re.compile(
     r"\b(?:createResource|createMemo|createDeferred|createComputed|createReaction|createSelector)\s*\("
 )
 SOLID_PRODUCE_PATTERN = re.compile(r"\b(?:produce|unwrap|reconcile)\s*\(")
+SOLID_RECONCILE_PATTERN = re.compile(r"\breconcile\s*\(")
+SOLID_PRODUCE_ONLY_PATTERN = re.compile(r"\bproduce\s*\(")
 
 TC39_SIGNALS_IMPORT_PATTERN = re.compile(r"""['"]signal-polyfill['"]""")
 TC39_SIGNALS_USAGE_PATTERN = re.compile(
@@ -896,6 +898,14 @@ def is_in_state_mgmt_scope(window: str, file_path: str) -> tuple[bool, str | Non
         return True, "recoil-atom"
     if XSTATE_IMPORT_PATTERN.search(window) and XSTATE_ASSIGN_PATTERN.search(window):
         return True, "xstate-assign"
+    if SOLID_STORE_IMPORT_PATTERN.search(window) and SOLID_PRODUCE_PATTERN.search(
+        window
+    ):
+        if SOLID_RECONCILE_PATTERN.search(window) and not SOLID_PRODUCE_ONLY_PATTERN.search(
+            window
+        ):
+            return True, "solid-reconcile"
+        return True, "solid-produce"
     if SOLID_STORE_IMPORT_PATTERN.search(window) and SOLID_STORE_USAGE_PATTERN.search(
         window
     ):
@@ -950,10 +960,6 @@ def is_in_state_mgmt_scope(window: str, file_path: str) -> tuple[bool, str | Non
         return True, "react-19-state-hooks"
     if REACT_SERVER_DIRECTIVE_PATTERN.search(window):
         return True, "react-server-action"
-    if SOLID_STORE_IMPORT_PATTERN.search(window) and SOLID_PRODUCE_PATTERN.search(
-        window
-    ):
-        return True, "solid-produce"
     if SHADOW_REALM_IMPORT_PATTERN.search(window) or SHADOW_REALM_USAGE_PATTERN.search(
         window
     ):
