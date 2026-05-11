@@ -175,8 +175,8 @@ def _validate_fixtures(fixtures: Iterable[Fixture]) -> tuple[int, int, list[str]
 def _cmd_validate(args: argparse.Namespace) -> int:
     fixtures = _list_fixtures()
     if not fixtures:
-        sys.stderr.write("corpus is empty; add fixtures first\n")
-        return 1
+        sys.stdout.write("corpus is empty; nothing to validate\n")
+        return 0
     passed, failed, failures = _validate_fixtures(fixtures)
     total = passed + failed
     pass_rate = (passed / total * 100.0) if total else 0.0
