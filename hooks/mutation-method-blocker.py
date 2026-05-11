@@ -288,6 +288,7 @@ from mutation_detectors_methods import (
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
     detect_array_push,
     detect_array_sort,
+    detect_arraybuffer_transfer,
     detect_atomics_mutations,
     detect_bracket_dispatch,
     detect_dataview_setters,
@@ -297,6 +298,8 @@ from mutation_detectors_methods import (
     detect_form_data_mutations,
     detect_headers_mutations,
     detect_map_set_collection_mutations,
+    detect_map_upsert,
+    detect_object_groupby_push,
     detect_proxy_mutating_traps,
     detect_typed_array_mutations,
     detect_uint8_base64_setter,
@@ -549,6 +552,9 @@ def _detect_all(
     matches.extend(detect_for_await_push_pattern(text, lang, file_path))
     if not hot:
         matches.extend(detect_uint8_base64_setter(text, lang, file_path))
+    matches.extend(detect_map_upsert(text, lang, file_path))
+    matches.extend(detect_arraybuffer_transfer(text, lang, file_path))
+    matches.extend(detect_object_groupby_push(text, lang, file_path))
     matches.extend(detect_property_assignment(text, lang, file_path))
     matches.extend(detect_computed_or_index_assignment(text, lang, file_path))
     matches.extend(detect_compound_assignment(text, lang, file_path))
