@@ -12,6 +12,8 @@ in one detector does not silently break the others.
 
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from conftest import make_write_payload
@@ -1331,3 +1333,92 @@ function bump() {
 
     # Assert
     assert "automerge.direct-mutation" not in stderr
+
+
+ASYNC_ITERATOR_RETURN_THROW_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "async-iterator-type-annotation-return",
+        """async function cleanup(iter: AsyncIterator<string>) {
+  await iter.return("done");
+}
+""",
+    ),
+    (
+        "async-iterator-type-annotation-throw",
+        """async function abort(iter: AsyncIterator<number>) {
+  await iter.throw(new Error("boom"));
+}
+""",
+    ),
+    (
+        "async-iterator-symbol-factory",
+        """async function consume(source: { [Symbol.asyncIterator](): AsyncIterator<number> }) {
+  const iter = source[Symbol.asyncIterator]();
+  await iter.return(0);
+}
+""",
+    ),
+]
+
+
+@pytest.fixture
+def _stage3_filter():
+    prev = os.environ.get("MUTATION_METHOD_TC39_STAGE_FILTER")
+    os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = "3"
+    yield
+    if prev is None:
+        os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
+    else:
+        os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = prev
+
+
+@pytest.mark.parametrize(
+    "name,snippet",
+    ASYNC_ITERATOR_RETURN_THROW_BLOCKED_FIXTURES,
+    ids=lambda v: v,
+)
+def test_async_iterator_return_throw_blocks_under_stage3(
+    name, snippet, run_hook, _stage3_filter
+):
+    # Arrange
+    payload = make_write_payload("/repo/src/iter.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "async-iterator.return-throw" in stderr, (
+        f"{name}: detector did not fire\n{stderr}"
+    )
+
+
+def test_async_iterator_return_throw_silent_at_stage4_default(run_hook):
+    # Arrange
+    snippet = """async function cleanup(iter: AsyncIterator<string>) {
+  await iter.return("done");
+}
+"""
+    payload = make_write_payload("/repo/src/iter.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "async-iterator.return-throw" not in stderr
+
+
+def test_async_iterator_generator_return_not_flagged(run_hook, _stage3_filter):
+    # Arrange
+    snippet = """function* gen() { yield 1; }
+function caller() {
+  const it = gen();
+  it.return(0);
+}
+"""
+    payload = make_write_payload("/repo/src/iter.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "async-iterator.return-throw" not in stderr

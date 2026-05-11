@@ -264,6 +264,7 @@ from mutation_detectors_assignments import (
     detect_property_assignment,
     detect_reflect_mutations,
     detect_static_block_mutation,
+    detect_async_iterator_return_throw,
     detect_automerge_direct_mutation,
     detect_effect_ts_ref_value_assign,
     detect_mobx_observable_outside_action,
@@ -579,6 +580,7 @@ def _detect_all(
     matches.extend(detect_private_field_assignment(text, lang, file_path))
     matches.extend(detect_symbol_key_assignment(text, lang, file_path))
     matches.extend(detect_static_block_mutation(text, lang, file_path))
+    matches.extend(detect_async_iterator_return_throw(text, lang, file_path))
     matches.extend(detect_automerge_direct_mutation(text, lang, file_path))
     matches.extend(detect_effect_ts_ref_value_assign(text, lang, file_path))
     matches.extend(detect_mobx_observable_outside_action(text, lang, file_path))
@@ -781,6 +783,7 @@ def _filter_matches(
                 continue
 
         if m.detector in {
+            "async-iterator.return-throw",
             "automerge.direct-mutation",
             "effect-ts.ref-value-assign",
             "mobx.observable-outside-action",

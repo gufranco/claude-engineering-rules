@@ -25,6 +25,7 @@ import re
 
 from mutation_allowlists import is_dom_assignment, is_dom_receiver
 from mutation_detectors_core import Match, strip_strings_comments, truncate_excerpt
+from mutation_fix_lookup import tc39_stage_filter
 
 
 def _split_chain(chain: str) -> tuple[str, str]:
@@ -1617,6 +1618,82 @@ def detect_automerge_direct_mutation(
                         "name": m.group("name"),
                         "chain": m.group("chain"),
                         "confidence": "4",
+                    },
+                )
+            )
+    return results
+
+
+ASYNC_ITERATOR_DECL_PATTERN = re.compile(
+    r"(?:\b(?:const|let|var)\s+|[(,]\s*)"
+    r"(?P<name>[a-zA-Z_$][\w$]*)\s*"
+    r":\s*AsyncIterator(?:Object)?\b"
+)
+ASYNC_ITERATOR_SYMBOL_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*="
+    r"\s*[a-zA-Z_$][\w$]*\s*\[\s*Symbol\.asyncIterator\s*\]\s*\(\s*\)"
+)
+
+
+def detect_async_iterator_return_throw(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    """Detect `.return(...)` / `.throw(...)` calls on async iterator bindings.
+
+    The Stage 3 AsyncIterator Helpers proposal adds `.return()` and
+    `.throw()` to the AsyncIterator prototype. Both calls early-terminate
+    the iterator and mutate its internal state; once invoked, every
+    subsequent `.next()` resolves to a done result. Reaching for these
+    methods outside a cleanup helper usually signals a missed `break` or
+    a forgotten try/finally pattern. The detector is Stage 3 filtered, so
+    suggestions surface only when `MUTATION_METHOD_TC39_STAGE_FILTER` is
+    set to `3` or lower.
+
+    Bindings are recognised through two narrow shapes that avoid false
+    positives against generator `.return(value)` or Promise `.throw()`:
+
+      - explicit `: AsyncIterator<T>` type annotation
+      - `= source[Symbol.asyncIterator]()` factory call
+    """
+    if tc39_stage_filter() > 3:
+        return []
+    if "AsyncIterator" not in text and "Symbol.asyncIterator" not in text:
+        return []
+    names: set[str] = set()
+    for m in ASYNC_ITERATOR_DECL_PATTERN.finditer(text):
+        names.add(m.group("name"))
+    for m in ASYNC_ITERATOR_SYMBOL_DECL_PATTERN.finditer(text):
+        names.add(m.group("name"))
+    if not names:
+        return []
+    fix_hint = (
+        "AsyncIterator `.return()` and `.throw()` terminate the iterator "
+        "and mutate its internal state. Prefer a `break` inside the "
+        "`for await` loop or a try/finally that lets the runtime call the "
+        "cleanup hooks. See "
+        "https://github.com/tc39/proposal-async-iterator-helpers for the "
+        "Stage 3 contract."
+    )
+    name_alt = "|".join(re.escape(n) for n in names)
+    pattern = re.compile(
+        r"(?<![\w$.])(?P<name>" + name_alt + r")\."
+        r"(?P<method>return|throw)\s*\("
+    )
+    results: list[Match] = []
+    for lineno, raw, masked in _iter_lines(text):
+        for m in pattern.finditer(masked):
+            results.append(
+                _make_match(
+                    "async-iterator.return-throw",
+                    lineno,
+                    m.start("name"),
+                    raw,
+                    fix_hint,
+                    {
+                        "name": m.group("name"),
+                        "method": m.group("method"),
+                        "confidence": "3",
+                        "tc39_stage": "3",
                     },
                 )
             )
