@@ -536,6 +536,12 @@
       "fix": "`$derived(...)` bindings are read-only. Reassigning them throws `state_unsafe_mutation` at runtime. Move the source of truth into a `$state(...)` binding and let `$derived` recompute, or wrap the computation in a function. See https://svelte.dev/docs/svelte/$derived.",
       "stage": 4
     },
+    "effect-ts.ref-value-assign": {
+      "category": "effect-ts",
+      "code": "MMB102",
+      "fix": "Effect-TS Ref bindings have no `.value` property. Updates go through `Ref.update`, `Ref.set`, or `Ref.modify` and must be `yield*`-ed inside an `Effect.gen` generator: `yield* Ref.set(ref, next)`. See https://effect.website/docs/state-management/ref.",
+      "stage": 4
+    },
     "nanostores.computed-write": {
       "category": "nanostores",
       "code": "MMB101",
