@@ -672,6 +672,60 @@ def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
     assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
 
 
+NANOSTORES_COMPUTED_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "nanostores-computed-set",
+        """import { atom, computed } from "nanostores";
+const a = atom(0);
+const doubled = computed(a, (v) => v * 2);
+function bad() {
+  doubled.set(99);
+}
+""",
+    ),
+    (
+        "nanostores-computed-setKey",
+        """import { map, computed } from "nanostores";
+const m = map({ a: 1 });
+const view = computed(m, (s) => s);
+function bad() {
+  view.setKey("a", 9);
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "snippet"), NANOSTORES_COMPUTED_BLOCKED_FIXTURES)
+def test_nanostores_computed_write_blocked(run_hook, label, snippet):
+    # Arrange
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert code == 2, f"{label}: nanostores computed write should block\n{stderr}"
+    assert "nanostores.computed-write" in stderr or "MMB101" in stderr
+
+
+def test_nanostores_atom_set_allowed(run_hook):
+    # Arrange
+    snippet = """import { atom } from "nanostores";
+const counter = atom(0);
+function bump() {
+  counter.set(counter.get() + 1);
+}
+"""
+    payload = make_write_payload("/repo/src/store.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "nanostores.computed-write" not in stderr
+
+
 TANSTACK_STORE_BLOCKED_FIXTURES: list[tuple[str, str]] = [
     (
         "tanstack-state-direct-write",

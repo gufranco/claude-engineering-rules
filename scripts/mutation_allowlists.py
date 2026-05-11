@@ -468,6 +468,9 @@ VUE_REACTIVE_VAR_DECL_PATTERN = re.compile(
 NANOSTORES_VAR_DECL_PATTERN = re.compile(
     r"\b(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*=\s*(?:atom|map|computed|deepMap|persistentAtom|persistentMap)\s*\("
 )
+NANOSTORES_COMPUTED_VAR_DECL_PATTERN = re.compile(
+    r"\b(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*computed\s*\("
+)
 SVELTE_RUNES_VAR_DECL_PATTERN = re.compile(
     r"\b(?:let|const|var)\s+([a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*\$(?:state|derived)\s*[(<]"
 )
