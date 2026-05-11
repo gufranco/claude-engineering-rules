@@ -1237,3 +1237,97 @@ const bump = action(() => {
 
     # Assert
     assert "mobx.observable-outside-action" not in stderr
+
+
+AUTOMERGE_DIRECT_MUTATION_BLOCKED_FIXTURES: list[tuple[str, str]] = [
+    (
+        "automerge-init-direct-property-write",
+        """import * as Automerge from "@automerge/automerge";
+let doc = Automerge.init();
+function bump() {
+  doc.count = 1;
+}
+""",
+    ),
+    (
+        "automerge-from-nested-property-write",
+        """import * as Automerge from "@automerge/automerge";
+let doc = Automerge.from({ count: 0 });
+function reset() {
+  doc.profile.name = "anon";
+}
+""",
+    ),
+    (
+        "automerge-load-compound-assign",
+        """import * as Automerge from "@automerge/automerge";
+let doc = Automerge.load(bytes);
+function inc() {
+  doc.count += 1;
+}
+""",
+    ),
+    (
+        "automerge-change-return-then-mutate",
+        """import * as Automerge from "@automerge/automerge";
+let doc = Automerge.change(initial, d => { d.count = 0 });
+function bad() {
+  doc.count = 5;
+}
+""",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "name,snippet",
+    AUTOMERGE_DIRECT_MUTATION_BLOCKED_FIXTURES,
+    ids=lambda v: v,
+)
+def test_automerge_direct_mutation_blocks(name, snippet, run_hook):
+    # Arrange
+    payload = make_write_payload("/repo/src/sync.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "automerge.direct-mutation" in stderr, (
+        f"{name}: detector did not fire\n{stderr}"
+    )
+
+
+def test_automerge_change_callback_mutation_allowed(run_hook):
+    # Arrange
+    snippet = """import * as Automerge from "@automerge/automerge";
+let doc = Automerge.init();
+function update() {
+  doc = Automerge.change(doc, draft => {
+    draft.count = 1;
+    draft.profile.name = "anon";
+  });
+}
+"""
+    payload = make_write_payload("/repo/src/sync.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "automerge.direct-mutation" not in stderr
+
+
+def test_automerge_without_import_skipped(run_hook):
+    # Arrange
+    snippet = """const doc = { count: 0 };
+function bump() {
+  doc.count = 1;
+}
+"""
+    payload = make_write_payload("/repo/src/plain.ts", snippet)
+
+    # Act
+    code, stderr = run_hook(payload)
+
+    # Assert
+    assert "automerge.direct-mutation" not in stderr
