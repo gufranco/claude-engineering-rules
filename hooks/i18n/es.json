@@ -1,0 +1,28 @@
+{
+  "locale": "es",
+  "blocked_header": "Bloqueado: mutación in situ detectada. Regla: ~/.claude/rules/code-style.md \"Immutability\".",
+  "fix_references_header": "Referencias para corrección:",
+  "fix_references": [
+    "Arrays: arr.toSorted / toReversed / toSpliced / with (ES2023) o spread.",
+    "Iterables: iterator helpers (.map / .filter / .take / .drop / .toArray, ES2024).",
+    "Agrupación: Object.groupBy(iter, fn), Map.groupBy(iter, fn) (ES2024) en vez de arr.reduce + push.",
+    "Objetos: { ...obj, prop: value } o patrón de rest destructuring.",
+    "Maps y Sets: new Map([...m, [k, v]]) / new Set([...s, v]). Métodos de Set union / intersection / difference (ES2024) no mutan.",
+    "Date: Temporal (ES2026, nativo o @js-temporal/polyfill) preferido, date-fns (subMonths, addDays, setHours) como respaldo.",
+    "Hot paths de TypedArray (crypto, codec, image, audio, parser, wasm, canvas, encoder, decoder, simd, webgl, pixel, hash, cipher, dsp, signal, fft, ml, tensor) auto-permitidos.",
+    "Bibliotecas de estado (Immer, Mutative, Redux Toolkit, Pinia, Vuex, MobX, Zustand+produce, Yjs, Valtio, Jotai, XState v5 assign, Solid stores, Nanostores, LegendApp, Tanstack Store, Effect-TS Data) auto-permitidas.",
+    "Vue 3.5 readonly() / shallowReadonly() y Svelte 5 $state runes auto-permitidos cuando el receptor está rastreado.",
+    "Navegación de framework (router.push, history.push, navigation.push) auto-permitida."
+  ],
+  "suppression_header": "Supresión:",
+  "suppression_lines": [
+    "Por línea: añada `// claude-allow-mutation -- <razón>` (justificación obligatoria).",
+    "Por archivo: en la parte superior `// @claude-allow-mutation -- <razón>`.",
+    "Marcadores estándar de ESLint y TypeScript son reconocidos."
+  ],
+  "bypass_header": "Variables de entorno de bypass:",
+  "bypass_lines": [
+    "MUTATION_METHOD_DISABLE=1   opt-out completo (raro, registrado en auditoría).",
+    "MUTATION_METHOD_AST=0       modo solo regex."
+  ]
+}
