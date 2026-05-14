@@ -227,10 +227,10 @@ This rule sits alongside, not above, the existing rule set. On conflict:
 
 The rules above operationalize five canonical sources on question quality. They are cited as inspiration; this file is independently authored.
 
-- "How To Ask Questions The Smart Way" by Eric S. Raymond. PT-BR mirror: https://area31.net.br/wiki/Como_fazer_perguntas_inteligentes. EN original: http://www.catb.org/esr/faqs/smart-questions.html. Fetched 2026-05-13.
-- "How to Report Bugs Effectively" by Simon Tatham. https://www.chiark.greenend.org.uk/~sgtatham/bugs.html. Fetched 2026-05-13.
-- "The XY Problem". https://xyproblem.info/. Fetched 2026-05-13.
-- "Don't ask to ask, just ask". https://dontasktoask.com/. Fetched 2026-05-13.
-- "No Hello". https://nohello.net/. Fetched 2026-05-13.
+- "How To Ask Questions The Smart Way" by Eric S. Raymond. PT-BR mirror: <https://area31.net.br/wiki/Como_fazer_perguntas_inteligentes>. EN original: <http://www.catb.org/esr/faqs/smart-questions.html>. Fetched 2026-05-13.
+- "How to Report Bugs Effectively" by Simon Tatham. <https://www.chiark.greenend.org.uk/~sgtatham/bugs.html>. Fetched 2026-05-13.
+- "The XY Problem". <https://xyproblem.info/>. Fetched 2026-05-13.
+- "Don't ask to ask, just ask". <https://dontasktoask.com/>. Fetched 2026-05-13.
+- "No Hello". <https://nohello.net/>. Fetched 2026-05-13.
 
 The original config enforced self-investigation, evidence-based completion, and writing precision. It did not codify question format. Without an explicit format, drift is predictable: clarifying questions become "How should I do this?", error reports lead with theory, loop closure becomes "Done.". This rule names the format and the failure modes so future sessions stay coherent.
