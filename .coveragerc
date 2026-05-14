@@ -13,7 +13,6 @@ omit =
     # shared harness with its own test module.
     hooks/ai-attribution-blocker.py
     hooks/anti-yolo.py
-    hooks/banned-phrases-blocker.py
     hooks/banned-prose-chars.py
     hooks/conventional-commits.py
     hooks/dangerous-command-blocker.py
