@@ -166,7 +166,7 @@ def test_invalid_json_stdin_does_not_crash():
     import sys
     from pathlib import Path
 
-    hook_path = Path("/Users/gufranco/.claude/hooks/subagent-brief-quality.py")
+    hook_path = Path(__file__).resolve().parents[3] / "hooks" / "subagent-brief-quality.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
 
