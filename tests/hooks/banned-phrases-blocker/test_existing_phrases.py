@@ -267,7 +267,9 @@ def test_invalid_json_stdin_does_not_crash(run_hook):
     import sys
     from pathlib import Path
 
-    hook_path = Path(__file__).resolve().parents[3] / "hooks" / "banned-phrases-blocker.py"
+    hook_path = (
+        Path(__file__).resolve().parents[3] / "hooks" / "banned-phrases-blocker.py"
+    )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
 
