@@ -32,6 +32,10 @@ always_loaded:
     description: Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security
     triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls, pentest, penetration, exploit, vulnerability, ssrf, idor, xxe, ssti, rce]
 
+  smart-questions:
+    description: Question and report quality across all dialogue directions, self-investigation gate, XY-aware framing, one blocking question format, ship the question, symptom-first status reports, Tatham bug-report essentials, subagent briefing requirements, FIXED/RESOLVED/DONE loop closure
+    triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation"]
+
   testing:
     description: Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot guidelines
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e]

@@ -108,6 +108,7 @@ Not everyone reading instructions will have CLI knowledge. When writing steps fo
 - Multiple valid approaches: state trade-offs briefly, pick the most performant, say why.
 - When the user's request is ambiguous ("compress", "clean up", "simplify"), confirm the specific meaning before executing. The cost of one clarifying question is near zero. The cost of wrong-direction work is a full revert.
 - **Execute, don't ask.** When the user gives a list of tasks or says "do everything," execute them all sequentially without pausing to ask for confirmation between steps. The user's default answer is "yes, do it." Only stop for genuinely blocking ambiguity that would cause wrong-direction work, not for permission to continue.
+- **Smart questions and reports.** When a clarifying question is unavoidable, when reporting status or errors, when briefing a subagent, or when closing a loop, follow `rules/smart-questions.md`. Specific question on the first line, what was investigated, options with trade-offs; symptom before theory; one-line `FIXED:`/`RESOLVED:`/`DONE:` on closure.
 
 ## Anti-Hallucination
 

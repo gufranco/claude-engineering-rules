@@ -44,6 +44,8 @@ Apply `checklists/checklist.md` category 17 during every verification. "Zero err
 
 ## Verification by Task Type
 
+When reporting verification output to the user, lead with the symptom, then chronology, then hypothesis, per `rules/smart-questions.md` "Status and Error Reports". When the task is complete, close with a one-line `FIXED:`, `RESOLVED:`, or `DONE:` resolution that names what changed, where, and the evidence command.
+
 **Code changes**: run formatter + tests + lint + build. All four.
 
 **Configuration changes**: verify the config loads correctly. Start the relevant service or run a validation command.

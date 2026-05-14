@@ -179,7 +179,7 @@ Confirm the scope is bounded and agreed upon.
 - What will NOT change? State the boundary explicitly.
 - Are there follow-up tasks that should be separate?
 
-If scope is unclear, ask one question before starting.
+If scope is unclear, ask one question before starting. Format the question per `rules/smart-questions.md` "Asking the user": specific question on the first line, what was investigated, options with trade-offs.
 
 ## Confidence Signal
 
