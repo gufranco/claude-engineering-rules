@@ -659,6 +659,24 @@
         ]
       },
       {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/banned-phrases-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/subagent-brief-quality.py"
+          }
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {

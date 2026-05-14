@@ -2,13 +2,18 @@
 """
 banned-phrases-blocker.py
 
-PreToolUse hook that blocks banned conversational phrases in external output.
-Rule source: ~/.claude/CLAUDE.md "Banned Phrases".
+PreToolUse hook that blocks banned conversational phrases in external output
+and meta-question openers in subagent prompts.
+Rule sources:
+  - ~/.claude/CLAUDE.md "Banned Phrases" (openers, closers, hedges, transitions, fluff).
+  - ~/.claude/rules/smart-questions.md "Briefing Subagents" + "Ship the Question"
+    (Agent/Task prompts must not start with a meta-question).
 
 Coverage:
   - Bash commands that publish text: gh pr/issue/api, glab mr/issue/api, git commit -m,
     slack send, curl to webhooks.
   - Write/Edit on Markdown files (.md) outside ~/.claude/.
+  - Agent/Task tool `prompt` field: leading meta-question phrases.
 
 The bypass is intended for quoting other people's text (review responses, citations).
 
@@ -92,6 +97,24 @@ FLUFF = [
     "synergies",
 ]
 
+AGENT_META_QUESTIONS = [
+    "Can you find",
+    "Can you check",
+    "Can you look",
+    "Could you find",
+    "Could you check",
+    "Could you look",
+    "Help me with",
+    "Help me find",
+    "Quick question",
+    "Anyone good at",
+    "Anyone know",
+    "Any expert",
+    "Should I ask",
+    "Can I ask",
+    "Just wondering",
+]
+
 
 def build_pattern(phrases: list[str], boundary: bool = True) -> re.Pattern:
     escaped = [re.escape(p) for p in phrases]
@@ -108,6 +131,12 @@ CATEGORIES = [
     ("transition", build_pattern(TRANSITIONS, boundary=False)),
     ("fluff adjective", build_pattern(FLUFF, boundary=True)),
 ]
+
+AGENT_META_LEADING = re.compile(
+    r"^\s*(?:" + "|".join(re.escape(p) for p in AGENT_META_QUESTIONS) + r")\b",
+    re.IGNORECASE,
+)
+AGENT_TOOL_NAMES = ("Agent", "Task")
 
 SKIPPED_DOCS = (
     "/.claude/CLAUDE.md",
@@ -158,6 +187,21 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     return out
 
 
+def find_agent_meta_question(prompt: str) -> str | None:
+    """Detect a meta-question opener in a subagent prompt.
+
+    Only fires when the prompt's first non-whitespace tokens match one of
+    the banned meta-question phrases. Mid-prompt occurrences are allowed
+    because they may be quoted examples.
+    """
+    if not isinstance(prompt, str) or not prompt.strip():
+        return None
+    m = AGENT_META_LEADING.match(prompt)
+    if not m:
+        return None
+    return m.group(0).strip()
+
+
 def find(text: str) -> list[str]:
     hits: list[str] = []
     for label, pat in CATEGORIES:
@@ -186,6 +230,31 @@ def main() -> int:
 
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}
+
+    if tool in AGENT_TOOL_NAMES:
+        prompt = tool_input.get("prompt", "")
+        hit = find_agent_meta_question(prompt)
+        if hit:
+            print(
+                "Blocked: subagent prompt starts with a meta-question. "
+                f"Leading phrase: {hit!r}. "
+                'Rule: ~/.claude/rules/smart-questions.md "Briefing Subagents" '
+                'and "Ship the Question".\n'
+                "Fix: replace the meta-prompt with the actual instruction. "
+                "Include scope, file:line refs from prior investigation, prior "
+                "attempts, expected output shape, and a response-length cap.\n"
+                "Bypass (rare; only when quoting another message): "
+                "BANNED_PHRASES_DISABLE=1.",
+                file=sys.stderr,
+            )
+            _audit(
+                hook="banned-phrases-blocker",
+                decision="block",
+                tool=tool,
+                reason="agent meta-question",
+                command_excerpt=hit[:240],
+            )
+            return 2
 
     items = collect(tool, tool_input)
     if not items:
