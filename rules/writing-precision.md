@@ -155,6 +155,8 @@ After writing any text, read it back and verify:
 4. **Example test.** Is there an instruction where the meaning could vary across readers? Add the example that anchors it. Examples are non-negotiable for rules, standards, and any instructional text.
 5. **Obligation test.** Does every "should" actually mean "must"? If yes, say "must". If optional, say "optional".
 
+For question messages, status updates, error reports, subagent prompts, and loop-closure lines, apply `rules/smart-questions.md` in addition to this gate.
+
 ## Scope
 
 This rule governs all text output without exception:

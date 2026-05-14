@@ -1298,3 +1298,16 @@ Apply on every PR that adds, edits, or removes a file under `prisma/migrations/`
 **Verification evidence:**
 - [ ] Output of `prisma migrate diff --exit-code` pasted in PR description
 - [ ] If non-trivial schema change: screenshot or log of fresh-DB `prisma migrate dev` showing zero follow-up migrations
+
+### 70. Question and Communication Quality
+
+Apply on every message that asks a clarifying question, briefs a subagent, reports status or an error, or closes a loop. Reference rule: `~/.claude/rules/smart-questions.md`.
+
+- [ ] Pre-flight investigation was exhausted before asking; the message states what was read, grepped, or checked, with file paths and line numbers when relevant
+- [ ] Clarifying questions to the user are single (one blocking question per turn), specific, and present the viable options with one decisive trade-off each
+- [ ] The first line of the message contains the actual question or report, not a meta-question ("Can I ask you something?", "Quick question") or hello-only opener
+- [ ] If the user request was narrow, the underlying goal was verified before execution (XY check); the broader goal is named in the response when it differs from the literal request
+- [ ] Status and error reports lead with the symptom (what happened), then chronology (what was attempted), then hypothesis (what I think); short updates use Object-Deviation form (`<object> - <deviation>`)
+- [ ] Bug reports include exact error text (verbatim, with codes/paths/hashes), environment, and reproduction steps; patching is deferred until the report is captured (Antelope rule)
+- [ ] Subagent prompts include scope, file:line references from prior investigation, prior attempts with errors, expected output shape, and a response-length cap
+- [ ] Loop closure: every completed task ends with a one-line resolution tagged `FIXED:`, `RESOLVED:`, or `DONE:` that names what changed, where (file:line), and the verification evidence command
