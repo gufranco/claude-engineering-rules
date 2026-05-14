@@ -10,7 +10,7 @@
 
 </div>
 
-**11** always-on rules · **63** on-demand standards · **30** slash-command skills · **33** runtime hooks · **9** custom agents · **36** MCP servers · **774** review items across **69** categories
+**11** always-on rules · **63** on-demand standards · **30** slash-command skills · **33** runtime hooks · **9** custom agents · **36** MCP servers · **782** review items across **70** categories
 
 ---
 
@@ -46,8 +46,8 @@ Verify-before-claim is a rule, not a suggestion. Read the file, run the command,
 <tr>
 <td width="50%" valign="top">
 
-### 774-Item Review Checklist
-One file, 69 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
+### 782-Item Review Checklist
+One file, 70 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
 
 </td>
 <td width="50%" valign="top">
@@ -74,7 +74,7 @@ A layered config where each layer catches what the layer above missed.
 | `hooks/` | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
 | `skills/` | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
 | `agents/` | Specialized subagents for focused review tasks | When delegated explicitly |
-| `checklists/` | 774-item review checklist for code, infra, and process | On demand during review |
+| `checklists/` | 782-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
@@ -271,7 +271,7 @@ $HOME/.claude/
   CLAUDE.md          Core engineering rules, always loaded
   RTK.md             RTK token-optimized CLI proxy reference
   settings.json      Permissions, hooks, MCP servers
-  checklists/        Unified 774-item review checklist
+  checklists/        Unified 782-item review checklist
   rules/             11 always-on rules plus 4 language-specific
     index.yml        Rule and standard catalog with trigger keywords
     lang/            TypeScript and Prisma rules
