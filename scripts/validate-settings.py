@@ -33,6 +33,7 @@ KNOWN_MATCHERS = {
     "WebFetch",
     "WebSearch",
     "Agent",
+    "Task",
     "NotebookEdit",
     "Skill",
 }
