@@ -116,3 +116,61 @@ jobs:
 
       - name: Run hook smoke tests
         run: bash tests/test-hooks.sh
+
+  cli:
+    name: CLI smoke (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Verify package.json parses
+        run: node -e "require('./package.json')"
+
+      - name: help
+        run: node bin/install.js help
+
+      - name: version
+        run: node bin/install.js version
+
+      - name: list
+        run: node bin/install.js list
+
+      - name: doctor
+        run: node bin/install.js doctor --target "${{ runner.temp }}/cer-target"
+
+      - name: install --dry-run all
+        run: node bin/install.js install --dry-run --target "${{ runner.temp }}/cer-target"
+
+      - name: install all (copy mode)
+        run: node bin/install.js install all --copy --target "${{ runner.temp }}/cer-copy" --yes
+
+      - name: verify copy install layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="${{ runner.temp }}/cer-copy"
+          for entry in skills agents hooks rules standards checklists CLAUDE.md settings.json; do
+            test -e "$target/$entry" || { echo "missing: $target/$entry"; exit 1; }
+          done
+          echo "copy install layout ok"
+
+      - name: install settings twice (backup behavior)
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="${{ runner.temp }}/cer-copy"
+          node bin/install.js install settings --copy --target "$target" --yes
+          ls "$target" | grep -E 'settings\.json\.bak\.' || { echo "no backup file produced"; exit 1; }
+          echo "backup file produced"
+
+      - name: npm pack (verify tarball contents)
+        run: npm pack --dry-run
