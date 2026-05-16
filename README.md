@@ -1136,10 +1136,56 @@ Not sure which workflow to use? Find your scenario:
 | Tool | Version | Install |
 |:-----|:--------|:--------|
 | Claude Code | Latest | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) |
+| Node.js | >= 18.0 | [nodejs.org](https://nodejs.org) (only required for the `npx` install path) |
 | Git | >= 2.0 | Pre-installed on macOS |
 | Python 3 | >= 3.8 | Pre-installed on macOS |
 
 ### Setup
+
+#### Option 1: npx (recommended)
+
+One command, no manual `ln -sf`. Clones the repo to `~/.claude-engineering-rules-src/` on first run, then symlinks every category into `~/.claude/`.
+
+```bash
+npx @gufranco/claude-engineering-rules install
+```
+
+Install one category at a time:
+
+```bash
+npx @gufranco/claude-engineering-rules install skills
+npx @gufranco/claude-engineering-rules install agents
+npx @gufranco/claude-engineering-rules install hooks
+npx @gufranco/claude-engineering-rules install rules
+npx @gufranco/claude-engineering-rules install standards
+npx @gufranco/claude-engineering-rules install checklists
+npx @gufranco/claude-engineering-rules install claude-md
+npx @gufranco/claude-engineering-rules install settings
+```
+
+Categories are `skills`, `agents`, `hooks`, `rules`, `standards`, `checklists`, `claude-md`, `settings`, or `all` (default).
+
+Common flags:
+
+| Flag | Effect |
+|:-----|:-------|
+| `--target <path>` | Install destination (default `~/.claude`) |
+| `--copy` | Copy files instead of symlinking |
+| `--symlink` | Force symlink mode (default) |
+| `--dry-run` | Print planned actions, change nothing |
+| `--force` | Replace existing entries without backup |
+
+`settings.json` is always handled safely: any existing file in the target is renamed to `settings.json.bak.<timestamp>` before the new one is installed.
+
+Diagnose your environment:
+
+```bash
+npx @gufranco/claude-engineering-rules doctor
+```
+
+Works with `pnpm dlx @gufranco/claude-engineering-rules ...` too.
+
+#### Option 2: manual clone
 
 ```bash
 git clone git@github.com:gufranco/claude-engineering-rules.git
@@ -1148,7 +1194,7 @@ git clone git@github.com:gufranco/claude-engineering-rules.git
 Symlink or copy the contents into `~/.claude/`:
 
 ```bash
-# Option A: symlink (recommended, stays in sync with git)
+# Option A: symlink (stays in sync with git)
 ln -sf "$(pwd)/claude-engineering-rules/"* ~/.claude/
 
 # Option B: copy

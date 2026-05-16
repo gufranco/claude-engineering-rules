@@ -1,0 +1,51 @@
+{
+  "name": "@gufranco/claude-engineering-rules",
+  "version": "0.1.0",
+  "description": "Opinionated engineering rules, skills, agents, hooks, standards, and checklists for Claude Code. Install into ~/.claude with one command.",
+  "license": "MIT",
+  "author": "gufranco",
+  "homepage": "https://github.com/gufranco/claude-engineering-rules",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gufranco/claude-engineering-rules.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gufranco/claude-engineering-rules/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "skills",
+    "agents",
+    "hooks",
+    "engineering-rules",
+    "developer-tools"
+  ],
+  "bin": {
+    "claude-engineering-rules": "bin/install.js"
+  },
+  "main": "bin/install.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "CLAUDE.md",
+    "settings.json",
+    "checklists/",
+    "rules/",
+    "standards/",
+    "skills/",
+    "agents/",
+    "hooks/",
+    ".markdownlint.json",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test:cli": "node bin/install.js --help"
+  }
+}

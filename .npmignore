@@ -1,0 +1,19 @@
+# Anything not in the `files` whitelist of package.json is excluded by default,
+# but be explicit about heavy / dev-only paths so accidental future inclusion is caught.
+
+.git/
+.github/
+.worktreeinclude
+scripts/
+tests/
+*.code-workspace
+debug/
+sessions/
+todos/
+tasks/
+plans/
+cache/
+*.log
+*.tmp
+*.bak
+.DS_Store
