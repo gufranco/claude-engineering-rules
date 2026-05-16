@@ -6,9 +6,20 @@
 <br>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/ci.yml?style=flat-square&label=CI)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/claude-engineering-rules?style=flat-square)](https://www.npmjs.com/package/claude-engineering-rules)
 [![License](https://img.shields.io/github/license/gufranco/claude-engineering-rules?style=flat-square)](LICENSE)
 
 </div>
+
+---
+
+## Install
+
+```bash
+npx claude-engineering-rules install
+```
+
+One command. Symlinks every rule, skill, agent, hook, standard, and checklist into `~/.claude/`. Works with `pnpm dlx claude-engineering-rules install` too. Pick a single category with `install skills`, `install agents`, `install hooks`, etc. See [Setup](#setup) for the full flag list and the manual clone path.
 
 ---
 
