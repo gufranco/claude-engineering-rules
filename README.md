@@ -1147,20 +1147,20 @@ Not sure which workflow to use? Find your scenario:
 One command, no manual `ln -sf`. Clones the repo to `~/.claude-engineering-rules-src/` on first run, then symlinks every category into `~/.claude/`.
 
 ```bash
-npx @gufranco/claude-engineering-rules install
+npx claude-engineering-rules install
 ```
 
 Install one category at a time:
 
 ```bash
-npx @gufranco/claude-engineering-rules install skills
-npx @gufranco/claude-engineering-rules install agents
-npx @gufranco/claude-engineering-rules install hooks
-npx @gufranco/claude-engineering-rules install rules
-npx @gufranco/claude-engineering-rules install standards
-npx @gufranco/claude-engineering-rules install checklists
-npx @gufranco/claude-engineering-rules install claude-md
-npx @gufranco/claude-engineering-rules install settings
+npx claude-engineering-rules install skills
+npx claude-engineering-rules install agents
+npx claude-engineering-rules install hooks
+npx claude-engineering-rules install rules
+npx claude-engineering-rules install standards
+npx claude-engineering-rules install checklists
+npx claude-engineering-rules install claude-md
+npx claude-engineering-rules install settings
 ```
 
 Categories are `skills`, `agents`, `hooks`, `rules`, `standards`, `checklists`, `claude-md`, `settings`, or `all` (default).
@@ -1180,10 +1180,10 @@ Common flags:
 Diagnose your environment:
 
 ```bash
-npx @gufranco/claude-engineering-rules doctor
+npx claude-engineering-rules doctor
 ```
 
-Works with `pnpm dlx @gufranco/claude-engineering-rules ...` too.
+Works with `pnpm dlx claude-engineering-rules ...` too.
 
 #### Option 2: manual clone
 

@@ -1,5 +1,5 @@
 {
-  "name": "@gufranco/claude-engineering-rules",
+  "name": "claude-engineering-rules",
   "version": "0.1.0",
   "description": "Opinionated engineering rules, skills, agents, hooks, standards, and checklists for Claude Code. Install into ~/.claude with one command.",
   "license": "MIT",

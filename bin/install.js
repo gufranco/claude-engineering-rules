@@ -50,7 +50,7 @@ function printHelp() {
   log(`claude-engineering-rules v${PKG.version}
 
 USAGE
-  npx @gufranco/claude-engineering-rules <command> [category] [options]
+  npx claude-engineering-rules <command> [category] [options]
 
 COMMANDS
   install [category]   Install one or all categories into the target dir
@@ -81,11 +81,11 @@ OPTIONS
   --verbose, -v        Verbose logging
 
 EXAMPLES
-  npx @gufranco/claude-engineering-rules install
-  npx @gufranco/claude-engineering-rules install skills
-  npx @gufranco/claude-engineering-rules install all --copy
-  npx @gufranco/claude-engineering-rules install settings --dry-run
-  npx @gufranco/claude-engineering-rules doctor
+  npx claude-engineering-rules install
+  npx claude-engineering-rules install skills
+  npx claude-engineering-rules install all --copy
+  npx claude-engineering-rules install settings --dry-run
+  npx claude-engineering-rules doctor
 `);
 }
 
