@@ -12,21 +12,15 @@ omit =
     # Untested hooks. Move out of this list as each is migrated to the
     # shared harness with its own test module.
     hooks/ai-attribution-blocker.py
-    hooks/anti-yolo.py
     hooks/banned-prose-chars.py
-    hooks/conventional-commits.py
     hooks/dangerous-command-blocker.py
-    hooks/dependency-pinning.py
     hooks/docker-context-guard.py
-    hooks/english-only-reminder.py
-    hooks/env-file-guard.py
     hooks/gcloud-config-guard.py
     hooks/gh-token-guard.py
     hooks/git-author-guard.py
     hooks/glab-token-guard.py
     hooks/internal-config-leakage.py
     hooks/kubectl-context-guard.py
-    hooks/large-file-blocker.py
     hooks/migration-idempotency.py
     hooks/mise-global-guard.py
     hooks/mock-internal-blocker.py
@@ -36,11 +30,9 @@ omit =
     hooks/secret-scanner.py
     hooks/settings-hygiene.py
     hooks/terraform-workspace-guard.py
-    hooks/test_profile.py
     hooks/aws-profile-guard.py
     hooks/as-any-blocker.py
     hooks/console-log-blocker.py
-    hooks/_profile.py
     hooks/prisma-schema-sync.py
     # Scripts not yet under test.
     scripts/mutation_source_map.py
