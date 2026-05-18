@@ -92,13 +92,13 @@ def looks_like_drizzle_schema(text: str) -> bool:
 
 def first_arg_is_string_literal(args: str) -> bool:
     stripped = args.lstrip()
-    if not stripped:
+    if not stripped:  # pragma: no cover - defensive; callers strip first
         return False
     return stripped[0] in ("'", '"', "`")
 
 
 def is_skipped_test_path(path: str) -> bool:
-    if not path:
+    if not path:  # pragma: no cover - defensive; caller already guards on empty path
         return False
     p = path.lower()
     return any(seg in p for seg in SKIP_PATH_HINTS)
@@ -176,7 +176,7 @@ def analyze(kind: str, text: str) -> list[str]:
         return find_in_script(text)
     if kind == "bash":
         return find_in_script(text)
-    return []
+    return []  # pragma: no cover - defensive; collect() only emits known kinds
 
 
 def main() -> int:

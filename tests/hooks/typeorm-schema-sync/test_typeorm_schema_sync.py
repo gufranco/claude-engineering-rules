@@ -10,8 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 HOOK = "typeorm-schema-sync"
 
 
@@ -261,6 +259,9 @@ def test_invalid_json_stdin_does_not_crash():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
+        if k in os.environ:
+            env[k] = os.environ[k]
 
     # Act
     proc = subprocess.run(
@@ -275,6 +276,152 @@ def test_invalid_json_stdin_does_not_crash():
 
     # Assert
     assert proc.returncode == 0
+
+
+def test_invalid_json_stdin_with_run_hook(run_hook):
+    # Arrange
+    # run_hook is the conftest fixture that propagates COVERAGE_PROCESS_START.
+
+    # Act
+    code, _stdout, _stderr = run_hook("typeorm-schema-sync", {"_not": "a-valid-tool-payload"})
+
+    # Assert
+    assert code == 0
+
+
+def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
+    # Arrange
+    # Empty file_path is acceptable when the content has no offending pattern.
+    payload = tool_use(
+        "Write",
+        {"file_path": "", "content": "const x = 1;\n"},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_index_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/entities/x.entity.ts",
+            "content": "@Index()\nexport class X {}\n",
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "@Index")
+
+
+def test_check_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/entities/x.entity.ts",
+            "content": "@Check()\nexport class X {}\n",
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "@Check")
+
+
+def test_check_decorator_with_brackets_in_single_arg_is_blocked(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/entities/x.entity.ts",
+            "content": "@Check('amount + (tax * 2) > 0')\nexport class X {}\n",
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "@Check")
+
+
+def test_check_decorator_with_two_args_is_allowed(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/entities/x.entity.ts",
+            "content": (
+                "@Entity('order')\n"
+                "@Check('Order_amount_chk', 'amount > 0')\n"
+                "export class Order {}\n"
+            ),
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_write_with_non_string_content_is_ignored(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/data-source.ts", "content": 12345},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_multiedit_with_non_dict_items_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/data-source.ts",
+            "edits": ["not a dict", None, 42],
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_edit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/repo/src/data-source.ts",
+            "old_string": "old",
+            "new_string": 12345,
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/data-source.ts",
+            "edits": [{"old_string": "a", "new_string": 999}],
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_disable_audit_env_bypasses_branch(tool_use, assert_allows):
+    # Arrange
+    # Confirms the bypass-env audit call line runs.
+    payload = tool_use("Write", {"file_path": "/repo/src/x.ts", "content": "synchronize: true"})
+
+    # Act / Assert
+    assert_allows(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "1"})
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
