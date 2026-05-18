@@ -9,21 +9,16 @@ source =
     hooks
     scripts
 omit =
-    # Untested hooks. Move out of this list as each is migrated to the
-    # shared harness with its own test module.
+    # Hooks with tests but the hook body is hard to exercise from pytest
+    # (requires git fixtures, large pattern catalogs, or runs only in
+    # Stop-hook context). Tests in tests/hooks/<name>/ still run and guard
+    # against regressions; they just don't push the total coverage above
+    # 95% for these specific files.
     hooks/dangerous-command-blocker.py
-    hooks/docker-context-guard.py
-    hooks/gcloud-config-guard.py
-    hooks/gh-token-guard.py
     hooks/git-author-guard.py
-    hooks/glab-token-guard.py
-    hooks/kubectl-context-guard.py
-    hooks/mise-global-guard.py
     hooks/retro-pointer.py
     hooks/secret-scanner.py
     hooks/settings-hygiene.py
-    hooks/terraform-workspace-guard.py
-    hooks/aws-profile-guard.py
     # Scripts not yet under test.
     scripts/mutation_source_map.py
     scripts/mutation_ts_project_service.py
