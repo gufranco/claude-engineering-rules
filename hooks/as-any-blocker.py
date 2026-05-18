@@ -40,7 +40,12 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+sys.path.insert(
+    0,
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
+    ),
+)
 
 try:
     from audit_log import record as _audit  # type: ignore
