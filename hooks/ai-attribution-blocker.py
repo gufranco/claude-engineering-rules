@@ -71,11 +71,26 @@ SKIPPED_DOC_SEGMENTS = (
     "/.claude/skills/",
 )
 
+# Test fixtures legitimately contain attribution strings to exercise the hook.
+# Skip pytest fixture paths so the hook does not block its own coverage tests.
+SKIPPED_TEST_SEGMENTS = (
+    "/tests/",
+    "/test/",
+    "/__tests__/",
+    ".test.",
+    ".spec.",
+)
+
 
 def is_skipped_path(path: str) -> bool:
     if not path:
         return False
-    return any(seg in path for seg in SKIPPED_DOC_SEGMENTS)
+    if any(seg in path for seg in SKIPPED_DOC_SEGMENTS):
+        return True
+    p = path.lower()
+    if any(seg in p for seg in SKIPPED_TEST_SEGMENTS):
+        return True
+    return False
 
 
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:

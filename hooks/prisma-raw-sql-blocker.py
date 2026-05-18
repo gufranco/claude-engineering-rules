@@ -50,6 +50,21 @@ def is_skipped_path(path: str) -> bool:
         return True
     if "/seed" in p and (p.endswith(".sql") or "/migrations/" in p):
         return True
+    if any(
+        seg in p
+        for seg in (
+            "/test/",
+            "/tests/",
+            "/__tests__/",
+            "/spec/",
+            ".spec.",
+            ".test.",
+            "/e2e/",
+            "/__mocks__/",
+            "/fixtures/",
+        )
+    ):
+        return True
     return False
 
 
