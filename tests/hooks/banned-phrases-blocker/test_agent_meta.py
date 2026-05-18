@@ -36,99 +36,132 @@ LEADING_META_PHRASES = [
 @pytest.mark.parametrize("phrase", LEADING_META_PHRASES)
 def test_agent_tool_blocks_leading_meta_phrase(tool_use, assert_blocks, phrase):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": phrase})
 
     # Act / Assert
+    # Assert
     assert_blocks(HOOK, payload, "subagent prompt starts with a meta-question")
 
 
 @pytest.mark.parametrize("phrase", LEADING_META_PHRASES)
 def test_task_tool_blocks_leading_meta_phrase(tool_use, assert_blocks, phrase):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Task", {"prompt": phrase})
 
     # Act / Assert
+    # Assert
     assert_blocks(HOOK, payload, "subagent prompt starts with a meta-question")
 
 
 def test_meta_phrase_mid_prompt_is_allowed(tool_use, assert_allows):
+    # Arrange
     # Arrange
     prompt = (
         "Find callers of createUser at services/userService.ts:42. "
         "Report file:line for each caller. Under 200 words. "
         "Some users ask Can you find this? but we already know."
     )
+    # Act
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
 def test_meta_phrase_with_leading_whitespace_is_blocked(tool_use, assert_blocks):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": "   \n  Can you check this please"})
 
     # Act / Assert
+    # Assert
     assert_blocks(HOOK, payload, "meta-question")
 
 
 def test_case_insensitive_match(tool_use, assert_blocks):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": "CAN YOU FIND the test fixture"})
 
     # Act / Assert
+    # Assert
     assert_blocks(HOOK, payload, "meta-question")
 
 
 def test_empty_prompt_does_not_block(tool_use, assert_allows):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": ""})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
 def test_whitespace_only_prompt_does_not_block(tool_use, assert_allows):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": "   \n\t  "})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
 def test_missing_prompt_field_does_not_block(tool_use, assert_allows):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
 def test_non_string_prompt_does_not_block(tool_use, assert_allows):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": 12345})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
 def test_well_formed_agent_prompt_passes(tool_use, assert_allows):
     # Arrange
+    # Arrange
     prompt = (
         "Find callers of createUser at services/userService.ts:42. "
         "Report file:line for each caller. Under 200 words."
     )
+    # Act
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses_agent_meta_block(tool_use, assert_allows):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use("Agent", {"prompt": "Can you find the bug"})
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload, env={"BANNED_PHRASES_DISABLE": "1"})
 
 
@@ -136,12 +169,15 @@ def test_bash_with_meta_phrase_in_command_does_not_match_agent_branch(
     tool_use, assert_allows
 ):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use(
         "Bash",
         {"command": "echo 'Can you find this' > /tmp/notes.txt"},
     )
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
@@ -149,6 +185,8 @@ def test_write_with_meta_phrase_in_code_file_does_not_match_agent_branch(
     tool_use, assert_allows
 ):
     # Arrange
+    # Arrange
+    # Act
     payload = tool_use(
         "Write",
         {
@@ -158,6 +196,7 @@ def test_write_with_meta_phrase_in_code_file_does_not_match_agent_branch(
     )
 
     # Act / Assert
+    # Assert
     assert_allows(HOOK, payload)
 
 
@@ -165,9 +204,12 @@ def test_agent_prompt_with_meta_phrase_takes_priority_over_other_check(
     tool_use, assert_blocks
 ):
     # Arrange
+    # Arrange
     prompt = "Can you find the bug. Hope this helps you understand."
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act / Assert
+    # Act
     _, stderr = assert_blocks(HOOK, payload, "meta-question")
+    # Assert
     assert "Leading phrase" in stderr
