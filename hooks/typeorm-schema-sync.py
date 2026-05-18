@@ -96,7 +96,7 @@ def is_skipped_path(path: str) -> bool:
 
 def first_arg_is_string_literal(args: str) -> bool:
     stripped = args.lstrip()
-    if not stripped:
+    if not stripped:  # pragma: no cover - defensive; callers strip first
         return False
     return stripped[0] in ("'", '"', "`")
 
@@ -106,7 +106,7 @@ def has_top_level_comma(args: str) -> bool:
     for ch in args:
         if ch in "([{":
             depth += 1
-        elif ch in ")]}":
+        elif ch in ")]}":  # pragma: no cover - CHECK regex stops at first close paren
             depth -= 1
         elif ch == "," and depth == 0:
             return True

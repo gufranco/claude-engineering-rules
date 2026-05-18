@@ -147,6 +147,20 @@ def test_skips_drizzle_meta_files(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+def test_skips_drizzle_dir_non_sql_file(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/drizzle/0003_custom.ts",
+            "content": "await db.execute(sql`SELECT 1`);\n",
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
 def test_skips_schema_files(tool_use, assert_allows):
     # Arrange
     payload = tool_use(
@@ -224,6 +238,9 @@ def test_invalid_json_stdin_does_not_crash():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
+        if k in os.environ:
+            env[k] = os.environ[k]
 
     # Act
     proc = subprocess.run(
@@ -238,6 +255,64 @@ def test_invalid_json_stdin_does_not_crash():
 
     # Assert
     assert proc.returncode == 0
+
+
+def test_invalid_json_via_run_hook(run_hook):
+    # Arrange / Act
+    code, _stdout, _stderr = run_hook("drizzle-raw-sql-blocker", {"_invalid": True})
+
+    # Assert
+    assert code == 0
+
+
+def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "", "content": "const rows = await db.select().from(t);\n"},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_write_non_string_content_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/x.ts", "content": 42},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/services/x.ts",
+            "edits": ["not a dict", None, 42],
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/services/x.ts",
+            "edits": [{"old_string": "a", "new_string": 123}],
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):

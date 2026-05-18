@@ -10,8 +10,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 HOOK = "drizzle-schema-sync"
 
 
@@ -258,6 +256,9 @@ def test_invalid_json_stdin_does_not_crash():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
+        if k in os.environ:
+            env[k] = os.environ[k]
 
     # Act
     proc = subprocess.run(
@@ -272,6 +273,214 @@ def test_invalid_json_stdin_does_not_crash():
 
     # Assert
     assert proc.returncode == 0
+
+
+def test_edit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/repo/src/db/schema/x.ts",
+            "old_string": "old",
+            "new_string": 9999,
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/db/schema/x.ts",
+            "edits": [{"old_string": "a", "new_string": 123}],
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_invalid_json_via_run_hook(run_hook):
+    # Arrange / Act
+    code, _stdout, _stderr = run_hook("drizzle-schema-sync", {"_invalid": True})
+
+    # Assert
+    assert code == 0
+
+
+def test_empty_file_path_is_allowed(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "", "content": "drizzle-orm import"},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_non_schema_non_script_file_is_ignored(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/utils/regular.ts",
+            "content": "console.log('hello');\n",
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_schema_edit_path_is_analyzed(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/repo/src/db/schema/users.ts",
+            "old_string": "// nothing",
+            "new_string": (
+                "import { pgTable, text, index } from 'drizzle-orm/pg-core';\n"
+                "export const users = pgTable('users', { email: text() }, (t) => ({\n"
+                "  emailIdx: index().on(t.email),\n"
+                "}));\n"
+            ),
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "index")
+
+
+def test_schema_multiedit_path_is_analyzed(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/db/schema/orders.ts",
+            "edits": [
+                {
+                    "old_string": "x",
+                    "new_string": (
+                        "import { pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';\n"
+                        "export const t = pgTable('t', { c: text() }, (x) => ({\n"
+                        "  i: uniqueIndex().on(x.c),\n"
+                        "}));\n"
+                    ),
+                },
+            ],
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "uniqueIndex")
+
+
+def test_script_edit_path_blocks_push(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/repo/scripts/deploy.sh",
+            "old_string": "echo done",
+            "new_string": "drizzle-kit push",
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "drizzle-kit push")
+
+
+def test_script_multiedit_path_blocks_push(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/Dockerfile",
+            "edits": [
+                {"old_string": "WORKDIR /app", "new_string": "WORKDIR /app\nRUN drizzle-kit push"},
+            ],
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "drizzle-kit push")
+
+
+def test_index_with_empty_args_is_blocked(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/db/schema/x.ts",
+            "content": (
+                "import { pgTable, text, index } from 'drizzle-orm/pg-core';\n"
+                "export const x = pgTable('x', { c: text() }, (t) => ({\n"
+                "  i: index().on(t.c),\n"
+                "}));\n"
+            ),
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "index")
+
+
+def test_bash_with_non_string_command_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use("Bash", {"command": 12345})
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_write_non_string_content_is_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/db/schema/x.ts", "content": 9999},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "MultiEdit",
+        {
+            "file_path": "/repo/src/db/schema/x.ts",
+            "edits": ["not a dict", None, 42],
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_index_method_chain_without_name_in_drizzle_schema(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/repo/src/db/schema/x.ts",
+            "old_string": "old",
+            "new_string": (
+                "import { pgTable } from 'drizzle-orm/pg-core';\n"
+                "// note: uniqueIndex without name\n"
+                "uniqueIndex().on(t.email)\n"
+            ),
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "uniqueIndex")
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
