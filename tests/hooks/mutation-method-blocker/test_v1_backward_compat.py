@@ -49,22 +49,31 @@ def _block_payload() -> dict:
 
 
 def test_v1_stderr_emitted_when_api_version_unset() -> None:
+    # Arrange
+    # Act
     code, _stdout, stderr = _run(_block_payload(), env_overrides=None)
+    # Assert
     assert code == 2
     assert "Blocked" in stderr or "mutation" in stderr.lower()
 
 
 def test_v1_stderr_emitted_when_api_version_1() -> None:
+    # Arrange
+    # Act
     code, _stdout, stderr = _run(
         _block_payload(), env_overrides={"CLAUDE_HOOK_API_VERSION": "1"}
     )
+    # Assert
     assert code == 2
     assert "Blocked" in stderr or "mutation" in stderr.lower()
 
 
 def test_v2_envelope_emitted_alongside_v1() -> None:
     """v2 stdout envelope is dual-emitted; v1 stderr never disappears."""
+    # Arrange
+    # Act
     code, stdout, stderr = _run(_block_payload(), env_overrides=None)
+    # Assert
     assert code == 2
     assert stderr.strip(), "v1 stderr must always be present"
     assert "{" in stdout, "v2 stdout envelope must always be present"
@@ -76,8 +85,11 @@ def test_v2_envelope_emitted_alongside_v1() -> None:
 
 def test_v1_stderr_emitted_when_api_version_garbage() -> None:
     """An unrecognized version string must still produce v1 stderr."""
+    # Arrange
+    # Act
     code, _stdout, stderr = _run(
         _block_payload(), env_overrides={"CLAUDE_HOOK_API_VERSION": "garbage"}
     )
+    # Assert
     assert code == 2
     assert stderr.strip()
