@@ -19,7 +19,7 @@ const users = await prisma.$queryRawUnsafe(
   `SELECT * FROM users WHERE email = '${req.body.email}'`
 )
 
-// SAFE — parameterized tagged template
+// SAFE: parameterized tagged template
 const users = await prisma.$queryRaw`
   SELECT * FROM users WHERE email = ${req.body.email}
 `
@@ -31,7 +31,7 @@ const users = await prisma.$queryRaw`
 **Detect:** `$queryRawUnsafe` or `$executeRawUnsafe` using values from ORM reads, not from `req.body`.
 
 ```typescript
-// VULNERABLE — stored username used in raw query
+// VULNERABLE: stored username used in raw query
 const user = await prisma.user.findUnique({ where: { id: userId } })
 const logs = await prisma.$queryRawUnsafe(
   `SELECT * FROM audit_logs WHERE actor = '${user.username}'`
@@ -54,7 +54,7 @@ const users = await prisma.user.findMany({
   where: req.query.filter as any
 })
 
-// SAFE — explicit field extraction
+// SAFE: explicit field extraction
 const users = await prisma.user.findMany({
   where: { role: String(req.query.role ?? 'user') }
 })
@@ -71,7 +71,7 @@ exec(`convert ${req.body.filename} output.png`, (err, stdout) => {
   res.send(stdout)
 })
 
-// SAFE — execFile with argument array, no shell
+// SAFE: execFile with argument array, no shell
 execFile('convert', [safePath, 'output.png'], (err, stdout) => {
   res.send(stdout)
 })
@@ -127,14 +127,14 @@ app.use(session({
 **Detect:** `req.session.pending*`, `req.session.step`, `req.session.mfa*` set in one handler and read in another.
 
 ```typescript
-// VULNERABLE — shared mutable session
+// VULNERABLE: shared mutable session
 app.post('/auth/login', async (req, res) => {
   const user = await verifyPassword(req.body.email, req.body.password)
   req.session.pendingUserId = user.id
   res.json({ nextStep: '2fa' })
 })
 
-// SAFE — single-use state token
+// SAFE: single-use state token
 app.post('/auth/login', async (req, res) => {
   const user = await verifyPassword(req.body.email, req.body.password)
   const stateToken = await createAuthState(user.id, '2fa_pending', { ttl: 300 })
@@ -148,7 +148,7 @@ app.post('/auth/login', async (req, res) => {
 **Detect:** `findFirst` with `usedAt: null` followed by a separate `update` on the same record.
 
 ```typescript
-// VULNERABLE — two queries, race window between them
+// VULNERABLE: two queries, race window between them
 const authCode = await prisma.oauthCode.findFirst({
   where: { code, usedAt: null }
 })
@@ -157,7 +157,7 @@ await prisma.oauthCode.update({
   data: { usedAt: new Date() }
 })
 
-// SAFE — atomic conditional update
+// SAFE: atomic conditional update
 const result = await prisma.oauthCode.updateMany({
   where: { code, usedAt: null, expiresAt: { gt: new Date() } },
   data: { usedAt: new Date() }
@@ -175,7 +175,7 @@ if (result.count === 0) throw new Error('Invalid or already-used code')
 **Detect:** `findUnique`/`findById` with `req.params` but no `userId`/`req.user` in the where clause.
 
 ```typescript
-// VULNERABLE — no ownership check
+// VULNERABLE: no ownership check
 app.get('/orders/:id', async (req, res) => {
   const order = await prisma.order.findUnique({
     where: { id: parseInt(req.params.id) }
@@ -183,7 +183,7 @@ app.get('/orders/:id', async (req, res) => {
   res.json(order)
 })
 
-// SAFE — ownership in query
+// SAFE: ownership in query
 app.get('/orders/:id', async (req, res) => {
   const order = await prisma.order.findFirst({
     where: { id: parseInt(req.params.id), userId: req.userId }
@@ -205,7 +205,7 @@ await prisma.user.update({
   data: req.body  // attacker sets role, balance, isAdmin
 })
 
-// SAFE — explicit field allowlist
+// SAFE: explicit field allowlist
 await prisma.user.update({
   where: { id: req.userId },
   data: { displayName: req.body.displayName, bio: req.body.bio }
@@ -230,7 +230,7 @@ await prisma.account.update({
   data: { balance: account.balance - amount }
 })
 
-// SAFE — atomic conditional update
+// SAFE: atomic conditional update
 const result = await prisma.account.updateMany({
   where: { userId, balance: { gte: amount } },
   data: { balance: { decrement: amount } }
@@ -253,7 +253,7 @@ await prisma.coupon.update({
   data: { usedAt: new Date(), usedBy: userId }
 })
 
-// SAFE — atomic updateMany in transaction
+// SAFE: atomic updateMany in transaction
 await prisma.$transaction(async (tx) => {
   const result = await tx.coupon.updateMany({
     where: { code, usedAt: null },
@@ -274,7 +274,7 @@ await prisma.$transaction(async (tx) => {
 **Detect:** `$transaction` containing `findUnique` + arithmetic + `update` without `FOR UPDATE` or atomic `decrement`/`increment`.
 
 ```typescript
-// VULNERABLE — READ COMMITTED allows both to read same balance
+// VULNERABLE: READ COMMITTED allows both to read same balance
 await prisma.$transaction(async (tx) => {
   const account = await tx.account.findUnique({ where: { userId } })
   await tx.account.update({
@@ -283,7 +283,7 @@ await prisma.$transaction(async (tx) => {
   })
 })
 
-// SAFE — SELECT FOR UPDATE serializes access
+// SAFE: SELECT FOR UPDATE serializes access
 await prisma.$transaction(async (tx) => {
   const [account] = await tx.$queryRaw<Account[]>`
     SELECT * FROM accounts WHERE user_id = ${userId} FOR UPDATE
@@ -302,7 +302,7 @@ await prisma.$transaction(async (tx) => {
 **Detect:** Lock acquisition in try/catch where the catch returns `true`, does not rethrow, or calls the protected function.
 
 ```typescript
-// VULNERABLE — catch returns true, lock becomes decorative
+// VULNERABLE: catch returns true, lock becomes decorative
 async function tryLock(key: string): Promise<boolean> {
   try {
     await prisma.lock.create({ data: { key } })
@@ -329,7 +329,7 @@ async function tryLock(key: string): Promise<boolean> {
 **Detect:** Lock with hardcoded TTL followed by calls to external APIs, batch updates, or expensive queries.
 
 ```typescript
-// VULNERABLE — 2s TTL, operation takes 5-15s
+// VULNERABLE: 2s TTL, operation takes 5-15s
 const lock = await prisma.lock.upsert({
   where: { key: `user-${userId}` },
   create: { key: `user-${userId}`, expiresAt: new Date(Date.now() + 2000) },
@@ -337,7 +337,7 @@ const lock = await prisma.lock.upsert({
 })
 await runExpensiveBatchUpdate(userId)
 
-// SAFE — row-level lock held for the duration of the transaction
+// SAFE: row-level lock held for the duration of the transaction
 await prisma.$transaction(async (tx) => {
   await tx.$queryRaw`SELECT id FROM accounts WHERE user_id = ${userId} FOR UPDATE`
   await runExpensiveBatchUpdate(userId)
@@ -350,7 +350,7 @@ await prisma.$transaction(async (tx) => {
 **Detect:** Job handlers and webhook endpoints that write without checking a dedup key or `processedEvent` table.
 
 ```typescript
-// VULNERABLE — no dedup, retries double-credit
+// VULNERABLE: no dedup, retries double-credit
 async function handlePaymentWebhook(event: PaymentEvent) {
   await prisma.account.update({
     where: { userId: event.userId },
@@ -358,7 +358,7 @@ async function handlePaymentWebhook(event: PaymentEvent) {
   })
 }
 
-// SAFE — dedup key in same transaction
+// SAFE: dedup key in same transaction
 async function handlePaymentWebhook(event: PaymentEvent) {
   await prisma.$transaction(async (tx) => {
     await tx.processedEvent.create({ data: { eventId: event.id } })
@@ -376,11 +376,11 @@ async function handlePaymentWebhook(event: PaymentEvent) {
 **Detect:** `axiosRetry` or retry configuration on POST/PUT/PATCH without `Idempotency-Key` header.
 
 ```typescript
-// VULNERABLE — retries re-execute the charge
+// VULNERABLE: retries re-execute the charge
 axiosRetry(axios, { retries: 3 })
 await axios.post('/charge', { userId, amount })
 
-// SAFE — idempotency key reused across retries
+// SAFE: idempotency key reused across retries
 const key = uuidv4()
 await axios.post('/charge', { userId, amount }, {
   headers: { 'Idempotency-Key': key }
@@ -400,7 +400,7 @@ await axios.post('/charge', { userId, amount }, {
 // VULNERABLE
 app.use(cors({ origin: true, credentials: true }))
 
-// SAFE — explicit allowlist
+// SAFE: explicit allowlist
 const ALLOWED_ORIGINS = new Set(['https://app.example.com'])
 app.use(cors({
   origin: (origin, cb) => {
@@ -422,7 +422,7 @@ app.get('/login', (req, res) => {
   res.redirect(req.query.next as string || '/dashboard')
 })
 
-// SAFE — allowlist of relative paths
+// SAFE: allowlist of relative paths
 const ALLOWED_PATHS = /^\/[a-zA-Z0-9/_-]*$/
 app.get('/login', (req, res) => {
   const next = req.query.next as string

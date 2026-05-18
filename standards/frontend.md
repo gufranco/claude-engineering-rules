@@ -62,7 +62,7 @@ When defining a color system:
 Use this Node.js snippet to verify OKLCH contrast ratios:
 
 ```javascript
-// oklch-contrast.js — run with: node oklch-contrast.js
+// oklch-contrast.js, run with: node oklch-contrast.js
 function oklchToOklab(L,C,H){const h=H*Math.PI/180;return{L,a:C*Math.cos(h),b:C*Math.sin(h)}}
 function oklabToLinSrgb(L,a,b){const l=L+.3963377774*a+.2158037573*b,m=L-.1055613458*a-.0638541728*b,s=L-.0894841775*a-1.291485548*b;return{r:4.0767416621*l**3-3.3077115913*m**3+.2309699292*s**3,g:-1.2684380046*l**3+2.6097574011*m**3-.3413193965*s**3,b:-.0041960863*l**3-.7034186147*m**3+1.707614701*s**3}}
 function linToSrgb(c){return c<=.0031308?12.92*c:1.055*c**(1/2.4)-.055}

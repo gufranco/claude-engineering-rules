@@ -553,7 +553,7 @@ test("dashboard page has valid heading hierarchy", async () => {
     parseInt(h.tagName.substring(1), 10)
   );
 
-  // Assert — no skipped heading levels
+  // Assert, no skipped heading levels
   for (let i = 1; i < levels.length; i++) {
     expect(levels[i]).toBeLessThanOrEqual(levels[i - 1] + 1);
   }
