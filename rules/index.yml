@@ -74,6 +74,21 @@ lang:
     description: Schema-vs-migration parity, index naming convention via map, prisma migrate diff verification, unmanaged-object bypass, schema completeness (createdAt, updatedAt, companyId indexes, FK indexes)
     triggers: [prisma, migration, migrations, schema.prisma, "@@index", "@@unique", "prisma migrate", "migrate diff", "migrate dev", "migrate deploy", drift, schema drift, createdAt, updatedAt, companyId]
 
+  typeorm-migrations:
+    path: rules/lang/typeorm-migrations.md
+    description: Entity-vs-migration parity for TypeORM, synchronize disabled outside local dev, explicit names on @Index/@Unique/@Check, down migration semantics, transactional DDL, no raw .query() in app code, schema completeness (@CreateDateColumn, @UpdateDateColumn, @DeleteDateColumn, FK indexes, companyId indexes)
+    triggers: [typeorm, "type-orm", "@Entity", "@Column", "@Index", "@Unique", "@Check", "@CreateDateColumn", "@UpdateDateColumn", "@DeleteDateColumn", "@ManyToOne", "@OneToMany", "data-source", "DataSource", "EntityManager", "QueryRunner", "migration:generate", "migration:run", "migration:revert", "migration:show", synchronize, "naming strategy", "NamingStrategy", "createQueryBuilder", "Repository", "InjectRepository"]
+
+  drizzle-migrations:
+    path: rules/lang/drizzle-migrations.md
+    description: Schema-vs-migration parity for Drizzle, drizzle-kit push banned outside local dev, explicit names on index() and uniqueIndex(), no built-in down migrations (reverse via new migration), no raw sql template in app code, schema completeness (created_at, updated_at via $onUpdateFn, FK indexes, identity columns over serial)
+    triggers: [drizzle, "drizzle-orm", "drizzle-kit", "drizzle-kit push", "drizzle-kit generate", "drizzle-kit migrate", "drizzle-kit pull", "drizzle-kit drop", pgTable, mysqlTable, sqliteTable, "defineRelations", "uniqueIndex", "$onUpdateFn", "$onUpdate", "defaultNow", "drizzle.config", "__drizzle_migrations", "_meta/_journal", "sql.raw", "db.execute", "db.run"]
+
+  sequelize-migrations:
+    path: rules/lang/sequelize-migrations.md
+    description: "Model-vs-migration parity for Sequelize, sync({ force/alter: true }) banned outside test fixtures, explicit name on every indexes entry, transactional migrations with queryInterface, paranoid soft delete, umzug storage configuration, no raw .query() in app code, schema completeness (timestamps, companyId indexes, FK indexes)"
+    triggers: [sequelize, "sequelize-cli", "sequelize-typescript", umzug, "Model.init", "sequelize.define", "queryInterface", "addColumn", "removeColumn", "addIndex", "removeIndex", "createTable", "dropTable", "belongsTo", "hasMany", "hasOne", "belongsToMany", paranoid, "SequelizeStorage", "sync({ force", "sync({ alter", "DataTypes"]
+
   typescript-types:
     path: rules/lang/typescript-types.md
     description: TypeScript type construct selection (interface vs type vs enum), discriminated unions with exhaustive matching, branded types for nominal typing, type state pattern for state machine transitions
