@@ -113,7 +113,9 @@ def has_top_level_comma(args: str) -> bool:
     return False
 
 
-def find_decorator_without_name(text: str, pattern: re.Pattern, label: str) -> list[str]:
+def find_decorator_without_name(
+    text: str, pattern: re.Pattern, label: str
+) -> list[str]:
     findings: list[str] = []
     for match in pattern.finditer(text):
         args = match.group("args").strip()

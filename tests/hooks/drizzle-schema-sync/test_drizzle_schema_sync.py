@@ -39,11 +39,7 @@ def test_blocks_drizzle_kit_push_in_dockerfile(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/Dockerfile",
-            "content": (
-                "FROM node:22\n"
-                "COPY . /app\n"
-                "RUN npx drizzle-kit push\n"
-            ),
+            "content": ("FROM node:22\nCOPY . /app\nRUN npx drizzle-kit push\n"),
         },
     )
 
@@ -57,11 +53,7 @@ def test_blocks_drizzle_kit_push_in_shell_script(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/scripts/deploy.sh",
-            "content": (
-                "#!/usr/bin/env bash\n"
-                "set -euo pipefail\n"
-                "drizzle-kit push\n"
-            ),
+            "content": ("#!/usr/bin/env bash\nset -euo pipefail\ndrizzle-kit push\n"),
         },
     )
 
@@ -76,11 +68,7 @@ def test_blocks_drizzle_kit_push_in_package_json(tool_use, assert_blocks):
         {
             "file_path": "/repo/package.json",
             "content": (
-                '{\n'
-                '  "scripts": {\n'
-                '    "db:push": "drizzle-kit push"\n'
-                '  }\n'
-                '}\n'
+                '{\n  "scripts": {\n    "db:push": "drizzle-kit push"\n  }\n}\n'
             ),
         },
     )
@@ -251,9 +239,7 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 def test_invalid_json_stdin_does_not_crash():
     # Arrange
-    hook_path = (
-        Path(__file__).resolve().parents[3] / "hooks" / "drizzle-schema-sync.py"
-    )
+    hook_path = Path(__file__).resolve().parents[3] / "hooks" / "drizzle-schema-sync.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
     for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
@@ -403,7 +389,10 @@ def test_script_multiedit_path_blocks_push(tool_use, assert_blocks):
         {
             "file_path": "/repo/Dockerfile",
             "edits": [
-                {"old_string": "WORKDIR /app", "new_string": "WORKDIR /app\nRUN drizzle-kit push"},
+                {
+                    "old_string": "WORKDIR /app",
+                    "new_string": "WORKDIR /app\nRUN drizzle-kit push",
+                },
             ],
         },
     )
@@ -501,11 +490,7 @@ def test_unrelated_yaml_is_ignored(tool_use, assert_allows):
         {
             "file_path": "/repo/.github/workflows/lint.yml",
             "content": (
-                "name: Lint\n"
-                "jobs:\n"
-                "  lint:\n"
-                "    steps:\n"
-                "      - run: pnpm lint\n"
+                "name: Lint\njobs:\n  lint:\n    steps:\n      - run: pnpm lint\n"
             ),
         },
     )

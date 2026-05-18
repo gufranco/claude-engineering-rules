@@ -108,11 +108,7 @@ def test_blocks_unique_decorator_without_name(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/src/entities/user.entity.ts",
-            "content": (
-                "@Entity('user')\n"
-                "@Unique(['email'])\n"
-                "export class User {}\n"
-            ),
+            "content": ("@Entity('user')\n@Unique(['email'])\nexport class User {}\n"),
         },
     )
 
@@ -127,9 +123,7 @@ def test_blocks_check_decorator_without_name(tool_use, assert_blocks):
         {
             "file_path": "/repo/src/entities/order.entity.ts",
             "content": (
-                "@Entity('order')\n"
-                "@Check('amount > 0')\n"
-                "export class Order {}\n"
+                "@Entity('order')\n@Check('amount > 0')\nexport class Order {}\n"
             ),
         },
     )
@@ -254,9 +248,7 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 def test_invalid_json_stdin_does_not_crash():
     # Arrange
-    hook_path = (
-        Path(__file__).resolve().parents[3] / "hooks" / "typeorm-schema-sync.py"
-    )
+    hook_path = Path(__file__).resolve().parents[3] / "hooks" / "typeorm-schema-sync.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
     for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
@@ -283,7 +275,9 @@ def test_invalid_json_stdin_with_run_hook(run_hook):
     # run_hook is the conftest fixture that propagates COVERAGE_PROCESS_START.
 
     # Act
-    code, _stdout, _stderr = run_hook("typeorm-schema-sync", {"_not": "a-valid-tool-payload"})
+    code, _stdout, _stderr = run_hook(
+        "typeorm-schema-sync", {"_not": "a-valid-tool-payload"}
+    )
 
     # Assert
     assert code == 0
@@ -329,7 +323,9 @@ def test_check_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
     assert_blocks(HOOK, payload, "@Check")
 
 
-def test_check_decorator_with_brackets_in_single_arg_is_blocked(tool_use, assert_blocks):
+def test_check_decorator_with_brackets_in_single_arg_is_blocked(
+    tool_use, assert_blocks
+):
     # Arrange
     payload = tool_use(
         "Write",
@@ -418,7 +414,9 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
 def test_disable_audit_env_bypasses_branch(tool_use, assert_allows):
     # Arrange
     # Confirms the bypass-env audit call line runs.
-    payload = tool_use("Write", {"file_path": "/repo/src/x.ts", "content": "synchronize: true"})
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/x.ts", "content": "synchronize: true"}
+    )
 
     # Act / Assert
     assert_allows(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "1"})
