@@ -57,9 +57,18 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. This includes `$queryRaw`, `$executeRaw`, `$queryRawUnsafe`, `$executeRawUnsafe` in Prisma, and equivalents in other ORMs. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM methods. If the ORM cannot express the operation, reconsider the approach or use a dedicated service (search engine, analytics DB). The only place SQL is acceptable is migration files. This applies to test files too: test setup and teardown must use ORM methods, not raw SQL to create indexes or alter constraints
 - **Service layer for data access**: routers, controllers, and API handlers must never import the ORM directly. All database operations go through service classes. This keeps the routing layer as a thin delegation layer and makes business logic independently testable
 
-## Prisma Schema Completeness
+## ORM Schema Completeness
 
-Moved to `rules/lang/prisma-migrations.md` (Schema Completeness section). Triggered on demand by `prisma`, `schema.prisma`, `@@index`, `createdAt`, `updatedAt`, `companyId`, and related keywords.
+Per-ORM rule files cover schema completeness, migration parity, and the no-raw-SQL boundary. Loaded on demand by matching triggers in `rules/index.yml`.
+
+| ORM | Rule file | Trigger keywords |
+|-----|-----------|-----------------|
+| Prisma | `rules/lang/prisma-migrations.md` | `prisma`, `schema.prisma`, `@@index`, `prisma migrate`, `createdAt`, `updatedAt`, `companyId` |
+| TypeORM | `rules/lang/typeorm-migrations.md` | `typeorm`, `@Entity`, `@Index`, `synchronize`, `DataSource`, `migration:generate`, `migration:run` |
+| Drizzle | `rules/lang/drizzle-migrations.md` | `drizzle-orm`, `drizzle-kit push`, `pgTable`, `uniqueIndex`, `$onUpdateFn`, `defaultNow`, `__drizzle_migrations` |
+| Sequelize | `rules/lang/sequelize-migrations.md` | `sequelize`, `umzug`, `queryInterface`, `sync({ force`, `sync({ alter`, `paranoid`, `Model.init` |
+
+Every ORM rule file declares the same five guarantees: schema and migration parity, explicit index names, transactional and idempotent DDL, no raw SQL in application code, and a service-layer boundary that keeps ORM imports out of controllers and routers.
 
 ## TypeScript Type Constructs
 
