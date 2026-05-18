@@ -232,7 +232,7 @@ The SDK must be initialized before any instrumented library is imported. Importi
 **Correct order:**
 
 ```typescript
-// 1. Initialize the SDK first — before any other import
+// 1. Initialize the SDK first, before any other import
 import './instrumentation'   // or: import { NodeSDK } from '@opentelemetry/sdk-node'
 
 // 2. Then import libraries that the SDK auto-instruments

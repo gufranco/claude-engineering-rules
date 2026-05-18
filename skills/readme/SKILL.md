@@ -334,7 +334,7 @@ Tables with variable name, description, required/optional, and default value.
 ```markdown
 | Variable | Description | Required | Default |
 |:---------|:------------|:--------:|:--------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | — |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |, |
 | `PORT` | Server port | No | `3000` |
 | `LOG_LEVEL` | Logging verbosity | No | `info` |
 ```

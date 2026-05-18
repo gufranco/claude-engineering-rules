@@ -6,9 +6,9 @@ tools:
   - Grep
   - Glob
 model: <haiku for fast/simple, sonnet for analysis, opus for complex reasoning>
-color: <blue | green | orange | red | yellow | purple | cyan — optional, for visual identification>
-memory: <path to JSONL file for cross-session memory — optional, for agents that track false positives or learned patterns>
-mcpServers: <list of MCP server names this agent is permitted to use — optional, omit to inherit all>
+color: <blue | green | orange | red | yellow | purple | cyan, optional, for visual identification>
+memory: <path to JSONL file for cross-session memory, optional, for agents that track false positives or learned patterns>
+mcpServers: <list of MCP server names this agent is permitted to use, optional, omit to inherit all>
   - <server-name>
 ---
 

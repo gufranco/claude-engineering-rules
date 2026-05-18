@@ -54,7 +54,7 @@ Return a JSON object:
       "file": "src/payments/invoice.service.ts",
       "line": 87,
       "severity": "HIGH",
-      "message": "Imports and calls calculateTotal() — will break when signature changes",
+      "message": "Imports and calls calculateTotal(), will break when signature changes",
       "fix": "Update call site to match new signature"
     }
   ],

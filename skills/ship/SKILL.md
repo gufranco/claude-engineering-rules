@@ -338,7 +338,7 @@ Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count 
 - Each fix is its own commit with a conventional-commit message.
 - Never skip hooks (`--no-verify`).
 - Never resolve a thread without verifying the fix is on the pushed SHA.
-- Never resolve threads authored by humans automatically — Step 6 covers AI bots only.
+- Never resolve threads authored by humans automatically, Step 6 covers AI bots only.
 - Use `ScheduleWakeup` (or equivalent) when waiting on CI or AI re-review to avoid burning context on tight polling loops.
 - **Restore account** on exit.
 

@@ -158,15 +158,15 @@ Commands may be aliased (`du`→`dust`, `ls`→`eza`), changing flags and output
 
 ### Shell Argument Safety (MANDATORY)
 
-Bash history expansion converts `!` to `\!` in double-quoted strings. Variable expansion, backtick execution, and backslash processing also apply. Any text payload passed through a double-quoted shell argument — code snippets, Markdown, prose with punctuation — will be silently corrupted.
+Bash history expansion converts `!` to `\!` in double-quoted strings. Variable expansion, backtick execution, and backslash processing also apply. Any text payload passed through a double-quoted shell argument, code snippets, Markdown, prose with punctuation, will be silently corrupted.
 
 **Rule: always use a single-quoted heredoc delimiter when passing text content to any CLI tool.**
 
 ```bash
-# WRONG — Bash history expansion corrupts ! and backticks
+# WRONG: Bash history expansion corrupts ! and backticks
 gh api ... --field body="if (!x) { return; }"
 
-# CORRECT — single-quoted delimiter disables ALL shell expansion inside
+# CORRECT: single-quoted delimiter disables ALL shell expansion inside
 gh api ... --field body="$(cat <<'PAYLOAD'
 if (!x) { return; }
 PAYLOAD

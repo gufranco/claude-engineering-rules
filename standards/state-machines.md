@@ -40,7 +40,7 @@ class DraftOrder {
     if (this.items.length === 0) return err(new OrderError('Cannot submit empty order'));
     return ok(new SubmittedOrder(this.id, this.items, new Date()));
   }
-  // no ship(), no cancel() — only addItem and submit are valid from draft
+  // no ship(), no cancel(), only addItem and submit are valid from draft
 }
 
 class SubmittedOrder {
@@ -57,7 +57,7 @@ class SubmittedOrder {
   reject(reason: string): RejectedOrder {
     return new RejectedOrder(this.id, reason);
   }
-  // no addItem() — submitted orders cannot be modified
+  // no addItem(), submitted orders cannot be modified
 }
 ```
 
