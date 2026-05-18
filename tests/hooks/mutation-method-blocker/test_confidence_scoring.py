@@ -1,6 +1,6 @@
 """Confidence scoring tests.
 
-Plan items 265-267. Verifies the public API of `hooks/mutation_confidence.py`:
+Plan items 265-267. Verifies the public API of `scripts/mutation_confidence.py`:
 
   - Score range is [1, 10] for every input combination.
   - Canonical detectors with AST + typed receiver score 10.
@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(ROOT / "hooks"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from mutation_confidence import (  # noqa: E402
     CONFIDENCE_HIGH,
