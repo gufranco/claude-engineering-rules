@@ -151,14 +151,18 @@ def main() -> None:
     if not findings:
         sys.exit(0)
 
-    print("BLOCKED: settings.json contains project- or machine-specific data.\n")
+    print(
+        "BLOCKED: settings.json contains project- or machine-specific data.\n",
+        file=sys.stderr,
+    )
     for value, reason in findings[:10]:
-        print(f"  - {reason}\n    value: {value}")
+        print(f"  - {reason}\n    value: {value}", file=sys.stderr)
     print(
         "\nKeep ~/.claude/settings.json portable across machines and projects.\n"
         "Use `${ENV_VAR}` placeholders, `~` for home, and add per-project tokens to\n"
         "~/.claude/.settings-hygiene-blocklist if you want them flagged on future edits.\n"
-        "Bypass once: set SETTINGS_HYGIENE_DISABLE=1 in the environment."
+        "Bypass once: set SETTINGS_HYGIENE_DISABLE=1 in the environment.",
+        file=sys.stderr,
     )
     _audit(
         hook="settings-hygiene",

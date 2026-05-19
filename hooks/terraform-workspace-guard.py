@@ -62,7 +62,8 @@ def main() -> None:
             "parallel shells targeting different workspaces stay "
             "isolated.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="terraform-workspace-guard",

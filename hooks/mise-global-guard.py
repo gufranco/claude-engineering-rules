@@ -67,7 +67,8 @@ def main() -> None:
             "Or run a one-off command without mutation: "
             "`mise exec <tool>@<version> -- <command>`.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="mise-global-guard",
@@ -86,7 +87,8 @@ def main() -> None:
             "the tool, or run `mise unuse <tool>` (no `--global`) inside "
             "the project directory.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="mise-global-guard",

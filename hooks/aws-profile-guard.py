@@ -55,7 +55,8 @@ def main() -> None:
             "Or use the per-command form on actual aws calls: "
             "`aws --profile <name> ...` or `AWS_PROFILE=<name> aws ...`\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="aws-profile-guard",

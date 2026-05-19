@@ -71,7 +71,8 @@ def main() -> None:
             "Or pass `--account=<email>` and `--project=<id>` directly "
             "on each gcloud call.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="gcloud-config-guard",
@@ -94,7 +95,8 @@ def main() -> None:
             "Or use the per-command form on actual gcloud calls: "
             "`gcloud --account=<email> --project=<id> ...`\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="gcloud-config-guard",

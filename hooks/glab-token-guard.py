@@ -54,7 +54,8 @@ def main():
             "and affects all terminals.\n"
             "Use GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab <command> instead.\n"
             "Check the git remote to determine the correct instance.\n"
-            "See: standards/multi-account-cli.md"
+            "See: standards/multi-account-cli.md",
+            file=sys.stderr,
         )
         _audit(
             hook="glab-token-guard",
@@ -88,7 +89,8 @@ def main():
         "Or export them: export GITLAB_TOKEN=<token> GITLAB_HOST=<host>\n"
         "Check git remote get-url origin to determine the correct instance.\n"
         "See: standards/multi-account-cli.md\n"
-        f"Command: {command}"
+        f"Command: {command}",
+        file=sys.stderr,
     )
     _audit(
         hook="glab-token-guard",
