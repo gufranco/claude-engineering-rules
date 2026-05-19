@@ -211,6 +211,24 @@ The hook recognizes these scopes without a suppression marker:
 
 Outside these scopes, the rule is absolute. Suppression markers exist for genuine exceptions and require a justification trailer (`-- <reason>`).
 
+## Bypass
+
+When working in a project where the rate of legitimate mutations is high enough that scattered suppression markers would pollute the source (transaction accumulators, advisory-lock patterns, in-memory caches that mirror persisted state, fire-and-forget Redis `client.set` flagged as false-positive `Map.set`), set the env var instead of writing markers into the project's files.
+
+```sh
+export MUTATION_METHOD_DISABLE=1
+```
+
+Markers in source code are a personal-tooling artifact; they should not appear in the project repository. Prefer one of these per-machine activation paths:
+
+| Scope | How |
+|-------|-----|
+| Single Claude Code session | Export `MUTATION_METHOD_DISABLE=1` in the parent shell before launching the CLI |
+| Per-project, machine-side | A `.envrc` in the local checkout with `export MUTATION_METHOD_DISABLE=1`. Loaded by `direnv`. The `.envrc` is not committed |
+| Always-on for one workspace | The `env` block in `~/.claude/settings.local.json` for that workspace |
+
+Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_LEAKAGE_DISABLE`: the env var is fully audit-logged. Use it when the alternative is dozens of `// claude-allow-mutation -- ...` comments staining a shared repository.
+
 ## Three Legs of Data Integrity
 
 Idempotent writes, atomic transactions, and immutable in-process state are three legs of the same stool. The first two are enforced at the boundary of the system (database, queue, network). The third is enforced inside the process by the mutation hook. Drop any leg and the others stop carrying weight: a transactional write of state that was mutated mid-flight commits the wrong values; an idempotent handler that mutates a shared cache between retries produces divergent results across attempts.
