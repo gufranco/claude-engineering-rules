@@ -9,6 +9,9 @@
 
 set -euo pipefail
 
+# Surface unexpected aborts instead of failing silently.
+trap 'echo "conventional-commits: hook aborted at line ${LINENO}" >&2' ERR
+
 _audit_block() {
     python3 "$HOME/.claude/scripts/audit_log.py" --hook conventional-commits \
         --decision block --tool Bash --reason "$1" --command "${COMMAND:-}" 2>/dev/null || true
@@ -23,7 +26,7 @@ try:
     print(data.get('tool_input', data.get('input', {})).get('command', ''))
 except:
     pass
-" 2>/dev/null)
+" 2>/dev/null || true)
 
 # Only check git commit commands
 if ! echo "${COMMAND}" | grep -qE '\bgit\s+commit\b'; then
@@ -58,7 +61,7 @@ if m_sub:
     if content:
         print(content.group(2).strip())
         sys.exit(0)
-" 2>/dev/null)
+" 2>/dev/null || true)
 
 # If we couldn't extract a message, allow (might be interactive or --allow-empty-message)
 if [[ -z "${MESSAGE}" ]]; then
@@ -71,13 +74,15 @@ SUBJECT=$(echo "${MESSAGE}" | head -1)
 # Validate conventional commit format
 PATTERN='^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?(!)?: .+'
 if ! echo "${SUBJECT}" | grep -qE "${PATTERN}"; then
-    echo "BLOCKED: Commit message does not follow conventional commit format."
-    echo ""
-    echo "  Got: ${SUBJECT}"
-    echo ""
-    echo "  Expected: <type>(<scope>): <subject>"
-    echo "  Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert"
-    echo "  Example: feat(auth): add SSO login with Google provider"
+    {
+        echo "BLOCKED: Commit message does not follow conventional commit format."
+        echo ""
+        echo "  Got: ${SUBJECT}"
+        echo ""
+        echo "  Expected: <type>(<scope>): <subject>"
+        echo "  Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert"
+        echo "  Example: feat(auth): add SSO login with Google provider"
+    } >&2
     _audit_block "subject not conventional format"
     exit 2
 fi
@@ -85,11 +90,13 @@ fi
 # Validate subject length (max 50 chars for subject line, per git-workflow rule)
 SUBJECT_LENGTH=${#SUBJECT}
 if [[ "${SUBJECT_LENGTH}" -gt 50 ]]; then
-    echo "BLOCKED: Commit subject line is ${SUBJECT_LENGTH} characters (max 50)."
-    echo ""
-    echo "  Got: ${SUBJECT}"
-    echo ""
-    echo "  Keep the subject concise. Use the body for details."
+    {
+        echo "BLOCKED: Commit subject line is ${SUBJECT_LENGTH} characters (max 50)."
+        echo ""
+        echo "  Got: ${SUBJECT}"
+        echo ""
+        echo "  Keep the subject concise. Use the body for details."
+    } >&2
     _audit_block "subject too long"
     exit 2
 fi
@@ -110,11 +117,13 @@ while IFS= read -r body_line; do
     fi
     BODY_LENGTH=${#body_line}
     if [[ "${BODY_LENGTH}" -gt 72 ]]; then
-        echo "BLOCKED: Commit body line ${LINE_NUM} is ${BODY_LENGTH} characters (max 72)."
-        echo ""
-        echo "  Got: ${body_line}"
-        echo ""
-        echo "  Wrap body lines at 72 characters."
+        {
+            echo "BLOCKED: Commit body line ${LINE_NUM} is ${BODY_LENGTH} characters (max 72)."
+            echo ""
+            echo "  Got: ${body_line}"
+            echo ""
+            echo "  Wrap body lines at 72 characters."
+        } >&2
         _audit_block "body line too long"
         exit 2
     fi
@@ -131,11 +140,13 @@ while IFS= read -r trailer_line; do
     if echo "${trailer_line}" | grep -qE '^(Rejected|Constraint|Risk):'; then
         # Validate general trailer format
         if ! echo "${trailer_line}" | grep -qE "${TRAILER_PATTERN}"; then
-            echo "BLOCKED: Malformed decision trailer."
-            echo ""
-            echo "  Got: ${trailer_line}"
-            echo ""
-            echo "  Expected: <Trailer>: <description>"
+            {
+                echo "BLOCKED: Malformed decision trailer."
+                echo ""
+                echo "  Got: ${trailer_line}"
+                echo ""
+                echo "  Expected: <Trailer>: <description>"
+            } >&2
             _audit_block "malformed decision trailer"
             exit 2
         fi
@@ -143,11 +154,13 @@ while IFS= read -r trailer_line; do
         # Validate Rejected trailer has pipe separator
         if echo "${trailer_line}" | grep -qE '^Rejected:'; then
             if ! echo "${trailer_line}" | grep -qE "${REJECTED_PATTERN}"; then
-                echo "BLOCKED: Rejected trailer must include reason after pipe."
-                echo ""
-                echo "  Got: ${trailer_line}"
-                echo ""
-                echo "  Expected: Rejected: <alternative> | <reason>"
+                {
+                    echo "BLOCKED: Rejected trailer must include reason after pipe."
+                    echo ""
+                    echo "  Got: ${trailer_line}"
+                    echo ""
+                    echo "  Expected: Rejected: <alternative> | <reason>"
+                } >&2
                 _audit_block "Rejected trailer missing pipe"
                 exit 2
             fi

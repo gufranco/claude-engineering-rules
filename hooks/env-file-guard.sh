@@ -47,10 +47,12 @@ case "${BASENAME}" in
         exit 0
         ;;
     .env|.env.*)
-        echo "BLOCKED: Cannot modify ${BASENAME}. Environment files may contain secrets."
-        echo "  File: ${FILE_PATH}"
-        echo ""
-        echo "  If you need to document a new env var, update .env.example instead."
+        {
+            echo "BLOCKED: Cannot modify ${BASENAME}. Environment files may contain secrets."
+            echo "  File: ${FILE_PATH}"
+            echo ""
+            echo "  If you need to document a new env var, update .env.example instead."
+        } >&2
         _audit_block "env file write blocked"
         exit 2
         ;;
@@ -60,8 +62,10 @@ esac
 # Block files in secrets directories
 case "${FILE_PATH}" in
     */secrets/*|*/credentials/*)
-        echo "BLOCKED: Cannot modify files in secrets directory."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify files in secrets directory."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "secrets directory write blocked"
         exit 2
         ;;
@@ -71,8 +75,10 @@ esac
 # Block private key files
 case "${BASENAME}" in
     *.pem|*.key|id_rsa|id_ed25519|id_ecdsa|id_dsa)
-        echo "BLOCKED: Cannot modify private key files."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify private key files."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "private key write blocked"
         exit 2
         ;;
@@ -84,16 +90,20 @@ case "${BASENAME}" in
     credentials|config.json)
         case "${FILE_PATH}" in
             */.aws/credentials|*/.docker/config.json)
-                echo "BLOCKED: Cannot modify cloud/tool credential files."
-                echo "  File: ${FILE_PATH}"
+                {
+                    echo "BLOCKED: Cannot modify cloud/tool credential files."
+                    echo "  File: ${FILE_PATH}"
+                } >&2
                 _audit_block "cloud credential file blocked"
                 exit 2
                 ;;
         esac
         ;;
     .npmrc|.pypirc|.netrc|.pgpass|.mysql_history)
-        echo "BLOCKED: Cannot modify credential/auth config files."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify credential/auth config files."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "credential config blocked"
         exit 2
         ;;
@@ -103,8 +113,10 @@ esac
 # Block Kubernetes config
 case "${FILE_PATH}" in
     */.kube/config)
-        echo "BLOCKED: Cannot modify Kubernetes config (contains cluster credentials)."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify Kubernetes config (contains cluster credentials)."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "kube config blocked"
         exit 2
         ;;
@@ -114,16 +126,20 @@ esac
 # Block Terraform state and variable files with secrets
 case "${BASENAME}" in
     *.tfstate|*.tfstate.backup)
-        echo "BLOCKED: Cannot modify Terraform state files (contain infrastructure secrets)."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify Terraform state files (contain infrastructure secrets)."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "tfstate blocked"
         exit 2
         ;;
     *.tfvars|*.tfvars.json)
-        echo "BLOCKED: Cannot modify Terraform variable files (may contain secrets)."
-        echo "  File: ${FILE_PATH}"
-        echo ""
-        echo "  Use terraform.tfvars.example for documentation instead."
+        {
+            echo "BLOCKED: Cannot modify Terraform variable files (may contain secrets)."
+            echo "  File: ${FILE_PATH}"
+            echo ""
+            echo "  Use terraform.tfvars.example for documentation instead."
+        } >&2
         _audit_block "tfvars blocked"
         exit 2
         ;;
@@ -133,8 +149,10 @@ esac
 # Block GCP and generic credential JSON files
 case "${BASENAME}" in
     *-credentials.json|*_credentials.json|service-account*.json)
-        echo "BLOCKED: Cannot modify credential JSON files."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify credential JSON files."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "credential json blocked"
         exit 2
         ;;
@@ -144,8 +162,10 @@ esac
 # Block SSH and GPG directories
 case "${FILE_PATH}" in
     */.ssh/*|*/.gnupg/*)
-        echo "BLOCKED: Cannot modify SSH/GPG configuration and keys."
-        echo "  File: ${FILE_PATH}"
+        {
+            echo "BLOCKED: Cannot modify SSH/GPG configuration and keys."
+            echo "  File: ${FILE_PATH}"
+        } >&2
         _audit_block "ssh/gpg blocked"
         exit 2
         ;;

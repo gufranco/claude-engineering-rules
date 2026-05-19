@@ -54,7 +54,8 @@ def main() -> None:
             "Or set the env var for the script: "
             "`export DOCKER_CONTEXT=<name>` then run docker commands.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="docker-context-guard",

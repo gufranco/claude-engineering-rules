@@ -9,6 +9,9 @@
 
 set -euo pipefail
 
+# Surface unexpected aborts instead of failing silently.
+trap 'echo "compact-context-saver: hook aborted at line ${LINENO}" >&2' ERR
+
 CONTEXT_FILE="${HOME}/.claude/.compact-context"
 
 save_context() {

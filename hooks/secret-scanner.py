@@ -206,7 +206,7 @@ def main():
 
     report.append("\nRemove the secrets and try again.")
     report.append("If these are false positives, commit manually outside Claude Code.")
-    print("\n".join(report))
+    print("\n".join(report), file=sys.stderr)
     _audit(
         hook="secret-scanner",
         decision="block",

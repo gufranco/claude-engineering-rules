@@ -59,7 +59,8 @@ def main() -> None:
             "Use the per-command flag instead: `kubectl --context <name> ...`\n"
             "Or set the env var: `export KUBECONFIG=<path>` then run kubectl.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="kubectl-context-guard",
@@ -77,7 +78,8 @@ def main() -> None:
             "Use the per-command flag instead: `kubectl --context <name> ...`\n"
             "Or set the env var: `export KUBECONFIG=<path>` then run kubectl.\n"
             "See: standards/multi-account-cli.md\n"
-            f"Command: {command}"
+            f"Command: {command}",
+            file=sys.stderr,
         )
         _audit(
             hook="kubectl-context-guard",

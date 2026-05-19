@@ -8,6 +8,9 @@
 
 set -euo pipefail
 
+# Surface unexpected aborts instead of failing silently.
+trap 'echo "smart-formatter: hook aborted at line ${LINENO}" >&2' ERR
+
 INPUT=$(cat)
 
 FILE_PATH=$(echo "${INPUT}" | python3 -c "
@@ -17,7 +20,7 @@ try:
     print(data.get('tool_input', data.get('input', {})).get('file_path', ''))
 except:
     pass
-" 2>/dev/null)
+" 2>/dev/null || true)
 
 if [[ -z "${FILE_PATH}" ]] || [[ ! -f "${FILE_PATH}" ]]; then
     exit 0

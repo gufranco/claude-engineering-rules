@@ -54,7 +54,8 @@ def main():
             "and affects all terminals.\n"
             "Use GH_TOKEN=$(gh auth token --user <account>) gh <command> instead.\n"
             "Check the git remote to determine the correct account.\n"
-            "See: standards/multi-account-cli.md"
+            "See: standards/multi-account-cli.md",
+            file=sys.stderr,
         )
         _audit(
             hook="gh-token-guard",
@@ -88,7 +89,8 @@ def main():
         "Or export it: export GH_TOKEN=$(gh auth token --user <account>)\n"
         "Check git remote get-url origin to determine the correct account.\n"
         "See: standards/multi-account-cli.md\n"
-        f"Command: {command}"
+        f"Command: {command}",
+        file=sys.stderr,
     )
     _audit(
         hook="gh-token-guard",

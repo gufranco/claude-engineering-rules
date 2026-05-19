@@ -40,11 +40,13 @@ while IFS= read -r file; do
 done < <(git diff --cached --name-only 2>/dev/null || true)
 
 if [[ -n "${LARGE_FILES}" ]]; then
-    echo "BLOCKED: Staged files exceed ${MAX_SIZE_KB}KB size limit."
-    echo -e "${LARGE_FILES}"
-    echo ""
-    echo "Remove large files from staging with: git reset HEAD <file>"
-    echo "Consider using .gitignore or Git LFS for large files."
+    {
+        echo "BLOCKED: Staged files exceed ${MAX_SIZE_KB}KB size limit."
+        echo -e "${LARGE_FILES}"
+        echo ""
+        echo "Remove large files from staging with: git reset HEAD <file>"
+        echo "Consider using .gitignore or Git LFS for large files."
+    } >&2
     python3 "$HOME/.claude/scripts/audit_log.py" --hook large-file-blocker \
         --decision block --tool Bash --reason "staged file exceeds size limit" \
         --command "${COMMAND:-}" 2>/dev/null || true

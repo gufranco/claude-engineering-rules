@@ -476,7 +476,10 @@ def main():
                 pattern=pattern,
                 command=command[:300],
             )
-            print(f"BLOCKED: Catastrophic command detected.\nCommand: {command}")
+            print(
+                f"BLOCKED: Catastrophic command detected.\nCommand: {command}",
+                file=sys.stderr,
+            )
             sys.exit(2)
 
     # Level 2: Critical paths and destructive operations
@@ -490,7 +493,7 @@ def main():
                 reason=reason,
                 command=command[:300],
             )
-            print(f"BLOCKED: {reason}\nCommand: {command}")
+            print(f"BLOCKED: {reason}\nCommand: {command}", file=sys.stderr)
             sys.exit(2)
 
     # Level 2.5: Recoverable operations — ask the user, do not block
@@ -547,7 +550,8 @@ def main():
                     f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
                     "Use a feature branch and create a PR instead.\n"
                     "Bypass (rare, e.g. personal config repo): ALLOW_PROTECTED_BRANCH_PUSH=1.\n"
-                    f"Command: {command}"
+                    f"Command: {command}",
+                    file=sys.stderr,
                 )
                 sys.exit(2)
 
