@@ -10,7 +10,7 @@
 
 </div>
 
-**11** always-on rules · **63** on-demand standards · **32** slash-command skills · **43** runtime hooks · **9** custom agents · **36** MCP servers · **782** review items across **70** categories
+**11** always-on rules · **63** on-demand standards · **32** slash-command skills · **44** runtime hooks · **9** custom agents · **36** MCP servers · **782** review items across **70** categories
 
 ---
 
@@ -19,13 +19,13 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-33 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, and 30+ other failure patterns.
+44 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, and 30+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-11 universal rules ship with every conversation. 63 domain standards load only when `rules/index.yml` triggers match the task. Most sessions pull 2-5 standards instead of all 63.
+11 universal rules ship with every conversation. 63 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 63.
 
 </td>
 </tr>
@@ -69,12 +69,12 @@ A layered config where each layer catches what the layer above missed.
 
 | Layer | What it enforces | When it runs |
 |:------|:-----------------|:-------------|
-| `CLAUDE.md` + `rules/` | Always-on engineering rules, tone, anti-hallucination, verification gates | Every conversation |
-| `standards/` + `rules/index.yml` | Domain expertise that loads on trigger keywords | When the task needs it |
-| `hooks/` | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
-| `skills/` | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
-| `agents/` | Specialized subagents for focused review tasks | When delegated explicitly |
-| `checklists/` | 782-item review checklist for code, infra, and process | On demand during review |
+| [`CLAUDE.md`](CLAUDE.md) + [`rules/`](rules) | Always-on engineering rules, tone, anti-hallucination, verification gates | Every conversation |
+| [`standards/`](standards) + [`rules/index.yml`](rules/index.yml) | Domain expertise that loads on trigger keywords | When the task needs it |
+| [`hooks/`](hooks) | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
+| [`skills/`](skills) | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
+| [`agents/`](agents) | Specialized subagents for focused review tasks | When delegated explicitly |
+| [`checklists/`](checklists) | 782-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
@@ -110,78 +110,89 @@ Topics: API design, authentication, caching, code review, container security, co
 
 | Skill | What it does |
 |:------|:-------------|
-| `/ship` | Delivery pipeline: commit, PR, release, CI checks, worktrees |
-| `/review` | Three-pass code review, QA analysis, visual audit |
-| `/respond` | Handle incoming review comments: classify, verify, draft replies, validate locally, post, resolve, monitor CI |
-| `/assessment` | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Outputs a machine-readable findings table that `/respond` can consume |
-| `/plan` | Spec folders with discovery, scope review, ADRs, scaffolding |
-| `/audit` | Security audit, threat modeling, supply chain checks |
-| `/test` | Test execution, perf, lint, CI smoke, stub generation |
-| `/deploy` | Post-merge landing and canary monitoring |
-| `/investigate` | Systematic debugging with hypothesis testing, 3-strike limit |
-| `/research` | Multi-source research with entity resolution and citation discipline |
-| `/design` | Design consultation, variants, design-system work |
-| `/refactor` | Guided refactoring with behavior preservation |
-| `/migrate` | Framework or library migration with incremental testing |
-| `/infra` | Container orchestration, IaC, database migrations |
-| `/hotfix` | Emergency production fix with expedited workflow |
-| `/incident` | Incident context gathering, blameless postmortem |
-| `/resolve` | Merge conflict resolution with verification |
-| `/cleanup` | Stale branch, PR, and worktree cleanup |
-| `/checkpoint` | Save and resume state across sessions |
-| `/explain` | Code explanation with Mermaid diagrams |
-| `/fix-issue` | Fix a GitHub issue by number with tests |
-| `/guard` | Directory freeze and scope enforcement |
-| `/benchmark` | Performance regression detection with baselines |
-| `/profile` | N+1 queries, missing indexes, complexity hot spots |
-| `/onboard` | Codebase onboarding: architecture map, "Start Here" |
-| `/pr-summary` | PR summary with reviewer suggestions |
-| `/readme` | README generation from codebase analysis |
-| `/retro` | Session retrospective with pattern extraction |
-| `/session-log` | Session activity logger for handoff |
-| `/setup` | Interactive project environment setup |
-| `/tdd` | Test-driven development loop |
-| `/zoom-out` | Step back from tactical work to strategic view |
+| [`/ship`](skills/ship/SKILL.md) | Delivery pipeline: commit, PR, release, CI checks, worktrees |
+| [`/review`](skills/review/SKILL.md) | Three-pass code review, QA analysis, visual audit |
+| [`/respond`](skills/respond/SKILL.md) | Handle incoming review comments: classify, verify, draft replies, validate locally, post, resolve, monitor CI |
+| [`/assessment`](skills/assessment/SKILL.md) | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Outputs a machine-readable findings table that `/respond` can consume |
+| [`/plan`](skills/plan/SKILL.md) | Spec folders with discovery, scope review, ADRs, scaffolding |
+| [`/audit`](skills/audit/SKILL.md) | Security audit, threat modeling, supply chain checks |
+| [`/test`](skills/test/SKILL.md) | Test execution, perf, lint, CI smoke, stub generation |
+| [`/deploy`](skills/deploy/SKILL.md) | Post-merge landing and canary monitoring |
+| [`/investigate`](skills/investigate/SKILL.md) | Systematic debugging with hypothesis testing, 3-strike limit |
+| [`/research`](skills/research/SKILL.md) | Multi-source research with entity resolution and citation discipline |
+| [`/design`](skills/design/SKILL.md) | Design consultation, variants, design-system work |
+| [`/refactor`](skills/refactor/SKILL.md) | Guided refactoring with behavior preservation |
+| [`/migrate`](skills/migrate/SKILL.md) | Framework or library migration with incremental testing |
+| [`/infra`](skills/infra/SKILL.md) | Container orchestration, IaC, database migrations |
+| [`/hotfix`](skills/hotfix/SKILL.md) | Emergency production fix with expedited workflow |
+| [`/incident`](skills/incident/SKILL.md) | Incident context gathering, blameless postmortem |
+| [`/resolve`](skills/resolve/SKILL.md) | Merge conflict resolution with verification |
+| [`/cleanup`](skills/cleanup/SKILL.md) | Stale branch, PR, and worktree cleanup |
+| [`/checkpoint`](skills/checkpoint/SKILL.md) | Save and resume state across sessions |
+| [`/explain`](skills/explain/SKILL.md) | Code explanation with Mermaid diagrams |
+| [`/fix-issue`](skills/fix-issue/SKILL.md) | Fix a GitHub issue by number with tests |
+| [`/guard`](skills/guard/SKILL.md) | Directory freeze and scope enforcement |
+| [`/benchmark`](skills/benchmark/SKILL.md) | Performance regression detection with baselines |
+| [`/profile`](skills/profile/SKILL.md) | N+1 queries, missing indexes, complexity hot spots |
+| [`/onboard`](skills/onboard/SKILL.md) | Codebase onboarding: architecture map, "Start Here" |
+| [`/pr-summary`](skills/pr-summary/SKILL.md) | PR summary with reviewer suggestions |
+| [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis |
+| [`/retro`](skills/retro/SKILL.md) | Session retrospective with pattern extraction |
+| [`/session-log`](skills/session-log/SKILL.md) | Session activity logger for handoff |
+| [`/setup`](skills/setup/SKILL.md) | Interactive project environment setup |
+| [`/tdd`](skills/tdd/SKILL.md) | Test-driven development loop |
+| [`/zoom-out`](skills/zoom-out/SKILL.md) | Step back from tactical work to strategic view |
 
 ### Hooks
 
-33 hooks in [`hooks/`](hooks/) wired through `settings.json`. Each runs before, after, or around a tool call.
+44 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
-| `dangerous-command-blocker.py` | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy |
-| `secret-scanner.py` | PreToolUse Bash | 40+ secret patterns before git commit |
-| `conventional-commits.sh` | PreToolUse Bash | Validates conventional commit format |
-| `gh-token-guard.py` | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch` |
-| `glab-token-guard.py` | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login |
-| `docker-context-guard.py` | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
-| `kubectl-context-guard.py` | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
-| `aws-profile-guard.py` | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
-| `gcloud-config-guard.py` | PreToolUse Bash | Forces `--configuration` per call |
-| `terraform-workspace-guard.py` | PreToolUse Bash | Forces `TF_WORKSPACE` per call |
-| `mise-global-guard.py` | PreToolUse Bash | Blocks `mise use --global`, forces project-local config |
-| `git-author-guard.py` | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
-| `large-file-blocker.sh` | PreToolUse Bash | Blocks commits with files over 5MB |
-| `env-file-guard.sh` | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
-| `rtk-rewrite.sh` | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
-| `ai-attribution-blocker.py` | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
-| `as-any-blocker.py` | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any` |
-| `banned-phrases-blocker.py` | PreToolUse Bash/Write/Edit | Blocks conversational fluff phrases in PRs and docs |
-| `banned-prose-chars.py` | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
-| `console-log-blocker.py` | PreToolUse Write/Edit | Blocks `console.*` in non-test code |
-| `internal-config-leakage.py` | PreToolUse Bash/Write/Edit | Prevents internal config references in external output |
-| `migration-idempotency.py` | PreToolUse Write/Edit | Forces `IF NOT EXISTS` / `IF EXISTS` on DDL |
-| `mock-internal-blocker.py` | PreToolUse Write/Edit | Blocks mocking own services, DB, Redis, queues in tests |
-| `mutation-method-blocker.py` | PreToolUse Write/Edit/MultiEdit | Blocks 90+ in-place mutation patterns in JS/TS |
-| `prisma-raw-sql-blocker.py` | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
-| `prisma-schema-sync.py` | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |
-| `redis-atomicity.py` | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI |
-| `settings-hygiene.py` | PreToolUse Write/Edit/MultiEdit | Blocks credentials and absolute home paths in settings |
-| `english-only-reminder.sh` | UserPromptSubmit | Injects system-reminder forcing English assistant output |
-| `smart-formatter.sh` | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt |
-| `notify-webhook.sh` | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
-| `retro-pointer.py` | Stop | One-line summary at session end when blocks accumulated |
-| `compact-context-saver.sh` | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
+| [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
+| [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any` |
+| [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
+| [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff phrases in PRs and docs |
+| [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
+| [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
+| [`compact-context-saver.sh`](hooks/compact-context-saver.sh) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
+| [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code |
+| [`conventional-commits.sh`](hooks/conventional-commits.sh) | PreToolUse Bash | Validates conventional commit format |
+| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy |
+| [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
+| [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Drizzle raw query escape hatches |
+| [`drizzle-schema-sync.py`](hooks/drizzle-schema-sync.py) | PreToolUse Write/Edit | Enforces Drizzle schema vs migration parity |
+| [`english-only-reminder.sh`](hooks/english-only-reminder.sh) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
+| [`env-file-guard.sh`](hooks/env-file-guard.sh) | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
+| [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | Blocks history-rewriting pushes when a `CHANGES_REQUESTED` review is open |
+| [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
+| [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch` |
+| [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
+| [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login |
+| [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse Bash/Write/Edit | Prevents internal config references in external output |
+| [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
+| [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse Bash | Blocks commits with files over 5MB |
+| [`markdown-link-discipline.py`](hooks/markdown-link-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks new bare file mentions in markdown when the path resolves to a real repo file |
+| [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse Write/Edit | Forces `IF NOT EXISTS` / `IF EXISTS` on DDL |
+| [`mise-global-guard.py`](hooks/mise-global-guard.py) | PreToolUse Bash | Blocks `mise use --global`, forces project-local config |
+| [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse Write/Edit | Blocks mocking own services, DB, Redis, queues in tests |
+| [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks 90+ in-place mutation patterns in JS/TS |
+| [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
+| [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
+| [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |
+| [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI |
+| [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated |
+| [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
+| [`rtk-rewrite.sh`](hooks/rtk-rewrite.sh) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
+| [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 40+ secret patterns before git commit |
+| [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches |
+| [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
+| [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | Blocks credentials and absolute home paths in settings |
+| [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt |
+| [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | Enforces subagent prompt quality with shape, file references, and length cap |
+| [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | Forces `TF_WORKSPACE` per call |
+| [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks TypeORM raw query escape hatches |
+| [`typeorm-schema-sync.py`](hooks/typeorm-schema-sync.py) | PreToolUse Write/Edit | Enforces TypeORM entity vs migration parity |
 
 ### Custom Agents
 
@@ -353,7 +364,7 @@ The hooks, rules, and skills activate automatically.
 
 ### MCP Servers
 
-36 MCP servers wired in `settings.json` across three transports:
+36 MCP servers wired in [`settings.json`](settings.json) across three transports:
 
 - **Stdio, no env:** Playwright, Memory, Sequential Thinking, Docker, Lighthouse, Ollama, Filesystem
 - **Stdio with env:** GitHub, GitLab, PostgreSQL, Redis, Slack, Obsidian, Kubernetes, AWS, Cloudflare, Puppeteer, Brave Search, Google Maps, Firecrawl, Resend, Todoist, Discord, Perplexity, LangSmith, Semgrep, Qdrant
@@ -381,7 +392,7 @@ $HOME/.claude/
   standards/         63 on-demand domain standards
   agents/            9 specialized subagents
   skills/            32 slash-command skills
-  hooks/             43 runtime hooks
+  hooks/             44 runtime hooks
   scripts/           Validation and maintenance scripts
   tests/             Hook smoke tests
   .github/workflows/ Lint, validation, hook tests
@@ -395,7 +406,7 @@ $HOME/.claude/
 <summary><strong>How do I customize or disable a rule?</strong></summary>
 <br>
 
-Rules in `rules/` load into context automatically. To disable one, delete or rename the file. To customize, edit the markdown. Changes take effect on the next conversation.
+Rules in [`rules/`](rules) load into context automatically. To disable one, delete or rename the file. To customize, edit the markdown. Changes take effect on the next conversation.
 
 </details>
 
@@ -403,7 +414,7 @@ Rules in `rules/` load into context automatically. To disable one, delete or ren
 <summary><strong>How do I add a new skill?</strong></summary>
 <br>
 
-Create a directory under `skills/` with a `SKILL.md` file. Use frontmatter: `name`, `description` for trigger matching, then the skill body with steps and rules. See any existing skill for the shape.
+Create a directory under [`skills/`](skills) with a `SKILL.md` file. Use frontmatter: `name`, `description` for trigger matching, then the skill body with steps and rules. See any existing skill for the shape.
 
 </details>
 
@@ -419,7 +430,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 63 standards total roughly 12,000 lines. Loading all of them into every conversation would burn the context window. `rules/index.yml` maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 63 standards total roughly 12,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
 
 </details>
 
