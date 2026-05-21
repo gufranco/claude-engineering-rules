@@ -212,7 +212,7 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 69 checklist categories, also assess:
+   In addition to the 70 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
