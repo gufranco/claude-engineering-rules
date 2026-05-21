@@ -131,7 +131,9 @@ INTERNAL_SECTION_HEADINGS = [
     "Standards Applied",
 ]
 SECTION_HEADING_PATTERN = re.compile(
-    r"(?im)^\s*#+\s*(?:" + "|".join(re.escape(h) for h in INTERNAL_SECTION_HEADINGS) + r")\b",
+    r"(?im)^\s*#+\s*(?:"
+    + "|".join(re.escape(h) for h in INTERNAL_SECTION_HEADINGS)
+    + r")\b",
 )
 
 SKIPPED_DOCS = (
@@ -402,7 +404,14 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
                 if isinstance(edit, dict):
                     content = edit.get("new_string", "")
                     if isinstance(content, str):
-                        out.append((fp, f"edits[{i}].new_string", "markdown" if kind == "markdown" else "payload", content))
+                        out.append(
+                            (
+                                fp,
+                                f"edits[{i}].new_string",
+                                "markdown" if kind == "markdown" else "payload",
+                                content,
+                            )
+                        )
 
     return out
 
