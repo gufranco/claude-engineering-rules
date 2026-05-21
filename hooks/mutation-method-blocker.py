@@ -730,9 +730,7 @@ def _filter_matches(
             continue
 
         if _line_allow_marker_active(lines, idx):
-            allow_reasons["allow-mutation"] = (
-                allow_reasons.get("allow-mutation", 0) + 1
-            )
+            allow_reasons["allow-mutation"] = allow_reasons.get("allow-mutation", 0) + 1
             continue
 
         if m.detector == "array.push":

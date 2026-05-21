@@ -205,9 +205,7 @@ def test_line_or_prev_has_suppression_with_hook_marker() -> None:
     lines = ["arr.push(v) // @allow-mutation -- ok"]
 
     # Act
-    actual = line_or_prev_has_suppression(
-        lines, 0, hook_marker="@allow-mutation"
-    )
+    actual = line_or_prev_has_suppression(lines, 0, hook_marker="@allow-mutation")
 
     # Assert
     assert actual is True

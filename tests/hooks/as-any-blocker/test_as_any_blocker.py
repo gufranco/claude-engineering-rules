@@ -267,9 +267,7 @@ def test_allows_preceding_line_allow_marker(tool_use, assert_allows):
         "Write",
         {
             "file_path": "/repo/src/x.ts",
-            "content": (
-                "// allow-any -- third-party shim\nconst x = value as any;\n"
-            ),
+            "content": ("// allow-any -- third-party shim\nconst x = value as any;\n"),
         },
     )
 

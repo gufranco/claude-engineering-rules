@@ -1159,9 +1159,7 @@ def test_hook_file_marker_without_justification_inactive():
 
 def test_hook_file_marker_past_top_scan_limit():
     # Arrange
-    lines = [f"const v{i} = 1;" for i in range(15)] + [
-        "// @allow-mutation -- late"
-    ]
+    lines = [f"const v{i} = 1;" for i in range(15)] + ["// @allow-mutation -- late"]
 
     # Act
     result = HOOK_MODULE._file_marker_active(lines)

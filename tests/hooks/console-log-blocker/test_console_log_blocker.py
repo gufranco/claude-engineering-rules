@@ -354,9 +354,7 @@ def test_blank_lines_at_top_skipped_in_file_marker_scan(tool_use, assert_allows)
         {
             "file_path": "/repo/src/cli.ts",
             "content": (
-                "\n\n\n"
-                "// @allow-console -- CLI entry point\n"
-                "console.log('ready');\n"
+                "\n\n\n// @allow-console -- CLI entry point\nconsole.log('ready');\n"
             ),
         },
     )
