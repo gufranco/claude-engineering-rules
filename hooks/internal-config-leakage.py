@@ -79,6 +79,7 @@ LEAK_PATTERNS = [
 SKIPPED_DOCS = (
     "/.claude/CLAUDE.md",
     "/.claude/README.md",
+    "/.claude/CHANGELOG.md",
     "/.claude/rules/",
     "/.claude/standards/",
     "/.claude/checklists/",
