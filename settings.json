@@ -600,6 +600,33 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/markdown-link-discipline.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/markdown-link-discipline.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/markdown-link-discipline.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/migration-idempotency.py"
           }
         ]
