@@ -120,11 +120,43 @@ def test_allows_pre_existing_bare_reference(tool_use, assert_allows, tmp_path):
     assert_allows(HOOK, payload)
 
 
+SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
+COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
+
+
+def _coverage_active() -> bool:
+    if "COVERAGE_PROCESS_START" in os.environ or "COVERAGE_RUN" in os.environ:
+        return True
+    if "pytest_cov" in sys.modules or "pytest_cov.plugin" in sys.modules:
+        return True
+    cov_module = sys.modules.get("coverage")
+    if cov_module is None:
+        return False
+    current = getattr(cov_module, "Coverage", None)
+    if current is None:
+        return False
+    return getattr(current, "current", lambda: None)() is not None
+
+
+def _build_subprocess_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    env = dict(os.environ)
+    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    if _coverage_active():
+        env["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
+        existing_pp = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = (
+            f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing_pp}"
+            if existing_pp
+            else str(SUBPROCESS_COV_DIR)
+        )
+    if extra:
+        env.update(extra)
+    return env
+
+
 def test_invalid_json_stdin_does_not_crash():
     # Arrange
     hook_path = REPO_ROOT / "hooks" / "markdown-link-discipline.py"
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
 
     # Act
     proc = subprocess.run(
@@ -132,7 +164,7 @@ def test_invalid_json_stdin_does_not_crash():
         input="not valid json",
         capture_output=True,
         text=True,
-        env=env,
+        env=_build_subprocess_env(),
         timeout=6.0,
         check=False,
     )
