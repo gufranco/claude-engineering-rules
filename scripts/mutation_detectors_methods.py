@@ -429,7 +429,7 @@ def _emit_map_mutations(
     delete_fix = (
         f"Replace `{kind.lower()}.delete(k)` with `new {kind}([...{kind.lower()}].filter(([key]) => key !== k))`."
         if kind == "Map"
-        else "WeakMap deletion is rare and may be intended. Document the lifetime; suppress with `// claude-allow-mutation` plus a justification trailer."
+        else "WeakMap deletion is rare and may be intended. Document the lifetime; suppress with `// allow-mutation` plus a justification trailer."
     )
     clear_fix = (
         f"Replace `{kind.lower()}.clear()` with `new {kind}()` and reassign."
@@ -503,7 +503,7 @@ def _emit_set_mutations(
     delete_fix = (
         f"Replace `{kind.lower()}.delete(v)` with `new {kind}([...{kind.lower()}].filter(x => x !== v))`."
         if kind == "Set"
-        else "WeakSet deletion is rare. Suppress with `// claude-allow-mutation` plus a justification trailer if the intent is correct."
+        else "WeakSet deletion is rare. Suppress with `// allow-mutation` plus a justification trailer if the intent is correct."
     )
     clear_fix = (
         f"Replace `{kind.lower()}.clear()` with `new {kind}()` and reassign."
@@ -808,7 +808,7 @@ def detect_form_data_mutations(
         "`Array.from(formData.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd; }, new FormData())` "
         "with the change applied during construction, or build the entries array immutably first. "
         "When the API consumer requires a stable FormData reference (XHR.send keeps a pointer, "
-        "third-party SDK retains the instance), suppress with `// @claude-allow-mutation -- "
+        "third-party SDK retains the instance), suppress with `// @allow-mutation -- "
         "<reason>` and document why. Confidence: 3 (FormData is a frequent legitimate exception)."
     )
     return _detect_web_api_collection(
@@ -868,7 +868,7 @@ def detect_dataview_setters(text: str, lang: str | None, file_path: str) -> list
         "build a fresh `ArrayBuffer` of the required size and write to a new DataView, then "
         "publish the new buffer atomically. For SharedArrayBuffer, prefer `Atomics.store(...)` "
         "(also flagged but with the SAB-aware fix) so the write is ordered. Suppress with "
-        "`// @claude-allow-mutation -- <reason>` when the caller requires pointer stability."
+        "`// @allow-mutation -- <reason>` when the caller requires pointer stability."
     )
     masked = strip_strings_comments(text)
     context_signal = bool(
@@ -1030,7 +1030,7 @@ def detect_uint8array_set_buffer_offset(
         "offset confusion, source length exceeding remaining space, source aliasing the "
         "destination view. Prefer a fresh typed array built with `Uint8Array.of(...)` or "
         "`new Uint8Array(buffer.slice(...))` and concatenate. For codec hot paths, suppress "
-        "with `// @claude-allow-mutation -- codec` and audit the offset arithmetic."
+        "with `// @allow-mutation -- codec` and audit the offset arithmetic."
     )
     masked = strip_strings_comments(text)
     if not UINT8_NAME_HINT_PATTERN.search(masked):
@@ -1092,7 +1092,7 @@ def detect_proxy_mutating_traps(
         "expose mutation to consumers. Prefer a copy-on-write strategy: the trap returns a "
         "new proxy wrapping the modified data, and the original stays untouched. When the "
         "Proxy is genuinely a mutable façade, document that contract in the handler's JSDoc "
-        "and suppress with `// @claude-allow-mutation -- proxy-mutable-facade <reason>`."
+        "and suppress with `// @allow-mutation -- proxy-mutable-facade <reason>`."
     )
     masked = strip_strings_comments(text)
     if not PROXY_HANDLER_CONTEXT_PATTERN.search(masked):
@@ -1339,7 +1339,7 @@ def detect_uint8_base64_setter(
         "Stage 3 `Uint8Array.prototype.setFromBase64` and `setFromHex` mutate the receiver "
         "in place. Use the static forms `Uint8Array.fromBase64(str)` and `Uint8Array.fromHex(str)` "
         "which return fresh instances. The static forms also expose a `lastChunkHandling` option "
-        "for partial input. Suppress with `// @claude-allow-mutation -- <reason>` for streaming "
+        "for partial input. Suppress with `// @allow-mutation -- <reason>` for streaming "
         "decode pipelines that intentionally write into a preallocated buffer."
     )
     iter_lines = _iter_lines(text)
@@ -1383,7 +1383,7 @@ def detect_map_upsert(text: str, lang: str | None, file_path: str) -> list[Match
         "is missing. For immutable callers use "
         "`map.has(k) ? map.get(k) : default` over a fresh "
         "`new Map([...map, [k, default]])`. Suppress with "
-        "`// claude-allow-mutation -- upsert into a local cache` for "
+        "`// allow-mutation -- upsert into a local cache` for "
         "memoization receivers."
     )
     iter_lines = _iter_lines(text)
@@ -1430,7 +1430,7 @@ def detect_arraybuffer_transfer(
         "view over `source` raises on access. If you need a resized copy "
         "without detaching, allocate a new buffer of the target size and "
         "copy bytes with `new Uint8Array(target).set(new Uint8Array(source))`. "
-        "Suppress with `// @claude-allow-mutation -- ownership handoff` when "
+        "Suppress with `// @allow-mutation -- ownership handoff` when "
         "the detachment is the intent (worker postMessage transfer list, "
         "zero-copy SAB resize)."
     )

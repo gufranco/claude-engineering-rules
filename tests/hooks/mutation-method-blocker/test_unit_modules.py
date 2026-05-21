@@ -522,10 +522,10 @@ def test_suppression_is_suppressed_block_state_none_computes():
 
 def test_suppression_is_suppressed_hook_marker():
     # Arrange
-    lines = ["items.push(x); // claude-allow-mutation -- justified"]
+    lines = ["items.push(x); // allow-mutation -- justified"]
 
     # Act
-    result = supp.is_suppressed(lines, 0, hook_marker="claude-allow-mutation")
+    result = supp.is_suppressed(lines, 0, hook_marker="allow-mutation")
 
     # Assert
     assert result is True
@@ -567,7 +567,7 @@ def test_suppression_has_inline_marker_in_block_comment():
 
 def test_suppression_has_justification_trailer_no_match():
     # Arrange
-    line = "// claude-allow-mutation"
+    line = "// allow-mutation"
 
     # Act
     result = supp.has_justification_trailer(line)
@@ -578,7 +578,7 @@ def test_suppression_has_justification_trailer_no_match():
 
 def test_suppression_has_justification_trailer_present():
     # Arrange
-    line = "// claude-allow-mutation -- legitimate use"
+    line = "// allow-mutation -- legitimate use"
 
     # Act
     result = supp.has_justification_trailer(line)
@@ -1137,7 +1137,7 @@ def test_methods_collection_kind_inconclusive():
 
 def test_hook_file_marker_blank_lines_then_marker():
     # Arrange
-    lines = ["", "", "// @claude-allow-mutation -- justified", "items.push(x);"]
+    lines = ["", "", "// @allow-mutation -- justified", "items.push(x);"]
 
     # Act
     result = HOOK_MODULE._file_marker_active(lines)
@@ -1148,7 +1148,7 @@ def test_hook_file_marker_blank_lines_then_marker():
 
 def test_hook_file_marker_without_justification_inactive():
     # Arrange
-    lines = ["// @claude-allow-mutation", "items.push(x);"]
+    lines = ["// @allow-mutation", "items.push(x);"]
 
     # Act
     result = HOOK_MODULE._file_marker_active(lines)
@@ -1160,7 +1160,7 @@ def test_hook_file_marker_without_justification_inactive():
 def test_hook_file_marker_past_top_scan_limit():
     # Arrange
     lines = [f"const v{i} = 1;" for i in range(15)] + [
-        "// @claude-allow-mutation -- late"
+        "// @allow-mutation -- late"
     ]
 
     # Act
@@ -1172,7 +1172,7 @@ def test_hook_file_marker_past_top_scan_limit():
 
 def test_hook_line_only_marker_excludes_file_form():
     # Arrange
-    line = "// @claude-allow-mutation -- file form"
+    line = "// @allow-mutation -- file form"
 
     # Act
     result = HOOK_MODULE._is_line_only_marker(line)
@@ -1183,7 +1183,7 @@ def test_hook_line_only_marker_excludes_file_form():
 
 def test_hook_line_only_marker_with_justification():
     # Arrange
-    line = "items.push(x); // claude-allow-mutation -- justified"
+    line = "items.push(x); // allow-mutation -- justified"
 
     # Act
     result = HOOK_MODULE._is_line_only_marker(line)
@@ -1216,7 +1216,7 @@ def test_hook_line_allow_marker_negative_index():
 
 def test_hook_line_allow_marker_same_line():
     # Arrange
-    lines = ["items.push(x); // claude-allow-mutation -- justified"]
+    lines = ["items.push(x); // allow-mutation -- justified"]
 
     # Act
     result = HOOK_MODULE._line_allow_marker_active(lines, 0)
@@ -1227,7 +1227,7 @@ def test_hook_line_allow_marker_same_line():
 
 def test_hook_line_allow_marker_preceding_line():
     # Arrange
-    lines = ["// claude-allow-mutation -- justified", "items.push(x);"]
+    lines = ["// allow-mutation -- justified", "items.push(x);"]
 
     # Act
     result = HOOK_MODULE._line_allow_marker_active(lines, 1)
@@ -1423,7 +1423,7 @@ def test_hook_build_message_contains_rule_reference():
 
 def test_hook_filter_matches_file_marker_suppresses_all():
     # Arrange
-    text = "// @claude-allow-mutation -- justified\nitems.push(x);\n"
+    text = "// @allow-mutation -- justified\nitems.push(x);\n"
     matches = [core.Match(line=2, col=1, text="items.push(x);", detector="array.push")]
     block_state = supp.compute_block_state(text.splitlines())
 

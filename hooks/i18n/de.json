@@ -16,8 +16,8 @@
   ],
   "suppression_header": "Unterdrückung:",
   "suppression_lines": [
-    "Pro Zeile: hänge `// claude-allow-mutation -- <Grund>` an (Begründung erforderlich).",
-    "Pro Datei: am Dateianfang `// @claude-allow-mutation -- <Grund>`.",
+    "Pro Zeile: hänge `// allow-mutation -- <Grund>` an (Begründung erforderlich).",
+    "Pro Datei: am Dateianfang `// @allow-mutation -- <Grund>`.",
     "Standard-ESLint- und TypeScript-Marker werden erkannt."
   ],
   "bypass_header": "Bypass-Umgebungsvariablen:",

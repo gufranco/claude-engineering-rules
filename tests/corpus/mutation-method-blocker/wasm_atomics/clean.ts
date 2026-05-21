@@ -12,7 +12,7 @@ declare const Atomics: any;
 // Atomics on SharedArrayBuffer view: legitimate shared-memory writes carry
 // an info signal. The suppression below pairs with the marker, but the
 // fixture documents the canonical lock-free counter increment.
-// @claude-allow-mutation -- shared-memory counter, ordering verified
+// @allow-mutation -- shared-memory counter, ordering verified
 const sab = new SharedArrayBuffer(1024);
 const view = new Int32Array(sab);
 Atomics.store(view, 0, 1);

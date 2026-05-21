@@ -36,8 +36,8 @@ Auto-allowed scopes (no flag):
 
 Suppression markers (per line):
 
-  - `// claude-allow-mutation -- justification` honored when justified.
-  - `// @claude-allow-mutation -- justification` at the top of the file
+  - `// allow-mutation -- justification` honored when justified.
+  - `// @allow-mutation -- justification` at the top of the file
     suppresses every detector for that file.
   - Standard ESLint and TypeScript markers honored:
     `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
@@ -180,7 +180,7 @@ Suppression budget (plan item 392):
 
   Per-project budget config at
   `<project-root>/.claude/mutation-budget.{yml,yaml,json}`. The
-  budget caps total `@claude-allow-mutation` markers, per-detector
+  budget caps total `@allow-mutation` markers, per-detector
   marker counts, and optionally requires justification trailers
   (`-- <reason>`). Run `python3 scripts/mutation_budget_check.py`
   in CI to enforce. Schema:
@@ -425,8 +425,8 @@ SAMPLE_LINE_CAP = 100
 MAX_HITS_PER_FILE = 8
 TOP_OF_FILE_SCAN = 10
 
-ALLOW_FILE_MARKER = "@claude-allow-mutation"
-ALLOW_LINE_MARKER = "claude-allow-mutation"
+ALLOW_FILE_MARKER = "@allow-mutation"
+ALLOW_LINE_MARKER = "allow-mutation"
 
 PROPERTY_DETECTORS: frozenset[str] = frozenset(
     {
@@ -574,7 +574,7 @@ def _file_marker_active(lines: list[str]) -> bool:
     """Return True when a top-of-file allow marker exists with justification.
 
     Without a justification trailer the marker is ignored (per plan item 96):
-    `// @claude-allow-mutation` alone does not bypass the hook; the writer
+    `// @allow-mutation` alone does not bypass the hook; the writer
     must append `-- <reason>` to make the suppression auditable.
     """
     seen = 0
@@ -597,7 +597,7 @@ def _is_line_only_marker(line: str) -> bool:
     `ALLOW_LINE_MARKER` is a substring of `ALLOW_FILE_MARKER`, so a naive
     `has_inline_marker(line, ALLOW_LINE_MARKER)` returns True for both. This
     helper excludes lines that carry the file marker so a stray
-    `// @claude-allow-mutation -- too late` past the top-of-file scan does
+    `// @allow-mutation -- too late` past the top-of-file scan does
     not silently suppress the next line as if it were a line marker.
     """
     return (
@@ -730,8 +730,8 @@ def _filter_matches(
             continue
 
         if _line_allow_marker_active(lines, idx):
-            allow_reasons["claude-allow-mutation"] = (
-                allow_reasons.get("claude-allow-mutation", 0) + 1
+            allow_reasons["allow-mutation"] = (
+                allow_reasons.get("allow-mutation", 0) + 1
             )
             continue
 

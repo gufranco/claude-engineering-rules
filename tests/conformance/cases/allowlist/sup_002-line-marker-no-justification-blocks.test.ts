@@ -5,5 +5,5 @@ detector: array.
 payload: edit
 ---
 const items = []
-items.push(1) // claude-allow-mutation
+items.push(1) // allow-mutation
 

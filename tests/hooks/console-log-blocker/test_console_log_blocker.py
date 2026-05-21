@@ -197,7 +197,7 @@ def test_line_marker_with_justification_suppresses(tool_use, assert_allows):
         "Write",
         {
             "file_path": "/repo/src/app.ts",
-            "content": "console.log('boot'); // claude-allow-console -- startup banner only\n",
+            "content": "console.log('boot'); // allow-console -- startup banner only\n",
         },
     )
 
@@ -212,7 +212,7 @@ def test_file_marker_with_justification_suppresses_all(tool_use, assert_allows):
         {
             "file_path": "/repo/src/cli.ts",
             "content": (
-                "// @claude-allow-console -- CLI entry point intentionally uses console\n"
+                "// @allow-console -- CLI entry point intentionally uses console\n"
                 "console.log('starting');\n"
                 "console.error('done');\n"
             ),
@@ -307,7 +307,7 @@ def test_line_marker_above_call_suppresses(tool_use, assert_allows):
         {
             "file_path": "/repo/src/app.ts",
             "content": (
-                "// claude-allow-console -- emergency banner before logger boots\n"
+                "// allow-console -- emergency banner before logger boots\n"
                 "console.log('boot');\n"
             ),
         },
@@ -355,7 +355,7 @@ def test_blank_lines_at_top_skipped_in_file_marker_scan(tool_use, assert_allows)
             "file_path": "/repo/src/cli.ts",
             "content": (
                 "\n\n\n"
-                "// @claude-allow-console -- CLI entry point\n"
+                "// @allow-console -- CLI entry point\n"
                 "console.log('ready');\n"
             ),
         },

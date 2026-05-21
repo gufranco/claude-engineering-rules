@@ -16,8 +16,8 @@
   ],
   "suppression_header": "Suppression:",
   "suppression_lines": [
-    "Per-line: append `// claude-allow-mutation -- <reason>` (justification required).",
-    "Per-file: top-of-file `// @claude-allow-mutation -- <reason>`.",
+    "Per-line: append `// allow-mutation -- <reason>` (justification required).",
+    "Per-file: top-of-file `// @allow-mutation -- <reason>`.",
     "Standard ESLint and TypeScript markers honored."
   ],
   "bypass_header": "Bypass envs:",
