@@ -10,7 +10,7 @@
 
 </div>
 
-**11** always-on rules · **63** on-demand standards · **30** slash-command skills · **33** runtime hooks · **9** custom agents · **36** MCP servers · **782** review items across **70** categories
+**11** always-on rules · **63** on-demand standards · **32** slash-command skills · **43** runtime hooks · **9** custom agents · **36** MCP servers · **782** review items across **70** categories
 
 ---
 
@@ -32,8 +32,8 @@
 <tr>
 <td width="50%" valign="top">
 
-### 30 Slash-Command Skills
-`/ship`, `/review`, `/plan`, `/audit`, `/investigate`, `/research`, and 24 more. Each is a documented multi-step workflow with subcommands, not a one-liner.
+### 32 Slash-Command Skills
+`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/investigate`, `/research`, and 24 more. Each is a documented multi-step workflow with subcommands, not a one-liner.
 
 </td>
 <td width="50%" valign="top">
@@ -106,12 +106,14 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Skills
 
-30 skills in [`skills/`](skills/). Each is a folder with a `SKILL.md` that documents steps, output format, and rules.
+32 skills in [`skills/`](skills/). Each is a folder with a `SKILL.md` that documents steps, output format, and rules.
 
 | Skill | What it does |
 |:------|:-------------|
 | `/ship` | Delivery pipeline: commit, PR, release, CI checks, worktrees |
 | `/review` | Three-pass code review, QA analysis, visual audit |
+| `/respond` | Handle incoming review comments: classify, verify, draft replies, validate locally, post, resolve, monitor CI |
+| `/assessment` | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Outputs a machine-readable findings table that `/respond` can consume |
 | `/plan` | Spec folders with discovery, scope review, ADRs, scaffolding |
 | `/audit` | Security audit, threat modeling, supply chain checks |
 | `/test` | Test execution, perf, lint, CI smoke, stub generation |
@@ -277,8 +279,8 @@ $HOME/.claude/
     lang/            TypeScript and Prisma rules
   standards/         63 on-demand domain standards
   agents/            9 specialized subagents
-  skills/            30 slash-command skills
-  hooks/             33 runtime hooks
+  skills/            32 slash-command skills
+  hooks/             43 runtime hooks
   scripts/           Validation and maintenance scripts
   tests/             Hook smoke tests
   .github/workflows/ Lint, validation, hook tests

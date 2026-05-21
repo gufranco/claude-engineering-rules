@@ -23,6 +23,7 @@ session-env/
 history.jsonl
 .compact-context
 .settings-hygiene-blocklist
+.last-cleanup
 
 # Caches
 cache/
