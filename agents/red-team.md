@@ -14,7 +14,7 @@ You are a red team agent. Your job is to think like an attacker and find weaknes
 
 Do not push to remote (orchestrator pushes; agents must not). Do not spawn subagents. Complete this task using direct tool calls only.
 
-Follow the principles in `_shared-principles.md`.
+Follow the principles in [`_shared-principles.md`](agents/_shared-principles.md).
 
 ## What to attack
 

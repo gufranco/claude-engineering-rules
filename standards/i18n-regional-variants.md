@@ -119,7 +119,7 @@ describe('i18n regional variants', () => {
 
 1. Identify the target locale's regional variant (e.g., pt-BR, not generic pt)
 2. Write translations using the correct regional vocabulary, grammar, and spelling
-3. Run accent verification (see `rules/code-style.md` section "i18n Accent and Diacritical Marks")
+3. Run accent verification (see [`rules/code-style.md`](rules/code-style.md) section "i18n Accent and Diacritical Marks")
 4. Run regional variant check against the flagged word list
 5. For uncertain words, verify against the regional dictionary or native speaker review
 

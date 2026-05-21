@@ -9,18 +9,18 @@ When existing code in the project violates these rules, the generated code must 
 **Priority order when instructions conflict:**
 
 1. `~/.claude/CLAUDE.md` and `~/.claude/rules/` (our rules, always win)
-2. Project-level `CLAUDE.md` (project conventions, second priority)
+2. Project-level [`CLAUDE.md`](CLAUDE.md) (project conventions, second priority)
 3. Existing code patterns (follow only when they don't violate 1 or 2)
 
 When following an existing pattern would violate a rule, follow the rule and fix the pattern in the code you touch.
 
 ## On-Demand Standards
 
-Domain-specific standards live in `standards/` and are NOT loaded automatically. Before starting work, check `rules/index.yml` for `on_demand` entries matching the task. Read matching files from `standards/` before writing code.
+Domain-specific standards live in [`standards/`](standards) and are NOT loaded automatically. Before starting work, check [`rules/index.yml`](rules/index.yml) for `on_demand` entries matching the task. Read matching files from [`standards/`](standards) before writing code.
 
 ## Core Principles
 
-Quick-scan before acting. The detailed verification items live in `checklists/checklist.md` (70 categories, 782 items).
+Quick-scan before acting. The detailed verification items live in [`checklists/checklist.md`](checklists/checklist.md) (70 categories, 782 items).
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.
@@ -108,7 +108,7 @@ Not everyone reading instructions will have CLI knowledge. When writing steps fo
 - Multiple valid approaches: state trade-offs briefly, pick the most performant, say why.
 - When the user's request is ambiguous ("compress", "clean up", "simplify"), confirm the specific meaning before executing. The cost of one clarifying question is near zero. The cost of wrong-direction work is a full revert.
 - **Execute, don't ask.** When the user gives a list of tasks or says "do everything," execute them all sequentially without pausing to ask for confirmation between steps. The user's default answer is "yes, do it." Only stop for genuinely blocking ambiguity that would cause wrong-direction work, not for permission to continue.
-- **Smart questions and reports.** When a clarifying question is unavoidable, when reporting status or errors, when briefing a subagent, or when closing a loop, follow `rules/smart-questions.md`. Specific question on the first line, what was investigated, options with trade-offs; symptom before theory; one-line `FIXED:`/`RESOLVED:`/`DONE:` on closure.
+- **Smart questions and reports.** When a clarifying question is unavoidable, when reporting status or errors, when briefing a subagent, or when closing a loop, follow [`rules/smart-questions.md`](rules/smart-questions.md). Specific question on the first line, what was investigated, options with trade-offs; symptom before theory; one-line `FIXED:`/`RESOLVED:`/`DONE:` on closure.
 
 ## Anti-Hallucination
 
@@ -197,7 +197,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 
 **Every code change:**
 
-1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. Apply every applicable category from `checklists/checklist.md` and state findings inline. Key categories to always check:
+1. **Self-review loop (MANDATORY, do not skip).** Read the full diff, then read every modified function from signature to closing brace. Apply every applicable category from [`checklists/checklist.md`](checklists/checklist.md) and state findings inline. Key categories to always check:
 
    - **Correctness (cat 1):** null/undefined handled? Edge cases traced?
    - **Security (cat 2):** inputs validated? No secrets? Auth enforced?
@@ -207,7 +207,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Zero warnings (cat 17):** tool output clean? Suppression justified?
    - **Writing style (prose/docs/rules):** em dashes removed? No parentheses in prose? Check every documentation, rule, or comment block you write or modify.
 
-   These are quick-scan reminders for the most critical categories. All 68 categories in `checklists/checklist.md` must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification when external sources were consulted, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, and category 58 for licensing and SPDX compliance. Read the full checklist, not just this summary.
+   These are quick-scan reminders for the most critical categories. All 68 categories in [`checklists/checklist.md`](checklists/checklist.md) must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification when external sources were consulted, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, and category 58 for licensing and SPDX compliance. Read the full checklist, not just this summary.
 
    State findings for each file before proceeding. "No issues" is an acceptable finding. If issues are found, fix them and re-read. Do not proceed to step 2 until this pass is clean.
 
@@ -259,6 +259,6 @@ After significant multi-step work or sessions with corrections, run `/retro`. Ca
 
 ## Claude Configuration Documentation
 
-`claude/README.md` documents the full setup. When modifying any file inside `claude/`, update `README.md` in the same task.
+`claude/README.md` documents the full setup. When modifying any file inside `claude/`, update [`README.md`](README.md) in the same task.
 
 @RTK.md

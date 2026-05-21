@@ -12,16 +12,16 @@ These CLIs are covered. Each has a per-command form that bypasses global state, 
 
 | CLI | Per-command form | Anti-pattern command (blocked) | Enforcing hook |
 |-----|------------------|-------------------------------|----------------|
-| `gh` | `GH_TOKEN=<token> gh ...` | `gh auth switch` | `hooks/gh-token-guard.py` |
-| `glab` | `GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab ...` | `glab auth login` | `hooks/glab-token-guard.py` |
-| `docker` | `docker --context <name> ...` or `DOCKER_CONTEXT=<name>` env or `DOCKER_HOST=<socket>` env | `docker context use <name>` | `hooks/docker-context-guard.py` |
-| `kubectl` | `kubectl --context <name> ...` or `KUBECONFIG=<path>` env | `kubectl config use-context <name>`, `kubectx <name>` | `hooks/kubectl-context-guard.py` |
-| `aws` | `aws --profile <name> ...` or `AWS_PROFILE=<name>` env | `aws configure set ...` without `--profile` | `hooks/aws-profile-guard.py` |
-| `gcloud` | `gcloud --account=<account> --project=<project> ...` or `--configuration=<name>` flag | `gcloud config set account`, `gcloud config set project`, `gcloud config configurations activate` | `hooks/gcloud-config-guard.py` |
-| `terraform` workspace | `TF_WORKSPACE=<name> terraform ...` env | `terraform workspace select <name>` | `hooks/terraform-workspace-guard.py` |
-| `mise` | Project-local `.mise.toml` / `.tool-versions`, `mise exec <tool>@<version> -- ...`, `mise x <tool>@<version> -- ...` | `mise use --global <tool>@<version>`, `mise use -g <tool>@<version>` | `hooks/mise-global-guard.py` |
+| `gh` | `GH_TOKEN=<token> gh ...` | `gh auth switch` | [`hooks/gh-token-guard.py`](hooks/gh-token-guard.py) |
+| `glab` | `GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab ...` | `glab auth login` | [`hooks/glab-token-guard.py`](hooks/glab-token-guard.py) |
+| `docker` | `docker --context <name> ...` or `DOCKER_CONTEXT=<name>` env or `DOCKER_HOST=<socket>` env | `docker context use <name>` | [`hooks/docker-context-guard.py`](hooks/docker-context-guard.py) |
+| `kubectl` | `kubectl --context <name> ...` or `KUBECONFIG=<path>` env | `kubectl config use-context <name>`, `kubectx <name>` | [`hooks/kubectl-context-guard.py`](hooks/kubectl-context-guard.py) |
+| `aws` | `aws --profile <name> ...` or `AWS_PROFILE=<name>` env | `aws configure set ...` without `--profile` | [`hooks/aws-profile-guard.py`](hooks/aws-profile-guard.py) |
+| `gcloud` | `gcloud --account=<account> --project=<project> ...` or `--configuration=<name>` flag | `gcloud config set account`, `gcloud config set project`, `gcloud config configurations activate` | [`hooks/gcloud-config-guard.py`](hooks/gcloud-config-guard.py) |
+| `terraform` workspace | `TF_WORKSPACE=<name> terraform ...` env | `terraform workspace select <name>` | [`hooks/terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) |
+| `mise` | Project-local `.mise.toml` / `.tool-versions`, `mise exec <tool>@<version> -- ...`, `mise x <tool>@<version> -- ...` | `mise use --global <tool>@<version>`, `mise use -g <tool>@<version>` | [`hooks/mise-global-guard.py`](hooks/mise-global-guard.py) |
 | `helm` | `helm --kube-context <name> ...` | `kubectl config use-context` upstream | covered transitively via `kubectl-context-guard.py` |
-| `git` (author identity) | `~/.gitconfig` `includeIf "hasconfig:remote.*.url:..."` resolves identity per remote | `git config --local user.*`, `GIT_AUTHOR_EMAIL=` env on `git commit`, push of commits authored under a placeholder identity | `hooks/git-author-guard.py` |
+| `git` (author identity) | `~/.gitconfig` `includeIf "hasconfig:remote.*.url:..."` resolves identity per remote | `git config --local user.*`, `GIT_AUTHOR_EMAIL=` env on `git commit`, push of commits authored under a placeholder identity | [`hooks/git-author-guard.py`](hooks/git-author-guard.py) |
 
 Niche CLIs not covered yet (vercel, netlify, fly, az, doctl, heroku, firebase, supabase) follow the same principle: prefer per-command tokens or flags. Add a hook when the user starts running them multi-account.
 
@@ -150,8 +150,8 @@ When the user starts running a new CLI multi-account, add coverage in five steps
 1. **Verify the per-command form.** Read the CLI's help: `<cli> --help`, `<cli> auth --help`, `<cli> config --help`. Confirm a flag (`--profile`, `--context`) or env var works without mutating global state.
 2. **Identify the anti-pattern command.** The one that mutates the active account or context globally.
 3. **Write `hooks/<cli>-<context>-guard.py`** following the gh-token-guard template. Stdin JSON parse, regex match, allow read-only and per-command forms, hard-block the anti-pattern, exit 2 with a pointer to this standard.
-4. **Add fixtures** under `tests/fixtures/`: at minimum one blocked scenario and one allowed scenario, ideally also a read-only and a no-op fixture.
-5. **Wire the hook** in `settings.json` under `PreToolUse > Bash`. Update the coverage table in this file. Update `rules/security.md` Hook Coverage table.
+4. **Add fixtures** under [`tests/fixtures/`](tests/fixtures): at minimum one blocked scenario and one allowed scenario, ideally also a read-only and a no-op fixture.
+5. **Wire the hook** in [`settings.json`](settings.json) under `PreToolUse > Bash`. Update the coverage table in this file. Update [`rules/security.md`](rules/security.md) Hook Coverage table.
 
 ## Rules summary
 
@@ -163,8 +163,8 @@ When the user starts running a new CLI multi-account, add coverage in five steps
 
 ## Related standards
 
-- `standards/github-accounts.md`: detailed per-command rules for `gh`.
-- `standards/gitlab-accounts.md`: detailed per-command rules for `glab`.
-- `standards/borrow-restore.md`: fallback pattern for tools without a per-command form.
-- `standards/git-identity.md`: author identity isolation for git, including the includeIf template and hook contract.
+- [`standards/github-accounts.md`](standards/github-accounts.md): detailed per-command rules for `gh`.
+- [`standards/gitlab-accounts.md`](standards/gitlab-accounts.md): detailed per-command rules for `glab`.
+- [`standards/borrow-restore.md`](standards/borrow-restore.md): fallback pattern for tools without a per-command form.
+- [`standards/git-identity.md`](standards/git-identity.md): author identity isolation for git, including the includeIf template and hook contract.
 - `standards/hook-authoring.md`: performance budget and exit-code semantics for new hooks.

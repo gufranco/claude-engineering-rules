@@ -4,7 +4,7 @@ Terraform's built-in testing framework validates that configuration updates do n
 
 ## File Structure
 
-Test files use `.tftest.hcl` extension. Organize in a `tests/` directory with naming that distinguishes unit from integration tests:
+Test files use `.tftest.hcl` extension. Organize in a [`tests/`](tests) directory with naming that distinguishes unit from integration tests:
 
 ```
 my-module/
@@ -293,4 +293,4 @@ terraform test -verbose
 
 ## Related Standards
 
-- `standards/infrastructure.md`: Infrastructure
+- [`standards/infrastructure.md`](standards/infrastructure.md): Infrastructure

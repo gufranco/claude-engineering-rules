@@ -5,7 +5,7 @@ description: Language-specific rules subdir. Place per-language guidance here wh
 
 # Language-Specific Rules
 
-This directory holds rules that apply to a single programming language. Cross-language rules stay in the parent `rules/` directory.
+This directory holds rules that apply to a single programming language. Cross-language rules stay in the parent [`rules/`](rules) directory.
 
 ## When to add a file here
 
@@ -17,7 +17,7 @@ This directory holds rules that apply to a single programming language. Cross-la
 
 ## Index integration
 
-When you add a file here, register it in `rules/index.yml` under the `on_demand` section with triggers that match the language name and its tooling. The file is not auto-loaded; the assistant pulls it when triggers match.
+When you add a file here, register it in [`rules/index.yml`](rules/index.yml) under the `on_demand` section with triggers that match the language name and its tooling. The file is not auto-loaded; the assistant pulls it when triggers match.
 
 ## Naming convention
 
@@ -25,4 +25,4 @@ When you add a file here, register it in `rules/index.yml` under the `on_demand`
 
 ## Existing flat rules
 
-The flat files in `standards/` (`go.md`, `rust.md`, `jvm.md`, `postgresql.md`, `typescript-5x.md`) are not moved. They remain authoritative until superseded by entries here. New language guidance goes here going forward.
+The flat files in [`standards/`](standards) (`go.md`, `rust.md`, `jvm.md`, `postgresql.md`, `typescript-5x.md`) are not moved. They remain authoritative until superseded by entries here. New language guidance goes here going forward.

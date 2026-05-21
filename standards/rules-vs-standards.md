@@ -6,8 +6,8 @@ How the two-tier configuration system in `~/.claude/` organizes guidance, and ho
 
 | Tier | Directory | Loading | Token cost |
 |------|-----------|---------|------------|
-| Tier 1 | `rules/` | Always loaded into every conversation | Fixed, every session |
-| Tier 2 | `standards/` | Loaded on demand when triggers match | Zero unless invoked |
+| Tier 1 | [`rules/`](rules) | Always loaded into every conversation | Fixed, every session |
+| Tier 2 | [`standards/`](standards) | Loaded on demand when triggers match | Zero unless invoked |
 
 Tier 1 content shapes how every response is produced. Tier 2 content provides domain-specific depth that only matters when the task touches that domain.
 
@@ -28,7 +28,7 @@ When two answers conflict: prefer standards/. The cost of an unloaded standard i
 
 ## Tier 1 Membership Criteria
 
-A file belongs in `rules/` only if it meets every criterion:
+A file belongs in [`rules/`](rules) only if it meets every criterion:
 
 1. **Universal applicability.** The guidance shapes every coding task. Examples: error classification, surgical edits, response language, completion gates.
 2. **Behavioral, not informational.** It tells the model what to do, not what something is. Standards reference material belongs in standards/.
@@ -40,16 +40,16 @@ Current Tier 1 files: `code-style.md`, `git-workflow.md`, `language.md`, `pre-fl
 
 ## Tier 2 Membership Criteria
 
-A file belongs in `standards/` if any of the following hold:
+A file belongs in [`standards/`](standards) if any of the following hold:
 
-1. **Domain-specific.** Applies only to a technology, framework, or workflow. Example: `postgresql.md`, `redis.md`, `rust.md`.
-2. **Reference material.** A lookup the model consults rather than guidance it always carries. Example: `llm-docs.md`, `identifiers.md`.
-3. **Optional depth.** Adds nuance beyond what `rules/` covers but is unnecessary for unrelated work.
+1. **Domain-specific.** Applies only to a technology, framework, or workflow. Example: [`postgresql.md`](standards/postgresql.md), [`redis.md`](standards/redis.md), [`rust.md`](standards/rust.md).
+2. **Reference material.** A lookup the model consults rather than guidance it always carries. Example: [`llm-docs.md`](standards/llm-docs.md), [`identifiers.md`](standards/identifiers.md).
+3. **Optional depth.** Adds nuance beyond what [`rules/`](rules) covers but is unnecessary for unrelated work.
 4. **Trigger-friendly.** A clear keyword set identifies when the standard is needed.
 
 ## Trigger Design
 
-Standards are loaded by matching task descriptions against the `triggers` field in `rules/index.yml`. Triggers must be:
+Standards are loaded by matching task descriptions against the `triggers` field in [`rules/index.yml`](rules/index.yml). Triggers must be:
 
 - **Specific enough** to avoid loading the standard for unrelated tasks
 - **General enough** to fire when the standard genuinely applies
@@ -101,13 +101,13 @@ A separate dimension: skills are workflows the user invokes, not passive guidanc
 | Skill | `skills/*/SKILL.md` | User invokes via `/<name>` | Multi-step workflow |
 | Agent | `agents/*.md` | Orchestrator delegates | Specialized task execution |
 | Hook | `hooks/*.{py,sh}` | Tool invocation | Pre/post tool enforcement |
-| Checklist | `checklists/checklist.md` | Verification phases | Review categories |
+| Checklist | [`checklists/checklist.md`](checklists/checklist.md) | Verification phases | Review categories |
 
 When designing new guidance, ask: is this content (rule/standard), workflow (skill), delegated work (agent), or runtime enforcement (hook)?
 
 ## Maintenance Discipline
 
-- Every new file in `rules/` or `standards/` must be registered in `rules/index.yml`
+- Every new file in [`rules/`](rules) or [`standards/`](standards) must be registered in [`rules/index.yml`](rules/index.yml)
 - Every removed file must be unregistered in the same commit
 - Run `python3 scripts/validate-counts.py` and `python3 scripts/validate-cross-refs.py` before committing changes to either tier
 - Trigger words are part of the public API of a standard. Treat trigger changes as breaking changes
@@ -123,7 +123,7 @@ MCP servers consume runtime context and rate budget. Treat them like Tier 1: eve
 | Scope each server to specific skills or agents | Avoid loading data-heavy servers for unrelated work |
 | Disable servers that have not been used for an extended period | Dead weight in every session |
 | Prefer per-skill MCP scoping over global activation | Smaller token footprint per task |
-| Document each MCP server's purpose and trigger set in `mcp-security.md` | Otherwise nobody remembers what it does |
+| Document each MCP server's purpose and trigger set in [`mcp-security.md`](standards/mcp-security.md) | Otherwise nobody remembers what it does |
 
 When evaluating a new MCP server: would a periodic CLI fetch satisfy the same need? If yes, prefer the CLI. MCP is for capabilities that need persistent connection, structured tool calls, or cross-session state.
 

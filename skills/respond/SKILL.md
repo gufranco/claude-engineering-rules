@@ -37,8 +37,8 @@ If no subcommand is given, default to the full workflow.
 ## Phase 1: Discover PR
 
 1. Run **in parallel**: `git remote get-url origin`, `git branch --show-current`, `git status --porcelain`.
-2. Detect platform from the remote URL. Supported platforms: GitHub, GitLab, Bitbucket Cloud. The default workflow in this file documents GitHub. For GitLab specifics, read `platform-gitlab.md` and substitute the API surface. For Bitbucket Cloud, read `platform-bitbucket.md` and substitute. The classification taxonomy, reply templates, and bot triage rules are identical across platforms.
-3. Resolve the platform account per `../../standards/multi-account-cli.md`. GitHub uses `GH_TOKEN=$(gh auth token --user <account>) gh ...`. GitLab uses `GITLAB_TOKEN=$(glab auth token --hostname <host>) glab ...`. Bitbucket uses `BITBUCKET_TOKEN` or `BITBUCKET_USERNAME`+`BITBUCKET_APP_PASSWORD` via `curl`.
+2. Detect platform from the remote URL. Supported platforms: GitHub, GitLab, Bitbucket Cloud. The default workflow in this file documents GitHub. For GitLab specifics, read [`platform-gitlab.md`](skills/respond/platform-gitlab.md) and substitute the API surface. For Bitbucket Cloud, read [`platform-bitbucket.md`](skills/respond/platform-bitbucket.md) and substitute. The classification taxonomy, reply templates, and bot triage rules are identical across platforms.
+3. Resolve the platform account per [`../../standards/multi-account-cli.md`](standards/multi-account-cli.md). GitHub uses `GH_TOKEN=$(gh auth token --user <account>) gh ...`. GitLab uses `GITLAB_TOKEN=$(glab auth token --hostname <host>) glab ...`. Bitbucket uses `BITBUCKET_TOKEN` or `BITBUCKET_USERNAME`+`BITBUCKET_APP_PASSWORD` via `curl`.
 4. Resolve the PR. If an argument is passed, parse it. Otherwise look up the PR for the current branch.
 
    ```bash
@@ -175,7 +175,7 @@ Output per thread: a classification record with author type, intent, decision, e
 
 ## Phase 4: Draft Strategy
 
-For each thread, draft a reply and, when applicable, a code change. The reply follows the natural voice rules from `../../standards/code-review.md` and `../../rules/writing-precision.md`, plus the four communication principles below.
+For each thread, draft a reply and, when applicable, a code change. The reply follows the natural voice rules from [`../../standards/code-review.md`](standards/code-review.md) and [`../../rules/writing-precision.md`](rules/writing-precision.md), plus the four communication principles below.
 
 ### Principle 1: Fix the code before explaining it
 
@@ -197,7 +197,7 @@ When a thread has cycled twice without convergence, propose a brief call. The sk
 
 ### Reply templates
 
-Full exemplars with good and bad counterparts live in `reply-templates.md`. The summary table covers the common intent-by-decision pairs.
+Full exemplars with good and bad counterparts live in [`reply-templates.md`](skills/respond/reply-templates.md). The summary table covers the common intent-by-decision pairs.
 
 | Intent x Decision | Template summary |
 |-------------------|-------------------|
@@ -483,7 +483,7 @@ The skill enforces these by surfacing reminders, never by acting unilaterally. W
 
 ## AI Bot Triage Tactics
 
-Full pattern catalog with per-tool false positives lives in `bot-triage.md`. The summary below is the operational ruleset when `--include-bots` is set.
+Full pattern catalog with per-tool false positives lives in [`bot-triage.md`](skills/respond/bot-triage.md). The summary below is the operational ruleset when `--include-bots` is set.
 
 ### Severity baseline
 
@@ -549,7 +549,7 @@ In both conventions, the skill never bulk-resolves. Each resolve is a single Gra
 
 ### Outdated vs Resolved
 
-GitHub auto-marks comments as `outdated` when the cited line changes. Outdated is not the same as resolved. The skill never relies on `isOutdated == true` as a substitute for an explicit resolution. Force-pushing to mark threads outdated is an anti-pattern flagged in the "As Reviewee" section of `../../standards/code-review.md`.
+GitHub auto-marks comments as `outdated` when the cited line changes. Outdated is not the same as resolved. The skill never relies on `isOutdated == true` as a substitute for an explicit resolution. Force-pushing to mark threads outdated is an anti-pattern flagged in the "As Reviewee" section of [`../../standards/code-review.md`](standards/code-review.md).
 
 ## Commit Credit Conventions
 
@@ -584,8 +584,8 @@ The skill prompts before adding any credit trailer. The default is no trailer un
 
 | File | When to read |
 |------|-------------|
-| `platform-gitlab.md` | When the detected platform is GitLab. Documents glab CLI and REST API patterns, discussion model, resolve semantics, and bot allowlist |
-| `platform-bitbucket.md` | When the detected platform is Bitbucket Cloud. Documents REST API patterns, auth model, and the absence of a native resolve concept |
+| [`platform-gitlab.md`](skills/respond/platform-gitlab.md) | When the detected platform is GitLab. Documents glab CLI and REST API patterns, discussion model, resolve semantics, and bot allowlist |
+| [`platform-bitbucket.md`](skills/respond/platform-bitbucket.md) | When the detected platform is Bitbucket Cloud. Documents REST API patterns, auth model, and the absence of a native resolve concept |
 
 ## Related skills
 

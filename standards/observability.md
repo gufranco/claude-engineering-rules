@@ -267,6 +267,6 @@ process.on('SIGTERM', () => sdk.shutdown())
 
 ## Related Standards
 
-- `standards/sre-practices.md`: SRE Practices
-- `standards/opentelemetry.md`: OpenTelemetry
-- `standards/dashboard-design.md`: Dashboard Design
+- [`standards/sre-practices.md`](standards/sre-practices.md): SRE Practices
+- [`standards/opentelemetry.md`](standards/opentelemetry.md): OpenTelemetry
+- [`standards/dashboard-design.md`](standards/dashboard-design.md): Dashboard Design

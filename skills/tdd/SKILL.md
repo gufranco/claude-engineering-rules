@@ -36,13 +36,13 @@ Match the project's test colocation pattern. Read 2 nearby tests to confirm:
 - Naming convention (`*.test.ts`, `*_test.go`, `test_*.py`).
 - Test runner imports.
 - Setup and teardown style.
-- Fake data approach. Apply `rules/testing.md` Test Data section.
+- Fake data approach. Apply [`rules/testing.md`](rules/testing.md) Test Data section.
 
 Add the test file if missing. Match the existing folder layout exactly.
 
 ### 3. Red: write the failing test
 
-- Use the AAA comment pattern from `rules/testing.md`. Three markers, no other comments in the test body.
+- Use the AAA comment pattern from [`rules/testing.md`](rules/testing.md). Three markers, no other comments in the test body.
 - Use the most specific assertion available. No `toBeTruthy`. Apply the Assertion Specificity table.
 - Seed any fake data generator deterministically.
 
@@ -61,7 +61,7 @@ Write the smallest change that makes the test pass. Resist the urge to add nearb
 - No new error handling beyond what the test asserts.
 - No new abstractions.
 - No "while I'm here" cleanup.
-- Stay surgical. See `rules/surgical-edits.md`.
+- Stay surgical. See [`rules/surgical-edits.md`](rules/surgical-edits.md).
 
 Run the test. Confirm it passes. Run the full test file to confirm no regressions on neighbors.
 
@@ -78,8 +78,8 @@ Run the full test file after every refactor change. The bar is zero failing test
 
 ### 6. Verify gates
 
-- Format, lint, typecheck, full test suite. Apply `rules/git-workflow.md` Local Quality Gate.
-- Coverage for the changed file at 95% or higher. Apply `rules/testing.md` Coverage section.
+- Format, lint, typecheck, full test suite. Apply [`rules/git-workflow.md`](rules/git-workflow.md) Local Quality Gate.
+- Coverage for the changed file at 95% or higher. Apply [`rules/testing.md`](rules/testing.md) Coverage section.
 
 Report a one-line summary: behavior implemented, test name, files changed, coverage on changed file.
 
@@ -89,7 +89,7 @@ Report a one-line summary: behavior implemented, test name, files changed, cover
 - Writing a test that passes on the first run. The test is not measuring what you think.
 - Adding multiple assertions for unrelated behaviors in one test. Split into separate `/tdd` runs.
 - Skipping the refactor step on every cycle. The codebase decays without it.
-- Mocking internal infrastructure to make the test cheap. Apply `rules/testing.md` Mocks Policy.
+- Mocking internal infrastructure to make the test cheap. Apply [`rules/testing.md`](rules/testing.md) Mocks Policy.
 
 ## Rules
 
@@ -97,7 +97,7 @@ Report a one-line summary: behavior implemented, test name, files changed, cover
 - Test must fail before production code is written. No exceptions.
 - The green step writes the minimum. Generalization belongs in refactor or in a later cycle.
 - Use the project's real test infrastructure. Never mock the database, queue, or your own services.
-- Apply existing rules: `rules/testing.md`, `rules/surgical-edits.md`, `rules/git-workflow.md`.
+- Apply existing rules: [`rules/testing.md`](rules/testing.md), [`rules/surgical-edits.md`](rules/surgical-edits.md), [`rules/git-workflow.md`](rules/git-workflow.md).
 
 ## Related skills
 

@@ -167,6 +167,6 @@ Before every production deployment:
 
 ## Related Standards
 
-- `standards/database.md`: Database
-- `standards/infrastructure.md`: Infrastructure
+- [`standards/database.md`](standards/database.md): Database
+- [`standards/infrastructure.md`](standards/infrastructure.md): Infrastructure
 - `standards/feature-flags.md`: Feature Flags

@@ -330,5 +330,5 @@ When introducing Temporal in a new module, prefer it over `Date` and over date-f
 
 ## Related Standards
 
-- `standards/frontend.md`: Frontend Design
+- [`standards/frontend.md`](standards/frontend.md): Frontend Design
 - `~/.claude/rules/code-style.md` "ES2024+ Fix Suggestions" lists every mutating call and its non-mutating replacement.

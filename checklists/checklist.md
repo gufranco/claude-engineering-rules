@@ -44,7 +44,7 @@ Not every category applies to every change. Skip categories clearly irrelevant t
 
 ### 3. Error Handling
 
-Error classification and typed error returns: `rules/code-style.md`. Retry parameters and HTTP status mapping: category 20.
+Error classification and typed error returns: [`rules/code-style.md`](rules/code-style.md). Retry parameters and HTTP status mapping: category 20.
 
 - [ ] Every error path covered with context, not silently swallowed
 - [ ] Error messages helpful for debugging without leaking internals
@@ -60,7 +60,7 @@ Error classification and typed error returns: `rules/code-style.md`. Retry param
 - [ ] No fire-and-forget promises that should be awaited. If intentionally fire-and-forget, attach `.catch()` to prevent unhandled rejections
 - [ ] No TOCTOU bugs: check-then-act sequences protected by database constraints, locks, or conditional writes
 - [ ] No unhandled promise rejections
-- [ ] Multi-command Redis operations use Lua scripts or `MULTI/EXEC`. Two sequential Redis commands (e.g., `INCRBY` then `EXPIRE`) are not atomic. See `standards/redis.md`
+- [ ] Multi-command Redis operations use Lua scripts or `MULTI/EXEC`. Two sequential Redis commands (e.g., `INCRBY` then `EXPIRE`) are not atomic. See [`standards/redis.md`](standards/redis.md)
 
 #### Concurrent actor timeline (MANDATORY for write paths)
 
@@ -89,7 +89,7 @@ Do not check these items abstractly. For each write path, identify every actor t
 
 ### 6. Algorithmic Performance
 
-Data structure selection guide and anti-pattern catalog: `standards/algorithmic-complexity.md`.
+Data structure selection guide and anti-pattern catalog: [`standards/algorithmic-complexity.md`](standards/algorithmic-complexity.md).
 
 #### Complexity
 
@@ -104,7 +104,7 @@ Data structure selection guide and anti-pattern catalog: `standards/algorithmic-
 
 #### Data structures
 
-- [ ] Data structures match the dominant operation. See `standards/algorithmic-complexity.md` decision guide
+- [ ] Data structures match the dominant operation. See [`standards/algorithmic-complexity.md`](standards/algorithmic-complexity.md) decision guide
 - [ ] Set for membership checks, Map for key-value lookups. Not array scans
 - [ ] Queue or deque for FIFO processing. Not array + `.shift()`
 - [ ] Heap or priority queue for priority ordering. Not sorted array with re-sort
@@ -128,7 +128,7 @@ Data structure selection guide and anti-pattern catalog: `standards/algorithmic-
 
 ### 7. Frontend Performance
 
-Skip if no frontend code changed. Full reference: `standards/frontend.md`.
+Skip if no frontend code changed. Full reference: [`standards/frontend.md`](standards/frontend.md).
 
 #### Rendering
 
@@ -183,7 +183,7 @@ Skip if the project is not a public-facing web application.
 
 #### Accessibility (WCAG 2.2)
 
-Full testing strategy: `standards/accessibility-testing.md`. Design rules: `standards/frontend.md`.
+Full testing strategy: [`standards/accessibility-testing.md`](standards/accessibility-testing.md). Design rules: [`standards/frontend.md`](standards/frontend.md).
 
 - [ ] All interactive targets meet 24x24 CSS pixel minimum (WCAG 2.5.8)
 - [ ] Focused element not entirely hidden by sticky headers, footers, or overlays (WCAG 2.4.11). `scroll-margin-top`/`scroll-margin-bottom` set to account for fixed bars
@@ -194,7 +194,7 @@ Full testing strategy: `standards/accessibility-testing.md`. Design rules: `stan
 
 ### 8. Testing
 
-Full testing philosophy, policies, and guidelines: `rules/testing.md`.
+Full testing philosophy, policies, and guidelines: [`rules/testing.md`](rules/testing.md).
 
 #### Coverage
 
@@ -205,7 +205,7 @@ Full testing philosophy, policies, and guidelines: `rules/testing.md`.
 
 #### Test quality
 
-- [ ] Tests follow AAA pattern with those exact comments: `// Arrange`, `// Act`, `// Assert`. No other comments in test bodies. See `rules/testing.md` for the full AAA policy
+- [ ] Tests follow AAA pattern with those exact comments: `// Arrange`, `// Act`, `// Assert`. No other comments in test bodies. See [`rules/testing.md`](rules/testing.md) for the full AAA policy
 - [ ] Test names describe behavior, not implementation ("should reject expired token" not "test validateToken")
 - [ ] Assertions specific enough to catch regressions. Not just `toBeTruthy()` when a specific value matters
 - [ ] No test-only backdoors in production code
@@ -213,18 +213,18 @@ Full testing philosophy, policies, and guidelines: `rules/testing.md`.
 - [ ] Tests verify the behavior they claim to test, not just that no error was thrown
 - [ ] Negative tests present: invalid input, unauthorized access, missing resources
 - [ ] Boundary value tests: empty arrays, zero, max int, empty string, null
-- [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values. See `rules/testing.md` for the library table and seeding guidelines
+- [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values. See [`rules/testing.md`](rules/testing.md) for the library table and seeding guidelines
 - [ ] Contract tests at service boundaries: consumer expectations verified against provider responses
 - [ ] Property-based tests for complex logic: invariants hold across randomized inputs, not just hand-picked examples
 
 #### Determinism
 
-- [ ] No dependency on current time, unseeded random values, network calls, shared database state, execution order, timing delays, or file system state. See `rules/testing.md` for the full flakiness table
+- [ ] No dependency on current time, unseeded random values, network calls, shared database state, execution order, timing delays, or file system state. See [`rules/testing.md`](rules/testing.md) for the full flakiness table
 - [ ] Snapshot tests strip non-deterministic values: timestamps, UUIDs, random tokens
 
 #### Mock policy (STRICT, blocking issue)
 
-See `rules/testing.md` for the full mock policy with rationale.
+See [`rules/testing.md`](rules/testing.md) for the full mock policy with rationale.
 
 - [ ] Database, Redis, queues, and caches use real connections via docker-compose, with `beforeAll()` seed and `afterAll()` cleanup
 - [ ] Own services and modules tested with real implementations, not mocks
@@ -347,7 +347,7 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 - [ ] Feature flag states consistent. If a flag guards behavior in one file, all related files respect the same flag
 - [ ] Env var completeness. Every env var referenced in code exists in `.env.example`, Docker Compose, CI/CD, and Terraform with matching names
 - [ ] Error type consistency. Domain error classes used across modules share a common base or discriminant, not ad-hoc strings
-- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic (pricing, permissions, formatting) is identical across all paths. No path reimplements the calculation inline. See `rules/code-style.md` "Delivery Path Consistency"
+- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic (pricing, permissions, formatting) is identical across all paths. No path reimplements the calculation inline. See [`rules/code-style.md`](rules/code-style.md) "Delivery Path Consistency"
 
 ### 16. Cascading Fix Analysis
 
@@ -367,7 +367,7 @@ Treat every warning as an error. A warning ignored today becomes a broken build 
 
 #### Strictness configuration
 
-- [ ] Compiler, type checker, and linter configured at maximum strictness. See `rules/code-style.md` "Maximum Compiler and Checker Strictness" for per-language requirements
+- [ ] Compiler, type checker, and linter configured at maximum strictness. See [`rules/code-style.md`](rules/code-style.md) "Maximum Compiler and Checker Strictness" for per-language requirements
 - [ ] No strictness flags intentionally disabled without a documented reason in the config file
 - [ ] When joining an existing project with missing strictness flags, add them and fix resulting errors in the same PR
 
@@ -427,7 +427,7 @@ Do not check these items by reading the code in isolation. Trace the key from so
 - [ ] **Multi-step mutation atomicity verified.** If the idempotent operation has multiple steps (void old data, create new data), are all steps in a single transaction? If step 2 fails after step 1 succeeded, is the state recoverable? A consumed idempotency key + partially completed mutation = permanently corrupted state if retries are blocked
 - [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys (different timestamps, different request IDs), do they both pass the dedup check? If yes, is there a secondary guard (per-entity mutex, database constraint) that prevents double-processing?
 
-Reference: `rules/code-style.md` (Data Safety), `standards/resilience.md` (Idempotency, Deduplication)
+Reference: [`rules/code-style.md`](rules/code-style.md) (Data Safety), [`standards/resilience.md`](standards/resilience.md) (Idempotency, Deduplication)
 
 ### 19. Atomicity and Transactions
 
@@ -439,7 +439,7 @@ Reference: `rules/code-style.md` (Data Safety), `standards/resilience.md` (Idemp
 - [ ] Conditional write failures classified: conflict (retry with fresh read) vs duplicate (skip)?
 - [ ] Multi-step workflows handle partial failure with rollback or compensating actions?
 
-Reference: `standards/database.md` (Transactions and Atomic Writes, Conditional Writes)
+Reference: [`standards/database.md`](standards/database.md) (Transactions and Atomic Writes, Conditional Writes)
 
 ### 20. Error Classification and Retry
 
@@ -460,7 +460,7 @@ Reference: `standards/database.md` (Transactions and Atomic Writes, Conditional 
 - [ ] Batch processing: individual item failures reported without aborting the batch?
 - [ ] Errors in cleanup code (finally blocks, defer) handled separately?
 
-Reference: `rules/code-style.md` (Error Classification), `standards/resilience.md` (Error Classification, Retry Strategy)
+Reference: [`rules/code-style.md`](rules/code-style.md) (Error Classification), [`standards/resilience.md`](standards/resilience.md) (Error Classification, Retry Strategy)
 
 ### 21. Caching
 
@@ -473,7 +473,7 @@ Reference: `rules/code-style.md` (Error Classification), `standards/resilience.m
 - [ ] Max memory limit set? Eviction policy chosen (LRU, LFU)?
 - [ ] Hit rate monitored?
 
-Reference: `standards/caching.md`
+Reference: [`standards/caching.md`](standards/caching.md)
 
 ### 22. Consistency Model
 
@@ -483,7 +483,7 @@ Reference: `standards/caching.md`
 - [ ] Implementation of read-your-writes explicit (read from primary after write, version token, or optimistic UI update)?
 - [ ] Eventual consistency communicated to consumers (not silently stale)?
 
-Reference: `standards/distributed-systems.md` (Consistency Models)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Consistency Models)
 
 ### 23. Back Pressure and Load Management
 
@@ -494,7 +494,7 @@ Reference: `standards/distributed-systems.md` (Consistency Models)
 - [ ] Rate limiting on public endpoints?
 - [ ] Plan for 10x traffic explicitly considered?
 
-Reference: `standards/resilience.md` (Back Pressure)
+Reference: [`standards/resilience.md`](standards/resilience.md) (Back Pressure)
 
 ### 24. Bulkhead Isolation
 
@@ -503,7 +503,7 @@ Reference: `standards/resilience.md` (Back Pressure)
 - [ ] Critical and non-critical workloads isolated (separate processes, queues, or deployments)?
 - [ ] Per-tenant or per-priority queue isolation where applicable?
 
-Reference: `standards/resilience.md` (Bulkhead)
+Reference: [`standards/resilience.md`](standards/resilience.md) (Bulkhead)
 
 ### 25. Concurrency Control
 
@@ -517,7 +517,7 @@ Reference: `standards/resilience.md` (Bulkhead)
 - [ ] Async operations awaited where the result matters? No fire-and-forget without error handler?
 - [ ] No deadlock potential from acquiring multiple locks?
 
-Reference: `standards/resilience.md` (Concurrency Control)
+Reference: [`standards/resilience.md`](standards/resilience.md) (Concurrency Control)
 
 ### 26. Saga and Cross-Service Coordination
 
@@ -530,7 +530,7 @@ Reference: `standards/resilience.md` (Concurrency Control)
 - [ ] Outbox delivery mechanism chosen (polling, CDC, log tailing)?
 - [ ] No dual writes (DB + message broker in separate operations)?
 
-Reference: `standards/distributed-systems.md` (Saga Pattern, Outbox Pattern)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Saga Pattern, Outbox Pattern)
 
 ### 27. Event Ordering and Delivery Guarantees
 
@@ -541,7 +541,7 @@ Reference: `standards/distributed-systems.md` (Saga Pattern, Outbox Pattern)
 - [ ] Out-of-order events handled (version check, last-write-wins, or buffer and reorder)?
 - [ ] Consumers handle message redelivery without duplicate side effects?
 
-Reference: `standards/distributed-systems.md` (Event Ordering and Delivery Guarantees)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Event Ordering and Delivery Guarantees)
 
 ### 28. Distributed Locking
 
@@ -551,7 +551,7 @@ Reference: `standards/distributed-systems.md` (Event Ordering and Delivery Guara
 - [ ] Fencing tokens used to prevent stale writes after lease expiry?
 - [ ] Every write includes the fencing token, storage rejects stale tokens?
 
-Reference: `standards/distributed-systems.md` (Distributed Locking)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Distributed Locking)
 
 ### 29. Schema Evolution
 
@@ -561,7 +561,7 @@ Reference: `standards/distributed-systems.md` (Distributed Locking)
 - [ ] No changed field types (new field with new type added instead)?
 - [ ] Consumers handle at least current and previous schema version?
 
-Reference: `standards/distributed-systems.md` (Schema Evolution)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Schema Evolution)
 
 ### 30. Immutability
 
@@ -572,7 +572,7 @@ Reference: `standards/distributed-systems.md` (Schema Evolution)
 - [ ] Audit-sensitive data append-only (versioned rows, not in-place updates)?
 - [ ] Events stored as immutable facts in event-driven systems?
 
-Reference: `rules/code-style.md` (Immutability)
+Reference: [`rules/code-style.md`](rules/code-style.md) (Immutability)
 
 ### 31. Query Optimization
 
@@ -590,7 +590,7 @@ Reference: `rules/code-style.md` (Immutability)
 - [ ] Write amplification understood? Indexes add write cost proportional to their count.
 - [ ] Read replicas used for read-heavy queries that tolerate slight staleness?
 
-Reference: `standards/database.md` (Query Optimization, Time-Range Queries)
+Reference: [`standards/database.md`](standards/database.md) (Query Optimization, Time-Range Queries)
 
 ### 32. Observability
 
@@ -615,7 +615,7 @@ Reference: `standards/database.md` (Query Optimization, Time-Range Queries)
 - [ ] Communication protocol during incidents? Status page updates, stakeholder notifications, war room coordination.
 - [ ] Blameless postmortem conducted within 48h of SEV1/SEV2? Timeline, root cause, contributing factors, action items with owners.
 
-Reference: `standards/observability.md`
+Reference: [`standards/observability.md`](standards/observability.md)
 
 ### 33. Security and Access Control
 
@@ -623,7 +623,7 @@ Reference: `standards/observability.md`
 - [ ] SQL injection: all queries parameterized or using ORM? No string concatenation in queries?
 - [ ] XSS: all user input escaped before rendering? Framework auto-escaping not bypassed?
 - [ ] Command injection: no user input passed to `exec`, `spawn`, or shell commands without sanitization?
-- [ ] Path traversal: no user input used in file paths without validation? `../` sequences blocked?
+- [ ] Path traversal: no user input used in file paths without validation? [`../`](.) sequences blocked?
 - [ ] SSRF: no user-controlled URLs fetched without allowlist validation?
 - [ ] Header injection: no user input in HTTP headers without sanitization?
 - [ ] Template injection: no user input in template strings evaluated server-side?
@@ -681,7 +681,7 @@ Reference: `standards/observability.md`
 - [ ] Zero trust applied? No implicit trust based on network location. Every request authenticated and authorized regardless of origin.
 - [ ] Certificate management automated? TLS certificates rotated before expiry. No manual cert renewal in production.
 
-Reference: `rules/security.md`, `standards/infrastructure.md` (Networking and Service Discovery)
+Reference: [`rules/security.md`](rules/security.md), [`standards/infrastructure.md`](standards/infrastructure.md) (Networking and Service Discovery)
 
 ### 34. API Contract Design
 
@@ -703,7 +703,7 @@ Reference: `rules/security.md`, `standards/infrastructure.md` (Networking and Se
 - [ ] Collections wrapped in `data` field? Consistent response envelope?
 - [ ] Response includes only necessary data? No over-fetching?
 
-Reference: `standards/api-design.md`
+Reference: [`standards/api-design.md`](standards/api-design.md)
 
 ### 35. External Dependency Resilience
 
@@ -716,10 +716,10 @@ Reference: `standards/api-design.md`
 - [ ] Idle timeout configured to reclaim unused connections?
 - [ ] For serverless: connection proxy (RDS Proxy, PgBouncer) to prevent exhaustion from cold starts?
 - [ ] Graceful degradation: fallback behavior defined when a dependency is unavailable?
-- [ ] Non-critical Redis reads wrapped in try/catch with safe default? A price enhancement, view counter, or recommendation score must not crash the critical path if Redis is down. See `standards/redis.md` "Non-Critical Redis Fallback"
+- [ ] Non-critical Redis reads wrapped in try/catch with safe default? A price enhancement, view counter, or recommendation score must not crash the critical path if Redis is down. See [`standards/redis.md`](standards/redis.md) "Non-Critical Redis Fallback"
 - [ ] Health check readiness endpoint reflects dependency status?
 
-Reference: `standards/resilience.md` (Circuit Breakers, Timeouts), `standards/database.md` (Connection Management), `standards/redis.md` (Non-Critical Redis Fallback)
+Reference: [`standards/resilience.md`](standards/resilience.md) (Circuit Breakers, Timeouts), [`standards/database.md`](standards/database.md) (Connection Management), [`standards/redis.md`](standards/redis.md) (Non-Critical Redis Fallback)
 
 ### 36. Async Processing Resilience
 
@@ -734,7 +734,7 @@ Reference: `standards/resilience.md` (Circuit Breakers, Timeouts), `standards/da
 - [ ] Background jobs have execution timeout with cleanup?
 - [ ] Message visibility timeout aligned with expected processing time?
 
-Reference: `standards/resilience.md` (Dead Letter Queues, Partial Failure, Timeouts)
+Reference: [`standards/resilience.md`](standards/resilience.md) (Dead Letter Queues, Partial Failure, Timeouts)
 
 ### 37. Deployment Readiness
 
@@ -751,7 +751,7 @@ Reference: `standards/resilience.md` (Dead Letter Queues, Partial Failure, Timeo
 - [ ] Rollback tested, not just planned? The rollback path has been exercised at least once?
 - [ ] Deployment frequency sustainable? Can the team ship this change independently without coordinating with other teams?
 
-Reference: `standards/distributed-systems.md` (Zero-Downtime Deployments), `standards/database.md` (Safe Migrations)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Zero-Downtime Deployments), [`standards/database.md`](standards/database.md) (Safe Migrations)
 
 ### 38. Graceful Degradation
 
@@ -768,7 +768,7 @@ Reference: `standards/distributed-systems.md` (Zero-Downtime Deployments), `stan
 - [ ] Chaos engineering practiced? Failure injection tested in non-production or controlled production environments.
 - [ ] Game days scheduled? Team exercises simulating outages to validate runbooks, monitoring, and incident response.
 
-Reference: `standards/resilience.md` (Circuit Breakers, Timeouts)
+Reference: [`standards/resilience.md`](standards/resilience.md) (Circuit Breakers, Timeouts)
 
 ### 39. Data Modeling
 
@@ -784,7 +784,7 @@ Reference: `standards/resilience.md` (Circuit Breakers, Timeouts)
 - [ ] Anti-corruption layer at context boundaries? Translation between external models and internal domain models happens at the edge, not throughout the codebase.
 - [ ] Ubiquitous language consistent? The same term means the same thing in code, database, API, and conversation. No synonyms for the same concept.
 
-Reference: `standards/database.md` (Access Pattern Design, Schema Rules)
+Reference: [`standards/database.md`](standards/database.md) (Access Pattern Design, Schema Rules)
 
 ### 40. Capacity Planning
 
@@ -799,7 +799,7 @@ Reference: `standards/database.md` (Access Pattern Design, Schema Rules)
 - [ ] Auto-scaling validated under load? Scale-up and scale-down behavior tested, not just configured.
 - [ ] Storage IOPS and throughput sized for peak? Not just capacity but performance under concurrent access.
 
-Reference: `standards/database.md` (Connection Management, NoSQL Key Design), `standards/resilience.md` (Back Pressure), `standards/infrastructure.md` (Cloud Architecture)
+Reference: [`standards/database.md`](standards/database.md) (Connection Management, NoSQL Key Design), [`standards/resilience.md`](standards/resilience.md) (Back Pressure), [`standards/infrastructure.md`](standards/infrastructure.md) (Cloud Architecture)
 
 ### 41. Testability
 
@@ -812,7 +812,7 @@ Reference: `standards/database.md` (Connection Management, NoSQL Key Design), `s
 - [ ] Test data builders or factories used? No brittle test setup with hardcoded object literals duplicated across tests.
 - [ ] Time and randomness injectable? Tests do not depend on the current clock or random output.
 
-Reference: `rules/testing.md` (Philosophy, Mock Policy), `rules/code-style.md` (Immutability)
+Reference: [`rules/testing.md`](rules/testing.md) (Philosophy, Mock Policy), [`rules/code-style.md`](rules/code-style.md) (Immutability)
 
 ### 42. Cost Awareness
 
@@ -825,7 +825,7 @@ Reference: `rules/testing.md` (Philosophy, Mock Policy), `rules/code-style.md` (
 - [ ] Unused resources cleaned up? No orphaned volumes, snapshots, or idle load balancers accumulating charges.
 - [ ] Cost alerts configured? Budget thresholds with notifications before spending spirals.
 
-Reference: `standards/caching.md` (When to Cache), `standards/database.md` (Query Optimization)
+Reference: [`standards/caching.md`](standards/caching.md) (When to Cache), [`standards/database.md`](standards/database.md) (Query Optimization)
 
 ### 43. Multi-Tenancy
 
@@ -838,7 +838,7 @@ Reference: `standards/caching.md` (When to Cache), `standards/database.md` (Quer
 - [ ] Tenant onboarding and offboarding automated? Provisioning and deprovisioning do not require manual steps or code changes.
 - [ ] Tenant-specific configuration supported? Feature flags, plan limits, and custom settings per tenant without code deploys.
 
-Reference: `rules/security.md` (Access Control), `standards/database.md` (Access Pattern Design)
+Reference: [`rules/security.md`](rules/security.md) (Access Control), [`standards/database.md`](standards/database.md) (Access Pattern Design)
 
 ### 44. Migration Strategy
 
@@ -851,7 +851,7 @@ Reference: `rules/security.md` (Access Control), `standards/database.md` (Access
 - [ ] Migration progress observable? Percentage of traffic or data migrated, error rates on old vs new, latency comparison.
 - [ ] Old system decommission planned? Timeline for shutting down the previous implementation after migration completes.
 
-Reference: `standards/distributed-systems.md` (Zero-Downtime Deployments), `standards/database.md` (Safe Migrations)
+Reference: [`standards/distributed-systems.md`](standards/distributed-systems.md) (Zero-Downtime Deployments), [`standards/database.md`](standards/database.md) (Safe Migrations)
 
 ### 45. Infrastructure as Code
 
@@ -866,7 +866,7 @@ Reference: `standards/distributed-systems.md` (Zero-Downtime Deployments), `stan
 - [ ] Secrets not stored in IaC state or templates? Sensitive values from a vault or secrets manager.
 - [ ] Plan reviewed before apply? No blind applies in production.
 
-Reference: `standards/infrastructure.md` (Infrastructure as Code)
+Reference: [`standards/infrastructure.md`](standards/infrastructure.md) (Infrastructure as Code)
 
 ### 46. Networking and Service Discovery
 
@@ -879,7 +879,7 @@ Reference: `standards/infrastructure.md` (Infrastructure as Code)
 - [ ] CDN configured for static assets and cacheable responses? Cache invalidation strategy defined.
 - [ ] Ingress and egress controls defined? Known set of external endpoints. Unexpected egress investigated.
 
-Reference: `standards/infrastructure.md` (Networking and Service Discovery)
+Reference: [`standards/infrastructure.md`](standards/infrastructure.md) (Networking and Service Discovery)
 
 ### 47. Container Orchestration
 
@@ -893,7 +893,7 @@ Reference: `standards/infrastructure.md` (Networking and Service Discovery)
 - [ ] Resource quotas and limit ranges per namespace? One team cannot consume the entire cluster.
 - [ ] Sidecar pattern used for cross-cutting concerns (mesh proxy, log collector, secrets injector)?
 
-Reference: `standards/infrastructure.md` (Container Orchestration)
+Reference: [`standards/infrastructure.md`](standards/infrastructure.md) (Container Orchestration)
 
 ### 48. CI/CD Pipeline Design
 
@@ -907,7 +907,7 @@ Reference: `standards/infrastructure.md` (Container Orchestration)
 - [ ] DORA metrics tracked? Deployment frequency, lead time, change failure rate, MTTR.
 - [ ] Rollback automated or one-click? Not a multi-step manual process.
 
-Reference: `standards/infrastructure.md` (CI/CD Pipeline Design)
+Reference: [`standards/infrastructure.md`](standards/infrastructure.md) (CI/CD Pipeline Design)
 
 ### 49. Cloud Architecture
 
@@ -922,7 +922,7 @@ Reference: `standards/infrastructure.md` (CI/CD Pipeline Design)
 - [ ] Cost allocation tags on all resources? Environment, team, service, cost center.
 - [ ] Reserved capacity or savings plans for stable workloads? Spot/preemptible for fault-tolerant jobs.
 
-Reference: `standards/infrastructure.md` (Cloud Architecture)
+Reference: [`standards/infrastructure.md`](standards/infrastructure.md) (Cloud Architecture)
 
 ### 50. Clean Room Verification
 
@@ -996,7 +996,7 @@ Apply after merging and deploying. Verify the deployed code works in production.
 
 ### 52. Design Quality
 
-Apply to frontend changes. Reference: `/review design` subcommand, `standards/frontend.md`, `standards/browser-testing.md`.
+Apply to frontend changes. Reference: `/review design` subcommand, [`standards/frontend.md`](standards/frontend.md), [`standards/browser-testing.md`](standards/browser-testing.md).
 
 - [ ] Typography hierarchy consistent: max 3-4 distinct sizes per page, clear visual weight progression
 - [ ] Color palette uses semantic tokens from the design system, no hardcoded hex values
@@ -1012,7 +1012,7 @@ Apply to frontend changes. Reference: `/review design` subcommand, `standards/fr
 
 ### 53. LLM Trust Boundary
 
-Apply when code processes, stores, or acts on LLM-generated output. Reference: `rules/code-style.md` LLM Output Trust Boundary section.
+Apply when code processes, stores, or acts on LLM-generated output. Reference: [`rules/code-style.md`](rules/code-style.md) LLM Output Trust Boundary section.
 
 - [ ] LLM-generated values validated for format and shape before database write
 - [ ] LLM output sanitized before vector database insertion to prevent stored prompt injection
@@ -1024,7 +1024,7 @@ Apply when code processes, stores, or acts on LLM-generated output. Reference: `
 
 ### 54. Performance Budget
 
-Apply to frontend changes and API endpoints. Reference: `standards/frontend.md` Core Web Vitals section, `standards/performance-budgets.md`.
+Apply to frontend changes and API endpoints. Reference: [`standards/frontend.md`](standards/frontend.md) Core Web Vitals section, [`standards/performance-budgets.md`](standards/performance-budgets.md).
 
 - [ ] LCP under 2.0s, INP under 150ms, CLS under 0.05
 - [ ] JavaScript bundle under 300KB compressed
@@ -1036,7 +1036,7 @@ Apply to frontend changes and API endpoints. Reference: `standards/frontend.md` 
 
 ### 55. Zero-Downtime Deployment
 
-Apply to database migrations and deployment changes. Reference: `standards/database.md` Expand-Contract section, `standards/zero-downtime-deployments.md`.
+Apply to database migrations and deployment changes. Reference: [`standards/database.md`](standards/database.md) Expand-Contract section, [`standards/zero-downtime-deployments.md`](standards/zero-downtime-deployments.md).
 
 - [ ] Database migrations use expand-contract pattern, never combining both in one deploy
 - [ ] Schema changes are backward-compatible with the previous application version
@@ -1046,7 +1046,7 @@ Apply to database migrations and deployment changes. Reference: `standards/datab
 
 ### 56. Supply Chain Security
 
-Apply when adding or updating dependencies. Reference: `rules/security.md` Supply Chain section.
+Apply when adding or updating dependencies. Reference: [`rules/security.md`](rules/security.md) Supply Chain section.
 
 - [ ] SBOM generated on CI build in SPDX or CycloneDX format
 - [ ] Build artifacts signed for provenance verification

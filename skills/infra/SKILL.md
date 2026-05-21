@@ -37,7 +37,7 @@ Manage Docker containers, compose services, and the runtime. Colima-aware, runti
    - Colima: check `colima status`, suggest `colima-start`.
    - Docker Desktop: suggest opening `/Applications/Docker.app`.
    - Linux: suggest `sudo systemctl start docker`.
-2. **Detect runtime, compose, containers** (parallel): `docker context show`, resolve Docker context per `standards/borrow-restore.md`, find compose files, `docker ps -a`.
+2. **Detect runtime, compose, containers** (parallel): `docker context show`, resolve Docker context per [`standards/borrow-restore.md`](standards/borrow-restore.md), find compose files, `docker ps -a`.
 3. Execute the requested operation:
    - **status**: runtime info, compose services, all containers. Mention `lazydocker` if available.
    - **build**: `<compose> build [service]`. Mention `dive` for layer analysis.

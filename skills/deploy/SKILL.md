@@ -57,13 +57,13 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
    gh pr merge <number> --squash --delete-branch
    ```
    If `--no-delete` is passed, omit `--delete-branch`.
-   If this is a dual-base PR (same change targeting two branches), omit `--delete-branch` per `../../rules/git-workflow.md`.
+   If this is a dual-base PR (same change targeting two branches), omit `--delete-branch` per [`../../rules/git-workflow.md`](rules/git-workflow.md).
 
 4. **Wait for deployment.** Detect the deployment mechanism:
 
    | Signal | Platform | How to monitor |
    |--------|---------|---------------|
-   | `.github/workflows/` with deploy job | GitHub Actions | `gh run list --branch main --limit 1 --json databaseId,status` then `gh run watch` |
+   | [`.github/workflows/`](.github/workflows) with deploy job | GitHub Actions | `gh run list --branch main --limit 1 --json databaseId,status` then `gh run watch` |
    | Vercel project | Vercel | Check Vercel MCP or `vercel ls --limit 1` |
    | Railway, Render, Fly | PaaS | Suggest user check the dashboard |
    | Manual deploy | Any | Ask user to trigger and confirm |
@@ -176,7 +176,7 @@ Monitor a recently deployed change for errors, performance regressions, and unex
 - Prefix every `gh` or `glab` command with the appropriate token per `../../rules/github-accounts.md` or `../../rules/gitlab-accounts.md`.
 - All timestamps in GMT.
 - Canary monitoring is non-blocking: report findings, do not auto-rollback without user confirmation.
-- If rate limits are a concern for monitoring, use one-shot checks instead of continuous polling per `../../rules/git-workflow.md`.
+- If rate limits are a concern for monitoring, use one-shot checks instead of continuous polling per [`../../rules/git-workflow.md`](rules/git-workflow.md).
 - Never access production databases or infrastructure directly. Use health endpoints and monitoring tool APIs only.
 
 ## Related skills

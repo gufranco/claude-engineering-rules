@@ -181,5 +181,5 @@ Use `Result.fromPromise` (or the neverthrow equivalent) to bridge a single async
 
 ## Related Standards
 
-- `standards/ddd-tactical-patterns.md`: DDD Tactical Patterns
-- `standards/resilience.md`: Resilience
+- [`standards/ddd-tactical-patterns.md`](standards/ddd-tactical-patterns.md): DDD Tactical Patterns
+- [`standards/resilience.md`](standards/resilience.md): Resilience

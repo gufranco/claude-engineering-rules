@@ -26,7 +26,7 @@ Do not cache when: data must be real-time, cache invalidation is harder than the
 | Event-driven invalidation | Source publishes change events, consumers invalidate | Decoupled, but adds an eventual consistency window |
 | Versioned keys | Include a version in the cache key (`user:42:v3`) | Simple for immutable snapshots, useless for mutable data |
 
-Never rely on "it will expire eventually" for data that users expect to see updated immediately after a write. The acceptable staleness window must align with the consistency model chosen for the system. Align with the consistency model hierarchy in `standards/distributed-systems.md`.
+Never rely on "it will expire eventually" for data that users expect to see updated immediately after a write. The acceptable staleness window must align with the consistency model chosen for the system. Align with the consistency model hierarchy in [`standards/distributed-systems.md`](standards/distributed-systems.md).
 
 ## Thundering Herd / Cache Stampede
 
@@ -38,7 +38,7 @@ When a popular cache key expires, hundreds of concurrent requests miss simultane
 - **Stale-while-revalidate**: serve the expired value while one background request refreshes
 - **Probabilistic early expiration (XFetch)**: each request, as the key approaches expiry, has a probability of refreshing early proportional to how close the TTL is to zero. This spreads the recomputation load across many requests rather than causing a cliff at exact expiry. Formula: refresh early if `currentTime - delta * beta * log(random()) > expiry`, where `beta` controls aggressiveness and `delta` is the recomputation time
 - **TTL jitter**: never set the same TTL on all keys. Add `TTL + random(0, TTL * 0.1)` to prevent synchronized expiration
-- **Cold-start after incidents**: when a cache is rebuilt after an outage, all keys are cold simultaneously. Use staggered TTLs with ±10% jitter on the initial warm-up writes so keys do not all expire together in the next cycle. Apply XFetch or lock-based recomputation from the first write rather than adding it only after a stampede is observed. Rate-limit cache-miss paths to protect the origin during the warm-up window. See `standards/resilience.md` Back Pressure for load shedding strategies
+- **Cold-start after incidents**: when a cache is rebuilt after an outage, all keys are cold simultaneously. Use staggered TTLs with ±10% jitter on the initial warm-up writes so keys do not all expire together in the next cycle. Apply XFetch or lock-based recomputation from the first write rather than adding it only after a stampede is observed. Rate-limit cache-miss paths to protect the origin during the warm-up window. See [`standards/resilience.md`](standards/resilience.md) Back Pressure for load shedding strategies
 
 ## Cache Warming
 
@@ -46,7 +46,7 @@ Cold caches after deploy or restart cause a load spike on the origin.
 
 - Pre-load hot keys on startup from a known list or recent access log
 - Use canary deploys: route a small percentage of traffic first so the cache fills gradually
-- If pre-loading is not feasible, rate-limit cache-miss paths to protect the origin during warmup. See `standards/resilience.md` Back Pressure for rate limiting patterns
+- If pre-loading is not feasible, rate-limit cache-miss paths to protect the origin during warmup. See [`standards/resilience.md`](standards/resilience.md) Back Pressure for rate limiting patterns
 
 ## Sizing and Eviction
 

@@ -10,7 +10,7 @@ Canonical structure for a project's design system document. Adapted from the Typ
 
 ## File placement
 
-Place at the repository root as `DESIGN.md`. Reference from `README.md` and from any prompt that asks the assistant to generate UI.
+Place at the repository root as `DESIGN.md`. Reference from [`README.md`](README.md) and from any prompt that asks the assistant to generate UI.
 
 ## Required sections
 

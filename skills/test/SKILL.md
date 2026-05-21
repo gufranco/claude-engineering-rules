@@ -31,7 +31,7 @@ Unified testing skill covering test execution, load testing, coverage, linting, 
 ### Test Runner Detection
 
 - Node.js: `vitest.config.*` or vitest in devDeps, `jest.config.*` or jest in devDeps, `mocha` in devDeps.
-- Rust: `cargo test`. Go: `go test ./...`. Python: look for `pytest.ini`, `pyproject.toml` with `[tool.pytest]`.
+- Rust: `cargo test`. Go: `go test ./...`. Python: look for [`pytest.ini`](pytest.ini), `pyproject.toml` with `[tool.pytest]`.
 - Shell: check for `shellcheck`.
 
 ### Steps
@@ -179,7 +179,7 @@ Generate test file stubs for code that lacks tests.
 3. Check for existing test files. Skip already-tested exports.
 4. Generate a test stub per untested export following project conventions:
    - Read existing test files in the same module for patterns.
-   - Follow `rules/testing.md`: AAA pattern, faker for data, real database.
+   - Follow [`rules/testing.md`](rules/testing.md): AAA pattern, faker for data, real database.
    - Include: one happy-path test, one error-path test, placeholder `// TODO: add edge cases`.
 5. Present stubs for approval before writing.
 6. After writing, run the test suite to verify stubs compile (they may fail on TODO assertions, which is expected).

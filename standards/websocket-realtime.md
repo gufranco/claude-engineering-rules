@@ -749,6 +749,6 @@ export default function (): void {
 
 ## Related Standards
 
-- `standards/resilience.md`: Resilience
-- `standards/api-design.md`: API Design
-- `standards/distributed-systems.md`: Distributed Systems
+- [`standards/resilience.md`](standards/resilience.md): Resilience
+- [`standards/api-design.md`](standards/api-design.md): API Design
+- [`standards/distributed-systems.md`](standards/distributed-systems.md): Distributed Systems

@@ -30,7 +30,7 @@ Before declaring any task complete:
 
 ## Zero Warnings as Verification Requirement
 
-Apply `checklists/checklist.md` category 17 during every verification. "Zero errors" is not "clean". A tool run that produces warnings is a failing verification. Scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`. If any appear, fix and re-run.
+Apply [`checklists/checklist.md`](checklists/checklist.md) category 17 during every verification. "Zero errors" is not "clean". A tool run that produces warnings is a failing verification. Scan the full output for: `warn`, `warning`, `deprecated`, `deprecation`, `notice`. If any appear, fix and re-run.
 
 ## Common Failures to Catch
 
@@ -44,7 +44,7 @@ Apply `checklists/checklist.md` category 17 during every verification. "Zero err
 
 ## Verification by Task Type
 
-When reporting verification output to the user, lead with the symptom, then chronology, then hypothesis, per `rules/smart-questions.md` "Status and Error Reports". When the task is complete, close with a one-line `FIXED:`, `RESOLVED:`, or `DONE:` resolution that names what changed, where, and the evidence command.
+When reporting verification output to the user, lead with the symptom, then chronology, then hypothesis, per [`rules/smart-questions.md`](rules/smart-questions.md) "Status and Error Reports". When the task is complete, close with a one-line `FIXED:`, `RESOLVED:`, or `DONE:` resolution that names what changed, where, and the evidence command.
 
 **Code changes**: run formatter + tests + lint + build. All four.
 

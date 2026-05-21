@@ -36,8 +36,8 @@ GH_TOKEN=$(gh auth token --user <account>) gh pr view --json title,body,files,ad
    | Source code | `src/`, `lib/`, `app/` |
    | Tests | `test/`, `spec/`, `__tests__/`, `*.test.*`, `*.spec.*` |
    | Configuration | `*.config.*`, `.*rc`, `package.json`, `tsconfig.json` |
-   | Documentation | `*.md`, `docs/` |
-   | Infrastructure | `Dockerfile`, `docker-compose.*`, `.github/`, `terraform/` |
+   | Documentation | `*.md`, [`docs/`](docs) |
+   | Infrastructure | `Dockerfile`, `docker-compose.*`, [`.github/`](.github), `terraform/` |
    | Database | `migrations/`, `prisma/`, `*.sql` |
 
 2. **Identify high-risk areas.** Flag files that need careful review:
@@ -80,7 +80,7 @@ git log --format='%an' --since='6 months ago' -- <file> | sort | uniq -c | sort 
 
 ### 4. Generate Summary
 
-If the PR description is empty or under 50 characters, generate a reviewer-friendly description following the format in `../../rules/git-workflow.md`:
+If the PR description is empty or under 50 characters, generate a reviewer-friendly description following the format in [`../../rules/git-workflow.md`](rules/git-workflow.md):
 
 - **What:** one paragraph explaining what changed and why.
 - **How:** key implementation decisions and trade-offs.
