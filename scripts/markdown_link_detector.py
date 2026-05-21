@@ -224,7 +224,10 @@ def detect_findings(
     if any(rel.startswith(p) for p in SKIP_DIR_PREFIXES):
         return []
 
-    doc_dir = (repo_root / file_path).parent.resolve()
+    if Path(file_path).is_absolute():
+        doc_dir = Path(file_path).parent.resolve()
+    else:
+        doc_dir = (repo_root / file_path).parent.resolve()
     code_ranges = find_code_block_ranges(text)
     findings: list[Finding] = []
 

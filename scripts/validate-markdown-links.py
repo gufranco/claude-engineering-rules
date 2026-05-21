@@ -46,7 +46,8 @@ def tracked_markdown_files(repo_root: Path) -> list[str]:
 def collect_findings(files: list[str], repo_root: Path) -> list[Finding]:
     all_findings: list[Finding] = []
     for rel in files:
-        path = repo_root / rel
+        path_rel = Path(rel)
+        path = path_rel if path_rel.is_absolute() else (repo_root / rel)
         try:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
@@ -72,7 +73,15 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.files:
-        files = [str(Path(f).resolve().relative_to(REPO_ROOT)) for f in args.files]
+        files = []
+        for f in args.files:
+            resolved = Path(f).resolve()
+            try:
+                files.append(str(resolved.relative_to(REPO_ROOT)))
+            except ValueError:
+                # Path is outside the repo. Use the absolute path so callers
+                # can validate ad-hoc files such as temporary test fixtures.
+                files.append(str(resolved))
     else:
         files = tracked_markdown_files(REPO_ROOT)
 
