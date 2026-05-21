@@ -48,6 +48,10 @@ always_loaded:
     description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
     triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description, code comment, error message]
 
+  markdown-links:
+    description: Every file mention in published markdown is a clickable link to the actual file. Two acceptable forms, exception zones, validator and hook integration, skip-list for test fixtures and command examples
+    triggers: [markdown, md, documentation, readme, link, file reference, file mention, bare path, backlink, doc link]
+
   ai-guardrails:
     description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
     triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
