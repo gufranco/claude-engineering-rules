@@ -252,6 +252,104 @@ This creates and submits the review in one step. No separate "create PENDING the
 
 Never post comments individually. Even a single comment goes through the JSON file flow. This prevents notification spam and avoids shell escaping failures with complex markdown.
 
+### Conventional Comments Taxonomy
+
+Prefix every posted inline comment with a Conventional Comments label so the receiver can triage at a glance. Source: `conventionalcomments.org`. The taxonomy aligns with the classifier used by `/respond`, so reviewer and reviewee speak the same vocabulary.
+
+| Severity | Conventional Comments label | When to use |
+|----------|----------------------------|-------------|
+| Blocking bug, security, correctness | `issue (blocking)` | Must be fixed before merge |
+| Architectural concern, not blocking | `issue (non-blocking)` | Worth flagging, can be deferred or discussed |
+| Consider an alternative | `suggestion` | Optional improvement |
+| Style preference, naming, formatting | `nitpick` | Small scope, the author may take or leave |
+| Author input requested | `question` | Direct question that needs a reply |
+| Reflective observation, no action | `thought` | Musing aloud |
+| Positive feedback | `praise` | Acknowledge good work |
+| Out of scope, follow-up | `chore` | File a ticket and link it |
+| Future reminder | `todo` | Add a `TODO(debt):` in code |
+
+Format inside the JSON `body`:
+
+```
+issue (blocking): The handler does not validate `companyId`. An empty string passes
+the type check and reaches the DB, creating cross-tenant rows.
+
+```suggestion
+if (!companyId) throw new ValidationError('companyId is required');
+```
+```
+
+### Feedback Equation for Pushback-Anticipated Comments
+
+When a comment challenges a design decision rather than a bug, write it in Observation, Impact, Request form. Source: Lara Hogan.
+
+| Component | What it states |
+|-----------|---------------|
+| Observation | What the code does, in neutral terms |
+| Impact | What would change if the reviewer's path were taken |
+| Request | What the reviewer wants from the author next |
+
+Apply when the comment is non-blocking but architectural. Do not apply to clear bug findings, those should be stated directly.
+
+Example:
+
+```
+issue (non-blocking): The handler uses optimistic locking on the order row.
+Under the expected load profile, optimistic locking would retry on every collision.
+The collision rate at peak is around 12% per the load test in `tests/load/orders.k6.js`,
+which means an average of 1.1 retries per request and a tail of 5+ retries for the worst case.
+Would pessimistic locking work better here, or is there a constraint that makes optimistic the right choice?
+```
+
+### Standard Shorthand Vocabulary
+
+Use the community-standard shorthand in summary comments so the reviewee recognizes the cues immediately.
+
+| Acronym | Meaning | When `/review` uses it |
+|---------|---------|------------------------|
+| `LGTM` | Looks good to me | Summary verdict with no findings |
+| `PTAL` | Please take another look | When `/review` re-runs after the author addressed comments |
+| `NIT` | Nitpick | Inline shorthand alternative to the `nitpick:` Conventional Comments prefix |
+| `RFC` | Request for comment | When `/review` wants the author to weigh in |
+| `WDYT` | What do you think | When asking the author for a judgment call |
+
+### Service Level Awareness in the Verdict
+
+Compute the PR's age and the time since the last review. In the verdict, add a Service Level line when one of these conditions holds.
+
+| Condition | Line added |
+|-----------|------------|
+| PR opened more than 1 business day ago with no prior review | `Cycle time: above target. The first-review target is 1 business day.` |
+| PR opened more than 7 days ago with no activity | `PR is stale. Author should push a status update or close.` |
+| PR has multiple `CHANGES_REQUESTED` reviews without recent author response | `Author response cycle: stalled. Consider escalating or switching to synchronous discussion.` |
+
+The lines are observational, not blocking. They surface the timing pressure to the human running `/review`.
+
+### Multi-Reviewer Dynamics Check
+
+Before posting the review, fetch existing review threads and the state of other reviews. If another human reviewer has an open thread that contradicts what `/review` is about to post, flag the conflict and present two options:
+
+1. Align with the existing reviewer. Drop the contradicting finding from the new review.
+2. Post the new perspective with explicit acknowledgment: `Different read from <other reviewer>: my concern is <X> while theirs is <Y>. Author should weigh both.`
+
+Never silently post a contradicting comment. The author should never discover the conflict during their `/respond` run.
+
+### Regression-Test Pinning Recommendation
+
+For every `issue (blocking)` finding that reports a bug, the suggested fix includes a named regression test like `it('rejects empty companyId per PR #4521')`. Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
+
+This mirrors the policy in `/respond` and ensures both ends of the review conversation expect named regression tests where they matter.
+
+### PR-Author Anti-Pattern Detection
+
+Check the PR description for known author-side anti-patterns from `standards/code-review.md` "As Reviewee". These become findings in the PR-summary part of the verdict, not inline comments.
+
+| Anti-pattern in PR body | Finding |
+|------------------------|---------|
+| `TODO`, `FIXME`, or `XXX` without a ticket reference | `Untracked deferral in PR description. File a ticket and reference it.` |
+| Mention of refactoring unrelated to the stated ticket | `Scope creep: the description mentions a refactor that is not the PR's stated purpose. Consider splitting.` |
+| Statement that the fix is incomplete without a follow-up plan | `Incomplete fix declared without follow-up. Either complete the fix or file a follow-up ticket.` |
+
 ### Review Standards
 
 Zero bugs, zero security issues, zero data integrity risks. Every error path handled. Every input validated. Every new behavior tested. Performance understood.
@@ -447,5 +545,6 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 ## Related skills
 
 - `/ship` -- Create commits and PRs after fixing review issues.
+- `/respond` -- Counterpart skill for the receiving side. When the author of a PR you review uses `/respond` to address your comments, they classify, verify, and reply using the same Conventional Comments taxonomy this skill uses for posting.
 - `/test` -- Run tests to verify review findings.
 - `/audit` -- Security-focused audit across the full project.
