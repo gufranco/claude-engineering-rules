@@ -41,12 +41,14 @@ except Exception:  # pragma: no cover
 
 
 RESOLVE_MUTATION = re.compile(r"resolveReviewThread\b")
+# Non-greedy so multiple gh api ... resolveReviewThread calls on the
+# same line each count as one match.
 GH_API_RESOLVE = re.compile(
-    r"(?:gh|glab)\s+api[^\n]*resolveReviewThread",
+    r"(?:gh|glab)\s+api[^\n]*?resolveReviewThread",
     re.IGNORECASE,
 )
 GLAB_RESOLVE = re.compile(
-    r"(?:gh|glab)\s+api[^\n]*-X\s+PUT[^\n]*resolved=true",
+    r"(?:gh|glab)\s+api[^\n]*?-X\s+PUT[^\n]*?resolved=true",
     re.IGNORECASE,
 )
 FOR_LOOP_PATTERN = re.compile(r"\bfor\s+\w+\s+in\b")
