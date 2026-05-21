@@ -213,6 +213,33 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/bulk-resolve-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/review-state-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/force-push-during-review.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/glab-token-guard.py"
           }
         ]
