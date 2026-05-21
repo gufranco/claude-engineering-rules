@@ -47,7 +47,7 @@ def is_force_push(command: str) -> bool:
         return True
     push_idx = command.find("git push")
     if push_idx >= 0:
-        tail = command[push_idx + len("git push"):]
+        tail = command[push_idx + len("git push") :]
         if FORCE_REFSPEC.search(tail):
             return True
     return False
@@ -89,7 +89,7 @@ def changes_requested_reviewer() -> str | None:
                 "--json",
                 "reviews",
                 "--jq",
-                ".reviews[] | select(.state == \"CHANGES_REQUESTED\") | .author.login",
+                '.reviews[] | select(.state == "CHANGES_REQUESTED") | .author.login',
             ],
             capture_output=True,
             text=True,
