@@ -28,13 +28,13 @@ This skill accepts optional arguments after `/readme`:
   | Variant | When to use | Template source |
   |---------|-------------|-----------------|
   | `marketing` | Public release, portfolio, open source. Hero, highlights grid, badges, eye-catching visuals. Default | The structure documented inline in this file |
-  | `assessment` | Take-home assessments, interview submissions, pre-submission audits, architecture reviews. Technical and explanatory tone. Tables and concrete examples. Design decisions as narrative paragraphs | `template-assessment.md` in this directory. Also invoked by `/assessment` step 12 |
+  | `assessment` | Take-home assessments, interview submissions, pre-submission audits, architecture reviews. Technical and explanatory tone. Tables and concrete examples. Design decisions as narrative paragraphs | [`template-assessment.md`](skills/readme/template-assessment.md) in this directory. Also invoked by `/assessment` step 12 |
 
 - `--about-only`: generate only the GitHub repo description and topics, skip README.
 - `--section <name>`: regenerate a specific section (e.g., `--section quick-start`).
 - `--diff`: update the existing README based on what changed since it was last written.
 
-When `--variant assessment` is passed, read `template-assessment.md` for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
+When `--variant assessment` is passed, read [`template-assessment.md`](skills/readme/template-assessment.md) for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
 
 ## Steps
 
@@ -45,7 +45,7 @@ Read the project thoroughly. Run these **in parallel**:
 1. **Project identity**: read `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Makefile`, or equivalent to get the project name, version, description, dependencies, and scripts.
 2. **Infrastructure and config**: read Terraform files, Docker files, CI/CD configs, `docker-compose.yml`, and deployment configs to understand the infrastructure.
 3. **Source code structure**: map the directory tree (`ls -R` or glob) to understand the project layout, modules, and organization.
-4. **Existing README**: read the current `README.md` if it exists, to understand what the user already had and what to improve.
+4. **Existing README**: read the current [`README.md`](README.md) if it exists, to understand what the user already had and what to improve.
 5. **Environment and setup**: read `.env.example`, setup scripts, and Makefile targets to document prerequisites and setup steps.
 6. **Git context**: run `git remote -v` and `git log --oneline -10` to get the repo URL, recent activity, and contributor count.
 7. **Visual assets**: check for logo files (`logo.png`, `logo.svg`, `banner.png`, `.github/assets/`, `docs/images/`) and existing screenshots or demos.
@@ -75,11 +75,11 @@ Generate a concise repo description (max 350 characters) and a list of topic tag
 1. Show the full README to the user for review.
 2. Show the GitHub About description and topics.
 3. Ask if they want changes before writing.
-4. **Resolve account** per `standards/borrow-restore.md` before applying GitHub About. Match the remote URL against authenticated accounts, switch if needed.
+4. **Resolve account** per [`standards/borrow-restore.md`](standards/borrow-restore.md) before applying GitHub About. Match the remote URL against authenticated accounts, switch if needed.
 5. After approval:
    - Write the README.md file.
    - Apply the GitHub About using `gh repo edit --description "<desc>"` and `gh repo edit --add-topic <topic>` commands.
-   - Restore the original account per `standards/borrow-restore.md`.
+   - Restore the original account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
 
 ## README Structure
 
@@ -748,31 +748,16 @@ The image GitHub shows on Twitter, Slack, Discord, LinkedIn, and any other platf
 
 ## File References (MANDATORY)
 
-Every file mentioned in the README must be a clickable Markdown link to the actual file in the repository. No exceptions.
+Every file mention in generated README content is a clickable link to the actual file. The full rule lives at [`rules/markdown-links.md`](../../rules/markdown-links.md), which now governs every published markdown file in the repo. Validator at [`scripts/validate-markdown-links.py`](../../scripts/validate-markdown-links.py). Hook at [`hooks/markdown-link-discipline.py`](../../hooks/markdown-link-discipline.py).
 
-**Rule:** whenever a file name, path, or directory appears in the README, wrap it as `[file.ext](relative/path/to/file.ext)`. This applies to prose, tables, lists, FAQ answers, collapsible sections, and footnotes. The only places file names may appear unlinked are inside fenced code blocks (where Markdown links do not render) and in inline code spans that represent literal command output.
+Quick reference for README generation:
 
-**How to apply:**
+- Plain link: `[file.ext](file.ext)`. Code-styled link: `` [`file.ext`](file.ext) ``.
+- Tables in the README always link the file column.
+- Fenced code blocks stay bare; compensate with a linked summary line above or below.
+- Repeat mentions in the same section: link the first occurrence only.
 
-- Resolve the path relative to the README location. For a root-level README, paths are relative to repo root: `[package.json](package.json)`, `[src/api/users.ts](src/api/users.ts)`.
-- Directories link to the directory itself: `[src/services/](src/services/)`. GitHub renders directory links as folder views.
-- Verify every linked path exists before writing. A broken link is a defect, same severity as inventing a feature.
-- When the same file is mentioned multiple times in the same section, link only the first occurrence to avoid visual noise. Subsequent mentions can use plain code spans.
-- Inside Markdown tables, keep links intact: `\| [tsconfig.json](tsconfig.json) \| TypeScript compiler config \|`.
-- Inside the project structure tree (fenced code block), file names stay unlinked because Markdown links do not render inside code fences. Compensate by adding a linked summary line above or below the tree.
-
-**Examples:**
-
-```markdown
-Configuration lives in [.env.example](.env.example) and is validated at startup by [src/config/schema.ts](src/config/schema.ts).
-
-| File | Purpose |
-|:-----|:--------|
-| [Makefile](Makefile) | Task runner targets |
-| [docker-compose.yml](docker-compose.yml) | Local dev stack |
-```
-
-This rule is enforced during the self-check at the end of Phase 3. Re-scan the draft and confirm every file name carries a link before presenting to the user.
+After generating the README, the validator must report zero findings before presenting to the user.
 
 ## Accessibility
 
