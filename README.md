@@ -201,20 +201,121 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Workflow Decision Guide
 
+Pick the skill by what you are trying to do, not by what the skill is called. Scenarios are grouped by intent. When two skills could apply, the final subsection shows how to pick.
+
+#### Building, planning, and prototyping
+
 | Scenario | Start with |
 |:---------|:-----------|
 | "I need to build X" | `/plan --discover` then implement |
-| "Something is broken" | `/investigate` |
-| "Can you review this PR?" | `/review` |
-| "Is my code ready to ship?" | `/review --local` then `/ship` |
-| "Are we secure?" | `/audit` |
-| "Time to release" | `/ship release` |
+| "Think through this before coding" | `/plan` |
+| "Record an architecture decision" | `/plan adr new <title>` |
+| "Generate boilerplate matching project patterns" | `/plan scaffold <type> <name>` |
+| "Set up this project for the first time" | `/setup` |
+| "Spin up Docker or database for local dev" | `/infra docker` or `/infra db` |
+| "First-time codebase walkthrough" | `/onboard` |
+| "Write the test first, then code" | `/tdd` |
+| "Explain how this code works" | `/explain` |
+| "I am lost in unfamiliar code" | `/zoom-out` |
+
+#### Reviewing, validating, and responding
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "Review this PR" | `/review <PR>` |
+| "Review my local branch before pushing" | `/review --local` |
+| "Test coverage gaps and QA scenarios" | `/review qa` |
+| "Accessibility, performance, SEO audit on the UI" | `/review design` |
+| "Run tests, coverage, lint, build" | `/test` |
+| "Load test or HTTP perf benchmark" | `/test perf` |
+| "Design consultation before implementing UI" | `/design` |
+| "Generate UI design variants for comparison" | `/design variants` |
+| "Reviewer left comments on my PR" | `/respond` |
+| "Pre-submission audit or take-home check" | `/assessment` |
+| "Find what is missing the way an interviewer would" | `/assessment --focus <area>` |
+| "Summarize this PR for reviewers" | `/pr-summary` |
+| "Are we secure" | `/audit` |
+| "Threat model or STRIDE analysis" | `/audit cso` |
+| "Dependency vulnerability scan" | `/audit deps` |
+
+#### Shipping and delivery
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "Commit and push" | `/ship commit --push` |
+| "Open a PR" | `/ship pr` |
+| "Create a tagged release" | `/ship release` |
+| "Is my code ready to ship" | `/review --local` then `/ship` |
 | "CI is failing" | `/ship checks` |
+| "Watch CI to green and address AI bot threads" | `/ship commit --pipeline` |
+| "Land the PR after approval" | `/deploy land` |
+| "Canary deploy and monitor" | `/deploy canary` |
+| "Parallel work across branches" | `/ship worktree init` |
+
+#### Debugging and incident response
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "Something is broken" | `/investigate` |
+| "Why is this slow" | `/profile` |
+| "Performance regression vs baseline" | `/benchmark` |
 | "Prod is broken, fix NOW" | `/hotfix` |
-| "Just joined this project" | `/onboard` |
+| "Write a postmortem" | `/incident` |
+| "Fix a GitHub issue by number" | `/fix-issue <number>` |
+
+#### Refactoring and migration
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "This code needs restructuring" | `/refactor` |
+| "Upgrade framework or library version" | `/migrate` |
+| "Replace library A with library B" | `/migrate` |
+| "Resolve merge conflicts" | `/resolve` |
+
+#### Documentation and discovery
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "Write or update a README" | `/readme` |
+| "Generate an assessment-style README" | `/readme --variant assessment` |
 | "What does the community say about X" | `/research X` |
 | "X vs Y, which is better" | `/research X vs Y` |
-| "This code needs restructuring" | `/refactor` |
+| "Find prior art for an idea" | `/research <topic>` |
+
+#### Operations and housekeeping
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "Clean up stale branches, PRs, and worktrees" | `/cleanup` |
+| "Save session state to resume later" | `/checkpoint save` |
+| "Resume where I left off" | `/checkpoint resume` |
+| "Lock down before a risky operation" | `/guard` |
+| "Standup or handoff notes" | `/session-log` |
+| "Session retrospective" | `/retro` |
+| "Discover codebase patterns and extract rules" | `/retro discover` |
+
+#### Recurring and scheduled work
+
+| Scenario | Start with |
+|:---------|:-----------|
+| "Poll something every N minutes" | `/loop <interval> /<command>` |
+| "Self-paced repeat of a task" | `/loop /<command>` |
+| "Cron-style scheduled remote agent" | `/schedule` |
+
+#### When two skills could apply
+
+| Ambiguity | Choose | Because |
+|:----------|:-------|:--------|
+| `/review` vs `/assessment` | `/review` for diff-level findings; `/assessment` for whole-system audit | `/review` catches bugs in what was written; `/assessment` finds patterns that should be present but are not |
+| `/review` vs `/audit` | `/audit` for security focus; `/review` for general quality | `/audit` runs STRIDE, dependency scans, and secret detection; `/review` runs the 70-category checklist |
+| `/respond` vs `/ship --pipeline` | `/respond` for human reviewer threads; `/ship --pipeline` for unattended AI-bot threads | Set `RESPOND_DRIVES_PIPELINE=1` to delegate the bot loop to `/respond` and unify the vocabulary across both flows |
+| `/investigate` vs `/profile` | `/investigate` for correctness; `/profile` for performance | `/investigate` debugs why something fails; `/profile` finds bottlenecks in working code |
+| `/refactor` vs `/migrate` | `/refactor` for internal restructure; `/migrate` for framework or version change | `/refactor` preserves behavior in your own code; `/migrate` follows the upstream's official upgrade docs |
+| `/explain` vs `/onboard` | `/explain` for a single file or function; `/onboard` for a whole project | `/explain` traces data flow with Mermaid; `/onboard` produces a "start here" guide with architecture map |
+| `/explain` vs `/zoom-out` | `/explain` for "what does this do"; `/zoom-out` for "where does this fit" | `/explain` goes deep into one piece; `/zoom-out` traces callers and surfaces the architectural role |
+| `/loop` vs `/schedule` | `/loop` for one terminal session; `/schedule` for a remote cron-style agent | `/loop` self-paces or polls inside the current session; `/schedule` runs an agent on a server on a recurring schedule |
+| `/cleanup` vs `/refactor` | `/cleanup` for git artifacts; `/refactor` for code quality | `/cleanup` deletes stale branches, PRs, worktrees; `/refactor` improves code structure without changing behavior |
+| `/test` vs `/review qa` | `/test` to execute; `/review qa` to analyze | `/test` runs the test suite, coverage, lint, perf; `/review qa` finds coverage gaps and writes scenarios |
 
 ## Quick Start
 
