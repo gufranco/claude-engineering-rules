@@ -1,9 +1,9 @@
 ---
 name: readme
-description: Generate a marketing-grade README and GitHub repo description by analyzing the project's actual codebase, infrastructure, and architecture. Use when user says "write a README", "generate README", "update README", "repo description", or wants a polished project README for open source or marketing purposes. Do NOT use for assessment READMEs (use /assessment, which has its own technical README template) or general documentation updates.
+description: Generate a README and GitHub repo description by analyzing the project's actual codebase, infrastructure, and architecture. Two variants. Marketing (default) for open source and portfolio: hero, badges, highlights grid. Assessment via `--variant assessment` for take-home submissions and architecture audits: technical tone, tables, narrative design decisions. Use when user says "write a README", "generate README", "update README", "repo description", "assessment README", or wants a polished project README. Do NOT use for general documentation updates.
 sensitive: true
 ---
-Generate a visually striking, technically deep README.md and GitHub repository description that sells the project at first glance. The output should feel like a product landing page built entirely in Markdown: eye-catching hero section, visual feature grids, architecture diagrams, concrete metrics, and a quick start that's impossible to miss. Every claim must be grounded in the actual codebase. Never invent features.
+Generate a README and GitHub repository description grounded in the actual codebase. Two variants are supported: marketing (default) and assessment (`--variant assessment`). The marketing variant feels like a product landing page: eye-catching hero section, visual feature grids, architecture diagrams, concrete metrics, quick start that's impossible to miss. The assessment variant feels like an engineering memo: tables for every section, design decisions written as narrative paragraphs, no marketing language. Every claim in both variants must be grounded in the actual codebase. Never invent features.
 
 ## When to use
 
@@ -22,10 +22,19 @@ Generate a visually striking, technically deep README.md and GitHub repository d
 
 This skill accepts optional arguments after `/readme`:
 
-- No arguments: generate a full README and repo description by scanning the entire project.
+- No arguments: generate a full README and repo description by scanning the entire project. Uses the marketing-grade structure documented in this file.
+- `--variant <name>`: pick the README structure variant. Default `marketing`. Currently supported variants:
+
+  | Variant | When to use | Template source |
+  |---------|-------------|-----------------|
+  | `marketing` | Public release, portfolio, open source. Hero, highlights grid, badges, eye-catching visuals. Default | The structure documented inline in this file |
+  | `assessment` | Take-home assessments, interview submissions, pre-submission audits, architecture reviews. Technical and explanatory tone. Tables and concrete examples. Design decisions as narrative paragraphs | `template-assessment.md` in this directory. Also invoked by `/assessment` step 12 |
+
 - `--about-only`: generate only the GitHub repo description and topics, skip README.
 - `--section <name>`: regenerate a specific section (e.g., `--section quick-start`).
 - `--diff`: update the existing README based on what changed since it was last written.
+
+When `--variant assessment` is passed, read `template-assessment.md` for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
 
 ## Steps
 
@@ -78,14 +87,18 @@ Use this structure as a guide. Skip sections that don't apply. Reorder if it mak
 
 ### 1. Hero Section
 
-The first thing anyone sees. It must create instant visual identity and communicate what the project does in under 5 seconds.
+The first thing anyone sees. It must create instant visual identity and communicate what the project does in under 5 seconds. The 5-second test is the explicit acceptance criterion: a developer scrolling fast should know what the project is, that it works, and how to try it without reading a single paragraph.
+
+**Light and dark mode logo via `<picture>`.** This is the canonical pattern as of late 2023. The older `#gh-dark-mode-only` fragment hack is deprecated. Drizzle, tRPC, Vite, Supabase, and Next.js all use this form.
 
 ```html
 <div align="center">
 
-<!-- Logo: use the project's actual logo if found in Phase 1 -->
-<!-- If no logo exists, skip this. Never use a placeholder -->
-<img src="path/to/logo.svg" alt="Project Name" width="200">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="path/to/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="path/to/logo-light.svg">
+  <img alt="Project Name" src="path/to/logo-light.svg" width="200">
+</picture>
 
 <br>
 <br>
@@ -96,14 +109,25 @@ The first thing anyone sees. It must create instant visual identity and communic
 <br>
 <br>
 
-<!-- Badge bar: only verifiable facts -->
-<!-- Group by: build status | version/release | tech stack | license -->
+<!-- Badge bar: see "Badges" section below for the cap and allowlist -->
 [![CI](badge-url)](link)
 [![Version](badge-url)](link)
 [![License](badge-url)](link)
 
 </div>
+
+<p align="center">
+  <a href="#documentation">Docs</a> &nbsp;|&nbsp;
+  <a href="https://discord.gg/..."><strong>Discord</strong></a> &nbsp;|&nbsp;
+  <a href="https://twitter.com/..."><strong>Twitter</strong></a> &nbsp;|&nbsp;
+  <a href="#contributing">Contributing</a> &nbsp;|&nbsp;
+  <a href="https://github.com/.../issues">Issues</a>
+</p>
 ```
+
+The **navigation pill row** under the badges is the pattern Bun, Zod, and Astro use. Zero scroll cost, gives the reader an escape hatch to the deeper docs and the community channels. Skip channels that do not exist for the project.
+
+When the project has only one logo, use a single `<img>` and skip the `<picture>` wrapper. Never use a placeholder. If no logo exists, omit the image entirely and lead with the bold tagline.
 
 After the centered hero, add a **metrics bar**: a single line or short paragraph with concrete numbers that make the scope tangible. Use bold for the numbers.
 
@@ -116,6 +140,8 @@ For CLI tools or libraries, quantify differently:
 ```markdown
 **45** commands · **3** platforms · **zero** dependencies · **<5ms** startup
 ```
+
+**Demo immediately.** The hero stack ends with one of three demo elements: an animated GIF for visual tools, an asciinema cast for CLI tools, or a 5-line code snippet for libraries. Place this within the first scroll. The "demo first" pattern is now baseline. Hyperfine opens with a GIF. Hono opens with a 4-line code example. Zod opens with a `z.object` schema definition.
 
 ### 2. Highlights Grid
 
@@ -164,17 +190,19 @@ One-line description of what this feature does and why it matters.
 
 Two short sections that frame the project as a story. Why does this exist? What pain does it kill?
 
-**The Problem**: 2-3 sentences max. Describe the pain point that motivated the project. Be specific and relatable.
+**The Problem**: 2-3 sentences max. Describe the pain point that motivated the project. Be specific and relatable. Include a third-party endorsement quote when one exists; pnpm leads with a Microsoft Rush team quote about disk efficiency, which is the single strongest social-proof move available.
 
-**The Solution**: how does this project solve it? If alternatives exist, include a comparison table. Be fair to alternatives but highlight genuine advantages with checkmarks.
+**The Solution**: how does this project solve it? If alternatives exist, include a comparison table. Be fair to alternatives but highlight genuine advantages. The search query "Project X vs Y" is high-intent; the comparison table captures that traffic. Use plain `Yes` and `No` text instead of emoji to keep the table accessible to screen readers and consistent in fixed-width contexts:
 
 ```markdown
 | Capability | This Project | Alternative A | Alternative B |
 |:-----------|:------------:|:-------------:|:-------------:|
-| Feature 1  | ✅           | ✅            | ❌            |
-| Feature 2  | ✅           | ❌            | ✅            |
-| Feature 3  | ✅           | ❌            | ❌            |
+| Feature 1  | Yes          | Yes           | No            |
+| Feature 2  | Yes          | No            | Yes           |
+| Feature 3  | Yes          | No            | No            |
 ```
+
+For richer tables, replace `Yes` with a short capability descriptor like "Built-in" or "Plugin" or "Partial" so the cell content tells the reader more than a binary. Never rely on color alone to communicate; screen readers ignore color, and red/green is invisible to about 8% of male readers.
 
 ### 4. Architecture
 
@@ -282,6 +310,207 @@ curl http://localhost:3000/health
 - Setup commands numbered only if order matters, otherwise a single code block.
 - Always end with a verification step that proves it works.
 - Include the expected output of the verification command.
+
+### 7b. For Contributors and Reviewers
+
+This subsection lowers the cost of contribution and pre-empts PR review back-and-forth. Include it when the project expects external contributors or when the project has more than one regular contributor.
+
+The generated section has four parts.
+
+**Reproducing a bug.** Concrete steps from clone to running a minimal reproducer. Reuse the same commands as the Quick Start verification step, plus any seed scripts or fixture files needed. A reviewer who cannot reproduce a reported bug pushes back harder.
+
+```markdown
+### Reproducing a bug
+
+```bash
+git clone https://github.com/user/repo.git
+cd repo
+npm install
+cp .env.example .env
+npm run db:seed
+npm run dev
+```
+
+To reproduce reported bugs, follow the steps above and then read the bug report's "Steps to reproduce" section.
+```
+
+**Project conventions.** A table listing concrete conventions detected from the codebase. Surfacing these in the README pre-empts review comments that would otherwise litigate style.
+
+```markdown
+### Project conventions
+
+| Convention | Source |
+|------------|--------|
+| Commit format | [Conventional Commits](https://www.conventionalcommits.org/) |
+| Branch naming | `feature/`, `bugfix/`, `hotfix/`, `chore/` prefixes |
+| Lint configuration | [.eslintrc.json](.eslintrc.json) |
+| Code style | [Prettier](https://prettier.io/) with [prettier.config.mjs](prettier.config.mjs) |
+| Review process | One human reviewer + CodeRabbit. Expect first response within 1 business day |
+```
+
+**Non-obvious decisions.** A short list of 3 to 5 architectural choices the project made deliberately, with one-line rationale each. These are the choices that reviewers would otherwise spend a thread asking about. This subsection cannot be auto-generated reliably; `/readme` prompts the user with: "Name 3 to 5 architectural choices that newcomers ask about. One sentence each."
+
+```markdown
+### Non-obvious decisions
+
+- Single-writer Postgres without sharding. The data fits and the operational cost of sharding outweighs the latency benefit at this scale.
+- Synchronous email sending in the request path. The volume is low enough that the queue overhead would dominate.
+- Branded `UserId` and `OrderId` types. Mixed-up IDs were the source of two production bugs last year.
+```
+
+**Issue tracker.** Link to where bugs and feature requests get filed. Deferred items from PR reviews land here.
+
+```markdown
+### Issue tracker
+
+Bugs and feature requests live in [GitHub Issues](https://github.com/user/repo/issues). Please file before opening a PR.
+```
+
+#### How /readme produces this subsection
+
+Phase 1 Deep Scan gains these scans:
+
+1. **Detect commit format.** Read recent commits via `git log --oneline -20`. Match against Conventional Commits patterns or any other recognizable format. Record the result for the Project conventions table.
+2. **Detect lint and style configs.** Look for `.eslintrc.*`, `prettier.config.*`, `.editorconfig`, `pyproject.toml [tool.ruff]`, `clippy.toml`, `golangci.yml`. Cite the discovered files in the table.
+3. **Detect AI review bots.** Look for `.coderabbit.yml`, `.coderabbit.yaml`, `.greptile.yml`, `.cursorrules`, `.cursor/`, `.sourcery.yaml`, `korbit.yml`. List the discovered bots in the conventions table.
+4. **Detect issue tracker.** Read repo metadata via `gh repo view --json hasIssuesEnabled,url`. If issues are disabled, look for `ISSUE_TEMPLATE/` or `BUG_REPORT.md` template files. If neither, omit the section and leave a comment recommending the user add one.
+5. **Detect testing instructions.** Look for `make test`, `npm run test`, `pytest`, `go test ./...`, or equivalent. The reproducing-a-bug instructions reuse the same command.
+
+#### Skip conditions
+
+If the project is a small CLI tool or a personal dotfiles repo with no expected reviewers, skip the entire "For Contributors and Reviewers" subsection. The signal for skipping: no recent PRs in the repo, or no recent contributors other than the author.
+
+### 7c. GitHub Alerts for Critical Callouts
+
+GitHub-flavored Markdown supports five alert types as of late 2023. Use them sparingly for content that genuinely deserves a visual break. Overuse turns the README into a wall of colored boxes and dilutes their effect.
+
+```markdown
+> [!NOTE]
+> Useful information that users should know, even when skimming content.
+
+> [!TIP]
+> Helpful advice for doing things better or more easily.
+
+> [!IMPORTANT]
+> Key information users need to know to achieve their goal.
+
+> [!WARNING]
+> Urgent info that needs immediate user attention to avoid problems.
+
+> [!CAUTION]
+> Advises about risks or negative outcomes of certain actions.
+```
+
+When to use each:
+
+| Alert | Use for |
+|-------|---------|
+| `NOTE` | Behavior the reader might miss, like a default value or a non-obvious fallback |
+| `TIP` | An optimization or shortcut that improves the experience but is not required |
+| `IMPORTANT` | A required step or constraint that the reader must internalize, like a peer dependency or minimum runtime version |
+| `WARNING` | A footgun or breaking-change announcement that risks production impact |
+| `CAUTION` | A destructive operation like database drops, force-pushes, or irreversible config changes |
+
+Two alerts in the entire README is healthy. Five is too many. Reserve them for callouts that would otherwise hide inside a paragraph.
+
+### 7d. Sponsors and Backers
+
+Sustainable open source funding is now expected for projects that ask for serious adoption. The pattern from pnpm, Biome, tRPC, and TanStack Query is a tiered sponsor section with logos rendered at size proportional to the contribution tier.
+
+```markdown
+## Sponsors
+
+### Platinum
+
+<a href="https://example.com"><img src="logos/sponsor-platinum.svg" alt="Sponsor Name" width="200"></a>
+
+### Gold
+
+<a href="https://example.com"><img src="logos/sponsor-gold.svg" alt="Sponsor Name" width="140"></a>
+
+### Silver
+
+<a href="https://example.com"><img src="logos/sponsor-silver.svg" alt="Sponsor Name" width="100"></a>
+
+### Backers
+
+<a href="https://opencollective.com/your-project"><img src="https://opencollective.com/your-project/backers.svg?width=890" alt="Backers"></a>
+```
+
+When to include the section:
+
+- The project has a `FUNDING.yml` file in `.github/`.
+- The project is on Open Collective, GitHub Sponsors, or Polar.
+- The project has at least one existing sponsor or is actively soliciting one.
+
+When to skip:
+
+- Personal projects, dotfiles, internal-only repos.
+- New projects with no sponsors and no immediate plans to ask.
+
+Render sponsor logos from a controlled directory like `assets/sponsors/` so the file paths stay stable. Update the section in the same PR that adds the sponsor.
+
+### 7e. AI Companion Files
+
+Modern READMEs ship with companion files that help AI agents and assistants navigate the repo. Two conventions are emerging.
+
+**`llms.txt` at the site root** for documentation sites. Plain-text Markdown file that summarizes the project for LLM consumption. Required structure: H1 with project name, blockquote summary, optional paragraphs, then H2 sections containing markdown links of the form `[name](url): optional notes`. Original spec at `llmstxt.org`. Adoption is around 10% of sites overall, near-100% among developer-facing SaaS. Cursor, Windsurf, Claude Code, and similar IDE agents fetch `/llms.txt` and `/llms-full.txt` when pointed at a documentation domain.
+
+```markdown
+# Project Name
+
+> One-paragraph summary of what the project does and who it is for.
+
+## Docs
+
+- [Quick Start](https://example.com/docs/quick-start): get running in 60 seconds
+- [API Reference](https://example.com/docs/api): full type signatures and examples
+
+## Examples
+
+- [Basic Example](https://example.com/examples/basic): the 5-line demo
+- [Advanced Example](https://example.com/examples/advanced): full-stack walkthrough
+```
+
+Generate `llms.txt` when the project has a documentation site distinct from the GitHub README. Skip when the README is the only documentation.
+
+**`AGENTS.md` at the repo root** for in-repo AI agent context. Emerged mid-2025 from a Sourcegraph, OpenAI, Google, and Cursor collaboration, now maintained by the Agentic AI Foundation under the Linux Foundation. Single Markdown file that AI coding agents read for project context: dev commands, conventions, deploy notes, code map. Distinct from `llms.txt`, which is a web standard, and distinct from per-tool files like `CLAUDE.md` or `.cursor/rules`.
+
+Generate `AGENTS.md` when the project will be touched by AI coding agents. Include: project overview, common commands, test conventions, where to find what, and any non-obvious constraints. Match the tone of a senior engineer briefing a new hire on day one.
+
+### 7f. Multilingual Variants
+
+For projects with an international audience, ship one README file per locale and a language switcher at the top of each.
+
+**Filename convention** uses ISO 639-1 or BCP 47 suffixes. English stays as `README.md`. Other locales get `README.<locale>.md`.
+
+| Locale | Filename |
+|--------|----------|
+| Brazilian Portuguese | `README.pt-BR.md` |
+| Simplified Chinese | `README.zh-CN.md` |
+| Traditional Chinese | `README.zh-TW.md` |
+| Japanese | `README.ja.md` |
+| German | `README.de.md` |
+| Spanish | `README.es.md` |
+| French | `README.fr.md` |
+
+**Language switcher at the top, before any content.** Format as a single line of pipe-separated links so the reader can jump without scrolling:
+
+```markdown
+**Read this in other languages:** [English](README.md) | [日本語](README.ja.md) | [Português](README.pt-BR.md) | [中文](README.zh-CN.md) | [Deutsch](README.de.md)
+```
+
+GitHub does not negotiate `Accept-Language`. Users always click the switcher. For projects with many translations like Supabase's 40-plus locales, a translation grid pattern, one column for flag icons and one for language names, scales further than the inline pipe list.
+
+When to localize:
+
+- The project has demonstrated international adoption signals: issues in non-English languages, contributors from multiple regions.
+- A core maintainer or volunteer commits to keeping the translation current.
+
+When to skip:
+
+- New projects without international traction.
+- Solo projects where the maintainer cannot keep translations synchronized with the English version.
 
 ### 8. Project Structure
 
@@ -417,15 +646,45 @@ The README should be scannable in 10 seconds. A developer scrolling fast should 
 
 ### Badges
 
-Only for verifiable, meaningful facts. Grouped and ordered consistently.
+Only for verifiable, meaningful facts. Grouped and ordered consistently. Cap at 5 to 8 badges in the hero. More than 8 dilutes signal and pushes content below the fold.
 
-**Order**: build status, version/release, language, license, optional extras.
+**Order**: build status, version and release, downloads, license, then optional extras like coverage, bundle size, and community.
 
-**Allowed**: CI status, latest release, language version, license type, downloads/installs, code coverage, platform support.
+**High-signal allowlist.** Each badge in this list earns its slot because it answers a real trust question.
 
-**Banned**: vanity badges ("awesome", "made with love"), badges for technologies not central to the project, broken or outdated badges.
+| Badge | What it tells the reader | Source |
+|-------|--------------------------|--------|
+| CI status | "Does it build?" | GitHub Actions, CircleCI |
+| Package version | "What version is current?" | npm, PyPI, crates.io, JSR |
+| Downloads per month or week | "Is anyone using it?" | npm, PyPI, GitHub Releases |
+| License | "Can I use it?" | shields.io static badge |
+| Coverage | "Are the tests honest?" | Codecov, Coveralls |
+| Bundle size | "Will it bloat my app?" | Bundlephobia, size-limit |
+| Community count | "Is there help when I get stuck?" | Discord, Slack |
+| OpenSSF Scorecard | "Is the supply chain audited?" | scorecard.dev |
+| Star History snapshot | "Is momentum building?" | Use only after the project crosses ~1k stars |
 
-Use shields.io with a consistent style parameter across all badges (e.g., `?style=flat-square` or `?style=for-the-badge` for bolder READMEs).
+**OpenSSF Scorecard badge format** for security-sensitive projects:
+
+```markdown
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/{owner}/{repo}/badge)](https://scorecard.dev/viewer/?uri=github.com/{owner}/{repo})
+```
+
+The badge requires the `scorecard-action:v2` GitHub Action with `publish_results: true` and `id-token: write` permission.
+
+**Denylist.** These add noise without trust signal and should never appear:
+
+- "Made with love", "Built with passion", "FORTHEBADGE" decorative tags
+- "Awesome" badges that link to nothing or to a placeholder list
+- Generic technology stack badges for the project's primary language. The language is already visible in the GitHub repo header
+- Badges for tools that are not central to the project's value proposition
+- Broken or outdated badges that show error states or that point at deleted services
+
+**Style consistency.** Pick one shields.io style and keep it across every badge. Common choices: `flat`, `flat-square`, `for-the-badge`. Mixing styles looks unfinished.
+
+**Color semantics.** Green for healthy or positive, red for failing or critical, blue for informational. Shields.io defaults map status colors automatically.
+
+**Alt text on every badge.** The `[![alt](url)](link)` markdown form includes alt text inside the brackets by default. Custom HTML `<img>` badges need explicit `alt=""`. Screen readers stay silent on image-only badges.
 
 ### Quantification
 
@@ -452,19 +711,40 @@ Make the project's scope tangible with specific numbers. These are the most pers
 
 ## GitHub About
 
+The About description renders as the meta-description in Google SERP snippets. Topics drive GitHub search relevance and Topic-page rankings. The social preview image is what every Twitter, Slack, Discord, and LinkedIn unfurl will show. These three fields are the single highest-leverage SEO surface in a GitHub repo.
+
 ### Description
 
 - Max 350 characters.
 - Format: `[What it is] + [key differentiator] + [quantified scope]`.
+- Front-load the most-searched keyword. The first 70 characters get the heaviest SEO weight and appear unwrapped in most listing UIs.
 - No emojis. No trailing period.
 - Example: `Production-grade multi-region AWS infrastructure as code. 9 Terraform modules, 30+ AWS services, 6 regions, one terraform apply`
 
 ### Topics
 
-- 8-15 topic tags.
-- Include: primary language, framework, cloud provider, key technologies, project type.
-- Use lowercase, hyphenated: `terraform`, `aws`, `multi-region`, `ecs-fargate`, `aurora-serverless`.
-- No generic tags like `code`, `project`, `awesome`.
+GitHub enforces a hard limit of **20 topics per repo**, each up to **50 characters**, lowercase letters, numbers, and hyphens only. Underscores are not permitted. Use all 20 slots.
+
+- **Use all 20 slots.** Mix broad terms (`javascript`, `web-development`) with narrow ones (`react-component`, `ui-library`). Topics function as LSI keywords and tie the repo to GitHub's related-concepts graph.
+- **Drop terms already in the About or repo name.** GitHub already gives those high weight; topics that duplicate them waste slots.
+- **Skip the primary language.** GitHub auto-detects and surfaces it separately.
+- **Lowercase and hyphens only.** `multi-region`, not `MultiRegion` or `multi_region`. Hyphens are the GitHub convention; underscores are rejected.
+- **No generic tags.** `code`, `project`, `awesome`, `app`. These hurt rather than help because they match millions of unrelated repos.
+- **Order by specificity, most distinctive first.** GitHub may truncate the list in some UIs; the leading topics get the most visibility.
+
+Apply via `gh repo edit --add-topic <topic>` per the account-safety pattern with `GH_TOKEN=$(gh auth token --user <account>)` prefix.
+
+### Social Preview Image
+
+The image GitHub shows on Twitter, Slack, Discord, LinkedIn, and any other platform that unfurls the repo URL. A repo without a social preview falls back to a generic GitHub-grid screenshot, which is the unmistakable signal of an unfinished project.
+
+- **GitHub minimum**: 640x320 pixels. **Recommended**: 1280x640 pixels.
+- **File**: PNG, JPG, or GIF. Under 1 MB.
+- **Universal cross-platform sweet spot**: 1200x630 pixels with text inside the center 80% safe zone. This shape works on Twitter, Facebook, LinkedIn, Discord, and Slack without cropping.
+- **Solid background**, not transparent. Transparent renders unpredictably on dark-mode platforms.
+- **High contrast** between text and background. 4.5:1 minimum for normal text, 3:1 for large text.
+- **Include the project name and one-line value prop**. The image is often viewed without the surrounding text, so it has to stand alone.
+- **Apply via the repo settings UI**, since the API does not currently expose social preview upload.
 
 ## File References (MANDATORY)
 
@@ -494,6 +774,47 @@ Configuration lives in [.env.example](.env.example) and is validated at startup 
 
 This rule is enforced during the self-check at the end of Phase 3. Re-scan the draft and confirm every file name carries a link before presenting to the user.
 
+## Accessibility
+
+READMEs render in browsers, screen readers, and increasingly in AI assistants reading the repo. The legal risk has risen since the European Accessibility Act took effect 2025-06-28. WebAIM's 2024 Million study found color contrast violations on 83.6% of sites surveyed.
+
+- **Every image has alt text.** Including badges. The bracket `![alt](url)` form puts the alt text inside the brackets by default. For decorative-only images, use empty alt `alt=""` so screen readers skip them. Otherwise, screen readers cut off around 125 characters of alt text.
+- **Color contrast at 4.5:1 for normal text and 3:1 for large text.** Applies to any custom HTML in the README, especially the centered hero `<div>` with a background color.
+- **Never rely on color alone.** Screen readers ignore color. Comparison tables that use only red and green cells without `Yes` and `No` text fail. Pair every color signal with a text or icon label.
+- **Heading order matters.** One H1, then H2 for top-level sections, then H3. Screen reader users navigate by heading. Skipping levels breaks the outline. The `<div align="center"><h1>` pattern preserves order while centering.
+- **Image-only badges leave screen readers silent.** Shields.io badges include alt text in the markdown form by default. Custom HTML `<img>` badges need explicit `alt=""`.
+
+## Measurement
+
+A README upgrade should show up in measurable repo signals within 30 days. Capture a baseline before the upgrade and compare after.
+
+| Signal | Tool | Notes |
+|--------|------|-------|
+| Unique visitors and page views | GitHub Insights | 14-day rolling window. Requires push access |
+| Clones | GitHub Insights | Leading indicator of intent to use |
+| Star trajectory | star-history.com | Embeddable chart, optional in the README itself once the project crosses 1k stars |
+| Referral sources | GitHub Insights | Shows what's driving traffic, useful when paired with social posts |
+| Long-term history | repohistory.com | Extends GitHub Insights past the 14-day window |
+| Daily stars detail | emanuelef/daily-stars-explorer | Deeper star-trajectory analysis |
+| Conversion ratios | Manual | Repo views to clones (intent), clones to stars (worth bookmarking), stars to contributors (worth contributing to) |
+
+Capture before the upgrade: baseline star count, weekly view count, clone count. Capture again after 30 days. Significant change correlates with the upgrade if no external mention (HN, Reddit, Twitter) coincided. View counts move first, stars follow.
+
+## Anti-Patterns
+
+| # | Anti-pattern | Why it hurts |
+|---|-------------|--------------|
+| 1 | Wall of text with no headings | Kills scannability. Use H2 or H3 every screenful |
+| 2 | Vanity badges like "MADE WITH LOVE", "FORTHEBADGE", or "Awesome" without an actual Awesome-list link | Aesthetic noise without trust signal. Dilutes the high-signal badges |
+| 3 | "TODO: write this section" left in published README | Signals an abandoned or unfinished project |
+| 4 | Broken images and dead links | Often after a logo rename. Lint with `markdown-link-check` in CI |
+| 5 | 2000-line wall instead of linking out to a docs site | READMEs over 500 lines should split into `/docs` or a dedicated documentation site |
+| 6 | Wrong project name in clone command after a repo rename | Breaks the 60-second quick start |
+| 7 | Missing LICENSE or contribution guide link | A repo without LICENSE is legally toxic for consumers. Awesome-list inclusion requires one |
+| 8 | Outdated screenshots showing prior major versions | Suggests the maintainer no longer touches the README. Auto-generate with Playwright in CI when possible |
+| 9 | No demo, no image, no GIF | Pure-text READMEs read as low-effort. The demo-first pattern is now baseline |
+| 10 | Overly personal tone like "just something I made real quick lol" | Undercuts the technical content. Match the project's category: technical for libraries, slightly warmer for end-user apps |
+
 ## Rules
 
 - **Evidence-based only.** Every feature, service, or capability mentioned must exist in the codebase. Read the actual files.
@@ -506,6 +827,9 @@ This rule is enforced during the self-check at the end of Phase 3. Re-scan the d
 - **Preserve user customizations.** If the user already has sections they wrote (like a specific "About" or custom badges), keep them unless asked to replace.
 - **Visual assets must exist.** Never reference an image, logo, or screenshot that doesn't exist in the repo. If no visual assets exist, skip those elements and note it as a follow-up.
 - **Test the visual output.** After generating, mentally render the Markdown. Check that HTML tables, Mermaid diagrams, and collapsible sections are properly closed and will render on GitHub.
+- **5-second test.** A developer scrolling fast should know what the project does, that it works, and how to try it within 5 seconds of landing. If the hero stack does not pass this test, restructure.
+- **Cap the hero at 5-8 badges.** More than 8 dilutes signal. Pull the rest into a "Status" section below the fold if they earn the slot.
+- **Demo-first.** A GIF, asciinema cast, or 5-line code snippet within the first scroll. No exceptions.
 
 ## Related skills
 
