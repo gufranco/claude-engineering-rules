@@ -45,6 +45,9 @@ jobs:
       - name: Validate counts
         run: python3 scripts/validate-counts.py
 
+      - name: Validate markdown link discipline
+        run: python3 scripts/validate-markdown-links.py
+
       - name: Validate JSON
         run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True) if 'node_modules' not in f]"
 
