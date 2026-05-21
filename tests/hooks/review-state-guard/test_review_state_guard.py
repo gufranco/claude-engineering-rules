@@ -39,9 +39,7 @@ def test_blocks_dismiss_via_api(tool_use, assert_blocks):
     # Arrange
     payload = tool_use(
         "Bash",
-        {
-            "command": "gh api repos/owner/repo/pulls/1/reviews/42/dismissals -X POST"
-        },
+        {"command": "gh api repos/owner/repo/pulls/1/reviews/42/dismissals -X POST"},
     )
 
     # Act / Assert
