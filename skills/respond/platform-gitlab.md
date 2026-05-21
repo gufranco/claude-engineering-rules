@@ -11,7 +11,7 @@ Platform is detected from the remote URL during Phase 1.
 | `github.com`, `*.github.com`, `git@github.com:` | GitHub |
 | `gitlab.com`, `*.gitlab.com`, `git@gitlab.com:`, self-hosted GitLab via remote URL | GitLab |
 
-The skill switches the CLI tool and the API endpoints accordingly. Account safety follows `../../standards/multi-account-cli.md`. For GitLab, the equivalent of `GH_TOKEN` is `GITLAB_TOKEN`, set via `GITLAB_TOKEN=$(glab auth token --hostname gitlab.com)`.
+The skill switches the CLI tool and the API endpoints accordingly. Account safety follows [`../../standards/multi-account-cli.md`](standards/multi-account-cli.md). For GitLab, the equivalent of `GH_TOKEN` is `GITLAB_TOKEN`, set via `GITLAB_TOKEN=$(glab auth token --hostname gitlab.com)`.
 
 ## glab CLI Surface
 

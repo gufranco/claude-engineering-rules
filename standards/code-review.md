@@ -94,10 +94,14 @@ Every review comment, PR description, PR comment, Slack message, and any other e
 
 **Never reference, cite, or mention:**
 
-- `~/.claude/`, `rules/`, `checklists/`, `standards/`, `skills/`
-- File names like `checklist.md`, `code-style.md`, `testing.md`, `database.md`
+- `~/.claude/`, [`rules/`](rules), [`checklists/`](checklists), [`standards/`](standards), [`skills/`](skills)
+- File names like `checklist.md`, `code-style.md`, `testing.md`, [`database.md`](standards/database.md)
 - Phrases like "per our rules", "per our standards", "category 17", "checklist item 3"
 - Rule-sourced phrasing that implies a codified checklist: "this violates rule X", "standard Y requires"
+- Internal severity tiers in posted text: `P0`, `P1`, `P2`, or section headings like `## P0 Blocking`, `## P1 Should Fix`, `## P2 Nits`. Severity is something you compute internally to triage; it maps to GitHub's `APPROVE` / `REQUEST_CHANGES` / `COMMENT` verdict, full stop. It does not appear as a label in the body.
+- The skill's own invocation arguments: `--backend`, `--frontend`, `--local`, `--post`, `--focus`, `--severity`, or any flag that names how you ran the tool. Never write "Backend-only review" or "Skipped frontend per the `--backend` flag". The first-person voice is plain English about what you actually looked at.
+- Conventional Comments label prefixes when posting: `issue (blocking):`, `issue (non-blocking):`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`. The vocabulary exists for human reviewers to use when they choose. When generated output uses it on every single comment, the uniformity is itself the template tell. Strip the label entirely; the tone of the prose carries the severity.
+- Structural section headings carried over from internal taxonomy: `Behavioral Flow Analysis`, `Blast Radius Summary`, `Standards Applied`. These sections inform what you write; their findings reach the reader as plain prose, not under those headings.
 
 **Instead, state the engineering reason directly:**
 
@@ -116,6 +120,39 @@ regression protection for a security fix.
 This applies to the initial generation, not as a post-hoc rewrite. Comments must be clean from the first draft. Requiring a second pass to "humanize" is a process failure.
 
 The internal config informs what to check. The review comment explains why using engineering reasoning. The reader sees the reasoning, never the source.
+
+A second worked example, with the kind of leak that motivated this rule:
+
+```
+# Bad: templated label, internal severity, flag self-reference
+issue (blocking): Backend-only review (`--backend`).
+
+P0 Blocking: round-robin path bypasses the under rejection. This
+violates the policy documented in our internal review standard.
+
+# Good: same finding, no scaffolding
+The round-robin path never runs the under rejection. So a user can
+include a one-way under in a round-robin and it lands. Putting the
+call in `createRoundRobinBetInternal` after the selections map is
+built closes it.
+```
+
+**Self-check before posting:**
+
+Scan the draft for the patterns below. If any are present, rewrite before posting:
+
+| Pattern | Why it leaks |
+|---------|--------------|
+| Line starts with `issue (`, `nitpick:`, `suggestion:`, `thought:`, `question:`, `praise:`, `chore:`, `todo:` | Conventional Comments template tell |
+| `P0`, `P1`, `P2`, `P3` as standalone tokens | Internal severity scaffolding |
+| `--backend`, `--frontend`, `--local`, `--post`, `--focus`, `--severity` | Skill invocation flag |
+| Path tokens that resolve under the personal config tree | Internal paths |
+| Bare names of the personal rule files when cited as authority | Internal file names |
+| `category 17`, `cat 8`, `checklist item 3` | Internal numbering |
+| `Behavioral Flow Analysis`, `Blast Radius Summary`, `Standards Applied` as headings | Internal section labels |
+| `per our rules`, `per our standards`, `our internal` | First-person possessive on the configuration |
+
+Enforcement: a Pre-Tool-Use hook on Bash, Write, and Edit blocks commands that publish externally (`gh pr`, `gh api`, `glab mr`, `git commit`, and similar) and Markdown or JSON payload files containing any of the patterns above. If the hook fires, the fix is to rewrite the content, not to bypass the hook.
 
 ## Test Evidence (MANDATORY)
 
@@ -180,8 +217,8 @@ Store ADRs in a `docs/adr/` directory in the repository. Number them sequentiall
 
 ## Zero Warnings (MANDATORY)
 
-Apply `checklists/checklist.md` category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
+Apply [`checklists/checklist.md`](checklists/checklist.md) category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
 
 ## Pre-Completion Checklist
 
-Run through `checklists/checklist.md`. All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.
+Run through [`checklists/checklist.md`](checklists/checklist.md). All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.

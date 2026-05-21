@@ -156,7 +156,7 @@ Container images are deployment artifacts. A poorly built image is large, slow t
 
 ### Runtime
 
-- **Init process**: use `tini`, `dumb-init`, or `docker run --init` to handle PID 1 signal forwarding and zombie process reaping. See `standards/twelve-factor.md` Factor IX for details
+- **Init process**: use `tini`, `dumb-init`, or `docker run --init` to handle PID 1 signal forwarding and zombie process reaping. See [`standards/twelve-factor.md`](standards/twelve-factor.md) Factor IX for details
 - **Production-only dependencies**: exclude dev dependencies from the final image. Install with `--omit=dev`, `--only=production`, or equivalent
 - **Single concern per container**: one process per container. Do not run application server, cron daemon, and log rotator in the same container
 

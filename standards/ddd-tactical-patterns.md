@@ -128,8 +128,8 @@ Rules:
 - Transactions do not span aggregates. Each aggregate is a consistency boundary
 - Reference other aggregates by ID, not by object reference. `Order` holds `customerId: CustomerId`, not `customer: Customer`
 - Keep aggregates small. Large aggregates create contention and performance problems. If two parts of the aggregate change independently, they are probably two aggregates. Target fewer than 10 entities per aggregate. If load testing shows lock contention, split
-- Cross-aggregate consistency is eventual. Use domain events to synchronize. For multi-step cross-aggregate workflows, use the Saga pattern from `standards/distributed-systems.md`
-- Validation lives in domain objects and application services. The infrastructure layer does NOT validate business rules. See `standards/hexagonal-architecture.md` for the boundary definition.
+- Cross-aggregate consistency is eventual. Use domain events to synchronize. For multi-step cross-aggregate workflows, use the Saga pattern from [`standards/distributed-systems.md`](standards/distributed-systems.md)
+- Validation lives in domain objects and application services. The infrastructure layer does NOT validate business rules. See [`standards/hexagonal-architecture.md`](standards/hexagonal-architecture.md) for the boundary definition.
 
 ## Domain Events
 

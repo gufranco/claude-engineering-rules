@@ -56,7 +56,7 @@ Analyze all uncommitted changes and create semantic commits following the conven
 
 ### Commit Message Format
 
-Follow `rules/git-workflow.md`. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. Subject: imperative mood, no caps, no period, max 50 chars. Body: wrap at 72, explain WHAT and WHY. Footer: `BREAKING CHANGE:`, `Fixes #`, `Closes #`, `Refs #`.
+Follow [`rules/git-workflow.md`](rules/git-workflow.md). Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. Subject: imperative mood, no caps, no period, max 50 chars. Body: wrap at 72, explain WHAT and WHY. Footer: `BREAKING CHANGE:`, `Fixes #`, `Closes #`, `Refs #`.
 
 ---
 
@@ -84,7 +84,7 @@ Create or update a pull request with a structured description. Supports GitHub a
 
 ### Steps
 
-1. **Gather context** (parallel): `git status --porcelain`, `git remote get-url origin`, `git branch --show-current`. Stop if uncommitted changes or on main. Detect CLI tool (`gh`/`glab`). **Resolve account** per `standards/borrow-restore.md`.
+1. **Gather context** (parallel): `git status --porcelain`, `git remote get-url origin`, `git branch --show-current`. Stop if uncommitted changes or on main. Detect CLI tool (`gh`/`glab`). **Resolve account** per [`standards/borrow-restore.md`](standards/borrow-restore.md).
 2. **Check existing PR and base branch** (parallel): look up existing PR, detect base branch (unless `--base`). If PR exists and no `update` flag, show URL and ask.
 3. `git fetch origin`, `git log --oneline origin/<base>..HEAD`. Stop if no commits.
 4. **Run quality gate**: detect and run test, lint, build. Stop if they fail.
@@ -103,7 +103,7 @@ Create or update a pull request with a structured description. Supports GitHub a
     - New environment variables not in `.env.example`.
     - New CLI commands or scripts not documented.
     If stale documentation is found, list the gaps and offer to update. If `--docs` flag is passed, update automatically without asking.
-14. **Restore account** per `standards/borrow-restore.md`.
+14. **Restore account** per [`standards/borrow-restore.md`](standards/borrow-restore.md).
 15. Enter Pipeline Monitoring loop unless `--no-pipeline`. The loop monitors both CI checks AND AI-tool review threads, and only exits when both are clean.
 
 ### PR Title
@@ -362,7 +362,7 @@ Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count 
 - Only force push with `--force-with-lease`, only after rebase.
 - Never merge PRs. Only create or update.
 - Never auto-approve Terraform applies or releases without user approval.
-- Always restore account per `standards/borrow-restore.md`.
+- Always restore account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
 - `--pipeline` and any `pr` flow that opens a PR must run the full Pipeline Monitoring loop. The loop only exits when CI is 100% green AND every AI-tool review thread is resolved on the latest pushed SHA. Resolving partial state (CI green but threads open, or threads resolved but CI red) is not "done".
 
 ## Related skills

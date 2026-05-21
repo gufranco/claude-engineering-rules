@@ -113,7 +113,7 @@ Examples:
 - When the source and target have different paradigms, do not force a 1:1 mapping. Redesign the affected code to be idiomatic in the target.
 - Preserve all existing test coverage. Migration must not reduce the test count or coverage percentage.
 - Do not add the target library without checking if it is already a dependency.
-- Follow `../../rules/code-style.md` dependency evaluation criteria when the migration involves choosing between alternatives.
+- Follow [`../../rules/code-style.md`](rules/code-style.md) dependency evaluation criteria when the migration involves choosing between alternatives.
 - Prefix every `gh` or `glab` command with the appropriate token per `../../rules/github-accounts.md` or `../../rules/gitlab-accounts.md`.
 
 ## Related skills

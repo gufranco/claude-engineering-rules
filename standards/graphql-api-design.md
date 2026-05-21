@@ -769,6 +769,6 @@ type User {
 
 ## Related Standards
 
-- `standards/api-design.md`: API Design
-- `standards/caching.md`: Caching
-- `standards/authentication.md`: Authentication
+- [`standards/api-design.md`](standards/api-design.md): API Design
+- [`standards/caching.md`](standards/caching.md): Caching
+- [`standards/authentication.md`](standards/authentication.md): Authentication

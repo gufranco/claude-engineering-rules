@@ -114,7 +114,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 - Never proceed past 3 failed fix attempts without user input.
 - The hypothesis log (step 11) is mandatory. It prevents repeating failed approaches and gives the user visibility into the investigation.
 - When `--freeze` is active, respect the boundary. Do not edit files outside the frozen scope, even if they seem related. If a fix requires changes outside the scope, ask the user to expand or remove the freeze.
-- All fix attempts must follow the full completion gates from `../../rules/verification.md`: formatter, tests, linter, build.
+- All fix attempts must follow the full completion gates from [`../../rules/verification.md`](rules/verification.md): formatter, tests, linter, build.
 
 ## Related skills
 

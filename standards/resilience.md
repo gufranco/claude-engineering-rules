@@ -105,7 +105,7 @@ For calls to external services that may be degraded:
 - **Open** (tripped): requests fail immediately without calling the service, checked periodically
 - **Half-open** (probing): limited requests pass through to test recovery. Send a single probe request on a timer. If it succeeds, move to Closed. If it fails, return to Open and reset the timer with backoff
 
-Track: failure count, failure rate, response time. Trip on sustained failure, not a single error. For database-specific failures (deadlocks, lock timeouts), apply the same circuit breaker pattern. See `standards/database.md` Connection Management for retry-worthy transient errors.
+Track: failure count, failure rate, response time. Trip on sustained failure, not a single error. For database-specific failures (deadlocks, lock timeouts), apply the same circuit breaker pattern. See [`standards/database.md`](standards/database.md) Connection Management for retry-worthy transient errors.
 
 **Error-type thresholds**: use separate counters per error class. A spike in timeouts must not trip the circuit for 5xx errors, and vice versa. Set independent thresholds for: connection refused, timeout, and 5xx. A mixed spike trips on the most severe class that crosses its own threshold.
 
@@ -151,7 +151,7 @@ try {
 
 Log every fallback activation at `warn` level. Silent fallbacks hide chronic dependency issues.
 
-See `standards/redis.md` "Non-Critical Redis Fallback" for Redis-specific patterns.
+See [`standards/redis.md`](standards/redis.md) "Non-Critical Redis Fallback" for Redis-specific patterns.
 
 ## Timeouts
 
@@ -162,7 +162,7 @@ Every external call must have an explicit timeout:
 - Queue operations: visibility timeout aligned with processing time
 - Background jobs: execution timeout with cleanup
 
-Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns. Database connection and query timeout values: see `standards/database.md` for per-query-type limits and statement timeout configuration.
+Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns. Database connection and query timeout values: see [`standards/database.md`](standards/database.md) for per-query-type limits and statement timeout configuration.
 
 ## Back Pressure
 

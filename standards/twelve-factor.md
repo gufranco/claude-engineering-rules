@@ -10,7 +10,7 @@ One codebase tracked in version control, many deploys.
 - Shared code between apps belongs in libraries managed through dependency managers, not copy-pasted
 - Production, staging, and development are all deploys of the same codebase at different versions
 
-See `rules/git-workflow.md` for branching, commits, and PR conventions.
+See [`rules/git-workflow.md`](rules/git-workflow.md) for branching, commits, and PR conventions.
 
 ## II. Dependencies
 
@@ -21,7 +21,7 @@ Explicitly declare and isolate all dependencies.
 - System tools like ImageMagick, ffmpeg, or curl must not be assumed available. If required, declare them in the Dockerfile or provision script, not just in documentation
 - Declaration and isolation must be used together. One without the other is insufficient
 
-See `rules/code-style.md` for version pinning and `rules/security.md` for supply chain security.
+See [`rules/code-style.md`](rules/code-style.md) for version pinning and [`rules/security.md`](rules/security.md) for supply chain security.
 
 ## III. Config
 
@@ -44,7 +44,7 @@ Store config in the environment. Strict separation between code and deploy-speci
 - Validate all required env vars at startup. Fail fast with a clear message listing what is missing
 - Document every env var in `.env.example` with placeholder values
 
-See `rules/security.md` for secrets management.
+See [`rules/security.md`](rules/security.md) for secrets management.
 
 ## IV. Backing Services
 
@@ -59,7 +59,7 @@ A backing service is any service consumed over the network: databases, caches, q
 
 **Test implication:** development and test environments use the same backing service types as production. SQLite locally with PostgreSQL in production violates this factor.
 
-See `standards/database.md` for connection management and `rules/testing.md` for real service requirements.
+See [`standards/database.md`](standards/database.md) for connection management and [`rules/testing.md`](rules/testing.md) for real service requirements.
 
 ## V. Build, Release, Run
 
@@ -76,7 +76,7 @@ Strictly separate the three stages.
 - Releases are append-only. Rollback means deploying a previous release, not mutating the current one
 - The run stage must be simple and predictable. Build complexity is acceptable because developers oversee it
 
-See `standards/infrastructure.md` for CI/CD pipeline design and artifact management.
+See [`standards/infrastructure.md`](standards/infrastructure.md) for CI/CD pipeline design and artifact management.
 
 ## VI. Processes
 
@@ -87,7 +87,7 @@ Execute the app as one or more stateless, share-nothing processes.
 - **No sticky sessions.** Session data belongs in a time-expiring external store (Redis, Memcached), not in process memory. Sticky sessions prevent horizontal scaling and make deployments fragile
 - Asset compilation and preprocessing happen during the build stage, not at runtime
 
-See `standards/distributed-systems.md` for stateless service design and `standards/caching.md` for external cache strategies.
+See [`standards/distributed-systems.md`](standards/distributed-systems.md) for stateless service design and [`standards/caching.md`](standards/caching.md) for external cache strategies.
 
 ## VII. Port Binding
 
@@ -108,7 +108,7 @@ Scale out via the process model.
 - Never daemonize processes or write PID files. Delegate process lifecycle to the platform (systemd, Kubernetes, container orchestrator)
 - Internal concurrency (threads, async I/O, goroutines) is fine within a process but is not a substitute for the process model. A single process with 100 threads cannot scale across machines
 
-See `standards/infrastructure.md` for HPA, autoscaling, and process orchestration.
+See [`standards/infrastructure.md`](standards/infrastructure.md) for HPA, autoscaling, and process orchestration.
 
 ## IX. Disposability
 
@@ -137,7 +137,7 @@ Maximize robustness with fast startup and graceful shutdown.
 - Use an init process like `tini` or `dumb-init` as the container entrypoint. It forwards signals correctly and reaps zombie child processes
 - In Dockerfiles: `ENTRYPOINT ["/sbin/tini", "--"]` followed by `CMD ["your-app"]`. Alternatively, use `docker run --init`
 
-See `standards/distributed-systems.md` for graceful shutdown and `standards/resilience.md` for idempotency patterns.
+See [`standards/distributed-systems.md`](standards/distributed-systems.md) for graceful shutdown and [`standards/resilience.md`](standards/resilience.md) for idempotency patterns.
 
 ## X. Dev/Prod Parity
 
@@ -155,7 +155,7 @@ Keep development, staging, and production as similar as possible.
 - "Lightweight local substitutes" (SQLite for PostgreSQL, in-memory cache for Redis, local filesystem for S3) create subtle incompatibilities that only surface in production. Avoid them
 - Modern tools (Docker, docker-compose, devcontainers) eliminate the cost argument for running production-equivalent services locally
 
-See `standards/infrastructure.md` for environment parity and module-based provisioning.
+See [`standards/infrastructure.md`](standards/infrastructure.md) for environment parity and module-based provisioning.
 
 ## XI. Logs
 
@@ -166,7 +166,7 @@ Treat logs as event streams.
 - The execution environment (container runtime, log collector, systemd) captures, collates, and routes streams to their final destination
 - The app is unaware of its log destination. The same code works in a terminal, Docker, and Kubernetes without changes
 
-See `standards/observability.md` for structured logging, log levels, sensitive data masking, and correlation IDs.
+See [`standards/observability.md`](standards/observability.md) for structured logging, log levels, sensitive data masking, and correlation IDs.
 
 ## XII. Admin Processes
 

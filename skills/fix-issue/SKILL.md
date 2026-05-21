@@ -37,7 +37,7 @@ End-to-end workflow for resolving a GitHub issue: from reading the issue to comm
 
 ### Phase 2: Pre-Flight
 
-Run the pre-flight checks from `../../rules/pre-flight.md`:
+Run the pre-flight checks from [`../../rules/pre-flight.md`](rules/pre-flight.md):
 
 1. **Duplicate check.** Search for existing fixes:
    - `gh pr list --search "<keywords from issue>"` for open PRs.
@@ -60,7 +60,7 @@ Run the pre-flight checks from `../../rules/pre-flight.md`:
 
 1. **Create a branch.** Name it `bugfix/<number>-<short-description>` for bugs, `feature/<number>-<short-description>` for features.
 
-2. **Implement the fix.** Follow `../../rules/code-style.md` for all code written.
+2. **Implement the fix.** Follow [`../../rules/code-style.md`](rules/code-style.md) for all code written.
 
 3. **Write tests.** Every fix must have tests that:
    - Fail without the fix and pass with it (for bugs).
@@ -71,7 +71,7 @@ Run the pre-flight checks from `../../rules/pre-flight.md`:
 
 ### Phase 4: Verify
 
-Run the full completion gates from `../../rules/verification.md`:
+Run the full completion gates from [`../../rules/verification.md`](rules/verification.md):
 
 1. Formatter. Show output.
 2. Linter. Zero warnings, zero errors. Show output.
@@ -81,7 +81,7 @@ Run the full completion gates from `../../rules/verification.md`:
 
 ### Phase 5: Commit
 
-1. **Commit the fix.** Use the format from `../../rules/git-workflow.md`:
+1. **Commit the fix.** Use the format from [`../../rules/git-workflow.md`](rules/git-workflow.md):
    ```
    fix(<scope>): <description>
 
@@ -103,7 +103,7 @@ Run the full completion gates from `../../rules/verification.md`:
 - For bugs, reproduce before fixing. A fix without reproduction is a guess.
 - The commit footer must reference the issue with `Fixes #N` so GitHub auto-closes it on merge.
 - Account token prefixing is mandatory for all `gh` commands per `../../rules/github-accounts.md`.
-- All code must follow `../../rules/code-style.md`. Existing violations in the codebase are not permission to add more.
+- All code must follow [`../../rules/code-style.md`](rules/code-style.md). Existing violations in the codebase are not permission to add more.
 
 ## Related Skills
 

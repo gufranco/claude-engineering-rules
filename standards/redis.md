@@ -5,9 +5,9 @@
 | Use case | Pattern | Alternative to consider |
 |----------|---------|------------------------|
 | Ephemeral counters, rate limiters | INCRBY + TTL | Database counter with scheduled cleanup |
-| Cache for read-heavy data | Cache-aside with TTL | See `standards/caching.md` |
-| Pub/sub for real-time messaging | PUBLISH/SUBSCRIBE | See `standards/websocket-realtime.md` |
-| Distributed locks | SET NX EX | See `standards/distributed-systems.md` |
+| Cache for read-heavy data | Cache-aside with TTL | See [`standards/caching.md`](standards/caching.md) |
+| Pub/sub for real-time messaging | PUBLISH/SUBSCRIBE | See [`standards/websocket-realtime.md`](standards/websocket-realtime.md) |
+| Distributed locks | SET NX EX | See [`standards/distributed-systems.md`](standards/distributed-systems.md) |
 | Session storage | GET/SET with TTL | Database-backed sessions if durability matters |
 
 Redis is ephemeral by default. If the data must survive a restart or eviction, it belongs in a database.
@@ -87,7 +87,7 @@ Use Lua when a command depends on a previous result within the same atomic block
 
 - Use a connection pool. One connection per request exhausts Redis under load
 - Separate connections for pub/sub: a client in subscriber mode cannot issue regular commands. Create a dedicated subscriber connection and a dedicated publisher connection
-- Lazy-initialize connections that are not needed on every request. A module that exports pure functions must not create a Redis connection at import time. See `rules/code-style.md` "No side effects at module level"
+- Lazy-initialize connections that are not needed on every request. A module that exports pure functions must not create a Redis connection at import time. See [`rules/code-style.md`](rules/code-style.md) "No side effects at module level"
 - Set `connectTimeout` and `commandTimeout`. A hanging Redis connection blocks the caller indefinitely without a timeout
 - Handle `ECONNREFUSED` and `ETIMEDOUT` as transient errors. Retry with backoff, not immediate retry
 

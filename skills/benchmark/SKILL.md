@@ -124,7 +124,7 @@ When `--save` is passed:
 ## Rules
 
 - Benchmarks must run against a local or staging environment, never production.
-- Report median, not mean. See `../../rules/testing.md` benchmark methodology section.
+- Report median, not mean. See [`../../rules/testing.md`](rules/testing.md) benchmark methodology section.
 - When no load testing tool is installed, state which tools are supported and ask whether to install one. Do not silently fall back to inaccurate methods.
 - Bundle size measurements require a fresh build. Do not measure stale build artifacts.
 - All timestamps in GMT.

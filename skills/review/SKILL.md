@@ -22,8 +22,8 @@ If no subcommand is given, default to `code`.
 Review a pull request, merge request, or local branch changes with rigorous, detail-oriented analysis. Every line of the diff is scrutinized for correctness, security, performance, maintainability, and adherence to best practices.
 
 Use two references:
-1. `../../checklists/checklist.md` for all 70 quality categories.
-2. `reviewer-prompt.md` in this directory for comment format and examples.
+1. [`../../checklists/checklist.md`](checklists/checklist.md) for all 70 quality categories.
+2. [`reviewer-prompt.md`](skills/review/reviewer-prompt.md) in this directory for comment format and examples.
 
 ### Arguments
 
@@ -53,20 +53,20 @@ When `--backend` or `--frontend` is passed, classify each file:
 5. **Read context**: PR description, commit messages, every changed file in full, imported modules, existing review comments, verify PR description matches diff.
 6. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers (`package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`), import statements in changed files, directory names, and config files. Match signals against trigger keywords in the `on_demand` section. Load **every** matched standard file plus all `always_loaded` rules.
 
-   This makes the review aware of domain-specific best practices. A PR that adds a database migration is reviewed against `standards/database.md`. A PR that adds a GraphQL resolver is reviewed against `standards/graphql-api-design.md`. A PR that adds a queue consumer is reviewed against `standards/message-queues.md`.
+   This makes the review aware of domain-specific best practices. A PR that adds a database migration is reviewed against [`standards/database.md`](standards/database.md). A PR that adds a GraphQL resolver is reviewed against [`standards/graphql-api-design.md`](standards/graphql-api-design.md). A PR that adds a queue consumer is reviewed against [`standards/message-queues.md`](standards/message-queues.md).
 
    Also load these rules for review context:
-   - `rules/verification.md`: when reviewing claims about test coverage or build success
-   - `rules/pre-flight.md`: when reviewing whether the author checked for existing solutions
-   - `rules/security.md`: security criteria, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
-   - `rules/writing-precision.md`: quality gate for review comments themselves
-   - `rules/code-style.md`: completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
-   - `rules/testing.md`: mock policy, AAA pattern, faker, deterministic tests, contract testing, performance regression
+   - [`rules/verification.md`](rules/verification.md): when reviewing claims about test coverage or build success
+   - [`rules/pre-flight.md`](rules/pre-flight.md): when reviewing whether the author checked for existing solutions
+   - [`rules/security.md`](rules/security.md): security criteria, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
+   - [`rules/writing-precision.md`](rules/writing-precision.md): quality gate for review comments themselves
+   - [`rules/code-style.md`](rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
+   - [`rules/testing.md`](rules/testing.md): mock policy, AAA pattern, faker, deterministic tests, contract testing, performance regression
    - `rules/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
    - `rules/privacy.md`: data minimization, retention, erasure when the diff touches personal data
-   - `rules/ai-guardrails.md`: when the diff processes, stores, or acts on LLM-generated output
+   - [`rules/ai-guardrails.md`](rules/ai-guardrails.md): when the diff processes, stores, or acts on LLM-generated output
 
-   Before suggesting fixes that call library APIs, check `standards/llm-docs.md` for the library's documentation URL. Verify the API exists.
+   Before suggesting fixes that call library APIs, check [`standards/llm-docs.md`](standards/llm-docs.md) for the library's documentation URL. Verify the API exists.
 
    Record which standards were loaded for inclusion in the review verdict.
 
@@ -181,10 +181,20 @@ When `--backend` or `--frontend` is passed, classify each file:
      **Security pattern analysis (when SCOPE_AUTH, SCOPE_API, SCOPE_WEBHOOK, or SCOPE_BACKEND is detected).** Read `~/.claude/skills/security-patterns.md` and apply it as an additional security lens. For each changed file that handles user input, perform source-to-sink tracing: map entry points to dangerous sinks (SQL, command, template, file, SSRF, redirect, XSS, deserialization) and verify sanitization at each transition. Check for vulnerability patterns matching the diff: race conditions on financial operations, IDOR, mass assignment, JWT weakness, CORS misconfiguration, missing idempotency. When a security finding is identified, run `git blame -L <start>,<end> <file>` on the vulnerable lines to determine when it was introduced and how long it has been exposed.
    - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 8 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
-11. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply `../../checklists/checklist.md` category 8. If coverage is below threshold, flag it as a blocking finding.
-12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply `../../checklists/checklist.md` category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
+11. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
+12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](checklists/checklist.md) category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
 13. **Check branch freshness, CI, test evidence, PR size** (parallel). Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
-14. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a **Behavioral Flow Analysis** section summarizing the lifecycle traces, concurrent actor timelines, and attacker models from step 9. When presenting to the user in-terminal, include a **Standards Applied** line listing loaded standards for internal transparency. When posting to GitHub or any external system, omit internal references entirely: no file names from `~/.claude/`, no checklist category numbers, no standard file names. Every comment must read as if a human engineer wrote it from experience. See `rules/code-review.md` "No Internal Config Leakage" for the full rule.
+14. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9. When presenting to the user in-terminal, also include a Standards Applied line for internal transparency.
+
+    **External output is a separate channel.** The in-terminal presentation includes internal scaffolding (Standards Applied, Behavioral Flow Analysis section heading, severity tiers like P0/P1/P2). What goes to GitHub does not. Before building the JSON payload, do a forward pass that strips:
+
+    - Conventional Comments label prefixes (`issue (blocking):`, `issue (non-blocking):`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`). Use no label.
+    - Internal severity tiers (`P0`, `P1`, `P2`) and section headings (`Standards Applied`, `Behavioral Flow Analysis`, `Blast Radius`).
+    - The skill's own invocation flags (`--backend`, `--frontend`, `--local`, `--post`).
+    - Internal file references (`~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, [`CLAUDE.md`](CLAUDE.md)).
+    - "Category N" or "checklist item N" phrasings; reach for the engineering reason directly.
+
+    This is a forward filter, not a post-hoc rewrite. If you find yourself rewriting after generation to scrub these, the generation prompt was wrong. Cleanliness from the first draft is the bar. See [`standards/code-review.md`](standards/code-review.md) "No Internal Config Leakage" and the `internal-config-leakage.py` hook (which will block the post if you miss something).
 15. **Next steps**:
     - **Own PR / local**: offer to fix issues. Convergence loop (max 5 iterations): fix, re-verify, re-audit. If 5 iterations are exhausted with findings still open, stop, list the remaining issues, and inform the author. Five iterations is enough for any reasonable convergence; remaining issues likely need a design change, not another fix pass.
     - **Someone else's PR**: offer to post inline comments. Show the exact payload first: each comment with file, line, body text, and suggestion blocks. Ask for confirmation before posting. `--post` skips the confirmation prompt but still shows the payload summary.
@@ -210,7 +220,7 @@ gh pr view <PR_NUMBER> --json commits --jq '.commits[-1].oid'
     {
       "path": "src/auth.ts",
       "line": 20,
-      "body": "Comment text with optional ```suggestion\nblock\n```"
+      "body": "Plain-prose comment body, no label prefix. A ```suggestion\nblock\n``` can be embedded when proposing a code change."
     },
     {
       "path": "src/auth.ts",
@@ -252,66 +262,46 @@ This creates and submits the review in one step. No separate "create PENDING the
 
 Never post comments individually. Even a single comment goes through the JSON file flow. This prevents notification spam and avoids shell escaping failures with complex markdown.
 
-### Conventional Comments Taxonomy
+### Comment Voice (MANDATORY)
 
-Prefix every posted inline comment with a Conventional Comments label so the receiver can triage at a glance. Source: `conventionalcomments.org`. The taxonomy aligns with the classifier used by `/respond`, so reviewer and reviewee speak the same vocabulary.
+Every posted comment must read like a human colleague wrote it. The [`standards/code-review.md`](standards/code-review.md) "Review Comments" section is the source of truth: no prefix labels, no structured templates, no checklist appearance. State the engineering reason directly.
 
-| Severity | Conventional Comments label | When to use |
-|----------|----------------------------|-------------|
-| Blocking bug, security, correctness | `issue (blocking)` | Must be fixed before merge |
-| Architectural concern, not blocking | `issue (non-blocking)` | Worth flagging, can be deferred or discussed |
-| Consider an alternative | `suggestion` | Optional improvement |
-| Style preference, naming, formatting | `nitpick` | Small scope, the author may take or leave |
-| Author input requested | `question` | Direct question that needs a reply |
-| Reflective observation, no action | `thought` | Musing aloud |
-| Positive feedback | `praise` | Acknowledge good work |
-| Out of scope, follow-up | `chore` | File a ticket and link it |
-| Future reminder | `todo` | Add a `TODO(debt):` in code |
+Internal triage (severity, category, source rule) stays internal. It informs which comments you choose to write and how blocking they are in the verdict, but it never appears in the posted text. The reader has no access to the configuration and must never learn it exists.
 
-Format inside the JSON `body`:
+**Forbidden in posted bodies:**
+
+- Conventional Comments label prefixes like `issue (blocking):`, `issue (non-blocking):`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`. These signal "I am working from a template" to any reader. Write the same content without the label.
+- Internal severity tiers: `P0`, `P1`, `P2`, or any heading like `## P0 Blocking`. The verdict you compute internally maps to GitHub's `APPROVE` / `REQUEST_CHANGES` / `COMMENT` event, full stop.
+- The skill's own invocation flags. If you ran the review with `--backend`, the posted comment is not "Backend-only review (`--backend`)". The first-person voice is "I went through the backend changes" or just plain English.
+- References to internal config: `~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, [`CLAUDE.md`](CLAUDE.md), "category 17", "checklists item 3".
+- Structural section headings carried over from internal taxonomy: "Behavioral Flow Analysis", "Blast Radius Summary", "Standards Applied". Internal-only sections; their content reaches the reader in plain prose, not under those labels.
+
+**Comment shape:**
+
+Open differently across comments. Sometimes a description, sometimes a question, sometimes a one-line observation. Variety is the signal that a human wrote it. Do not start every comment with the same word or phrase.
+
+When you have a code change to suggest, use a GitHub `suggestion` block. The block is the structure; no prose label is needed above it.
+
+Example of a clean inline comment body:
 
 ```
-issue (blocking): The handler does not validate `companyId`. An empty string passes
-the type check and reaches the DB, creating cross-tenant rows.
+The round-robin path doesn't run this check. `createRoundRobinBetInternal`
+(around line 3501) builds its own selections map and goes straight to
+`placeRoundRobin` -> `createParlayBet`, so the rejection never fires for
+that route. Putting the same call early in `createRoundRobinBetInternal`
+covers it, and factoring it into a tiny shared helper avoids the next
+placement entry point silently missing it.
 
 ```suggestion
-if (!companyId) throw new ValidationError('companyId is required');
+    rejectOneWayUnderBetSelections(legsBySemanticId);
 ```
 ```
 
-### Feedback Equation for Pushback-Anticipated Comments
+No label, no taxonomy, no template scaffolding. The text alone carries the severity through tone.
 
-When a comment challenges a design decision rather than a bug, write it in Observation, Impact, Request form. Source: Lara Hogan.
+### Reviewer-Side Shorthand (Internal Use Only)
 
-| Component | What it states |
-|-----------|---------------|
-| Observation | What the code does, in neutral terms |
-| Impact | What would change if the reviewer's path were taken |
-| Request | What the reviewer wants from the author next |
-
-Apply when the comment is non-blocking but architectural. Do not apply to clear bug findings, those should be stated directly.
-
-Example:
-
-```
-issue (non-blocking): The handler uses optimistic locking on the order row.
-Under the expected load profile, optimistic locking would retry on every collision.
-The collision rate at peak is around 12% per the load test in `tests/load/orders.k6.js`,
-which means an average of 1.1 retries per request and a tail of 5+ retries for the worst case.
-Would pessimistic locking work better here, or is there a constraint that makes optimistic the right choice?
-```
-
-### Standard Shorthand Vocabulary
-
-Use the community-standard shorthand in summary comments so the reviewee recognizes the cues immediately.
-
-| Acronym | Meaning | When `/review` uses it |
-|---------|---------|------------------------|
-| `LGTM` | Looks good to me | Summary verdict with no findings |
-| `PTAL` | Please take another look | When `/review` re-runs after the author addressed comments |
-| `NIT` | Nitpick | Inline shorthand alternative to the `nitpick:` Conventional Comments prefix |
-| `RFC` | Request for comment | When `/review` wants the author to weigh in |
-| `WDYT` | What do you think | When asking the author for a judgment call |
+The summary section you show the user in-terminal can use the standard reviewer shorthand (`LGTM`, `PTAL`, `RFC`, `WDYT`) because the user is the one operating this skill. Those acronyms do not belong in the body posted to GitHub unless the project itself uses them, in which case they are the project's vocabulary, not the skill's.
 
 ### Service Level Awareness in the Verdict
 
@@ -336,13 +326,13 @@ Never silently post a contradicting comment. The author should never discover th
 
 ### Regression-Test Pinning Recommendation
 
-For every `issue (blocking)` finding that reports a bug, the suggested fix includes a named regression test like `it('rejects empty companyId per PR #4521')`. Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
+For every blocking-severity bug finding, the suggested fix includes a named regression test like `it('rejects empty companyId per PR #4521')`. Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
 
 This mirrors the policy in `/respond` and ensures both ends of the review conversation expect named regression tests where they matter.
 
 ### PR-Author Anti-Pattern Detection
 
-Check the PR description for known author-side anti-patterns from `standards/code-review.md` "As Reviewee". These become findings in the PR-summary part of the verdict, not inline comments.
+Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](standards/code-review.md) "As Reviewee". These become findings in the PR-summary part of the verdict, not inline comments.
 
 | Anti-pattern in PR body | Finding |
 |------------------------|---------|
@@ -380,13 +370,13 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 
 1. **Identify scope**: path argument or `git diff origin/<base>...HEAD --name-only`. Filter to implementation files.
 2. **Load domain-specific test standards.** Read `~/.claude/rules/index.yml` and match the project against test-related standards:
-   - If the project has Playwright or Cypress: load `standards/browser-testing.md` and check test patterns against it
-   - If the project has `.tftest.hcl` files or Terraform: load `standards/terraform-testing.md`
-   - If the project has axe-core, jest-axe, or pa11y dependencies: load `standards/accessibility-testing.md`
-   - Always load `rules/testing.md` for the base test methodology (AAA, mock policy, faker, coverage)
+   - If the project has Playwright or Cypress: load [`standards/browser-testing.md`](standards/browser-testing.md) and check test patterns against it
+   - If the project has `.tftest.hcl` files or Terraform: load [`standards/terraform-testing.md`](standards/terraform-testing.md)
+   - If the project has axe-core, jest-axe, or pa11y dependencies: load [`standards/accessibility-testing.md`](standards/accessibility-testing.md)
+   - Always load [`rules/testing.md`](rules/testing.md) for the base test methodology (AAA, mock policy, faker, coverage)
    - Findings from these standards become QA findings with the same severity/rule citation format
 3. **Map behavior paths**: for each file, extract happy paths, input variations, validation failures, authorization paths, state transitions, error recovery, boundary values, concurrency, data integrity, side effects.
-4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, `tests/`, `e2e/`. Map each `it()`/`test()` to behavior paths.
+4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, [`tests/`](tests), `e2e/`. Map each `it()`/`test()` to behavior paths.
 5. **Cross-reference**: classify each path as Covered, Partial, Missing, or Untestable.
 6. **Risk assessment**: Critical (auth bypass, data loss, security), High (core feature broken, data corruption), Medium (non-core, graceful degradation), Low (cosmetic, unlikely edge case).
 7. **Run 30 QA rules**: functional correctness (1-6), error handling (7-12), security (13-18), data integrity (19-22), integration boundaries (23-26), edge cases and resilience (27-30).
@@ -425,7 +415,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 ```
 
 1. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths (auth, data writes, error handling) is a blocking finding.
-2. **Fix mode** (if `--fix`): present report first, wait for confirmation. Generate tests following `rules/testing.md`: AAA pattern, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
+2. **Fix mode** (if `--fix`): present report first, wait for confirmation. Generate tests following [`rules/testing.md`](rules/testing.md): AAA pattern, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
 
 ### 30 QA Rules Reference
 
@@ -463,7 +453,7 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
 ### Steps
 
 1. **Identify scope**: path argument or changed `.tsx`, `.jsx`, `.css`, `.scss` files. Read `globals.css` for color system.
-2. **Read code**: every file in scope, color system, layout components, shared UI components. If the code was AI-generated or is a new frontend build, check for distributional convergence: generic font choices (Inter, Roboto, Arial), cliched color schemes (purple gradients on white), flat solid-color backgrounds, and predictable layouts. Flag these as MEDIUM findings with a reference to `standards/frontend.md` "Avoiding Distributional Convergence" section. Skip this check when working within an existing design system.
+2. **Read code**: every file in scope, color system, layout components, shared UI components. If the code was AI-generated or is a new frontend build, check for distributional convergence: generic font choices (Inter, Roboto, Arial), cliched color schemes (purple gradients on white), flat solid-color backgrounds, and predictable layouts. Flag these as MEDIUM findings with a reference to [`standards/frontend.md`](standards/frontend.md) "Avoiding Distributional Convergence" section. Skip this check when working within an existing design system.
 3. **Color contrast**: resolve CSS custom properties to OKLCH/hex. Calculate ratios. Flag < 4.5:1 normal text, < 3:1 large text. Check BOTH light and dark mode.
 4. **Typography**: body text >= 16px, line length constrained, headings use `text-balance`, consistent heading scale, max 2-3 font weights.
 5. **Spacing**: consistent section padding, grid gaps, card padding, no arbitrary values when Tailwind scale works.
@@ -471,9 +461,9 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
 7. **Accessibility**: `aria-labelledby` on sections, `aria-label` on nav landmarks, `aria-hidden` on decorative elements, `htmlFor` on labels, focus indicators visible (3:1 contrast), no positive `tabindex`, `prefers-reduced-motion` respected.
 8. **Animation**: CSS-based, `prefers-reduced-motion` fallback (opacity: 1, transform: none), reasonable durations.
 9. **Dark mode**: all tokens have light/dark values, dark backgrounds L < 0.25, no hardcoded colors bypassing tokens.
-10. **Performance** (if `--focus performance`, `cwv`, or `all`): apply `checklists/checklist.md` category 7 performance budgets. Check page weight, JS/CSS size, image optimization, font loading strategy, third-party script loading, code splitting. Reference: `standards/frontend.md` Web Performance section.
-11. **Core Web Vitals** (if `--focus cwv` or `all`): apply `checklists/checklist.md` category 7 CWV items. Verify LCP element is preloaded and prioritized. Check for main thread blocking tasks > 50ms (INP). Check for unsized images, font FOUT, and above-viewport content injection (CLS). Reference: `standards/frontend.md` CWV Debugging section.
-12. **SEO** (if `--focus seo` or `all`, only for public-facing web apps): apply `checklists/checklist.md` category 7 SEO items. Verify title tags, meta descriptions, heading hierarchy, canonical URLs, structured data, robots.txt, and sitemap. Reference: `standards/frontend.md` SEO section.
+10. **Performance** (if `--focus performance`, `cwv`, or `all`): apply [`checklists/checklist.md`](checklists/checklist.md) category 7 performance budgets. Check page weight, JS/CSS size, image optimization, font loading strategy, third-party script loading, code splitting. Reference: [`standards/frontend.md`](standards/frontend.md) Web Performance section.
+11. **Core Web Vitals** (if `--focus cwv` or `all`): apply [`checklists/checklist.md`](checklists/checklist.md) category 7 CWV items. Verify LCP element is preloaded and prioritized. Check for main thread blocking tasks > 50ms (INP). Check for unsized images, font FOUT, and above-viewport content injection (CLS). Reference: [`standards/frontend.md`](standards/frontend.md) CWV Debugging section.
+12. **SEO** (if `--focus seo` or `all`, only for public-facing web apps): apply [`checklists/checklist.md`](checklists/checklist.md) category 7 SEO items. Verify title tags, meta descriptions, heading hierarchy, canonical URLs, structured data, robots.txt, and sitemap. Reference: [`standards/frontend.md`](standards/frontend.md) SEO section.
 13. **Dimension scoring.** Rate each dimension 0-10 based on the findings:
 
     | Dimension | Score | Key factors |
@@ -497,7 +487,7 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
     - Cookie-cutter landing page layouts with no brand personality
     Rate as MEDIUM findings. The goal is not to ban these patterns but to ensure they are intentional choices, not defaults.
 
-15. **Compile and output**: group by severity (HIGH, MEDIUM, LOW). Each finding cites file:line and the rule from `standards/frontend.md` or `standards/accessibility-testing.md`. Include the dimension scorecard. If `--fix`, apply fixes and run build.
+15. **Compile and output**: group by severity (HIGH, MEDIUM, LOW). Each finding cites file:line and the rule from [`standards/frontend.md`](standards/frontend.md) or [`standards/accessibility-testing.md`](standards/accessibility-testing.md). Include the dimension scorecard. If `--fix`, apply fixes and run build.
 
 ---
 
@@ -530,14 +520,14 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - Never modify implementation code during QA analysis. Report bugs, do not fix them.
 - Never weaken existing tests. New tests add coverage only.
 - Every QA finding must cite a specific file:line and QA rule number.
-- Every design finding must cite the rule from `standards/frontend.md`.
+- Every design finding must cite the rule from [`standards/frontend.md`](standards/frontend.md).
 - Always detect git platform from remote URL.
 - Always read surrounding code before reviewing.
 - Always present the full review before posting comments.
 - Never approve a PR with failing tests, stale branch, or missing test evidence.
-- Always restore account per `standards/borrow-restore.md`.
+- Always restore account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
 - Apply all 70 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
-- When the diff touches authentication, load `standards/authentication.md` and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
+- When the diff touches authentication, load [`standards/authentication.md`](standards/authentication.md) and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
 - When the diff adds or modifies dependencies, apply category 56 (Supply Chain): check for typosquatting, verify lockfile integrity, check for known vulnerabilities.
 - When the diff includes database migrations, apply category 55 (Zero-Downtime Deployment): verify expand-contract pattern, backward compatibility with previous app version.
 - When the diff processes LLM output, apply category 53 (LLM Trust Boundary): verify output validation, sanitization before storage, URL allowlisting.

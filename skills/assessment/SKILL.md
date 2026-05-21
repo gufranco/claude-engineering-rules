@@ -33,7 +33,7 @@ This skill accepts optional arguments after `/assessment`:
 ## Steps
 
 1. **Understand the requirements.** Before assessing the implementation, understand what was asked.
-   - Scan the **entire project** for requirement and context documents, not just the root or `docs/`. Search all directories for files named README, INSTRUCTIONS, BRIEF, ASSIGNMENT, REQUIREMENTS, CHALLENGE, TASK, PROMPT, PROBLEM, SPEC, DESIGN, ARCHITECTURE, ADR, or similar, in any format: `.md`, `.txt`, `.pdf`, `.docx`, `.html`. Also check for hidden files like `.assignment`, `.brief`, or dotfiles that might contain instructions.
+   - Scan the **entire project** for requirement and context documents, not just the root or [`docs/`](docs). Search all directories for files named README, INSTRUCTIONS, BRIEF, ASSIGNMENT, REQUIREMENTS, CHALLENGE, TASK, PROMPT, PROBLEM, SPEC, DESIGN, ARCHITECTURE, ADR, or similar, in any format: `.md`, `.txt`, `.pdf`, `.docx`, `.html`. Also check for hidden files like `.assignment`, `.brief`, or dotfiles that might contain instructions.
    - Read every document found. Extract: the problem statement, explicit requirements, evaluation criteria, constraints, time limits, and bonus/stretch goals if mentioned.
    - Ask the user: **"Do you have additional instructions from email, a job posting, or other external sources that I should consider? If this is for a specific company, what is the company name? Were any external projects, codebases, or articles used as reference during implementation?"** Wait for a response before proceeding. If the user provides text, screenshots, or URLs, incorporate that as additional requirements context. If external sources were consulted, record them for category 50 (Clean Room) verification in step 7.
    - **Company research.** If a company name is provided, search for their engineering blog, tech blog, GitHub organization, open source projects, tech talks, and **Glassdoor interview reviews**. Glassdoor is especially valuable: candidates often share the exact take-home problem, evaluation criteria, interview questions, and what the company looks for. Search for `"<company name>" interview software engineer site:glassdoor.com` and similar queries. Also understand what technologies they use, what patterns they value, and what their engineering culture looks like. A company that blogs about event sourcing will notice if you didn't use it. A company with strict TypeScript repos will judge a loosely-typed submission. Use this context to prioritize which patterns matter most for the assessment.
@@ -48,36 +48,36 @@ This skill accepts optional arguments after `/assessment`:
 
 3. **Read the full implementation.** Read every changed file in full, not just the diff. The goal is to understand the complete solution, not just what changed. Also read key surrounding files: imports, configs, schemas, middleware, route definitions, environment files.
 
-4. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers (`package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`), import statements, directory names, and config files (`.graphqlrc`, `terraform/`, `k8s/`, `docker-compose.yml`, `.eslintrc`, `tsconfig.json`, `playwright.config.*`, `.proto` files, `i18n/` or `locales/` directories, `Dockerfile`, `.github/workflows/`).
+4. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers (`package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`), import statements, directory names, and config files (`.graphqlrc`, `terraform/`, `k8s/`, `docker-compose.yml`, `.eslintrc`, `tsconfig.json`, `playwright.config.*`, `.proto` files, `i18n/` or `locales/` directories, `Dockerfile`, [`.github/workflows/`](.github/workflows)).
 
    Match signals against trigger keywords in the `on_demand` section of the index. Load **every** matched standard file. Also load **all** `always_loaded` rules.
 
-   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 70-category checklist. A project using PostgreSQL loads `standards/database.md`. A project with GraphQL loads `standards/graphql-api-design.md`. A project with Terraform loads `standards/terraform-testing.md`. Every applicable standard is loaded, no exceptions.
+   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 70-category checklist. A project using PostgreSQL loads [`standards/database.md`](standards/database.md). A project with GraphQL loads [`standards/graphql-api-design.md`](standards/graphql-api-design.md). A project with Terraform loads [`standards/terraform-testing.md`](standards/terraform-testing.md). Every applicable standard is loaded, no exceptions.
 
-   Additionally, load these references for use during fix and convergence phases. The current setup keeps rules under `rules/` and on-demand standards under `standards/`. Several files that were once in `rules/` migrated to `standards/`; the list below uses the current paths.
-   - `rules/pre-flight.md`: verify interfaces before implementing fixes
-   - `rules/verification.md`: evidence-based verification for every claim, zero warnings
-   - `rules/writing-precision.md`: quality gate for generated README and comments
-   - `rules/git-workflow.md`: commit format during fix phase
-   - `rules/security.md`: security criteria beyond the checklist categories, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
-   - `rules/code-style.md`: completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x patterns
-   - `rules/testing.md`: mock policy, AAA pattern, faker, deterministic tests, coverage, contract testing, performance regression
-   - `rules/ai-guardrails.md`: when code processes LLM output, validate trust boundaries
-   - `rules/smart-questions.md`: question format, status reports, FIXED/RESOLVED/DONE loop closure
-   - `rules/surgical-edits.md`: each diff line must trace to the request
-   - `standards/documentation.md`: preservation rules when updating project docs
-   - `standards/debugging.md`: 4-phase process when diagnosing planted defects in step 6
-   - `standards/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
-   - `standards/privacy.md`: data minimization, retention, erasure, consent, pseudonymization
-   - `standards/context-management.md`: compact discipline and re-read cadence during long audits
-   - `standards/cost-awareness.md`: cloud and runtime cost trade-offs
-   - `standards/code-review.md`: includes the "As Reviewee" section. When the assessment surfaces gaps that will be addressed via a PR, this is the reference for how the author should handle reviewer feedback
-   - `rules/lang/typescript-types.md`, `typescript-immutability.md`, `typescript-strict.md`: load when TypeScript is detected
-   - `rules/lang/prisma-migrations.md`, `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`: load when the corresponding ORM is detected
+   Additionally, load these references for use during fix and convergence phases. The current setup keeps rules under [`rules/`](rules) and on-demand standards under [`standards/`](standards). Several files that were once in [`rules/`](rules) migrated to [`standards/`](standards); the list below uses the current paths.
+   - [`rules/pre-flight.md`](rules/pre-flight.md): verify interfaces before implementing fixes
+   - [`rules/verification.md`](rules/verification.md): evidence-based verification for every claim, zero warnings
+   - [`rules/writing-precision.md`](rules/writing-precision.md): quality gate for generated README and comments
+   - [`rules/git-workflow.md`](rules/git-workflow.md): commit format during fix phase
+   - [`rules/security.md`](rules/security.md): security criteria beyond the checklist categories, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
+   - [`rules/code-style.md`](rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x patterns
+   - [`rules/testing.md`](rules/testing.md): mock policy, AAA pattern, faker, deterministic tests, coverage, contract testing, performance regression
+   - [`rules/ai-guardrails.md`](rules/ai-guardrails.md): when code processes LLM output, validate trust boundaries
+   - [`rules/smart-questions.md`](rules/smart-questions.md): question format, status reports, FIXED/RESOLVED/DONE loop closure
+   - [`rules/surgical-edits.md`](rules/surgical-edits.md): each diff line must trace to the request
+   - [`standards/documentation.md`](standards/documentation.md): preservation rules when updating project docs
+   - [`standards/debugging.md`](standards/debugging.md): 4-phase process when diagnosing planted defects in step 6
+   - [`standards/performance.md`](standards/performance.md): Core Web Vitals budgets, API latency targets, bundle size limits
+   - [`standards/privacy.md`](standards/privacy.md): data minimization, retention, erasure, consent, pseudonymization
+   - [`standards/context-management.md`](standards/context-management.md): compact discipline and re-read cadence during long audits
+   - [`standards/cost-awareness.md`](standards/cost-awareness.md): cloud and runtime cost trade-offs
+   - [`standards/code-review.md`](standards/code-review.md): includes the "As Reviewee" section. When the assessment surfaces gaps that will be addressed via a PR, this is the reference for how the author should handle reviewer feedback
+   - [`rules/lang/typescript-types.md`](rules/lang/typescript-types.md), `typescript-immutability.md`, `typescript-strict.md`: load when TypeScript is detected
+   - [`rules/lang/prisma-migrations.md`](rules/lang/prisma-migrations.md), `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`: load when the corresponding ORM is detected
    - `rules/context-management.md`: context preservation guidance for long assessment sessions
    - `rules/cost-awareness.md`: when assessing infrastructure choices, evaluate cost implications
 
-   Before coding any fix that calls a library API, check `standards/llm-docs.md` for the library's documentation URL. Fetch the docs and verify the API exists. Never guess API signatures.
+   Before coding any fix that calls a library API, check [`standards/llm-docs.md`](standards/llm-docs.md) for the library's documentation URL. Fetch the docs and verify the API exists. Never guess API signatures.
 
 5. **Verify the project works.** Before analyzing architecture, confirm the project actually builds and passes its own tests. A project that doesn't compile is worse than any missing pattern. Run these **in parallel** where possible:
 
@@ -110,7 +110,7 @@ This skill accepts optional arguments after `/assessment`:
 
    Record all results for inclusion in the assessment output.
 
-6. **Hunt for planted defects.** Some projects, especially interview take-homes and coding challenges, contain **intentional bugs, anti-patterns, or subtle correctness issues** designed to test whether the candidate can spot and fix them. Read the code with suspicion. For each file, look for: logic bugs, data bugs, validation gaps, concurrency bugs, security flaws, anti-patterns, configuration issues, dependency traps, test gaps, mock abuse, and structural violations. The specific criteria for each category are defined in `../../checklists/checklist.md` categories 1-9, 17, 18-49, and 50. Use the checklist as the hunting guide, but read with the assumption that defects may be intentional. Pay special attention to tests that mock internal infrastructure like databases, Redis, or queues instead of using real connections: this is a common defect that makes tests pass while the actual code is broken.
+6. **Hunt for planted defects.** Some projects, especially interview take-homes and coding challenges, contain **intentional bugs, anti-patterns, or subtle correctness issues** designed to test whether the candidate can spot and fix them. Read the code with suspicion. For each file, look for: logic bugs, data bugs, validation gaps, concurrency bugs, security flaws, anti-patterns, configuration issues, dependency traps, test gaps, mock abuse, and structural violations. The specific criteria for each category are defined in [`../../checklists/checklist.md`](checklists/checklist.md) categories 1-9, 17, 18-49, and 50. Use the checklist as the hunting guide, but read with the assumption that defects may be intentional. Pay special attention to tests that mock internal infrastructure like databases, Redis, or queues instead of using real connections: this is a common defect that makes tests pass while the actual code is broken.
 
    If any defect is found, classify it with the same severity/effort scale used for missing patterns. Planted bugs that affect correctness or security are always CRITICAL.
 
@@ -151,7 +151,7 @@ This skill accepts optional arguments after `/assessment`:
    - `security`: categories 33, 34. Standards: `security.md`. Also read `~/.claude/skills/security-patterns.md` and check every applicable pattern against the implementation. Injection patterns covering raw query, second-order, ORM operator, and command. Auth patterns covering JWT weakness, session cookies, auth state, and OAuth code atomicity. Authorization patterns covering IDOR and mass assignment. Race conditions covering read-modify-write, find-then-update, transaction isolation, lock fail-open, lock TTL, missing idempotency, and retry without idempotency. Web security covering CORS, unvalidated redirect, GraphQL depth and batching. The financial-platform checklist applies if payments or balances are present
    - `resilience`: categories 20, 23, 24, 25, 35, 36, 38. Standards: `resilience.md`, `caching.md`, `distributed-systems.md`
    - `api`: categories 18, 34. Standards: `api-design.md`, `contract-testing.md` when downstream consumers exist
-   - `data`: categories 19, 21, 22, 30, 31, 39, 69. Standards: `database.md`, `identifiers.md`, `postgresql.md` when PostgreSQL is detected, `redis.md` when Redis is detected. ORM-specific schema-migration rules in `rules/lang/prisma-migrations.md`, `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`
+   - `data`: categories 19, 21, 22, 30, 31, 39, 69. Standards: `database.md`, `identifiers.md`, `postgresql.md` when PostgreSQL is detected, `redis.md` when Redis is detected. ORM-specific schema-migration rules in [`rules/lang/prisma-migrations.md`](rules/lang/prisma-migrations.md), `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`
    - `ops`: categories 32, 36, 37, 40, 42, 44, 51. Standards: `observability.md`, `infrastructure.md`, `cost-awareness.md`, `sre-practices.md`
    - `quality`: categories 41, 50, 52. Standards: `algorithmic-complexity.md`, `state-machines.md`, `ddd-tactical-patterns.md`, `hexagonal-architecture.md`, `railway-oriented-programming.md` when functional error handling is in use
    - `infra`: categories 45, 46, 47, 48, 49. Standards: `infrastructure.md`, `twelve-factor.md`, `terraform-testing.md`, `multi-account-cli.md` when multiple cloud accounts are configured
@@ -168,9 +168,9 @@ This skill accepts optional arguments after `/assessment`:
    - `supply-chain`: category 56. Standards: `container-security.md`, `secrets-management.md`, `licensing.md` for SBOM and SPDX
    - `observability`: categories 32, 37. Standards: `observability.md`, `opentelemetry.md`, `sre-practices.md`, `dashboard-design.md`
    - `privacy`: category 33. Standards: `privacy-engineering.md`, `privacy.md`
-   - `llm`: category 53. Standards: `llm-docs.md` for library documentation, `mcp-security.md` when MCP is involved. Use `rules/ai-guardrails.md` and `rules/code-style.md` LLM Trust Boundary sections
+   - `llm`: category 53. Standards: `llm-docs.md` for library documentation, `mcp-security.md` when MCP is involved. Use [`rules/ai-guardrails.md`](rules/ai-guardrails.md) and [`rules/code-style.md`](rules/code-style.md) LLM Trust Boundary sections
    - `monorepo`: categories 13, 15. Standard: `monorepo.md`
-   - `typescript`: category 1. Standards: `typescript-5x.md` plus the per-area files `rules/lang/typescript-types.md`, `rules/lang/typescript-immutability.md`, `rules/lang/typescript-strict.md`
+   - `typescript`: category 1. Standards: `typescript-5x.md` plus the per-area files [`rules/lang/typescript-types.md`](rules/lang/typescript-types.md), [`rules/lang/typescript-immutability.md`](rules/lang/typescript-immutability.md), [`rules/lang/typescript-strict.md`](rules/lang/typescript-strict.md)
    - `all` (default): all applicable categories and all matched standards from step 4
 
    **Superset detection.** If the codebase uses a language that has a widely adopted superset offering stronger type safety or tooling, ask the user whether they want to convert. This is especially valuable in interview contexts where using the superset demonstrates engineering rigor.
@@ -201,9 +201,9 @@ This skill accepts optional arguments after `/assessment`:
 
    This logic is language-agnostic. The principle is: every dependency must have full type support in the target superset. If it doesn't, either find types, find an alternative that has types, or write the types yourself.
 
-8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against `../../checklists/checklist.md`. The checklist groups break down as: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, category 58 for licensing compliance, category 59 for time zone and calendar correctness, category 60 for numerical precision, category 61 for internationalization edge cases, category 62 for browser and device diversity, category 63 for backups and recovery, category 64 for disaster recovery, category 65 for capacity planning, category 66 for multi-region, category 67 for compliance and audit trail, category 68 for vendor and third-party risk, category 69 for schema-migration sync, and category 70 for question and communication quality. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
+8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against [`../../checklists/checklist.md`](checklists/checklist.md). The checklist groups break down as: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, category 58 for licensing compliance, category 59 for time zone and calendar correctness, category 60 for numerical precision, category 61 for internationalization edge cases, category 62 for browser and device diversity, category 63 for backups and recovery, category 64 for disaster recovery, category 65 for capacity planning, category 66 for multi-region, category 67 for compliance and audit trail, category 68 for vendor and third-party risk, category 69 for schema-migration sync, and category 70 for question and communication quality. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
 
-   **Standard-based audit.** For every standard loaded in step 4, check whether the project follows the patterns described in that standard. Each standard contains specific, actionable rules. A project that uses a database but ignores `standards/database.md` connection pooling guidance is a finding. A REST API that ignores `standards/api-design.md` pagination conventions is a finding. Treat standard violations the same as checklist violations: assign status (PRESENT/PARTIAL/MISSING), severity, and effort. Reference the specific standard file in each finding.
+   **Standard-based audit.** For every standard loaded in step 4, check whether the project follows the patterns described in that standard. Each standard contains specific, actionable rules. A project that uses a database but ignores [`standards/database.md`](standards/database.md) connection pooling guidance is a finding. A REST API that ignores [`standards/api-design.md`](standards/api-design.md) pagination conventions is a finding. Treat standard violations the same as checklist violations: assign status (PRESENT/PARTIAL/MISSING), severity, and effort. Reference the specific standard file in each finding.
 
    After auditing each file individually, perform a **cross-file consistency check**:
    - **Design contradictions:** Does one module assume graceful degradation while another enforces a hard dependency? Does one file treat a field as optional while another treats it as required?
@@ -218,7 +218,7 @@ This skill accepts optional arguments after `/assessment`:
 
    - **Git history quality.** For interview submissions, commit history signals engineering discipline. Check: are commits logical and atomic (one concern per commit)? Do messages follow conventional commit format? Is there a meaningful progression (infrastructure first, then core logic, then tests, then polish)? A single "initial commit" with everything is a MEDIUM finding. Messy or meaningless commit messages are LOW.
 
-   - **Dependency health and package selection.** Apply `../../checklists/checklist.md` category 13 for the baseline checks (justified, maintained, pinned, licensed, typed, better alternatives). Beyond that, also check assessment-specific concerns:
+   - **Dependency health and package selection.** Apply [`../../checklists/checklist.md`](checklists/checklist.md) category 13 for the baseline checks (justified, maintained, pinned, licensed, typed, better alternatives). Beyond that, also check assessment-specific concerns:
      - Is the runtime version the latest stable LTS, pinned with a version manager config file and `engines` (or equivalent) in the package manifest?
      - Are there platform-specific issues (native modules failing on Apple Silicon, deprecated packages with no ARM64 support)?
      - **Better alternatives signals**: no commits in 12+ months, open security issues, archived repository, missing type support when alternatives have it, large bundle size when a lighter option exists. Flag and include the replacement in the fix step.
@@ -277,7 +277,7 @@ This skill accepts optional arguments after `/assessment`:
 
    | Platform | Config file | Location |
    |:---------|:-----------|:---------|
-   | GitHub | `.github/workflows/ci.yml` | GitHub Actions |
+   | GitHub | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | GitHub Actions |
    | GitLab | `.gitlab-ci.yml` | GitLab CI |
 
    The pipeline must execute every quality gate the project has, in order of feedback speed:
@@ -302,7 +302,7 @@ This skill accepts optional arguments after `/assessment`:
 
    **Mock policy (STRICT).** Tests must connect to real infrastructure. If the code talks to a database, the test connects to a real database. If it uses Redis, the test uses a real Redis instance. Same for queues, caches, and any other data store. Add test dependencies to docker-compose with a `beforeAll()` hook to seed required data. Only external third-party APIs outside your control, time, and randomness may be mocked. Mocking your own database, services, or modules is a CRITICAL finding: the test may pass while the actual integration is broken, which is worse than no test at all. When fixing mock violations, replace the mock with a real connection, add the dependency to docker-compose if missing, and use `beforeAll()` / `afterAll()` for setup and teardown.
 
-   **For any fix involving transactions**, follow `../../checklists/checklist.md` category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
+   **For any fix involving transactions**, follow [`../../checklists/checklist.md`](checklists/checklist.md) category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
 
 **If `--comments` was passed**, add an inline comment above each significant code change explaining:
 
@@ -342,7 +342,7 @@ Comment guidelines:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate `../../checklists/checklist.md`? Run all 70 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
+       - Did any fix violate [`../../checklists/checklist.md`](checklists/checklist.md)? Run all 70 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
        - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
@@ -364,7 +364,7 @@ Comment guidelines:
     - Missing tests for new code paths added during fixes
     - Dependencies added during fixes that need audit, type checking, or justification
 
-12. **Generate the README.** After convergence, generate a technical README by invoking `/readme --variant assessment`. The template lives at `../readme/template-assessment.md` and is owned by the `/readme` skill so that both marketing and assessment variants share one source of truth. Read the template before writing.
+12. **Generate the README.** After convergence, generate a technical README by invoking `/readme --variant assessment`. The template lives at [`../readme/template-assessment.md`](skills/readme/template-assessment.md) and is owned by the `/readme` skill so that both marketing and assessment variants share one source of truth. Read the template before writing.
 
 13. **Update GitHub repository metadata.** After committing the README, update the repository's description and topics on GitHub so the repo page communicates the same quality as the code.
 
@@ -378,13 +378,13 @@ Comment guidelines:
     GH_TOKEN=$(gh auth token --user <account>) gh repo edit <owner>/<repo> --add-topic <topic1> --add-topic <topic2> ...
     ```
 
-    **Account handling**: prefix every `gh` invocation with `GH_TOKEN=$(gh auth token --user <account>) gh ...` per `standards/github-accounts.md` and the broader `standards/multi-account-cli.md` pattern. The earlier borrow-and-restore approach is now a fallback only for tools without a per-command form, none of which apply here.
+    **Account handling**: prefix every `gh` invocation with `GH_TOKEN=$(gh auth token --user <account>) gh ...` per [`standards/github-accounts.md`](standards/github-accounts.md) and the broader [`standards/multi-account-cli.md`](standards/multi-account-cli.md) pattern. The earlier borrow-and-restore approach is now a fallback only for tools without a per-command form, none of which apply here.
 
     Commit the README as a separate commit: `docs: add technical README with architecture and design decisions`. The GitHub metadata update does not require a commit since it only changes the repository settings.
 
 ## Assessment Checklist Categories
 
-The full 70-category checklist lives in `../../checklists/checklist.md`, shared with completion gates, `/review`, and `/respond`. Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Clean Room is category 50, Deployment Verification 51, Design Quality 52, LLM Trust Boundary 53, Performance Budget 54, Zero-Downtime Deployment 55, Supply Chain 56, Event-Driven 57, Licensing 58, Time Zone and Calendar 59, Numerical Precision 60, i18n Edge Cases 61, Browser and Device Diversity 62, Backups and Recovery 63, Disaster Recovery 64, Capacity Planning 65, Multi-Region 66, Compliance and Audit Trail 67, Vendor and Third-Party Risk 68, Schema-Migration Sync 69, and Question and Communication Quality 70.
+The full 70-category checklist lives in [`../../checklists/checklist.md`](checklists/checklist.md), shared with completion gates, `/review`, and `/respond`. Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Clean Room is category 50, Deployment Verification 51, Design Quality 52, LLM Trust Boundary 53, Performance Budget 54, Zero-Downtime Deployment 55, Supply Chain 56, Event-Driven 57, Licensing 58, Time Zone and Calendar 59, Numerical Precision 60, i18n Edge Cases 61, Browser and Device Diversity 62, Backups and Recovery 63, Disaster Recovery 64, Capacity Planning 65, Multi-Region 66, Compliance and Audit Trail 67, Vendor and Third-Party Risk 68, Schema-Migration Sync 69, and Question and Communication Quality 70.
 
 ## Output Format
 
@@ -396,9 +396,9 @@ A single markdown table summarizing every finding. One row per finding. Columns 
 
 | Gap | Severity | Label | Category | Suggested fix | Regression test |
 |-----|----------|-------|----------|---------------|-----------------|
-| One-line description | CRITICAL/HIGH/MEDIUM/LOW | issue (blocking) / issue (non-blocking) / suggestion / nitpick | Checklist category number from `checklists/checklist.md` | Concrete code or pattern reference | Named test pattern if the fix is a one-line guard, otherwise `none` |
+| One-line description | CRITICAL/HIGH/MEDIUM/LOW | issue (blocking) / issue (non-blocking) / suggestion / nitpick | Checklist category number from [`checklists/checklist.md`](checklists/checklist.md) | Concrete code or pattern reference | Named test pattern if the fix is a one-line guard, otherwise `none` |
 
-The Label column uses the Conventional Comments taxonomy from the Classification section. Categories below use the numbering from `checklists/checklist.md`. The Suggested fix column is one or two lines; longer fixes live in the per-finding section.
+The Label column uses the Conventional Comments taxonomy from the Classification section. Categories below use the numbering from [`checklists/checklist.md`](checklists/checklist.md). The Suggested fix column is one or two lines; longer fixes live in the per-finding section.
 
 ### Narrative Report
 
@@ -547,8 +547,8 @@ The steps above define **what** to do. These rules define **constraints** on how
 - Reference the dynamically loaded standards and rules for each finding. The full list of what was loaded appears in the Standards Applied section of the output. Every finding must cite the specific standard or rule file that defines the violated pattern.
 - Do not flag deployment readiness for code that is explicitly a prototype, proof-of-concept, or interview take-home unless `--focus ops` was specified.
 - When `--comments` is active, every comment must pass this test: would a senior engineer reading this code for the first time learn something from the comment that the code alone does not convey? If not, delete the comment. `--comments` only affects the fix step, not the assessment output.
-- The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in `../../checklists/checklist.md`. Do not duplicate them here.
-- Every API must validate both sides of the boundary: inputs (request body, query params, path params, headers) AND outputs (response body) with a schema library. Missing output validation is a finding. See `../../checklists/checklist.md` category 33.
+- The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in [`../../checklists/checklist.md`](checklists/checklist.md). Do not duplicate them here.
+- Every API must validate both sides of the boundary: inputs (request body, query params, path params, headers) AND outputs (response body) with a schema library. Missing output validation is a finding. See [`../../checklists/checklist.md`](checklists/checklist.md) category 33.
 
 ## Related skills
 
@@ -558,4 +558,4 @@ The steps above define **what** to do. These rules define **constraints** on how
 - `/ship commit`. Commit fixes after addressing assessment gaps.
 - `/ship --pipeline`. Monitor CI and AI-bot threads after the fix PR opens. When `RESPOND_DRIVES_PIPELINE=1` is set, the AI-bot sweep delegates to `/respond` for unified vocabulary.
 - `/readme`. Marketing-grade README. The assessment README reuses Phase 1 scanning but uses a technical structure instead.
-- `standards/code-review.md`. The "As Reviewee" section documents the 20 best practices and 18 anti-patterns that govern how the author should respond when reviewers comment on the fix PR. Service Level Expectations live in the same standard.
+- [`standards/code-review.md`](standards/code-review.md). The "As Reviewee" section documents the 20 best practices and 18 anti-patterns that govern how the author should respond when reviewers comment on the fix PR. Service Level Expectations live in the same standard.

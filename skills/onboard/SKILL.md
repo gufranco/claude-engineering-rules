@@ -28,13 +28,13 @@ Run `ls` on the project root and each top-level directory. Classify each directo
 | Directory type | Examples |
 |---------------|----------|
 | Source code | `src/`, `lib/`, `app/`, `pkg/`, `internal/` |
-| Tests | `test/`, `tests/`, `__tests__/`, `spec/` |
-| Configuration | `config/`, `.github/`, `.husky/` |
+| Tests | `test/`, [`tests/`](tests), `__tests__/`, `spec/` |
+| Configuration | `config/`, [`.github/`](.github), `.husky/` |
 | Build output | `dist/`, `build/`, `.next/`, `out/` |
-| Documentation | `docs/`, `doc/` |
+| Documentation | [`docs/`](docs), `doc/` |
 | Infrastructure | `infra/`, `terraform/`, `k8s/`, `docker/` |
 | Database | `prisma/`, `migrations/`, `db/` |
-| Scripts | `scripts/`, `bin/`, `tools/` |
+| Scripts | [`scripts/`](scripts), `bin/`, `tools/` |
 | Static assets | `public/`, `static/`, `assets/` |
 
 ### Step 3: Identify entry points
@@ -86,7 +86,7 @@ Search the codebase for structural patterns:
 
 ### Step 7: Read existing documentation
 
-Read in parallel: `README.md`, `CONTRIBUTING.md`, `ARCHITECTURE.md`, `docs/` directory contents, `CLAUDE.md`. Note what is documented and what is missing.
+Read in parallel: [`README.md`](README.md), `CONTRIBUTING.md`, `ARCHITECTURE.md`, [`docs/`](docs) directory contents, [`CLAUDE.md`](CLAUDE.md). Note what is documented and what is missing.
 
 ### Step 8: Detect conventions
 

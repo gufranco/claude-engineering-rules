@@ -662,5 +662,5 @@ it("must process events for the same order in sequence order", async () => {
 ## Related Standards
 
 - `standards/event-driven-architecture.md`: Event-Driven Architecture
-- `standards/resilience.md`: Resilience
-- `standards/distributed-systems.md`: Distributed Systems
+- [`standards/resilience.md`](standards/resilience.md): Resilience
+- [`standards/distributed-systems.md`](standards/distributed-systems.md): Distributed Systems

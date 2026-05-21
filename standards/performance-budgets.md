@@ -182,5 +182,5 @@ Track performance metrics continuously, not just during development.
 
 ## Related Standards
 
-- `standards/frontend.md`: Frontend Design
-- `standards/observability.md`: Observability
+- [`standards/frontend.md`](standards/frontend.md): Frontend Design
+- [`standards/observability.md`](standards/observability.md): Observability

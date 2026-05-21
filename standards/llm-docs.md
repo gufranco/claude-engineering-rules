@@ -145,4 +145,4 @@ When migrating between major versions or working with deprecated APIs, fetch the
 
 ## Related Standards
 
-- `standards/api-design.md`: API Design
+- [`standards/api-design.md`](standards/api-design.md): API Design

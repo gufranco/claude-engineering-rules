@@ -181,5 +181,5 @@ Never store restricted data without encryption. Never log confidential or restri
 
 ## Related Standards
 
-- `standards/authentication.md`: Authentication
-- `standards/database.md`: Database
+- [`standards/authentication.md`](standards/authentication.md): Authentication
+- [`standards/database.md`](standards/database.md): Database

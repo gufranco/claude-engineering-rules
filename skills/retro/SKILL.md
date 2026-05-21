@@ -40,7 +40,7 @@ Analyze the current conversation to extract directives, corrections, preferences
 2. **Deduplicate against existing config.** Read:
    - `~/.claude/CLAUDE.md`
    - `~/.claude/rules/*.md`
-   - Project `CLAUDE.md` files
+   - Project [`CLAUDE.md`](CLAUDE.md) files
    - Memory files in `~/.claude/projects/*/memory/`
 
    For each finding, answer: does it already exist? If yes, why wasn't it respected?
@@ -91,7 +91,7 @@ Walk through a codebase, identify recurring conventions, and create rule files. 
 
 ### Steps
 
-1. **Scan project** (parallel): glob for source patterns, read manifest, read existing CLAUDE.md and rules, read `rules/index.yml`.
+1. **Scan project** (parallel): glob for source patterns, read manifest, read existing CLAUDE.md and rules, read [`rules/index.yml`](rules/index.yml).
 
 2. **Identify patterns** across 5-10 representative files per category:
 
@@ -111,7 +111,7 @@ Walk through a codebase, identify recurring conventions, and create rule files. 
 
 4. **Draft each rule.** H1 title, rule in 1-2 sentences, one code example, 2-4 edge case bullets. Max 40 lines. Show for confirmation.
 
-5. **Place the rule.** Global: `rules/<name>.md` + `rules/index.yml` entry. Project: append to CLAUDE.md or `.claude/rules/`.
+5. **Place the rule.** Global: `rules/<name>.md` + [`rules/index.yml`](rules/index.yml) entry. Project: append to CLAUDE.md or `.claude/rules/`.
 
 6. Ask "Any other patterns, or done?" Loop until finished.
 
@@ -177,13 +177,13 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
    | Question | If yes |
    |---------|--------|
    | Is there an existing rule covering this? | Why was it not respected? Vague language, buried, no example? Strengthen it |
-   | Is this a missing rule? | Draft one in `rules/` and update `rules/index.yml` |
+   | Is this a missing rule? | Draft one in [`rules/`](rules) and update [`rules/index.yml`](rules/index.yml) |
    | Is it skill-specific (e.g., always blocks during `/ship`)? | Update that skill's checklist or pre-flight |
    | Is the hook itself overzealous? | Propose loosening the pattern, never weaken without explicit user approval |
 
 6. **Present findings.** Table: hook, reason, count, sessions, proposed action, target file. Wait for approval per cluster, or "All".
 
-7. **Apply.** Write the proposed edits using the same conventions as `/retro` default mode. Update `README.md` if `~/.claude/` files changed.
+7. **Apply.** Write the proposed edits using the same conventions as `/retro` default mode. Update [`README.md`](README.md) if `~/.claude/` files changed.
 
 8. **Advance the cursor.** After successful application (or explicit "skip"), write the new byte offset to `~/.claude/logs/.retro-cursor`. Never advance on failure: a re-run must replay the same events.
 
@@ -193,7 +193,7 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
 
 - Never propose disabling a hook to silence noise. The hook is correct by definition; the upstream config is what changes.
 - Bypass events (`decision=bypass`) deserve scrutiny too: a frequently bypassed hook signals a workflow gap.
-- Redact any value matching the secret patterns in `scripts/audit_log.py` before quoting `command_excerpt` back to the user. The audit logger redacts on write, but treat the field as untrusted.
+- Redact any value matching the secret patterns in [`scripts/audit_log.py`](scripts/audit_log.py) before quoting `command_excerpt` back to the user. The audit logger redacts on write, but treat the field as untrusted.
 - Cursor file is advisory. If it points past the file end (after rotation), reset to 0.
 - One-shot mode: when invoked with `--dry-run`, show proposals and skip both writes and cursor advance.
 

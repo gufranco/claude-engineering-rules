@@ -81,5 +81,5 @@ For message-based APIs (Kafka topics, RabbitMQ exchanges, WebSocket channels):
 
 ## Related Standards
 
-- `standards/api-design.md`: API Design
-- `standards/graphql-api-design.md`: GraphQL API Design
+- [`standards/api-design.md`](standards/api-design.md): API Design
+- [`standards/graphql-api-design.md`](standards/graphql-api-design.md): GraphQL API Design
