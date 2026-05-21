@@ -230,6 +230,8 @@ The monitoring loop has **two parallel exit conditions that must BOTH hold on th
 
 Do not declare the loop complete while either condition is open. If a fix is pushed for one condition, both conditions must be re-verified on the new SHA before exiting.
 
+**Human-authored review threads are out of scope of this loop.** They require judgment per thread and are handled by `/respond`. When a human reviewer adds a thread during pipeline monitoring, this loop ignores it; the author runs `/respond` separately to triage and reply.
+
 ### Step 1: Detect platform and locate checks
 
 Run **in parallel**: `git remote get-url origin`, `git branch --show-current`. Detect CLI tool. **Resolve account**. Check if PR exists.
@@ -260,6 +262,10 @@ Fetch failed logs (parallel). Search for existing fixes first. Present diagnosis
 ### Step 6: AI-tool comment sweep
 
 Fetch every open review thread authored by AI bots and resolve them all. This step is mandatory in `--pipeline` mode and runs every time CI is green, including after a CI fix push.
+
+**Optional delegation to `/respond`.** When the environment variable `RESPOND_DRIVES_PIPELINE=1` is set, this step delegates to `/respond --auto --include-bots` instead of running the inline sweep below. The delegated workflow gives unified vocabulary and unified bot triage with the human-thread flow, and routes through the same hooks. To take effect, the user must also set `RESPOND_AUTO_ACK=1` since `/respond --auto` requires the second lock. The default behavior, when the env var is unset, is the inline sweep documented in 6a through 6e.
+
+The delegation is opt-in to preserve backward compatibility. Existing `--pipeline` invocations continue to work without changes.
 
 #### 6a: Fetch open AI-tool threads
 
@@ -362,6 +368,7 @@ Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count 
 ## Related skills
 
 - `/review` -- Review code before or after creating a PR.
+- `/respond` -- Address incoming human review comments on a PR you authored. Complements this skill's AI-bot loop with a workflow for the human-thread side.
 - `/test` -- Run tests before shipping.
 - `/infra` -- Manage Docker/DB before shipping.
 - `/deploy` -- Merge and deploy after the PR is approved.
