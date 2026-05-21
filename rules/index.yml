@@ -138,8 +138,8 @@ on_demand:
 
   code-review:
     path: standards/code-review.md
-    description: PR authoring, review comment style, no-config-leakage rule, test evidence, branch freshness, tech debt tracking, ADRs, zero warnings gate
-    triggers: [review, pr, pull request, code review, adr, tech debt, external output, config leakage, open pr, create pr, submit pr, merge pr, approve]
+    description: PR authoring and reviewee discipline, review comment style, no-config-leakage rule, test evidence, branch freshness, tech debt tracking, ADRs, zero warnings gate, handling incoming review feedback, Conventional Comments taxonomy
+    triggers: [review, pr, pull request, code review, adr, tech debt, external output, config leakage, open pr, create pr, submit pr, merge pr, approve, respond, reply, address comments, incoming review, handle review, reviewer comments, pr feedback, reviewee, conventional comments, ptal, lgtm, nit]
 
   debugging:
     path: standards/debugging.md
