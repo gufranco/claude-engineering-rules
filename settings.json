@@ -398,11 +398,29 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-process-leak-blocker.py"
+          }
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/ai-attribution-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-process-leak-blocker.py"
           }
         ]
       },
@@ -416,11 +434,29 @@
         ]
       },
       {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-process-leak-blocker.py"
+          }
+        ]
+      },
+      {
         "matcher": "MultiEdit",
         "hooks": [
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/ai-attribution-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-process-leak-blocker.py"
           }
         ]
       },
