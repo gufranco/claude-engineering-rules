@@ -13,10 +13,34 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIX_SCRIPT = REPO_ROOT / "scripts" / "fix-markdown-links.py"
+SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
+COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
+
+
+def _coverage_active() -> bool:
+    if "COVERAGE_PROCESS_START" in os.environ or "COVERAGE_RUN" in os.environ:
+        return True
+    if "pytest_cov" in sys.modules or "pytest_cov.plugin" in sys.modules:
+        return True
+    cov_module = sys.modules.get("coverage")
+    if cov_module is None:
+        return False
+    current = getattr(cov_module, "Coverage", None)
+    if current is None:
+        return False
+    return getattr(current, "current", lambda: None)() is not None
 
 
 def run_fix(*args: str) -> subprocess.CompletedProcess:
     env = dict(os.environ)
+    if _coverage_active():
+        env["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
+        existing_pp = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = (
+            f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing_pp}"
+            if existing_pp
+            else str(SUBPROCESS_COV_DIR)
+        )
     return subprocess.run(
         [sys.executable, str(FIX_SCRIPT), *args],
         capture_output=True,

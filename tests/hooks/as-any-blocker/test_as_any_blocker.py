@@ -253,7 +253,7 @@ def test_allows_line_with_inline_allow_marker(tool_use, assert_allows):
         "Write",
         {
             "file_path": "/repo/src/x.ts",
-            "content": ("const x = value as any; // claude-allow-any -- legacy type\n"),
+            "content": ("const x = value as any; // allow-any -- legacy type\n"),
         },
     )
 
@@ -267,9 +267,7 @@ def test_allows_preceding_line_allow_marker(tool_use, assert_allows):
         "Write",
         {
             "file_path": "/repo/src/x.ts",
-            "content": (
-                "// claude-allow-any -- third-party shim\nconst x = value as any;\n"
-            ),
+            "content": ("// allow-any -- third-party shim\nconst x = value as any;\n"),
         },
     )
 
@@ -284,7 +282,7 @@ def test_allows_top_of_file_marker(tool_use, assert_allows):
         {
             "file_path": "/repo/src/x.ts",
             "content": (
-                "// @claude-allow-any -- legacy file pending refactor\n"
+                "// @allow-any -- legacy file pending refactor\n"
                 "const x = value as any;\n"
                 "const y: any[] = [];\n"
             ),
@@ -301,7 +299,7 @@ def test_blocks_when_marker_missing_justification(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/src/x.ts",
-            "content": "const x = value as any; // claude-allow-any\n",
+            "content": "const x = value as any; // allow-any\n",
         },
     )
 

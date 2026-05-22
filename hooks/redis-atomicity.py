@@ -132,9 +132,7 @@ def find(text: str) -> list[str]:
     for i, line in enumerate(lines):
         if not (INCR_LIKE.search(line) or GET_LIKE.search(line)):
             continue
-        if line_or_prev_has_suppression(
-            lines, i, hook_marker="@claude-allow-redis-atomicity"
-        ):
+        if line_or_prev_has_suppression(lines, i, hook_marker="@allow-redis-atomicity"):
             continue
         for j in range(i + 1, min(i + 1 + WINDOW_LINES, len(lines))):
             window = "\n".join(lines[i : j + 1])
@@ -142,7 +140,7 @@ def find(text: str) -> list[str]:
                 break
             target = lines[j]
             if line_or_prev_has_suppression(
-                lines, j, hook_marker="@claude-allow-redis-atomicity"
+                lines, j, hook_marker="@allow-redis-atomicity"
             ):
                 break
             if INCR_LIKE.search(line) and EXPIRE_LIKE.search(target):

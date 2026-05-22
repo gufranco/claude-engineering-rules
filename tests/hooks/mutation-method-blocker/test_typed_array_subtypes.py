@@ -211,7 +211,7 @@ def test_typed_array_suppression_marker_bypasses_detector(run_hook):
     # Arrange
     snippet = (
         "const buffer = new Uint8Array(1024)\n"
-        "buffer.set([1, 2, 3], 0) // @claude-allow-mutation -- WebGL upload requires stable buffer\n"
+        "buffer.set([1, 2, 3], 0) // @allow-mutation -- WebGL upload requires stable buffer\n"
     )
     payload = make_edit_payload("/repo/src/business/orders.ts", snippet)
 

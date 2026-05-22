@@ -63,7 +63,7 @@ The hook governs JS values, not Web platform side-effect APIs. The boundary is c
 | Web Storage (`localStorage.setItem`, `sessionStorage.setItem`, `*.removeItem`, `*.clear`) | Out of scope | Side-effect API. The "no module-level side effects" rule governs placement, not the mutation hook |
 | `URLSearchParams.{append,set,delete,sort}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `new URLSearchParams([...params, [k, v]])` |
 | `Headers.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `new Headers([...headers, [k, v]])` |
-| `FormData.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `Array.from(form.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())` (uses fresh-instance reducer initializer; mark with `@claude-allow-mutation` for XHR.send pointer-stability cases) |
+| `FormData.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `Array.from(form.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())` (uses fresh-instance reducer initializer; mark with `@allow-mutation` for XHR.send pointer-stability cases) |
 
 The principle: if the API mutates a JavaScript value that has a feasible non-mutating alternative via fresh-instance construction, the hook flags it. If the API mutates external state (DOM, persistence, storage) that has no in-memory equivalent, the hook is silent.
 
@@ -227,7 +227,7 @@ Markers in source code are a personal-tooling artifact; they should not appear i
 | Per-project, machine-side | A `.envrc` in the local checkout with `export MUTATION_METHOD_DISABLE=1`. Loaded by `direnv`. The `.envrc` is not committed |
 | Always-on for one workspace | The `env` block in `~/.claude/settings.local.json` for that workspace |
 
-Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_LEAKAGE_DISABLE`: the env var is fully audit-logged. Use it when the alternative is dozens of `// claude-allow-mutation -- ...` comments staining a shared repository.
+Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_LEAKAGE_DISABLE`: the env var is fully audit-logged. Use it when the alternative is dozens of `// allow-mutation -- ...` comments staining a shared repository.
 
 ## Three Legs of Data Integrity
 
