@@ -35,34 +35,66 @@ from pathlib import Path
 # Phrases that indicate the model is parking the work instead of
 # either asking a real question or finishing the plan.
 CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"\bstopping\s+(?:here|at\s+this|as\s+a)\b", re.IGNORECASE),
-     "stopping for permission instead of continuing"),
-    (re.compile(r"natural\s+(?:check|stop)\s?point", re.IGNORECASE),
-     "describing the moment as a checkpoint"),
-    (re.compile(r"tell\s+me\s+(?:when|to)\s+continue", re.IGNORECASE),
-     "asking permission to continue"),
-    (re.compile(r"say\s+(?:go|continue|next)\b", re.IGNORECASE),
-     "waiting for a go signal"),
-    (re.compile(r"if\s+you\s+want\s+me\s+to\s+continue", re.IGNORECASE),
-     "conditional continuation"),
-    (re.compile(r"or\s+which\s+(?:phase|step|module)\s+to\s+jump\s+to", re.IGNORECASE),
-     "offering to skip ahead instead of pushing forward"),
-    (re.compile(r"\bnext\s+batch[:.]", re.IGNORECASE),
-     "next-batch deferral"),
-    (re.compile(r"awaiting\s+your\s+(?:direction|input|answer)", re.IGNORECASE),
-     "passive deferral"),
-    (re.compile(r"give\s+me\s+the\s+go-?ahead", re.IGNORECASE),
-     "explicit ask for go-ahead"),
-    (re.compile(r"continuing\s+in\s+(?:subsequent|later|future)\s+turns?", re.IGNORECASE),
-     "deferring to a later turn"),
-    (re.compile(r"resume\s+in\s+the\s+next\s+session", re.IGNORECASE),
-     "deferring to the next session"),
-    (re.compile(r"would\s+you\s+like\s+me\s+to\s+continue", re.IGNORECASE),
-     "asking if the user wants continuation"),
-    (re.compile(r"\bI('|\s+a)?ll\s+(?:continue|resume)\s+(?:in|on)\s+(?:the\s+)?next", re.IGNORECASE),
-     "promising continuation later"),
-    (re.compile(r"\bdone:\s.*\.\s*Next\s+(?:batch|step|phase)\b", re.IGNORECASE),
-     "DONE summary that promises a next batch"),
+    (
+        re.compile(r"\bstopping\s+(?:here|at\s+this|as\s+a)\b", re.IGNORECASE),
+        "stopping for permission instead of continuing",
+    ),
+    (
+        re.compile(r"natural\s+(?:check|stop)\s?point", re.IGNORECASE),
+        "describing the moment as a checkpoint",
+    ),
+    (
+        re.compile(r"tell\s+me\s+(?:when|to)\s+continue", re.IGNORECASE),
+        "asking permission to continue",
+    ),
+    (
+        re.compile(r"say\s+(?:go|continue|next)\b", re.IGNORECASE),
+        "waiting for a go signal",
+    ),
+    (
+        re.compile(r"if\s+you\s+want\s+me\s+to\s+continue", re.IGNORECASE),
+        "conditional continuation",
+    ),
+    (
+        re.compile(
+            r"or\s+which\s+(?:phase|step|module)\s+to\s+jump\s+to", re.IGNORECASE
+        ),
+        "offering to skip ahead instead of pushing forward",
+    ),
+    (re.compile(r"\bnext\s+batch[:.]", re.IGNORECASE), "next-batch deferral"),
+    (
+        re.compile(r"awaiting\s+your\s+(?:direction|input|answer)", re.IGNORECASE),
+        "passive deferral",
+    ),
+    (
+        re.compile(r"give\s+me\s+the\s+go-?ahead", re.IGNORECASE),
+        "explicit ask for go-ahead",
+    ),
+    (
+        re.compile(
+            r"continuing\s+in\s+(?:subsequent|later|future)\s+turns?", re.IGNORECASE
+        ),
+        "deferring to a later turn",
+    ),
+    (
+        re.compile(r"resume\s+in\s+the\s+next\s+session", re.IGNORECASE),
+        "deferring to the next session",
+    ),
+    (
+        re.compile(r"would\s+you\s+like\s+me\s+to\s+continue", re.IGNORECASE),
+        "asking if the user wants continuation",
+    ),
+    (
+        re.compile(
+            r"\bI('|\s+a)?ll\s+(?:continue|resume)\s+(?:in|on)\s+(?:the\s+)?next",
+            re.IGNORECASE,
+        ),
+        "promising continuation later",
+    ),
+    (
+        re.compile(r"\bdone:\s.*\.\s*Next\s+(?:batch|step|phase)\b", re.IGNORECASE),
+        "DONE summary that promises a next batch",
+    ),
 ]
 
 
@@ -120,7 +152,7 @@ def find_violations(text: str) -> list[tuple[str, str]]:
     for pat, label in CHECKPOINT_PATTERNS:
         m = pat.search(text)
         if m:
-            snippet = text[max(0, m.start() - 30):m.end() + 60].replace("\n", " | ")
+            snippet = text[max(0, m.start() - 30) : m.end() + 60].replace("\n", " | ")
             out.append((m.group(0), f"{label}: ...{snippet}..."))
     return out
 
@@ -162,7 +194,9 @@ def main() -> int:
     if not findings:
         return 0
 
-    bullet_lines = "\n".join(f"  - {match!r}\n      {snippet}" for match, snippet in findings)
+    bullet_lines = "\n".join(
+        f"  - {match!r}\n      {snippet}" for match, snippet in findings
+    )
 
     print(
         "Blocked: turn-ending pattern detected without a genuine blocking question.\n"
