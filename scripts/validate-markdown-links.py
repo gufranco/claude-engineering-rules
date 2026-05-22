@@ -26,7 +26,9 @@ REPO_ROOT = SCRIPT_DIR.parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from markdown_link_detector import (  # noqa: E402
+    BrokenLinkFinding,
     Finding,
+    detect_broken_link_targets,
     detect_findings,
     is_advisory_file,
 )
@@ -43,8 +45,11 @@ def tracked_markdown_files(repo_root: Path) -> list[str]:
     return [line for line in result.stdout.splitlines() if line]
 
 
-def collect_findings(files: list[str], repo_root: Path) -> list[Finding]:
-    all_findings: list[Finding] = []
+def collect_findings(
+    files: list[str], repo_root: Path
+) -> tuple[list[Finding], list[BrokenLinkFinding]]:
+    bare: list[Finding] = []
+    broken: list[BrokenLinkFinding] = []
     for rel in files:
         path_rel = Path(rel)
         path = path_rel if path_rel.is_absolute() else (repo_root / rel)
@@ -52,8 +57,9 @@ def collect_findings(files: list[str], repo_root: Path) -> list[Finding]:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        all_findings.extend(detect_findings(text, rel, repo_root))
-    return all_findings
+        bare.extend(detect_findings(text, rel, repo_root))
+        broken.extend(detect_broken_link_targets(text, rel, repo_root))
+    return bare, broken
 
 
 def main() -> int:
@@ -85,34 +91,62 @@ def main() -> int:
     else:
         files = tracked_markdown_files(REPO_ROOT)
 
-    findings = collect_findings(files, REPO_ROOT)
-    blocking: list[Finding] = []
-    advisory: list[Finding] = []
+    bare_findings, broken_findings = collect_findings(files, REPO_ROOT)
+    blocking_bare: list[Finding] = []
+    advisory_bare: list[Finding] = []
+    blocking_broken: list[BrokenLinkFinding] = []
+    advisory_broken: list[BrokenLinkFinding] = []
 
-    for f in findings:
+    for f in bare_findings:
         if is_advisory_file(f.file) and not args.include_advisory:
-            advisory.append(f)
+            advisory_bare.append(f)
         else:
-            blocking.append(f)
+            blocking_bare.append(f)
 
-    if advisory:
-        print(f"Advisory: {len(advisory)} bare file reference(s) in specs/")
-        for f in advisory:
+    for bf in broken_findings:
+        if is_advisory_file(bf.file) and not args.include_advisory:
+            advisory_broken.append(bf)
+        else:
+            blocking_broken.append(bf)
+
+    if advisory_bare:
+        print(f"Advisory: {len(advisory_bare)} bare file reference(s) in specs/")
+        for f in advisory_bare:
             print(f"  {f.render()}")
         print()
 
-    if not blocking:
+    if advisory_broken:
+        print(f"Advisory: {len(advisory_broken)} broken link target(s) in specs/")
+        for bf in advisory_broken:
+            print(f"  {bf.render()}")
+        print()
+
+    if not blocking_bare and not blocking_broken:
         print(
-            f"PASSED: 0 blocking bare file references across {len(files)} markdown files."
+            f"PASSED: 0 blocking findings across {len(files)} markdown files "
+            "(bare references + broken link targets)."
         )
         return 0
 
-    print(f"FAILED: {len(blocking)} bare file reference(s) found")
-    print()
-    for f in blocking:
-        print(f"  {f.render()}")
-    print()
-    print("Wrap each reference as: [`<name>`](<path>) or [<name>](<path>)")
+    if blocking_bare:
+        print(f"FAILED: {len(blocking_bare)} bare file reference(s) found")
+        print()
+        for f in blocking_bare:
+            print(f"  {f.render()}")
+        print()
+        print("Wrap each reference as: [`<name>`](<path>) or [<name>](<path>)")
+        print()
+
+    if blocking_broken:
+        print(f"FAILED: {len(blocking_broken)} broken link target(s) found")
+        print()
+        for bf in blocking_broken:
+            print(f"  {bf.render()}")
+        print()
+        print("Rewrite each link target as a path relative to the document.")
+        print("Auto-fix: python3 scripts/fix-markdown-links.py")
+        print()
+
     print("Rule: rules/markdown-links.md")
     return 1
 

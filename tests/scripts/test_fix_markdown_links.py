@@ -119,8 +119,93 @@ def test_fix_with_include_advisory_modifies_specs():
         # Act
         proc = run_fix(str(spec_target), "--include-advisory")
         result = spec_target.read_text()
-        # Assert
+        # Assert: link target is file-relative (specs/foo.md to repo-root README.md)
         assert proc.returncode == 0
-        assert "[`README.md`](README.md)" in result
+        assert "[`README.md`](../README.md)" in result
     finally:
         spec_target.unlink(missing_ok=True)
+
+
+def test_fix_rewrites_broken_target_to_file_relative():
+    # Arrange: link uses repo-root-relative path (the common GitHub-breaking mistake)
+    target = REPO_ROOT / "tmp-fix-broken-target.md"
+    target.write_text("See [the spec](README.md).\n")
+    # Place the doc inside a subdirectory so a repo-root path needs rewriting.
+    subdir = REPO_ROOT / "tmp-fix-broken-subdir"
+    subdir.mkdir(exist_ok=True)
+    subdir_target = subdir / "doc.md"
+    subdir_target.write_text("See [home](README.md).\n")
+    try:
+        # Act
+        proc = run_fix(str(subdir_target))
+        result = subdir_target.read_text()
+        # Assert
+        assert proc.returncode == 0
+        assert "[home](../README.md)" in result
+        assert "rewrote 1 broken target" in proc.stdout
+    finally:
+        subdir_target.unlink(missing_ok=True)
+        try:
+            subdir.rmdir()
+        except OSError:
+            pass
+        target.unlink(missing_ok=True)
+
+
+def test_fix_dry_run_lists_broken_targets():
+    # Arrange
+    subdir = REPO_ROOT / "tmp-fix-dry-broken-subdir"
+    subdir.mkdir(exist_ok=True)
+    subdir_target = subdir / "doc.md"
+    subdir_target.write_text("See [home](README.md).\n")
+    original = subdir_target.read_text()
+    try:
+        # Act
+        proc = run_fix(str(subdir_target), "--dry-run")
+        # Assert: dry-run does not modify the file
+        assert proc.returncode == 0
+        assert subdir_target.read_text() == original
+        assert "would rewrite" in proc.stdout
+    finally:
+        subdir_target.unlink(missing_ok=True)
+        try:
+            subdir.rmdir()
+        except OSError:
+            pass
+
+
+def test_fix_warns_on_unfixable_broken_target():
+    # Arrange: link target does not exist anywhere in the repo
+    target = REPO_ROOT / "tmp-fix-unfixable.md"
+    target.write_text("See [ghost](truly-missing-file.md).\n")
+    original = target.read_text()
+    try:
+        # Act
+        proc = run_fix(str(target))
+        # Assert: file untouched, warning printed
+        assert proc.returncode == 0
+        assert target.read_text() == original
+        assert "WARNING" in proc.stdout
+        assert "manual review" in proc.stdout
+    finally:
+        target.unlink(missing_ok=True)
+
+
+def test_fix_preserves_fragment_when_rewriting_target():
+    # Arrange
+    subdir = REPO_ROOT / "tmp-fix-fragment-subdir"
+    subdir.mkdir(exist_ok=True)
+    subdir_target = subdir / "doc.md"
+    subdir_target.write_text("See [intro](README.md#intro).\n")
+    try:
+        # Act
+        proc = run_fix(str(subdir_target))
+        # Assert
+        assert proc.returncode == 0
+        assert "[intro](../README.md#intro)" in subdir_target.read_text()
+    finally:
+        subdir_target.unlink(missing_ok=True)
+        try:
+            subdir.rmdir()
+        except OSError:
+            pass

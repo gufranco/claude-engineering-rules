@@ -11,6 +11,7 @@ Rule source: ``rules/markdown-links.md``.
 
 from __future__ import annotations
 
+import os.path
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -65,7 +66,7 @@ class Finding:
     line: int
     column: int  # 1-based column of the backticked span
     token: str  # the inner content of the backticked span
-    resolved_path: str  # path-resolved location of the actual file
+    resolved_path: str  # link path, relative to the document's directory
 
     def render(self) -> str:
         return (
@@ -74,26 +75,79 @@ class Finding:
         )
 
 
+@dataclass(frozen=True)
+class BrokenLinkFinding:
+    """An existing markdown link whose target file is missing.
+
+    ``correct_path`` is the file-relative path that would resolve to the same
+    target when the original link was written as repo-root-relative. None when
+    the target does not exist anywhere in the repo.
+    """
+
+    file: str  # path of the file containing the link, relative to repo root
+    line: int
+    column: int  # 1-based column where the link target starts
+    link_text: str  # the [text] portion of the link
+    link_target: str  # the (target) portion as written
+    correct_path: str | None
+
+    def render(self) -> str:
+        if self.correct_path:
+            suggestion = f" -> rewrite as ({self.correct_path})"
+        else:
+            suggestion = " (target not found in repo)"
+        return (
+            f"{self.file}:{self.line}:{self.column}: "
+            f"[{self.link_text}]({self.link_target}){suggestion}"
+        )
+
+
+def file_relative_path(target: Path, doc_dir: Path) -> str:
+    """Return ``target`` as a path relative to ``doc_dir`` using POSIX separators."""
+    rel = os.path.relpath(str(target), str(doc_dir))
+    return rel.replace(os.sep, "/")
+
+
 def find_code_block_ranges(text: str) -> list[tuple[int, int]]:
     """Return a list of (start_line, end_line) for fenced code blocks.
 
-    Both ends are 1-based and inclusive. Front-matter blocks delimited by
-    ``---`` at the start of the file are also treated as code blocks.
+    Both ends are 1-based and inclusive. Follows the CommonMark rule that a
+    closing fence must use the same character (backtick or tilde) as the
+    opening fence and have at least as many of them. This lets templates
+    nest a 3-backtick block inside a 4-backtick block without confusing
+    the detector.
+
+    Front-matter blocks delimited by ``---`` at the start of the file are
+    also treated as code blocks.
     """
     ranges: list[tuple[int, int]] = []
     lines = text.split("\n")
+    fence_open = re.compile(r"^\s*(`{3,}|~{3,})")
+
     in_block = False
     block_start = 0
-    fence_pattern = re.compile(r"^\s*```")
+    open_char = ""
+    open_len = 0
 
     for i, line in enumerate(lines, 1):
-        if fence_pattern.match(line):
-            if in_block:
-                ranges.append((block_start, i))
-                in_block = False
-            else:
-                in_block = True
-                block_start = i
+        m = fence_open.match(line)
+        if not m:
+            continue
+        fence = m.group(1)
+        if in_block:
+            if fence[0] == open_char and len(fence) >= open_len:
+                # Ensure the closing fence has no info string.
+                rest = line[m.end() :].strip()
+                if not rest:
+                    ranges.append((block_start, i))
+                    in_block = False
+                    open_char = ""
+                    open_len = 0
+        else:
+            in_block = True
+            block_start = i
+            open_char = fence[0]
+            open_len = len(fence)
 
     # Unclosed fence: include to end of file.
     if in_block:
@@ -255,10 +309,104 @@ def detect_findings(
                     line=i,
                     column=span_start + 1,
                     token=inner,
-                    resolved_path=str(resolved.relative_to(repo_root)),
+                    resolved_path=file_relative_path(resolved, doc_dir),
                 )
             )
 
+    return findings
+
+
+_LINK_TARGET_SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "ftp://", "tel:")
+
+
+def _inline_code_span_ranges(line: str) -> list[tuple[int, int]]:
+    r"""Return (start, end) character ranges of inline code spans in ``line``.
+
+    Both ends are 0-based indices into the line. Used to skip markdown-link
+    pattern matches that fall inside ``\`code\``` spans (e.g. table cells like
+    ``\`arr['push'](...)\```).
+    """
+    ranges: list[tuple[int, int]] = []
+    for m in INLINE_CODE_SPAN.finditer(line):
+        ranges.append((m.start(), m.end()))
+    return ranges
+
+
+def detect_broken_link_targets(
+    text: str,
+    file_path: str,
+    repo_root: Path,
+) -> list[BrokenLinkFinding]:
+    """Return links whose target does not exist when resolved file-relative.
+
+    GitHub resolves markdown link paths relative to the document containing
+    the link. A link that uses a repo-root-relative path (e.g. linking to
+    ``rules/foo.md`` from inside another ``rules/`` document) 404s on GitHub.
+    This detector flags those cases, plus links whose target is missing
+    entirely.
+    """
+    rel = file_path
+    if rel in EXEMPT_FILES:
+        return []
+    if any(rel.startswith(p) for p in SKIP_DIR_PREFIXES):
+        return []
+
+    if Path(file_path).is_absolute():
+        doc_dir = Path(file_path).parent.resolve()
+    else:
+        doc_dir = (repo_root / file_path).parent.resolve()
+    code_ranges = find_code_block_ranges(text)
+    findings: list[BrokenLinkFinding] = []
+
+    for i, line in enumerate(text.split("\n"), 1):
+        if line_is_inside_ranges(i, code_ranges):
+            continue
+        inline_code_ranges = _inline_code_span_ranges(line)
+        for m in MARKDOWN_LINK.finditer(line):
+            if column_inside_ranges(m.start(), inline_code_ranges):
+                continue
+            link_text = m.group("text")
+            url = m.group("url").strip()
+            if not url or url.startswith(_LINK_TARGET_SKIP_PREFIXES):
+                continue
+            target_no_frag = url.split("#", 1)[0]
+            if not target_no_frag:
+                continue
+            # Trim a leading "./" for cleanliness.
+            cleaned = (
+                target_no_frag[2:]
+                if target_no_frag.startswith("./")
+                else target_no_frag
+            )
+            if cleaned.startswith("/"):
+                continue
+
+            # GitHub resolves relative to the document. Try file-relative first.
+            file_relative_target = (doc_dir / cleaned).resolve()
+            if file_relative_target.exists():
+                continue
+
+            # Broken. Check whether the path is fixable by interpreting it as
+            # repo-root-relative (the common authoring mistake).
+            correct_path: str | None = None
+            repo_root_target = (repo_root / cleaned).resolve()
+            try:
+                repo_root_target.relative_to(repo_root)
+            except ValueError:
+                pass
+            else:
+                if repo_root_target.exists():
+                    correct_path = file_relative_path(repo_root_target, doc_dir)
+            findings.append(
+                BrokenLinkFinding(
+                    file=rel,
+                    line=i,
+                    column=m.start("url") + 1,
+                    link_text=link_text,
+                    link_target=url,
+                    correct_path=correct_path,
+                )
+            )
     return findings
 
 
