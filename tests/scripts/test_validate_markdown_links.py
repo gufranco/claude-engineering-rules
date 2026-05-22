@@ -29,6 +29,7 @@ def run_validator(path: Path, *extra_args: str) -> subprocess.CompletedProcess:
 
 def test_clean_file_passes(tmp_path):
     # Arrange
+    (tmp_path / "README.md").write_text("# Stub")
     target = tmp_path / "clean.md"
     target.write_text("# Clean\n\nSee [`README.md`](README.md) for details.\n")
 
@@ -82,6 +83,7 @@ def test_fenced_code_block_is_skipped(tmp_path):
 
 def test_link_text_is_not_flagged(tmp_path):
     # Arrange
+    (tmp_path / "README.md").write_text("# Stub")
     target = tmp_path / "doc.md"
     target.write_text("# Link\n\nSee [`README.md`](README.md) for details.\n")
 

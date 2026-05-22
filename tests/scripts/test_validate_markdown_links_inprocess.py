@@ -34,15 +34,17 @@ def test_tracked_markdown_files_returns_list():
 
 
 def test_collect_findings_empty_for_no_files():
-    findings = validate_module.collect_findings([], REPO_ROOT)
-    assert findings == []
+    bare, broken = validate_module.collect_findings([], REPO_ROOT)
+    assert bare == []
+    assert broken == []
 
 
 def test_collect_findings_handles_missing_file():
     # Arrange: a path that does not exist
-    findings = validate_module.collect_findings(["does-not-exist.md"], REPO_ROOT)
+    bare, broken = validate_module.collect_findings(["does-not-exist.md"], REPO_ROOT)
     # Assert: silently skip missing files
-    assert findings == []
+    assert bare == []
+    assert broken == []
 
 
 def test_main_returns_zero_when_repo_clean(monkeypatch, capsys):
@@ -104,3 +106,61 @@ def test_main_reports_findings_for_bare_reference(monkeypatch, capsys, tmp_path)
         assert "README.md" in captured.out
     finally:
         target.unlink(missing_ok=True)
+
+
+def test_main_reports_broken_link_target(monkeypatch, capsys, tmp_path):
+    # Arrange: link target does not exist
+    target = REPO_ROOT / "tmp-validator-broken-link.md"
+    target.write_text("See [missing](ghost-file.md).\n")
+    try:
+        monkeypatch.setattr(sys, "argv", ["validate-markdown-links.py", str(target)])
+        # Act
+        code = validate_module.main()
+        # Assert
+        assert code == 1
+        captured = capsys.readouterr()
+        assert "FAILED" in captured.out
+        assert "broken link target" in captured.out
+        assert "ghost-file.md" in captured.out
+    finally:
+        target.unlink(missing_ok=True)
+
+
+def test_main_reports_advisory_bare_findings_in_specs(monkeypatch, capsys):
+    # Arrange: bare reference in specs/ is advisory, not blocking
+    spec_target = REPO_ROOT / "specs" / "tmp-validator-advisory-bare.md"
+    spec_target.parent.mkdir(parents=True, exist_ok=True)
+    spec_target.write_text("Look at `README.md` here.\n")
+    try:
+        monkeypatch.setattr(
+            sys, "argv", ["validate-markdown-links.py", str(spec_target)]
+        )
+        # Act
+        code = validate_module.main()
+        # Assert: passes (advisory only) but reports the advisory finding
+        assert code == 0
+        captured = capsys.readouterr()
+        assert "Advisory" in captured.out
+        assert "bare file reference" in captured.out
+    finally:
+        spec_target.unlink(missing_ok=True)
+
+
+def test_main_reports_advisory_broken_targets_in_specs(monkeypatch, capsys):
+    # Arrange: broken link target in specs/ is advisory
+    spec_target = REPO_ROOT / "specs" / "tmp-validator-advisory-broken.md"
+    spec_target.parent.mkdir(parents=True, exist_ok=True)
+    spec_target.write_text("See [missing](ghost.md).\n")
+    try:
+        monkeypatch.setattr(
+            sys, "argv", ["validate-markdown-links.py", str(spec_target)]
+        )
+        # Act
+        code = validate_module.main()
+        # Assert
+        assert code == 0
+        captured = capsys.readouterr()
+        assert "Advisory" in captured.out
+        assert "broken link target" in captured.out
+    finally:
+        spec_target.unlink(missing_ok=True)
