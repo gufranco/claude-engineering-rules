@@ -43,6 +43,10 @@ Before committing any AI-generated code, verify:
 
 If you cannot explain what a generated block does line by line, do not commit it. Read it, trace the logic, verify the data flow. "It works" is not understanding. Understanding means you can predict what happens with unexpected input.
 
+## Design Taste
+
+Mechanical review catches mechanical defects. Design taste catches the rest: the choice between two correct designs, the call about whether a layer earns its place, the moment to absorb complexity instead of pushing it up. Taste develops only by shipping, watching the result, and changing the next decision based on the outcome. AI assistance does not substitute for that loop because taste is calibrated against outcomes, not against training data. See [`design-philosophy.md`](design-philosophy.md) "Design Taste" for the full argument.
+
 ## Multi-Agent Validation
 
 When agents generate code, the orchestrator must review the output with the same rigor as any other code change. Agent output is not pre-validated. Run the full self-review loop from the completion gates.
