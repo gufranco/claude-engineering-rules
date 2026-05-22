@@ -143,6 +143,8 @@ Read the surrounding code. Confirm the new code fits the existing patterns, exce
 
 If the change doesn't fit the existing architecture, raise it before implementing.
 
+When the design is not obvious, draft two radically different approaches before choosing. The first design is rarely the best, and the comparison sharpens the requirements. See [`design-philosophy.md`](design-philosophy.md) "Design It Twice".
+
 ### 3. Interface Verification
 
 Verify every external interface the implementation will touch.

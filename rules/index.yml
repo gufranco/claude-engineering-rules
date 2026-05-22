@@ -11,6 +11,9 @@ always_loaded:
     description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits. TypeScript-specific guidance moved to rules/lang/typescript-types.md, rules/lang/typescript-immutability.md, and rules/lang/typescript-strict.md
     triggers: [style, completeness, fundamentals, "command-query", cqs, "data safety", "delivery path", "defensive invariants", analyzability, validation, zod, dto, "removal safety", "locale-aware", i18n, accent, diacritical, "destructive action", "llm output", "trust boundary", "bisect"]
 
+  design-philosophy:
+    description: Ousterhout-derived heuristics for managing complexity. Three manifestations of complexity (change amplification, cognitive load, unknown unknowns), two root causes (dependencies, obscurity), strategic vs tactical programming with 10-20 percent budget, deep modules at module level (defers to existing 30-line function rule), general-purpose modules are deeper, pull complexity downwards, different layer different abstraction, design it twice, define errors out of existence with exception masking and aggregation, red flags catalog (pass-through methods, pass-through variables, configuration parameters, classitis, decorator overuse, getters/setters, adjacent layers same abstraction, temporal decomposition, repeated try/catch), design taste from shipping and feedback
+    triggers: [design, complexity, deep module, shallow module, "change amplification", "cognitive load", "unknown unknowns", obscurity, dependencies, "strategic programming", "tactical programming", "design it twice", "pull complexity downwards", "define errors out of existence", "exception masking", "exception aggregation", "pass-through method", "pass-through variable", "configuration parameter", classitis, "temporal decomposition", "design taste", red flag, smell, ousterhout]
 
   git-workflow:
     description: Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy
@@ -123,6 +126,11 @@ on_demand:
     path: standards/performance.md
     description: Core Web Vitals budgets, API latency targets, database query limits, JS and CSS bundle budgets, image optimization, DOM rendering rules
     triggers: [performance, lcp, inp, cls, core web vitals, bundle size, latency, p50, p95, p99, image, dom, reflow, lighthouse, bundle, frontend perf]
+
+  low-latency:
+    path: standards/low-latency.md
+    description: HFT and real-time engineering. Memory hierarchy with TLB and hugepages, mlockall pinning, NUMA allocation policies and pinning, IRQ affinity, NMI and SMI handling, scheduler priority via chrt, software fault elimination. Validation with cyclictest, hwlatdetect, numastat. Pre-production checklist for nanosecond-budget systems.
+    triggers: [hft, "high frequency trading", "low latency", "low-latency", realtime, "real-time", "real time", numa, hugepages, hugepage, tlb, "translation lookaside buffer", mlockall, cyclictest, hwlatdetect, "cpu pinning", "kernel patch", jitter, nanoseconds, microseconds, "soft realtime", "hard realtime", "scheduler latency", isolcpus, "nmi watchdog", smi, "c-states", numactl, taskset, numastat, libnuma]
 
   documentation:
     path: standards/documentation.md
