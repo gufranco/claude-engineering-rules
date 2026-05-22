@@ -10,7 +10,7 @@ Exhaust the cheap-to-check sources before producing a clarifying question. The u
 
 | Source | What to check |
 |--------|--------------|
-| [`CLAUDE.md`](CLAUDE.md) and `rules/*` | Whether the question is already answered by an existing rule |
+| [`CLAUDE.md`](../CLAUDE.md) and `rules/*` | Whether the question is already answered by an existing rule |
 | Codebase grep / glob | Whether the symbol, file, or path the user named already exists |
 | Read the file the user named | Before asking what is in it |
 | `git log` / `git blame` | Recent changes to the file, last author, intent in the message |
@@ -57,7 +57,7 @@ Constraints:
 
 - One blocking question per turn. Bundling three questions into one message is forbidden; the user can answer only one.
 - Ship the question in the first message. No "Can I ask you something?", no hello-only opener, no "Quick question?".
-- No rhetorical closers ("Let me know if that helps", "Sound good?"). Already enforced by [`hooks/banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py).
+- No rhetorical closers ("Let me know if that helps", "Sound good?"). Already enforced by [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 - No apologies, no repeated thanks, no hyper-courtesy.
 
 ```
@@ -218,10 +218,10 @@ A failed test sends the draft back to the keyboard.
 
 This rule sits alongside, not above, the existing rule set. On conflict:
 
-- [`rules/pre-flight.md`](rules/pre-flight.md) governs the investigation gate. This rule extends the gate's output (the question format), not the gate itself.
-- [`rules/writing-precision.md`](rules/writing-precision.md) governs sentence-level precision. Apply both: precision per writing-precision, format per this rule.
-- [`rules/verification.md`](rules/verification.md) governs evidence for completion. This rule's "Closing the Loop" formats the evidence; verification governs whether the evidence is real.
-- [`rules/surgical-edits.md`](rules/surgical-edits.md) governs diff scope. XY framing must surface a broader goal but does not authorize expanding the diff. Surface the goal as a question, then let the user decide whether to expand the scope.
+- [`rules/pre-flight.md`](pre-flight.md) governs the investigation gate. This rule extends the gate's output (the question format), not the gate itself.
+- [`rules/writing-precision.md`](writing-precision.md) governs sentence-level precision. Apply both: precision per writing-precision, format per this rule.
+- [`rules/verification.md`](verification.md) governs evidence for completion. This rule's "Closing the Loop" formats the evidence; verification governs whether the evidence is real.
+- [`rules/surgical-edits.md`](surgical-edits.md) governs diff scope. XY framing must surface a broader goal but does not authorize expanding the diff. Surface the goal as a question, then let the user decide whether to expand the scope.
 
 ## 11. Why This Rule Exists
 

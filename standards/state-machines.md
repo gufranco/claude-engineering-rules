@@ -294,5 +294,5 @@ Entry/exit actions reduce duplication when multiple transitions lead to the same
 
 ## Related Standards
 
-- [`standards/ddd-tactical-patterns.md`](standards/ddd-tactical-patterns.md): DDD Tactical Patterns
+- [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md): DDD Tactical Patterns
 - `standards/event-driven-architecture.md`: Event-Driven Architecture

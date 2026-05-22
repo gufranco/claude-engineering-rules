@@ -424,5 +424,5 @@ Distributed systems generate IDs on different nodes with clock drift of 1-100ms.
 
 ## Related Standards
 
-- [`standards/database.md`](standards/database.md): Database
-- [`standards/distributed-systems.md`](standards/distributed-systems.md): Distributed Systems
+- [`standards/database.md`](database.md): Database
+- [`standards/distributed-systems.md`](distributed-systems.md): Distributed Systems

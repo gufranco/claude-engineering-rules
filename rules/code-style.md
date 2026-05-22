@@ -59,20 +59,20 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 
 ## ORM Schema Completeness
 
-Per-ORM rule files cover schema completeness, migration parity, and the no-raw-SQL boundary. Loaded on demand by matching triggers in [`rules/index.yml`](rules/index.yml).
+Per-ORM rule files cover schema completeness, migration parity, and the no-raw-SQL boundary. Loaded on demand by matching triggers in [`rules/index.yml`](index.yml).
 
 | ORM | Rule file | Trigger keywords |
 |-----|-----------|-----------------|
-| Prisma | [`rules/lang/prisma-migrations.md`](rules/lang/prisma-migrations.md) | `prisma`, `schema.prisma`, `@@index`, `prisma migrate`, `createdAt`, `updatedAt`, `companyId` |
-| TypeORM | [`rules/lang/typeorm-migrations.md`](rules/lang/typeorm-migrations.md) | `typeorm`, `@Entity`, `@Index`, `synchronize`, `DataSource`, `migration:generate`, `migration:run` |
-| Drizzle | [`rules/lang/drizzle-migrations.md`](rules/lang/drizzle-migrations.md) | `drizzle-orm`, `drizzle-kit push`, `pgTable`, `uniqueIndex`, `$onUpdateFn`, `defaultNow`, `__drizzle_migrations` |
-| Sequelize | [`rules/lang/sequelize-migrations.md`](rules/lang/sequelize-migrations.md) | `sequelize`, `umzug`, `queryInterface`, `sync({ force`, `sync({ alter`, `paranoid`, `Model.init` |
+| Prisma | [`rules/lang/prisma-migrations.md`](lang/prisma-migrations.md) | `prisma`, `schema.prisma`, `@@index`, `prisma migrate`, `createdAt`, `updatedAt`, `companyId` |
+| TypeORM | [`rules/lang/typeorm-migrations.md`](lang/typeorm-migrations.md) | `typeorm`, `@Entity`, `@Index`, `synchronize`, `DataSource`, `migration:generate`, `migration:run` |
+| Drizzle | [`rules/lang/drizzle-migrations.md`](lang/drizzle-migrations.md) | `drizzle-orm`, `drizzle-kit push`, `pgTable`, `uniqueIndex`, `$onUpdateFn`, `defaultNow`, `__drizzle_migrations` |
+| Sequelize | [`rules/lang/sequelize-migrations.md`](lang/sequelize-migrations.md) | `sequelize`, `umzug`, `queryInterface`, `sync({ force`, `sync({ alter`, `paranoid`, `Model.init` |
 
 Every ORM rule file declares the same five guarantees: schema and migration parity, explicit index names, transactional and idempotent DDL, no raw SQL in application code, and a service-layer boundary that keeps ORM imports out of controllers and routers.
 
 ## TypeScript Type Constructs
 
-Moved to [`rules/lang/typescript-types.md`](rules/lang/typescript-types.md). Covers `interface` vs `type` vs `enum` selection, discriminated unions with exhaustive matching, branded types, and the type state pattern. Triggered on demand by `typescript`, `type`, `interface`, `enum`, `brand`, `discriminated`, and related keywords.
+Moved to [`rules/lang/typescript-types.md`](lang/typescript-types.md). Covers `interface` vs `type` vs `enum` selection, discriminated unions with exhaustive matching, branded types, and the type state pattern. Triggered on demand by `typescript`, `type`, `interface`, `enum`, `brand`, `discriminated`, and related keywords.
 
 ## Command-Query Separation
 
@@ -94,7 +94,7 @@ Cross-language baseline: immutable by default, mutable by exception. Every value
 - Derive values with selectors or computed properties. Never cache derived values as mutable fields
 - Framework-internal mutation (Immer, MobX, Redux Toolkit) stays at the framework boundary. Everything else treats state as read-only
 
-TypeScript-specific rules (mutation surface, DOM/Web API stance, ES2024+ replacements, readonly type ladder, auto-allowed scopes, CI snippets, Three Legs of Data Integrity, date and time handling) live in [`rules/lang/typescript-immutability.md`](rules/lang/typescript-immutability.md). Triggered on demand by `immutable`, `mutation`, `readonly`, `splice`, `sort`, `push`, `Map.set`, `Set.add`, `Date`, `Temporal`, and related keywords.
+TypeScript-specific rules (mutation surface, DOM/Web API stance, ES2024+ replacements, readonly type ladder, auto-allowed scopes, CI snippets, Three Legs of Data Integrity, date and time handling) live in [`rules/lang/typescript-immutability.md`](lang/typescript-immutability.md). Triggered on demand by `immutable`, `mutation`, `readonly`, `splice`, `sort`, `push`, `Map.set`, `Set.add`, `Date`, `Temporal`, and related keywords.
 
 ## Delivery Path Consistency
 
@@ -125,11 +125,11 @@ Before writing code that mutates state, answer three questions:
 2. **Atomic?** Do multiple writes need to succeed or fail together? Use a transaction
 3. **Duplicates?** Networks retry. Queues redeliver. Users double-click. Extract a dedup key and use a durable store
 
-See [`standards/resilience.md`](standards/resilience.md) for patterns and [`standards/database.md`](standards/database.md) for transaction strategies.
+See [`standards/resilience.md`](../standards/resilience.md) for patterns and [`standards/database.md`](../standards/database.md) for transaction strategies.
 
 ## Error Classification
 
-Checklist items: [`checklists/checklist.md`](checklists/checklist.md) category 3. Retry parameters and HTTP status mapping: [`checklists/checklist.md`](checklists/checklist.md) category 20.
+Checklist items: [`checklists/checklist.md`](../checklists/checklist.md) category 3. Retry parameters and HTTP status mapping: [`checklists/checklist.md`](../checklists/checklist.md) category 20.
 
 Every `catch` must classify: transient (retry with backoff), permanent (fail immediately), or ambiguous (retry with limit, then permanent). A bare catch that logs and rethrows is a bug.
 
@@ -249,11 +249,11 @@ Stricter checks catch bugs at compile time instead of production. The cost of fi
 - When a new strictness flag becomes available in a toolchain update, enable it
 - Document any flag intentionally left disabled with the specific reason in the config file
 
-TypeScript-specific strictness, target, and module settings live in [`rules/lang/typescript-strict.md`](rules/lang/typescript-strict.md). Triggered on demand by `tsconfig`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `target`, `moduleResolution`, and related keywords.
+TypeScript-specific strictness, target, and module settings live in [`rules/lang/typescript-strict.md`](lang/typescript-strict.md). Triggered on demand by `tsconfig`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `target`, `moduleResolution`, and related keywords.
 
 ## Zero Warnings
 
-Apply [`checklists/checklist.md`](checklists/checklist.md) category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
+Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
 
 ## Removal Safety
 
@@ -275,7 +275,7 @@ Before removing or renaming any resource, verify all consumers. A resource is an
 | Environment variable | `.env.example`, CI/CD, Docker, Terraform, all `process.env` reads |
 | Translation key | All `t('key')`, `t.raw('key')`, message JSON files |
 | CSS class or design token | All `className`, Tailwind config, component files |
-| Package dependency | All imports from that package across `src/` and [`tests/`](tests) |
+| Package dependency | All imports from that package across `src/` and [`tests/`](../tests) |
 
 A removal without a consumer search is a latent runtime error.
 
@@ -287,7 +287,7 @@ Use a date library for all date operations. Never use raw `Date` methods for for
 - Every `format()` call that renders user-visible text must receive the dynamic locale from the app's locale context, never a hardcoded locale import
 - `new Date()` for creating a timestamp to pass to a database ORM is acceptable since the ORM needs a Date object
 
-The TypeScript-specific Temporal vs date-fns mapping table, mutation-blocker hook integration, and ES2026 timing details live in [`rules/lang/typescript-immutability.md`](rules/lang/typescript-immutability.md).
+The TypeScript-specific Temporal vs date-fns mapping table, mutation-blocker hook integration, and ES2026 timing details live in [`rules/lang/typescript-immutability.md`](lang/typescript-immutability.md).
 
 ## Locale-Aware Components
 
@@ -339,7 +339,7 @@ When code processes output from LLMs, treat it as untrusted external input.
 
 ## TypeScript 5.x Patterns
 
-Moved to [`rules/lang/typescript-strict.md`](rules/lang/typescript-strict.md). Triggered on demand by `using`, `await using`, `Symbol.dispose`, `NoInfer`, `verbatimModuleSyntax`, and related keywords.
+Moved to [`rules/lang/typescript-strict.md`](lang/typescript-strict.md). Triggered on demand by `using`, `await using`, `Symbol.dispose`, `NoInfer`, `verbatimModuleSyntax`, and related keywords.
 
 ## Bisect-Friendly Commits
 

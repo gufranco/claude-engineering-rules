@@ -110,7 +110,7 @@ Present the scope review findings. In `--auto` mode, only pause for user input i
 
 3. **Gather references.** Identify 2-5 files following patterns the new code should match. Read them. Note structure, naming, error handling, testing.
 
-4. **Match relevant rules.** Read [`rules/index.yml`](rules/index.yml). Match top 3-5 rules by triggers. Read them.
+4. **Match relevant rules.** Read [`rules/index.yml`](../../rules/index.yml). Match top 3-5 rules by triggers. Read them.
 
 5. **Evaluate alternatives.** For non-trivial decisions, 2-3 approaches with trade-offs, risk level, and recommendation. For each:
    - **Decisive test**: smallest experiment to confirm/invalidate.
@@ -128,9 +128,9 @@ Present the scope review findings. In `--auto` mode, only pause for user input i
 
 7. **Append mandatory closing gates.** Every `plan.md` task breakdown must end with these two items, in this order, as the final tasks. They are not optional. They cannot be moved earlier or removed.
 
-   **Gate 1: Test Coverage (95%+).** Apply [`../../checklists/checklist.md`](checklists/checklist.md) category 8 (Testing). Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
+   **Gate 1: Test Coverage (95%+).** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8 (Testing). Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
 
-   **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](checklists/checklist.md) category 50 (Clean Room). Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: `rules/clean-room.md`.
+   **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50 (Clean Room). Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: `rules/clean-room.md`.
 
 8. **Present plan.** Wait for approval.
 
@@ -226,7 +226,7 @@ Export the active spec folder's task breakdown to GitHub issues. One issue per t
 
 ### Arguments
 
-- No arguments: read the most recent spec folder under [`specs/`](specs) or `.claude/specs/`.
+- No arguments: read the most recent spec folder under [`specs/`](../../specs) or `.claude/specs/`.
 - `<spec-folder>`: explicit path to the spec folder.
 - `--label <name>`: label to apply to every created issue. Repeatable.
 - `--milestone <name>`: milestone to assign to every issue.
@@ -234,9 +234,9 @@ Export the active spec folder's task breakdown to GitHub issues. One issue per t
 
 ### Steps
 
-1. **Resolve spec folder.** Default to the latest folder under [`specs/`](specs) or `.claude/specs/`.
+1. **Resolve spec folder.** Default to the latest folder under [`specs/`](../../specs) or `.claude/specs/`.
 2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue.
-3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
+3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists. Borrowed from the deduplication pattern.
 5. **Build issue body.** Include: the task description, the spec folder path, a link to `plan.md`, and any phase grouping.
 6. **Create issues.** GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label>`. GitLab: equivalent `glab issue create`.
@@ -292,7 +292,7 @@ Generate boilerplate by reading existing project patterns. No external generator
 - Spec folders are permanent. They record WHY decisions were made.
 - The plan must reference verified file paths.
 - Search for existing work before designing new solutions.
-- Spec folders go in [`specs/`](specs) or `.claude/specs/` within the project, never in `~/.claude/`.
+- Spec folders go in [`specs/`](../../specs) or `.claude/specs/` within the project, never in `~/.claude/`.
 
 ## Related skills
 

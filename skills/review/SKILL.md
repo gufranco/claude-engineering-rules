@@ -22,8 +22,8 @@ If no subcommand is given, default to `code`.
 Review a pull request, merge request, or local branch changes with rigorous, detail-oriented analysis. Every line of the diff is scrutinized for correctness, security, performance, maintainability, and adherence to best practices.
 
 Use two references:
-1. [`../../checklists/checklist.md`](checklists/checklist.md) for all 70 quality categories.
-2. [`reviewer-prompt.md`](skills/review/reviewer-prompt.md) in this directory for comment format and examples.
+1. [`../../checklists/checklist.md`](../../checklists/checklist.md) for all 70 quality categories.
+2. [`reviewer-prompt.md`](reviewer-prompt.md) in this directory for comment format and examples.
 
 ### Arguments
 
@@ -53,20 +53,20 @@ When `--backend` or `--frontend` is passed, classify each file:
 5. **Read context**: PR description, commit messages, every changed file in full, imported modules, existing review comments, verify PR description matches diff.
 6. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers (`package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`), import statements in changed files, directory names, and config files. Match signals against trigger keywords in the `on_demand` section. Load **every** matched standard file plus all `always_loaded` rules.
 
-   This makes the review aware of domain-specific best practices. A PR that adds a database migration is reviewed against [`standards/database.md`](standards/database.md). A PR that adds a GraphQL resolver is reviewed against [`standards/graphql-api-design.md`](standards/graphql-api-design.md). A PR that adds a queue consumer is reviewed against [`standards/message-queues.md`](standards/message-queues.md).
+   This makes the review aware of domain-specific best practices. A PR that adds a database migration is reviewed against [`standards/database.md`](../../standards/database.md). A PR that adds a GraphQL resolver is reviewed against [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A PR that adds a queue consumer is reviewed against [`standards/message-queues.md`](../../standards/message-queues.md).
 
    Also load these rules for review context:
-   - [`rules/verification.md`](rules/verification.md): when reviewing claims about test coverage or build success
-   - [`rules/pre-flight.md`](rules/pre-flight.md): when reviewing whether the author checked for existing solutions
-   - [`rules/security.md`](rules/security.md): security criteria, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
-   - [`rules/writing-precision.md`](rules/writing-precision.md): quality gate for review comments themselves
-   - [`rules/code-style.md`](rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
-   - [`rules/testing.md`](rules/testing.md): mock policy, AAA pattern, faker, deterministic tests, contract testing, performance regression
+   - [`rules/verification.md`](../../rules/verification.md): when reviewing claims about test coverage or build success
+   - [`rules/pre-flight.md`](../../rules/pre-flight.md): when reviewing whether the author checked for existing solutions
+   - [`rules/security.md`](../../rules/security.md): security criteria, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
+   - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for review comments themselves
+   - [`rules/code-style.md`](../../rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
+   - [`rules/testing.md`](../../rules/testing.md): mock policy, AAA pattern, faker, deterministic tests, contract testing, performance regression
    - `rules/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
    - `rules/privacy.md`: data minimization, retention, erasure when the diff touches personal data
-   - [`rules/ai-guardrails.md`](rules/ai-guardrails.md): when the diff processes, stores, or acts on LLM-generated output
+   - [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md): when the diff processes, stores, or acts on LLM-generated output
 
-   Before suggesting fixes that call library APIs, check [`standards/llm-docs.md`](standards/llm-docs.md) for the library's documentation URL. Verify the API exists.
+   Before suggesting fixes that call library APIs, check [`standards/llm-docs.md`](../../standards/llm-docs.md) for the library's documentation URL. Verify the API exists.
 
    Record which standards were loaded for inclusion in the review verdict.
 
@@ -181,8 +181,8 @@ When `--backend` or `--frontend` is passed, classify each file:
      **Security pattern analysis (when SCOPE_AUTH, SCOPE_API, SCOPE_WEBHOOK, or SCOPE_BACKEND is detected).** Read `~/.claude/skills/security-patterns.md` and apply it as an additional security lens. For each changed file that handles user input, perform source-to-sink tracing: map entry points to dangerous sinks (SQL, command, template, file, SSRF, redirect, XSS, deserialization) and verify sanitization at each transition. Check for vulnerability patterns matching the diff: race conditions on financial operations, IDOR, mass assignment, JWT weakness, CORS misconfiguration, missing idempotency. When a security finding is identified, run `git blame -L <start>,<end> <file>` on the vulnerable lines to determine when it was introduced and how long it has been exposed.
    - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 8 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
-11. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
-12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](checklists/checklist.md) category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
+11. **Run local verification**: test (with coverage), lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
+12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50 (Clean Room). If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
 13. **Check branch freshness, CI, test evidence, PR size** (parallel). Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
 14. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9. When presenting to the user in-terminal, also include a Standards Applied line for internal transparency.
 
@@ -191,10 +191,10 @@ When `--backend` or `--frontend` is passed, classify each file:
     - Conventional Comments label prefixes (`issue (blocking):`, `issue (non-blocking):`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`). Use no label.
     - Internal severity tiers (`P0`, `P1`, `P2`) and section headings (`Standards Applied`, `Behavioral Flow Analysis`, `Blast Radius`).
     - The skill's own invocation flags (`--backend`, `--frontend`, `--local`, `--post`).
-    - Internal file references (`~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, [`CLAUDE.md`](CLAUDE.md)).
+    - Internal file references (`~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, [`CLAUDE.md`](../../CLAUDE.md)).
     - "Category N" or "checklist item N" phrasings; reach for the engineering reason directly.
 
-    This is a forward filter, not a post-hoc rewrite. If you find yourself rewriting after generation to scrub these, the generation prompt was wrong. Cleanliness from the first draft is the bar. See [`standards/code-review.md`](standards/code-review.md) "No Internal Config Leakage" and the `internal-config-leakage.py` hook (which will block the post if you miss something).
+    This is a forward filter, not a post-hoc rewrite. If you find yourself rewriting after generation to scrub these, the generation prompt was wrong. Cleanliness from the first draft is the bar. See [`standards/code-review.md`](../../standards/code-review.md) "No Internal Config Leakage" and the `internal-config-leakage.py` hook (which will block the post if you miss something).
 15. **Next steps**:
     - **Own PR / local**: offer to fix issues. Convergence loop (max 5 iterations): fix, re-verify, re-audit. If 5 iterations are exhausted with findings still open, stop, list the remaining issues, and inform the author. Five iterations is enough for any reasonable convergence; remaining issues likely need a design change, not another fix pass.
     - **Someone else's PR**: offer to post inline comments. Show the exact payload first: each comment with file, line, body text, and suggestion blocks. Ask for confirmation before posting. `--post` skips the confirmation prompt but still shows the payload summary.
@@ -264,7 +264,7 @@ Never post comments individually. Even a single comment goes through the JSON fi
 
 ### Comment Voice (MANDATORY)
 
-Every posted comment must read like a human colleague wrote it. The [`standards/code-review.md`](standards/code-review.md) "Review Comments" section is the source of truth: no prefix labels, no structured templates, no checklist appearance. State the engineering reason directly.
+Every posted comment must read like a human colleague wrote it. The [`standards/code-review.md`](../../standards/code-review.md) "Review Comments" section is the source of truth: no prefix labels, no structured templates, no checklist appearance. State the engineering reason directly.
 
 Internal triage (severity, category, source rule) stays internal. It informs which comments you choose to write and how blocking they are in the verdict, but it never appears in the posted text. The reader has no access to the configuration and must never learn it exists.
 
@@ -273,7 +273,7 @@ Internal triage (severity, category, source rule) stays internal. It informs whi
 - Conventional Comments label prefixes like `issue (blocking):`, `issue (non-blocking):`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`. These signal "I am working from a template" to any reader. Write the same content without the label.
 - Internal severity tiers: `P0`, `P1`, `P2`, or any heading like `## P0 Blocking`. The verdict you compute internally maps to GitHub's `APPROVE` / `REQUEST_CHANGES` / `COMMENT` event, full stop.
 - The skill's own invocation flags. If you ran the review with `--backend`, the posted comment is not "Backend-only review (`--backend`)". The first-person voice is "I went through the backend changes" or just plain English.
-- References to internal config: `~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, [`CLAUDE.md`](CLAUDE.md), "category 17", "checklists item 3".
+- References to internal config: `~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, [`CLAUDE.md`](../../CLAUDE.md), "category 17", "checklists item 3".
 - Structural section headings carried over from internal taxonomy: "Behavioral Flow Analysis", "Blast Radius Summary", "Standards Applied". Internal-only sections; their content reaches the reader in plain prose, not under those labels.
 
 **Comment shape:**

@@ -37,7 +37,7 @@ Before committing any AI-generated code, verify:
 | Naming | Do names match the domain language used in the rest of the codebase? |
 | Duplication | Does the generated code duplicate logic that already exists elsewhere? |
 | Over-engineering | If 200 lines could be 50, rewrite. Would a senior engineer call this overcomplicated? |
-| Surgical scope | Every changed line traces to the request. No adjacent "improvements". See [`rules/surgical-edits.md`](rules/surgical-edits.md) |
+| Surgical scope | Every changed line traces to the request. No adjacent "improvements". See [`rules/surgical-edits.md`](surgical-edits.md) |
 
 ## Never Commit Code You Cannot Explain
 
@@ -53,7 +53,7 @@ When agents generate code, the orchestrator must review the output with the same
 
 ## AI-Specific Defect Patterns
 
-Track these patterns. They recur across AI-generated code. For canonical definitions of terms like hallucination, sycophancy, and plausible drift, see [`standards/ai-vocabulary.md`](standards/ai-vocabulary.md).
+Track these patterns. They recur across AI-generated code. For canonical definitions of terms like hallucination, sycophancy, and plausible drift, see [`standards/ai-vocabulary.md`](../standards/ai-vocabulary.md).
 
 | Pattern | Description |
 |---------|------------|

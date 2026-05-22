@@ -4,7 +4,7 @@
 
 `"strict": true` plus every additional flag not covered by `strict`: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`, `noFallthroughCasesInSwitch`, `forceConsistentCasingInFileNames`, `verbatimModuleSyntax`. When a new strictness flag is added to TypeScript, enable it.
 
-The cross-language strictness principle and per-language requirements live in [`rules/code-style.md`](rules/code-style.md) under "Maximum Compiler and Checker Strictness". This file covers TypeScript specifics.
+The cross-language strictness principle and per-language requirements live in [`rules/code-style.md`](../code-style.md) under "Maximum Compiler and Checker Strictness". This file covers TypeScript specifics.
 
 ## Target and Module Settings
 

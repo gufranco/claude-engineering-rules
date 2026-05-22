@@ -282,6 +282,6 @@ export default defineConfig({
 
 ## Related Standards
 
-- [`standards/frontend.md`](standards/frontend.md): Frontend Design
-- [`standards/accessibility-testing.md`](standards/accessibility-testing.md): Accessibility Testing
-- [`standards/performance-budgets.md`](standards/performance-budgets.md): Performance Budgets
+- [`standards/frontend.md`](frontend.md): Frontend Design
+- [`standards/accessibility-testing.md`](accessibility-testing.md): Accessibility Testing
+- [`standards/performance-budgets.md`](performance-budgets.md): Performance Budgets

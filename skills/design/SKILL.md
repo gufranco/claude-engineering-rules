@@ -206,7 +206,7 @@ Scaffold a design system or extend an existing component library with new tokens
    - Where it applies.
    - Migration path for existing hardcoded values.
 
-4. **Scaffold project DESIGN.md when missing.** Apply the canonical schema from [`standards/design-md-template.md`](standards/design-md-template.md): mission, brand, style foundations, accessibility, writing tone, do/don't rules, component expectations, quality gates. The per-feature design docs from the `consult` subcommand are separate from this project-level document.
+4. **Scaffold project DESIGN.md when missing.** Apply the canonical schema from [`standards/design-md-template.md`](../../standards/design-md-template.md): mission, brand, style foundations, accessibility, writing tone, do/don't rules, component expectations, quality gates. The per-feature design docs from the `consult` subcommand are separate from this project-level document.
 
 5. **Present for approval.** Propose changes to config files and suggest `/plan scaffold component <name>` for new components.
 

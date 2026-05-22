@@ -141,6 +141,6 @@ Toil is manual, repetitive, automatable work that scales with service size. Trac
 
 ## Related Standards
 
-- [`standards/observability.md`](standards/observability.md): Observability
-- [`standards/dashboard-design.md`](standards/dashboard-design.md): Dashboard Design
-- [`standards/resilience.md`](standards/resilience.md): Resilience
+- [`standards/observability.md`](observability.md): Observability
+- [`standards/dashboard-design.md`](dashboard-design.md): Dashboard Design
+- [`standards/resilience.md`](resilience.md): Resilience

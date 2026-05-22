@@ -66,7 +66,7 @@ If no `--depth` is specified, default to `deep`.
 
 7. **Improvement suggestions.** If the code has issues, note them:
    - Only suggest improvements that are concrete and actionable.
-   - Reference the specific rule from [`../../rules/`](rules) that applies.
+   - Reference the specific rule from [`../../rules/`](../../rules) that applies.
    - Do not suggest improvements for code that is already well-structured. "No improvements needed" is valid output.
 
 ### Shallow mode

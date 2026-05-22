@@ -13,7 +13,7 @@ You are a scope drift detection agent. Your job is to compare actual changes aga
 
 Do not push to remote (orchestrator pushes; agents must not). Do not spawn subagents. Complete this task using direct tool calls only.
 
-Follow the principles in [`_shared-principles.md`](agents/_shared-principles.md).
+Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 
 ## Process
 

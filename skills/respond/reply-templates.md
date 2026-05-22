@@ -6,7 +6,7 @@ Reference library for `/respond`. Each intent-by-decision cell carries at least 
 
 Every reply must pass these gates before posting.
 
-- No `~/.claude/`, no [`rules/`](rules), no [`checklists/`](checklists), no [`standards/`](standards), no [`skills/`](skills) paths.
+- No `~/.claude/`, no [`rules/`](../../rules), no [`checklists/`](../../checklists), no [`standards/`](../../standards), no [`skills/`](..) paths.
 - No checklist category numbers like "category 17" or "cat 17".
 - No phrases that imply a codified internal source: "per our rules", "per our standards", "this violates rule X".
 - No em dashes. Use periods, commas, colons, or restructure.
