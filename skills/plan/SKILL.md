@@ -226,7 +226,7 @@ Export the active spec folder's task breakdown to GitHub issues. One issue per t
 
 ### Arguments
 
-- No arguments: read the most recent spec folder under [`specs/`](../../specs) or `.claude/specs/`.
+- No arguments: read the most recent spec folder under `specs/` or `.claude/specs/`.
 - `<spec-folder>`: explicit path to the spec folder.
 - `--label <name>`: label to apply to every created issue. Repeatable.
 - `--milestone <name>`: milestone to assign to every issue.
@@ -234,7 +234,7 @@ Export the active spec folder's task breakdown to GitHub issues. One issue per t
 
 ### Steps
 
-1. **Resolve spec folder.** Default to the latest folder under [`specs/`](../../specs) or `.claude/specs/`.
+1. **Resolve spec folder.** Default to the latest folder under `specs/` or `.claude/specs/`.
 2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue.
 3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists. Borrowed from the deduplication pattern.
@@ -292,7 +292,7 @@ Generate boilerplate by reading existing project patterns. No external generator
 - Spec folders are permanent. They record WHY decisions were made.
 - The plan must reference verified file paths.
 - Search for existing work before designing new solutions.
-- Spec folders go in [`specs/`](../../specs) or `.claude/specs/` within the project, never in `~/.claude/`.
+- Spec folders go in `specs/` or `.claude/specs/` within the project, never in `~/.claude/`.
 
 ## Related skills
 

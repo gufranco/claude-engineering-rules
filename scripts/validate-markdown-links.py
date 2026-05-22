@@ -31,6 +31,7 @@ from markdown_link_detector import (  # noqa: E402
     detect_broken_link_targets,
     detect_findings,
     is_advisory_file,
+    tracked_paths,
 )
 
 
@@ -50,6 +51,7 @@ def collect_findings(
 ) -> tuple[list[Finding], list[BrokenLinkFinding]]:
     bare: list[Finding] = []
     broken: list[BrokenLinkFinding] = []
+    tracked = tracked_paths(repo_root)
     for rel in files:
         path_rel = Path(rel)
         path = path_rel if path_rel.is_absolute() else (repo_root / rel)
@@ -57,8 +59,8 @@ def collect_findings(
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        bare.extend(detect_findings(text, rel, repo_root))
-        broken.extend(detect_broken_link_targets(text, rel, repo_root))
+        bare.extend(detect_findings(text, rel, repo_root, tracked=tracked))
+        broken.extend(detect_broken_link_targets(text, rel, repo_root, tracked=tracked))
     return bare, broken
 
 

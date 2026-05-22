@@ -26,6 +26,7 @@ from markdown_link_detector import (  # noqa: E402
     is_file_path_token,
     line_is_inside_ranges,
     resolve_path,
+    tracked_paths,
 )
 
 
@@ -349,6 +350,51 @@ def test_find_code_block_ranges_tilde_fences():
     text = "before\n~~~\ncode\n~~~\nafter"
     ranges = find_code_block_ranges(text)
     assert ranges == [(2, 4)]
+
+
+def test_tracked_paths_lists_files_and_directories():
+    paths = tracked_paths(REPO_ROOT)
+    # tracked_paths should include some known files
+    assert "README.md" in paths
+    assert "scripts/markdown_link_detector.py" in paths
+    # And derived directory entries
+    assert "scripts" in paths
+
+
+def test_tracked_paths_returns_empty_for_non_git_dir(tmp_path):
+    paths = tracked_paths(tmp_path)
+    assert paths == set()
+
+
+def test_detect_broken_link_targets_flags_gitignored_target(tmp_path):
+    # Arrange: target exists on disk but is not tracked.
+    (tmp_path / "untracked.md").write_text("# Not tracked\n")
+    target_file = tmp_path / "doc.md"
+    target_file.write_text("See [untracked](untracked.md).\n")
+    # tracked set deliberately empty: simulates gitignored target
+    findings = detect_broken_link_targets(
+        target_file.read_text(),
+        str(target_file),
+        tmp_path,
+        tracked=set(),
+    )
+    assert len(findings) == 1
+    assert findings[0].correct_path is None
+
+
+def test_detect_findings_skips_bare_ref_to_untracked_file(tmp_path):
+    # Arrange: file exists on disk but isn't in tracked set
+    (tmp_path / "untracked.md").write_text("# Not tracked\n")
+    target_file = tmp_path / "doc.md"
+    target_file.write_text("Mention `untracked.md` here.\n")
+    findings = detect_findings(
+        target_file.read_text(),
+        str(target_file),
+        tmp_path,
+        tracked=set(),
+    )
+    # No findings: detector ignores bare refs whose target is not tracked
+    assert findings == []
 
 
 def test_detect_broken_link_targets_respects_skip_dirs(tmp_path):
