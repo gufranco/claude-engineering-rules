@@ -25,6 +25,7 @@
 - `BREAKING CHANGE:` for breaking changes, or `!` after type/scope
 - `Fixes #123`, `Closes #456`, `Refs #789`
 - **NEVER** add `Co-authored-by` lines referencing any AI
+- **NEVER** include AI workflow language: phase-N markers, references to a planning doc, project planning-folder paths, canvas-region mappings, casual ADR-NNN references, or hyperbole tells like "state-of-the-art" or "100% faithful". See `~/.claude/rules/no-ai-process-leak.md` and the `ai-process-leak-blocker.py` hook.
 
 ## Decision Trailers (Optional)
 

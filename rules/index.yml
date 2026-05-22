@@ -56,6 +56,10 @@ always_loaded:
     description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
     triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
 
+  no-ai-process-leak:
+    description: Block phase-N markers, planning-doc references, project planning-folder paths, canvas-region mappings, casual ADR-NNN references, and hyperbole tells (state-of-the-art, 100% faithful) in commit messages, PR descriptions, code comments, and other human-facing artifacts. Enforced by ai-process-leak-blocker.py hook with AI_PROCESS_LEAK_DISABLE parent-shell bypass for editing planning artifacts
+    triggers: [ai process leak, process leak, phase, plan reference, canvas region, hyperbole, state-of-the-art, faithful, planning artifact, commit message leak, pr description leak]
+
   memory-supersede:
     description: Supersede-not-delete chain for project and feedback memories, frontmatter pointers, chain depth limit, reference memories may be deleted
     triggers: [memory, supersede, supersedes, superseded_by, auto-memory, memory chain, memory update, memory archive]
