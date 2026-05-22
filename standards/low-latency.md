@@ -208,6 +208,6 @@ Before deploying any latency-sensitive code to production:
 
 ## Source Material
 
-- Vasilios Syrakis, "Profit or Poverty: TLB": https://cetanu.github.io/blog/translation-lookaside-buffer/
-- Vasilios Syrakis, "Profit or Poverty: NUMA": https://cetanu.github.io/blog/why-numa-is-important-in-trading/
-- Vasilios Syrakis, "Profit or Poverty: Realtime kernel patch": https://cetanu.github.io/blog/linux-is-not-a-realtime-system/
+- [Vasilios Syrakis, "Profit or Poverty: TLB"](https://cetanu.github.io/blog/translation-lookaside-buffer/)
+- [Vasilios Syrakis, "Profit or Poverty: NUMA"](https://cetanu.github.io/blog/why-numa-is-important-in-trading/)
+- [Vasilios Syrakis, "Profit or Poverty: Realtime kernel patch"](https://cetanu.github.io/blog/linux-is-not-a-realtime-system/)
