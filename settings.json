@@ -1004,6 +1004,14 @@
             "command": "python3 ~/.claude/hooks/retro-pointer.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/auto-continue-stop-blocker.py"
+          }
+        ]
       }
     ]
   },
