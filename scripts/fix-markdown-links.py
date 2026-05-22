@@ -32,6 +32,7 @@ from markdown_link_detector import (  # noqa: E402
     detect_broken_link_targets,
     detect_findings,
     is_advisory_file,
+    tracked_paths,
 )
 
 
@@ -166,6 +167,7 @@ def main() -> int:
     grand_total = 0
     touched_files: set[str] = set()
     unfixable_broken: list[BrokenLinkFinding] = []
+    tracked = tracked_paths(REPO_ROOT)
 
     for rel in files:
         path = REPO_ROOT / rel
@@ -179,7 +181,7 @@ def main() -> int:
         # Fix broken existing link targets first. The bare-reference detector
         # below would otherwise be confused by links whose URL still points to
         # a non-resolving path.
-        broken = detect_broken_link_targets(text, rel, REPO_ROOT)
+        broken = detect_broken_link_targets(text, rel, REPO_ROOT, tracked=tracked)
         fixable_broken = [f for f in broken if f.correct_path is not None]
         unfixable_broken.extend(f for f in broken if f.correct_path is None)
 
@@ -200,7 +202,7 @@ def main() -> int:
                 text = path.read_text(encoding="utf-8")
 
         # Wrap bare references.
-        findings = detect_findings(text, rel, REPO_ROOT)
+        findings = detect_findings(text, rel, REPO_ROOT, tracked=tracked)
         if not findings:
             continue
         if args.dry_run:

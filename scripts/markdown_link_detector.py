@@ -267,10 +267,17 @@ def detect_findings(
     text: str,
     file_path: str,
     repo_root: Path,
+    *,
+    tracked: set[str] | None = None,
 ) -> list[Finding]:
     """Run the detector on ``text`` from ``file_path``.
 
     Returns the list of findings. Empty list when the file is clean.
+
+    Pass ``tracked`` to scope existence checks to the git tree. Without
+    it, the detector checks the filesystem (used by ad-hoc input). The
+    distinction matters because a bare reference to a gitignored path
+    would otherwise be auto-wrapped into a link that 404s in CI.
     """
     rel = file_path
     if rel in EXEMPT_FILES:
@@ -301,6 +308,8 @@ def detect_findings(
             resolved = resolve_path(inner, doc_dir, repo_root)
             if resolved is None:
                 continue
+            if tracked is not None and not _target_exists(resolved, repo_root, tracked):
+                continue
             if is_already_linked(line, span_start, span_end):
                 continue
             findings.append(
@@ -317,6 +326,57 @@ def detect_findings(
 
 
 _LINK_TARGET_SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "ftp://", "tel:")
+
+
+def tracked_paths(repo_root: Path) -> set[str]:
+    """Return the set of repo-relative paths tracked by git, plus every
+    directory derived from those paths.
+
+    Used as the source of truth for "does this link target exist?" when
+    validating cross-document links. A bare filesystem check would let
+    gitignored artifacts (logs/, specs/, .last-cleanup, etc.) pass on a
+    developer machine but fail in CI where the checkout never had them.
+    """
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "ls-files"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, OSError, FileNotFoundError):
+        return set()
+    paths: set[str] = set()
+    for line in result.stdout.splitlines():
+        if not line:
+            continue
+        paths.add(line)
+        parts = line.split("/")
+        for i in range(1, len(parts)):
+            paths.add("/".join(parts[:i]))
+    return paths
+
+
+def _target_exists(
+    candidate: Path,
+    repo_root: Path,
+    tracked: set[str] | None,
+) -> bool:
+    """Return True if ``candidate`` is a real link destination.
+
+    When ``tracked`` is provided, membership in the git tree is the
+    source of truth. Targets outside the repo always fall back to a
+    filesystem check (the tracked set is repo-relative).
+    """
+    try:
+        rel = str(candidate.relative_to(repo_root))
+    except ValueError:
+        return candidate.exists()
+    if tracked is None:
+        return candidate.exists()
+    return rel in tracked
 
 
 def _inline_code_span_ranges(line: str) -> list[tuple[int, int]]:
@@ -336,6 +396,8 @@ def detect_broken_link_targets(
     text: str,
     file_path: str,
     repo_root: Path,
+    *,
+    tracked: set[str] | None = None,
 ) -> list[BrokenLinkFinding]:
     """Return links whose target does not exist when resolved file-relative.
 
@@ -344,6 +406,11 @@ def detect_broken_link_targets(
     ``rules/foo.md`` from inside another ``rules/`` document) 404s on GitHub.
     This detector flags those cases, plus links whose target is missing
     entirely.
+
+    Pass ``tracked`` (a set of repo-relative paths from ``tracked_paths()``)
+    to scope the existence check to the git tree. Without it, the detector
+    falls back to filesystem existence, which is correct for ad-hoc input
+    but lets gitignored paths slip through CI.
     """
     rel = file_path
     if rel in EXEMPT_FILES:
@@ -383,7 +450,7 @@ def detect_broken_link_targets(
 
             # GitHub resolves relative to the document. Try file-relative first.
             file_relative_target = (doc_dir / cleaned).resolve()
-            if file_relative_target.exists():
+            if _target_exists(file_relative_target, repo_root, tracked):
                 continue
 
             # Broken. Check whether the path is fixable by interpreting it as
@@ -395,7 +462,7 @@ def detect_broken_link_targets(
             except ValueError:
                 pass
             else:
-                if repo_root_target.exists():
+                if _target_exists(repo_root_target, repo_root, tracked):
                     correct_path = file_relative_path(repo_root_target, doc_dir)
             findings.append(
                 BrokenLinkFinding(

@@ -34,6 +34,7 @@ try:
         Finding,
         detect_findings,
         is_advisory_file,
+        tracked_paths,
     )
 except ImportError:  # pragma: no cover
     sys.exit(0)
@@ -131,8 +132,11 @@ def main() -> None:
 
     post_text = derive_post_text(tool, tool_input, pre_text)
 
-    pre_findings = detect_findings(pre_text, rel, REPO_ROOT) if pre_text else []
-    post_findings = detect_findings(post_text, rel, REPO_ROOT)
+    tracked = tracked_paths(REPO_ROOT)
+    pre_findings = (
+        detect_findings(pre_text, rel, REPO_ROOT, tracked=tracked) if pre_text else []
+    )
+    post_findings = detect_findings(post_text, rel, REPO_ROOT, tracked=tracked)
 
     pre_tokens = {f.token for f in pre_findings}
     new_findings = [f for f in post_findings if f.token not in pre_tokens]
