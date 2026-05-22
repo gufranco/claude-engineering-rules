@@ -6,6 +6,8 @@ PreToolUse hook that blocks banned conversational phrases in external output
 and meta-question openers in subagent prompts.
 Rule sources:
   - ~/.claude/CLAUDE.md "Banned Phrases" (openers, closers, hedges, transitions, fluff).
+  - ~/.claude/rules/design-philosophy.md "Strategic vs Tactical Programming"
+    (tactical hyperbole: "quick fix", "temporary workaround", "cleanup later").
   - ~/.claude/rules/smart-questions.md "Briefing Subagents" + "Ship the Question"
     (Agent/Task prompts must not start with a meta-question).
 
@@ -96,6 +98,20 @@ FLUFF = [
     "synergy",
     "synergies",
 ]
+TACTICAL = [
+    "quick fix",
+    "quick win",
+    "temporary fix",
+    "temporary workaround",
+    "temporary hack",
+    "band-aid",
+    "bandaid",
+    "we'll fix later",
+    "we will fix later",
+    "cleanup later",
+    "clean up later",
+    "fix it later",
+]
 
 AGENT_META_QUESTIONS = [
     "Can you find",
@@ -130,6 +146,7 @@ CATEGORIES = [
     ("hedge", build_pattern(HEDGES, boundary=False)),
     ("transition", build_pattern(TRANSITIONS, boundary=False)),
     ("fluff adjective", build_pattern(FLUFF, boundary=True)),
+    ("tactical hyperbole", build_pattern(TACTICAL, boundary=False)),
 ]
 
 AGENT_META_LEADING = re.compile(
@@ -275,8 +292,10 @@ def main() -> int:
         'Rule: ~/.claude/CLAUDE.md "Banned Phrases".\n'
         + "\n".join(findings)
         + "\n\nFix: rewrite without openers ('Great question!'), closers ('Let me know if'), "
-        "hedges ('It's worth noting'), transitions ('That said,'), or fluff adjectives "
-        "('robust', 'comprehensive', 'seamless'). State the point directly.\n"
+        "hedges ('It's worth noting'), transitions ('That said,'), fluff adjectives "
+        "('robust', 'comprehensive', 'seamless'), or tactical hyperbole "
+        "('quick fix', 'temporary workaround', 'cleanup later'). State the point directly. "
+        "Tactical hyperbole signals weak engineering and is permanent once published.\n"
         "Bypass (when quoting someone else's text): set BANNED_PHRASES_DISABLE=1.",
         file=sys.stderr,
     )
