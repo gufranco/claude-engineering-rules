@@ -16,8 +16,8 @@
   ],
   "suppression_header": "抑制:",
   "suppression_lines": [
-    "行単位: `// claude-allow-mutation -- <理由>` を追記します (理由は必須)。",
-    "ファイル単位: ファイル先頭に `// @claude-allow-mutation -- <理由>` を記述します。",
+    "行単位: `// allow-mutation -- <理由>` を追記します (理由は必須)。",
+    "ファイル単位: ファイル先頭に `// @allow-mutation -- <理由>` を記述します。",
     "標準的な ESLint および TypeScript のマーカーも認識されます。"
   ],
   "bypass_header": "バイパス用環境変数:",

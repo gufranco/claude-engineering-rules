@@ -111,13 +111,13 @@
     "arraybuffer.transfer": {
       "category": "buffer",
       "code": "MMB095",
-      "fix": "`ArrayBuffer.prototype.transfer()` detaches the source: `source.byteLength` becomes 0 and every view raises on access. Allocate a fresh buffer and copy via `new Uint8Array(target).set(new Uint8Array(source))` to keep `source` usable. Suppress with `// @claude-allow-mutation -- ownership handoff` when detachment is the intent (worker postMessage transfer list).",
+      "fix": "`ArrayBuffer.prototype.transfer()` detaches the source: `source.byteLength` becomes 0 and every view raises on access. Allocate a fresh buffer and copy via `new Uint8Array(target).set(new Uint8Array(source))` to keep `source` usable. Suppress with `// @allow-mutation -- ownership handoff` when detachment is the intent (worker postMessage transfer list).",
       "stage": 4
     },
     "arraybuffer.transfer-to-fixed-length": {
       "category": "buffer",
       "code": "MMB096",
-      "fix": "`ArrayBuffer.prototype.transferToFixedLength()` detaches the source and returns a non-resizable copy. Allocate explicitly when you need to keep the original. Suppress with `// @claude-allow-mutation -- ownership handoff` when detachment is the intent.",
+      "fix": "`ArrayBuffer.prototype.transferToFixedLength()` detaches the source and returns a non-resizable copy. Allocate explicitly when you need to keep the original. Suppress with `// @allow-mutation -- ownership handoff` when detachment is the intent.",
       "stage": 4
     },
     "async-iterable.for-await-push": {
@@ -145,13 +145,13 @@
     "collection.map.get-or-insert": {
       "category": "collection",
       "code": "MMB093",
-      "fix": "Stage 4 `Map.prototype.getOrInsert(key, default)` mutates the receiver when the key is missing. For immutable callers use `map.has(k) ? map.get(k) : default` over `new Map([...map, [k, default]])`. Suppress with `// claude-allow-mutation -- upsert into a local cache` for memoization receivers.",
+      "fix": "Stage 4 `Map.prototype.getOrInsert(key, default)` mutates the receiver when the key is missing. For immutable callers use `map.has(k) ? map.get(k) : default` over `new Map([...map, [k, default]])`. Suppress with `// allow-mutation -- upsert into a local cache` for memoization receivers.",
       "stage": 4
     },
     "collection.map.get-or-insert-computed": {
       "category": "collection",
       "code": "MMB094",
-      "fix": "Stage 4 `Map.prototype.getOrInsertComputed(key, factory)` mutates the receiver when the key is missing. For immutable callers use `map.has(k) ? map.get(k) : factory()` over `new Map([...map, [k, factory()]])`. Suppress with `// claude-allow-mutation -- upsert into a local cache` for memoization receivers.",
+      "fix": "Stage 4 `Map.prototype.getOrInsertComputed(key, factory)` mutates the receiver when the key is missing. For immutable callers use `map.has(k) ? map.get(k) : factory()` over `new Map([...map, [k, factory()]])`. Suppress with `// allow-mutation -- upsert into a local cache` for memoization receivers.",
       "stage": 4
     },
     "collection.map.set": {
@@ -483,7 +483,7 @@
     "web-api.form-data.append": {
       "category": "web-api",
       "code": "MMB053",
-      "fix": "FormData.append mutates the instance. Build a fresh FormData from the existing entries and the new field. When the API consumer requires a stable FormData reference (XHR.send keeps a pointer), suppress with `// @claude-allow-mutation -- <reason>`. Confidence: 3."
+      "fix": "FormData.append mutates the instance. Build a fresh FormData from the existing entries and the new field. When the API consumer requires a stable FormData reference (XHR.send keeps a pointer), suppress with `// @allow-mutation -- <reason>`. Confidence: 3."
     },
     "web-api.form-data.delete": {
       "category": "web-api",
@@ -493,7 +493,7 @@
     "web-api.form-data.set": {
       "category": "web-api",
       "code": "MMB054",
-      "fix": "FormData.set mutates the instance. Build a fresh FormData from the filtered entries plus the new value. Suppress with `// @claude-allow-mutation -- <reason>` when the consumer requires the same reference. Confidence: 3."
+      "fix": "FormData.set mutates the instance. Build a fresh FormData from the filtered entries plus the new value. Suppress with `// @allow-mutation -- <reason>` when the consumer requires the same reference. Confidence: 3."
     },
     "web-api.headers.append": {
       "category": "web-api",

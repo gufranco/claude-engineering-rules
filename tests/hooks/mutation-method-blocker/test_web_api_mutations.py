@@ -164,7 +164,7 @@ FORM_DATA_ALLOWED: list[str] = [
     (
         "const next = Array.from(form.entries()).reduce("
         "(fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())\n"
-        "// @claude-allow-mutation -- reducer initializer is fresh"
+        "// @allow-mutation -- reducer initializer is fresh"
     ),
     "const value = form.get('name')",
     "const present = form.has('avatar')",
@@ -187,17 +187,17 @@ def test_form_data_allowed_pattern_passes(run_hook, snippet):
 SUPPRESSION_CASES: list[tuple[str, str]] = [
     (
         "const params = new URLSearchParams(q)\n"
-        "params.append('q', t) // @claude-allow-mutation -- third-party SDK retains pointer",
+        "params.append('q', t) // @allow-mutation -- third-party SDK retains pointer",
         "url-search-params suppression",
     ),
     (
         "const headers = new Headers(init)\n"
-        "headers.set('X', v) // @claude-allow-mutation -- middleware mutates in place by contract",
+        "headers.set('X', v) // @allow-mutation -- middleware mutates in place by contract",
         "headers suppression",
     ),
     (
         "const fd = new FormData()\n"
-        "fd.append('file', f) // @claude-allow-mutation -- XHR.send keeps the reference",
+        "fd.append('file', f) // @allow-mutation -- XHR.send keeps the reference",
         "form-data suppression",
     ),
 ]

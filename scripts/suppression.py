@@ -43,7 +43,7 @@ Honored markers:
   File-level:
     // @ts-nocheck                 (top of file)
     /* eslint-disable */            (single occurrence on its own line)
-    // @claude-allow-<category>    (top-of-file allow for this hook category)
+    // @allow-<category>    (top-of-file allow for this hook category)
     # mypy: ignore-errors          (top-of-file mypy file disable)
     # type: ignore                 (top-of-file when sole content of header)
     # ruff: noqa                   (top-of-file ruff file disable)

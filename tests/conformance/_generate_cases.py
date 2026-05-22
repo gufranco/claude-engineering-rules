@@ -767,7 +767,7 @@ def gen_suppression_cases() -> int:
             "verdict": "allow",
             "payload": "edit",
         },
-        "const items = []\nitems.push(1) // claude-allow-mutation -- legacy hot path\n",
+        "const items = []\nitems.push(1) // allow-mutation -- legacy hot path\n",
     )
     n += 1
     write_case(
@@ -778,7 +778,7 @@ def gen_suppression_cases() -> int:
             "detector": "array.",
             "payload": "edit",
         },
-        "const items = []\nitems.push(1) // claude-allow-mutation\n",
+        "const items = []\nitems.push(1) // allow-mutation\n",
     )
     n += 1
     write_case(
@@ -788,7 +788,7 @@ def gen_suppression_cases() -> int:
             "verdict": "allow",
             "payload": "write",
         },
-        "// @claude-allow-mutation -- ported from legacy module\nconst items = []\nitems.push(1)\n",
+        "// @allow-mutation -- ported from legacy module\nconst items = []\nitems.push(1)\n",
     )
     return n
 

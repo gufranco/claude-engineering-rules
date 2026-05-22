@@ -1,4 +1,4 @@
-// @claude-allow-mutation -- corpus fixture; ES2026 detector test cases retained for Phase B
+// @allow-mutation -- corpus fixture; ES2026 detector test cases retained for Phase B
 //
 // Phase B dirty fixture: Map upsert (MMB093/MMB094), ArrayBuffer.transfer
 // (MMB095/MMB096), and Object.groupBy bucket push (MMB097).

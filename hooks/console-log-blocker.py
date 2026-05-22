@@ -14,8 +14,8 @@ Skipped paths:
 
 Suppression markers (per line):
 
-  - `// claude-allow-console -- justification` honored when justified.
-  - `// @claude-allow-console -- justification` at the top of the file
+  - `// allow-console -- justification` honored when justified.
+  - `// @allow-console -- justification` at the top of the file
     suppresses every console.* call in that file.
   - Standard ESLint and TypeScript markers honored:
     `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
@@ -94,8 +94,8 @@ SKIP_SUFFIXES: tuple[str, ...] = (
     ".stories.tsx",
 )
 
-ALLOW_FILE_MARKER = "@claude-allow-console"
-ALLOW_LINE_MARKER = "claude-allow-console"
+ALLOW_FILE_MARKER = "@allow-console"
+ALLOW_LINE_MARKER = "allow-console"
 TOP_OF_FILE_SCAN = 10
 
 
@@ -229,8 +229,8 @@ def main() -> int:
         + "\n\nFix: use the project's structured logger (Pino, Winston, @repo/logger, etc.). "
         "console is allowed only in tests, scripts, and Next.js error boundaries.\n"
         "Suppression:\n"
-        "  - Per-line: append `// claude-allow-console -- <reason>` (justification required).\n"
-        "  - Per-file: top-of-file `// @claude-allow-console -- <reason>`.\n"
+        "  - Per-line: append `// allow-console -- <reason>` (justification required).\n"
+        "  - Per-file: top-of-file `// @allow-console -- <reason>`.\n"
         "  - Standard ESLint and TypeScript markers honored.\n"
         "Bypass (one-off, rare): set CONSOLE_LOG_DISABLE=1.",
         file=sys.stderr,

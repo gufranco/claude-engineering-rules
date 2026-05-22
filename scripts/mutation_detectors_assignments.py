@@ -715,7 +715,7 @@ def detect_private_field_assignment(
         "Private fields are mutable by default. Prefer immutable patterns: "
         "return a new instance from the method that needs to change state, or expose "
         "a `with*` method that constructs a fresh class instance. When mutation is "
-        "intentional, mark the file with `@claude-allow-mutation -- <reason>`."
+        "intentional, mark the file with `@allow-mutation -- <reason>`."
     )
     for lineno, raw, masked in _iter_lines(text):
         if _looks_like_declaration(raw, masked):

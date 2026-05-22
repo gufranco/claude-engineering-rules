@@ -202,12 +202,10 @@ def test_line_or_prev_has_suppression_alias_matches_is_suppressed() -> None:
 
 def test_line_or_prev_has_suppression_with_hook_marker() -> None:
     # Arrange
-    lines = ["arr.push(v) // @claude-allow-mutation -- ok"]
+    lines = ["arr.push(v) // @allow-mutation -- ok"]
 
     # Act
-    actual = line_or_prev_has_suppression(
-        lines, 0, hook_marker="@claude-allow-mutation"
-    )
+    actual = line_or_prev_has_suppression(lines, 0, hook_marker="@allow-mutation")
 
     # Assert
     assert actual is True

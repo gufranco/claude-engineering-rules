@@ -21,8 +21,8 @@ Skipped:
 
 Suppression markers (per line):
 
-  - `// claude-allow-any -- justification` honored when justified.
-  - `// @claude-allow-any -- justification` at the top of the file
+  - `// allow-any -- justification` honored when justified.
+  - `// @allow-any -- justification` at the top of the file
     suppresses every `any` in that file.
   - Standard ESLint and TypeScript markers honored:
     `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
@@ -72,8 +72,8 @@ PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"<[^<>]*\bany\b[^<>]*>"), "generic with any"),
 )
 
-ALLOW_FILE_MARKER = "@claude-allow-any"
-ALLOW_LINE_MARKER = "claude-allow-any"
+ALLOW_FILE_MARKER = "@allow-any"
+ALLOW_LINE_MARKER = "allow-any"
 TOP_OF_FILE_SCAN = 10
 MAX_HITS_PER_FILE = 8
 
@@ -149,7 +149,7 @@ def find(text: str) -> list[str]:
     """Return formatted hits for every line carrying an `any` pattern.
 
     Honors block-level eslint-disable, line-level eslint and TypeScript
-    markers, and the hook-specific `claude-allow-any` markers when they
+    markers, and the hook-specific `allow-any` markers when they
     carry a justification trailer.
     """
     lines = text.splitlines()
@@ -217,8 +217,8 @@ def main() -> int:
         "proper type. For ORM queries use the generated types (Prisma.WhereInput, etc.). "
         "For payloads use Zod parsing.\n"
         "Suppression:\n"
-        "  - Per-line: append `// claude-allow-any -- <reason>` (justification required).\n"
-        "  - Per-file: top-of-file `// @claude-allow-any -- <reason>`.\n"
+        "  - Per-line: append `// allow-any -- <reason>` (justification required).\n"
+        "  - Per-file: top-of-file `// @allow-any -- <reason>`.\n"
         "  - Standard ESLint and TypeScript markers honored.\n"
         "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1.",
         file=sys.stderr,

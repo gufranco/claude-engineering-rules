@@ -1,4 +1,4 @@
-// @claude-allow-mutation -- corpus fixture; legacy mutation patterns intentionally retained for Phase 35 detector tests
+// @allow-mutation -- corpus fixture; legacy mutation patterns intentionally retained for Phase 35 detector tests
 //
 // Phase 35 dirty fixture: legacy mutation patterns that the Stage 3/4
 // features replace. The hook MUST flag each block when the file is not

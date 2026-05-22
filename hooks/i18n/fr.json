@@ -16,8 +16,8 @@
   ],
   "suppression_header": "Suppression :",
   "suppression_lines": [
-    "Par ligne : ajoutez `// claude-allow-mutation -- <raison>` (justification obligatoire).",
-    "Par fichier : en haut du fichier `// @claude-allow-mutation -- <raison>`.",
+    "Par ligne : ajoutez `// allow-mutation -- <raison>` (justification obligatoire).",
+    "Par fichier : en haut du fichier `// @allow-mutation -- <raison>`.",
     "Les marqueurs standards ESLint et TypeScript sont reconnus."
   ],
   "bypass_header": "Variables d'environnement de contournement :",
