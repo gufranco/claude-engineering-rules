@@ -506,6 +506,6 @@ Flag these patterns during `/review design`. They signal template-generated UI t
 
 ## Related Standards
 
-- [`standards/accessibility-testing.md`](standards/accessibility-testing.md): Accessibility Testing
-- [`standards/performance-budgets.md`](standards/performance-budgets.md): Performance Budgets
-- [`standards/browser-testing.md`](standards/browser-testing.md): Browser Testing
+- [`standards/accessibility-testing.md`](accessibility-testing.md): Accessibility Testing
+- [`standards/performance-budgets.md`](performance-budgets.md): Performance Budgets
+- [`standards/browser-testing.md`](browser-testing.md): Browser Testing

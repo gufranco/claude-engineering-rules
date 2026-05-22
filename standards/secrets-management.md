@@ -145,5 +145,5 @@ Before every release:
 
 ## Related Standards
 
-- [`standards/container-security.md`](standards/container-security.md): Container Security
-- [`standards/infrastructure.md`](standards/infrastructure.md): Infrastructure
+- [`standards/container-security.md`](container-security.md): Container Security
+- [`standards/infrastructure.md`](infrastructure.md): Infrastructure

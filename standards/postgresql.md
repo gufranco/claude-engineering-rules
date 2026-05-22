@@ -1,6 +1,6 @@
 # PostgreSQL
 
-PostgreSQL-specific guidance. Generic database concerns live in [`database.md`](standards/database.md).
+PostgreSQL-specific guidance. Generic database concerns live in [`database.md`](database.md).
 
 ## Connection Management
 

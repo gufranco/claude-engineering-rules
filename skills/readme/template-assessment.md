@@ -4,7 +4,7 @@ The technical-assessment variant of `/readme`. Use when the README needs to demo
 
 The tone is technical and explanatory. Every section uses tables and concrete examples. Design decisions are written as narrative paragraphs, not structured labels.
 
-For the marketing-grade variant covering open-source repos and portfolio projects, see the default flow documented in [`SKILL.md`](skills/readme/SKILL.md) in this directory.
+For the marketing-grade variant covering open-source repos and portfolio projects, see the default flow documented in [`SKILL.md`](SKILL.md) in this directory.
 
 ## Data Gathering
 

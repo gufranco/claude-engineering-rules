@@ -47,7 +47,7 @@ Rules are not retroactive. They govern code you write or touch.
 
 ## Tiebreaker with Completeness
 
-The Completeness rule in [`rules/code-style.md`](rules/code-style.md) and this rule are both mandatory but operate on different axes. Completeness sets the **depth** of work inside a scope; surgical edits set the **width** of that scope.
+The Completeness rule in [`rules/code-style.md`](code-style.md) and this rule are both mandatory but operate on different axes. Completeness sets the **depth** of work inside a scope; surgical edits set the **width** of that scope.
 
 - Inside the requested scope, every aspect must be finished to production quality. No TODOs, no half-measures, no missing tests, no skipped error paths.
 - Outside the requested scope, do not touch code, even if it would be more "complete" overall.

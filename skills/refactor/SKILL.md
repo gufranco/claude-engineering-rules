@@ -5,7 +5,7 @@ description: Guided refactoring with behavior preservation verification. Identif
 
 Incremental refactoring workflow that enforces behavior preservation at every step. Each refactoring is a separate commit with test verification before and after.
 
-The refactoring principles follow [`../../rules/code-style.md`](rules/code-style.md). This skill provides the execution workflow.
+The refactoring principles follow [`../../rules/code-style.md`](../../rules/code-style.md). This skill provides the execution workflow.
 
 ## Arguments
 

@@ -68,7 +68,7 @@ Rules:
 - One adapter per port per infrastructure. `PostgresOrderRepository` and `InMemoryOrderRepository` both implement `OrderRepository`
 - Adapters handle mapping between external representations and domain types. The domain never sees a database row, HTTP request, or message envelope
 - Adapters catch infrastructure exceptions and convert them to domain error types
-- Business rule validation belongs in domain objects and application services, not in adapters. Adapters validate structure (types, required fields) only. See [`standards/ddd-tactical-patterns.md`](standards/ddd-tactical-patterns.md) for tactical patterns.
+- Business rule validation belongs in domain objects and application services, not in adapters. Adapters validate structure (types, required fields) only. See [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md) for tactical patterns.
 
 ## Dependency Direction
 
@@ -163,7 +163,7 @@ Avoid hard-coded plugin lists. Discover adapters at runtime through one of these
 | Mechanism | How | When to use |
 |-----------|-----|-------------|
 | Directory scan | Read a `plugins/` directory, import each `index.ts` | Monorepo with co-located plugins |
-| Config registration | [`settings.json`](settings.json) lists enabled plugin IDs | User-selectable features |
+| Config registration | [`settings.json`](../settings.json) lists enabled plugin IDs | User-selectable features |
 | Import map / service locator | Central registry maps IDs to factory functions | Library distributed as a package |
 
 **In-memory adapters in tests:**
@@ -188,9 +188,9 @@ class InMemoryNotificationAdapter implements NotificationPort {
 }
 ```
 
-The in-memory adapter lives in `adapters/in-memory/`, not in [`tests/`](tests). It is importable by the application for local development modes. Tests that need to assert on sent notifications import the in-memory adapter directly, not a framework mock.
+The in-memory adapter lives in `adapters/in-memory/`, not in [`tests/`](../tests). It is importable by the application for local development modes. Tests that need to assert on sent notifications import the in-memory adapter directly, not a framework mock.
 
 ## Related Standards
 
-- [`standards/ddd-tactical-patterns.md`](standards/ddd-tactical-patterns.md): DDD Tactical Patterns
-- [`standards/database.md`](standards/database.md): Database
+- [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md): DDD Tactical Patterns
+- [`standards/database.md`](database.md): Database

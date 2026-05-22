@@ -68,5 +68,5 @@ Display SLOs as burn-rate alerts, not raw uptime percentages.
 
 ## Related Standards
 
-- [`standards/observability.md`](standards/observability.md): Observability
-- [`standards/sre-practices.md`](standards/sre-practices.md): SRE Practices
+- [`standards/observability.md`](observability.md): Observability
+- [`standards/sre-practices.md`](sre-practices.md): SRE Practices

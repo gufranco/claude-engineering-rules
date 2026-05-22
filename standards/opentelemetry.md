@@ -207,6 +207,6 @@ Choose the correct metric instrument for each measurement.
 
 ## Related Standards
 
-- [`standards/observability.md`](standards/observability.md): Observability
-- [`standards/sre-practices.md`](standards/sre-practices.md): SRE Practices
-- [`standards/distributed-systems.md`](standards/distributed-systems.md): Distributed Systems
+- [`standards/observability.md`](observability.md): Observability
+- [`standards/sre-practices.md`](sre-practices.md): SRE Practices
+- [`standards/distributed-systems.md`](distributed-systems.md): Distributed Systems

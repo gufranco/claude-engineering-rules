@@ -211,5 +211,5 @@ securityContext:
 
 ## Related Standards
 
-- [`standards/infrastructure.md`](standards/infrastructure.md): Infrastructure
-- [`standards/secrets-management.md`](standards/secrets-management.md): Secrets Management
+- [`standards/infrastructure.md`](infrastructure.md): Infrastructure
+- [`standards/secrets-management.md`](secrets-management.md): Secrets Management

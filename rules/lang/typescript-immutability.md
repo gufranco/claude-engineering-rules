@@ -233,7 +233,7 @@ Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_L
 
 Idempotent writes, atomic transactions, and immutable in-process state are three legs of the same stool. The first two are enforced at the boundary of the system (database, queue, network). The third is enforced inside the process by the mutation hook. Drop any leg and the others stop carrying weight: a transactional write of state that was mutated mid-flight commits the wrong values; an idempotent handler that mutates a shared cache between retries produces divergent results across attempts.
 
-See [`checklists/checklist.md`](checklists/checklist.md) category 5 (Data Integrity) for the matching boundary checks: write idempotency keys, transaction scope, and constraint alignment between validators and the database.
+See [`checklists/checklist.md`](../../checklists/checklist.md) category 5 (Data Integrity) for the matching boundary checks: write idempotency keys, transaction scope, and constraint alignment between validators and the database.
 
 ## Date and Time Handling
 

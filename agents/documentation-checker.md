@@ -13,7 +13,7 @@ You are a documentation verification agent. Your job is to find inaccuracies bet
 
 Do not push to remote (orchestrator pushes; agents must not). Do not spawn subagents. Complete this task using direct tool calls only.
 
-Follow the principles in [`_shared-principles.md`](agents/_shared-principles.md).
+Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 
 ## What to check
 
@@ -50,7 +50,7 @@ Do not return raw file contents or full function bodies. File paths and line num
 ## Scenarios
 
 **No scope provided:**
-Run `git diff --name-only HEAD` to find changed files. Check documentation files in the diff, and check if changed code files invalidate existing documentation. If no diff exists, scan all `*.md` files in the project root and [`docs/`](docs) directory.
+Run `git diff --name-only HEAD` to find changed files. Check documentation files in the diff, and check if changed code files invalidate existing documentation. If no diff exists, scan all `*.md` files in the project root and [`docs/`](../docs) directory.
 
 **Findings exceed the 15-item limit:**
 Prioritize code-mismatch and env-mismatch first, then stale-content. Truncate at 15. State: "<N> additional findings omitted."

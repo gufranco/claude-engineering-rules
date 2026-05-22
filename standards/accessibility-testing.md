@@ -146,7 +146,7 @@ Zero errors for a pass. Pa11y returns a non-zero exit code on any violation, so 
 
 ## WCAG 2.2 Additions
 
-WCAG 2.2 adds criteria not present in 2.1. Check these in addition to the 2.1 baseline. Checklist items: [`checklists/checklist.md`](checklists/checklist.md) category 7 (Accessibility subsection).
+WCAG 2.2 adds criteria not present in 2.1. Check these in addition to the 2.1 baseline. Checklist items: [`checklists/checklist.md`](../checklists/checklist.md) category 7 (Accessibility subsection).
 
 ### Focus Not Obscured (2.4.11, AA)
 
@@ -225,7 +225,7 @@ Test at minimum on one desktop and one mobile screen reader per release. Verify:
 
 ### Color Contrast Verification
 
-- Use the OKLCH contrast calculation from [`standards/frontend.md`](standards/frontend.md) for programmatic checks
+- Use the OKLCH contrast calculation from [`standards/frontend.md`](frontend.md) for programmatic checks
 - Test every foreground/background pair that appears together
 - Muted text, placeholder text, and disabled states are the most common failure points
 - Dark mode requires a separate contrast audit
@@ -576,7 +576,7 @@ Modals, toasts, dropdowns, and other dynamic UI must be tested in both their hid
 
 ### OKLCH-Aware Contrast Calculation
 
-OKLCH provides perceptually uniform lightness, making contrast adjustments predictable. Use the contrast calculation from [`standards/frontend.md`](standards/frontend.md) for programmatic verification.
+OKLCH provides perceptually uniform lightness, making contrast adjustments predictable. Use the contrast calculation from [`standards/frontend.md`](frontend.md) for programmatic verification.
 
 Key rules:
 

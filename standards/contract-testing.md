@@ -185,5 +185,5 @@ A consumer PR that publishes a new contract does not block the provider. The pro
 
 ## Related Standards
 
-- [`standards/api-design.md`](standards/api-design.md): API Design
-- [`standards/distributed-systems.md`](standards/distributed-systems.md): Distributed Systems
+- [`standards/api-design.md`](api-design.md): API Design
+- [`standards/distributed-systems.md`](distributed-systems.md): Distributed Systems

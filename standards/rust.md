@@ -44,7 +44,7 @@
 ## Testing
 
 - Unit tests in `#[cfg(test)] mod tests` at the bottom of the module
-- Integration tests in [`tests/`](tests) directory; each file is a separate crate
+- Integration tests in [`tests/`](../tests) directory; each file is a separate crate
 - Property-based tests with `proptest` for parser, math, and serialization code
 - `#[should_panic(expected = "...")]` to assert panic messages
 

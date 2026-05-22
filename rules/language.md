@@ -4,7 +4,7 @@
 
 **Respond in English. Always. Without exception.**
 
-This rule is enforced by [`hooks/english-only-reminder.sh`](hooks/english-only-reminder.sh), which injects a system-reminder on every user prompt. It is also restated in [`CLAUDE.md`](CLAUDE.md) and reinforced here. Three layers because past sessions drifted into Portuguese when the user wrote in Portuguese.
+This rule is enforced by [`hooks/english-only-reminder.sh`](../hooks/english-only-reminder.sh), which injects a system-reminder on every user prompt. It is also restated in [`CLAUDE.md`](../CLAUDE.md) and reinforced here. Three layers because past sessions drifted into Portuguese when the user wrote in Portuguese.
 
 ## Specifics
 

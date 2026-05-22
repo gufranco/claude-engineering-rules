@@ -78,6 +78,6 @@ Mobile apps must handle network unavailability gracefully.
 
 ## Related Standards
 
-- [`standards/frontend.md`](standards/frontend.md): Frontend Design
-- [`standards/authentication.md`](standards/authentication.md): Authentication
-- [`standards/performance-budgets.md`](standards/performance-budgets.md): Performance Budgets
+- [`standards/frontend.md`](frontend.md): Frontend Design
+- [`standards/authentication.md`](authentication.md): Authentication
+- [`standards/performance-budgets.md`](performance-budgets.md): Performance Budgets

@@ -28,13 +28,13 @@ This skill accepts optional arguments after `/readme`:
   | Variant | When to use | Template source |
   |---------|-------------|-----------------|
   | `marketing` | Public release, portfolio, open source. Hero, highlights grid, badges, eye-catching visuals. Default | The structure documented inline in this file |
-  | `assessment` | Take-home assessments, interview submissions, pre-submission audits, architecture reviews. Technical and explanatory tone. Tables and concrete examples. Design decisions as narrative paragraphs | [`template-assessment.md`](skills/readme/template-assessment.md) in this directory. Also invoked by `/assessment` step 12 |
+  | `assessment` | Take-home assessments, interview submissions, pre-submission audits, architecture reviews. Technical and explanatory tone. Tables and concrete examples. Design decisions as narrative paragraphs | [`template-assessment.md`](template-assessment.md) in this directory. Also invoked by `/assessment` step 12 |
 
 - `--about-only`: generate only the GitHub repo description and topics, skip README.
 - `--section <name>`: regenerate a specific section (e.g., `--section quick-start`).
 - `--diff`: update the existing README based on what changed since it was last written.
 
-When `--variant assessment` is passed, read [`template-assessment.md`](skills/readme/template-assessment.md) for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
+When `--variant assessment` is passed, read [`template-assessment.md`](template-assessment.md) for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
 
 ## Steps
 
@@ -45,7 +45,7 @@ Read the project thoroughly. Run these **in parallel**:
 1. **Project identity**: read `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Makefile`, or equivalent to get the project name, version, description, dependencies, and scripts.
 2. **Infrastructure and config**: read Terraform files, Docker files, CI/CD configs, `docker-compose.yml`, and deployment configs to understand the infrastructure.
 3. **Source code structure**: map the directory tree (`ls -R` or glob) to understand the project layout, modules, and organization.
-4. **Existing README**: read the current [`README.md`](README.md) if it exists, to understand what the user already had and what to improve.
+4. **Existing README**: read the current [`README.md`](../../README.md) if it exists, to understand what the user already had and what to improve.
 5. **Environment and setup**: read `.env.example`, setup scripts, and Makefile targets to document prerequisites and setup steps.
 6. **Git context**: run `git remote -v` and `git log --oneline -10` to get the repo URL, recent activity, and contributor count.
 7. **Visual assets**: check for logo files (`logo.png`, `logo.svg`, `banner.png`, `.github/assets/`, `docs/images/`) and existing screenshots or demos.
@@ -75,11 +75,11 @@ Generate a concise repo description (max 350 characters) and a list of topic tag
 1. Show the full README to the user for review.
 2. Show the GitHub About description and topics.
 3. Ask if they want changes before writing.
-4. **Resolve account** per [`standards/borrow-restore.md`](standards/borrow-restore.md) before applying GitHub About. Match the remote URL against authenticated accounts, switch if needed.
+4. **Resolve account** per [`standards/borrow-restore.md`](../../standards/borrow-restore.md) before applying GitHub About. Match the remote URL against authenticated accounts, switch if needed.
 5. After approval:
    - Write the README.md file.
    - Apply the GitHub About using `gh repo edit --description "<desc>"` and `gh repo edit --add-topic <topic>` commands.
-   - Restore the original account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
+   - Restore the original account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 
 ## README Structure
 
@@ -439,7 +439,7 @@ Sustainable open source funding is now expected for projects that ask for seriou
 
 When to include the section:
 
-- The project has a `FUNDING.yml` file in `.github/`.
+- The project has a `FUNDING.yml` file in [`.github/`](../../.github).
 - The project is on Open Collective, GitHub Sponsors, or Polar.
 - The project has at least one existing sponsor or is actively soliciting one.
 
@@ -474,7 +474,7 @@ Modern READMEs ship with companion files that help AI agents and assistants navi
 
 Generate `llms.txt` when the project has a documentation site distinct from the GitHub README. Skip when the README is the only documentation.
 
-**`AGENTS.md` at the repo root** for in-repo AI agent context. Emerged mid-2025 from a Sourcegraph, OpenAI, Google, and Cursor collaboration, now maintained by the Agentic AI Foundation under the Linux Foundation. Single Markdown file that AI coding agents read for project context: dev commands, conventions, deploy notes, code map. Distinct from `llms.txt`, which is a web standard, and distinct from per-tool files like `CLAUDE.md` or `.cursor/rules`.
+**`AGENTS.md` at the repo root** for in-repo AI agent context. Emerged mid-2025 from a Sourcegraph, OpenAI, Google, and Cursor collaboration, now maintained by the Agentic AI Foundation under the Linux Foundation. Single Markdown file that AI coding agents read for project context: dev commands, conventions, deploy notes, code map. Distinct from `llms.txt`, which is a web standard, and distinct from per-tool files like [`CLAUDE.md`](../../CLAUDE.md) or `.cursor/rules`.
 
 Generate `AGENTS.md` when the project will be touched by AI coding agents. Include: project overview, common commands, test conventions, where to find what, and any non-obvious constraints. Match the tone of a senior engineer briefing a new hire on day one.
 
@@ -482,7 +482,7 @@ Generate `AGENTS.md` when the project will be touched by AI coding agents. Inclu
 
 For projects with an international audience, ship one README file per locale and a language switcher at the top of each.
 
-**Filename convention** uses ISO 639-1 or BCP 47 suffixes. English stays as `README.md`. Other locales get `README.<locale>.md`.
+**Filename convention** uses ISO 639-1 or BCP 47 suffixes. English stays as [`README.md`](../../README.md). Other locales get `README.<locale>.md`.
 
 | Locale | Filename |
 |--------|----------|

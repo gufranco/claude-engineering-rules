@@ -3,7 +3,7 @@
 ## Schema Rules
 
 - Always: `created_at`, `updated_at`
-- Soft delete: `deleted_at` (nullable). In event-driven systems, soft-delete events must still be published so downstream consumers can invalidate their caches and update projections. Do not suppress the delete event just because the record remains in the database. See [`standards/distributed-systems.md`](standards/distributed-systems.md) Saga Pattern for cross-service consistency.
+- Soft delete: `deleted_at` (nullable). In event-driven systems, soft-delete events must still be published so downstream consumers can invalidate their caches and update projections. Do not suppress the delete event just because the record remains in the database. See [`standards/distributed-systems.md`](distributed-systems.md) Saga Pattern for cross-service consistency.
 - Dates in UTC
 
 ## Query Optimization
@@ -162,8 +162,8 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 - Use connection pooling. Never open a connection per request
 - Set pool size based on expected concurrency, not a guess. Too large wastes resources, too small causes contention
 - Configure idle timeout to reclaim unused connections
-- Handle connection errors gracefully: retry on transient failures (deadlocks, lock timeouts), fail fast on auth errors. Classify transaction failures using the error classification in [`standards/resilience.md`](standards/resilience.md).
-- Timeout values (acquisition timeout, idle timeout, statement timeout) must align with the circuit breaker thresholds in [`standards/resilience.md`](standards/resilience.md).
+- Handle connection errors gracefully: retry on transient failures (deadlocks, lock timeouts), fail fast on auth errors. Classify transaction failures using the error classification in [`standards/resilience.md`](resilience.md).
+- Timeout values (acquisition timeout, idle timeout, statement timeout) must align with the circuit breaker thresholds in [`standards/resilience.md`](resilience.md).
 - For serverless: use a connection proxy (RDS Proxy, PgBouncer) to avoid connection exhaustion from cold starts
 
 ## Locking Strategy

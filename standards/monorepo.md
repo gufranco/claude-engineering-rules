@@ -146,5 +146,5 @@ Never run `pnpm -r build` or iterate over packages manually. The orchestrator ha
 
 ## Related Standards
 
-- [`standards/infrastructure.md`](standards/infrastructure.md): Infrastructure
-- [`standards/typescript-5x.md`](standards/typescript-5x.md): TypeScript 5.x Patterns
+- [`standards/infrastructure.md`](infrastructure.md): Infrastructure
+- [`standards/typescript-5x.md`](typescript-5x.md): TypeScript 5.x Patterns

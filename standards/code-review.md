@@ -94,8 +94,8 @@ Every review comment, PR description, PR comment, Slack message, and any other e
 
 **Never reference, cite, or mention:**
 
-- `~/.claude/`, [`rules/`](rules), [`checklists/`](checklists), [`standards/`](standards), [`skills/`](skills)
-- File names like `checklist.md`, `code-style.md`, `testing.md`, [`database.md`](standards/database.md)
+- `~/.claude/`, [`rules/`](../rules), [`checklists/`](../checklists), [`standards/`](.), [`skills/`](../skills)
+- File names like `checklist.md`, `code-style.md`, `testing.md`, [`database.md`](database.md)
 - Phrases like "per our rules", "per our standards", "category 17", "checklist item 3"
 - Rule-sourced phrasing that implies a codified checklist: "this violates rule X", "standard Y requires"
 - Internal severity tiers in posted text: `P0`, `P1`, `P2`, or section headings like `## P0 Blocking`, `## P1 Should Fix`, `## P2 Nits`. Severity is something you compute internally to triage; it maps to GitHub's `APPROVE` / `REQUEST_CHANGES` / `COMMENT` verdict, full stop. It does not appear as a label in the body.
@@ -217,8 +217,8 @@ Store ADRs in a `docs/adr/` directory in the repository. Number them sequentiall
 
 ## Zero Warnings (MANDATORY)
 
-Apply [`checklists/checklist.md`](checklists/checklist.md) category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
+Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17 during every review. Warnings are blocking issues with the same severity as bugs. A PR that "passes CI" but has deprecation warnings or non-fatal annotations is not passing.
 
 ## Pre-Completion Checklist
 
-Run through [`checklists/checklist.md`](checklists/checklist.md). All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.
+Run through [`checklists/checklist.md`](../checklists/checklist.md). All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.

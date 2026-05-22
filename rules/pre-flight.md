@@ -26,7 +26,7 @@ Search the codebase, open PRs, recent branches, and community packages for exist
 
 If a solution exists in the codebase, reuse or extend it. If a well-adopted package exists, suggest it before implementing manually. Building from scratch what a maintained library already solves is wasted effort and ongoing maintenance burden.
 
-When suggesting a package, follow the evaluation criteria from [`rules/code-style.md`](rules/code-style.md) Dependencies section: compare top options, check maintenance activity, community size, vulnerabilities, and bundle size.
+When suggesting a package, follow the evaluation criteria from [`rules/code-style.md`](code-style.md) Dependencies section: compare top options, check maintenance activity, community size, vulnerabilities, and bundle size.
 
 ### 1b. Market and Competitor Research (Feature Planning)
 
@@ -171,7 +171,7 @@ If any answer is no, investigate further. Do not write a speculative fix.
 
 ### 5. Warning Baseline
 
-Apply the "Warning baseline" section of [`checklists/checklist.md`](checklists/checklist.md) category 17. Run linter, type checker, and test suite on the files you plan to change. Record the current warning count. After implementation, the count must be equal to or lower.
+Apply the "Warning baseline" section of [`checklists/checklist.md`](../checklists/checklist.md) category 17. Run linter, type checker, and test suite on the files you plan to change. Record the current warning count. After implementation, the count must be equal to or lower.
 
 ### 6. Scope Agreement
 
@@ -181,7 +181,7 @@ Confirm the scope is bounded and agreed upon.
 - What will NOT change? State the boundary explicitly.
 - Are there follow-up tasks that should be separate?
 
-If scope is unclear, ask one question before starting. Format the question per [`rules/smart-questions.md`](rules/smart-questions.md) "Asking the user": specific question on the first line, what was investigated, options with trade-offs.
+If scope is unclear, ask one question before starting. Format the question per [`rules/smart-questions.md`](smart-questions.md) "Asking the user": specific question on the first line, what was investigated, options with trade-offs.
 
 ## Confidence Signal
 

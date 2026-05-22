@@ -214,5 +214,5 @@ V = vertices, E = edges. For sparse graphs E ≈ V; for dense graphs E ≈ V^2.
 
 ## Related Standards
 
-- [`standards/database.md`](standards/database.md): Database
-- [`standards/caching.md`](standards/caching.md): Caching
+- [`standards/database.md`](database.md): Database
+- [`standards/caching.md`](caching.md): Caching

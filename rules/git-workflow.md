@@ -277,4 +277,4 @@ When a project has a CHANGELOG.md:
 Build output directories must never be committed:
 
 - `dist/`, `build/`, `.next/`, `out/`, `coverage/`, `node_modules/`
-- Verify these are in [`.gitignore`](.gitignore) when setting up or reviewing a project
+- Verify these are in [`.gitignore`](../.gitignore) when setting up or reviewing a project

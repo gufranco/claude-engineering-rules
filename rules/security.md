@@ -10,7 +10,7 @@
 
 ## Auth Checklist
 
-Apply [`checklists/checklist.md`](checklists/checklist.md) category 33 (Security and Access Control). The full auth verification items live there.
+Apply [`checklists/checklist.md`](../checklists/checklist.md) category 33 (Security and Access Control). The full auth verification items live there.
 
 ## OAuth 2.1 and Token Management
 
