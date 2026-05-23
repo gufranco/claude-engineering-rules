@@ -67,6 +67,10 @@ always_loaded:
     description: Supersede-not-delete chain for project and feedback memories, frontmatter pointers, chain depth limit, reference memories may be deleted
     triggers: [memory, supersede, supersedes, superseded_by, auto-memory, memory chain, memory update, memory archive]
 
+  found-fix:
+    description: A problem surfaced by any verification surface (CI annotations, deprecations, linter warnings, security advisories, hook blockers, broken docs links) is in scope for the current task regardless of when it was introduced. Bans the "pre-existing", "not introduced by my change", "orthogonal", "out of scope" rationalizations in commit messages, PR descriptions, and code comments. Enforced by hooks/found-fix-rationalization-blocker.py with FOUND_FIX_RATIONALIZATION_DISABLE parent-shell bypass for writing about the rule itself
+    triggers: [found-fix, "pre-existing", "not introduced", "orthogonal", "leave for later", "out of scope", deprecation, annotation, "verification gate", "broken windows"]
+
 
 # Tier 1b: Language-specific (rules/lang/)
 #

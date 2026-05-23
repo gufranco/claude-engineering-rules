@@ -61,5 +61,6 @@ When the request is genuinely too narrow to be safe (a fix that introduces a vul
 - The user explicitly asks for a refactor, cleanup, formatting pass, or sweeping change.
 - The change is part of a planned migration with documented scope.
 - The user names a specific anti-pattern to remove across the file or codebase.
+- A verification surface flags an issue. CI annotations, deprecation notices, linter warnings, security advisories, broken docs links, and hook blockers are always in scope for the current task even if pre-existing. See [`found-fix.md`](found-fix.md). The width of the diff grows to whatever it takes to clear the gate; the surgical-edit constraint applies only to substantive feature or refactor scope, not to verification compliance.
 
 In all other cases, surgical edits.
