@@ -147,6 +147,11 @@ SKIPPED_DOCS = (
     "/.claude/skills/",
     "/.claude/specs/",
     "/.claude/scripts/",
+    "/.claude/agents/",
+    "/.claude/tests/",
+    "/.claude/projects/",
+    "/.claude/settings.json",
+    "/.claude/settings.local.json",
 )
 
 # Bash subcommands that never publish and should be skipped wholesale, even if

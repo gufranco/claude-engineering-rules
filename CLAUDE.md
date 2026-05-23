@@ -32,6 +32,7 @@ Quick-scan before acting. The detailed verification items live in [`checklists/c
 - [ ] **Reuse first.** Before implementing, check if the problem or solution already exists in branches, PRs, the codebase, or as an established community package. Building from scratch what a well-adopted library already solves is wasted effort.
 - [ ] **Performance first.** When multiple solutions exist, choose the most performant one. Avoid unnecessary allocations, copies, iterations, and re-renders. Think about algorithmic complexity before writing the first line.
 - [ ] **Zero warnings.** Treat every warning as an error. Deprecation notices, linter warnings, build warnings, CI annotations, runtime warnings: all must be resolved, not ignored. A warning left unaddressed is a future breakage.
+- [ ] **Found, fix.** A problem surfaced by any verification surface is in scope for the current task, regardless of when it was introduced. "Pre-existing", "not introduced by my change", "orthogonal" are banned rationalizations. See [`rules/found-fix.md`](rules/found-fix.md).
 
 ## Tone
 
@@ -218,7 +219,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
 4. Run the linter. Zero warnings, zero errors. Show output
 5. Run the build. Clean build, zero warnings, zero errors. Show output
 6. **If steps 3-5 required code fixes, return to step 1.** Every code change gets a fresh self-review. No exceptions.
-7. After push, check CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts all require a fix before the task is done
+7. After push, check CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts all require a fix before the task is done. The age or source of the warning is irrelevant. See [`rules/found-fix.md`](rules/found-fix.md) for the explicit ban on "pre-existing" and "not introduced by this change" rationalizations
 
 **Bug fixes add:**
 
