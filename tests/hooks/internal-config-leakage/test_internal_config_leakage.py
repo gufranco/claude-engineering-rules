@@ -293,6 +293,65 @@ def test_allows_skipped_hooks_path(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+def test_allows_settings_json_edit(tool_use, assert_allows):
+    # settings.json is the config itself and must reference ~/.claude paths
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/Users/gufranco/.claude/settings.json",
+            "old_string": '"command": "python3 ~/.claude/hooks/foo.py"',
+            "new_string": '"command": "python3 ~/.claude/hooks/bar.py"',
+        },
+    )
+    assert_allows(HOOK, payload)
+
+
+def test_allows_settings_local_json_edit(tool_use, assert_allows):
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/Users/gufranco/.claude/.claude/settings.local.json",
+            "old_string": '"~/.claude/hooks/x.py"',
+            "new_string": '"~/.claude/hooks/y.py"',
+        },
+    )
+    assert_allows(HOOK, payload)
+
+
+def test_allows_agents_path(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/Users/gufranco/.claude/agents/example.md",
+            "content": "Follow rules/code-style.md for context.\n",
+        },
+    )
+    assert_allows(HOOK, payload)
+
+
+def test_allows_tests_path(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/Users/gufranco/.claude/tests/hooks/foo/test_foo.py",
+            "content": "# Mentions ~/.claude/hooks/foo.py in assertion text.\n",
+        },
+    )
+    assert_allows(HOOK, payload)
+
+
+def test_allows_projects_memory_path(tool_use, assert_allows):
+    # Memory files legitimately reference repo paths to teach the model
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/Users/gufranco/.claude/projects/-Users-gufranco--claude/memory/feedback_x.md",
+            "content": "See ~/.claude/rules/x.md for the rule.\n",
+        },
+    )
+    assert_allows(HOOK, payload)
+
+
 def test_disable_env_bypasses(tool_use, assert_allows):
     # Arrange
     payload = tool_use(
