@@ -10,7 +10,7 @@
 
 </div>
 
-**11** always-on rules · **63** on-demand standards · **32** slash-command skills · **44** runtime hooks · **9** custom agents · **36** MCP servers · **782** review items across **70** categories
+**17** always-on rules · **65** on-demand standards · **33** slash-command skills · **52** runtime hooks · **15** custom agents · **36** MCP servers · **782** review items across **70** categories
 
 ---
 
@@ -19,21 +19,21 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-44 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, and 30+ other failure patterns.
+52 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-11 universal rules ship with every conversation. 63 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 63.
+17 universal rules ship with every conversation. 65 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 65.
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 32 Slash-Command Skills
-`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/investigate`, `/research`, and 24 more. Each is a documented multi-step workflow with subcommands, not a one-liner.
+### 33 Slash-Command Skills
+`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/onboard`, `/investigate`, `/research`, and 24 more. Each is a documented multi-step workflow with subcommands, not a one-liner. `/audit trust` and `/onboard --verify` catch malicious code in untrusted projects before any install runs.
 
 </td>
 <td width="50%" valign="top">
@@ -80,10 +80,11 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-12 rules in [`rules/`](rules/), loaded into every conversation.
+17 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
+| [`architecture-defaults`](rules/architecture-defaults.md) | Five-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
 | [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule |
 | [`design-philosophy`](rules/design-philosophy.md) | Complexity manifestations and root causes, deep modules, strategic vs tactical, design it twice, red flags, design taste |
 | [`testing`](rules/testing.md) | Integration-first, strict mock policy, AAA pattern, fake data, deterministic tests |
@@ -96,18 +97,22 @@ A layered config where each layer catches what the layer above missed.
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
 | [`memory-supersede`](rules/memory-supersede.md) | Supersede-not-delete for project and feedback memories |
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
+| [`smart-questions`](rules/smart-questions.md) | Question format, status reports, FIXED/RESOLVED/DONE loop closure, Tatham bug-report essentials |
+| [`found-fix`](rules/found-fix.md) | Any verification-surface finding is in scope for the current task. Bans the rationalization phrases that defer fixes to a later session |
+| [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, hyperbole tells from commit messages and PR descriptions |
+| [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
 
-Plus 4 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `prisma-migrations`.
+Plus 7 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `prisma-migrations`, `typeorm-migrations`, `drizzle-migrations`, `sequelize-migrations`.
 
 ### Standards, loaded on demand
 
-64 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+65 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, container security, contract testing, database, DDD, debugging, distributed systems, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
 ### Skills
 
-32 skills in [`skills/`](skills/). Each is a folder with a `SKILL.md` that documents steps, output format, and rules.
+33 skills in [`skills/`](skills/). Each is a folder with a `SKILL.md` that documents steps, output format, and rules.
 
 | Skill | What it does |
 |:------|:-------------|
@@ -116,7 +121,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`/respond`](skills/respond/SKILL.md) | Handle incoming review comments: classify, verify, draft replies, validate locally, post, resolve, monitor CI |
 | [`/assessment`](skills/assessment/SKILL.md) | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Outputs a machine-readable findings table that `/respond` can consume |
 | [`/plan`](skills/plan/SKILL.md) | Spec folders with discovery, scope review, ADRs, scaffolding |
-| [`/audit`](skills/audit/SKILL.md) | Security audit, threat modeling, supply chain checks |
+| [`/audit`](skills/audit/SKILL.md) | Security audit, threat modeling, supply chain checks. `/audit trust` adds untrusted-project safety scanning with IOC catalog at [`trust-patterns.md`](skills/audit/trust-patterns.md) |
 | [`/test`](skills/test/SKILL.md) | Test execution, perf, lint, CI smoke, stub generation |
 | [`/deploy`](skills/deploy/SKILL.md) | Post-merge landing and canary monitoring |
 | [`/investigate`](skills/investigate/SKILL.md) | Systematic debugging with hypothesis testing, 3-strike limit |
@@ -135,7 +140,8 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`/guard`](skills/guard/SKILL.md) | Directory freeze and scope enforcement |
 | [`/benchmark`](skills/benchmark/SKILL.md) | Performance regression detection with baselines |
 | [`/profile`](skills/profile/SKILL.md) | N+1 queries, missing indexes, complexity hot spots |
-| [`/onboard`](skills/onboard/SKILL.md) | Codebase onboarding: architecture map, "Start Here" |
+| [`/onboard`](skills/onboard/SKILL.md) | Codebase onboarding: architecture map, "Start Here". Phase 0 prompts before running the trust scan. Flags `--trust` and `--verify` pre-decide non-interactively |
+| [`/gan`](skills/gan/SKILL.md) | Generator-Evaluator iteration loop for building features against a scored rubric. Iterates planner, generator, and evaluator subagents until the threshold is met |
 | [`/pr-summary`](skills/pr-summary/SKILL.md) | PR summary with reviewer suggestions |
 | [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis |
 | [`/retro`](skills/retro/SKILL.md) | Session retrospective with pattern extraction |
@@ -146,17 +152,20 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Hooks
 
-44 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+52 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
+| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, and hyperbole tells |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any` |
+| [`auto-continue-stop-blocker.py`](hooks/auto-continue-stop-blocker.py) | Stop | Blocks the "checkpoint and wait" pattern. Forces continued execution unless the model called AskUserQuestion for a real decision or finished every task in the active plan |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
 | [`compact-context-saver.sh`](hooks/compact-context-saver.sh) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
+| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code |
 | [`conventional-commits.sh`](hooks/conventional-commits.sh) | PreToolUse Bash | Validates conventional commit format |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy |
@@ -166,6 +175,8 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`english-only-reminder.sh`](hooks/english-only-reminder.sh) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
 | [`env-file-guard.sh`](hooks/env-file-guard.sh) | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | Blocks history-rewriting pushes when a `CHANGES_REQUESTED` review is open |
+| [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | Blocks rationalization phrases that defer verification-surface findings to a later session. Targets commit messages, PR bodies, release notes, and code comments |
+| [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch` |
 | [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
@@ -174,6 +185,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
 | [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse Bash | Blocks commits with files over 5MB |
 | [`markdown-link-discipline.py`](hooks/markdown-link-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks new bare file mentions in markdown when the path resolves to a real repo file |
+| [`mcp-health-check.py`](hooks/mcp-health-check.py) | PreToolUse/PostToolUse `mcp__*` | Tracks MCP server health in `cache/mcp-health.json`. Short-circuits calls to servers past the unhealthy-failure threshold |
 | [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse Write/Edit | Forces `IF NOT EXISTS` / `IF EXISTS` on DDL |
 | [`mise-global-guard.py`](hooks/mise-global-guard.py) | PreToolUse Bash | Blocks `mise use --global`, forces project-local config |
 | [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse Write/Edit | Blocks mocking own services, DB, Redis, queues in tests |
@@ -189,7 +201,8 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | Blocks credentials and absolute home paths in settings |
-| [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt |
+| [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt. Batches files for the Stop hook |
+| [`stop-format-typecheck.sh`](hooks/stop-format-typecheck.sh) | Stop | Reads the batched edit list from `smart-formatter.sh`, deduplicates, formats once, then runs typecheck once per touched workspace |
 | [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | Enforces subagent prompt quality with shape, file references, and length cap |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | Forces `TF_WORKSPACE` per call |
 | [`todo-marker-blocker.py`](hooks/todo-marker-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks TODO/FIXME/HACK/XXX/WIP markers in source code, allows issue-linked form `TODO(#123)` |
@@ -198,19 +211,25 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Custom Agents
 
-9 specialized subagents in [`agents/`](agents/). Each follows the agent template.
+15 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
 
 | Agent | Purpose |
 |:------|:--------|
 | [`accessibility-auditor`](agents/accessibility-auditor.md) | WCAG 2.1 AA accessibility review |
 | [`api-reviewer`](agents/api-reviewer.md) | API backward compatibility and design review |
 | [`blast-radius`](agents/blast-radius.md) | Trace all consumers of changed interfaces |
+| [`conversation-analyzer`](agents/conversation-analyzer.md) | Read a session transcript and surface patterns worth capturing as instincts, hooks, or rule revisions |
 | [`documentation-checker`](agents/documentation-checker.md) | Documentation accuracy vs codebase |
+| [`gan-planner`](agents/gan-planner.md) | First step of the `/gan` loop. Expands a brief into acceptance criteria, a file list, and a five-row scoring rubric |
+| [`gan-generator`](agents/gan-generator.md) | Second step of the `/gan` loop. Implements the plan against the named files. Returns proposed diffs, never writes |
+| [`gan-evaluator`](agents/gan-evaluator.md) | Third step of the `/gan` loop. Scores the implementation against the planner's rubric. Returns per-row scores and concrete feedback |
 | [`i18n-validator`](agents/i18n-validator.md) | Translation file validation |
 | [`migration-planner`](agents/migration-planner.md) | Database migration safety and ordering |
+| [`opensource-sanitizer`](agents/opensource-sanitizer.md) | Pre-public-push safety net. Scans diffs for leaked secrets, PII, internal references, and other artifacts that should not appear in a public repository |
 | [`red-team`](agents/red-team.md) | Adversarial analysis: attack happy paths |
 | [`scope-drift-detector`](agents/scope-drift-detector.md) | Compare diff against plan for scope drift |
 | [`test-scenario-generator`](agents/test-scenario-generator.md) | Test scenarios with priority and traceability |
+| [`type-design-analyzer`](agents/type-design-analyzer.md) | Review TypeScript type design for encapsulation, invariant expression, and runtime safety |
 
 ### Workflow Decision Guide
 
@@ -384,20 +403,22 @@ The `env-file-guard.sh` hook adds a runtime layer that catches anything permissi
 
 ```
 $HOME/.claude/
-  CLAUDE.md          Core engineering rules, always loaded
-  RTK.md             RTK token-optimized CLI proxy reference
-  settings.json      Permissions, hooks, MCP servers
-  checklists/        Unified 782-item review checklist
-  rules/             11 always-on rules plus 4 language-specific
-    index.yml        Rule and standard catalog with trigger keywords
-    lang/            TypeScript and Prisma rules
-  standards/         63 on-demand domain standards
-  agents/            9 specialized subagents
-  skills/            32 slash-command skills
-  hooks/             44 runtime hooks
-  scripts/           Validation and maintenance scripts
-  tests/             Hook smoke tests
-  .github/workflows/ Lint, validation, hook tests
+  CLAUDE.md              Core engineering rules, always loaded
+  RTK.md                 RTK token-optimized CLI proxy reference
+  INTERVIEW-WORKFLOWS.md Playbook for live coding interviews
+  settings.json          Permissions, hooks, MCP servers
+  checklists/            Unified 782-item review checklist across 70 categories
+  rules/                 17 always-on rules plus 7 language-specific
+    index.yml            Rule and standard catalog with trigger keywords
+    lang/                TypeScript, Prisma, TypeORM, Drizzle, Sequelize rules
+  standards/             65 on-demand domain standards
+  agents/                15 specialized subagents
+  skills/                33 slash-command skills
+    audit/trust-patterns.md  IOC catalog for the /audit trust scan
+  hooks/                 52 runtime hooks
+  scripts/               Validation and maintenance scripts
+  tests/                 Hook smoke tests and fixture trees
+  .github/workflows/     Lint, validation, hook tests
 ```
 
 </details>
