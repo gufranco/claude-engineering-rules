@@ -1,0 +1,11 @@
+{
+  "name": "safe-fixture",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "vitest",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  }
+}

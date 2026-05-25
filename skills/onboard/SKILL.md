@@ -7,10 +7,53 @@ Structured codebase exploration that produces a navigable architecture overview 
 
 ## Arguments
 
-- No arguments: scan the current working directory as the project root.
-- `<path>`: use the specified path as the project root.
+- No arguments: onboard the current working directory. Phase 0 prompts before running the trust scan.
+- `<path>`: onboard the specified path as the project root.
+- `--trust`: I trust this project. Skip the trust scan and the prompt. Recorded in the final Start Here guide as a deliberate skip.
+- `--verify`: I do not trust this project. Run the trust scan without prompting. Useful for take-homes, external repos, and untrusted source.
+- Passing both `--trust` and `--verify` together is a conflict. Reject with an error.
 
 ## Process
+
+### Phase 0: Trust decision (asked first)
+
+Before any other action, ask the user whether to trust the project. The trust scan is opt-in per invocation.
+
+**Decision flow:**
+
+| Invocation | Behavior |
+|------------|----------|
+| `/onboard <path>` with no flag | AskUserQuestion fires. Two options below. Default focus is "No, scan it first" |
+| `/onboard <path> --trust` | Skip the prompt. Skip the scan. Continue to Step 1. The Start Here guide records `Safety verdict: SKIPPED (--trust)` |
+| `/onboard <path> --verify` | Skip the prompt. Run the scan. Continue per the verdict-to-action table below |
+| `/onboard <path> --trust --verify` | Reject with error: conflicting flags |
+
+**Prompt wording:**
+
+> Do you trust this project? Picking "No, scan it first" runs a read-only scan for install-time hooks, credential-theft patterns, and known supply-chain attack signatures. Takes under 30 seconds on most projects.
+
+Options:
+
+| Option | Effect |
+|--------|--------|
+| Yes, trust it (skip scan) | Skip scan. Continue to Step 1. Start Here guide records `Safety verdict: SKIPPED (user trusts project)` |
+| No, scan it first (default focus, Recommended for new or external projects) | Run `/audit trust --json` against the project root. Apply the verdict mapping below |
+
+**When the scan runs**, map the verdict to action:
+
+| Verdict | `/onboard` action |
+|---------|-------------------|
+| SAFE | Continue to Step 1 silently. Note the verdict in the final Start Here guide |
+| SUSPICIOUS | Present the findings to the user. Ask "Continue with onboarding?" with default no. If yes, proceed to Step 1. If no, abort |
+| HIGH-RISK | Block. Present the findings. Require the user to type the literal phrase `I accept the risk` before continuing |
+| MALICIOUS | Block. Present the findings. Refuse to continue. Recommend running the project inside a Docker sandbox or deleting the directory. Do not proceed to Step 1 under any circumstance |
+
+**Phase 0 constraints (apply when the scan runs):**
+
+- Never install dependencies. Never run any command defined in the project.
+- Never read `.env`, `.env.local`, or `.env.production`. Only `.env.example`.
+- Never reveal actual secret values found during the scan. Show file, line, and pattern name only.
+- The scan is read-only. The user's trust choice is recorded in the Start Here guide either way.
 
 ### Step 1: Detect the project
 
@@ -117,14 +160,19 @@ Recommend running `/retro discover` to capture the detected conventions as durab
 
 ## Rules
 
+- Phase 0 prompts the user before any scan runs. The default option in the prompt is "No, scan it first", aligned with the protective intent for unknown projects.
+- The user can pre-decide non-interactively with `--trust` (skip scan) or `--verify` (run scan). Passing both is a conflict.
+- When the scan runs and returns HIGH-RISK or MALICIOUS, abort onboarding even if the user pressures to continue. The HIGH-RISK override path requires the explicit phrase. MALICIOUS has no override.
 - Never modify any project files during onboarding. This is a read-only exploration.
 - Do not install dependencies or run build commands unless the user asks.
 - When documentation is incomplete or contradicts the code, trust the code.
 - Flag discrepancies between docs and code as findings.
 - Keep the Start Here guide under 200 lines. Link to files instead of inlining code.
+- The Start Here guide must include a "Safety verdict" line near the top, summarizing the trust decision and the scan result if applicable.
 
 ## Related skills
 
+- `/audit trust` -- Untrusted-project safety scan. Runs automatically as Phase 0. Can also be invoked standalone before adding a new dependency or considering a third-party project.
 - `/explain` -- Deep explanation of a specific file or function.
 - `/assessment` -- Full quality assessment of the codebase.
 - `/retro discover` -- Capture conventions as rules.

