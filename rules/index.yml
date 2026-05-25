@@ -7,6 +7,10 @@
 # ── Tier 1: Always loaded (rules/) ──────────────────────────────────
 
 always_loaded:
+  architecture-defaults:
+    description: Always-on architectural baseline. Universal principles (DRY, SOLID, KISS, YAGNI, immutability, idempotency, deduplication), five-question architecture gate triggering on-demand standards (DDD when business rules/invariants/state transitions exist, hexagonal when 2+ infra deps exist), hard rules with no exceptions, domain layer contract, idempotency specifics with key/storage/scope/retry, deduplication specifics for queue consumers and webhook receivers, post-implementation verification gate, skip list for trivial scripts
+    triggers: [architecture, defaults, ddd, hexagonal, ports, adapters, aggregate, domain, idempotency, deduplication, dedup, immutability, dry, solid, yagni, kiss, service, controller, repository, use case, feature]
+
   code-style:
     description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits. TypeScript-specific guidance moved to rules/lang/typescript-types.md, rules/lang/typescript-immutability.md, and rules/lang/typescript-strict.md
     triggers: [style, completeness, fundamentals, "command-query", cqs, "data safety", "delivery path", "defensive invariants", analyzability, validation, zod, dto, "removal safety", "locale-aware", i18n, accent, diacritical, "destructive action", "llm output", "trust boundary", "bisect"]
@@ -284,7 +288,7 @@ on_demand:
   resilience:
     path: standards/resilience.md
     description: Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads
-    triggers: [retry, idempotent, circuit breaker, dlq, backpressure, timeout, rate limit, resilience, fault tolerance]
+    triggers: [retry, idempotent, idempotency, idempotency key, circuit breaker, dlq, backpressure, timeout, rate limit, resilience, fault tolerance, deduplication, dedup, dedup key, double-click, double click, webhook, webhook receiver, message handler, queue consumer, scheduled job, cron job, write endpoint, post endpoint, put endpoint, patch endpoint, delete endpoint, mutation, mutating operation, side effect]
 
   identifiers:
     path: standards/identifiers.md
@@ -299,7 +303,7 @@ on_demand:
   hexagonal-architecture:
     path: standards/hexagonal-architecture.md
     description: Ports and adapters pattern with dependency direction, port interfaces, adapter implementations, and per-layer testing strategy
-    triggers: [hexagonal, ports and adapters, port, adapter, dependency direction, architecture layers, domain isolation, layered architecture]
+    triggers: [hexagonal, ports and adapters, port, adapter, dependency direction, architecture layers, domain isolation, layered architecture, service layer, use case, application layer, infrastructure layer, composition root, dependency injection, di container, interface, abstraction, controller, repository pattern, adapter pattern, clean architecture, onion architecture]
 
   railway-oriented-programming:
     path: standards/railway-oriented-programming.md
@@ -309,12 +313,17 @@ on_demand:
   ddd-tactical-patterns:
     path: standards/ddd-tactical-patterns.md
     description: Entities, value objects, aggregates, domain events, repositories, domain services, and ubiquitous language
-    triggers: [ddd, domain-driven, entity, value object, aggregate, domain event, repository pattern, ubiquitous language, bounded context]
+    triggers: [ddd, domain-driven, entity, value object, aggregate, domain event, repository pattern, ubiquitous language, bounded context, domain logic, domain service, business rule, business logic, invariant, entity model, value type, saga, choreography, orchestration, anemic, rich domain, business invariant, state transition, lifecycle, workflow]
 
   state-machines:
     path: standards/state-machines.md
     description: Type state pattern, runtime state machines, transition tables, guard conditions, XState, and testing strategies for stateful workflows
     triggers: [state machine, state chart, statechart, xstate, transition, workflow, lifecycle, type state, guard condition]
+
+  trust-patterns:
+    path: skills/audit/trust-patterns.md
+    description: Indicators of compromise for untrusted projects. Install-time lifecycle hooks, code-level red flags (eval/base64/obfuscation), sensitive file access patterns, exfiltration endpoints (Discord/Telegram/pastebin webhooks), CI/CD attack patterns (pull_request_target plus PR-ref checkout, unpinned actions), editor and tooling auto-run, dependency red flags (typosquats, age, lockfile drift), binary anomalies, and known-malicious package list updated per attack disclosure
+    triggers: [untrusted, malicious code, malware, supply chain, supply-chain attack, exfiltration, exfil, postinstall, preinstall, lifecycle script, typosquat, typo-squat, credential theft, credential stealer, shai-hulud, axios compromise, trapdoor, mini shai-hulud, webhook exfiltration, discord webhook, telegram bot, pastebin payload, sigstore, npm provenance, ignore-scripts, min-release-age, trust scan, safety scan, first-look, take-home, contractor delivery, untrusted package, dependency confusion]
 
   accessibility-testing:
     path: standards/accessibility-testing.md
