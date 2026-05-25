@@ -7,6 +7,16 @@ Perform an architecture completeness audit on an implementation. Unlike `/review
 
 Designed for self-assessment before submitting work, whether in an interview, a take-home, or before declaring a feature complete.
 
+## Subcommand Routing
+
+| Invocation | Action |
+|-----------|--------|
+| `/assessment` or `/assessment <path>` | Architecture completeness audit on the named files or the current branch (default) |
+| `/assessment harness` | Audit `~/.claude/` itself against the 12-category harness rubric (see Harness Audit section below) |
+| `/assessment skills` | Audit the user's skill portfolio for unused, stale, overlapping, or under-documented skills (see Skills Audit section below) |
+
+The default branch (no subcommand) is the architecture audit. The two new subcommands target `~/.claude/` itself, not the current project.
+
 ## When to use
 
 - After implementing a feature and before saying "I'm done."
@@ -14,6 +24,7 @@ Designed for self-assessment before submitting work, whether in an interview, a 
 - Design validation: verify a solution covers all the patterns it should.
 - Pre-production readiness: verify deployment, security, and operational patterns.
 - Learning: understand which architecture concepts apply to a given problem.
+- Annual review of `~/.claude/` itself (`harness` and `skills` subcommands).
 
 ## When NOT to use
 
@@ -55,6 +66,7 @@ This skill accepts optional arguments after `/assessment`:
    Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 70-category checklist. A project using PostgreSQL loads [`standards/database.md`](../../standards/database.md). A project with GraphQL loads [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A project with Terraform loads [`standards/terraform-testing.md`](../../standards/terraform-testing.md). Every applicable standard is loaded, no exceptions.
 
    Additionally, load these references for use during fix and convergence phases. The current setup keeps rules under [`rules/`](../../rules) and on-demand standards under [`standards/`](../../standards). Several files that were once in [`rules/`](../../rules) migrated to [`standards/`](../../standards); the list below uses the current paths.
+   - [`rules/architecture-defaults.md`](../../rules/architecture-defaults.md): universal principles, five-question architecture gate, hard rules, domain layer contract, idempotency and deduplication specifics. Always-loaded baseline that drives the DDD/hexagonal/state-machine decisions in step 7
    - [`rules/pre-flight.md`](../../rules/pre-flight.md): verify interfaces before implementing fixes
    - [`rules/verification.md`](../../rules/verification.md): evidence-based verification for every claim, zero warnings
    - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for generated README and comments
@@ -65,6 +77,9 @@ This skill accepts optional arguments after `/assessment`:
    - [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md): when code processes LLM output, validate trust boundaries
    - [`rules/smart-questions.md`](../../rules/smart-questions.md): question format, status reports, FIXED/RESOLVED/DONE loop closure
    - [`rules/surgical-edits.md`](../../rules/surgical-edits.md): each diff line must trace to the request
+   - [`rules/design-philosophy.md`](../../rules/design-philosophy.md): Ousterhout complexity heuristics for refactor fixes, deep modules, design it twice, red flags catalog
+   - [`rules/found-fix.md`](../../rules/found-fix.md): pre-existing findings surfaced by the audit are in scope for the current fix pass. Banned rationalizations and the enforcement boundary
+   - [`rules/no-ai-process-leak.md`](../../rules/no-ai-process-leak.md): commit messages, PR descriptions, and code comments produced during the fix phase must read as if a human wrote them
    - [`standards/documentation.md`](../../standards/documentation.md): preservation rules when updating project docs
    - [`standards/debugging.md`](../../standards/debugging.md): 4-phase process when diagnosing planted defects in step 6
    - [`standards/performance.md`](../../standards/performance.md): Core Web Vitals budgets, API latency targets, bundle size limits
@@ -74,8 +89,6 @@ This skill accepts optional arguments after `/assessment`:
    - [`standards/code-review.md`](../../standards/code-review.md): includes the "As Reviewee" section. When the assessment surfaces gaps that will be addressed via a PR, this is the reference for how the author should handle reviewer feedback
    - [`rules/lang/typescript-types.md`](../../rules/lang/typescript-types.md), `typescript-immutability.md`, `typescript-strict.md`: load when TypeScript is detected
    - [`rules/lang/prisma-migrations.md`](../../rules/lang/prisma-migrations.md), `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`: load when the corresponding ORM is detected
-   - `rules/context-management.md`: context preservation guidance for long assessment sessions
-   - `rules/cost-awareness.md`: when assessing infrastructure choices, evaluate cost implications
 
    Before coding any fix that calls a library API, check [`standards/llm-docs.md`](../../standards/llm-docs.md) for the library's documentation URL. Fetch the docs and verify the API exists. Never guess API signatures.
 
@@ -114,7 +127,21 @@ This skill accepts optional arguments after `/assessment`:
 
    If any defect is found, classify it with the same severity/effort scale used for missing patterns. Planted bugs that affect correctness or security are always CRITICAL.
 
-7. **Classify the implementation.** Determine what type of system this is, informed by both the code and the requirements gathered in step 1. Each trait maps to a set of applicable categories:
+7. **Classify the implementation.** Determine what type of system this is, informed by both the code and the requirements gathered in step 1.
+
+   **Architecture gate (run first).** Before walking the trait table, answer the five questions from [`../../rules/architecture-defaults.md`](../../rules/architecture-defaults.md) Architecture Gate. Each "yes" forces the matching standard to load regardless of `--focus`:
+
+   | Question | If yes, force-load |
+   |----------|-------------------|
+   | Does this involve business rules, state transitions, or invariants beyond CRUD? | [`../../standards/ddd-tactical-patterns.md`](../../standards/ddd-tactical-patterns.md) |
+   | Are there two or more infrastructure dependencies (DB + queue, DB + external API)? | [`../../standards/hexagonal-architecture.md`](../../standards/hexagonal-architecture.md) |
+   | Is the operation mutating shared state, persisting data, or producing side effects? | [`../../standards/resilience.md`](../../standards/resilience.md) for idempotency and dedup |
+   | Does the operation cross trust boundaries: HTTP, queue, external API, LLM output? | [`../../rules/code-style.md`](../../rules/code-style.md) Validation section |
+   | Are there multiple states or transitions for a domain object? | [`../../standards/state-machines.md`](../../standards/state-machines.md) |
+
+   If two or more questions answer yes, this is non-trivial work. Findings for missing DDD aggregates, missing port/adapter separation, missing idempotency keys, missing dedup windows, or boolean-blind state representations are at least HIGH severity.
+
+   **Trait table.** Each trait maps to a set of applicable categories:
 
    | Trait | Signal | Categories to check |
    |:------|:-------|:-------------------|
@@ -549,6 +576,84 @@ The steps above define **what** to do. These rules define **constraints** on how
 - When `--comments` is active, every comment must pass this test: would a senior engineer reading this code for the first time learn something from the comment that the code alone does not convey? If not, delete the comment. `--comments` only affects the fix step, not the assessment output.
 - The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in [`../../checklists/checklist.md`](../../checklists/checklist.md). Do not duplicate them here.
 - Every API must validate both sides of the boundary: inputs (request body, query params, path params, headers) AND outputs (response body) with a schema library. Missing output validation is a finding. See [`../../checklists/checklist.md`](../../checklists/checklist.md) category 33.
+
+## Harness Audit (`/assessment harness`)
+
+Audits `~/.claude/` against a 12-category rubric. Inspired by ECC's harness-audit. Returns a prioritized scorecard with remediation links.
+
+### Categories
+
+| # | Category | What to check |
+|---|----------|--------------|
+| 1 | Tool Coverage | Hooks/skills/agents/commands for every routine workflow. Gaps in basic ops (commit, push, review, test) score low |
+| 2 | Context Efficiency | Average tokens loaded at session start. CLAUDE.md size. Always-on rule count. On-demand standards reachable via index |
+| 3 | Quality Gates | Per-language formatter, linter, type checker, test runner enforced via hooks. Coverage thresholds defined |
+| 4 | Memory Persistence | `memory/` lanes exist (user/feedback/project/reference) and have `supersede` discipline. Index file present |
+| 5 | Eval Coverage | Tests exist for hooks. Skill-level smoke tests. CI runs them on every push |
+| 6 | Security Guardrails | Secret scanner, dangerous-command blocker, push-during-review guard, multi-account isolation, settings hygiene |
+| 7 | Cost Efficiency | Model routing rules. Local cost telemetry. Strategic compaction guidance. Agent parallelism caps |
+| 8 | GitHub Integration | `gh` allowlisted. PR / review / ship skills wired. Branch-state guard. CI monitoring after push |
+| 9 | Vercel Integration | If user works with Vercel: deploy skill, project detection, env var handling, log fetching |
+| 10 | Netlify Integration | Same shape as Vercel for Netlify |
+| 11 | Cloudflare Integration | Workers / Pages deploy, wrangler.toml awareness, observability MCP |
+| 12 | Fly Integration | `flyctl` deploy, fly.toml awareness, scale-to-zero |
+
+Categories 9-12 are conditional. Skip them if the user does not work with the platform. Detect via:
+
+| Platform | Detection |
+|----------|----------|
+| Vercel | `~/.vercel/`, `vercel.json` in any recent project |
+| Netlify | `~/.netlify/`, `netlify.toml` in any recent project |
+| Cloudflare | `wrangler.toml`, `wrangler.jsonc` in any recent project |
+| Fly | `fly.toml` in any recent project |
+
+### Scoring
+
+Each applicable category gets a 0-10 score with one of three statuses:
+
+- **PRESENT** (8-10): the category is covered with depth.
+- **PARTIAL** (4-7): the category is covered superficially or with gaps.
+- **MISSING** (0-3): the category is essentially absent.
+
+### Output
+
+Markdown report with: one-line summary per category, the score, a `## Findings` section per non-PRESENT category with concrete remediation linking to the relevant rule/standard/skill. End with a Top-3 priorities list.
+
+### Run
+
+Read `~/.claude/CLAUDE.md`, list `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/hooks/`, `~/.claude/rules/`, `~/.claude/standards/`, and the MCP block in `~/.claude/settings.json`. Apply the rubric. Do not modify any files.
+
+## Skills Audit (`/assessment skills`)
+
+Audits the user's skill portfolio. Returns a per-skill verdict with one of:
+
+- **HEALTHY**: documented, used in recent sessions, single responsibility, links to related skills.
+- **STALE**: no edits in the last 12 months and no session-log mention in the last 90 days. Candidate for archival.
+- **OVERLAPPING**: two or more skills cover the same workflow. Candidate for merge.
+- **THIN**: SKILL.md under 50 lines without a When-to-use, Steps, and Related-skills section. Candidate for expansion or deletion.
+- **MISSING-LINKS**: no Related-skills section, no borrow-restore reference, no cross-link to a relevant rule or standard.
+
+### Checks per skill
+
+1. **Existence:** SKILL.md present, frontmatter valid, name matches directory.
+2. **Format:** Subcommand Routing table or single-purpose; When-to-use; When-NOT-to-use; Steps; Related skills.
+3. **Recency:** `git log -1 --format=%ai SKILL.md`. Anything older than 12 months is a STALE candidate.
+4. **Usage:** scan `~/.claude/projects/*/session-log*` for the skill name in the last 90 days.
+5. **Overlap:** grep all SKILL.md descriptions for keywords. Flag skills with identical primary keywords.
+6. **Links:** ensure related-skills cross-references resolve and no skill links to a removed file.
+
+### Output
+
+One-line verdict per skill in a table. Then a prioritized action list:
+
+- Skills to archive
+- Skills to merge (paired)
+- Skills to expand (with what's missing)
+- Skills to link-fix
+
+### Run
+
+Read every `~/.claude/skills/*/SKILL.md`. Cross-reference with `git log` and recent session logs. Do not modify any files; produce a report the user can act on.
 
 ## Related skills
 
