@@ -834,6 +834,33 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/dockerfile-compose-quality.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/dockerfile-compose-quality.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/dockerfile-compose-quality.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/drizzle-schema-sync.py"
           }
         ]

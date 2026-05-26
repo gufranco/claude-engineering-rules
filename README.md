@@ -170,6 +170,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`conventional-commits.sh`](hooks/conventional-commits.sh) | PreToolUse Bash | Validates conventional commit format |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
+| [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | Blocks `.env` and key/cert copies, secret-named `ENV`/`ARG` with literal values, Compose `privileged: true`, and host-namespace toggles. Warns on floating tags, `USER root`, deprecated top-level `version:`, and literal secrets in `environment:`. Bypass `DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Drizzle raw query escape hatches |
 | [`drizzle-schema-sync.py`](hooks/drizzle-schema-sync.py) | PreToolUse Write/Edit | Enforces Drizzle schema vs migration parity |
 | [`english-only-reminder.sh`](hooks/english-only-reminder.sh) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
