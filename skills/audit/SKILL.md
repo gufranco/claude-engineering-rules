@@ -34,7 +34,7 @@ If no subcommand is given, run all layers (excluding threat modeling, daily, and
 1. **Detect project and tools** (parallel): identify languages from manifests, check for Dockerfiles, check available tools (`pnpm`, `pip-audit`, `cargo-audit`, `trivy`, `grype`, `semgrep`, `bandit`), read `.env.example`.
 2. **Dependency scan**: per-language audit (see deps section).
 3. **Secret scanning**: scan all tracked files (`git ls-files`) using patterns from `~/.claude/hooks/secret-scanner.py`. Skip binaries, lockfiles, vendored code. Check [`.gitignore`](../../.gitignore) covers `.env`, `*.pem`, `*.key`. Apply the extended provider-specific patterns below (see secrets section) for Stripe, Twilio, GCP, Azure, Slack, Shopify, and other services not covered by the hook's generic patterns.
-4. **Dockerfile checks**: for each Dockerfile: pinned base image? `USER` directive? No `COPY` of sensitive files? `--no-install-recommends`? `HEALTHCHECK`? If `trivy` available, scan built images.
+4. **Dockerfile and Compose checks**: see the `docker` subcommand section below. Run the full Dockerfile checklist and, when `compose*.yml` or `docker-compose*.yml` is present, the full Compose checklist. If `hadolint` is on `PATH`, run `hadolint Dockerfile`. If `docker scout` is available, run `docker scout quickview` and `docker scout cves`. If `trivy` is available, scan built images.
 5. **Code patterns**: SQL injection (string concatenation in queries), command injection (`exec`/`spawn`/`eval` with dynamic input), XSS (`dangerouslySetInnerHTML`/`innerHTML`), path traversal, hardcoded secrets, insecure randomness (`Math.random()` for security), empty catch blocks. Run `semgrep --config auto` if available. Also check supply chain risks: review `postinstall` scripts in dependencies (`cat node_modules/<pkg>/package.json | jq .scripts.postinstall`), verify scoped packages resolve to the private registry (`npm install --dry-run`), verify Docker secrets use `--mount=type=secret` not `ENV`/`ARG`, and confirm lockfile integrity hashes are present.
 6. **Compile report** by severity:
 
@@ -125,6 +125,71 @@ Also check high-risk contexts: test fixtures with real credentials, database see
 
 - `trivy image <name>` for OS and library vulnerabilities.
 - `dive <name>` for layer analysis and wasted space.
+
+---
+
+## docker
+
+Dockerfile, Compose, BuildKit, and image authoring audit. Authority for every rule below is [`standards/container-security.md`](../../standards/container-security.md).
+
+### Dockerfile checklist
+
+For each Dockerfile in the repo, verify:
+
+- Base image pinned by digest (`FROM image:tag@sha256:...`), not floating tag (`latest`, `lts`, no tag)
+- `# syntax=docker/dockerfile:1` declared at the top to enable modern BuildKit frontend
+- Multi-stage build; runtime stage does not include compilers, source, or dev dependencies
+- `WORKDIR` absolute path
+- `USER` directive in final stage sets a non-root UID (numeric preferred for Kubernetes compatibility)
+- No `COPY .env*`, `COPY *.pem`, `COPY *.key`, `COPY *.crt`, `COPY id_rsa*`
+- No `ENV` or `ARG` containing literal secret values (`PASSWORD=`, `TOKEN=`, `API_KEY=`, `PRIVATE_KEY=`)
+- Build-time secrets use `RUN --mount=type=secret,id=<name>`, never `ENV` or `ARG`
+- Package installs use `--no-install-recommends` (apt), `--no-cache` (apk), or equivalent
+- Package manager caches purged in the same layer: `rm -rf /var/lib/apt/lists/*`, `pip cache purge`, etc.
+- BuildKit cache mounts used for package managers when build time matters: `--mount=type=cache,target=<path>`
+- `COPY --link` used to maximize layer cache hits
+- `HEALTHCHECK` declared with `--interval`, `--timeout`, `--start-period`, `--retries`
+- PID 1 covered by `tini`, `dumb-init`, `docker run --init`, or Compose `init: true`
+- `.dockerignore` exists and excludes `.env*`, `*.pem`, `*.key`, `.git/`, `node_modules/`, `.terraform/`
+- Hadolint clean on the file when `hadolint` is on `PATH` (run `hadolint Dockerfile`)
+
+### Compose checklist
+
+For each `compose.yml`, `compose.*.yml`, `docker-compose.yml`, `docker-compose.*.yml`:
+
+- No top-level `version:` key (deprecated under Compose v2)
+- Every service has `read_only: true` unless the workload legitimately writes to its root
+- Every service has `cap_drop: ["ALL"]` followed by minimal `cap_add:` entries
+- Every service has `security_opt: ["no-new-privileges:true"]`
+- No service has `privileged: true`
+- No service has `pid: host`, `ipc: host`, `network_mode: host`, or `userns_mode: host`
+- Every service either inherits a non-root `USER` from the Dockerfile or sets `user: "<uid>:<gid>"`
+- Secrets defined via top-level `secrets:` with `file:`, `environment:`, or `external: true` source; never via plain `environment:`
+- Apps consume secrets via the `*_FILE` convention (`DB_PASSWORD_FILE=/run/secrets/db_password`)
+- Dev port bindings use `127.0.0.1:` prefix; internal services use `expose:`, not `ports:`
+- Networks are explicit per tier; backend networks marked `internal: true`
+- `depends_on:` uses `condition: service_healthy` form for ordering, paired with `healthcheck:`
+- Every service sets `init: true` or has `tini`/`dumb-init` as PID 1 in its Dockerfile
+- Resource limits set (`deploy.resources.limits.memory`, `cpus`, plus `pids_limit`, `ulimits.nofile`)
+- `restart:` uses `on-failure:<n>` or `unless-stopped`, not unbounded `always`
+- Only namespaced `sysctls:` (no raw `net.core.*`)
+- Dev-only services gated behind `profiles: ["dev"]`
+- Production deployment does not invoke `docker compose watch` or the `develop:` block
+
+### Tools to invoke when present
+
+| Tool | Command |
+|------|---------|
+| Hadolint | `hadolint Dockerfile` per Dockerfile; fail on any rule in the never-ignore list (DL3000, DL3007, DL3008, DL3018, DL3025, DL3027, DL3059, DL4006) |
+| Docker Scout | `docker scout quickview <image>`; then `docker scout cves <image> --only-severity critical,high --exit-code`; then `docker scout policy evaluate <image>` for attestation coverage |
+| Trivy | `trivy config .` for Dockerfile + Compose misconfigurations; `trivy image <name>` for OS+library CVEs |
+| Grype | `grype <image>` cross-check with Trivy when the registry is sensitive |
+| Dive | `dive <image>` for layer waste and base-image bloat |
+| BuildKit attestation check | `docker buildx imagetools inspect <image> --format '{{ json .SBOM }}'` and `--format '{{ json .Provenance }}'` to confirm SBOM + provenance attached |
+
+### Reporting
+
+Report findings in the standard severity buckets (Critical / High / Medium / Low). Critical: secrets in layers, `privileged: true`, host namespaces, `COPY .env`. High: missing `USER` non-root, floating tags, missing `cap_drop`, missing `no-new-privileges`, dev ports bound to `0.0.0.0`. Medium: missing `HEALTHCHECK`, missing `init: true`, missing `.dockerignore`, missing BuildKit cache mounts. Low: missing attestations, missing Hadolint config, image bloat.
 
 ---
 
