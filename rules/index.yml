@@ -422,8 +422,8 @@ on_demand:
 
   container-security:
     path: standards/container-security.md
-    description: Non-root containers, minimal base images, multi-stage builds, no secrets in layers, image scanning, SLSA provenance, cosign
-    triggers: [container security, dockerfile, distroless, multi-stage, image scanning, trivy, grype, cosign, non-root, slsa]
+    description: Dockerfile and Compose security baseline. Non-root, minimal/digest-pinned bases, multi-stage builds, BuildKit modern features (cache mounts, --link, heredoc), build secrets, HEALTHCHECK, PID-1/init, Hadolint, read-only roots, resource limits, Compose security (no-new-privileges, cap_drop, read_only, secrets via files, network segmentation), image scanning (Trivy, Grype, Scout), BuildKit attestations (SBOM, SLSA provenance), cosign, rootless Docker, K8s securityContext, OWASP Docker Top 10 mapping, 2025 Docker Desktop CVE pointer
+    triggers: [container security, container, dockerfile, dockerignore, compose, docker compose, docker-compose, compose.yml, compose spec, buildkit, build secret, --mount=type=secret, cache mount, copy --link, heredoc, distroless, chainguard, wolfi, multi-stage, hadolint, image scanning, trivy, grype, snyk container, docker scout, sbom, provenance, attestation, slsa, cosign, sigstore, fulcio, non-root, runasnonroot, rootless, no-new-privileges, cap_drop, cap_add, read_only, readonlyrootfilesystem, privileged, tmpfs, healthcheck, tini, dumb-init, init: true, expose, ports, network_mode, pid: host, ipc: host, userns_mode, profiles, develop.watch, watch mode]
 
   opentelemetry:
     path: standards/opentelemetry.md
