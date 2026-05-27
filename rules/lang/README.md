@@ -21,8 +21,5 @@ When you add a file here, register it in [`rules/index.yml`](../index.yml) under
 
 ## Naming convention
 
-`<language-slug>.md` where the slug matches the language name in lowercase, kebab-case for multi-word names. Examples: `typescript.md`, `rust.md`, `python.md`, `c-sharp.md`.
+`<language-slug>.md` where the slug matches the language name in lowercase, kebab-case for multi-word names. Examples: `typescript.md`, `rust.md`, [`python.md`](python.md), `c-sharp.md`.
 
-## Existing flat rules
-
-The flat files in [`standards/`](../../standards) (`go.md`, `rust.md`, `jvm.md`, `postgresql.md`, `typescript-5x.md`) are not moved. They remain authoritative until superseded by entries here. New language guidance goes here going forward.

@@ -5,7 +5,7 @@ Immutable by default, mutable by exception. Every value starts as readonly. Muta
 ## Behavioral Rules
 
 - Never mutate function arguments. Copy, modify the copy, return it
-- `const` by default. `let` only when reassignment is genuinely needed (loop counters, accumulators that cannot be expressed functionally). Never `var`
+- `const` by default. `let` only when reassignment is genuinely needed, loop counters, accumulators that cannot be expressed functionally. Never `var`
 - Spread or `structuredClone` over in-place mutation: `{ ...obj, field: newValue }` for shallow updates, `structuredClone(obj)` when you need a true deep copy without structural sharing
 - Arrays: `[...arr, item]`, `.filter()`, `.map()`, `reduce()` over `.push()`, `.splice()`, `.sort()` on the original. Prefer ES2023 non-mutating methods when available: `.toSorted()`, `.toReversed()`, `.toSpliced()`, `.with(index, value)`
 - **`.push()` is banned.** Use spread `[...arr, item]` or `Array.from()`. The only exception is `router.push()` from Next.js/framework navigation, which is not an array mutation
@@ -65,11 +65,11 @@ The hook governs JS values, not Web platform side-effect APIs. The boundary is c
 | `Headers.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `new Headers([...headers, [k, v]])` |
 | `FormData.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `Array.from(form.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())` (uses fresh-instance reducer initializer; mark with `@allow-mutation` for XHR.send pointer-stability cases) |
 
-The principle: if the API mutates a JavaScript value that has a feasible non-mutating alternative via fresh-instance construction, the hook flags it. If the API mutates external state (DOM, persistence, storage) that has no in-memory equivalent, the hook is silent.
+The principle: if the API mutates a JavaScript value that has a feasible non-mutating alternative via fresh-instance construction, the hook flags it. If the API mutates external state, DOM, persistence, storage, that has no in-memory equivalent, the hook is silent.
 
 ## Withdrawn Proposals
 
-The Records and Tuples proposal (deeply immutable `#{}` records and `#[]` tuples with structural equality) was withdrawn from TC39 on 2025-04-14 and the spec repository was archived on 2025-04-15. Its successor, the Composites proposal, is at Stage 1 and not yet usable. Treat any code that still references `#{}` or `#[]` as legacy: rewrite using plain object/array literals plus `as const` and the `readonly` ladder. The mutation hook does not recognize these withdrawn syntaxes; if a parser fails on a `#{}` literal the policy default (allow) applies and a warning is logged.
+The Records and Tuples proposal, deeply immutable `#{}` records and `#[]` tuples with structural equality, was withdrawn from TC39 on 2025-04-14 and the spec repository was archived on 2025-04-15. Its successor, the Composites proposal, is at Stage 1 and not yet usable. Treat any code that still references `#{}` or `#[]` as legacy: rewrite using plain object/array literals plus `as const` and the `readonly` ladder. The mutation hook does not recognize these withdrawn syntaxes; if a parser fails on a `#{}` literal the policy default, allow, applies and a warning is logged.
 
 ## ES2024+ Fix Suggestions
 
@@ -123,7 +123,7 @@ The seven Set composition methods all return new Set instances and never mutate 
 
 ### Iterables (iterator helpers, ES2024)
 
-When the input is an iterable (generator, lazy stream, range), iterator helpers avoid materializing intermediate arrays and never mutate the source.
+When the input is an iterable, generator, lazy stream, range, iterator helpers avoid materializing intermediate arrays and never mutate the source.
 
 | Pattern with arrays | Iterator-helper replacement |
 |---------------------|----------------------------|
@@ -174,7 +174,7 @@ The hook recognizes the following advanced proposals and emits Stage-aware fix s
 | Composites proposal | Stage 1 | Records and Tuples successor; not usable yet |
 | TC39 Signals proposal (`signal-polyfill`) | Stage 1 | Framework-specific reactive primitives until standardized |
 
-Stage 4 features (`Promise.try`, `Promise.withResolvers`, `Array.fromAsync`, `Error.isError`, `RegExp.escape`, `Atomics.pause`, `Float16Array`) are universally suggested. Stage 3 features ship in TypeScript 5.7+ for AsyncIterator helpers; consult `tsconfig.json` `lib` settings before relying on them.
+Stage 4 features, `Promise.try`, `Promise.withResolvers`, `Array.fromAsync`, `Error.isError`, `RegExp.escape`, `Atomics.pause`, `Float16Array`, are universally suggested. Stage 3 features ship in TypeScript 5.7+ for AsyncIterator helpers; consult `tsconfig.json` `lib` settings before relying on them.
 
 ## Readonly Type Ladder
 
@@ -200,12 +200,12 @@ The hook recognizes these scopes without a suppression marker:
 - Framework navigation receivers: `router.push`, `history.push`, `navigation.push`, `redirect.push`
 - Stream and queue receivers: `stream.push`, `ws.push`, `res.push`, `subject.next`
 - Draft and reducer libraries: Immer `produce(state, draft => ...)`, Mutative `create(state, draft => ...)`, Redux Toolkit `createSlice` and `extraReducers`
-- Store libraries: Pinia `defineStore`, Vuex `mutations`, MobX `action` / `runInAction` / `makeAutoObservable`, Zustand `set(produce(...))`, Valtio `proxy(...)` tracked variables, Jotai `useAtom` setter, Recoil `useRecoilState` setter (deprecation hint emitted), Nanostores `atom`/`map` `.set()` and `.setKey()`, LegendApp State `observable(...)` `.set()`, Tanstack Store `Store` `.setState()`, Solid stores `setStore(...)`
+- Store libraries: Pinia `defineStore`, Vuex `mutations`, MobX `action` / `runInAction` / `makeAutoObservable`, Zustand `set(produce(...))`, Valtio `proxy(...)` tracked variables, Jotai `useAtom` setter, Recoil `useRecoilState` setter, deprecation hint emitted, Nanostores `atom`/`map` `.set()` and `.setKey()`, LegendApp State `observable(...)` `.set()`, Tanstack Store `Store` `.setState()`, Solid stores `setStore(...)`
 - State machines: XState v5 `assign(...)` callbacks and `actions` configuration objects
-- CRDT and runes: Yjs CRDT types (`new Y.Array`, `new Y.Map`, `new Y.Text`, etc.), Svelte 5 `$state(...)` (but NOT `$state.raw(...)` or `$derived(...)` reassignment)
-- Immutable wrappers (mutations on tracked variables flag): Vue 3.5 `readonly()` and `shallowReadonly()`, Effect-TS `Data.struct()` / `Data.tagged()` / `Data.tuple()`
-- Modern reactive primitives: Angular signals `signal()` / `computed()` / `linkedSignal()` / `resource()` with `.set()` and `.update()`, Qwik `useSignal()` / `useStore()` / `useComputed$()` with `.value =` assignment, Preact signals `signal()` / `computed()` / `batch()` from `@preact/signals*` packages with `.value =` assignment, React 19 `useFormState()` / `useActionState()` / `useOptimistic()` / `useReducer()` / `useSyncExternalStore()` setter dispatches, React 19 `'use server'` action bodies, TC39 Signals proposal `new Signal.State()` / `new Signal.Computed()` (Stage 1, future-proof placeholder via `signal-polyfill`), Effect-TS `Effect.gen(function*() { ... })` / `Ref.update()` / `Ref.set()` / `Ref.modify()` / `SubscriptionRef` / `SynchronizedRef`, Solid stores `produce()` / `unwrap()` / `reconcile()` (distinguished from Immer by `solid-js/store` import), fp-ts `pipe()` / `flow()` / `chain()` / `fold()` (non-mutating composition, never flagged)
-- Solid resources (read-only, never flagged): `createResource()`, `createMemo()`, `createDeferred()`, `createComputed()`, `createReaction()`, `createSelector()`
+- CRDT and runes: Yjs CRDT types such as `new Y.Array`, `new Y.Map`, or `new Y.Text`, plus Svelte 5 `$state(...)`. NOT `$state.raw(...)` or `$derived(...)` reassignment
+- Immutable wrappers, mutations on tracked variables flag: Vue 3.5 `readonly()` and `shallowReadonly()`, Effect-TS `Data.struct()` / `Data.tagged()` / `Data.tuple()`
+- Modern reactive primitives: Angular signals `signal()` / `computed()` / `linkedSignal()` / `resource()` with `.set()` and `.update()`, Qwik `useSignal()` / `useStore()` / `useComputed$()` with `.value =` assignment, Preact signals `signal()` / `computed()` / `batch()` from `@preact/signals*` packages with `.value =` assignment, React 19 `useFormState()` / `useActionState()` / `useOptimistic()` / `useReducer()` / `useSyncExternalStore()` setter dispatches, React 19 `'use server'` action bodies, TC39 Signals proposal `new Signal.State()` / `new Signal.Computed()` at Stage 1 as a future-proof placeholder via `signal-polyfill`, Effect-TS `Effect.gen(function*() { ... })` / `Ref.update()` / `Ref.set()` / `Ref.modify()` / `SubscriptionRef` / `SynchronizedRef`, Solid stores `produce()` / `unwrap()` / `reconcile()` distinguished from Immer by `solid-js/store` import, plus fp-ts `pipe()` / `flow()` / `chain()` / `fold()` as non-mutating composition that is never flagged
+- Solid resources, read-only, never flagged: `createResource()`, `createMemo()`, `createDeferred()`, `createComputed()`, `createReaction()`, `createSelector()`
 - State-management filename patterns: `*Slice.ts`, `*Store.ts`, `*reducer.ts`, `*.pinia.ts`, `*.mobx.ts`, `*.valtio.ts`, `*.proxy.ts`, `*.machine.ts`, `*.actor.ts`, `*.svelte`, `*.svelte.ts`, `*.signal.ts`, `*.qwik.tsx`, `*.component.ts`, `*.service.ts`, `*.effect.ts`
 - TypedArray hot-path directories: `crypto`, `codec`, `image`, `audio`, `parser`, `wasm`, `canvas`, `encoder`, `decoder`, `simd`, `webgl`, `pixel`, `hash`, `cipher`, `dsp`, `signal`, `fft`, `ml`, `tensor`
 
@@ -213,7 +213,7 @@ Outside these scopes, the rule is absolute. Suppression markers exist for genuin
 
 ## Bypass
 
-When working in a project where the rate of legitimate mutations is high enough that scattered suppression markers would pollute the source (transaction accumulators, advisory-lock patterns, in-memory caches that mirror persisted state, fire-and-forget Redis `client.set` flagged as false-positive `Map.set`), set the env var instead of writing markers into the project's files.
+When working in a project where the rate of legitimate mutations is high enough that scattered suppression markers would pollute the source, such as transaction accumulators, advisory-lock patterns, in-memory caches that mirror persisted state, or fire-and-forget Redis `client.set` flagged as false-positive `Map.set`, set the env var instead of writing markers into the project's files.
 
 ```sh
 export MUTATION_METHOD_DISABLE=1
@@ -231,15 +231,15 @@ Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_L
 
 ## Three Legs of Data Integrity
 
-Idempotent writes, atomic transactions, and immutable in-process state are three legs of the same stool. The first two are enforced at the boundary of the system (database, queue, network). The third is enforced inside the process by the mutation hook. Drop any leg and the others stop carrying weight: a transactional write of state that was mutated mid-flight commits the wrong values; an idempotent handler that mutates a shared cache between retries produces divergent results across attempts.
+Idempotent writes, atomic transactions, and immutable in-process state are three legs of the same stool. The first two are enforced at the boundary of the system, database, queue, network. The third is enforced inside the process by the mutation hook. Drop any leg and the others stop carrying weight: a transactional write of state that was mutated mid-flight commits the wrong values; an idempotent handler that mutates a shared cache between retries produces divergent results across attempts.
 
-See [`checklists/checklist.md`](../../checklists/checklist.md) category 5 (Data Integrity) for the matching boundary checks: write idempotency keys, transaction scope, and constraint alignment between validators and the database.
+See [`checklists/checklist.md`](../../checklists/checklist.md) category 5, Data Integrity, for the matching boundary checks: write idempotency keys, transaction scope, and constraint alignment between validators and the database.
 
 ## Date and Time Handling
 
 Use a date library for all date operations. Never use raw `Date` methods for formatting, parsing, comparison, or arithmetic.
 
-The Temporal API reached TC39 Stage 4 on 2026-03-11 and is included in ES2026. Native support is shipping in Chrome 144+, Firefox 139+, and Edge 144+. When Temporal is available in the project (native runtime or `@js-temporal/polyfill`), prefer it over date-fns. Temporal types (`PlainDate`, `PlainTime`, `PlainDateTime`, `ZonedDateTime`, `Duration`, `Instant`) are immutable: `.with({ month })`, `.add(Duration.from({ days: 1 }))`, and `.subtract(...)` return new values rather than mutating the receiver, which is exactly the pattern this rule prefers.
+The Temporal API reached TC39 Stage 4 on 2026-03-11 and is included in ES2026. Native support is shipping in Chrome 144+, Firefox 139+, Edge 144+, and Node.js 26 with Temporal enabled by default since the May 2026 release. When Temporal is available in the project, whether through a native runtime or `@js-temporal/polyfill`, prefer it over date-fns. Temporal types `PlainDate`, `PlainTime`, `PlainDateTime`, `ZonedDateTime`, `Duration`, and `Instant` are immutable: `.with({ month })`, `.add(Duration.from({ days: 1 }))`, and `.subtract(...)` return new values rather than mutating the receiver, which is exactly the pattern this rule prefers.
 
 | Raw Date pattern | Preferred (Temporal, ES2026 / Stage 4) | Fallback (date-fns) |
 |-----------------|----------------------------------------|---------------------|

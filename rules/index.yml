@@ -12,7 +12,7 @@ always_loaded:
     triggers: [architecture, defaults, ddd, hexagonal, ports, adapters, aggregate, domain, idempotency, deduplication, dedup, immutability, dry, solid, yagni, kiss, service, controller, repository, use case, feature]
 
   code-style:
-    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits. TypeScript-specific guidance moved to rules/lang/typescript-types.md, rules/lang/typescript-immutability.md, and rules/lang/typescript-strict.md
+    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits
     triggers: [style, completeness, fundamentals, "command-query", cqs, "data safety", "delivery path", "defensive invariants", analyzability, validation, zod, dto, "removal safety", "locale-aware", i18n, accent, diacritical, "destructive action", "llm output", "trust boundary", "bisect"]
 
   design-philosophy:
@@ -55,6 +55,10 @@ always_loaded:
     description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
     triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description, code comment, error message]
 
+  normative-keywords:
+    description: BCP 14 (RFC 2119 + RFC 8174) normative keyword vocabulary for rules, standards, skills, agents, and READMEs. Glossary for must, must not, should, should not, may, never, always with equivalent forms. Lowercase is the default register. Uppercase is opt-in for genuinely critical security, correctness, data-integrity, and irreversibility statements. Single-citation model avoids per-file RFC boilerplate. Composes with writing-precision.md "Eliminate weasel words"
+    triggers: [must, "must not", should, "should not", shall, may, required, recommended, optional, never, always, normative, keyword, "normative keyword", bcp, "bcp 14", "rfc 2119", "rfc 8174", weasel, obligation, requirement]
+
   markdown-links:
     description: Every file mention in published markdown is a clickable link to the actual file. Two acceptable forms, exception zones, validator and hook integration, skip-list for test fixtures and command examples
     triggers: [markdown, md, documentation, readme, link, file reference, file mention, bare path, backlink, doc link]
@@ -78,9 +82,8 @@ always_loaded:
 
 # Tier 1b: Language-specific (rules/lang/)
 #
-# Loaded when the active task names a specific language. New language
-# guidance goes here; existing flat language standards remain in standards/
-# until superseded by entries in this subdir.
+# Loaded when the active task names a specific language. Per-language
+# guidance lives here; cross-language standards live under standards/.
 
 lang:
   _placeholder:
@@ -88,25 +91,15 @@ lang:
     description: Index for language-specific rules. Populated as new entries arrive.
     triggers: [lang readme, language rules index]
 
-  prisma-migrations:
-    path: rules/lang/prisma-migrations.md
-    description: Schema-vs-migration parity, index naming convention via map, prisma migrate diff verification, unmanaged-object bypass, schema completeness (createdAt, updatedAt, companyId indexes, FK indexes)
-    triggers: [prisma, migration, migrations, schema.prisma, "@@index", "@@unique", "prisma migrate", "migrate diff", "migrate dev", "migrate deploy", drift, schema drift, createdAt, updatedAt, companyId]
-
-  typeorm-migrations:
-    path: rules/lang/typeorm-migrations.md
-    description: Entity-vs-migration parity for TypeORM, synchronize disabled outside local dev, explicit names on @Index/@Unique/@Check, down migration semantics, transactional DDL, no raw .query() in app code, schema completeness (@CreateDateColumn, @UpdateDateColumn, @DeleteDateColumn, FK indexes, companyId indexes)
-    triggers: [typeorm, "type-orm", "@Entity", "@Column", "@Index", "@Unique", "@Check", "@CreateDateColumn", "@UpdateDateColumn", "@DeleteDateColumn", "@ManyToOne", "@OneToMany", "data-source", "DataSource", "EntityManager", "QueryRunner", "migration:generate", "migration:run", "migration:revert", "migration:show", synchronize, "naming strategy", "NamingStrategy", "createQueryBuilder", "Repository", "InjectRepository"]
-
-  drizzle-migrations:
-    path: rules/lang/drizzle-migrations.md
-    description: Schema-vs-migration parity for Drizzle, drizzle-kit push banned outside local dev, explicit names on index() and uniqueIndex(), no built-in down migrations (reverse via new migration), no raw sql template in app code, schema completeness (created_at, updated_at via $onUpdateFn, FK indexes, identity columns over serial)
-    triggers: [drizzle, "drizzle-orm", "drizzle-kit", "drizzle-kit push", "drizzle-kit generate", "drizzle-kit migrate", "drizzle-kit pull", "drizzle-kit drop", pgTable, mysqlTable, sqliteTable, "defineRelations", "uniqueIndex", "$onUpdateFn", "$onUpdate", "defaultNow", "drizzle.config", "__drizzle_migrations", "_meta/_journal", "sql.raw", "db.execute", "db.run"]
-
-  sequelize-migrations:
-    path: rules/lang/sequelize-migrations.md
-    description: "Model-vs-migration parity for Sequelize, sync({ force/alter: true }) banned outside test fixtures, explicit name on every indexes entry, transactional migrations with queryInterface, paranoid soft delete, umzug storage configuration, no raw .query() in app code, schema completeness (timestamps, companyId indexes, FK indexes)"
-    triggers: [sequelize, "sequelize-cli", "sequelize-typescript", umzug, "Model.init", "sequelize.define", "queryInterface", "addColumn", "removeColumn", "addIndex", "removeIndex", "createTable", "dropTable", "belongsTo", "hasMany", "hasOne", "belongsToMany", paranoid, "SequelizeStorage", "sync({ force", "sync({ alter", "DataTypes"]
+  orm-migrations:
+    path: rules/lang/orm-migrations.md
+    description: "Consolidated ORM migrations rule covering Prisma, TypeORM, Drizzle, Sequelize, and MikroORM. Cross-cutting principles (schema-vs-migration parity, schema sync strategy hierarchy with push/sync banned outside dev, idempotent DDL with IF NOT EXISTS, explicit index names, transactional migrations, migration ordering, down-migration semantics, service-layer boundary, no raw SQL from app code, API boundary DTOs, schema completeness with createdAt/updatedAt/deletedAt/companyId/FK indexes, unmanaged objects). Per-ORM sections show exact syntax for parity, index naming, schema completeness, verification (migrate diff, probe migration, drizzle-kit generate, mikro-orm migration:create --dry-run), down migrations, transactions, and raw-query escape hatches. MikroORM-specific: Data Mapper plus Unit of Work, entity discovery via entities and entitiesTs, @mikro-orm/migrations Migrator extension, transactional and allOrNothing wrappers, schema:fresh banned outside dev, EntityManager.fork() per request, soft-delete via @Filter decorator"
+    triggers: [orm, "orm migrations", migration, migrations, drift, "schema drift", createdAt, updatedAt, deletedAt, companyId, "schema sync", "schema completeness", "service layer", "service-layer boundary",
+               prisma, schema.prisma, "@@index", "@@unique", "prisma migrate", "migrate diff", "migrate dev", "migrate deploy",
+               typeorm, "type-orm", "@Entity", "@Column", "@Index", "@Unique", "@Check", "@CreateDateColumn", "@UpdateDateColumn", "@DeleteDateColumn", "@ManyToOne", "@OneToMany", "data-source", "DataSource", "EntityManager", "QueryRunner", "migration:generate", "migration:run", "migration:revert", "migration:show", synchronize, "naming strategy", "NamingStrategy", "createQueryBuilder", "Repository", "InjectRepository",
+               drizzle, "drizzle-orm", "drizzle-kit", "drizzle-kit push", "drizzle-kit generate", "drizzle-kit migrate", "drizzle-kit pull", "drizzle-kit drop", pgTable, mysqlTable, sqliteTable, "defineRelations", "uniqueIndex", "$onUpdateFn", "$onUpdate", "defaultNow", "drizzle.config", "__drizzle_migrations", "_meta/_journal",
+               sequelize, "sequelize-cli", "sequelize-typescript", umzug, "Model.init", "sequelize.define", "queryInterface", "addColumn", "removeColumn", "addIndex", "removeIndex", "createTable", "dropTable", "belongsTo", "hasMany", "hasOne", "belongsToMany", paranoid, "SequelizeStorage", "sync({ force", "sync({ alter", "DataTypes",
+               "mikro-orm", "@mikro-orm/core", "@mikro-orm/migrations", "@mikro-orm/postgresql", "@mikro-orm/mysql", "@mikro-orm/sqlite", "@mikro-orm/mongodb", "MikroORM.init", entities, entitiesTs, "schema:fresh", "schema:update", "schema:create", "migration:create", "migration:up", "migration:down", Migrator, "Data Mapper", "Unit of Work", "@Filter", "@Property", "@PrimaryKey", "@Entity", RequestContext, "em.fork", "em.persistAndFlush"]
 
   typescript-types:
     path: rules/lang/typescript-types.md
@@ -120,8 +113,13 @@ lang:
 
   typescript-strict:
     path: rules/lang/typescript-strict.md
-    description: TypeScript compiler strictness (noUncheckedIndexedAccess, exactOptionalPropertyTypes, verbatimModuleSyntax), target/module settings to match runtime, TypeScript 5.x patterns (using/await using, NoInfer, Symbol.dispose)
-    triggers: [typescript, ts, tsxconfig, tsconfig, strict, compiler, strictness, "noUncheckedIndexedAccess", "exactOptionalPropertyTypes", "verbatimModuleSyntax", "noPropertyAccessFromIndexSignature", "noFallthroughCasesInSwitch", target, module, moduleResolution, "@tsconfig/node", using, "await using", "Symbol.dispose", "Symbol.asyncDispose", NoInfer, "ts 5", "typescript 5"]
+    description: TypeScript compiler strictness (noUncheckedIndexedAccess, exactOptionalPropertyTypes, verbatimModuleSyntax), target/module settings to match runtime, TypeScript 5.x patterns (using/await using, NoInfer, Symbol.dispose), TypeScript 5.8 specifics (erasableSyntaxOnly, stable module node18, granular conditional-branch return checks)
+    triggers: [typescript, ts, tsxconfig, tsconfig, strict, compiler, strictness, "noUncheckedIndexedAccess", "exactOptionalPropertyTypes", "verbatimModuleSyntax", "noPropertyAccessFromIndexSignature", "noFallthroughCasesInSwitch", target, module, moduleResolution, "@tsconfig/node", using, "await using", "Symbol.dispose", "Symbol.asyncDispose", NoInfer, "ts 5", "typescript 5", "ts 5.8", "typescript 5.8", "erasableSyntaxOnly", "erasable-syntax-only", "module node18"]
+
+  python:
+    path: rules/lang/python.md
+    description: Python 2026 tooling stack (uv, ruff, pyright or mypy strict, pytest with auto async mode), src project layout, full type hints with Protocol-based structural subtyping, no Any, frozen dataclasses with slots for immutability parity with TypeScript readonly rules, Pydantic v2 validation at boundaries, asyncio with TaskGroup, structured logging, common pitfalls
+    triggers: [python, py, "py3", "python3", uv, "uv.lock", "uv add", "uv sync", "uv run", ruff, "ruff check", "ruff format", mypy, "mypy strict", pyright, "ty type checker", pyrefly, pytest, "pytest-asyncio", "asyncio_mode", pyproject, "pyproject.toml", asyncio, "asyncio.TaskGroup", anyio, pydantic, "pydantic v2", fastapi, django, flask, sqlalchemy, "src layout", dataclass, "frozen=True", "slots=True", Protocol, TypeGuard, TypeIs, ParamSpec, Self, LiteralString, hypothesis, faker, structlog]
 
 # Tier 2: On demand (standards/)
 #
