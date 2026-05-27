@@ -26,14 +26,14 @@ State the behavior in one sentence. If it covers more than one assertion, split 
 Identify:
 - The function or class under test.
 - The input that triggers the behavior.
-- The expected observable outcome (return value, thrown error, side effect).
+- The expected observable outcome, return value, thrown error, side effect.
 
 If any of the three is unclear, ask one question and stop.
 
 ### 2. Locate or create the test file
 
 Match the project's test colocation pattern. Read 2 nearby tests to confirm:
-- Naming convention (`*.test.ts`, `*_test.go`, `test_*.py`).
+- Naming convention, `*.test.ts`, `*_test.go`, `test_*.py`.
 - Test runner imports.
 - Setup and teardown style.
 - Fake data approach. Apply [`rules/testing.md`](../../rules/testing.md) Test Data section.

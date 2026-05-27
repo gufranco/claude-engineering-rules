@@ -4,10 +4,10 @@
 
 - Self-review the entire diff line by line
 - Run all tests locally
-- Keep PRs small (< 400 lines ideally, max 1000)
+- Keep PRs small such as < 400 lines ideally, or max 1000
 - One logical change per PR
 - Include before/after screenshots for UI changes
-- Verify visual identity consistency: new pages must match existing pages in layout structure, spacing tokens, component usage, badge patterns, loading states, and pagination. Reference the project's visual identity guide (CLAUDE.md) when one exists
+- Verify visual identity consistency: new pages must match existing pages in layout structure, spacing tokens, component usage, badge patterns, loading states, and pagination. Reference the project's visual identity guide at [`CLAUDE.md`](../CLAUDE.md) when one exists
 
 ## As Reviewee
 
@@ -67,7 +67,7 @@ When others review your PR, the goal is to close every open thread with either a
 | The drive-by accept, implementing the suggestion without checking what it would change | Ships nitpicks and AI noise into production |
 | The defensive wall, "works as intended" with no engagement | Disengages, escalates the thread |
 | Silent force-push during review | Drops the reviewer's comment context, marks threads outdated without resolving them |
-| The TODO smuggle, "I'll fix it later" with no ticket | Cleanup never happens |
+| The TODO smuggle: deferring a fix with no ticket | Cleanup never happens |
 | The Ransom Note, holding the patch hostage until the developer does unrelated work | Conflates review with separate scope |
 | The Double Team, two reviewers contradict and the author ping-pongs without naming the conflict | Wastes everyone's time |
 | The Guessing Game, vague criticism with no acceptance path | The author cannot tell when the comment is satisfied |
@@ -100,7 +100,7 @@ Every review comment, PR description, PR comment, Slack message, and any other e
 - Rule-sourced phrasing that implies a codified checklist: "this violates rule X", "standard Y requires"
 - Internal severity tiers in posted text: `P0`, `P1`, `P2`, or section headings like `## P0 Blocking`, `## P1 Should Fix`, `## P2 Nits`. Severity is something you compute internally to triage; it maps to GitHub's `APPROVE` / `REQUEST_CHANGES` / `COMMENT` verdict, full stop. It does not appear as a label in the body.
 - The skill's own invocation arguments: `--backend`, `--frontend`, `--local`, `--post`, `--focus`, `--severity`, or any flag that names how you ran the tool. Never write "Backend-only review" or "Skipped frontend per the `--backend` flag". The first-person voice is plain English about what you actually looked at.
-- Conventional Comments label prefixes when posting: `issue (blocking):`, `issue (non-blocking):`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`. The vocabulary exists for human reviewers to use when they choose. When generated output uses it on every single comment, the uniformity is itself the template tell. Strip the label entirely; the tone of the prose carries the severity.
+- Conventional Comments label prefixes when posting: `issue, blocking:`, `issue, non-blocking:`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`. The vocabulary exists for human reviewers to use when they choose. When generated output uses it on every single comment, the uniformity is itself the template tell. Strip the label entirely; the tone of the prose carries the severity.
 - Structural section headings carried over from internal taxonomy: `Behavioral Flow Analysis`, `Blast Radius Summary`, `Standards Applied`. These sections inform what you write; their findings reach the reader as plain prose, not under those headings.
 
 **Instead, state the engineering reason directly:**
@@ -152,7 +152,22 @@ Scan the draft for the patterns below. If any are present, rewrite before postin
 | `Behavioral Flow Analysis`, `Blast Radius Summary`, `Standards Applied` as headings | Internal section labels |
 | `per our rules`, `per our standards`, `our internal` | First-person possessive on the configuration |
 
-Enforcement: a Pre-Tool-Use hook on Bash, Write, and Edit blocks commands that publish externally (`gh pr`, `gh api`, `glab mr`, `git commit`, and similar) and Markdown or JSON payload files containing any of the patterns above. If the hook fires, the fix is to rewrite the content, not to bypass the hook.
+Enforcement: a Pre-Tool-Use hook on Bash, Write, and Edit blocks commands that publish externally, `gh pr`, `gh api`, `glab mr`, `git commit`, and similar, and Markdown or JSON payload files containing any of the patterns above. If the hook fires, the fix is to rewrite the content, not to bypass the hook.
+
+## Severity Triage (INTERNAL)
+
+Use this table to decide what action a finding triggers. The label itself never appears in posted text per "No Internal Config Leakage" above. It maps to the GitHub verdict and to the tone of the comment.
+
+| Internal severity | Action | Maps to GitHub | Tone of comment |
+|-------------------|--------|----------------|------------------|
+| CRITICAL | Block the PR. Do not approve under any condition. Explain the failure mode and the minimum fix. | `REQUEST_CHANGES` | Direct, names the failure mode, suggests the fix |
+| HIGH | Block the PR. Acceptable to negotiate scope (split into a follow-up) if the author offers a credible plan. | `REQUEST_CHANGES` | Direct, gives the rationale and the trade-off |
+| MEDIUM | Do not block. Leave an inline comment the author should address before merge. If ignored, raise to HIGH on re-review. | `COMMENT` | Plain inline note |
+| LOW | Do not block. Optional improvement, taste call, or nitpick. The author may accept or dismiss without justification. | `COMMENT` | Brief, signal it is optional |
+
+**Promotion rules.** Three LOW findings in the same file is not a HIGH. A LOW that repeats unfixed after re-review may rise to MEDIUM if the author explicitly chose to ignore it. A finding that turns out to gate a production incident retroactively becomes CRITICAL for the postmortem record, regardless of how it was filed originally.
+
+**Anti-padding.** Do not split a single finding into "CRITICAL + three MEDIUMs" to look thorough. One finding per defect. Use the highest applicable severity.
 
 ## Test Evidence (MANDATORY)
 
@@ -189,7 +204,7 @@ Not all tech debt is bad. Intentional debt taken with a plan to repay is a valid
 
 - If you introduce a shortcut or known limitation, document it with a `TODO(debt):` comment explaining what the ideal solution is and why it wasn't done now
 - If you encounter existing debt while working, note it but do not fix it in the same PR. File it separately
-- Classify debt by impact: **blocks future work** (fix soon), **slows development** (schedule), **cosmetic** (backlog)
+- Classify debt by impact: **blocks future work**, fix soon, **slows development**, schedule, **cosmetic**. Backlog
 
 ### Architecture Decision Records (ADR)
 

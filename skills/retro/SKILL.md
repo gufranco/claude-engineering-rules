@@ -14,6 +14,9 @@ Unified learning skill for extracting patterns from conversations and codebases.
 | `/retro --curate` | Review and clean up memory files |
 | `/retro --promote` | Graduate memory entries to rules/CLAUDE.md |
 | `/retro --hooks` | Mine `~/.claude/logs/hooks.log` for block patterns and propose upstream fixes |
+| `/retro instinct` | Extract atomic instincts from the session with confidence scores; save to `memory/instincts/<project>/` |
+| `/retro promote <instinct-id>` | Move a project-scoped instinct to global (`memory/instincts/global.md`) |
+| `/retro prune` | Delete stale or low-confidence instincts after explicit user approval |
 
 ---
 
@@ -91,7 +94,7 @@ Walk through a codebase, identify recurring conventions, and create rule files. 
 
 ### Steps
 
-1. **Scan project** (parallel): glob for source patterns, read manifest, read existing CLAUDE.md and rules, read [`rules/index.yml`](../../rules/index.yml).
+1. **Scan project**, parallel: glob for source patterns, read manifest, read existing CLAUDE.md and rules, read [`rules/index.yml`](../../rules/index.yml).
 
 2. **Identify patterns** across 5-10 representative files per category:
 
@@ -130,7 +133,7 @@ Review and clean up memory files. Part of the self-improving agent lifecycle.
    - **Still accurate?** Check against current code/config.
    - **Still useful?** Does it inform future behavior?
    - **Redundant?** Covered by a rule or CLAUDE.md?
-   - **Promotable?** Should it graduate to a rule? (see `--promote`)
+   - **Promotable?** Should it graduate to a rule? See `--promote`
 3. Present findings: keep, update, delete, promote.
 4. Apply approved changes.
 
@@ -164,11 +167,11 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
 
 ### Steps
 
-1. **Locate the audit log.** Default: `~/.claude/logs/hooks.log` (JSONL, one event per line). Read the cursor file `~/.claude/logs/.retro-cursor` if it exists; resume from that byte offset. If absent, start from the beginning of the current file. Also consider rotated `hooks.log.1` for the previous window.
+1. **Locate the audit log.** Default: `~/.claude/logs/hooks.log`, JSONL, one event per line. Read the cursor file `~/.claude/logs/.retro-cursor` if it exists; resume from that byte offset. If absent, start from the beginning of the current file. Also consider rotated `hooks.log.1` for the previous window.
 
 2. **Parse and filter.** Each line is JSON with shape: `{ts, session_id, cwd, hook, decision, level, tool, command_excerpt, reason, bypass_env}`. Filter to `decision in {"block", "bypass"}`. Skip malformed lines silently.
 
-3. **Cluster.** Group events by `(hook, reason)`. For each cluster record: count, distinct sessions, distinct cwds, sample `command_excerpt` (first 3 unique).
+3. **Cluster.** Group events by `(hook, reason)`. For each cluster record: count, distinct sessions, distinct cwds, sample `command_excerpt`, first 3 unique.
 
 4. **Rank.** Sort clusters by count descending. Present top 10. Single-occurrence blocks are noise unless they map to a clear behavioral fix; skip them by default.
 
@@ -185,17 +188,98 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
 
 7. **Apply.** Write the proposed edits using the same conventions as `/retro` default mode. Update [`README.md`](../../README.md) if `~/.claude/` files changed.
 
-8. **Advance the cursor.** After successful application (or explicit "skip"), write the new byte offset to `~/.claude/logs/.retro-cursor`. Never advance on failure: a re-run must replay the same events.
+8. **Advance the cursor.** After successful application, or explicit "skip", write the new byte offset to `~/.claude/logs/.retro-cursor`. Never advance on failure: a re-run must replay the same events.
 
 9. **Verify.** Re-read modified files. Confirm no contradictions with existing rules.
 
 ### Rules
 
 - Never propose disabling a hook to silence noise. The hook is correct by definition; the upstream config is what changes.
-- Bypass events (`decision=bypass`) deserve scrutiny too: a frequently bypassed hook signals a workflow gap.
+- Bypass events, `decision=bypass` deserve scrutiny too: a frequently bypassed hook signals a workflow gap.
 - Redact any value matching the secret patterns in [`scripts/audit_log.py`](../../scripts/audit_log.py) before quoting `command_excerpt` back to the user. The audit logger redacts on write, but treat the field as untrusted.
-- Cursor file is advisory. If it points past the file end (after rotation), reset to 0.
+- Cursor file is advisory. If it points past the file end, after rotation, reset to 0.
 - One-shot mode: when invoked with `--dry-run`, show proposals and skip both writes and cursor advance.
+
+## instinct (atomic learnings with promote/prune lifecycle)
+
+A third memory lane on top of the existing `user`, `feedback`, `project`, `reference` types in the auto-memory tree. Instincts are smaller, more granular, and confidence-scored. They live in a separate tree so they do not collide with the other lanes:
+
+```
+memory/
+  instincts/
+    <project-slug>/   one folder per project the instinct came from
+      YYYY-MM-DD-<slug>.md
+    global.md         promoted instincts that apply everywhere
+    archive/          pruned instincts kept for one rotation cycle
+```
+
+### When to write a feedback memory vs an instinct
+
+| Use feedback memory | Use instinct |
+|---------------------|--------------|
+| The user gave an explicit correction or preference that should apply broadly. | A pattern noticed during one session that may or may not generalize. |
+| You can write the rule in 3-6 sentences with concrete examples. | You can write it in one or two sentences as a hypothesis. |
+| Confidence the rule is durable is 8+ out of 10. | Confidence is 4-7. Needs validation across more sessions. |
+
+An instinct that hits confidence 8+ on the next promotion review graduates to a feedback memory or to `global.md`, cross-project.
+
+### `/retro instinct` steps
+
+1. Run the default `/retro` analysis to identify candidate patterns.
+2. For each candidate, do not propose it as a feedback memory yet. Instead:
+    - Phrase the pattern in one or two sentences.
+    - Score confidence 1-10, how durable is this pattern across sessions and projects?.
+    - Score generality 1-10, does it apply broadly or only to this project?.
+    - Identify the project slug from the current working directory's repo name, or `global` when the pattern is harness-only.
+3. Show the user the proposed instinct list. Ask once: "approve all / pick / skip."
+4. On approve, write each instinct to `memory/instincts/<project-slug>/<YYYY-MM-DD>-<slug>.md` with this frontmatter:
+
+```markdown
+---
+slug: <kebab-slug>
+created: <YYYY-MM-DD>
+confidence: <1-10>
+generality: <1-10>
+project: <slug>
+status: probationary
+source-session: <session id or transcript path>
+---
+
+<One or two sentences naming the pattern.>
+
+**Why:** <where this came from in the session>
+**How to apply:** <when this should affect future behavior>
+**Promote at:** confidence >= 8 AND seen in 2+ projects, OR user explicitly approves earlier.
+```
+
+5. Do not touch `MEMORY.md` for instincts. Instincts are not in the global index; only graduated feedback/project memories are.
+
+### `/retro promote <instinct-id>` steps
+
+1. Resolve `<instinct-id>` to a path under `memory/instincts/`.
+2. Read the instinct. Confirm with the user that the pattern has held up.
+3. If the instinct is project-scoped but the user wants it global: move the file to `memory/instincts/global.md`, append or rewrite. Update status to `global`.
+4. If the instinct is durable enough to leave the lane entirely: convert it to a `feedback_*.md` or `project_*.md` memory in the parent `memory/` tree, update `MEMORY.md` index, and archive the original instinct under `memory/instincts/archive/`.
+5. Always record the promotion date.
+
+### `/retro prune` steps
+
+1. List instincts under `memory/instincts/` that meet at least one of:
+    - `created` more than 60 days ago AND `confidence < 5`.
+    - `created` more than 180 days ago regardless of confidence, unless `status: promoted`.
+    - `status: superseded`, set manually when a newer instinct replaces an older one.
+2. Show the list to the user. For each, show: slug, created, confidence, the first sentence of the body.
+3. Ask once: "delete all / pick / skip."
+4. Move approved deletions to `memory/instincts/archive/`, do not delete outright. Archive is purged on the next prune older than 90 days.
+
+### Rules for instincts
+
+- Instincts are hypotheses, not commitments. Treat them as advisory until promoted.
+- Never let an instinct file exceed 30 lines. Atomic by design. Split if it grows.
+- Confidence is the user's call, not the assistant's. Default to 5 on creation.
+- Promotion requires user approval, not automatic graduation. Confidence + generality scores are inputs to the decision, not triggers.
+- Pruning requires user approval. Never auto-delete.
+- The `conversation-analyzer` agent at [`agents/conversation-analyzer.md`](../../agents/conversation-analyzer.md) in the harness root is the recommended way to surface candidate instincts.
 
 ## Rules
 

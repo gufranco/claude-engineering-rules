@@ -1,6 +1,6 @@
 # DESIGN.md Template
 
-Canonical structure for a project's design system document. Adapted from the TypeUI DESIGN.md format used by design-md-chrome. Use this when scaffolding a new product or extracting a design system from an existing site.
+Canonical structure for a project's design system document. Use this when scaffolding a new product or extracting a design system from an existing site.
 
 ## When to consult
 

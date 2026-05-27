@@ -1,6 +1,6 @@
 # Bitbucket Platform Support
 
-Reference for `/respond` when the detected platform is Bitbucket Cloud. The workflow is identical to GitHub. The API surface differs and Bitbucket lacks a first-party CLI, so all interactions go through `curl` or `bb` (a community CLI).
+Reference for `/respond` when the detected platform is Bitbucket Cloud. The workflow is identical to GitHub. The API surface differs and Bitbucket lacks a first-party CLI, so all interactions go through `curl` or `bb`, a community CLI.
 
 ## Status
 
@@ -134,7 +134,3 @@ The `reviewers` array replaces the entire reviewer list. The skill fetches the c
 ## Recommendation
 
 For projects where Bitbucket usage is regular, consider migrating PR review workflows to GitHub or GitLab if feasible. Bitbucket's review API is older and the absence of a thread-resolution concept makes it the weakest of the three platforms for this kind of structured workflow. `/respond` supports Bitbucket but cannot deliver the same level of automation.
-
-## Source Notes
-
-Bitbucket Cloud REST API references: `developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/`. The community `bb` CLI is at `github.com/jthibault/bb` but is unmaintained as of 2026. The skill prefers `curl` for stability.

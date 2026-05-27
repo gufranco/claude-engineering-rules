@@ -131,8 +131,3 @@ If the answer to all three is "neither, nothing, no", the change was strictly ta
 - [`ai-guardrails.md`](ai-guardrails.md): mechanical review of AI-generated code.
 - [`verification.md`](verification.md): the completion gate.
 
-## Source Material
-
-- John Ousterhout, "A Philosophy of Software Design". Yaknyam Press, 2018 first edition, 2021 second edition.
-- [Stanford excerpt](https://web.stanford.edu/~ouster/cgi-bin/aposd2ndEdExtract.pdf)
-- [Vasilios Syrakis review](https://cetanu.github.io/blog/a-philosophy-of-software-design/)

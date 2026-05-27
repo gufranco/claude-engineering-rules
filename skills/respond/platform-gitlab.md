@@ -149,7 +149,3 @@ Self-hosted GitLab instances need an explicit `--hostname` flag on every `glab` 
 | Pending review batching | GitLab does not have GitHub's "pending review" concept. The skill posts each reply as a discrete note |
 | `dismiss review` | Approvals can be revoked but the API path differs per instance configuration. The skill never dismisses approvals |
 | `re-request specific reviewer` | The `reviewer_ids` PUT replaces the entire reviewer list. The skill fetches the current list, adds the requested users if missing, and PUTs the union |
-
-## Source Notes
-
-GitLab API references: `docs.gitlab.com/ee/api/discussions.html`, `docs.gitlab.com/ee/api/merge_requests.html`, `docs.gitlab.com/ee/api/notes.html`. `glab` CLI documentation: `gitlab.com/gitlab-org/cli`. Conventional Comments adoption on GitLab is documented at `handbook.gitlab.com/handbook/engineering/workflow/code-review/`.

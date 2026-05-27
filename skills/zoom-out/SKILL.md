@@ -27,7 +27,7 @@ Read the full file at `<path>`. If a line number is given, read 30 lines around 
 
 For each function the target calls, locate its definition. Note:
 - Which module it lives in.
-- Whether it is pure or has side effects (I/O, network, database, global state).
+- Whether it is pure or has side effects such as I/O, network, database, or global state.
 - Whether it is project code or library code.
 
 Stop at depth 1 unless `--depth` is higher.
@@ -36,7 +36,7 @@ Stop at depth 1 unless `--depth` is higher.
 
 Grep the project for usages of the target's exports. For each caller:
 - Which module imports it.
-- The shape of the call site (one-shot, loop, retry, conditional).
+- The shape of the call site, one-shot, loop, retry, conditional.
 - Whether the caller is a route handler, a job, a CLI entry, a test, or another internal module.
 
 ### 4. Identify the module boundary
@@ -44,7 +44,7 @@ Grep the project for usages of the target's exports. For each caller:
 Group the files touched in steps 2 and 3 by directory and by responsibility. State:
 - Which module the target belongs to.
 - Which neighboring modules it talks to.
-- Whether the boundary looks intentional or accidental (cross-cutting imports, circular references, leaky abstractions).
+- Whether the boundary looks intentional or accidental such as cross-cutting imports, circular references, or leaky abstractions.
 
 ### 5. Name the architectural role
 

@@ -16,6 +16,7 @@ Do not spawn subagents. Complete this task using direct tool calls only.
 ## Constraints
 
 - Do not modify any files. Read-only review.
+- Do not push. Subagents never push to remote; the orchestrator handles all git operations.
 - Do not return raw file contents or full function bodies.
 - Limit to TypeScript files. Skip JavaScript, JSON, Markdown.
 - Skip generated files (e.g., Prisma client, GraphQL codegen output) unless the diff explicitly touches them.
@@ -91,6 +92,6 @@ State "Only generated files changed. Skipping per agent policy." and exit.
 
 - [ ] Every TS file in scope was read
 - [ ] Findings cite the specific check from the table
-- [ ] Fix lines are concrete (suggest a branded type name, name the discriminator, etc.)
+- [ ] Fix lines are concrete such as suggest a branded type name, name the discriminator, or etc.
 - [ ] Severity matches the table; no inflation
 - [ ] Output is bounded at 20 findings

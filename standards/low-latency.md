@@ -206,8 +206,3 @@ Before deploying any latency-sensitive code to production:
 - [`performance-budgets.md`](performance-budgets.md) for SLO and budget framing.
 - [`algorithmic-complexity.md`](algorithmic-complexity.md) for the algorithm-level analysis that runs before any of this matters.
 
-## Source Material
-
-- [Vasilios Syrakis, "Profit or Poverty: TLB"](https://cetanu.github.io/blog/translation-lookaside-buffer/)
-- [Vasilios Syrakis, "Profit or Poverty: NUMA"](https://cetanu.github.io/blog/why-numa-is-important-in-trading/)
-- [Vasilios Syrakis, "Profit or Poverty: Realtime kernel patch"](https://cetanu.github.io/blog/linux-is-not-a-realtime-system/)

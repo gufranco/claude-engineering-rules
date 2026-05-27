@@ -138,6 +138,8 @@ Reorders v1's scattered timestamp bits for lexicographic sortability. Still uses
 
 **Avoid when:** creation timestamp must not be derivable from the ID. Use v4 instead.
 
+**Native generation:** PostgreSQL 18 ships a built-in `uuidv7()` function. On PG 18+, generate IDs in SQL with `DEFAULT uuidv7()` on the column. Older PostgreSQL versions need an extension like `pg_uuidv7` or an application-side library such as `uuid` for Node.js or `uuid_utils` for Python. Application generation also works on PG 18 when the writer needs the ID before the row is inserted.
+
 ### UUID v8: Custom/Experimental
 
 Only version and variant bits are mandated. The remaining 122 bits are application-defined.
@@ -190,7 +192,7 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 
 ### Snowflake
 
-64-bit integer: 41-bit millisecond timestamp + 10-bit machine ID (5 datacenter + 5 worker) + 12-bit sequence counter.
+64-bit integer: 41-bit millisecond timestamp + 10-bit machine ID, 5 datacenter + 5 worker, + 12-bit sequence counter.
 
 | Property | Value |
 |:---------|:------|
@@ -208,7 +210,7 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 
 ### Sonyflake
 
-64-bit integer: 39-bit timestamp (10ms resolution) + 8-bit sequence + 16-bit machine ID.
+64-bit integer: 39-bit timestamp, 10ms resolution, + 8-bit sequence + 16-bit machine ID.
 
 | Property | Value |
 |:---------|:------|
@@ -220,13 +222,13 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 | Configuration | Machine ID defaults to lower 16 bits of private IP. Customizable |
 | Lifetime | ~174 years from start time |
 
-**Use when:** many generator nodes (> 1,024) but moderate per-node throughput is acceptable. Default machine ID derivation from IP simplifies configuration.
+**Use when:** many generator nodes, > 1, 024, but moderate per-node throughput is acceptable. Default machine ID derivation from IP simplifies configuration.
 
 **Avoid when:** a single instance needs more than 25,600 IDs/second.
 
 ### TSID (Time-Sorted ID)
 
-64-bit integer: 42-bit millisecond timestamp + configurable split between node ID and counter bits (total 22 bits).
+64-bit integer: 42-bit millisecond timestamp + configurable split between node ID and counter bits, total 22 bits.
 
 | Property | Value |
 |:---------|:------|
@@ -243,7 +245,7 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 
 ### Randflake
 
-64-bit integer encrypted with Sparx64 block cipher. Pre-encryption: 30-bit timestamp (seconds) + 17-bit node ID + 17-bit counter.
+64-bit integer encrypted with Sparx64 block cipher. Pre-encryption: 30-bit timestamp, seconds, + 17-bit node ID + 17-bit counter.
 
 | Property | Value |
 |:---------|:------|
@@ -261,7 +263,7 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 
 ### xid
 
-96 bits: 32-bit Unix timestamp (seconds) + 24-bit machine ID + 16-bit process ID + 24-bit counter.
+96 bits: 32-bit Unix timestamp, seconds, + 24-bit machine ID + 16-bit process ID + 24-bit counter.
 
 | Property | Value |
 |:---------|:------|
@@ -272,7 +274,7 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 | Capacity | 16,777,216 IDs/s per process |
 | Configuration | None. Machine ID derived from hostname automatically |
 
-**Use when:** you need compact, sortable, zero-config IDs and can accept second-level timestamp resolution. 20 characters is shorter than UUID (36) or ULID (26).
+**Use when:** you need compact, sortable, zero-config IDs and can accept second-level timestamp resolution. 20 characters is shorter than UUID, 36, or ULID, 26.
 
 **Avoid when:** millisecond-level ordering matters, or IDs must fit in a 64-bit integer.
 
@@ -294,7 +296,7 @@ UUIDv7 encoded as Crockford's Base32 with a type prefix: `user_2x4y6z...`, `orde
 
 ### NanoID
 
-Pure cryptographically secure random bytes mapped to a configurable alphabet. Default: 21 characters, URL-safe alphabet (A-Za-z0-9_-), ~126 bits of entropy.
+Pure cryptographically secure random bytes mapped to a configurable alphabet. Default: 21 characters, URL-safe alphabet, A-Za-z0-9_-, ~126 bits of entropy.
 
 | Property | Value |
 |:---------|:------|
@@ -311,13 +313,13 @@ Pure cryptographically secure random bytes mapped to a configurable alphabet. De
 
 ### MongoDB ObjectId
 
-96 bits: 32-bit Unix timestamp + 40-bit random (per-process) + 24-bit counter.
+96 bits: 32-bit Unix timestamp + 40-bit random, per-process, + 24-bit counter.
 
-**Use only with MongoDB.** Outside MongoDB, prefer xid (same concept, more compact encoding) or UUID v7 (standardized).
+**Use only with MongoDB.** Outside MongoDB, prefer xid, same concept, more compact encoding, or UUID v7, standardized.
 
 ### Firebase Push ID
 
-120 bits: 48-bit millisecond timestamp + 72-bit random (incremented within same millisecond).
+120 bits: 48-bit millisecond timestamp + 72-bit random, incremented within same millisecond.
 
 **Use only with Firebase Realtime Database.** The format is tightly coupled to Firebase's ordering semantics. Outside Firebase, use UUID v7 or ULID.
 
@@ -369,23 +371,23 @@ Pure cryptographically secure random bytes mapped to a configurable alphabet. De
 
 **PostgreSQL `UUID` type:** 16 bytes, indexed as a fixed-size binary value. More efficient than `VARCHAR(36)` for UUIDs. Use `gen_random_uuid()` for v4. For v7, generate in the application layer.
 
-**MySQL `BINARY(16)`:** store UUIDs as raw bytes for compact storage and faster indexing. Use `UUID_TO_BIN(uuid, 1)` for swap-flag ordering (makes v1/v4 UUIDs index-friendly). For v7, the swap flag is unnecessary since the timestamp is already in the most significant bits.
+**MySQL `BINARY` of 16 bytes:** store UUIDs as raw bytes for compact storage and faster indexing. Use `UUID_TO_BIN(uuid, 1)` for swap-flag ordering, which makes v1 and v4 UUIDs index-friendly. For v7, the swap flag is unnecessary since the timestamp is already in the most significant bits.
 
 ## Index Performance
 
-Random IDs (v4, NanoID, CUID2) cause write amplification in B-tree indexes:
+Random IDs, v4, NanoID, CUID2, cause write amplification in B-tree indexes:
 
 - New rows insert at random positions, splitting existing pages.
 - Working set for the index grows because recently-written pages are scattered across the tree.
 - Buffer pool efficiency drops: hot pages are not contiguous.
 
-Sortable IDs (v7, ULID, TSID, Snowflake) concentrate writes at the right edge of the B-tree:
+Sortable IDs, v7, ULID, TSID, Snowflake, concentrate writes at the right edge of the B-tree:
 
 - New rows always append to the rightmost leaf page.
 - Only the rightmost pages need to be in memory for writes.
 - Sequential I/O patterns for both writes and range scans.
 
-**Measured impact:** on write-heavy workloads with large tables (> 10M rows), sortable IDs show 2-5x better insert throughput compared to random UUIDs. The gap widens as the table grows and the index no longer fits in memory.
+**Measured impact:** on write-heavy workloads with large tables, > 10M rows, sortable IDs show 2-5x better insert throughput compared to random UUIDs. The gap widens as the table grows and the index no longer fits in memory.
 
 ## Migration Path
 
@@ -408,11 +410,11 @@ Never change a primary key in-place on a live table.
 - **Treating Sqids as encryption.** It is reversible encoding, not security.
 - **NanoID with `non-secure` mode in production.** Uses `Math.random()`, which is not cryptographically secure.
 - **SERIAL instead of BIGSERIAL in PostgreSQL.** INT overflow on growing tables requires downtime to fix.
-- **Storing UUIDs as `VARCHAR(36)` when a native `UUID` type exists.** Wastes storage (36 bytes vs 16 bytes) and reduces index performance.
+- **Storing UUIDs as `VARCHAR(36)` when a native `UUID` type exists.** Wastes storage, 36 bytes vs 16 bytes and reduces index performance.
 
 ## Collision Detection
 
-ULIDs and UUIDs have negligible collision probability at any realistic scale. Use a database UNIQUE constraint as the authoritative collision guard. On a constraint violation, retry with a new ID (max 3 retries, then surface an error). Do not implement application-level pre-insert uniqueness checks: they introduce TOCTOU races.
+ULIDs and UUIDs have negligible collision probability at any realistic scale. Use a database UNIQUE constraint as the authoritative collision guard. On a constraint violation, retry with a new ID, max 3 retries, then surface an error. Do not implement application-level pre-insert uniqueness checks: they introduce TOCTOU races.
 
 ## ID Reuse
 

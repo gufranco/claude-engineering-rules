@@ -4,7 +4,7 @@ Also known as Ports and Adapters. Extends the "functional core, imperative shell
 
 ## When to Use
 
-Use hexagonal architecture when the project has two or more infrastructure dependencies (database, message queue, external API, file system) and the domain logic is complex enough that testing it in isolation has clear value. For simple CRUD with one database, this is overhead.
+Use hexagonal architecture when the project has two or more infrastructure dependencies, database, message queue, external API, file system, and the domain logic is complex enough that testing it in isolation has clear value. For simple CRUD with one database, this is overhead.
 
 ## Structure
 
@@ -68,11 +68,11 @@ Rules:
 - One adapter per port per infrastructure. `PostgresOrderRepository` and `InMemoryOrderRepository` both implement `OrderRepository`
 - Adapters handle mapping between external representations and domain types. The domain never sees a database row, HTTP request, or message envelope
 - Adapters catch infrastructure exceptions and convert them to domain error types
-- Business rule validation belongs in domain objects and application services, not in adapters. Adapters validate structure (types, required fields) only. See [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md) for tactical patterns.
+- Business rule validation belongs in domain objects and application services, not in adapters. Adapters validate structure, types, required fields only. See [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md) for tactical patterns.
 
 ## Dependency Direction
 
-The domain defines what it needs (ports). The application layer wires ports to adapters. The composition root (main entry point) assembles everything.
+The domain defines what it needs, ports. The application layer wires ports to adapters. The composition root, main entry point, assembles everything.
 
 ```typescript
 // composition-root.ts (or module registration)
@@ -83,7 +83,7 @@ const submitOrder = new SubmitOrderUseCase(orderRepository, paymentGateway);
 
 Rules:
 - The domain layer has zero `import` statements pointing to adapter or framework code
-- Framework decorators (@Controller, @Injectable) only appear in the adapter and composition layers
+- Framework decorators, @Controller, @Injectable only appear in the adapter and composition layers
 - If a domain file imports from `node_modules`, the dependency must be a pure library with no I/O (e.g., date-fns, zod for schemas)
 
 ## Testing Strategy
@@ -119,7 +119,7 @@ class SubmitOrderUseCase {
 Rules:
 - The composition root is the only place that references concrete adapter class names
 - Adapters for the same port are interchangeable. Swapping one for another must require zero changes in domain or application code
-- Test doubles (in-memory adapters) are real adapter implementations, not mocks. They implement the port interface and enforce the same contracts
+- Test doubles, in-memory adapters are real adapter implementations, not mocks. They implement the port interface and enforce the same contracts
 
 ## Anti-Patterns
 

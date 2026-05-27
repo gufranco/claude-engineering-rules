@@ -31,10 +31,10 @@ Optional context fields:
 
 Write logs to stdout and stderr. Never write log files from the application.
 
-- stdout for normal log events (info, debug)
+- stdout for normal log events such as info, or debug
 - stderr for errors and warnings
-- The infrastructure layer (container runtime, log collector sidecar, systemd journal) is responsible for routing, rotation, and storage
-- This separation lets the same application run locally (logs to terminal), in Docker (logs via `docker logs`), and in Kubernetes (logs to node agent) without code changes
+- The infrastructure layer, container runtime, log collector sidecar, systemd journal is responsible for routing, rotation, and storage
+- This separation lets the same application run locally, logs to terminal, in Docker, logs via `docker logs`, and in Kubernetes, logs to node agent without code changes
 - Never open file handles for logging inside the application. File-based logging creates rotation concerns, disk pressure, and permission issues that belong to the platform, not the app
 
 ## Log Levels
@@ -155,7 +155,7 @@ Define reliability targets before building monitoring. Without them, alerts are 
 
 **Rules:**
 
-- Define SLIs first. Common: availability, latency (p50, p95, p99), error rate, throughput
+- Define SLIs first. Common: availability, latency, p50, p95, p99, error rate, throughput
 - SLOs must be based on SLIs, not gut feeling. Measure first, then set targets
 - SLOs should be slightly stricter than SLAs. If the SLA is 99.95%, the SLO might be 99.97%
 - **Error budget** = 100% minus SLO. A 99.9% SLO means 0.1% error budget, roughly 43 minutes of downtime per month. When the budget is spent, prioritize reliability over features
@@ -166,7 +166,7 @@ Define reliability targets before building monitoring. Without them, alerts are 
 - Alert on symptoms, not causes. "Error rate > 1%" not "CPU > 80%"
 - Tie alerts to SLO violations: "error budget burn rate exceeds 10x" is more actionable than a static threshold
 - Every alert must have a runbook link
-- Use severity levels: `critical` (pages immediately), `warning` (notify channel), `info` (dashboard only)
+- Use severity levels: `critical`, pages immediately, `warning`, notify channel, `info`. Dashboard only
 - Include in alert: what is happening, which service, since when, link to dashboard
 - Review alert signal-to-noise ratio monthly. If an alert fires without requiring action, tune or remove it
 
@@ -206,15 +206,15 @@ When production breaks:
 
 Two complementary methods for structuring dashboards:
 
-- **USE method** (resources: CPU, memory, disk, network): Utilization (how busy), Saturation (how much work is queued), Errors (error rate). Apply to every resource the service depends on.
-- **RED method** (services and endpoints): Rate (requests per second), Errors (error rate), Duration (latency distribution). Apply to every service and every endpoint.
+- **USE method**, resources: CPU, memory, disk, network: Utilization, how busy, Saturation, how much work is queued, Errors, error rate. Apply to every resource the service depends on.
+- **RED method**, services and endpoints: Rate, requests per second, Errors, error rate, Duration, latency distribution. Apply to every service and every endpoint.
 
-Four golden signals (Google SRE model): latency, traffic, errors, saturation. When in doubt, build your first dashboard around these four.
+Four golden signals, Google SRE model: latency, traffic, errors, saturation. When in doubt, build your first dashboard around these four.
 
 Dashboard structure rules:
 - Top row: the single most important signal for the on-call to answer "is this service healthy?"
 - Second row: RED metrics per endpoint
-- Third row: USE metrics per dependency (database, cache, queue)
+- Third row: USE metrics per dependency such as database, cache, or queue
 - Bottom rows: detailed breakdowns for debugging
 
 ## Cost Allocation Monitoring
@@ -262,7 +262,7 @@ process.on('SIGTERM', () => sdk.shutdown())
 **Rules:**
 
 - Never import instrumented libraries at module level before the SDK starts. Move them inside functions, use lazy imports, or restructure entry points so the SDK file is the first import.
-- The Collector is the only valid telemetry destination from application code. Never send traces, metrics, or logs directly to a backend (Jaeger, Zipkin, Prometheus). Configure the SDK to export to `localhost:4317` (OTLP gRPC) or `localhost:4318` (OTLP HTTP). The Collector handles routing, sampling, batching, and backend switching.
+- The Collector is the only valid telemetry destination from application code. Never send traces, metrics, or logs directly to a backend, Jaeger, Zipkin, Prometheus. Configure the SDK to export to `localhost:4317`, OTLP gRPC or `localhost:4318`, OTLP HTTP. The Collector handles routing, sampling, batching, and backend switching.
 - Use the OTLP exporter in all environments, including local development. Run a local Collector via Docker to replicate the production telemetry path.
 
 ## Related Standards

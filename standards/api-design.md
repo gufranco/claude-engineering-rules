@@ -67,7 +67,7 @@ Response includes:
 }
 ```
 
-**Offset-based (when needed):**
+**Offset-based, when needed:**
 ```
 GET /users?page=2&pageSize=20
 ```
@@ -79,7 +79,7 @@ GET /users?page=2&pageSize=20
 ## Filtering and Sorting
 
 - Filter with query params: `GET /users?status=active&role=admin`
-- Sort with a `sort` param: `GET /users?sort=-createdAt,name` (prefix `-` for descending)
+- Sort with a `sort` param: `GET /users?sort=-createdAt,name`. Prefix `-` for descending
 - Document all supported filter and sort fields
 
 ## Versioning
@@ -166,7 +166,7 @@ Include hypermedia links only when clients genuinely use them to discover and dr
 
 - Use URI path versioning as the default: `/v1/users`, `/v2/users`
 - Deprecation timeline: 6-month announcement, 12-month migration support, 18-24 month removal
-- Include `Deprecation` header (RFC 9745) and `Sunset` header (RFC 8594) on deprecated endpoints
+- Include `Deprecation` header, RFC 9745 and `Sunset` header, RFC 8594 on deprecated endpoints
 - Monitor consumption per version before removing support. Never sunset a version with active consumers above threshold
 
 ## Backend for Frontend

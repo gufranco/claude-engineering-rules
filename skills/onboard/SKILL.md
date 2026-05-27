@@ -48,7 +48,7 @@ Options:
 | HIGH-RISK | Block. Present the findings. Require the user to type the literal phrase `I accept the risk` before continuing |
 | MALICIOUS | Block. Present the findings. Refuse to continue. Recommend running the project inside a Docker sandbox or deleting the directory. Do not proceed to Step 1 under any circumstance |
 
-**Phase 0 constraints (apply when the scan runs):**
+**Phase 0 constraints, apply when the scan runs:**
 
 - Never install dependencies. Never run any command defined in the project.
 - Never read `.env`, `.env.local`, or `.env.production`. Only `.env.example`.
@@ -161,7 +161,7 @@ Recommend running `/retro discover` to capture the detected conventions as durab
 ## Rules
 
 - Phase 0 prompts the user before any scan runs. The default option in the prompt is "No, scan it first", aligned with the protective intent for unknown projects.
-- The user can pre-decide non-interactively with `--trust` (skip scan) or `--verify` (run scan). Passing both is a conflict.
+- The user can pre-decide non-interactively with `--trust`, skip scan or `--verify`, run scan. Passing both is a conflict.
 - When the scan runs and returns HIGH-RISK or MALICIOUS, abort onboarding even if the user pressures to continue. The HIGH-RISK override path requires the explicit phrase. MALICIOUS has no override.
 - Never modify any project files during onboarding. This is a read-only exploration.
 - Do not install dependencies or run build commands unless the user asks.

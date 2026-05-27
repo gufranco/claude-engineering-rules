@@ -57,7 +57,7 @@ Rules for Lua scripts:
 
 ### MULTI/EXEC pipeline
 
-Use `MULTI/EXEC` when atomicity is needed but the commands are independent (no command depends on the result of a previous one within the transaction).
+Use `MULTI/EXEC` when atomicity is needed but the commands are independent. No command depends on the result of a previous one within the transaction.
 
 ```typescript
 const results = await redis.multi()
@@ -93,7 +93,7 @@ Use Lua when a command depends on a previous result within the same atomic block
 
 ## Non-Critical Redis Fallback
 
-When Redis is used for a non-critical feature (price enhancement, recommendation scoring, view counters) inside a critical path (serving API responses, processing payments), the critical path must survive Redis failure.
+When Redis is used for a non-critical feature, price enhancement, recommendation scoring, view counters, inside a critical path, serving API responses, processing payments, the critical path must survive Redis failure.
 
 **Rule: wrap non-critical Redis reads in a try/catch that returns a safe default.**
 
@@ -130,6 +130,6 @@ Log every fallback activation at `warn` level with the operation name and error.
 ## Testing
 
 - Integration tests for Redis operations must connect to a real Redis instance, not a mock. Add Redis to the test environment's docker-compose
-- Test TTL behavior with short TTLs (1-2 seconds) and `await` the expiration
+- Test TTL behavior with short TTLs, 1-2 seconds and `await` the expiration
 - Test atomic operations under concurrency: spawn multiple promises that race on the same key, verify the final state is consistent
-- Pure functions that compute values from Redis data (thresholds, steps, pricing) can be unit tested without Redis
+- Pure functions that compute values from Redis data, thresholds, steps, pricing can be unit tested without Redis

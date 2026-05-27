@@ -31,7 +31,7 @@ function generatePKCE(): { verifier: string; challenge: string } {
 | Storage | Never in localStorage. Use httpOnly secure cookies or in-memory only |
 | Validation | Verify signature, expiration, issuer, and audience on every request |
 
-Short-lived tokens limit the blast radius of a compromised token. Pair with refresh token rotation for seamless UX.
+Short-lived tokens limit the exposure window of a compromised token. Pair with refresh token rotation so the user experience stays uninterrupted.
 
 ## Refresh Token Rotation
 

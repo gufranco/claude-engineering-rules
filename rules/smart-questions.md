@@ -41,9 +41,9 @@ the literal path so the user can confirm.
 
 **When to skip XY framing.**
 
-- The user named both the goal and the means in the same sentence ("use ripgrep to find X for purpose Y").
+- The user named both the goal and the means in the same sentence, "use ripgrep to find X for purpose Y".
 - Continuation within an approved plan: do not re-verify framing for steps the user already approved.
-- The CLAUDE.md "Execute, don't ask" rule fires (list of tasks, "do everything"): execute. XY framing applies only when the request is narrow and isolated.
+- The CLAUDE.md "Execute, don't ask" rule fires, list of tasks, "do everything": execute. XY framing applies only when the request is narrow and isolated.
 
 ## 3. Asking the User
 
@@ -57,7 +57,7 @@ Constraints:
 
 - One blocking question per turn. Bundling three questions into one message is forbidden; the user can answer only one.
 - Ship the question in the first message. No "Can I ask you something?", no hello-only opener, no "Quick question?".
-- No rhetorical closers ("Let me know if that helps", "Sound good?"). Already enforced by [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
+- No rhetorical closers, "Let me know if that helps", "Sound good?". Already enforced by [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 - No apologies, no repeated thanks, no hyper-courtesy.
 
 ```
@@ -104,7 +104,7 @@ ci - actionlint annotates 2 workflows with shellcheck SC2086
 
 ### 4.1 Bug reports
 
-When reporting a bug (to the user, to a subagent, or in a commit message), every item below is required.
+When reporting a bug, to the user, to a subagent, or in a commit message, every item below is required.
 
 | Element | Rule |
 |--------|------|
@@ -218,7 +218,7 @@ A failed test sends the draft back to the keyboard.
 
 This rule sits alongside, not above, the existing rule set. On conflict:
 
-- [`rules/pre-flight.md`](pre-flight.md) governs the investigation gate. This rule extends the gate's output (the question format), not the gate itself.
+- [`rules/pre-flight.md`](pre-flight.md) governs the investigation gate. This rule extends the gate's output, the question format, not the gate itself.
 - [`rules/writing-precision.md`](writing-precision.md) governs sentence-level precision. Apply both: precision per writing-precision, format per this rule.
 - [`rules/verification.md`](verification.md) governs evidence for completion. This rule's "Closing the Loop" formats the evidence; verification governs whether the evidence is real.
 - [`rules/surgical-edits.md`](surgical-edits.md) governs diff scope. XY framing must surface a broader goal but does not authorize expanding the diff. Surface the goal as a question, then let the user decide whether to expand the scope.

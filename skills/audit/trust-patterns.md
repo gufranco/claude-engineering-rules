@@ -152,7 +152,7 @@ IDE and shell-tooling configs that execute code automatically when the project i
 
 ## Section G: Dependency red flags
 
-Properties of declared dependencies, evaluated against metadata available offline (lockfile) and optionally online (`npm view`, `pip show`).
+Properties of declared dependencies, evaluated against metadata available offline, lockfile, and optionally online, `npm view`, `pip show`.
 
 | Pattern | Severity | Target | Rationale | Known false positives |
 |---------|----------|--------|-----------|----------------------|

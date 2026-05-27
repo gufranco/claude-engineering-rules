@@ -54,7 +54,7 @@ Rules:
 - Each trailer is one line
 - `Rejected` must include the pipe separator between alternative and reason
 - Multiple trailers of the same type are allowed
-- Do not add trailers to trivial commits (typos, formatting, config tweaks)
+- Do not add trailers to trivial commits such as typos, formatting, or config tweaks
 
 ## Branch Naming
 
@@ -93,14 +93,14 @@ Detect the correct commands from the project's package manager, lockfile, and sc
 - Show the output of each check. Silent success is not evidence.
 - This gate applies to every commit, not just the final one before a push.
 - Stale results do not count. If code changed since the last run, run again.
-- **Formatter and linter are not always the same tool.** Many projects have a `lint` script that runs ESLint (or equivalent) without invoking Prettier. Running `pnpm lint` in that case does not satisfy step 1. Always check whether the lint script includes the formatter. If it does not, run `prettier --check` (or the equivalent check-mode command) as a separate explicit step. A Prettier failure caught only by CI forces an extra commit and an extra pipeline run.
+- **Formatter and linter are not always the same tool.** Many projects have a `lint` script that runs ESLint, or equivalent without invoking Prettier. Running `pnpm lint` in that case does not satisfy step 1. Always check whether the lint script includes the formatter. If it does not, run `prettier --check`, or the equivalent check-mode command as a separate explicit step. A Prettier failure caught only by CI forces an extra commit and an extra pipeline run.
 - **When a format check fails for `package.json` and the project uses `prettier-plugin-packagejson`**, do not guess the field order manually. The plugin applies its own schema-based ordering that is not alphabetical. Run `prettier --write package.json` locally with the project's exact plugin version installed and read the result. One local run gives the correct format. Repeated manual attempts without running the formatter do not.
 
 ## Schema and Environment Sync (MANDATORY)
 
 When a commit changes the database schema or environment variable configuration, these additional steps are required before committing.
 
-**Database schema changes (Prisma, migrations):**
+**Database schema changes, Prisma, migrations:**
 
 1. Push to the dev database: `npx prisma db push`
 2. Push to the test database using the connection string from `.env.test`, not a manually constructed URL
@@ -108,7 +108,7 @@ When a commit changes the database schema or environment variable configuration,
 4. Run the full test suite to verify no regressions
 5. Add new models to the test cleanup order in `test/setup.ts`
 
-**Environment variable changes (add, remove, rename, change default):**
+**Environment variable changes, add, remove, rename, change default:**
 
 1. Update `.env.example` with the new variable and a placeholder value
 2. Update `.env.test` to provide a test-appropriate value
@@ -135,7 +135,7 @@ After ANY push:
 
 **Batch fixes before pushing.** When CI fails with multiple issues, fix all of them locally before pushing again. One push with all fixes, not one push per fix. Each push triggers a full pipeline run across all platforms.
 
-**Rate limit awareness.** `gh run watch` polls every 3 seconds (~1200 requests/hour). Never run multiple watchers concurrently. Before starting a watcher, check quota with `gh api rate_limit`. If remaining quota is below 500, use one-shot `gh run view <id>` checks instead of continuous polling.
+**Rate limit awareness.** `gh run watch` polls every 3 seconds, around 1200 requests per hour. Never run multiple watchers concurrently. Before starting a watcher, check quota with `gh api rate_limit`. If remaining quota is below 500, use one-shot `gh run view <id>` checks instead of continuous polling.
 
 ## CI File Validation
 
@@ -178,11 +178,11 @@ gh pr create --draft --title "<TICKET-ID>: WIP"
 gh pr merge <number> --squash --delete-branch
 ```
 
-**Dual-base PRs (same change targeting two branches):** never use `--delete-branch` on the first merge. GitHub auto-closes any other open PR whose head is the deleted branch. Use separate branches (`fix/foo-develop`, `fix/foo-main`) from the start, or omit `--delete-branch` until both PRs are merged.
+**Dual-base PRs, same change targeting two branches:** never use `--delete-branch` on the first merge. GitHub auto-closes any other open PR whose head is the deleted branch. Use separate branches like `fix/foo-develop` and `fix/foo-main` from the start, or omit `--delete-branch` until both PRs are merged.
 
 ## Shallow Clone Detection
 
-Before running `git rebase` on a repo that may be a shallow clone (repos in `/tmp/`, CI workspaces, repos cloned with `--depth`):
+Before running `git rebase` on a repo that may be a shallow clone, like repos in `/tmp/`, CI workspaces, or repos cloned with `--depth`:
 
 1. Check: `git rev-parse --is-shallow-repository`
 2. If `true`: run `git fetch --unshallow` before rebasing.
@@ -225,7 +225,7 @@ Every `git push` triggers a CI pipeline run. Pipeline runs consume paid runner m
 **Exceptions where intermediate pushes are acceptable:**
 
 - The user explicitly asks to push.
-- A PR review is needed before continuing (push to get feedback).
+- A PR review is needed before continuing, push to get feedback.
 - The branch needs to be shared with another developer.
 
 **Batch CI fixes.** When CI fails with multiple issues, fix all of them locally before pushing. One push with all fixes, not one push per fix.
@@ -244,13 +244,13 @@ If a change causes problems:
 
 ## Migration Ordering
 
-When a project uses sequential migrations (Prisma, Flyway, Knex, etc.), migrations for the current task must always have the latest timestamps. Other team members may merge migrations while you work.
+When a project uses sequential migrations, Prisma, Flyway, Knex, etc., migrations for the current task must always have the latest timestamps. Other team members may merge migrations while you work.
 
 Before every commit, push, rebase, or PR:
 
 1. List existing migrations: `ls <migrations_dir> | sort | tail -5`
 2. If your migrations are not last, rename them with newer timestamps
-3. Verify ordering again after rebase (rebasing can interleave with newly merged migrations)
+3. Verify ordering again after rebase. Rebasing can interleave with newly merged migrations
 
 ## Migration Idempotency
 

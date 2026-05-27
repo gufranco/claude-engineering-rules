@@ -33,7 +33,7 @@ Rules:
 - One page object per page or major component.
 - Methods return `Promise<void>` for actions, `Promise<T>` for queries.
 - Never expose Playwright locators directly. The page object is the API.
-- Use role-based selectors (`getByRole`, `getByLabel`, `getByText`) over CSS selectors. They match how users and assistive technology interact with the page.
+- Use role-based selectors, `getByRole`, `getByLabel`, `getByText`, over CSS selectors. They match how users and assistive technology interact with the page.
 
 ### Test Fixtures
 
@@ -133,7 +133,7 @@ await expect(page).toHaveScreenshot('dashboard.png', {
 Rules:
 - Disable animations before capturing (`animations: 'disabled'`). Animations cause flaky diffs.
 - Set a consistent viewport size. Different sizes produce different screenshots.
-- Mask dynamic content (timestamps, avatars, random data) with `mask` option.
+- Mask dynamic content, timestamps, avatars, random data with `mask` option.
 - Store baselines in version control. Review screenshot diffs in PRs.
 - Run visual tests on a single OS in CI. Font rendering differs across platforms.
 
@@ -168,7 +168,7 @@ for (const bp of breakpoints) {
 
 Verify:
 - Navigation collapses to mobile menu at the right breakpoint.
-- Grid columns adjust (1 on mobile, 2 on tablet, 3+ on desktop).
+- Grid columns adjust, 1 on mobile, 2 on tablet, 3+ on desktop.
 - Touch targets are at least 44x44px on mobile viewports.
 - No horizontal overflow at any breakpoint.
 
@@ -217,7 +217,7 @@ Target: under 200ms. Measure with Lighthouse CI or Web Vitals library in E2E tes
 
 ### Lighthouse CI Integration
 
-For comprehensive CWV measurement in CI:
+For full CWV measurement in CI:
 
 ```yaml
 # lighthouserc.json
@@ -257,7 +257,7 @@ Never use real production cookies in tests. Generate test-specific tokens from a
 
 - Each test gets a fresh browser context. No shared state between tests.
 - Use `test.describe.configure({ mode: 'parallel' })` for independent tests.
-- Use `test.describe.configure({ mode: 'serial' })` only when tests depend on prior state (multi-step workflows).
+- Use `test.describe.configure({ mode: 'serial' })` only when tests depend on prior state, multi-step workflows.
 - Clean up created data in `afterEach` or use transactional rollback.
 - Use unique test data per test to prevent collision in parallel runs.
 
@@ -278,7 +278,7 @@ export default defineConfig({
 
 - Retry flaky tests in CI but never locally. Flaky tests must be fixed, not retried indefinitely.
 - Capture traces on failure for debugging. Traces include DOM snapshots, network requests, and console logs.
-- Run with a single worker in CI if tests share external resources (database, API). Parallel locally.
+- Run with a single worker in CI if tests share external resources, database, API. Parallel locally.
 
 ## Related Standards
 

@@ -16,13 +16,29 @@ Run these checks in order. If any fails, stop and resolve before writing code.
 
 Search the codebase, open PRs, recent branches, and community packages for existing solutions.
 
+**Tool ordering, mandatory:** run these in order. Stop at the first match.
+
+1. **Local codebase grep / ripgrep.** Same keywords, function names, feature terms. File names too.
+2. **Open PRs.** `gh pr list --search "<keywords>"`. Cover both your repo and any monorepo siblings.
+3. **Recent branches.** `git branch -a --list "*<keyword>*"`. Local and remote.
+4. **Closed PRs.** `gh pr list --state closed --search "<keywords>"`. A closed PR may name a dead-end or a postponed approach.
+5. **GitHub code search.** `gh search code "<keywords>" --language=<lang>`. Surface patterns the rest of the world uses for the same problem.
+6. **Library / framework docs.** Read the README and API docs of the major library in the area before authoring a utility. `llms.txt` first, then official docs.
+7. **Package registry.** `npm search`, `pip search`, `cargo search`, `gem search`. A maintained package is preferred to a hand-rolled utility.
+8. **Web search.** Only after steps 1-7 turn up nothing. Web results are unranked by domain context.
+
+**Anti-duplication gate for skills and agents.** Before proposing a new `~/.claude/skills/<name>/` or `~/.claude/agents/<name>.md`, run steps 1-2 against `~/.claude/skills/` and `~/.claude/agents/` first, plus the on-demand entries in `~/.claude/rules/index.yml`. Prefer extending an existing skill or agent over creating a new one. Justify the new file in writing when no extension fits.
+
 | Where to look | How |
 |----------------|-----|
-| Current codebase | Grep for keywords, function names, feature terms |
+| Current codebase | `rg -i "<keyword>"`, including file names |
 | Open PRs | `gh pr list --search "<keywords>"` |
 | Recent branches | `git branch -a --list "*<keyword>*"` |
 | Closed PRs | `gh pr list --state closed --search "<keywords>"` |
-| Community packages | Search for established libraries that solve the problem. Check npm, PyPI, or the relevant registry |
+| GitHub code search | `gh search code "<keywords>" --language=<lang>` |
+| Library docs | `llms.txt` first, then official docs |
+| Package registry | `npm search`, `pip search`, `cargo search` |
+| Web search | Last resort |
 
 If a solution exists in the codebase, reuse or extend it. If a well-adopted package exists, suggest it before implementing manually. Building from scratch what a maintained library already solves is wasted effort and ongoing maintenance burden.
 
@@ -97,7 +113,7 @@ Features present in 3+ sources are market-validated patterns. Implement them. Fe
 **Copy what works. Improve what is weak. Invent only when the market has no answer.**
 
 - If every competitor implements a feature the same way, do it the same way. Users expect it.
-- If competitors implement it poorly (bad UX, missing edge cases), improve the implementation but keep the concept.
+- If competitors implement it poorly, bad UX, missing edge cases, improve the implementation but keep the concept.
 - If no competitor has the feature and the user requests it, design it carefully with extra user validation.
 - Never assume a feature is unnecessary because competitors lack it. Ask the user.
 - Never assume a feature is necessary because competitors have it. Validate against the user's actual workflow.
@@ -108,7 +124,7 @@ Features present in 3+ sources are market-validated patterns. Implement them. Fe
 |-----------|---------------|
 | Single feature (e.g., "add quote PDF export") | Search 5+ competitors for how they handle it. Read 2+ implementations. |
 | Module improvement (e.g., "improve dispatch board") | Search 10+ platforms across all regions. Read 3+ open source implementations. Build comparison matrix. |
-| Full roadmap or architecture plan | Search 15+ platforms. Read 5+ open source projects. Analyze user's own repos across all accounts. Build comprehensive cross-reference matrix. Document in spec folder. |
+| Full roadmap or architecture plan | Search 15+ platforms. Read 5+ open source projects. Analyze user's own repos across all accounts. Build a full cross-reference matrix. Document in spec folder. |
 
 #### Time investment
 
