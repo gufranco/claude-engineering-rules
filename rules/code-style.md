@@ -23,15 +23,15 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 ## Fundamentals
 
 - DRY, SOLID, KISS, YAGNI, LoD, CQS, Pit of Success
-- Small functions (< 30 lines). Small files (< 500 lines). When a file exceeds 500 lines, extract sections into separate files. A 3,000-line page file is unreviewable and unmaintainable
+- Functions under 30 lines. Files under 500 lines. When a file exceeds 500 lines, extract sections into separate files. A 3,000-line page file is unreviewable and unmaintainable
 - Meaningful names
 - No magic numbers or magic strings. Extract any literal used more than once to a named constant. API model names, rate limits, timeouts, thresholds, and configuration values all belong in a centralized config object or constants file, not scattered as inline literals
 - Single export per file
 - For functions with many arguments, pass one options object. Return objects.
 - File order: main export first, then subcomponents, helpers, static content, types
 - Design for change: isolate business logic from the framework. Prefer dependency inversion. Structure as **functional core, imperative shell**: pure logic with no I/O in the core, side effects pushed to the outermost layer. The core is testable with no mocks. The shell converts between the external world and the core's types
-- **Use-case functions**: for multi-step business flows, write a thin orchestration function that contains zero conditionals, zero loops, and zero exception handling. Only flat, sequential calls to domain services. Name it in business language (`calculatePriceCut`, `transferOwnership`), not technical language (`processData`). Use cases serve as a navigation index: any reader can see the full flow, its parameters, and its dependencies at a glance
-- **No environment conditionals**: never branch business logic on `NODE_ENV`, `APP_ENV`, or equivalent. Code that runs only in production is code that is never tested. Use configuration externalization for infrastructure differences (log format, connection strings), not code conditionals
+- **Use-case functions**: for multi-step business flows, write a thin orchestration function that contains zero conditionals, zero loops, and zero exception handling. Only flat, sequential calls to domain services. Name it in business language like `calculatePriceCut` or `transferOwnership`, not technical language like `processData`. Use cases serve as a navigation index: any reader can see the full flow, its parameters, and its dependencies at a glance
+- **No environment conditionals**: never branch business logic on `NODE_ENV`, `APP_ENV`, or equivalent. Code that runs only in production is code that is never tested. Use configuration externalization for infrastructure differences such as log format and connection strings, not code conditionals
 - **Remove over guard**: when a feature or dependency is unsupported on a platform, prefer removing it over wrapping it in a conditional. Conditionals add complexity, testing surface, and maintenance burden. Only guard when the feature is critical and has no cross-platform alternative
 - **Domain exception boundary**: services and domain logic throw domain-specific error classes, never framework HTTP exceptions. An exception filter or middleware at the boundary maps domain errors to HTTP responses.
 - **Validation infrastructure**: in NestJS projects, register validation globally via interceptor + method decorator, not per-parameter pipes. Controllers should have no validation imports or logic.
@@ -39,10 +39,10 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - Prefer composition over inheritance
 - **No side effects at module level**: module/file scope runs on import. Keep it free of I/O, network calls, global state mutations, and event listener registration. All side effects belong inside explicitly called functions. A module that changes behavior just by being imported is a hidden coupling. Common violations: creating a Redis/database connection at module level (`const redis = createClient()`), registering an event listener, starting a timer. If a module exports both pure functions and I/O functions, either split it into two modules or lazy-initialize the I/O resources inside the functions that need them
 - Use braces for all control structures
-- **Never swallow errors**: no empty `catch`, no `catch {}`, no `catch { /* comment */ }`. Every catch must log the error with context (entity ID, operation name) using the project's logger, then either rethrow or return a typed error. "The operation is best-effort" is not an excuse: log the failure so it can be diagnosed in production
+- **Never swallow errors**: no empty `catch`, no `catch {}`, no `catch { /* comment */ }`. Every catch must log the error with context, such as entity ID and operation name, using the project's logger, then either rethrow or return a typed error. "The operation is best-effort" is not an excuse: log the failure so it can be diagnosed in production
 - **Fire-and-forget side effects must have error logging**: when using `void promise` to satisfy `no-floating-promises`, always append `.catch((error: unknown) => logger.error({ err: error }, 'description'))`. A void promise without `.catch()` silently drops errors. This applies to activity logging, touchpoint triggers, notification sends, and any async side effect that runs outside the main request path
 - **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, document why
-- **Use the project logger, never console**: `console.log`, `console.error`, `console.warn`, and `console.info` must not appear in production code. Use the project's structured logger (Pino, Winston, etc.) which provides log levels, JSON formatting, and context. The only exceptions are Next.js error boundaries (`error.tsx`) where the logger may not be available
+- **Use the project logger, never console**: `console.log`, `console.error`, `console.warn`, and `console.info` must not appear in production code. Use the project's structured logger such as Pino or Winston, which provides log levels, JSON formatting, and context. The only exceptions are Next.js error boundaries at `error.tsx`, where the logger may not be available
 - **No deep nesting**: max 3 levels of indentation. Guard clauses and early returns to flatten control flow
 - **Flat control flow**: avoid recursion unless the data structure is inherently recursive, like trees or graphs. Prefer iterative solutions with explicit bounds. Recursion hides stack growth, making resource usage unpredictable and stack overflows hard to diagnose. When recursion is necessary, always add a depth limit
 - **Strong typing**: explicit types for parameters, return values, and public interfaces. Never `any`, use `unknown` and narrow. Enable maximum strictness (see "Maximum Compiler and Checker Strictness" section below). When modifying a file that already uses `any`, replace it with proper types in the code you touch. Existing violations are not permission to add more
@@ -50,37 +50,24 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **Explicit imports**: import only what you use. Barrel imports (`import * from`) and re-export index files load entire modules, increasing startup time and memory. For libraries you author, provide granular exports so consumers can import individual functions
 - **Bounded iteration**: every loop and retry must have an explicit upper bound. No `while (true)` without a break condition that is guaranteed to trigger. Polling loops need a timeout. Retry loops need a max attempt count. Pagination loops need a page limit. An unbounded loop is a latent outage
 - **Minimal scope**: declare variables at the smallest scope where they are used. Do not declare at function top and use 40 lines later. In languages with block scope, declare inside the block. Smaller scope means fewer interactions, easier reasoning, and less surface for bugs
-- **Don't block the request-handling thread**: never run CPU-intensive work (image processing, compression, cryptographic operations on large inputs) or synchronous I/O on the thread that serves requests. Offload to a worker thread, background job, or separate process. A blocked request thread stalls all concurrent requests
+- **Don't block the request-handling thread**: never run CPU-intensive work like image processing, compression, or cryptographic operations on large inputs on the thread that serves requests, and never run synchronous I/O there either. Offload to a worker thread, background job, or separate process. A blocked request thread stalls all concurrent requests
 - **Pit of Success**: design APIs so the correct usage is the easiest path. Wrong usage should require deliberate effort. Accept `NonEmptyArray<T>` instead of `T[]` with a runtime check. Require dependencies in the constructor instead of exposing an `init()` the caller might forget. Use enums instead of magic strings. When a caller can misuse your API without the compiler stopping them, the API is a pit of failure
-- **DI only when needed**: dependency inversion (the SOLID principle: depend on abstractions, not concretions) is a design choice. DI containers are one implementation of that principle. Start with direct module imports. Only adopt a DI container when you genuinely need to swap implementations at runtime or in tests. DI containers add indirection, increase startup time, and make stack traces harder to follow. Most applications achieve dependency inversion through constructor parameters and interfaces without a container
+- **DI only when needed**: dependency inversion, the SOLID principle of depending on abstractions instead of concretions, is a design choice. DI containers are one implementation of that principle. Start with direct module imports. Only adopt a DI container when you genuinely need to swap implementations at runtime or in tests. DI containers add indirection, increase startup time, and make stack traces harder to follow. Most applications achieve dependency inversion through constructor parameters and interfaces without a container
 - **No `Record<string, unknown>` for ORM queries**: never use `Record<string, unknown>` or `Record<string, any>` for Prisma `where`, `data`, or `orderBy` clauses. Use the generated types: `Prisma.WorkOrderWhereInput`, `Prisma.InvoiceUpdateInput`, etc. `Record<string, unknown>` bypasses the type system and hides field renames, removed columns, and type mismatches. If the filter is built dynamically, use a typed builder function that returns the correct Prisma input type
-- **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. This includes `$queryRaw`, `$executeRaw`, `$queryRawUnsafe`, `$executeRawUnsafe` in Prisma, and equivalents in other ORMs. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM methods. If the ORM cannot express the operation, reconsider the approach or use a dedicated service (search engine, analytics DB). The only place SQL is acceptable is migration files. This applies to test files too: test setup and teardown must use ORM methods, not raw SQL to create indexes or alter constraints
+- **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. This includes `$queryRaw`, `$executeRaw`, `$queryRawUnsafe`, `$executeRawUnsafe` in Prisma, and equivalents in other ORMs. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM methods. If the ORM cannot express the operation, reconsider the approach or use a dedicated service such as a search engine or analytics database. The only place SQL is acceptable is migration files. This applies to test files too: test setup and teardown must use ORM methods, not raw SQL to create indexes or alter constraints
 - **Service layer for data access**: routers, controllers, and API handlers must never import the ORM directly. All database operations go through service classes. This keeps the routing layer as a thin delegation layer and makes business logic independently testable
 
 ## ORM Schema Completeness
 
-Per-ORM rule files cover schema completeness, migration parity, and the no-raw-SQL boundary. Loaded on demand by matching triggers in [`rules/index.yml`](index.yml).
-
-| ORM | Rule file | Trigger keywords |
-|-----|-----------|-----------------|
-| Prisma | [`rules/lang/prisma-migrations.md`](lang/prisma-migrations.md) | `prisma`, `schema.prisma`, `@@index`, `prisma migrate`, `createdAt`, `updatedAt`, `companyId` |
-| TypeORM | [`rules/lang/typeorm-migrations.md`](lang/typeorm-migrations.md) | `typeorm`, `@Entity`, `@Index`, `synchronize`, `DataSource`, `migration:generate`, `migration:run` |
-| Drizzle | [`rules/lang/drizzle-migrations.md`](lang/drizzle-migrations.md) | `drizzle-orm`, `drizzle-kit push`, `pgTable`, `uniqueIndex`, `$onUpdateFn`, `defaultNow`, `__drizzle_migrations` |
-| Sequelize | [`rules/lang/sequelize-migrations.md`](lang/sequelize-migrations.md) | `sequelize`, `umzug`, `queryInterface`, `sync({ force`, `sync({ alter`, `paranoid`, `Model.init` |
-
-Every ORM rule file declares the same five guarantees: schema and migration parity, explicit index names, transactional and idempotent DDL, no raw SQL in application code, and a service-layer boundary that keeps ORM imports out of controllers and routers.
-
-## TypeScript Type Constructs
-
-Moved to [`rules/lang/typescript-types.md`](lang/typescript-types.md). Covers `interface` vs `type` vs `enum` selection, discriminated unions with exhaustive matching, branded types, and the type state pattern. Triggered on demand by `typescript`, `type`, `interface`, `enum`, `brand`, `discriminated`, and related keywords.
+For any ORM, the same five guarantees apply: schema and migration parity, explicit index names, transactional and idempotent DDL, no raw SQL in application code, and a service-layer boundary that keeps ORM imports out of controllers and routers. Per-ORM detail in [`rules/lang/orm-migrations.md`](lang/orm-migrations.md).
 
 ## Command-Query Separation
 
-A function either changes state (command, returns void) or returns data (query, no side effects). Never both.
+A function either changes state as a command that returns void, or returns data as a query with no side effects. Never both.
 
 - Commands perform an action: `saveUser(user)`, `sendEmail(message)`. Return `void` or a `Result` indicating success/failure
 - Queries return data without side effects: `getUserById(id)`, `calculateTotal(items)`. Safe to call multiple times
-- When you need both, split into two: `createOrder()` (command) then `getOrder(id)` (query), not `createAndReturnOrder()`
+- When you need both, split into two: a `createOrder()` command then a `getOrder(id)` query, not `createAndReturnOrder()`
 - Exceptions: stack/queue `pop` operations where the removal and retrieval are inherently atomic. Document these cases
 
 ## Immutability
@@ -92,13 +79,11 @@ Cross-language baseline: immutable by default, mutable by exception. Every value
 - Prefer copy-on-write over in-place mutation when the language offers a non-mutating alternative
 - State transitions produce new state, never mutate the previous one
 - Derive values with selectors or computed properties. Never cache derived values as mutable fields
-- Framework-internal mutation (Immer, MobX, Redux Toolkit) stays at the framework boundary. Everything else treats state as read-only
-
-TypeScript-specific rules (mutation surface, DOM/Web API stance, ES2024+ replacements, readonly type ladder, auto-allowed scopes, CI snippets, Three Legs of Data Integrity, date and time handling) live in [`rules/lang/typescript-immutability.md`](lang/typescript-immutability.md). Triggered on demand by `immutable`, `mutation`, `readonly`, `splice`, `sort`, `push`, `Map.set`, `Set.add`, `Date`, `Temporal`, and related keywords.
+- Framework-internal mutation, like Immer, MobX, or Redux Toolkit, stays at the framework boundary. Everything else treats state as read-only
 
 ## Delivery Path Consistency
 
-When the same business logic is served through multiple delivery paths (REST API, WebSocket push, background job, SSE stream, mobile push notification), the calculation must be identical across all paths. A price, a score, a permission check, or any derived value must produce the same result regardless of which path delivers it.
+When the same business logic is served through multiple delivery paths, such as a REST API, a WebSocket push, a background job, an SSE stream, or a mobile push notification, the calculation must be identical across all paths. A price, a score, a permission check, or any derived value must produce the same result regardless of which path delivers it.
 
 **Rule: extract shared calculations into a single function. Every delivery path calls that function. No path reimplements the logic inline.**
 
@@ -131,12 +116,12 @@ See [`standards/resilience.md`](../standards/resilience.md) for patterns and [`s
 
 Checklist items: [`checklists/checklist.md`](../checklists/checklist.md) category 3. Retry parameters and HTTP status mapping: [`checklists/checklist.md`](../checklists/checklist.md) category 20.
 
-Every `catch` must classify: transient (retry with backoff), permanent (fail immediately), or ambiguous (retry with limit, then permanent). A bare catch that logs and rethrows is a bug.
+Every `catch` must classify the error: transient, retry with backoff; permanent, fail immediately; or ambiguous, retry with a limit then mark permanent. A bare catch that logs and rethrows is a bug.
 
 Also classify by scope:
 
-- **Request-scoped** (non-catastrophic): return an error response to the caller and continue serving. Validation failures, not-found errors, permission denials
-- **Process-scoped** (catastrophic): trigger graceful shutdown. Unrecoverable state corruption, exhausted resources, broken invariants that affect all requests
+- **Request-scoped, non-catastrophic**: return an error response to the caller and continue serving. Validation failures, not-found errors, permission denials
+- **Process-scoped, catastrophic**: trigger graceful shutdown. Unrecoverable state corruption, exhausted resources, broken invariants that affect all requests
 
 The error handler itself must be self-protecting: if logging fails inside the handler, fall back to stdout directly. A crashing error handler turns every error into an unrecoverable crash.
 
@@ -146,7 +131,7 @@ In domain logic, prefer returning typed errors over throwing exceptions. A `Resu
 
 - Use exceptions for truly exceptional, unrecoverable situations: broken invariants, programmer errors, process-scoped failures
 - Use Result types for expected domain failures: validation errors, not-found, permission denied, business rule violations
-- At framework boundaries (HTTP handlers, CLI entry points, queue consumers), convert Result types to the framework's error mechanism (throw, error response, rejection)
+- At framework boundaries (e.g., HTTP handlers, CLI entry points, queue consumers), convert Result types to the framework's error mechanism via throw, error response, or rejection
 - A hand-rolled discriminated union is sufficient. Libraries like neverthrow or Effect provide chaining utilities if the codebase benefits from pipelines
 
 ## Defensive Invariants
@@ -200,7 +185,7 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 
 1. **Ask permission.** Never add without approval.
 2. **Check existing.** Maybe already solved natively.
-3. **Evaluate.** Compare the top 3-5 options in the category using a structured table with measurable criteria: maintenance activity (commits in last 6 months), community size (stars, dependents), known vulnerabilities, bundle size, and API quality. Never pick by gut feeling.
+3. **Evaluate.** Compare the top 3-5 options in the category using a structured table with measurable criteria: maintenance activity counted as commits in the last 6 months, community size measured by stars and dependents, known vulnerabilities, bundle size, and API quality. Never pick by gut feeling.
 4. **Size.** Avoid heavy packages for simple tasks.
 5. Pin exact versions. Separate dev dependencies. Commit lockfile.
 6. **Pin the package manager.** Different versions produce different lockfiles. Use Corepack, a manifest version field, or CI config to enforce consistency.
@@ -211,7 +196,7 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 - Validate semantically, not just syntactically: positive monetary values, valid date ranges, enum membership
 - Validate both input and output schemas at system boundaries
 - **Parse, don't validate**: validation that returns `boolean` is wasteful. The caller still holds untyped data and downstream functions cannot trust it without re-checking. Instead, parse into a typed value. `parseEmail(input: string): Result<Email, ValidationError>` returns a branded `Email` type. After this point, every function that accepts `Email` is guaranteed valid input with zero re-validation. Combine Zod's `.transform()` + `.brand()` to parse and brand in a single step
-- **String ID fields must reject empty strings**: every required `z.string()` field that represents an identifier (fields ending in `Id`, or named `entityType`, `entityId`, `recordType`, `recordId`, etc.) must have `.min(1)`. An empty string passes `z.string()` but creates corrupt data when used as a foreign key or lookup value. Optional ID fields use `z.string().min(1).optional()`
+- **String ID fields must reject empty strings**: every required `z.string()` field that represents an identifier must have `.min(1)`. This covers fields ending in `Id`, or named `entityType`, `entityId`, `recordType`, `recordId`, and similar. An empty string passes `z.string()` but creates corrupt data when used as a foreign key or lookup value. Optional ID fields use `z.string().min(1).optional()`
 - **Monetary and quantity fields must be positive**: `z.number().positive()` or `z.coerce.number().positive()` for any field representing money, counts, ratings, or quantities. Zero or negative values in these fields indicate a bug, not a valid state
 
 ## File Naming
@@ -249,8 +234,6 @@ Stricter checks catch bugs at compile time instead of production. The cost of fi
 - When a new strictness flag becomes available in a toolchain update, enable it
 - Document any flag intentionally left disabled with the specific reason in the config file
 
-TypeScript-specific strictness, target, and module settings live in [`rules/lang/typescript-strict.md`](lang/typescript-strict.md). Triggered on demand by `tsconfig`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `target`, `moduleResolution`, and related keywords.
-
 ## Zero Warnings
 
 Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17. Zero tolerance for compiler, linter, type checker, build, test runner, and runtime warnings. No suppression without documented justification.
@@ -287,8 +270,6 @@ Use a date library for all date operations. Never use raw `Date` methods for for
 - Every `format()` call that renders user-visible text must receive the dynamic locale from the app's locale context, never a hardcoded locale import
 - `new Date()` for creating a timestamp to pass to a database ORM is acceptable since the ORM needs a Date object
 
-The TypeScript-specific Temporal vs date-fns mapping table, mutation-blocker hook integration, and ES2026 timing details live in [`rules/lang/typescript-immutability.md`](lang/typescript-immutability.md).
-
 ## Locale-Aware Components
 
 Calendars, date pickers, and any component that displays locale-sensitive content must bind to the app's dynamic locale. Never hardcode a single locale.
@@ -318,14 +299,14 @@ Run accent verification on every translation file change. Automated tests must c
 Every single-click action that deletes, cancels, or significantly alters a record must show a confirmation dialog before executing. This applies to:
 
 - Delete buttons
-- Status changes (approve, reject, cancel, archive)
-- Toggle switches (activate/deactivate)
-- Revoke actions (API keys, access tokens)
+- Status changes such as approve, reject, cancel, or archive
+- Toggle switches that activate or deactivate
+- Revoke actions like API keys or access tokens
 - Bulk operations
 
 Form submissions where the user deliberately filled fields and clicks "Save" do not need confirmation. The deliberate act of filling the form is the confirmation.
 
-Never use the native browser `confirm()` or `window.confirm()`. Use the framework's dialog component (AlertDialog in shadcn/ui, Modal in other UI libraries).
+Never use the native browser `confirm()` or `window.confirm()`. Use the framework's dialog component, such as `AlertDialog` in shadcn/ui or `Modal` in other UI libraries.
 
 ## LLM Output Trust Boundary
 
@@ -337,9 +318,7 @@ When code processes output from LLMs, treat it as untrusted external input.
 - Verify tool output shape matches expected schema before acting on it
 - Never store raw LLM output in user-visible fields without sanitization
 
-## TypeScript 5.x Patterns
-
-Moved to [`rules/lang/typescript-strict.md`](lang/typescript-strict.md). Triggered on demand by `using`, `await using`, `Symbol.dispose`, `NoInfer`, `verbatimModuleSyntax`, and related keywords.
+For MCP server scoping, agent privilege boundaries, and the full OWASP LLM Top 10 2025 checklist that adds System Prompt Leakage, Vector and Embedding Weaknesses, and Excessive Agency, see [`standards/mcp-security.md`](../standards/mcp-security.md).
 
 ## Bisect-Friendly Commits
 

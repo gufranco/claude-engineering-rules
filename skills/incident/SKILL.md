@@ -30,12 +30,12 @@ This skill accepts optional arguments after `/incident`:
 
 1. **Collect deployment history.** Run these **in parallel**:
    - `git log --oneline --since="24 hours ago" --all` to find recent commits.
-   - `gh release list --limit 5` to find recent releases (if `gh` is available).
+   - `gh release list --limit 5` to find recent releases, if `gh` is available.
    - `gh pr list --state merged --limit 10 --json number,title,mergedAt` to find recently merged PRs.
 
 2. **Check service health.** Run these **in parallel**:
    - If the project has health check endpoints documented in the codebase, suggest curling them.
-   - `docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"` to check container health (if applicable).
+   - `docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"` to check container health, if applicable.
    - Check for error monitoring: suggest checking Sentry, Datadog, or CloudWatch based on project dependencies.
 
 3. **Identify recent changes.** Run these **in parallel**:
@@ -76,7 +76,7 @@ This skill accepts optional arguments after `/incident`:
    - What was the user impact? Who was affected and how.
    - What was the severity? SEV1 through SEV4.
 
-2. **Gather automated context.** Run the same data collection as gather mode (steps 1-3 above).
+2. **Gather automated context.** Run the same data collection as gather mode, steps 1-3 above.
 
 3. **Build the timeline.** Combine user-provided timestamps with automated data:
    - Match deploy times against the incident window.

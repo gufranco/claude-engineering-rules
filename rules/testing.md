@@ -6,13 +6,13 @@ Tests should verify real behavior, not mock behavior.
 
 ## Priority
 
-1. **Integration** (preferred): real database, real services
+1. **Integration**, preferred: real database, real services
 2. **E2E**: full user flows
-3. **Unit** (fallback): pure functions only
+3. **Unit**, fallback: pure functions only
 
 ## Mocks Policy (STRICT)
 
-**Allowed:** External third-party APIs outside your control (systems you do not own and cannot run locally), Time/Date, Randomness
+**Allowed:** External third-party APIs outside your control, systems you do not own and cannot run locally, Time/Date, Randomness
 
 **NEVER Mock:**
 - **Database**: connect to a real database. Add it to docker-compose for the test environment. Use `beforeAll()` to seed, `afterAll()` to clean up
@@ -182,13 +182,13 @@ When changing environment variable schemas, validation rules, or defaults, updat
 | Change env var from optional to required | `.env.test` must provide a value |
 | Remove env var | Grep all `.env*` files and CI configs for references |
 
-When changing the database schema (Prisma, migrations), push to both dev and test databases before running tests. Use the connection string from `.env.test`, not a manually constructed one.
+When changing the database schema, Prisma, migrations, push to both dev and test databases before running tests. Use the connection string from `.env.test`, not a manually constructed one.
 
 ## Test Resource Isolation
 
 Tests running in parallel must not compete for shared resources.
 
-- **Ports**: use random or OS-assigned ports (port 0). Never hardcode (3000, 8080): they fail in parallel runs or when the port is in use
+- **Ports**: use random or OS-assigned ports, port 0. Never hardcode, 3000, 8080: they fail in parallel runs or when the port is in use
 - **Database schemas**: use per-test or per-worker schemas, unique database names, or transactional rollback to prevent test data collisions
 - **File system**: use OS-provided temp directories with unique prefixes per test. Clean up in `afterEach`
 - **Environment variables**: restore originals after each test. Leaked changes cause order-dependent failures
@@ -197,7 +197,7 @@ Tests running in parallel must not compete for shared resources.
 
 Every page and component must render correctly on the smallest supported viewport. A layout that works on desktop but breaks on mobile is a bug.
 
-- Test on 320px width (iPhone SE) as the minimum. If it works at 320px, it works everywhere
+- Test on 320px width, iPhone SE as the minimum. If it works at 320px, it works everywhere
 - E2E tests must include at least one mobile viewport test per page using Playwright's `page.setViewportSize({ width: 375, height: 667 })`
 - Verify: no horizontal overflow, no truncated buttons, no overlapping elements, no unreadable text
 - Tables must either scroll horizontally or collapse into a card layout on mobile
@@ -207,7 +207,7 @@ Every page and component must render correctly on the smallest supported viewpor
 
 When comparing implementations or measuring performance:
 
-- **Use median (p50), not mean.** GC pauses, JIT warmup, and outliers distort the mean. Report p50, p95, and p99
+- **Use median, p50, not mean.** GC pauses, JIT warmup, and outliers distort the mean. Report p50, p95, and p99
 - **Include the runtime version.** Results change across versions. Record language version, runtime, and date
 - **Audit for correctness.** A silent error produces misleading "fast" results. Verify the benchmark exercises the intended code path
 - **Measure with realistic data.** Micro-benchmarks with 10 items do not predict behavior with 10,000 items. Use representative data sizes and realistic code paths
@@ -254,7 +254,7 @@ Detect performance regressions before they reach production.
 
 - Establish baselines for API latency, page load time, and bundle size
 - Compare before/after on every PR. Alert on p95 latency increase >10% or bundle size increase >5%
-- Use median (p50) for primary reporting, not mean. GC pauses and outliers distort the mean
+- Use median, p50 for primary reporting, not mean. GC pauses and outliers distort the mean
 - Report p50, p95, and p99 with runtime version and date
 - Verify benchmarks exercise the intended code path. Silent errors produce misleading "fast" results
 - Use realistic data sizes. Micro-benchmarks with 10 items do not predict behavior with 10,000 items

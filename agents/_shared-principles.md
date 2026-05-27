@@ -4,7 +4,7 @@ This file is a reference fragment. Every agent in this directory follows these p
 
 ## Directory Conventions
 
-The [`agents/`](.) directory contains both agent definitions and support files. Counts in documentation refer to **agents only**, excluding files prefixed with `_` (shared fragments) and [`TEMPLATE.md`](TEMPLATE.md) (boilerplate). To count agents: `ls agents/*.md | grep -vE "^_|TEMPLATE"`.
+The [`agents/`](.) directory contains both agent definitions and support files. Counts in documentation refer to **agents only**, excluding files prefixed with `_`, shared fragments, and [`TEMPLATE.md`](TEMPLATE.md) covering boilerplate. To count agents: `ls agents/*.md | grep -vE "^_|TEMPLATE"`.
 
 ## Execution
 

@@ -76,11 +76,11 @@ function validateOrder(input: OrderInput): Result<ValidOrder, ValidationError[]>
 }
 ```
 
-Use fail-fast for sequential dependencies (step B needs step A's output). Use error accumulation for independent validations (email and address have no dependency on each other).
+Use fail-fast for sequential dependencies, step B needs step A's output. Use error accumulation for independent validations, email and address have no dependency on each other.
 
 ### Async pipelines
 
-The same pattern works with `ResultAsync` (neverthrow) or `Effect` for async operations:
+The same pattern works with `ResultAsync`, neverthrow, or `Effect` for async operations:
 
 ```typescript
 function submitOrder(input: unknown): ResultAsync<OrderConfirmation, SubmitOrderError> {
@@ -138,7 +138,7 @@ Rules:
 | neverthrow | ~5 KB | `ResultAsync` built-in | Small | Most TypeScript projects |
 | Effect | ~200 KB | Native, full runtime | Large, growing | Complex systems with dependency injection, concurrency, and observability needs |
 
-Start with neverthrow. Move to Effect when you need its runtime features (structured concurrency, layers, telemetry). Do not adopt Effect for simple Result chaining.
+Start with neverthrow. Move to Effect when you need its runtime features, structured concurrency, layers, telemetry. Do not adopt Effect for simple Result chaining.
 
 ## Error Propagation Semantics
 
@@ -167,7 +167,7 @@ source$.pipe(
 );
 ```
 
-Use `Result.fromPromise` (or the neverthrow equivalent) to bridge a single async operation into a Result. Use Observable pipelines when the delivery is an ongoing sequence (WebSocket messages, SSE events, polling intervals).
+Use `Result.fromPromise`, or the neverthrow equivalent, to bridge a single async operation into a Result. Use Observable pipelines when the delivery is an ongoing sequence, WebSocket messages, SSE events, polling intervals.
 
 ## Anti-Patterns
 

@@ -4,15 +4,31 @@
 
 These are the thresholds for "good" scores. Measure on real user data, not just lab tests.
 
-| Metric | Target | What it measures |
-|--------|--------|-----------------|
-| LCP | Under 2.0s | Largest visible content element fully rendered |
-| INP | Under 150ms | Responsiveness to user interactions across the page lifecycle |
-| CLS | Under 0.05 | Visual stability, cumulative layout shift |
+| Metric | Target (ours) | Google "good" threshold | What it measures |
+|--------|--------------|------------------------|------------------|
+| LCP | Under 2.0s | Under 2.5s | Largest visible content element fully rendered |
+| INP | Under 150ms | Under 200ms | Responsiveness to user interactions across the page lifecycle |
+| CLS | Under 0.05 | Under 0.1 | Visual stability, cumulative layout shift |
+
+Our targets are tighter than Google's "good" thresholds on purpose. A surface that just barely scrapes Google's bar is not differentiated. Surfaces that aim 20% inside the bar absorb variance from slow devices, third-party drift, and feature growth without falling out of compliance.
 
 - Measure with Real User Monitoring, not just Lighthouse. Lab scores hide device and network variance.
 - Track p75 values. The 75th percentile reflects the experience of most users, including slower devices and connections.
 - Separate metrics by page type. A landing page has different budgets than a data-heavy dashboard.
+
+### Per-Page JS Budget Template
+
+The "Under 300KB JavaScript" line in Resource Budgets is a global cap. Real codebases need a per-page tier so a marketing landing is not held to the same line as a data console. Pick the tier that matches the page and set it as a build-time check.
+
+| Page tier | Examples | JS budget (compressed) | Rationale |
+|-----------|----------|------------------------|-----------|
+| Static / landing | Marketing pages, blog posts, docs | Under 80KB | Pages must render usefully without JS. Most users do not need any. |
+| App shell | Login, signup, password reset, simple forms | Under 150KB | Limited interactivity. Heavy frameworks are wasted weight. |
+| Standard app page | List views, profile pages, settings | Under 300KB | The default tier. Matches the global cap. |
+| Heavy interactive | Editor, dashboard, table-heavy console | Under 500KB | Justified by feature depth. Document the budget in the page's README. |
+| Embedded widget | Iframe widgets, embeddable scripts | Under 50KB | Host site is paying the cost. Keep it negligible. |
+
+Anything above "heavy interactive" requires an explicit budget waiver in the spec folder, with an owner and a follow-up to reduce it. A 1MB+ page is not a budget; it is a technical debt entry.
 
 ## Resource Budgets
 

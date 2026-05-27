@@ -25,7 +25,7 @@ The code uses the same terms that domain experts use. Not developer translations
 Rules:
 - Class names, method names, enum values, and event names come from domain language
 - If the team cannot agree on a term, that is a modeling question to resolve with domain experts, not a naming question to resolve in a PR
-- When language changes (business redefines a concept), rename in code. The cost of a rename is lower than the cost of permanent translation
+- When language changes, business redefines a concept, rename in code. The cost of a rename is lower than the cost of permanent translation
 
 ## Value Objects
 
@@ -161,7 +161,7 @@ type OrderEvent = OrderPlaced | OrderCancelled | OrderShipped;
 ```
 
 Rules:
-- Past tense: `OrderPlaced`, not `PlaceOrder` (that is a command)
+- Past tense: `OrderPlaced`, not `PlaceOrder`. That is a command
 - Immutable. Events represent facts that already happened
 - Include all data a consumer needs. Consumers should not need to query back for details
 - Use discriminated unions with a `kind` tag for exhaustive matching
@@ -212,7 +212,7 @@ Rules:
 - Repository interface uses domain types only
 - Repositories return fully reconstituted aggregates, not database rows or partial objects
 - `save` handles both insert and update. The caller does not distinguish between new and existing aggregates
-- Repositories do not contain query logic for reporting or search. Use separate read models for complex queries (CQRS)
+- Repositories do not contain query logic for reporting or search. Use separate read models for complex queries. CQRS
 
 ## Saga vs Domain Events
 

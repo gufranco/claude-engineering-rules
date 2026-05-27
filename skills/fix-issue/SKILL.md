@@ -7,7 +7,7 @@ End-to-end workflow for resolving a GitHub issue: from reading the issue to comm
 
 ## Arguments
 
-- `<number>` (required): the GitHub issue number to fix.
+- `<number>` is required: the GitHub issue number to fix.
 - `--dry-run`: analyze and propose a fix without implementing.
 
 ## Process
@@ -51,7 +51,7 @@ Run the pre-flight checks from [`../../rules/pre-flight.md`](../../rules/pre-fli
 
 3. **Interface verification.** Read the signatures, types, and contracts of every function or API the fix will touch.
 
-4. **Root cause confirmation** (bugs only). Follow `../../rules/debugging.md`:
+4. **Root cause confirmation**, bugs only. Follow `../../rules/debugging.md`:
    - Reproduce the bug.
    - State the root cause: WHY, not just WHERE.
    - Predict what a test input will produce.
@@ -63,8 +63,8 @@ Run the pre-flight checks from [`../../rules/pre-flight.md`](../../rules/pre-fli
 2. **Implement the fix.** Follow [`../../rules/code-style.md`](../../rules/code-style.md) for all code written.
 
 3. **Write tests.** Every fix must have tests that:
-   - Fail without the fix and pass with it (for bugs).
-   - Cover the new behavior including edge cases (for features).
+   - Fail without the fix and pass with it, for bugs.
+   - Cover the new behavior including edge cases, for features.
    - Meet 95%+ coverage on changed files.
 
 4. **If `--dry-run`:** stop here. Present the proposed approach, affected files, and test plan. Do not write code.

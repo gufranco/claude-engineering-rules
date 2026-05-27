@@ -20,7 +20,7 @@ The hook does not know any real identity. It validates presence, locality, and n
 
 ## Template for `~/.gitconfig`
 
-This is a template. Replace placeholder values (`personal-user`, `work-org`, `alice@example.com`, `bob@example.org`) with real account names and emails before installing.
+This is a template. Replace placeholder values, `personal-user`, `work-org`, `alice@example.com`, `bob@example.org`, with real account names and emails before installing.
 
 ```ini
 [user]
@@ -67,7 +67,7 @@ This is a template. Replace placeholder values (`personal-user`, `work-org`, `al
 | Push | `git push`, `git push --force`, `git push --force-with-lease` | Walk `git log --format=%ae @{push}..HEAD`. Block if any author email is empty or matches a placeholder pattern |
 | Config mutation | `git config user.email <value>`, `git config user.name <value>`, `git config --local user.*` | Block any `--local` write to `user.*`. Allow `--global` writes (they edit `~/.gitconfig`, the source of truth) |
 
-Read-only commands (`git config --get user.email`, `git status`, `git log`) are not gated.
+Read-only commands, `git config --get user.email`, `git status`, `git log`, are not gated.
 
 ## Bypass
 

@@ -17,6 +17,7 @@ Do not spawn subagents. Complete this task using direct tool calls only.
 
 - Do not call Edit, Write, MultiEdit. Return text only.
 - Do not run the dev server, do not run tests, do not run linters. Read-only investigation.
+- Do not push. Subagents never push to remote; the orchestrator handles all git operations after the loop terminates.
 - Do not modify the rubric mid-loop. The plan is produced once and used for the entire iteration.
 - The rubric must have exactly 5 rows. Weights must sum to 10.
 
@@ -68,7 +69,7 @@ State the most reasonable interpretation explicitly under "Open assumptions" and
 **Brief is too large for one loop:**
 Produce a plan for the smallest viable subset that delivers value, and list the remainder under "Decomposition". The orchestrator may call you again for the next chunk.
 
-**Brief describes a non-feature task (refactor, rename, format):**
+**Brief describes a non-feature task, refactor, rename, format:**
 Return a plan that names the task as a refactor and a rubric that scores on behavior preservation, not on new functionality.
 
 ## Final Checklist

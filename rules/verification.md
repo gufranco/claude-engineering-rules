@@ -38,7 +38,7 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17 during
 - "It should work" based on reading the code, without executing it
 - "Build succeeds" based on no syntax errors, without actually building
 - "Fixed the bug" based on the fix looking correct, without reproducing
-- Conflating "no errors" with "works correctly" (silent failures)
+- Conflating "no errors" with "works correctly". Silent failures
 - "CI passed" but ignoring deprecation warnings or non-fatal annotations in the run output
 - Dismissing a flagged issue as "pre-existing" or "not introduced by this change". A problem surfaced by a verification surface is in scope regardless of when it was introduced. See [`found-fix.md`](found-fix.md)
 - Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. `tail -20` on a run with 50+ failures shows only the summary line, hiding every failure. Always use `grep -E "passed|failed"` to capture the full result counts, or read the exit code. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
@@ -81,7 +81,7 @@ This check applies to analytical output: reviews, assessments, incident analyses
 
 ## Cross-Platform Verification
 
-When code has platform-specific branches (architecture checks, OS detection, conditional package lists), never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
+When code has platform-specific branches, architecture checks, OS detection, conditional package lists, never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
 
 ## Post-Deploy Verification
 

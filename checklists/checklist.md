@@ -1,6 +1,6 @@
 # Checklist
 
-Single source of truth for what to verify. Shared by completion gates (self-review during implementation), `/review` (code review), and `/assessment` (architecture audit).
+Single source of truth for what to verify. Shared by completion gates for self-review during implementation, `/review` for code review, and `/assessment` for architecture audit.
 
 Each consumer applies the checklist differently:
 
@@ -22,7 +22,7 @@ Not every category applies to every change. Skip categories clearly irrelevant t
 - [ ] Null, undefined, and empty values handled on every code path
 - [ ] Boolean logic correct: no inverted conditions, missing negations, or wrong operator precedence
 - [ ] Return values checked on every call that can fail
-- [ ] No type coercion traps: strict equality (`===`) where needed
+- [ ] No type coercion traps: strict equality, `===` where needed
 - [ ] No unreachable code after early returns, throws, or breaks
 - [ ] Switch statements have `break` and `default` where required
 - [ ] Regex patterns correct, anchored, and safe from ReDoS
@@ -50,7 +50,7 @@ Error classification and typed error returns: [`rules/code-style.md`](../rules/c
 - [ ] Error messages helpful for debugging without leaking internals
 - [ ] Error propagation strategy consistent across modules
 - [ ] No thrown exception that could crash a request handler unhandled
-- [ ] Errors classified: transient (retry with backoff), permanent (fail immediately), or ambiguous (retry with limit, then fail)
+- [ ] Errors classified: transient, retry with backoff, permanent, fail immediately, or ambiguous such as retry with limit, or then fail
 - [ ] Error handler self-protecting: logging failure inside handler falls back to stdout
 
 ### 4. Concurrency
@@ -66,10 +66,10 @@ Error classification and typed error returns: [`rules/code-style.md`](../rules/c
 
 Do not check these items abstractly. For each write path, identify every actor that can trigger it and trace the interleaving.
 
-- [ ] **All concurrent actors identified.** For every write path, list every source that can trigger it: user request, webhook delivery, webhook retry, cron job, queue consumer, another service. Two actors from the same source (two webhook deliveries with different timestamps) count as distinct actors
-- [ ] **Timeline drawn for 2+ concurrent actors.** Pick the two most likely concurrent actors and trace their execution step by step. At each step where one actor reads or writes shared state, ask: "what if the other actor just wrote to this same row/key/resource?" If any interleaving produces incorrect state (double bonus, orphaned token, lost update), the code needs a lock, transaction, or constraint
-- [ ] **Every read-then-write in the same lock/transaction scope.** If a function reads a value, makes a decision, and writes based on that decision, the read and write must be inside the same transaction or protected by a row-level lock. An application-level check (`if exists, skip`) without a database constraint or `FOR UPDATE` is a TOCTOU race
-- [ ] **Multi-step mutations protected against interleaving.** If a function does void-then-create, delete-then-insert, or any sequence of writes that must happen together, verify a single actor cannot interleave between the steps. A per-entity mutex (Redis lock keyed on user ID) or an interactive database transaction spanning all steps prevents interleaving
+- [ ] **All concurrent actors identified.** For every write path, list every source that can trigger it: user request, webhook delivery, webhook retry, cron job, queue consumer, another service. Two actors from the same source, two webhook deliveries with different timestamps count as distinct actors
+- [ ] **Timeline drawn for 2+ concurrent actors.** Pick the two most likely concurrent actors and trace their execution step by step. At each step where one actor reads or writes shared state, ask: "what if the other actor just wrote to this same row/key/resource?" If any interleaving produces incorrect state, double bonus, orphaned token, lost update, the code needs a lock, transaction, or constraint
+- [ ] **Every read-then-write in the same lock/transaction scope.** If a function reads a value, makes a decision, and writes based on that decision, the read and write must be inside the same transaction or protected by a row-level lock. An application-level check, `if exists, skip` without a database constraint or `FOR UPDATE` is a TOCTOU race
+- [ ] **Multi-step mutations protected against interleaving.** If a function does void-then-create, delete-then-insert, or any sequence of writes that must happen together, verify a single actor cannot interleave between the steps. A per-entity mutex, Redis lock keyed on user ID or an interactive database transaction spanning all steps prevents interleaving
 - [ ] **`Promise.all` with shared mutable state flagged.** Arrays, objects, or counters mutated from concurrent promises via `.push()`, `count++`, or property assignment are not safe. Use `Promise.allSettled` and classify results afterwards, or process sequentially when the item count is small
 
 ### 5. Data Integrity
@@ -77,15 +77,15 @@ Do not check these items abstractly. For each write path, identify every actor t
 - [ ] **Idempotent:** every write operation safe to execute twice with the same input. If not naturally idempotent, a guard prevents duplicate effects
 - [ ] **Deduplicated:** natural dedup key identified with durable check-before-process. In-memory-only dedup is not acceptable
 - [ ] **Atomic:** related writes wrapped in a transaction or conditional expression. No partial writes left to corrupt state
-- [ ] Validation present at every system boundary: not just syntactic but semantic (positive amounts, valid date ranges, enum membership)
+- [ ] Validation present at every system boundary: not just syntactic but semantic such as positive amounts, valid date ranges, or enum membership
 - [ ] Database constraints match application-level validation: unique constraints, foreign keys, check constraints
 - [ ] Async processors have DLQ, partial batch failure reporting, dedup by message ID, and monitoring
 
 #### Schema verification (MANDATORY, do not skip)
 
-- [ ] **Every application-level uniqueness check has a DB constraint.** For every `findFirst`/`findUnique` + `create` pattern, read the actual schema file (Prisma schema, migration SQL, or ORM model definition) and verify a corresponding `@@unique`, `UNIQUE INDEX`, or `UNIQUE` constraint exists on the same columns. An application check without a DB constraint is a race condition. Never assume a constraint exists because the code checks for it
-- [ ] **Every application-level NOT NULL check has a DB constraint.** If the code throws when a field is null, the column must be `NOT NULL` in the schema. An application check without a DB constraint allows corrupt data from other code paths (migrations, manual SQL, other services)
-- [ ] **Batch transactions use interactive mode for dependent writes.** `$transaction([...])` (batch array) executes independent statements. If statement B depends on statement A succeeding (e.g., detach token then delete bonus), use `$transaction(async (tx) => { ... })` (interactive) so a failure in A prevents B from executing. Batch mode + dependent writes = partial corruption on failure
+- [ ] **Every application-level uniqueness check has a DB constraint.** For every `findFirst`/`findUnique` + `create` pattern, read the actual schema file, Prisma schema, migration SQL, or ORM model definition and verify a corresponding `@@unique`, `UNIQUE INDEX`, or `UNIQUE` constraint exists on the same columns. An application check without a DB constraint is a race condition. Never assume a constraint exists because the code checks for it
+- [ ] **Every application-level NOT NULL check has a DB constraint.** If the code throws when a field is null, the column must be `NOT NULL` in the schema. An application check without a DB constraint allows corrupt data from other code paths such as migrations, manual SQL, or other services
+- [ ] **Batch transactions use interactive mode for dependent writes.** `$transaction([...])`, batch array executes independent statements. If statement B depends on statement A succeeding (e.g., detach token then delete bonus), use `$transaction(async, tx => { ... })`, interactive so a failure in A prevents B from executing. Batch mode + dependent writes = partial corruption on failure
 
 ### 6. Algorithmic Performance
 
@@ -93,11 +93,11 @@ Data structure selection guide and anti-pattern catalog: [`standards/algorithmic
 
 #### Complexity
 
-- [ ] No O(n^2) or worse hidden in nested loops, repeated `.find()`, `.filter()` inside `.map()`
+- [ ] No O of n-squared or worse hidden in nested loops, repeated `.find()`, `.filter()` inside `.map()`
 - [ ] No `.find()`, `.includes()`, or `.indexOf()` called inside a loop over another collection. Build a Map or Set first
 - [ ] No string concatenation in loops. Collect in array, `.join()` at the end
 - [ ] No `Array.shift()` in a while loop (O(n^2) from reindexing). Use a queue, pointer index, or reverse + pop
-- [ ] No nested `.reduce()` with spread accumulator (O(n^2) from copying). Mutate the accumulator
+- [ ] No nested `.reduce()` with spread accumulator, which is O of n-squared from copying. Mutate the accumulator
 - [ ] No sorting when only min/max/k-th element is needed. Use a heap or selection algorithm
 - [ ] No re-sorting after single insertions. Use binary search + insert or a sorted data structure
 - [ ] Sorting only when necessary, using the right algorithm for the data size
@@ -112,7 +112,7 @@ Data structure selection guide and anti-pattern catalog: [`standards/algorithmic
 #### Resource management
 
 - [ ] No unbounded data loaded into memory. Streams or pagination for large datasets
-- [ ] No allocations inside hot loops (object creation, string concatenation, closures)
+- [ ] No allocations inside hot loops such as object creation, string concatenation, or closures
 - [ ] File handles, connections, and streams closed after use
 - [ ] No synchronous I/O in async code paths
 - [ ] No N+1 query patterns. Batch or join instead
@@ -121,7 +121,7 @@ Data structure selection guide and anti-pattern catalog: [`standards/algorithmic
 #### Space complexity
 
 - [ ] No unbounded caches. Every Map or object used as cache has a max size, TTL, or LRU eviction
-- [ ] No closure leaks: closures in long-lived objects (event handlers, timers, singletons) do not capture large scopes
+- [ ] No closure leaks: closures in long-lived objects, event handlers, timers, singletons do not capture large scopes
 - [ ] No event listener accumulation: listeners registered in loops or hot paths have cleanup
 - [ ] Recursive functions have bounded depth or use iteration with explicit stack
 - [ ] `.map()` / `.filter()` chains on large datasets use a single loop or generators to avoid intermediate array allocations
@@ -133,51 +133,51 @@ Skip if no frontend code changed. Full reference: [`standards/frontend.md`](../s
 #### Rendering
 
 - [ ] No unnecessary re-renders. Dependencies in `useEffect`/`useMemo`/`useCallback` correct
-- [ ] Large lists virtualized (content-visibility or library) when > 100 items
+- [ ] Large lists virtualized, content-visibility or library when > 100 items
 - [ ] No blocking operations on the main thread. CPU-intensive work offloaded to Web Workers
 - [ ] Bundle size impact considered. No unnecessarily large dependencies added
 
 #### Performance Budgets
 
 - [ ] Total page weight < 1.5 MB
-- [ ] JavaScript (compressed) < 300 KB
-- [ ] CSS (compressed) < 100 KB
+- [ ] JavaScript, compressed < 300 KB
+- [ ] CSS, compressed < 100 KB
 - [ ] Above-fold images < 500 KB total
 - [ ] Fonts < 100 KB total. Self-hosted, not loaded from external CDNs
 
 #### Core Web Vitals
 
-- [ ] LCP < 2.5s. LCP element preloaded with `fetchpriority="high"` and `loading="eager"`. Critical CSS inlined (< 14 KB). No render-blocking JS in `<head>`
+- [ ] LCP < 2.5s. LCP element preloaded with `fetchpriority="high"` and `loading="eager"`. Critical CSS inlined, < 14 KB. No render-blocking JS in `<head>`
 - [ ] INP < 200ms. No tasks > 50ms on main thread. Event handlers complete in < 100ms. Heavy work deferred with `requestIdleCallback`. Visual feedback provided immediately on interaction
 - [ ] CLS < 0.1. All images and videos have explicit `width`/`height` or `aspect-ratio`. Ads and embeds have `min-height` containers. Dynamic content inserted below viewport, not above. Fonts use `font-display: optional` or matched `size-adjust` metrics. Animations use `transform`/`opacity` only
 
 #### Images
 
-- [ ] Format selection: AVIF for photos (fallback WebP, then JPEG), PNG for transparency, SVG for icons and illustrations
+- [ ] Format selection: AVIF for photos, fallback WebP, then JPEG, PNG for transparency, SVG for icons and illustrations
 - [ ] Responsive images use `<picture>` with multiple `srcset` breakpoints and `sizes` attribute
 - [ ] Below-fold images use `loading="lazy"` and `decoding="async"`
 
 #### Fonts
 
-- [ ] `font-display: swap` (primary) or `font-display: optional` (non-critical)
+- [ ] `font-display: swap`, primary or `font-display: optional`. Non-critical
 - [ ] Critical fonts preloaded: `<link rel="preload" href="font.woff2" as="font" type="font/woff2" crossorigin>`
-- [ ] Variable fonts used when multiple weights are needed (one file instead of many)
+- [ ] Variable fonts used when multiple weights are needed. One file instead of many
 
 #### Third-Party Scripts
 
 - [ ] Loaded with `async` or `defer`. No synchronous third-party scripts in critical path
-- [ ] Non-essential scripts (analytics, chat widgets) deferred until after interaction or DOMContentLoaded
+- [ ] Non-essential scripts, analytics, chat widgets deferred until after interaction or DOMContentLoaded
 
 #### SEO
 
 Skip if the project is not a public-facing web application.
 
-- [ ] Every page has a unique `<title>` (50-60 chars) with primary keyword near the beginning
-- [ ] Every page has a unique `<meta name="description">` (150-160 chars)
+- [ ] Every page has a unique `<title>`, 50-60 chars with primary keyword near the beginning
+- [ ] Every page has a unique `<meta name="description">`. 150-160 chars
 - [ ] Single `<h1>` per page. Heading hierarchy follows logical order, no skipped levels
 - [ ] Canonical URL set: `<link rel="canonical" href="...">`
 - [ ] Images have descriptive `alt` text and keyword-relevant filenames
-- [ ] Structured data (JSON-LD) present for the content type (Article, Product, FAQ, Organization, BreadcrumbList)
+- [ ] Structured data, JSON-LD present for the content type such as Article, Product, FAQ, Organization, or BreadcrumbList
 - [ ] `robots.txt` allows crawling of public pages, blocks `/admin/`, `/api/`, `/private/`
 - [ ] XML sitemap exists, includes only canonical indexable URLs, submitted to Search Console
 
@@ -185,12 +185,12 @@ Skip if the project is not a public-facing web application.
 
 Full testing strategy: [`standards/accessibility-testing.md`](../standards/accessibility-testing.md). Design rules: [`standards/frontend.md`](../standards/frontend.md).
 
-- [ ] All interactive targets meet 24x24 CSS pixel minimum (WCAG 2.5.8)
-- [ ] Focused element not entirely hidden by sticky headers, footers, or overlays (WCAG 2.4.11). `scroll-margin-top`/`scroll-margin-bottom` set to account for fixed bars
-- [ ] Drag actions have single-pointer alternatives: buttons, inputs, or click-based interactions (WCAG 2.5.7)
-- [ ] Help mechanisms (contact, chat, FAQ) appear in the same relative position across pages (WCAG 3.2.6)
-- [ ] Users not forced to re-enter information already provided in the same session (WCAG 3.3.7)
-- [ ] Login does not rely solely on cognitive function tests. Paste allowed in password fields. `autocomplete="current-password"` set. Alternative auth methods available (WCAG 3.3.8)
+- [ ] All interactive targets meet 24x24 CSS pixel minimum. WCAG 2.5.8
+- [ ] Focused element not entirely hidden by sticky headers, footers, or overlays, WCAG 2.4.11. `scroll-margin-top`/`scroll-margin-bottom` set to account for fixed bars
+- [ ] Drag actions have single-pointer alternatives: buttons, inputs, or click-based interactions. WCAG 2.5.7
+- [ ] Help mechanisms, contact, chat, FAQ appear in the same relative position across pages. WCAG 3.2.6
+- [ ] Users not forced to re-enter information already provided in the same session. WCAG 3.3.7
+- [ ] Login does not rely solely on cognitive function tests. Paste allowed in password fields. `autocomplete="current-password"` set. Alternative auth methods available. WCAG 3.3.8
 
 ### 8. Testing
 
@@ -206,7 +206,7 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 #### Test quality
 
 - [ ] Tests follow AAA pattern with those exact comments: `// Arrange`, `// Act`, `// Assert`. No other comments in test bodies. See [`rules/testing.md`](../rules/testing.md) for the full AAA policy
-- [ ] Test names describe behavior, not implementation ("should reject expired token" not "test validateToken")
+- [ ] Test names describe behavior, not implementation. Prefer `"should reject expired token"` over `"test validateToken"`
 - [ ] Assertions specific enough to catch regressions. Not just `toBeTruthy()` when a specific value matters
 - [ ] No test-only backdoors in production code
 - [ ] Tests independent: no shared mutable state between tests, no ordering dependency
@@ -273,9 +273,9 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] Variable names describe what the value IS, not how it was computed
 - [ ] Function names describe what the function DOES, using verbs
 - [ ] Boolean variables use `is`, `has`, `can`, `should` prefixes
-- [ ] No single-letter variables outside of trivial loops (`i`, `j`)
+- [ ] No single-letter variables outside of trivial loops such as `i`, or `j`
 - [ ] No misleading names (e.g. `getUser` that also modifies state)
-- [ ] Abbreviations avoided unless universally understood (`url`, `id`, `html` are fine; `usr`, `mgr`, `cfg` are not)
+- [ ] Abbreviations avoided unless universally understood where `url`, `id`, `html` are fine; `usr`, `mgr`, `cfg` are not)
 - [ ] File and module names consistent with the project's naming convention
 - [ ] Code readable without comments. Comments explain WHY, not WHAT
 - [ ] File ordering: main export first, then subcomponents, helpers, static content, types
@@ -288,7 +288,7 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] Coupling between modules appropriate. Changed code testable in isolation
 - [ ] No circular dependencies introduced
 - [ ] Configuration externalized. No environment-specific behavior hardcoded
-- [ ] Decision reversibility considered: one-way doors (public API shape, database schema, data deletion) get extra scrutiny
+- [ ] Decision reversibility considered: one-way doors, public API shape, database schema, data deletion get extra scrutiny
 - [ ] Fan-out low: module depends only on abstractions it needs
 - [ ] Law of Demeter: only call methods on direct dependencies, parameters, and objects you create
 - [ ] Use-case functions for multi-step business flows: zero conditionals, zero loops, flat sequential calls to domain services
@@ -300,7 +300,7 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] Change does not break existing callers, consumers, or clients. Function signatures, API responses, event payloads, and configuration formats checked
 - [ ] If a public function signature changed, all callers in the codebase are updated
 - [ ] If an API response shape changed, frontend consumers and external integrations are updated
-- [ ] If a database column was renamed, removed, or retyped, the migration follows the safe pattern (add new, dual-write, migrate readers, drop old)
+- [ ] If a database column was renamed, removed, or retyped, the migration follows the safe pattern such as add new, dual-write, migrate readers, or drop old
 - [ ] If a message or event schema changed, existing consumers can still process old messages in flight
 - [ ] If environment variables were renamed or removed, deployment configs, CI pipelines, and documentation are updated
 - [ ] If a feature was removed, a deprecation path or migration guide exists
@@ -310,13 +310,13 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] New dependency justified. Could this be done with existing code or stdlib?
 - [ ] Dependency actively maintained with recent commits and no known vulnerabilities
 - [ ] Version pinned exactly in lockfile
-- [ ] License compatible with the project (no GPL in MIT projects, no AGPL in SaaS without compliance)
+- [ ] License compatible with the project such as no GPL in MIT projects, or no AGPL in SaaS without compliance
 - [ ] Bundle size impact acceptable for frontend dependencies
 - [ ] Dev dependencies correctly separated from production dependencies
 - [ ] Transitive dependencies audited: no known vulnerabilities in the dependency tree
-- [ ] No duplicate packages solving the same problem (two HTTP clients, two date libraries)
-- [ ] Type definitions available (native or `@types/*`) for TypeScript projects
-- [ ] License compatible with all project dependencies (no transitive GPL in MIT projects)
+- [ ] No duplicate packages solving the same problem such as two HTTP clients, or two date libraries
+- [ ] Type definitions available, native or via `@types/*`, for TypeScript projects
+- [ ] License compatible with all project dependencies. No transitive GPL in MIT projects
 - [ ] Bundle size delta measured for frontend dependencies. No single dependency adds more than 50KB gzipped without justification
 
 ### 14. Documentation
@@ -324,12 +324,12 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] README updated if setup, env vars, API, or architecture changed
 - [ ] New env vars documented in `.env.example`
 - [ ] Breaking changes documented with migration steps
-- [ ] API documentation updated for new or changed endpoints (OpenAPI, JSDoc, or inline)
+- [ ] API documentation updated for new or changed endpoints such as OpenAPI, JSDoc, or or inline
 - [ ] Changelog entry added for user-facing changes
 - [ ] Migration guide provided when upgrading dependencies with breaking changes
-- [ ] Inline code comments explain non-obvious decisions (the "why", not the "what")
-- [ ] PR description explains what changed and why (review mode only)
-- [ ] PR scope focused: one logical change, not a grab-bag of unrelated fixes (review mode only)
+- [ ] Inline code comments explain non-obvious decisions such as the "why", or not the "what"
+- [ ] PR description explains what changed and why. Review mode only
+- [ ] PR scope focused: one logical change, not a grab-bag of unrelated fixes. Review mode only
 - [ ] Public API types and interfaces have JSDoc or equivalent doc comments describing purpose and constraints
 - [ ] Inline comments explain the "why" for non-obvious decisions. No comments restating what the code does
 
@@ -347,7 +347,7 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 - [ ] Feature flag states consistent. If a flag guards behavior in one file, all related files respect the same flag
 - [ ] Env var completeness. Every env var referenced in code exists in `.env.example`, Docker Compose, CI/CD, and Terraform with matching names
 - [ ] Error type consistency. Domain error classes used across modules share a common base or discriminant, not ad-hoc strings
-- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic (pricing, permissions, formatting) is identical across all paths. No path reimplements the calculation inline. See [`rules/code-style.md`](../rules/code-style.md) "Delivery Path Consistency"
+- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic, pricing, permissions, formatting is identical across all paths. No path reimplements the calculation inline. See [`rules/code-style.md`](../rules/code-style.md) "Delivery Path Consistency"
 
 ### 16. Cascading Fix Analysis
 
@@ -406,162 +406,162 @@ Only apply categories relevant to the system type. A CLI tool does not need cach
 
 ### 18. Idempotency and Deduplication
 
-- [ ] Every write operation (API, event handler, database) safe to execute twice with the same input?
+- [ ] Every write operation, API, event handler, database safe to execute twice with the same input?
 - [ ] Guard mechanism identified per layer?
   - API: `Idempotency-Key` header with cached response
   - Event handler: dedup by message ID before processing
   - Database: upsert, `ON CONFLICT DO NOTHING`, or conditional expression
   - State machine: check current state before transitioning
-- [ ] Natural deduplication key identified (request ID, event ID, user+action+date)?
-- [ ] Dedup state stored durably (database, not in-memory)? Survives restarts?
-- [ ] Dedup window (TTL) exceeds maximum retry/redelivery time?
+- [ ] Natural deduplication key identified such as request ID, event ID, or user+action+date?
+- [ ] Dedup state stored durably, database, not in-memory? Survives restarts?
+- [ ] Dedup window, TTL exceeds maximum retry/redelivery time?
 - [ ] POST endpoints that create resources support `Idempotency-Key` header?
 
 #### Idempotency key trace-through (MANDATORY for webhooks, event handlers, and async processors)
 
 Do not check these items by reading the code in isolation. Trace the key from source to storage to retry.
 
-- [ ] **Key derivation traced.** What exact input produces the idempotency key? Write it down: "key = f(timestamp, body)" or "key = header value". If the key is derived from request metadata (timestamp, nonce, signature), it changes on every retry by the external system. This is a broken idempotency mechanism that only catches network-level duplicates, not application-level retries
-- [ ] **Key stability across retries verified.** Simulate the external system retrying: does the retry produce the same key? If the external system re-signs with a new timestamp, the derived key changes. If the external system sends a stable idempotency header, verify the code uses it. If neither is guaranteed, the idempotency key must be derived from semantically stable fields (email + sorted promotion codes, user ID + action type + date) not from transport metadata
-- [ ] **Key-consumed-before-completion recovery verified.** If the idempotency key is stored in Redis/DB before the protected operation completes, trace what happens when the operation fails after key storage: (a) Is the key deleted on transient failure so retries can proceed? (b) Is the key preserved on permanent failure to prevent re-execution? (c) If the external system retries with a different key (transport-derived), does the retry bypass the consumed key entirely?
-- [ ] **Multi-step mutation atomicity verified.** If the idempotent operation has multiple steps (void old data, create new data), are all steps in a single transaction? If step 2 fails after step 1 succeeded, is the state recoverable? A consumed idempotency key + partially completed mutation = permanently corrupted state if retries are blocked
-- [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys (different timestamps, different request IDs), do they both pass the dedup check? If yes, is there a secondary guard (per-entity mutex, database constraint) that prevents double-processing?
+- [ ] **Key derivation traced.** What exact input produces the idempotency key? Write it down: `key = f of timestamp and body` or `key = header value`. If the key is derived from request metadata, timestamp, nonce, signature, it changes on every retry by the external system. This is a broken idempotency mechanism that only catches network-level duplicates, not application-level retries
+- [ ] **Key stability across retries verified.** Simulate the external system retrying: does the retry produce the same key? If the external system re-signs with a new timestamp, the derived key changes. If the external system sends a stable idempotency header, verify the code uses it. If neither is guaranteed, the idempotency key must be derived from semantically stable fields, email + sorted promotion codes, user ID + action type + date not from transport metadata
+- [ ] **Key-consumed-before-completion recovery verified.** If the idempotency key is stored in Redis/DB before the protected operation completes, trace what happens when the operation fails after key storage:, a Is the key deleted on transient failure so retries can proceed?, b Is the key preserved on permanent failure to prevent re-execution?, c If the external system retries with a different key, transport-derived, does the retry bypass the consumed key entirely?
+- [ ] **Multi-step mutation atomicity verified.** If the idempotent operation has multiple steps, void old data, create new data, are all steps in a single transaction? If step 2 fails after step 1 succeeded, is the state recoverable? A consumed idempotency key + partially completed mutation = permanently corrupted state if retries are blocked
+- [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys, different timestamps, different request IDs, do they both pass the dedup check? If yes, is there a secondary guard, per-entity mutex, database constraint that prevents double-processing?
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) (Data Safety), [`standards/resilience.md`](../standards/resilience.md) (Idempotency, Deduplication)
+Reference: [`rules/code-style.md`](../rules/code-style.md) covering Data Safety, [`standards/resilience.md`](../standards/resilience.md) covering Idempotency, Deduplication
 
 ### 19. Atomicity and Transactions
 
 - [ ] Related writes wrapped in a single transaction?
-- [ ] Conditional writes used to prevent lost updates (optimistic locking, version field)?
-- [ ] Transaction scope kept short (validation and I/O before, not inside)?
+- [ ] Conditional writes used to prevent lost updates such as optimistic locking, or version field?
+- [ ] Transaction scope kept short, with validation and I/O before, not inside?
 - [ ] Explicit rollback on failure, not relying on implicit cleanup?
 - [ ] NoSQL: `TransactWriteItems` or conditional expressions for multi-item atomicity?
-- [ ] Conditional write failures classified: conflict (retry with fresh read) vs duplicate (skip)?
+- [ ] Conditional write failures classified: conflict, retry with fresh read vs duplicate, skip?
 - [ ] Multi-step workflows handle partial failure with rollback or compensating actions?
 
-Reference: [`standards/database.md`](../standards/database.md) (Transactions and Atomic Writes, Conditional Writes)
+Reference: [`standards/database.md`](../standards/database.md) covering Transactions and Atomic Writes, Conditional Writes
 
 ### 20. Error Classification and Retry
 
 - [ ] Every `catch` classifies the error as transient or permanent?
-- [ ] Transient errors (timeout, 429, 503, connection reset): logged as warn, retried with exponential backoff + jitter?
-- [ ] Permanent errors (400, 404, validation, auth): logged as error, failed immediately, never retried?
-- [ ] Ambiguous errors (500, unknown): retried up to 3 times, then treated as permanent?
+- [ ] Transient errors, timeout, 429, 503, connection reset: logged as warn, retried with exponential backoff + jitter?
+- [ ] Permanent errors, 400, 404, validation, auth: logged as error, failed immediately, never retried?
+- [ ] Ambiguous errors, 500, unknown: retried up to 3 times, then treated as permanent?
 - [ ] Classification propagated upstream so callers can make informed decisions?
 - [ ] No bare catch blocks that log and rethrow without classification?
-- [ ] Retry parameters explicit: base delay (100-500ms), multiplier (2x), jitter (0-50%), max retries (3 sync, 5 async)?
-- [ ] Max delay cap set (never exceeds 30s between retries)?
+- [ ] Retry parameters explicit: base delay, 100-500ms, multiplier, 2x, jitter , 0 to 50 percent, max retries such as 3 sync, or 5 async?
+- [ ] Max delay cap set, never exceeds 30s between retries?
 - [ ] Total retry time fits within the caller's timeout budget?
 - [ ] Caught errors include context: what operation failed, with what input, and why?
 - [ ] Async errors handled? No unhandled promise rejections? No missing `await`?
 - [ ] Error propagation consistent? Not mixing thrown exceptions with returned error codes in the same layer?
-- [ ] HTTP status codes correct for each error type (400, 401, 403, 404, 409, 422, 500)?
+- [ ] HTTP status codes correct for each error type: 400, 401, 403, 404, 409, 422, or 500?
 - [ ] Partial failure: if step 3 of 5 fails, are steps 1-2 rolled back or is the state consistent?
 - [ ] Batch processing: individual item failures reported without aborting the batch?
-- [ ] Errors in cleanup code (finally blocks, defer) handled separately?
+- [ ] Errors in cleanup code, finally blocks, defer handled separately?
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) (Error Classification), [`standards/resilience.md`](../standards/resilience.md) (Error Classification, Retry Strategy)
+Reference: [`rules/code-style.md`](../rules/code-style.md) covering Error Classification, [`standards/resilience.md`](../standards/resilience.md) covering Error Classification, Retry Strategy
 
 ### 21. Caching
 
 - [ ] Reads from slow or expensive sources: caching considered?
-- [ ] Cache strategy chosen explicitly (cache-aside, write-through, read-through)?
-- [ ] Invalidation strategy explicit (TTL, event-driven, explicit on write)?
+- [ ] Cache strategy chosen explicitly such as cache-aside, write-through, or read-through?
+- [ ] Invalidation strategy explicit such as TTL, event-driven, or explicit on write?
 - [ ] TTL set with jitter to prevent synchronized expiration?
-- [ ] Popular keys protected from thundering herd (lock-based recomputation, stale-while-revalidate)?
+- [ ] Popular keys protected from thundering herd such as lock-based recomputation, or stale-while-revalidate?
 - [ ] Cache warming strategy for cold starts after deploy?
-- [ ] Max memory limit set? Eviction policy chosen (LRU, LFU)?
+- [ ] Max memory limit set? Eviction policy chosen such as LRU, or LFU?
 - [ ] Hit rate monitored?
 
 Reference: [`standards/caching.md`](../standards/caching.md)
 
 ### 22. Consistency Model
 
-- [ ] Consistency model chosen explicitly (strong, eventual, read-your-writes, causal)?
-- [ ] Weakest tolerable model used (strong only for finance, auth, inventory)?
+- [ ] Consistency model chosen explicitly such as strong, eventual, read-your-writes, or causal?
+- [ ] Weakest tolerable model used such as strong only for finance, auth, or inventory?
 - [ ] Read-your-writes implemented where users mutate and immediately read their own data?
-- [ ] Implementation of read-your-writes explicit (read from primary after write, version token, or optimistic UI update)?
-- [ ] Eventual consistency communicated to consumers (not silently stale)?
+- [ ] Implementation of read-your-writes explicit such as read from primary after write, version token, or or optimistic UI update?
+- [ ] Eventual consistency communicated to consumers, not silently stale?
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Consistency Models)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Consistency Models
 
 ### 23. Back Pressure and Load Management
 
 - [ ] Every in-memory queue and channel has a max size?
-- [ ] Behavior defined when queue is full (reject, drop oldest, block)?
-- [ ] Load shedding strategy: requests classified by priority (critical > important > deferrable)?
+- [ ] Behavior defined when queue is full such as reject, drop oldest, or block?
+- [ ] Load shedding strategy: requests classified by priority, critical > important > deferrable?
 - [ ] Overload responses use 503 with `Retry-After` header?
 - [ ] Rate limiting on public endpoints?
 - [ ] Plan for 10x traffic explicitly considered?
 
-Reference: [`standards/resilience.md`](../standards/resilience.md) (Back Pressure)
+Reference: [`standards/resilience.md`](../standards/resilience.md) covering Back Pressure
 
 ### 24. Bulkhead Isolation
 
 - [ ] Separate connection pool per external dependency?
 - [ ] One slow dependency cannot exhaust the shared pool?
-- [ ] Critical and non-critical workloads isolated (separate processes, queues, or deployments)?
+- [ ] Critical and non-critical workloads isolated such as separate processes, queues, or or deployments?
 - [ ] Per-tenant or per-priority queue isolation where applicable?
 
-Reference: [`standards/resilience.md`](../standards/resilience.md) (Bulkhead)
+Reference: [`standards/resilience.md`](../standards/resilience.md) covering Bulkhead
 
 ### 25. Concurrency Control
 
 - [ ] Fan-out operations bounded by semaphore or worker pool?
 - [ ] No unbounded `Promise.all` over large arrays?
 - [ ] Worker pool size configured, not left at defaults?
-- [ ] Timeout set on each unit of work (stuck worker does not permanently reduce capacity)?
+- [ ] Timeout set on each unit of work, stuck worker does not permanently reduce capacity?
 - [ ] Queue depth, active workers, and rejection count instrumented?
 - [ ] Shared mutable state protected by locks, mutexes, or atomic operations?
-- [ ] No TOCTOU (time-of-check-to-time-of-use) bugs? Check-then-act patterns use database constraints or CAS?
+- [ ] No TOCTOU, time-of-check-to-time-of-use bugs? Check-then-act patterns use database constraints or CAS?
 - [ ] Async operations awaited where the result matters? No fire-and-forget without error handler?
 - [ ] No deadlock potential from acquiring multiple locks?
 
-Reference: [`standards/resilience.md`](../standards/resilience.md) (Concurrency Control)
+Reference: [`standards/resilience.md`](../standards/resilience.md) covering Concurrency Control
 
 ### 26. Saga and Cross-Service Coordination
 
-- [ ] Multi-service transactions use saga pattern (not distributed transactions/2PC)?
+- [ ] Multi-service transactions use the saga pattern, not distributed transactions or 2PC?
 - [ ] Each saga step has an explicit compensating action?
 - [ ] Compensating actions are idempotent?
-- [ ] Saga state persisted durably (can resume after crash)?
+- [ ] Saga state persisted durably, can resume after crash?
 - [ ] Saga timeout defined, compensation triggered if exceeded?
-- [ ] Database write + event publish uses outbox pattern (single transaction)?
-- [ ] Outbox delivery mechanism chosen (polling, CDC, log tailing)?
-- [ ] No dual writes (DB + message broker in separate operations)?
+- [ ] Database write + event publish uses outbox pattern, single transaction?
+- [ ] Outbox delivery mechanism chosen such as polling, CDC, or log tailing?
+- [ ] No dual writes, DB + message broker in separate operations?
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Saga Pattern, Outbox Pattern)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Saga Pattern, Outbox Pattern
 
 ### 27. Event Ordering and Delivery Guarantees
 
-- [ ] Delivery guarantee chosen explicitly (at-most-once, at-least-once, exactly-once)?
+- [ ] Delivery guarantee chosen explicitly such as at-most-once, at-least-once, or exactly-once?
 - [ ] At-least-once delivery paired with idempotent consumers?
-- [ ] Ordering scope chosen (per-entity, global, causal, none)?
-- [ ] Partition key set for per-entity ordering (Kafka partition key, SQS FIFO group ID)?
-- [ ] Out-of-order events handled (version check, last-write-wins, or buffer and reorder)?
+- [ ] Ordering scope chosen such as per-entity, global, causal, or none?
+- [ ] Partition key set for per-entity ordering such as Kafka partition key, or SQS FIFO group ID?
+- [ ] Out-of-order events handled such as version check, last-write-wins, or or buffer and reorder?
 - [ ] Consumers handle message redelivery without duplicate side effects?
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Event Ordering and Delivery Guarantees)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Event Ordering and Delivery Guarantees
 
 ### 28. Distributed Locking
 
-- [ ] Coordination required between instances (scheduled jobs, leader election, exclusive access)?
-- [ ] Lock implementation chosen (Redis, database advisory, ZooKeeper/etcd)?
+- [ ] Coordination required between instances such as scheduled jobs, leader election, or exclusive access?
+- [ ] Lock implementation chosen, such as Redis, database advisory, ZooKeeper, or etcd?
 - [ ] Lease expiry set so crashed holders release locks?
 - [ ] Fencing tokens used to prevent stale writes after lease expiry?
 - [ ] Every write includes the fencing token, storage rejects stale tokens?
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Distributed Locking)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Distributed Locking
 
 ### 29. Schema Evolution
 
 - [ ] Events and messages include a `schemaVersion` field?
 - [ ] All schema changes backward and forward compatible?
 - [ ] No removed or renamed fields without migration plan?
-- [ ] No changed field types (new field with new type added instead)?
+- [ ] No changed field types, new field with new type added instead?
 - [ ] Consumers handle at least current and previous schema version?
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Schema Evolution)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Schema Evolution
 
 ### 30. Immutability
 
@@ -569,10 +569,10 @@ Reference: [`standards/distributed-systems.md`](../standards/distributed-systems
 - [ ] `const` by default, `let` only when reassignment needed?
 - [ ] State transitions produce new state, never mutate previous?
 - [ ] Derived values computed from state via selectors, not cached as mutable fields?
-- [ ] Audit-sensitive data append-only (versioned rows, not in-place updates)?
+- [ ] Audit-sensitive data append-only such as versioned rows, or not in-place updates?
 - [ ] Events stored as immutable facts in event-driven systems?
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) (Immutability)
+Reference: [`rules/code-style.md`](../rules/code-style.md) covering Immutability
 
 ### 31. Query Optimization
 
@@ -585,26 +585,26 @@ Reference: [`rules/code-style.md`](../rules/code-style.md) (Immutability)
 - [ ] Time-range queries: timezone-aware? Not assuming UTC alignment for daily buckets?
 - [ ] Time-range boundaries computed at query time from user's local timezone?
 - [ ] NoSQL key design distributes writes evenly? No hot partitions?
-- [ ] Connection pooling configured? No connection leak (opening without closing)?
+- [ ] Connection pooling configured? No connection leak, opening without closing?
 - [ ] Query plans reviewed with EXPLAIN for new or changed queries? No full table scans on large tables?
 - [ ] Write amplification understood? Indexes add write cost proportional to their count.
 - [ ] Read replicas used for read-heavy queries that tolerate slight staleness?
 
-Reference: [`standards/database.md`](../standards/database.md) (Query Optimization, Time-Range Queries)
+Reference: [`standards/database.md`](../standards/database.md) covering Query Optimization, Time-Range Queries
 
 ### 32. Observability
 
-- [ ] Structured JSON logging with required fields (level, message, timestamp, requestId, service)?
-- [ ] Log levels correct (error for failures, warn for handled-but-unexpected, info for business events)?
-- [ ] Correlation ID (requestId) propagated across all service calls via `X-Request-Id` header?
-- [ ] No sensitive data logged (passwords, tokens, PII)? Redaction patterns applied?
+- [ ] Structured JSON logging with required fields such as level, message, timestamp, requestId, or service?
+- [ ] Log levels correct such as error for failures, warn for handled-but-unexpected, or info for business events?
+- [ ] Correlation ID, requestId propagated across all service calls via `X-Request-Id` header?
+- [ ] No sensitive data logged, passwords, tokens, PII? Redaction patterns applied?
 - [ ] No logging inside tight loops?
-- [ ] Health check endpoints present: liveness (process alive, no deps) + readiness (all deps reachable with latency)?
-- [ ] Metrics for request rate, error rate, latency (p50/p95/p99), saturation?
-- [ ] Metric labels low-cardinality (never user IDs, request IDs, timestamps)?
+- [ ] Health check endpoints present: liveness, process alive, no deps + readiness, all deps reachable with latency?
+- [ ] Metrics for request rate, error rate, latency at p50, p95, and p99, and saturation?
+- [ ] Metric labels low-cardinality such as never user IDs, request IDs, or timestamps?
 - [ ] Distributed tracing: W3C Trace Context headers, spans for inbound/outbound calls, DB queries, and queue ops?
 - [ ] Alerts on symptoms, not causes? Tied to SLO violations? Runbook links on every alert?
-- [ ] SLIs defined (availability, latency, error rate)? SLOs set based on measured data, not guesses?
+- [ ] SLIs defined, availability, latency, error rate? SLOs set based on measured data, not guesses?
 - [ ] Error budget tracked? Reliability prioritized over features when budget is spent?
 - [ ] Every alert has a runbook with: what it means, how to diagnose, how to mitigate, and who to escalate to?
 - [ ] Distributed debugging path documented? Given a requestId, can an engineer trace the full request across services?
@@ -627,23 +627,23 @@ Reference: [`standards/observability.md`](../standards/observability.md)
 - [ ] SSRF: no user-controlled URLs fetched without allowlist validation?
 - [ ] Header injection: no user input in HTTP headers without sanitization?
 - [ ] Template injection: no user input in template strings evaluated server-side?
-- [ ] Input sanitization at all system boundaries (user input, external APIs)?
+- [ ] Input sanitization at all system boundaries such as user input, or external APIs?
 
 #### Authentication and authorization
 - [ ] Passwords hashed with bcrypt or argon2, never MD5 or SHA?
-- [ ] Rate limiting on auth endpoints (login, register, password reset)?
+- [ ] Rate limiting on auth endpoints such as login, register, or password reset?
 - [ ] Token expiration configured? Refresh token rotation?
 - [ ] Tokens validated for expiration, signature, and audience?
 - [ ] Session management: tokens rotated after auth state changes? Proper invalidation on logout?
-- [ ] CSRF protection on state-changing endpoints (SameSite cookies, CSRF tokens, or origin validation)?
+- [ ] CSRF protection on state-changing endpoints such as SameSite cookies, CSRF tokens, or or origin validation?
 - [ ] Access control: default deny? Permissions explicitly granted, never explicitly denied?
-- [ ] Per-resource authorization checked, not just per-role (IDOR prevention)?
+- [ ] Per-resource authorization checked, not just per-role, IDOR prevention?
 - [ ] Authorization logic centralized, not scattered across controllers?
 
 #### Data protection
 - [ ] Encryption in transit: TLS 1.2+ on all external connections?
-- [ ] Encryption at rest for sensitive data (platform-managed keys)?
-- [ ] Constant-time comparison for secrets (no timing side-channel)?
+- [ ] Encryption at rest for sensitive data, platform-managed keys?
+- [ ] Constant-time comparison for secrets, no timing side-channel?
 - [ ] No secrets, API keys, tokens, or credentials in code, comments, or config files?
 - [ ] No sensitive data in logs, error messages, or stack traces?
 - [ ] No PII leaked through API responses beyond what the caller needs?
@@ -652,36 +652,36 @@ Reference: [`standards/observability.md`](../standards/observability.md)
 
 #### Cryptography
 - [ ] No custom crypto implementations? Using well-known libraries?
-- [ ] No weak algorithms (MD5, SHA1 for security purposes, DES)?
+- [ ] No weak algorithms such as MD5, SHA1 for security purposes, or DES?
 - [ ] Random values generated with cryptographically secure source?
 
 #### Data privacy
 - [ ] Data minimization: only collecting what's needed?
 - [ ] Retention policy defined per data type? Automated deletion after retention period?
 - [ ] Right to erasure: path to delete all of a user's personal data on request?
-- [ ] Audit logging for sensitive actions (login, password change, role change, record deletion, PII access)?
+- [ ] Audit logging for sensitive actions such as login, password change, role change, record deletion, or PII access?
 
 #### Supply chain
 - [ ] Dependencies locked with exact versions? Lockfile committed? Audit in CI?
 
 #### Webhook and external callback handlers
-- [ ] Signing secrets validated at application startup with a loud failure (crash or block the route), not silently read at request time. A missing or empty secret that silently rejects all deliveries is a silent outage
+- [ ] Signing secrets validated at application startup with a loud failure, crash or block the route, not silently read at request time. A missing or empty secret that silently rejects all deliveries is a silent outage
 - [ ] Timestamp validation rejects future timestamps, not just old ones. `Math.abs(now - timestamp)` allows pre-signed requests with future timestamps. Use directional check: `now - timestamp` must be >= 0 and <= window
-- [ ] Signature comparison uses constant-time function (`timingSafeEqual`, `hmac.compare`). Length check before `timingSafeEqual` is acceptable only when the expected length is fixed and publicly known (e.g., HMAC-SHA256 always produces 64 hex chars)
+- [ ] Signature comparison uses constant-time function, `timingSafeEqual`, `hmac.compare`. Length check before `timingSafeEqual` is acceptable only when the expected length is fixed and publicly known (e.g., HMAC-SHA256 always produces 64 hex chars)
 - [ ] Input canonicalization applied before processing. Emails lowercased and trimmed. Promotion codes normalized. Case-sensitive database lookups with non-canonical input produce false negatives
-- [ ] Rate limiting on webhook endpoints. An attacker with a compromised signing secret can generate valid requests at high volume. Without rate limiting, they can exhaust Redis memory (long TTL idempotency keys), DB connection pool, or downstream API quotas
-- [ ] Webhook path exemptions from auth middleware use exact match or prefix match. Trailing slashes, query strings, and encoded path segments must not bypass the exemption (fail closed is acceptable, fail open is not)
-- [ ] Per-entity mutex for multi-step mutations triggered by external events. When a webhook voids old data and creates new data for the same user, a per-user lock (Redis lock keyed on user ID) spanning the entire sequence prevents concurrent deliveries from interleaving
-- [ ] Response codes designed for the external system's retry behavior. Return 200 for known non-errors (user not found, already processed) to prevent unnecessary retries. Return 5xx only for genuinely transient failures. Document which conditions return which codes
+- [ ] Rate limiting on webhook endpoints. An attacker with a compromised signing secret can generate valid requests at high volume. Without rate limiting, they can exhaust Redis memory, long TTL idempotency keys, DB connection pool, or downstream API quotas
+- [ ] Webhook path exemptions from auth middleware use exact match or prefix match. Trailing slashes, query strings, and encoded path segments must not bypass the exemption such as fail closed is acceptable, or fail open is not
+- [ ] Per-entity mutex for multi-step mutations triggered by external events. When a webhook voids old data and creates new data for the same user, a per-user lock, Redis lock keyed on user ID spanning the entire sequence prevents concurrent deliveries from interleaving
+- [ ] Response codes designed for the external system's retry behavior. Return 200 for known non-errors, user not found, already processed to prevent unnecessary retries. Return 5xx only for genuinely transient failures. Document which conditions return which codes
 
 #### Infrastructure security
 - [ ] IAM follows least privilege? Service accounts scoped per service, no shared credentials across services.
-- [ ] Secrets managed through a vault (HashiCorp Vault, AWS Secrets Manager, GCP Secret Manager)? Rotated automatically on schedule.
+- [ ] Secrets managed through a vault, HashiCorp Vault, AWS Secrets Manager, GCP Secret Manager? Rotated automatically on schedule.
 - [ ] Network segmentation enforced? Services only reachable from expected sources. No flat network where everything can talk to everything.
 - [ ] Zero trust applied? No implicit trust based on network location. Every request authenticated and authorized regardless of origin.
 - [ ] Certificate management automated? TLS certificates rotated before expiry. No manual cert renewal in production.
 
-Reference: [`rules/security.md`](../rules/security.md), [`standards/infrastructure.md`](../standards/infrastructure.md) (Networking and Service Discovery)
+Reference: [`rules/security.md`](../rules/security.md), [`standards/infrastructure.md`](../standards/infrastructure.md) covering Networking and Service Discovery
 
 ### 34. API Contract Design
 
@@ -690,12 +690,12 @@ Reference: [`rules/security.md`](../rules/security.md), [`standards/infrastructu
 - [ ] Error response shape consistent: machine-readable code, human message, requestId, optional field details?
 - [ ] No stack traces or internal paths exposed in production error responses?
 - [ ] Request/response shapes consistent with existing endpoints?
-- [ ] Pagination on all list endpoints? Strategy chosen (cursor-based default, offset-based for random access)?
+- [ ] Pagination on all list endpoints? Strategy chosen such as cursor-based default, or offset-based for random access?
 - [ ] Default and maximum page size set?
 - [ ] Filtering and sorting on list endpoints?
 - [ ] Versioning strategy: URL path (`/v1/...`), at most two major versions active?
 - [ ] Deprecation lifecycle: `Deprecation` and `Sunset` headers, monitoring, documented migration path?
-- [ ] Rate limiting headers on every response (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`)?
+- [ ] Rate limiting headers on every response, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`?
 - [ ] `Retry-After` header on 429 responses?
 - [ ] POST endpoints that create resources support `Idempotency-Key` header?
 - [ ] Bulk operations return per-item results with individual status codes?
@@ -707,38 +707,38 @@ Reference: [`standards/api-design.md`](../standards/api-design.md)
 
 ### 35. External Dependency Resilience
 
-- [ ] Explicit timeout on every external call (connect + read for HTTP, statement for DB, visibility for queues)?
-- [ ] No reliance on framework defaults (often 30-60s, too generous)?
-- [ ] Circuit breakers for services that may be degraded (closed, open, half-open)?
+- [ ] Explicit timeout on every external call such as connect + read for HTTP, statement for DB, or visibility for queues?
+- [ ] No reliance on framework defaults such as often 30-60s, or too generous?
+- [ ] Circuit breakers for services that may be degraded such as closed, open, or half-open?
 - [ ] Circuit breaker trips on sustained failure, not a single error?
 - [ ] Connection pooling: separate pool per external dependency?
 - [ ] Pool size based on expected concurrency, not defaults or guesses?
 - [ ] Idle timeout configured to reclaim unused connections?
-- [ ] For serverless: connection proxy (RDS Proxy, PgBouncer) to prevent exhaustion from cold starts?
+- [ ] For serverless: connection proxy, RDS Proxy, PgBouncer to prevent exhaustion from cold starts?
 - [ ] Graceful degradation: fallback behavior defined when a dependency is unavailable?
 - [ ] Non-critical Redis reads wrapped in try/catch with safe default? A price enhancement, view counter, or recommendation score must not crash the critical path if Redis is down. See [`standards/redis.md`](../standards/redis.md) "Non-Critical Redis Fallback"
 - [ ] Health check readiness endpoint reflects dependency status?
 
-Reference: [`standards/resilience.md`](../standards/resilience.md) (Circuit Breakers, Timeouts), [`standards/database.md`](../standards/database.md) (Connection Management), [`standards/redis.md`](../standards/redis.md) (Non-Critical Redis Fallback)
+Reference: [`standards/resilience.md`](../standards/resilience.md) covering Circuit Breakers, Timeouts, [`standards/database.md`](../standards/database.md) covering Connection Management, [`standards/redis.md`](../standards/redis.md) covering Non-Critical Redis Fallback
 
 ### 36. Async Processing Resilience
 
 - [ ] Dead letter queue configured on every queue and event source mapping?
-- [ ] `maxReceiveCount` set based on retry policy (typically 3-5)?
+- [ ] `maxReceiveCount` set based on retry policy, typically 3-5?
 - [ ] Partial batch failures reported: return individual failure IDs so successful messages are not redelivered?
 - [ ] DLQ depth monitored with alerts? Messages in DLQ mean data is not being processed.
 - [ ] Reprocessing path built: DLQ messages can be replayed after root cause fix?
 - [ ] Consumer processes each item independently? One failure does not abort the batch?
 - [ ] Per-item success/failure tracked and reported?
-- [ ] State consistent after partial failure (compensating actions or rollback)?
+- [ ] State consistent after partial failure, compensating actions or rollback?
 - [ ] Background jobs have execution timeout with cleanup?
 - [ ] Message visibility timeout aligned with expected processing time?
 
-Reference: [`standards/resilience.md`](../standards/resilience.md) (Dead Letter Queues, Partial Failure, Timeouts)
+Reference: [`standards/resilience.md`](../standards/resilience.md) covering Dead Letter Queues, Partial Failure, Timeouts
 
 ### 37. Deployment Readiness
 
-- [ ] Backward compatibility: old and new versions coexist during rollout (rolling update, blue/green, canary)?
+- [ ] Backward compatibility: old and new versions coexist during rollout via rolling update, blue/green, or canary?
 - [ ] Database migrations run before deployment? Old code works with new schema?
 - [ ] Safe migration patterns used: nullable columns first, no renames or type changes in one step?
 - [ ] Liveness probe: returns 200 if process is running, no dependency checks?
@@ -747,28 +747,28 @@ Reference: [`standards/resilience.md`](../standards/resilience.md) (Dead Letter 
 - [ ] Feature flags for user-facing behavior changes that need gradual rollout?
 - [ ] Rollback plan: can revert deployment without data loss or manual intervention?
 - [ ] No hardcoded config: all environment-specific values from env vars or config service?
-- [ ] Canary promotion criteria defined? Metrics checked before widening rollout (error rate, latency, business KPIs)?
+- [ ] Canary promotion criteria defined? Metrics checked before widening rollout such as error rate, latency, or business KPIs?
 - [ ] Rollback tested, not just planned? The rollback path has been exercised at least once?
 - [ ] Deployment frequency sustainable? Can the team ship this change independently without coordinating with other teams?
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Zero-Downtime Deployments), [`standards/database.md`](../standards/database.md) (Safe Migrations)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Zero-Downtime Deployments, [`standards/database.md`](../standards/database.md) covering Safe Migrations
 
 ### 38. Graceful Degradation
 
 - [ ] Each external dependency has a defined fallback UX when unavailable?
-- [ ] Core user flows work without non-critical dependencies (recommendations, analytics, notifications)?
+- [ ] Core user flows work without non-critical dependencies such as recommendations, analytics, or notifications?
 - [ ] Fallback responses identified per dependency: cached data, default values, or reduced functionality?
 - [ ] Degraded state communicated to the user? No silent failures that look like empty data.
 - [ ] Degraded paths tested? Chaos testing or dependency kill switches exercised?
 - [ ] Blast radius analyzed? A single dependency failure does not cascade to unrelated features.
 - [ ] Timeout-based degradation: if a dependency is slow but not down, the system switches to fallback before the user notices?
-- [ ] RTO (Recovery Time Objective) and RPO (Recovery Point Objective) defined per service? How fast must it recover, and how much data loss is tolerable?
+- [ ] RTO, Recovery Time Objective and RPO, Recovery Point Objective defined per service? How fast must it recover, and how much data loss is tolerable?
 - [ ] Backup strategy validated? Backups tested with actual restore, not just "backups run nightly."
 - [ ] Cross-region failover plan exists for critical services? Traffic can shift to a secondary region if the primary is unavailable.
 - [ ] Chaos engineering practiced? Failure injection tested in non-production or controlled production environments.
 - [ ] Game days scheduled? Team exercises simulating outages to validate runbooks, monitoring, and incident response.
 
-Reference: [`standards/resilience.md`](../standards/resilience.md) (Circuit Breakers, Timeouts)
+Reference: [`standards/resilience.md`](../standards/resilience.md) covering Circuit Breakers, Timeouts
 
 ### 39. Data Modeling
 
@@ -784,14 +784,14 @@ Reference: [`standards/resilience.md`](../standards/resilience.md) (Circuit Brea
 - [ ] Anti-corruption layer at context boundaries? Translation between external models and internal domain models happens at the edge, not throughout the codebase.
 - [ ] Ubiquitous language consistent? The same term means the same thing in code, database, API, and conversation. No synonyms for the same concept.
 
-Reference: [`standards/database.md`](../standards/database.md) (Access Pattern Design, Schema Rules)
+Reference: [`standards/database.md`](../standards/database.md) covering Access Pattern Design, Schema Rules
 
 ### 40. Capacity Planning
 
 - [ ] Storage growth rate estimated? Data volume projected for 1 year, 3 years.
 - [ ] Read/write ratio understood? Informs caching strategy, replica topology, and index design.
 - [ ] Bottleneck identified? CPU-bound, memory-bound, I/O-bound, or network-bound under expected load.
-- [ ] Horizontal scaling path exists? No single-instance assumptions baked into the design (local file storage, in-memory state, sticky sessions).
+- [ ] Horizontal scaling path exists? No single-instance assumptions baked into the design, local file storage, in-memory state, sticky sessions.
 - [ ] Hot spots identified? Uneven distribution of load across partitions, shards, or instances.
 - [ ] Data retention and archival strategy defined? Old data moved to cold storage or deleted on schedule.
 - [ ] Connection and thread pool limits sized for expected concurrency, with headroom for spikes?
@@ -799,7 +799,7 @@ Reference: [`standards/database.md`](../standards/database.md) (Access Pattern D
 - [ ] Auto-scaling validated under load? Scale-up and scale-down behavior tested, not just configured.
 - [ ] Storage IOPS and throughput sized for peak? Not just capacity but performance under concurrent access.
 
-Reference: [`standards/database.md`](../standards/database.md) (Connection Management, NoSQL Key Design), [`standards/resilience.md`](../standards/resilience.md) (Back Pressure), [`standards/infrastructure.md`](../standards/infrastructure.md) (Cloud Architecture)
+Reference: [`standards/database.md`](../standards/database.md) covering Connection Management, NoSQL Key Design, [`standards/resilience.md`](../standards/resilience.md) covering Back Pressure, [`standards/infrastructure.md`](../standards/infrastructure.md) covering Cloud Architecture
 
 ### 41. Testability
 
@@ -812,37 +812,37 @@ Reference: [`standards/database.md`](../standards/database.md) (Connection Manag
 - [ ] Test data builders or factories used? No brittle test setup with hardcoded object literals duplicated across tests.
 - [ ] Time and randomness injectable? Tests do not depend on the current clock or random output.
 
-Reference: [`rules/testing.md`](../rules/testing.md) (Philosophy, Mock Policy), [`rules/code-style.md`](../rules/code-style.md) (Immutability)
+Reference: [`rules/testing.md`](../rules/testing.md) covering Philosophy, Mock Policy, [`rules/code-style.md`](../rules/code-style.md) covering Immutability
 
 ### 42. Cost Awareness
 
 - [ ] Query cost understood? Expensive queries identified and optimized or cached.
 - [ ] Compute right-sized? Instance types, Lambda memory, and container resources match actual usage, not guesses.
-- [ ] Storage tiers used appropriately? Hot data on fast storage, cold data on archive (S3 IA, Glacier, equivalent).
+- [ ] Storage tiers used appropriately? Hot data on fast storage, cold data on archive, S3 IA, Glacier, equivalent.
 - [ ] Batch vs real-time chosen deliberately? Real-time processing only when the use case requires it.
 - [ ] Egress costs considered? Cross-region and cross-AZ traffic minimized. CDN for static assets.
 - [ ] Cache ROI positive? The cost of the cache infrastructure is less than the cost of hitting the origin.
 - [ ] Unused resources cleaned up? No orphaned volumes, snapshots, or idle load balancers accumulating charges.
 - [ ] Cost alerts configured? Budget thresholds with notifications before spending spirals.
 
-Reference: [`standards/caching.md`](../standards/caching.md) (When to Cache), [`standards/database.md`](../standards/database.md) (Query Optimization)
+Reference: [`standards/caching.md`](../standards/caching.md) covering When to Cache, [`standards/database.md`](../standards/database.md) covering Query Optimization
 
 ### 43. Multi-Tenancy
 
-- [ ] Tenant data isolation enforced? Row-level (shared DB, tenant_id column), schema-level (tenant per schema), or instance-level (tenant per DB)?
+- [ ] Tenant data isolation enforced? Row-level, shared DB, tenant_id column, schema-level, tenant per schema, or instance-level, tenant per DB?
 - [ ] Every query scoped to the tenant? No accidental cross-tenant data leakage through missing WHERE clauses or cache key collisions?
-- [ ] Noisy neighbor prevention? One tenant's heavy usage cannot degrade performance for others (per-tenant rate limits, queue isolation, connection limits).
+- [ ] Noisy neighbor prevention? One tenant's heavy usage cannot degrade performance for others, per-tenant rate limits, queue isolation, connection limits.
 - [ ] Per-tenant resource limits defined? Storage quotas, API rate limits, concurrent connection caps.
 - [ ] Tenant context propagated across service boundaries? Every downstream call carries the tenant identifier.
 - [ ] Tenant-aware caching? Cache keys include tenant ID. Invalidation scoped to the affected tenant.
 - [ ] Tenant onboarding and offboarding automated? Provisioning and deprovisioning do not require manual steps or code changes.
 - [ ] Tenant-specific configuration supported? Feature flags, plan limits, and custom settings per tenant without code deploys.
 
-Reference: [`rules/security.md`](../rules/security.md) (Access Control), [`standards/database.md`](../standards/database.md) (Access Pattern Design)
+Reference: [`rules/security.md`](../rules/security.md) covering Access Control, [`standards/database.md`](../standards/database.md) covering Access Pattern Design
 
 ### 44. Migration Strategy
 
-- [ ] Migration approach chosen? Strangler fig (gradual replacement), parallel run (old + new simultaneously), or big bang (with rollback plan)?
+- [ ] Migration approach chosen? Strangler fig, gradual replacement, parallel run, old + new simultaneously, or big bang, with rollback plan?
 - [ ] Feature parity validated? Automated comparison between old and new system outputs for the same inputs.
 - [ ] Data migration plan defined? Backfill strategy, data transformation, validation checksums, rollback path for data.
 - [ ] Dark launching used for high-risk migrations? New path runs in shadow mode, results compared but not served to users.
@@ -851,11 +851,11 @@ Reference: [`rules/security.md`](../rules/security.md) (Access Control), [`stand
 - [ ] Migration progress observable? Percentage of traffic or data migrated, error rates on old vs new, latency comparison.
 - [ ] Old system decommission planned? Timeline for shutting down the previous implementation after migration completes.
 
-Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) (Zero-Downtime Deployments), [`standards/database.md`](../standards/database.md) (Safe Migrations)
+Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Zero-Downtime Deployments, [`standards/database.md`](../standards/database.md) covering Safe Migrations
 
 ### 45. Infrastructure as Code
 
-- [ ] All infrastructure defined in code (Terraform, Pulumi, CloudFormation)? No manually provisioned resources?
+- [ ] All infrastructure defined in code, Terraform, Pulumi, CloudFormation? No manually provisioned resources?
 - [ ] Provisioning idempotent? Running the same code twice produces the same infrastructure with no orphaned resources.
 - [ ] State managed remotely with locking? No local state files for shared infrastructure.
 - [ ] State isolation: separate state per environment and per service? One blast radius per state file.
@@ -866,7 +866,7 @@ Reference: [`standards/distributed-systems.md`](../standards/distributed-systems
 - [ ] Secrets not stored in IaC state or templates? Sensitive values from a vault or secrets manager.
 - [ ] Plan reviewed before apply? No blind applies in production.
 
-Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (Infrastructure as Code)
+Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) covering Infrastructure as Code
 
 ### 46. Networking and Service Discovery
 
@@ -879,21 +879,21 @@ Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (Infr
 - [ ] CDN configured for static assets and cacheable responses? Cache invalidation strategy defined.
 - [ ] Ingress and egress controls defined? Known set of external endpoints. Unexpected egress investigated.
 
-Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (Networking and Service Discovery)
+Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) covering Networking and Service Discovery
 
 ### 47. Container Orchestration
 
 - [ ] Resource requests and limits set on every container? Requests based on actual usage, limits with headroom for peaks.
-- [ ] Horizontal pod autoscaling configured? Metric (CPU, custom) chosen, min/max replicas set, cooldown tuned.
-- [ ] Pod disruption budgets defined? Minimum available during voluntary disruptions (node drain, upgrade).
+- [ ] Horizontal pod autoscaling configured? Metric, CPU, custom chosen, min/max replicas set, cooldown tuned.
+- [ ] Pod disruption budgets defined? Minimum available during voluntary disruptions, node drain, upgrade.
 - [ ] Anti-affinity spreads replicas across nodes and availability zones? No single-point-of-failure co-location.
 - [ ] Rolling update strategy tuned? maxUnavailable and maxSurge set for zero-downtime deploys.
-- [ ] Health probes configured correctly? Liveness (restart on hang), readiness (remove from LB on unready), startup (slow-starting apps).
+- [ ] Health probes configured correctly? Liveness, restart on hang, readiness, remove from LB on unready, startup, slow-starting apps.
 - [ ] Graceful shutdown: preStop hook, terminationGracePeriodSeconds long enough to drain connections?
 - [ ] Resource quotas and limit ranges per namespace? One team cannot consume the entire cluster.
-- [ ] Sidecar pattern used for cross-cutting concerns (mesh proxy, log collector, secrets injector)?
+- [ ] Sidecar pattern used for cross-cutting concerns such as mesh proxy, log collector, or secrets injector?
 
-Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (Container Orchestration)
+Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) covering Container Orchestration
 
 ### 48. CI/CD Pipeline Design
 
@@ -907,22 +907,22 @@ Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (Cont
 - [ ] DORA metrics tracked? Deployment frequency, lead time, change failure rate, MTTR.
 - [ ] Rollback automated or one-click? Not a multi-step manual process.
 
-Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (CI/CD Pipeline Design)
+Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) covering CI/CD Pipeline Design
 
 ### 49. Cloud Architecture
 
-- [ ] Multi-region strategy chosen? Single, active-passive, or active-active? Trade-offs (cost, complexity, RTO) understood.
+- [ ] Multi-region strategy chosen? Single, active-passive, or active-active? Trade-offs, cost, complexity, RTO understood.
 - [ ] Blast radius contained at infrastructure level? Account/project isolation per environment and workload class.
 - [ ] AZ-independent? Losing one availability zone does not degrade service. Resources spread across 2+ AZs.
 - [ ] Cell-based architecture where appropriate? Independent cells by geography, customer segment, or shard.
 - [ ] Service quotas known and monitored? Hitting a cloud provider limit in production is an outage.
 - [ ] Auto-scaling validated? Scale-up and scale-down tested under load. Predictive scaling for known patterns.
 - [ ] DDoS mitigation: WAF, rate limiting at edge, cloud-native shield on public load balancers?
-- [ ] Data residency requirements met? Storage and processing regions comply with regulations (GDPR, LGPD).
+- [ ] Data residency requirements met? Storage and processing regions comply with regulations, GDPR, LGPD.
 - [ ] Cost allocation tags on all resources? Environment, team, service, cost center.
 - [ ] Reserved capacity or savings plans for stable workloads? Spot/preemptible for fault-tolerant jobs.
 
-Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) (Cloud Architecture)
+Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) covering Cloud Architecture
 
 ### 50. Clean Room Verification
 
@@ -936,21 +936,21 @@ Full process and similarity thresholds: `rules/clean-room.md`.
 - [ ] Functions split and grouped differently from the source
 - [ ] Class/module hierarchy independently designed
 - [ ] Data flow and transformation sequence differs from the source
-- [ ] Public interfaces (routes, exports, method signatures) independently designed
+- [ ] Public interfaces, routes, exports, method signatures independently designed
 
 #### Naming independence (section B)
 
 - [ ] No variable or constant names copied from the source
-- [ ] Function and method names independently chosen (standard names like `get`, `set`, `parse` exempt)
+- [ ] Function and method names independently chosen such as standard names like `get`, `set`, or `parse` exempt
 - [ ] Type, interface, class, and enum names independently chosen
-- [ ] File names independently chosen (conventional names like `index.ts`, `main.go` exempt)
+- [ ] File names independently chosen such as conventional names like `index.ts`, or `main.go` exempt
 - [ ] Error messages, log messages, and user-facing text are original
 - [ ] No comments copied or closely paraphrased from the source
 
 #### Logic independence (section C)
 
 - [ ] Algorithms expressed independently, even when the abstract algorithm is the same
-- [ ] Control flow (branching, guards, loops) differs from the source
+- [ ] Control flow, branching, guards, loops differs from the source
 - [ ] Error types, messages, and recovery strategies independently designed
 - [ ] Edge cases handled based on own analysis, not copied from the source
 - [ ] Validation logic derived from requirements, not copied
@@ -959,14 +959,14 @@ Full process and similarity thresholds: `rules/clean-room.md`.
 #### Configuration and infrastructure independence (section D)
 
 - [ ] Configuration files use own structure and key names
-- [ ] Database schema (table names, column names, relationships) independently designed
+- [ ] Database schema, table names, column names, relationships independently designed
 - [ ] Tests verify the same requirements but are structured independently
 
 #### License and legal compliance (section E)
 
-- [ ] Source license permits learning from it (no restriction on derivative works for ideas)
+- [ ] Source license permits learning from it. No restriction on derivative works for ideas
 - [ ] No copyleft contamination: if source is GPL/AGPL, implementation is structurally independent
-- [ ] No patented algorithms reproduced (check source README, LICENSE, PATENTS files)
+- [ ] No patented algorithms reproduced such as check source README, LICENSE, or PATENTS files
 - [ ] Source was publicly available, not accessed through NDA or restricted channel
 - [ ] No function, class, or block of 4+ lines copied from the source
 
@@ -986,13 +986,13 @@ Reference: `rules/clean-room.md`
 Apply after merging and deploying. Verify the deployed code works in production. Reference: `/deploy` skill.
 
 - [ ] Health endpoint returns 200 after deployment
-- [ ] Key user flows verified in production (login, core feature, checkout)
+- [ ] Key user flows verified in production such as login, core feature, or checkout
 - [ ] Error rate compared against pre-deploy baseline, no increase
 - [ ] No new console errors or warnings in browser
-- [ ] Performance metrics (response time, LCP) within acceptable range vs baseline
-- [ ] Rollback plan documented and verified (revert commit identified, rollback command ready)
+- [ ] Performance metrics, response time, LCP within acceptable range vs baseline
+- [ ] Rollback plan documented and verified such as revert commit identified, or rollback command ready
 - [ ] Deployment logs clean, no warnings or deprecation notices
-- [ ] Database migrations applied successfully (if applicable)
+- [ ] Database migrations applied successfully. If applicable
 
 ### 52. Design Quality
 
@@ -1000,15 +1000,15 @@ Apply to frontend changes. Reference: `/review design` subcommand, [`standards/f
 
 - [ ] Typography hierarchy consistent: max 3-4 distinct sizes per page, clear visual weight progression
 - [ ] Color palette uses semantic tokens from the design system, no hardcoded hex values
-- [ ] All color combinations pass WCAG AA contrast (4.5:1 normal text, 3:1 large text)
-- [ ] Spacing follows the project's grid system (4px or 8px scale), no arbitrary pixel values
-- [ ] Every interactive element has visible focus state (3:1 contrast minimum)
+- [ ] All color combinations pass WCAG AA contrast such as 4.5:1 normal text, or 3:1 large text
+- [ ] Spacing follows the project's grid system, 4px or 8px scale, no arbitrary pixel values
+- [ ] Every interactive element has visible focus state. 3:1 contrast minimum
 - [ ] All async operations have loading states
 - [ ] Empty states designed with guidance, not blank screens
 - [ ] Error states are informative and actionable, not generic "Something went wrong"
 - [ ] Component renders correctly at mobile, tablet, and desktop breakpoints
 - [ ] Touch targets at least 44x44px on mobile viewports
-- [ ] No AI-pattern defaults accepted without intentional customization (generic fonts, stock layouts, placeholder gradients)
+- [ ] No AI-pattern defaults accepted without intentional customization such as generic fonts, stock layouts, or placeholder gradients
 
 ### 53. LLM Trust Boundary
 
@@ -1080,26 +1080,26 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 - [ ] Shebang scripts place the SPDX header on line 2, not line 1
 
 **Uncommentable Files:**
-- [ ] Binary files (images, fonts, PDFs) have `.license` sidecar files
+- [ ] Binary files, images, fonts, PDFs have `.license` sidecar files
 - [ ] JSON, .env, and other commentless formats covered by REUSE.toml or sidecar
-- [ ] Generated files and build artifacts excluded (covered by .gitignore)
+- [ ] Generated files and build artifacts excluded. Covered by .gitignore
 
 **License Expressions:**
 - [ ] GNU licenses use `-only` or `-or-later` suffix, never bare identifiers
 - [ ] License expressions are single-line, no line breaks mid-expression
-- [ ] AND/OR/WITH operators use correct case (all upper or all lower)
+- [ ] AND/OR/WITH operators use correct case. All upper or all lower
 - [ ] Parentheses used when precedence override is needed
 
 **Third-Party and Mixed Licensing:**
 - [ ] Third-party vendored files preserve their original license headers
-- [ ] Snippet tags (SPDX-SnippetBegin/End) used when a file section has a different license
+- [ ] Snippet tags via `SPDX-SnippetBegin` and `SPDX-SnippetEnd` used when a file section has a different license
 - [ ] License compatibility verified when mixing permissive and copyleft code
 - [ ] LICENSES/ directory contains full text for every referenced license identifier
 
 **Configuration and CI:**
 - [ ] REUSE.toml used for bulk licensing, not deprecated `.reuse/dep5`
 - [ ] `reuse lint` passes in CI when REUSE compliance is adopted
-- [ ] CI workflow configured (GitHub Actions `fsfe/reuse-action@v6` or equivalent)
+- [ ] CI workflow configured. GitHub Actions `fsfe/reuse-action@v6` or equivalent
 
 ---
 
@@ -1112,7 +1112,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 
 **Comparison and Arithmetic:**
 - [ ] Date arithmetic crosses DST boundaries without producing 23-hour or 25-hour days
-- [ ] Calendar math (add 1 month, end of month) uses a date library, never raw arithmetic
+- [ ] Calendar math, add 1 month, end of month uses a date library, never raw arithmetic
 - [ ] Recurring schedules account for DST transitions at the user's location
 
 **Formatting:**
@@ -1123,17 +1123,17 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 ### 60. Numerical Precision
 
 **Money:**
-- [ ] Monetary amounts stored as integer minor units (cents), never floats
+- [ ] Monetary amounts stored as integer minor units, cents, never floats
 - [ ] Currency code stored alongside every monetary amount
-- [ ] Rounding rule (banker's, half-up, truncate) explicit at every conversion
+- [ ] Rounding rule, banker's, half-up, truncate explicit at every conversion
 
 **Floating Point:**
 - [ ] Float comparison uses an epsilon, never `==`
 - [ ] Sums of floats use Kahan summation when precision matters
-- [ ] Decimal types (`BigDecimal`, `Decimal`) used for tax, interest, and unit conversions
+- [ ] Decimal types such as `BigDecimal` or `Decimal` used for tax, interest, and unit conversions
 
 **Integer Overflow:**
-- [ ] Counters and IDs sized to outlast the system (i64 or larger for monotonic counters)
+- [ ] Counters and IDs sized to outlast the system. I64 or larger for monotonic counters
 - [ ] Arithmetic on user-supplied integers checked for overflow at the boundary
 
 ### 61. Internationalization Edge Cases
@@ -1141,7 +1141,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 **Text:**
 - [ ] String length measured in grapheme clusters, never UTF-16 code units, when displayed to users
 - [ ] Sorting uses locale-aware comparison, never byte order
-- [ ] Case conversion routes through Unicode (Turkish dotless i, German ß)
+- [ ] Case conversion routes through Unicode such as Turkish dotless i, or German ß
 
 **Bidirectional and RTL:**
 - [ ] UI mirrors correctly for Arabic, Hebrew, Persian
@@ -1149,7 +1149,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 - [ ] Mixed LTR/RTL strings render with explicit Unicode markers
 
 **Plural and Gender:**
-- [ ] Plural rules cover the locale (Russian has six plural forms, Arabic has six)
+- [ ] Plural rules cover the locale such as Russian has six plural forms, or Arabic has six
 - [ ] Gendered translations supplied for languages that require them
 
 ### 62. Browser and Device Diversity
@@ -1157,7 +1157,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 **Browsers:**
 - [ ] Tested on the latest Chrome, Firefox, Safari, Edge
 - [ ] Mobile Safari and Chrome on Android verified for any responsive change
-- [ ] Polyfills loaded only for browsers that need them (no unnecessary payload)
+- [ ] Polyfills loaded only for browsers that need them. No unnecessary payload
 
 **Inputs:**
 - [ ] Touch events handled alongside mouse and keyboard
@@ -1166,20 +1166,20 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 
 **Network:**
 - [ ] Slow 3G profile tested for critical path
-- [ ] Offline state degrades gracefully (cached UI, queued mutations)
+- [ ] Offline state degrades gracefully such as cached UI, or queued mutations
 - [ ] Reconnection retries do not duplicate writes
 
 ### 63. Backups and Recovery
 
 **Frequency:**
-- [ ] Backup interval matches the recovery point objective (RPO)
+- [ ] Backup interval matches the recovery point objective. RPO
 - [ ] Continuous WAL archiving for any database with RPO under 1 hour
 - [ ] Application-level snapshots when database backup is insufficient
 
 **Verification:**
 - [ ] Backups restored to a clean environment at least monthly
-- [ ] Restore time tested against the recovery time objective (RTO)
-- [ ] Backup integrity (checksum or hash) verified before declaring success
+- [ ] Restore time tested against the recovery time objective. RTO
+- [ ] Backup integrity, checksum or hash verified before declaring success
 
 **Storage:**
 - [ ] Backups encrypted at rest
@@ -1211,7 +1211,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 - [ ] Load test confirms peak forecast plus 50% margin
 
 **Scaling Triggers:**
-- [ ] Auto-scaling rules tied to a leading indicator (queue depth, latency p95)
+- [ ] Auto-scaling rules tied to a leading indicator such as queue depth, or latency p95
 - [ ] Scale-up faster than scale-down to avoid thrashing
 - [ ] Manual override available for unusual events
 
@@ -1233,7 +1233,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 - [ ] Cache layers regional, not global
 
 **Failover:**
-- [ ] Region failure does not lose committed writes (sync replication or accept RPO)
+- [ ] Region failure does not lose committed writes. Sync replication or accept RPO
 - [ ] Read replicas in secondary regions stay current within RPO
 - [ ] Backups exist in a region separate from the primary
 
@@ -1241,7 +1241,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 
 **Audit Log:**
 - [ ] Every sensitive action logged with actor, target, timestamp, IP, user agent
-- [ ] Logs append-only and tamper-evident (hash chain or write-once storage)
+- [ ] Logs append-only and tamper-evident. Hash chain or write-once storage
 - [ ] Retention period meets the regulatory requirement
 
 **Personal Data:**
@@ -1257,25 +1257,25 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 ### 68. Vendor and Third-Party Risk
 
 **Selection:**
-- [ ] Vendor evaluated on security posture, certifications (SOC 2, ISO 27001), uptime SLA
+- [ ] Vendor evaluated on security posture, certifications, SOC 2, ISO 27001, uptime SLA
 - [ ] Data processing agreement signed before sending personal data
 - [ ] Sub-processor list reviewed and tracked
 
 **Operational:**
-- [ ] Vendor outage runbook documented (graceful degradation, fallback)
+- [ ] Vendor outage runbook documented such as graceful degradation, or fallback
 - [ ] Vendor SLA metrics tracked against contractual targets
 - [ ] Renewal calendar prevents auto-renewal of underperforming vendors
 
 **Exit:**
 - [ ] Data export format documented and tested
 - [ ] Migration path to an alternative vendor estimated
-- [ ] Vendor lock-in (proprietary protocols, custom data formats) flagged in ADR
+- [ ] Vendor lock-in, proprietary protocols, custom data formats flagged in ADR
 
 ### 69. Schema-Migration Sync (Prisma)
 
-Apply on every PR that adds, edits, or removes a file under `prisma/migrations/` or modifies `schema.prisma`. Reference rule: `~/.claude/rules/lang/prisma-migrations.md`.
+Apply on every PR that adds, edits, or removes a file under `prisma/migrations/` or modifies `schema.prisma`. Reference rule: `~/.claude/rules/lang/orm-migrations.md (Prisma section)`.
 
-**Static parity (offline):**
+**Static parity, offline:**
 - [ ] Every `CREATE INDEX` in migration SQL has a matching `@@index([...], map: "<exact name>")` on the target model
 - [ ] Every `CREATE UNIQUE INDEX` has a matching `@@unique([...], map: "<exact name>")`
 - [ ] Every `ALTER TABLE ... ADD COLUMN` has the column declared as a field on the model with matching type and nullability
@@ -1283,17 +1283,17 @@ Apply on every PR that adds, edits, or removes a file under `prisma/migrations/`
 - [ ] Every `DROP INDEX` removes the corresponding `@@index` from the model
 - [ ] Every `CREATE TABLE` has a matching `model` block; every `DROP TABLE` removes it
 - [ ] Every index name follows `<Model>_<col>(_<col>)*_<purpose>_idx` and is passed via explicit `map:`
-- [ ] Unmanaged objects (extensions, materialized views, triggers, GIN/GiST trgm indexes) are documented with a leading comment in the migration file explaining why no schema entry exists
+- [ ] Unmanaged objects such as extensions, materialized views, triggers, or GIN/GiST trgm indexes are documented with a leading comment in the migration file explaining why no schema entry exists
 
-**Authoritative drift (requires DB):**
+**Authoritative drift, requires DB:**
 - [ ] `prisma migrate diff --from-schema-datamodel <schema> --to-migrations <dir> --exit-code` returns 0
 - [ ] `prisma migrate dev` against a fresh DB after deploying all migrations produces no follow-up migration
 
 **Cross-checks:**
-- [ ] Migration timestamp is later than every migration on the base branch (cross-reference with `git-workflow.md` "Migration Ordering")
+- [ ] Migration timestamp is later than every migration on the base branch. Cross-reference with `git-workflow.md` "Migration Ordering"
 - [ ] Migration file uses `IF NOT EXISTS` / `IF EXISTS` per `git-workflow.md` "Migration Idempotency"
 - [ ] If the migration creates indexes on tables with significant row counts, `CREATE INDEX CONCURRENTLY` is used
-- [ ] New model passes `code-style.md` "Prisma Schema Completeness" gate (createdAt, updatedAt, companyId index, FK indexes)
+- [ ] New model passes `code-style.md` "Prisma Schema Completeness" gate such as createdAt, updatedAt, companyId index, or FK indexes
 
 **Verification evidence:**
 - [ ] Output of `prisma migrate diff --exit-code` pasted in PR description
@@ -1304,10 +1304,10 @@ Apply on every PR that adds, edits, or removes a file under `prisma/migrations/`
 Apply on every message that asks a clarifying question, briefs a subagent, reports status or an error, or closes a loop. Reference rule: `~/.claude/rules/smart-questions.md`.
 
 - [ ] Pre-flight investigation was exhausted before asking; the message states what was read, grepped, or checked, with file paths and line numbers when relevant
-- [ ] Clarifying questions to the user are single (one blocking question per turn), specific, and present the viable options with one decisive trade-off each
-- [ ] The first line of the message contains the actual question or report, not a meta-question ("Can I ask you something?", "Quick question") or hello-only opener
-- [ ] If the user request was narrow, the underlying goal was verified before execution (XY check); the broader goal is named in the response when it differs from the literal request
-- [ ] Status and error reports lead with the symptom (what happened), then chronology (what was attempted), then hypothesis (what I think); short updates use Object-Deviation form (`<object> - <deviation>`)
-- [ ] Bug reports include exact error text (verbatim, with codes/paths/hashes), environment, and reproduction steps; patching is deferred until the report is captured (Antelope rule)
+- [ ] Clarifying questions to the user are single, one blocking question per turn, specific, and present the viable options with one decisive trade-off each
+- [ ] The first line of the message contains the actual question or report, not a meta-question, "Can I ask you something?", "Quick question" or hello-only opener
+- [ ] If the user request was narrow, the underlying goal was verified before execution, XY check; the broader goal is named in the response when it differs from the literal request
+- [ ] Status and error reports lead with the symptom, what happened, then chronology, what was attempted, then hypothesis, what I think; short updates use Object-Deviation form. `<object> - <deviation>`
+- [ ] Bug reports include exact error text verbatim, with codes, paths, and hashes, plus environment and reproduction steps; patching is deferred until the report is captured. Antelope rule
 - [ ] Subagent prompts include scope, file:line references from prior investigation, prior attempts with errors, expected output shape, and a response-length cap
-- [ ] Loop closure: every completed task ends with a one-line resolution tagged `FIXED:`, `RESOLVED:`, or `DONE:` that names what changed, where (file:line), and the verification evidence command
+- [ ] Loop closure: every completed task ends with a one-line resolution tagged `FIXED:`, `RESOLVED:`, or `DONE:` that names what changed, where, file:line, and the verification evidence command

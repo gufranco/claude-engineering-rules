@@ -4,7 +4,7 @@ Standards for code targeting the Java Virtual Machine. Applies to Java 17+ and K
 
 ## Build and Tooling
 
-- Gradle (Kotlin DSL) is preferred over Maven for new projects; both are acceptable for existing ones
+- Gradle, Kotlin DSL is preferred over Maven for new projects; both are acceptable for existing ones
 - Pin the JDK version with `toolchain` in Gradle. Don't rely on `JAVA_HOME`
 - Treat compiler warnings as errors: `-Werror` for javac, `allWarningsAsErrors = true` for Kotlin
 - Run Spotless or ktlint on every commit; CI fails on formatting drift
@@ -20,19 +20,19 @@ Standards for code targeting the Java Virtual Machine. Applies to Java 17+ and K
 
 ## Null Handling
 
-- Java: prefer `Optional<T>` for return values, never for parameters or fields. Annotate with JSpecify (`@Nullable`, `@NonNull`) for tooling
+- Java: prefer `Optional<T>` for return values, never for parameters or fields. Annotate with JSpecify, `@Nullable`, `@NonNull`, for tooling
 - Kotlin: nullable types are part of the type system. Use `!!` only when a runtime invariant is documented; never for hopeful access
 
 ## Immutability
 
-- Java records for value types (Java 14+)
+- Java records for value types. Java 14+
 - Kotlin `data class` with `val` properties; copy with `copy()`
 - Collections: `List.of(...)`, `Set.of(...)`, `Map.of(...)` for immutable instances. Avoid `Collections.unmodifiableList` wrappers when a true immutable factory exists
-- Kotlin: `listOf`, `setOf`, `mapOf` for read-only views; `persistentListOf` (kotlinx.collections.immutable) for structurally immutable
+- Kotlin: `listOf`, `setOf`, `mapOf` for read-only views; `persistentListOf`, kotlinx.collections.immutable for structurally immutable
 
 ## Concurrency
 
-- Virtual threads (Project Loom, Java 21+) for blocking I/O. Spawn liberally; they're cheap
+- Virtual threads, Project Loom, Java 21+ for blocking I/O. Spawn liberally; they're cheap
 - Kotlin coroutines: structured concurrency through `coroutineScope`, `supervisorScope`. Never `GlobalScope`
 - `CompletableFuture` for async pipelines in plain Java. Always supply a custom `Executor` for production code
 - Lock with `ReentrantLock` over `synchronized` when fairness or interruption matters
@@ -55,7 +55,7 @@ Standards for code targeting the Java Virtual Machine. Applies to Java 17+ and K
 - Constructor injection only. No `@Autowired` field injection
 - `@ConfigurationProperties` over scattered `@Value` annotations
 - Profile-specific beans via `@Profile`, not runtime conditionals
-- Reactive (`Mono`, `Flux`) when the workload is I/O-bound and high-concurrency; imperative otherwise
+- Reactive, `Mono`, `Flux`, when the workload is I/O-bound and high-concurrency; imperative otherwise
 
 ## Testing
 

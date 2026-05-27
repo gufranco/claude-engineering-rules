@@ -16,6 +16,7 @@ Do not spawn subagents. Complete this task using direct tool calls only.
 ## Constraints
 
 - Do not modify any files. Read-only.
+- Do not push. Subagents never push to remote; the orchestrator handles all git operations.
 - Do not propose patterns that already exist as rules in [`~/.claude/rules/`](../rules), standards in [`~/.claude/standards/`](../standards), or in the user's auto-memory directory under their Claude Code projects path. Always cross-check.
 - Do not invent patterns. Every candidate must trace to a specific turn in the transcript.
 - Keep candidates atomic. One pattern per candidate; do not bundle.
@@ -72,7 +73,7 @@ Maximum 10 candidates. If no patterns surface, state "No instinct candidates thi
 **Transcript not found:**
 State "Transcript path not provided and no recent session log found" and exit cleanly.
 
-**Transcript is short (under 20 turns):**
+**Transcript is short, under 20 turns:**
 Most sessions need more material to surface a pattern. State "Session too short for pattern extraction" and exit unless the orchestrator passed `--force`.
 
 **Candidate matches an existing rule verbatim:**
@@ -87,5 +88,5 @@ Report it under target `rule` and name the file to extend.
 - [ ] Each candidate cites at least one transcript turn
 - [ ] Each candidate was cross-checked against existing rules, standards, memory
 - [ ] Confidence and generality are honest, not aspirational
-- [ ] Targets are concrete (instinct file, hook name, skill path)
+- [ ] Targets are concrete such as instinct file, hook name, or skill path
 - [ ] Maximum 10 candidates

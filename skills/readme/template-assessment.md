@@ -152,7 +152,7 @@ Explain the `code`, `message`, and `details` fields.
 
 ## Design Decisions
 
-For each significant decision (at least 5), write a narrative subsection.
+For each significant decision, at least 5 of them, write a narrative subsection.
 Do NOT use structured labels like "Choice/Why/Trade-off". Write natural
 paragraphs that explain what was done, why, and the trade-off, all woven
 into the prose. Each subsection has a descriptive title.

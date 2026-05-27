@@ -57,7 +57,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
    gh pr merge <number> --squash --delete-branch
    ```
    If `--no-delete` is passed, omit `--delete-branch`.
-   If this is a dual-base PR (same change targeting two branches), omit `--delete-branch` per [`../../rules/git-workflow.md`](../../rules/git-workflow.md).
+   If this is a dual-base PR, same change targeting two branches, omit `--delete-branch` per [`../../rules/git-workflow.md`](../../rules/git-workflow.md).
 
 4. **Wait for deployment.** Detect the deployment mechanism:
 
@@ -71,9 +71,9 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
    If no deployment mechanism is detected, ask the user how deployments work.
 
 5. **Verify production health.** After deployment completes:
-   - If a health endpoint is known (from project docs or user input), `curl` it and verify 200.
+   - If a health endpoint is known, from project docs or user input, `curl` it and verify 200.
    - If the project has a public URL, verify it loads.
-   - Check for new error reports if monitoring is configured (Sentry MCP, etc.).
+   - Check for new error reports if monitoring is configured, Sentry MCP, etc..
    - Report the deployment result.
 
 6. **Switch to local main.** After successful deployment:
@@ -119,20 +119,20 @@ Monitor a recently deployed change for errors, performance regressions, and unex
 - No arguments: monitor for 5 minutes with checks every 60 seconds.
 - `--duration <minutes>`: monitor for a custom duration.
 - `--url <url>`: target a specific URL for health checks.
-- `--baseline`: capture current metrics as the baseline before a deploy (run this first).
+- `--baseline`: capture current metrics as the baseline before a deploy, run this first.
 
 ### Steps
 
 1. **Establish baseline.** If `--baseline` was passed or no prior baseline exists:
-   - Record current error rate from monitoring tools (if accessible).
+   - Record current error rate from monitoring tools, if accessible.
    - Record response time for key endpoints.
    - Save as the comparison point.
 
 2. **Monitor loop.** For each check interval:
    - Verify the health endpoint returns 200.
-   - Check for new errors in monitoring tools (Sentry MCP if available).
+   - Check for new errors in monitoring tools, Sentry MCP if available.
    - Compare current response time against baseline.
-   - Check browser console for JavaScript errors (if Playwright MCP is available and a frontend URL is known).
+   - Check browser console for JavaScript errors, if Playwright MCP is available and a frontend URL is known.
 
 3. **Report per interval:**
 

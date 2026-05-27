@@ -84,20 +84,20 @@ Load test HTTP endpoints. Auto-detects the best available tool.
 
 ### Arguments
 
-- A URL (required): endpoint to test.
+- A URL is required: endpoint to test.
 - `-n <requests>`: total requests (default: 1000).
 - `-c <concurrency>`: concurrent connections (default: 10).
 - `-d <duration>`: test duration (e.g. `30s`). Overrides `-n`.
 - `--method <METHOD>`: HTTP method (default: GET).
 - `--body <json>`: request body.
-- `--header <key:value>`: custom header (repeatable).
+- `--header <key:value>`: custom header, repeatable.
 - `--compare`: run twice with a pause for changes between runs.
 - `--script <path>`: custom k6 script.
 
 ### Steps
 
 1. Parse arguments. Validate target with a single request.
-2. Detect tool (preference order): k6, wrk, hey, ab.
+2. Detect tool, preference order: k6, wrk, hey, ab.
 3. Build command:
    - **k6**: generate temp script with VUs, duration/iterations, headers, body. Run with `--summary-trend-stats`.
    - **wrk**: `wrk -t<threads> -c<concurrency> -d<duration> <url>`. Lua script for POST.
@@ -132,9 +132,9 @@ Detect flaky tests by running the full suite multiple times and tracking which t
 2. Run the suite 5 times in sequence, capturing pass/fail status for each test.
 3. Track per-test consistency: a test is flaky if it fails in at least 1 run and passes in at least 1 run.
 4. Classify by flake rate:
-   - Fail rate > 5%: quarantine candidate (flag immediately, never merge until fixed).
-   - Fail rate 1-5%: intermittent (investigate root cause before next release).
-   - Fail rate < 1%: monitor (log, watch in future runs).
+   - Fail rate > 5%: quarantine candidate, flag immediately, never merge until fixed.
+   - Fail rate 1-5%: intermittent, investigate root cause before next release.
+   - Fail rate < 1%: monitor, log, watch in future runs.
 5. Report results:
 
 ```
@@ -182,7 +182,7 @@ Generate test file stubs for code that lacks tests.
    - Follow [`rules/testing.md`](../../rules/testing.md): AAA pattern, faker for data, real database.
    - Include: one happy-path test, one error-path test, placeholder `// TODO: add edge cases`.
 5. Present stubs for approval before writing.
-6. After writing, run the test suite to verify stubs compile (they may fail on TODO assertions, which is expected).
+6. After writing, run the test suite to verify stubs compile, they may fail on TODO assertions, which is expected.
 
 ---
 
@@ -190,11 +190,11 @@ Generate test file stubs for code that lacks tests.
 
 - Always detect package manager and test runner from project config.
 - Never install test dependencies without asking.
-- Never modify test files during test execution (only `stubs` generates files).
+- Never modify test files during test execution, only `stubs` generates files.
 - Never run perf tests against production URLs without explicit confirmation.
 - Always validate perf target is reachable before load testing.
 - Always clean up temporary files.
-- Default perf to safe values (1000 requests, 10 concurrency).
+- Default perf to safe values, 1000 requests, 10 concurrency.
 - Show exact commands so user can reproduce manually.
 - If no test config exists, say so and stop.
 

@@ -519,7 +519,7 @@ For clients that cannot use a static allowlist, APQ provides a middle ground.
 1. Client sends a query hash
 2. Server checks the hash against a cache
 3. If miss, client resends with the full query text
-4. Server stores hash-to-query in a shared cache (Redis)
+4. Server stores hash-to-query in a shared cache. Redis
 
 - APQ reduces bandwidth and parsing overhead
 - APQ is not a security mechanism. In production, combine APQ with an allowlist

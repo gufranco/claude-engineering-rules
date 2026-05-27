@@ -10,7 +10,7 @@
 
 ## Auth Checklist
 
-Apply [`checklists/checklist.md`](../checklists/checklist.md) category 33 (Security and Access Control). The full auth verification items live there.
+Apply [`checklists/checklist.md`](../checklists/checklist.md) category 33 for Security and Access Control. The full auth verification items live there.
 
 ## OAuth 2.1 and Token Management
 
@@ -29,7 +29,7 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 33 (Secur
 ## Password Policy (NIST 800-63B)
 
 - Minimum 12 characters, no maximum below 64
-- No complexity requirements (uppercase, special chars, numbers)
+- No complexity requirements for uppercase, special chars, or numbers
 - No periodic rotation requirements
 - Check against HaveIBeenPwned breach database on creation and change
 - Hash with Argon2id (`timeCost: 3, memoryCost: 65536, parallelism: 4`) or bcrypt with saltRounds >= 12
@@ -45,15 +45,15 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 33 (Secur
 
 ## Auth Delegation
 
-Prefer specialized identity providers (Auth0, Cognito, Clerk, Keycloak) over custom auth. Auth flows have too many moving parts: password hashing, token lifecycle, session management, MFA, rate limiting, account recovery. A single mistake creates a vulnerability.
+Prefer specialized identity providers like Auth0, Cognito, Clerk, or Keycloak over custom auth. Auth flows have too many moving parts: password hashing, token lifecycle, session management, MFA, rate limiting, account recovery. A single mistake creates a vulnerability.
 
-When delegating: separate the auth concern behind an interface so the provider can be swapped without rewriting business logic. Record the trade-off (vendor coupling, privacy, cost) in an ADR.
+When delegating: separate the auth concern behind an interface so the provider can be swapped without rewriting business logic. Record the trade-off, including vendor coupling, privacy, and cost, in an ADR.
 
 ## Access Control
 
 - Default deny. Explicitly grant permissions, never explicitly deny them
-- Verify authorization per-resource, not just per-role. User A being an admin does not mean they can access User B's private data (IDOR prevention)
-- Use role-based access control (RBAC) for most applications. Consider attribute-based (ABAC) when permissions depend on resource properties or context
+- Verify authorization per-resource, not just per-role. User A being an admin does not mean they can access User B's private data, the IDOR prevention rule
+- Use role-based access control, RBAC, for most applications. Consider attribute-based ABAC when permissions depend on resource properties or context
 - Authorization logic lives in one place, not scattered across controllers
 
 ## Encryption
@@ -80,7 +80,7 @@ Applies regardless of GDPR, LGPD, CCPA coverage. Building later is always harder
 
 Log sensitive actions with context:
 
-- Login attempts (success/failure)
+- Login attempts, both success and failure
 - Password changes
 - Role changes
 - Record deletions
@@ -104,6 +104,38 @@ Set security headers on every HTTP response. Missing headers are silent vulnerab
 
 Use a framework middleware or reverse proxy to set these once, not per-route.
 
+### CSP Template
+
+`Content-Security-Policy` deserves a concrete template, not a placeholder. The defaults below are nonce-based, which is strictly safer than `'unsafe-inline'` and works in every modern browser. Generate a fresh nonce per request and inject it into every inline `<script nonce>` and `<style nonce>` tag.
+
+```
+Content-Security-Policy: default-src 'self';
+  base-uri 'self';
+  object-src 'none';
+  frame-ancestors 'none';
+  form-action 'self';
+  upgrade-insecure-requests;
+  script-src 'self' 'nonce-{REQUEST_NONCE}' 'strict-dynamic';
+  style-src 'self' 'nonce-{REQUEST_NONCE}';
+  img-src 'self' data: https:;
+  font-src 'self' data:;
+  connect-src 'self' https://api.example.com wss://api.example.com;
+  worker-src 'self' blob:;
+  manifest-src 'self';
+  media-src 'self';
+  report-uri /csp-report;
+  report-to csp-endpoint
+```
+
+Rules:
+
+- `{REQUEST_NONCE}` is a base64 value from `crypto.randomBytes(16)` regenerated per response. Never reuse, never derive from session ID or user input.
+- `'strict-dynamic'` lets nonce-trusted scripts load further scripts without an explicit allowlist. Required for most React/Vue/Svelte bundlers that emit dynamic imports.
+- `connect-src` is the most common cause of breakage. Update it when you add a backend host, a websocket endpoint, an analytics provider, or a third-party SDK.
+- `frame-ancestors 'none'` is the modern replacement for `X-Frame-Options: DENY`. Set both for older browser support.
+- Ship report-only mode first using the `Content-Security-Policy-Report-Only` header, collect violation reports from `/csp-report` for one week, then promote to enforcement.
+- Never inline `'unsafe-inline'` or `'unsafe-eval'`. If a library requires them, replace the library.
+
 ## Input and Output Safety
 
 - **Payload size limits**: enforce maximum request body size at the framework or reverse proxy level. Unbounded payloads enable denial of service. Default to a reasonable limit (e.g., 1MB) and increase per-endpoint only when justified
@@ -111,23 +143,23 @@ Use a framework middleware or reverse proxy to set these once, not per-route.
 - **ReDoS prevention**: avoid unbounded quantifiers in regex patterns that process user input. Patterns like `(a+)+$` or `([a-zA-Z]+)*` backtrack exponentially. Use linear-time regex engines or validate input length before matching
 - **Dynamic code execution**: never use `eval()`, `Function()`, `exec()`, or equivalent constructs that execute strings as code. If dynamic behavior is needed, use a lookup table or strategy pattern
 - **Open redirect prevention**: validate redirect destinations against an allowlist of trusted domains. Never redirect to a URL taken directly from user input without validation. Relative paths are safer than absolute URLs
-- **SSRF prevention**: when the server fetches URLs on behalf of user input, allowlist permitted domains and protocols. Block requests to private IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, ::1) and cloud metadata endpoints (169.254.169.254). Validate the resolved IP, not just the hostname, to prevent DNS rebinding
+- **SSRF prevention**: when the server fetches URLs on behalf of user input, allowlist permitted domains and protocols. Block requests to private IP ranges, including `10.x`, `172.16-31.x`, `192.168.x`, `127.x`, and `::1`, and cloud metadata endpoints at `169.254.169.254`. Validate the resolved IP, not just the hostname, to prevent DNS rebinding
 
 ## Token Revocation
 
 JWTs cannot be invalidated without server-side state. When revocation is required:
 
-- Maintain a blocklist of revoked token IDs (the `jti` claim) in a fast store like Redis
+- Maintain a blocklist of revoked token IDs via the `jti` claim in a fast store like Redis
 - Set a TTL on blocklist entries matching the token's remaining lifetime
 - Check the blocklist on every authenticated request
 - Revoke tokens on: password change, explicit logout, permission change, account compromise
 
-Short-lived access tokens (5-15 minutes) with refresh token rotation reduce the window of exposure and the size of the blocklist.
+Short-lived access tokens, 5 to 15 minutes, with refresh token rotation reduce the window of exposure and the size of the blocklist.
 
 ## Process Isolation
 
 - Run as non-root. Container root = host root if the container is escaped
-- In containers: create a dedicated user in the Dockerfile (`USER node`, `USER appuser`), never run as PID 1 without signal handling
+- In containers: create a dedicated user in the Dockerfile (e.g., `USER node` or `USER appuser`). Never run as PID 1 without signal handling
 - In VMs and bare metal: create a service account with only the permissions the application needs
 - File system: application must own only its working directory. System dirs, config outside the app, and other users' data must be inaccessible
 
@@ -147,7 +179,7 @@ Environment variables are insufficient for production secrets. A single compromi
 Dependencies are attack surface. A compromised package runs with your code's permissions.
 
 - **Lock dependencies**: always commit lockfiles. Pin exact versions, not ranges
-- **Verify integrity**: enable lockfile integrity checking (`npm ci`, not `npm install` in CI)
+- **Verify integrity**: enable lockfile integrity checking via `npm ci`, not `npm install`, in CI
 - **Review before adding**: check the package's maintainers, recent commits, download count, and known vulnerabilities before installing. A package with 12 downloads and one maintainer is a risk
 - **Typosquatting**: double-check package names. `lodash` vs `1odash`, `colors` vs `colour`. One character can mean malicious code
 - **Dependency confusion**: if you use private packages, configure scoped registries to prevent public registry substitution
@@ -155,8 +187,8 @@ Dependencies are attack surface. A compromised package runs with your code's per
 - **Minimize surface**: fewer dependencies = fewer attack vectors. Prefer native/stdlib when the alternative is a small package with deep transitive dependencies
 - **Monitor advisories**: subscribe to security advisories for your critical dependencies. Do not wait for a scheduled audit to learn about a zero-day
 - **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format. Per-file SPDX-License-Identifier headers improve SBOM accuracy. See `rules/licensing.md`
-- **Artifact signing**: sign build artifacts with Sigstore (cosign) for provenance verification
-- **SLSA compliance**: target SLSA Level 2 minimum for customer-facing services (hosted builds with signed provenance)
+- **Artifact signing**: sign build artifacts with Sigstore via `cosign` for provenance verification
+- **SLSA compliance**: target SLSA Level 2 minimum for customer-facing services, which means hosted builds with signed provenance
 
 ## Hook Coverage
 

@@ -111,7 +111,7 @@ Run Lighthouse in CI to enforce a minimum accessibility score.
 }
 ```
 
-The threshold is 0.9 (90%). A score below 90 fails the CI step. Teams targeting AAA compliance must raise this to 0.95.
+The threshold is 0.9, 90%. A score below 90 fails the CI step. Teams targeting AAA compliance must raise this to 0.95.
 
 ### Pa11y
 
@@ -146,7 +146,7 @@ Zero errors for a pass. Pa11y returns a non-zero exit code on any violation, so 
 
 ## WCAG 2.2 Additions
 
-WCAG 2.2 adds criteria not present in 2.1. Check these in addition to the 2.1 baseline. Checklist items: [`checklists/checklist.md`](../checklists/checklist.md) category 7 (Accessibility subsection).
+WCAG 2.2 adds criteria not present in 2.1. Check these in addition to the 2.1 baseline. Checklist items: [`checklists/checklist.md`](../checklists/checklist.md) category 7, Accessibility subsection.
 
 ### Focus Not Obscured (2.4.11, AA)
 
@@ -173,7 +173,7 @@ Every drag action must have a single-pointer alternative. Sortable lists need up
 
 ### Consistent Help (3.2.6, A)
 
-Help mechanisms (contact info, chat widget, FAQ link) must appear in the same relative position across pages. Do not move help to different locations on different pages.
+Help mechanisms, contact info, chat widget, FAQ link, must appear in the same relative position across pages. Do not move help to different locations on different pages.
 
 ### Redundant Entry (3.3.7, A)
 
@@ -181,12 +181,12 @@ Do not force users to re-enter the same information within the same session. Aut
 
 ### Accessible Authentication (3.3.8, AA)
 
-Login must not rely solely on cognitive function tests (puzzles, pattern recognition).
+Login must not rely solely on cognitive function tests, puzzles, pattern recognition.
 
 - Allow paste in password fields: `<input type="password" autocomplete="current-password">`
 - Offer alternatives: passkey, SSO, email magic link
 - AA allows object recognition or personal content as alternatives
-- AAA (3.3.9) prohibits even those: only password managers, passkeys, or federated login
+- AAA, 3.3.9 prohibits even those: only password managers, passkeys, or federated login
 
 ## Manual Testing Checklist
 
@@ -581,7 +581,7 @@ OKLCH provides perceptually uniform lightness, making contrast adjustments predi
 Key rules:
 
 - Body text on background: 4.5:1 minimum
-- Large text (>= 18px bold or >= 24px): 3:1 minimum
+- Large text, >= 18px bold or >= 24px: 3:1 minimum
 - UI components, borders, focus rings: 3:1 against adjacent colors
 - Disabled elements are exempt from contrast requirements, but must still be distinguishable from enabled elements
 

@@ -31,20 +31,20 @@ Research design patterns in the ecosystem, propose a component hierarchy, and pr
 
 - No arguments: interactive mode. Ask what needs to be designed.
 - `<description>`: start consultation with the given feature or component.
-- `--research`: include competitive research (search for how other products solve the same problem).
+- `--research`: include competitive research, search for how other products solve the same problem.
 
 ### Steps
 
 1. **Clarify requirements.** Ask one question at a time:
    - What is the user trying to accomplish?
    - What are the inputs and outputs?
-   - What states exist (empty, loading, error, success, partial)?
+   - What states exist such as empty, loading, error, success, or partial?
    - What are the accessibility requirements?
    - Is there an existing design system or component library to follow?
 
-2. **Research (if `--research` or the problem is non-trivial).** Run **in parallel**:
+2. **Research, if `--research` or the problem is non-trivial.** Run **in parallel**:
    - Search for similar UI patterns in the project's existing components.
-   - Search for established patterns in the component library (shadcn/ui, MUI, Ant Design, etc.) if one is in use.
+   - Search for established patterns in the component library, such as shadcn/ui, MUI, or Ant Design, if one is in use.
    - If `--research`: search the web for how other products handle this pattern.
 
 3. **Detect the project's design foundation.** Read **in parallel**:
@@ -152,10 +152,10 @@ Generate multiple design approaches for the same requirement and present them fo
 1. **Read context.** Load DESIGN.md if it exists, or ask for the requirement.
 
 2. **Generate N distinct approaches.** Each variant must differ meaningfully in at least one major dimension:
-   - Layout strategy (cards vs list vs table vs timeline)
-   - Information density (minimal vs detailed)
-   - Interaction model (inline editing vs modal vs page navigation)
-   - Visual style (compact vs spacious, flat vs layered)
+   - Layout strategy. Cards vs list vs table vs timeline
+   - Information density. Minimal vs detailed
+   - Interaction model. Inline editing vs modal vs page navigation
+   - Visual style such as compact vs spacious, or flat vs layered
 
 3. **Present comparison:**
 
@@ -185,7 +185,7 @@ Scaffold a design system or extend an existing component library with new tokens
 ### Arguments
 
 - No arguments: audit existing design tokens and suggest improvements.
-- `<component-type>`: scaffold a new component type (button, card, dialog, table, form, etc.).
+- `<component-type>`: scaffold a new component type, button, card, dialog, table, form, etc..
 
 ### Steps
 
@@ -218,7 +218,7 @@ Scaffold a design system or extend an existing component library with new tokens
 - Color choices must pass WCAG AA contrast ratios. Use the project's semantic color tokens, not raw hex values.
 - DESIGN.md is permanent. It records WHY decisions were made, not just WHAT was decided.
 - Never generate production code during design consultation. This skill produces decisions and specifications, not implementation.
-- When the project uses a specific component library (shadcn/ui, MUI, etc.), use its component vocabulary and patterns. Do not invent parallel abstractions.
+- When the project uses a specific component library like shadcn/ui or MUI, use its component vocabulary and patterns. Do not invent parallel abstractions.
 
 ## Related skills
 

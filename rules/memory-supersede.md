@@ -52,7 +52,7 @@ supersedes: feedback_example.md
 ## Chain Limits
 
 - Maximum chain depth: 5 supersessions. Beyond this, archive the oldest entries to a `memory/archive/` directory and remove from the chain.
-- The supersede chain must form a directed acyclic graph. Never point two new memories at the same predecessor unless one is genuinely a fork (rare).
+- The supersede chain must form a directed acyclic graph. Never point two new memories at the same predecessor unless one is genuinely a fork, rare.
 
 ## Why This Rule Exists
 

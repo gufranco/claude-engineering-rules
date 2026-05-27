@@ -29,8 +29,9 @@ The rule applies to every artifact a human reader can see outside the planning f
 
 - `git commit -m` subject and body
 - `git tag -m`, `git notes` add/append
-- `gh pr create`, `gh pr edit`, `gh pr review`, `gh release create`, `gh issue create/edit/comment`
-- `glab mr create/update`, `glab release create`
+- `gh pr create`, `gh pr edit`, `gh pr review`, `gh pr comment`, `gh issue create/edit/comment`, `gh release create/edit`
+- `gh api` targeting a comment endpoint, such as `repos/<o>/<r>/pulls/<n>/comments/<id>/replies` POST or `repos/<o>/<r>/pulls/comments/<id>` PATCH, including `--input <file>` payloads
+- `glab mr create/update`, `glab mr note`, `glab release create`
 - Code comments, doc-string preambles, README files outside docs/adr and project planning folders
 - Slack messages, email drafts, status updates written by the assistant
 - CHANGELOG entries
@@ -52,6 +53,11 @@ It does not apply inside the planning folder itself. Files under project `specs`
 | `100% faithful`, `fully faithful`, `absolutely faithful` | Faithfulness language is process self-congratulation |
 | `lands in phase N`, `comes online in phase N` | Phase-relative scheduling |
 | `following the plan`, `as the plan describes` | Plan-as-authority language |
+| `I ran the suite`, `I ran the tests`, `I ran jest`, `I ran the full suite` | Narrating the verification loop. The reader cares about the result, not the steps |
+| `observed the actual status`, `observed the behavior`, `observed the response` | Empirical-observation narration. Just state the result |
+| `for each X case I ran`, `for each X I observed`, `for each X I tried` | Meta-iteration over test cases. Reads as AI workflow self-talk |
+| `with the asserts pinned to match`, `pinned to match the actual` | Frames the verification as the deliverable. The deliverable is the code |
+| `All N tests still pass`, `All N integration tests pass`, `N tests all pass` | Verification-summary trailer. CI conveys this; the comment should not |
 
 This list is the hook's regex set. It is not exhaustive. The principle stands: if a sentence describes the process of generating the change, it does not belong outside the planning folder.
 
@@ -87,6 +93,41 @@ editorconfig / gitattributes / gitignore set.
 
 The good version is shorter, names what changed, and contains no AI-process tells. A reader cannot tell whether a human or an AI produced it.
 
+## How To Write A PR Review Reply Instead
+
+Review-comment replies are public artifacts seen by every future reader of the PR. They follow the same rule as commits: state what changed and why, never how the change was verified or how many iterations the verification took.
+
+Bad:
+
+```
+Pinned every permissive assertion to an exact status. Pushed `597d6d1cc`.
+
+For each previously-permissive case I ran the suite, observed the
+actual status, then asserted on it plus the response body. Resulting
+pins:
+
+- GET /accounts: 200 with empty array.
+- POST /requiresSsnCheck: 200 with requiresSsnCheck: false.
+- PUT /cancel: 400 when status != PENDING_APPROVAL, 404 when unknown.
+
+All 21 redemption integration tests still pass.
+```
+
+Good:
+
+```
+Pinned every permissive assertion to an exact status with body checks.
+Pushed `597d6d1cc`.
+
+- GET /accounts: 200 with an empty array.
+- POST /requiresSsnCheck: 200 with `requiresSsnCheck: false`, since
+  `buildVerifiedUser` sets `isSsnVerified: true`.
+- PUT /cancel: 400 when status is not `PENDING_APPROVAL`, 404 when
+  the merchantRefNum is unknown.
+```
+
+The good version cuts three things: the "I ran the suite, observed, asserted" workflow narration, the "Resulting pins:" framing label, and the "All N tests still pass" trailer. The reader gets the result and the reasoning. The reader does not get a tour of how the assertions were derived. CI status conveys whether tests pass.
+
 ## How To Write A Code Comment Instead
 
 Code comments describe the code. They never describe how the code was produced.
@@ -109,12 +150,14 @@ The good version uses the standard `TODO:` convention any reader recognizes, nam
 
 ## Self-Test Before Committing Or Posting
 
-For every commit message, PR description, code comment, or chat message destined for another human, ask:
+For every commit message, PR description, PR review reply, code comment, or chat message destined for another human, ask:
 
 1. Does any sentence describe the process that produced this change?
 2. Does any sentence reference a plan, spec, phase, or canvas?
 3. Does any sentence contain hyperbole I would not say out loud to a teammate?
 4. Could a reader tell, from this text alone, that an AI assisted?
+5. Does any sentence narrate the verification loop? "I ran the suite", "observed the actual status", "for each case I tried", "with the asserts pinned to match" all expose AI-flavored verification.
+6. Does the message end with a verification-summary trailer like "All N tests still pass"? CI conveys this; the comment should not.
 
 If any answer is yes, rewrite before sending. The hook will block the worst of it; this self-test catches the rest.
 
@@ -127,5 +170,5 @@ The bypass `AI_PROCESS_LEAK_DISABLE=1` is for editing planning artifacts that le
 - `~/.claude/CLAUDE.md` "No AI attribution" covers the narrower explicit-attribution case.
 - `~/.claude/rules/git-workflow.md` "Commit Format" defines the subject and body envelope.
 - `~/.claude/rules/writing-precision.md` covers the broader precision floor.
-- `~/.claude/standards/code-review.md` "No Internal Config Leakage" covers the related class of `~/.claude/` path leaks (different hook).
+- `~/.claude/standards/code-review.md` "No Internal Config Leakage" covers the related class of `~/.claude/` path leaks, different hook.
 - `~/.claude/hooks/ai-process-leak-blocker.py` is the enforcement layer.

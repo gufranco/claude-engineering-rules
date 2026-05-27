@@ -36,7 +36,7 @@
 - Accept interfaces, return concrete types
 - Define interfaces in the consumer's package, not the producer's
 - Keep interfaces small. `io.Reader`, `io.Writer`, `error` are the model
-- Avoid empty interface (`any`) in public APIs except where genuinely needed (encoding, reflection)
+- Avoid empty interface (`any`) in public APIs except where genuinely needed such as encoding, or reflection
 
 ## Generics
 

@@ -18,7 +18,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 
 ### Phase 1: Reproduce
 
-1. **Understand the symptom.** Ask the user (or read from the description):
+1. **Understand the symptom.** Ask the user, or read from the description:
    - What is the expected behavior?
    - What is the actual behavior?
    - When did it start? What changed recently?
@@ -33,7 +33,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
    - Ask the user for more context.
    - Do not proceed until the failure is reproducible or the investigation target is clear.
 
-4. **Activate freeze (if requested).** When `--freeze <path>` was passed:
+4. **Activate freeze, if requested.** When `--freeze <path>` was passed:
    - Write the target path to `~/.claude/.freeze-scope`.
    - All subsequent edits are restricted to that directory.
    - State the freeze boundary to the user.
@@ -70,8 +70,8 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 1. **Attempt the fix.** Apply a single, focused change that addresses the root cause.
 
 2. **Verify the fix.** Run these **in parallel**:
-    - The original reproduction steps (must now succeed).
-    - The full test suite (must not regress).
+    - The original reproduction steps, must now succeed.
+    - The full test suite, must not regress.
 
 3. **Track attempts.** Maintain a running log:
 
@@ -97,10 +97,10 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 
 2. **Remove diagnostic instrumentation.** Delete any temporary logging, debug prints, or test scaffolding added during investigation.
 
-3. **Remove freeze (if active).** Delete `~/.claude/.freeze-scope` to restore normal editing scope.
+3. **Remove freeze, if active.** Delete `~/.claude/.freeze-scope` to restore normal editing scope.
 
 4. **Summary.** State:
-    - Root cause (WHY, not just WHERE).
+    - Root cause, WHY, not just WHERE.
     - Fix applied.
     - How many attempts it took.
     - Whether the same pattern exists elsewhere.
@@ -112,7 +112,7 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 - Never fix the symptom. A null check is not a fix if you do not know why the value is null.
 - Never relax a checker, linter, or type constraint to make a failure disappear. Fix the code.
 - Never proceed past 3 failed fix attempts without user input.
-- The hypothesis log (step 11) is mandatory. It prevents repeating failed approaches and gives the user visibility into the investigation.
+- The hypothesis log, step 11 is mandatory. It prevents repeating failed approaches and gives the user visibility into the investigation.
 - When `--freeze` is active, respect the boundary. Do not edit files outside the frozen scope, even if they seem related. If a fix requires changes outside the scope, ask the user to expand or remove the freeze.
 - All fix attempts must follow the full completion gates from [`../../rules/verification.md`](../../rules/verification.md): formatter, tests, linter, build.
 

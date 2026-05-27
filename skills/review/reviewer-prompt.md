@@ -4,7 +4,7 @@
 
 Apply the checklist to every review. Go through every applicable category. Do not skip sections because the change "looks small" or "is just a refactor."
 
-**Checklist** ([`../../checklists/checklist.md`](../../checklists/checklist.md)): 70 categories covering code-level quality (1-17), architecture, resilience, and infrastructure (18-49), clean room verification (50), deployment verification (51), design quality (52), LLM trust boundary (53), performance budget (54), zero-downtime deployment (55), supply chain security (56), event-driven architecture (57), and licensing compliance (58). This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15 (cross-file consistency) applies after all per-file checks. Category 16 (cascading fix analysis) applies to every issue found. Categories 18-58 apply when relevant to the system type and scope signals.
+**Checklist** ([`../../checklists/checklist.md`](../../checklists/checklist.md)): 70 categories covering code-level quality , 1 to 17, architecture, resilience, and infrastructure , 18 to 49, clean room verification, 50, deployment verification, 51, design quality, 52, LLM trust boundary, 53, performance budget, 54, zero-downtime deployment, 55, supply chain security, 56, event-driven architecture, 57, and licensing compliance, 58. This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15, cross-file consistency, applies after all per-file checks. Category 16, cascading fix analysis, applies to every issue found. Categories 18-58 apply when relevant to the system type and scope signals.
 
 In addition to the checklist, the review dynamically loads on-demand standards from `~/.claude/rules/index.yml` that match the project's technology stack. When a standard is loaded, review code against its specific patterns.
 
@@ -96,7 +96,7 @@ Push the filter down to the database:
 const activeUsers = await userRepository.find({
   where: { status: 'active', role },
   take: pageSize,
-  skip: (page - 1) * pageSize,
+  skip:, page - 1, * pageSize,
 });
 ```
 ````
@@ -155,8 +155,8 @@ Use a database-level unique constraint and handle the conflict:
 try {
   const user = userRepository.create({ email, name });
   await userRepository.save(user);
-} catch (error) {
-  if (error.code === '23505') { // PostgreSQL unique violation
+} catch, error, {
+  if, error.code === '23505', { // PostgreSQL unique violation
     return res.status(409).json({
       error: { code: 'DUPLICATE_EMAIL', message: 'A user with this email already exists' },
     });
@@ -168,11 +168,11 @@ try {
 And make sure the migration includes the constraint:
 
 ```sql
-ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
+ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE, email;
 ```
 ````
 
-Cascading fix warning (when the fix itself could introduce a new problem):
+Cascading fix warning, when the fix itself could introduce a new problem:
 
 ````
 This handler doesn't validate `userId` before passing it to the query.
@@ -216,7 +216,7 @@ For every DDL statement in every changed migration file, verify a matching decla
 | `CREATE TABLE <name>` | `model <Name>` block |
 | `DROP TABLE <name>` | `model <Name>` block removed |
 
-Authoritative drift check (run when a fresh DB is available):
+Authoritative drift check, run when a fresh DB is available:
 
 ```bash
 pnpm exec prisma migrate diff \
@@ -227,7 +227,7 @@ pnpm exec prisma migrate diff \
 
 Non-zero exit is a P0 blocking finding. Paste the full output in the review.
 
-Unmanaged objects exempt from parity (PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, RLS policies) must have a leading comment in the migration file naming the unmanaged class. Missing documentation is P1.
+Unmanaged objects exempt from parity, such as PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, or RLS policies, must have a leading comment in the migration file naming the unmanaged class. Missing documentation is P1.
 
 Example finding when parity is missing:
 

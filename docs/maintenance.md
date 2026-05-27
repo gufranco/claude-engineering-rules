@@ -10,7 +10,7 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 
 - [ ] Update all MCP server packages: `npx -y <package>@latest` for each entry in [`settings.json`](../settings.json)
 - [ ] Check for new Claude Code releases: `claude --version`
-- [ ] Review [`standards/`](../standards) files for outdated version references (Node.js LTS, Python, Go, Rust)
+- [ ] Review [`standards/`](../standards) files for outdated version references such as Node.js LTS, Python, Go, or Rust
 - [ ] Run `python3 scripts/validate-checklist-counts.py` and fix any count mismatches in README.md and CLAUDE.md
 
 ### Hook health
@@ -74,7 +74,7 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 
 - [ ] Run `/retro` on a representative session and save findings to [`rules/`](../rules) or [`standards/`](../standards)
 - [ ] Review memory files in `~/.claude/projects/*/memory/`, update stale facts, delete outdated entries
-- [ ] Compare README.md feature counts (rules, standards, skills, hooks, agents) against actual file counts
+- [ ] Compare README.md feature counts, rules, standards, skills, hooks, agents against actual file counts
 - [ ] Archive spec folders older than 6 months: `mv specs/2024-*/ archive/specs/`
 
 ### Performance and token audit

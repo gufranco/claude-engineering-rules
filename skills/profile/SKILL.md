@@ -98,7 +98,7 @@ Flags can be combined with a path: `/profile src/api --db`.
    **Fix:**
    ```ts
    // Before
-   for (const order of orders) {
+   for, const order of orders, {
      order.customer = await prisma.customer.findUnique({ where: { id: order.customerId } });
    }
 
@@ -125,9 +125,9 @@ Flags can be combined with a path: `/profile src/api --db`.
    ### Summary
 
    Top 3 actions by impact:
-   1. Fix the N+1 query in order listing (critical)
-   2. Add pagination to the products endpoint (high)
-   3. Replace sequential API calls with Promise.all in checkout (high)
+   1. Fix the N+1 query in order listing. Critical
+   2. Add pagination to the products endpoint. High
+   3. Replace sequential API calls with Promise.all in checkout. High
    ```
 
 ## Rules

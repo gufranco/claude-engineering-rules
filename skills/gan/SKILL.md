@@ -1,13 +1,13 @@
 ---
 name: gan
-description: Generator-Evaluator iteration loop for building features against a scored rubric. Inspired by Anthropic's "Harness Design for Long-Running Application Development". Use when user says "gan", "gan loop", "generator evaluator", "iterate to threshold", "build with feedback loop", or needs an iteration pattern stronger than `/loop` for feature work that has a measurable quality signal. Do NOT use for one-shot implementations (use `/plan` + direct edits), recurring schedules (use `/loop`), or visual design exploration (use `/design variants`).
+description: Generator-Evaluator iteration loop for building features against a scored rubric. Use when user says "gan", "gan loop", "generator evaluator", "iterate to threshold", "build with feedback loop", or needs an iteration pattern stronger than `/loop` for feature work that has a measurable quality signal. Do NOT use for one-shot implementations (use `/plan` + direct edits), recurring schedules (use `/loop`), or visual design exploration (use `/design variants`).
 ---
 
 Run a planner → generator → evaluator loop with a score-gated stop condition. The planner expands the brief into acceptance criteria and a rubric. The generator implements against the criteria. The evaluator scores the result, returns feedback. The loop iterates until the score crosses the threshold or the iteration cap is hit.
 
 ## When to use
 
-- The output has a measurable quality signal (Playwright test outcome, lint pass, custom rubric).
+- The output has a measurable quality signal, Playwright test outcome, lint pass, custom rubric.
 - The first attempt is unlikely to be the last attempt.
 - The cost of running a feedback loop is justified by the quality lift.
 
@@ -35,10 +35,10 @@ Environment variables:
 The skill orchestrates three Claude Code agents shipped alongside it:
 
 - [`agents/gan-planner.md`](../../agents/gan-planner.md): expands the brief into acceptance criteria, file list, and a 5-row scoring rubric.
-- [`agents/gan-generator.md`](../../agents/gan-generator.md): implements the plan; returns proposed diffs or full file contents (NOT direct writes).
+- [`agents/gan-generator.md`](../../agents/gan-generator.md): implements the plan; returns proposed diffs or full file contents, NOT direct writes.
 - [`agents/gan-evaluator.md`](../../agents/gan-evaluator.md): scores the implementation against the rubric, returns per-row scores and a verdict.
 
-The orchestrator (this skill) is the sole filesystem writer. Same single-writer invariant as `/plan multi-execute`.
+The orchestrator, this skill, is the sole filesystem writer. Same single-writer invariant as `/plan multi-execute`.
 
 ## Process
 
@@ -49,12 +49,12 @@ The orchestrator (this skill) is the sole filesystem writer. Same single-writer 
 
 1. **Plan once.** Spawn `gan-planner` with the brief. Receive:
     - Acceptance criteria as a checklist.
-    - File list (paths the implementation will touch).
+    - File list, paths the implementation will touch.
     - Rubric: 5 rows, each weighted 1-10, total weights sum to 10. Each row names a measurable quality.
 
-2. **Iterate** (cap `GAN_MAX_ITERATIONS`):
+2. **Iterate**, cap `GAN_MAX_ITERATIONS`:
 
-    a. **Generate.** Spawn `gan-generator` with the plan, current state, and last iteration's feedback (if any). Generator returns proposed changes as unified diffs.
+    a. **Generate.** Spawn `gan-generator` with the plan, current state, and last iteration's feedback, if any. Generator returns proposed changes as unified diffs.
 
     b. **Apply.** Orchestrator parses the diffs and writes via Edit / Write / MultiEdit. On apply failure, treat as a generator failure: feed the error back to the generator, retry once, then move on.
 
@@ -82,7 +82,6 @@ The orchestrator (this skill) is the sole filesystem writer. Same single-writer 
 - Apply costs are real. Cap `GAN_MAX_ITERATIONS` at 8 by default; loops past that have diminishing returns.
 - Always check `GAN_PASS_THRESHOLD` against the rubric's weighted total, not against any single row.
 - The evaluator must run the same evidence path each iteration. Switching from screenshot to Playwright mid-loop invalidates the score history.
-- Inspired by Anthropic's "Harness Design for Long-Running Application Development." Read it once before tuning the defaults.
 
 ## Related skills
 

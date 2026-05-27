@@ -52,7 +52,7 @@ Display SLOs as burn-rate alerts, not raw uptime percentages.
 ## Alert Integration
 
 - Every panel that can trigger an alert must show the alert threshold as a horizontal line or shaded region
-- Alert state (firing, pending, OK) must be visible on the dashboard without navigating elsewhere
+- Alert state, firing, pending, OK must be visible on the dashboard without navigating elsewhere
 - Link from alert notifications directly to the relevant dashboard with the time range pre-set to the alert window
 
 ## Anti-Patterns
@@ -66,7 +66,19 @@ Display SLOs as burn-rate alerts, not raw uptime percentages.
 | No baseline | Cannot tell if current values are normal | Add week-over-week comparison or static baseline annotation |
 | Dashboard sprawl | Hundreds of dashboards, nobody knows which to use | Curate a home dashboard per team. Archive unused dashboards |
 
+## Product Dashboards
+
+The anti-patterns above target observability dashboards. Product or admin dashboards, a customer-facing analytics view, an internal ops console, a business metrics screen, share the same hazards plus the visual-template hazards covered in [`standards/frontend.md`](frontend.md) under "Anti-Template Policy".
+
+Apply both:
+
+1. The observability anti-patterns above for the data and chart layer.
+2. The Anti-Template Policy in [`standards/frontend.md`](frontend.md) for the visual and information-architecture layer. The "Dashboard by numbers" banned pattern is the same hazard as "Wall of graphs" but stated from a product perspective: a screen that exists to show metrics is not a dashboard, it is a metric warehouse.
+
+A product dashboard must answer an operator question on entry. The first sentence of its README should read "this dashboard answers <question>". If it cannot be filled in, the dashboard is not ready to ship.
+
 ## Related Standards
 
 - [`standards/observability.md`](observability.md): Observability
 - [`standards/sre-practices.md`](sre-practices.md): SRE Practices
+- [`standards/frontend.md`](frontend.md): Frontend. Anti-Template Policy

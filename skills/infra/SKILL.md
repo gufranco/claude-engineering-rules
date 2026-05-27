@@ -13,7 +13,7 @@ Unified infrastructure skill for local development. Replaces standalone `/docker
 | `/infra terraform` | Terraform/OpenTofu workflows |
 | `/infra db` | Database migrations and operations |
 
-If no subcommand is given, default to `docker` (show status).
+If no subcommand is given, default to `docker`, show status.
 
 ---
 
@@ -26,7 +26,7 @@ Manage Docker containers, compose services, and the runtime. Colima-aware, runti
 - No arguments or `status`: show status of all containers, compose services, runtime.
 - `build [service]`: build images.
 - `up [service]`: start services in detached mode.
-- `down`: stop and remove compose containers (ask approval).
+- `down`: stop and remove compose containers, ask approval.
 - `restart [service]`: restart services or standalone containers.
 - `logs [service]`: show recent logs.
 - `shell <service|container>`: interactive shell in a container.
@@ -37,7 +37,7 @@ Manage Docker containers, compose services, and the runtime. Colima-aware, runti
    - Colima: check `colima status`, suggest `colima-start`.
    - Docker Desktop: suggest opening `/Applications/Docker.app`.
    - Linux: suggest `sudo systemctl start docker`.
-2. **Detect runtime, compose, containers** (parallel): `docker context show`, resolve Docker context per [`standards/borrow-restore.md`](../../standards/borrow-restore.md), find compose files, `docker ps -a`.
+2. **Detect runtime, compose, containers**, parallel: `docker context show`, resolve Docker context per [`standards/borrow-restore.md`](../../standards/borrow-restore.md), find compose files, `docker ps -a`.
 3. Execute the requested operation:
    - **status**: runtime info, compose services, all containers. Mention `lazydocker` if available.
    - **build**: `<compose> build [service]`. Mention `dive` for layer analysis.
@@ -73,9 +73,9 @@ Run Terraform or OpenTofu with built-in safety checks. Always validate before pl
 
 ### Steps
 
-1. **Detect tool and directory** (parallel): `which terraform`, `which tofu`. Check `.terraform-version`/`.opentofu-version`. Find `.tf` files.
-2. **Check environment**: `.envrc` and direnv status. Show `TF_VAR_*`, `AWS_*` etc. (names only).
-3. Check initialization (`.terraform` directory). Init if needed.
+1. **Detect tool and directory**, parallel: `which terraform`, `which tofu`. Check `.terraform-version`/`.opentofu-version`. Find `.tf` files.
+2. **Check environment**: `.envrc` and direnv status. Show `TF_VAR_*`, `AWS_*` etc., names only.
+3. Check initialization, `.terraform` directory. Init if needed.
 4. Execute:
    - **fmt**: `<tool> fmt -recursive -diff`, then apply.
    - **validate**: `<tool> validate`.
@@ -103,10 +103,10 @@ Manage database migrations, containers, and data operations. Detects ORM and pac
 
 - No arguments: show migration status and container status.
 - `migrate`: run pending migrations.
-- `rollback`: rollback last batch (requires approval).
+- `rollback`: rollback last batch, requires approval.
 - `create <name>`: create new migration file.
 - `seed`: run seeders.
-- `reset`: rollback all and re-run (destructive, requires approval).
+- `reset`: rollback all and re-run, destructive, requires approval.
 - `start`: start database container.
 - `stop`: stop database container.
 - `terminal`: open database shell.
@@ -117,16 +117,16 @@ Manage database migrations, containers, and data operations. Detects ORM and pac
 
 ### Steps
 
-1. **Detect setup** (parallel): check Docker containers, resolve Docker context, detect ORM, detect package manager.
+1. **Detect setup**, parallel: check Docker containers, resolve Docker context, detect ORM, detect package manager.
 2. Execute:
-   - **status**: container status (suggest shell functions if not running), migration status per ORM.
-   - **start/stop**: suggest user shell functions (`postgres-start`, `mongo-start`, etc.).
+   - **status**: container status, suggest shell functions if not running, migration status per ORM.
+   - **start/stop**: suggest user shell functions, `postgres-start`, `mongo-start`, etc..
    - **terminal**: suggest shell functions or direct exec (`docker exec -it postgres psql -U postgres`).
    - **migrate**: check container running, show pending, run ORM-specific migrate command, verify.
    - **rollback**: show status, warn about data loss, require approval, run ORM-specific rollback.
    - **create**: require name, run ORM-specific create command, show file path.
    - **seed**: run ORM-specific seed command.
-   - **reset**: warn (destructive), require approval, rollback all, re-run all, verify.
+   - **reset**: warn, destructive, require approval, rollback all, re-run all, verify.
 
 ### Standalone Container Details
 

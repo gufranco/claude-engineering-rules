@@ -16,8 +16,6 @@ Treat every AI-bot comment as P3 until corroborated by a human reviewer or by a 
 | Qodo Merge | Variable | Lower than CodeRabbit | High on test gaps |
 | Korbit | Limited public data | Limited public data | Limited public data |
 
-Source: independent benchmarks from `greptile.com/benchmarks`, `devtoolsacademy.com/blog/state-of-ai-code-review-tools-2025/`, and the May 2026 GitHub Blog post on Copilot review metrics.
-
 ## False-Positive Catalog
 
 ### Style and convention violations
@@ -173,7 +171,3 @@ The Cursor IDE offers a separate review workflow that runs locally. When the use
 ## Never Credit a Bot
 
 Never add a commit author or co-author trailer that names any AI tool. The personal CLAUDE.md rule forbids this, and the `ai-attribution-blocker.py` hook enforces it at runtime. When the bot's catch was good, the credit goes to the human who triaged the bot's comment, not to the bot.
-
-## Source Notes
-
-CodeRabbit command grammar from `docs.coderabbit.ai/guides/commands`. Cursor BugBot trigger commands from `cursor.com/bugbot` and the May 2026 forum thread. Copilot UI behavior from the May 2026 GitHub Blog post. Benchmark numbers from `greptile.com/benchmarks` and `devtoolsacademy.com/blog/state-of-ai-code-review-tools-2025/`. The false-positive catalog draws on practitioner reports from `coderabbit.ai/blog/code-review-best-practices-for-vibe-coding`, the Sourcery documentation, and discussions on `news.ycombinator.com` and `lobste.rs`. Patterns are independently described.

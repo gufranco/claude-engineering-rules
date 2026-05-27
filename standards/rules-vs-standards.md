@@ -103,7 +103,7 @@ A separate dimension: skills are workflows the user invokes, not passive guidanc
 | Hook | `hooks/*.{py,sh}` | Tool invocation | Pre/post tool enforcement |
 | Checklist | [`checklists/checklist.md`](../checklists/checklist.md) | Verification phases | Review categories |
 
-When designing new guidance, ask: is this content (rule/standard), workflow (skill), delegated work (agent), or runtime enforcement (hook)?
+When designing new guidance, ask: is this content as a rule or standard, workflow, skill, delegated work as an agent, or runtime enforcement as a hook?
 
 ## Maintenance Discipline
 

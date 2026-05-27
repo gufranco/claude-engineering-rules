@@ -91,7 +91,8 @@ A layered config where each layer catches what the layer above missed.
 | [`security`](rules/security.md) | Secrets, auth, encryption, data privacy, audit logging, supply chain |
 | [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs |
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
-| [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output |
+| [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output, plus pronoun discipline, active voice, and tone calibration with Claude-conversation examples |
+| [`normative-keywords`](rules/normative-keywords.md) | BCP 14 (RFC 2119 + RFC 8174) keyword glossary. Lowercase primary, uppercase opt-in for critical correctness, security, data integrity, and irreversibility |
 | [`pre-flight`](rules/pre-flight.md) | Duplicate check, market research, architecture fit, interface verification |
 | [`surgical-edits`](rules/surgical-edits.md) | Every changed line traces to the request |
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
@@ -191,6 +192,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`mise-global-guard.py`](hooks/mise-global-guard.py) | PreToolUse Bash | Blocks `mise use --global`, forces project-local config |
 | [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse Write/Edit | Blocks mocking own services, DB, Redis, queues in tests |
 | [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks 90+ in-place mutation patterns in JS/TS |
+| [`normative-keyword-discipline.py`](hooks/normative-keyword-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks bullet items starting with `Should ` or `should ` in rules, standards, checklists, and [`CLAUDE.md`](CLAUDE.md). Enforces the BCP 14 weasel-words rule. Bypass `NORMATIVE_KEYWORD_DISABLE=1` |
 | [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |

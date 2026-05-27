@@ -61,10 +61,10 @@ Every write operation must be safe to execute more than once with the same resul
 
 ### Implementation Checklist
 
-- [ ] Can this handler receive the same input twice? (network retry, queue redelivery, Lambda retry)
+- [ ] Can this handler receive the same input twice? such as network retry, queue redelivery, or Lambda retry
 - [ ] If yes, what prevents duplicate side effects?
-- [ ] Is the deduplication key durable? (not in-memory, survives restarts)
-- [ ] What is the deduplication window? (TTL must exceed max retry/redelivery time)
+- [ ] Is the deduplication key durable? such as not in-memory, or survives restarts
+- [ ] What is the deduplication window? TTL must exceed max retry or redelivery time
 
 ## Deduplication
 
@@ -72,10 +72,10 @@ Every write operation must be safe to execute more than once with the same resul
 
 For queue consumers, event handlers, and webhook receivers:
 
-1. Extract a unique message identifier (message ID, event ID, idempotency key)
-2. Check if already processed (database lookup, cache check)
+1. Extract a unique message identifier such as message ID, event ID, or idempotency key
+2. Check if already processed such as database lookup, or cache check
 3. Process the message
-4. Record the message ID as processed (same transaction as the business write when possible)
+4. Record the message ID as processed. Same transaction as the business write when possible
 
 The deduplication store must be durable. In-memory sets are lost on restart and cause reprocessing.
 
@@ -92,7 +92,7 @@ Prefer database constraints over application checks:
 Every async processor must have a DLQ strategy:
 
 1. **Configure a DLQ** on every queue and event source mapping
-2. **Set maxReceiveCount** based on the retry policy (typically 3-5)
+2. **Set maxReceiveCount** based on the retry policy. Typically 3-5
 3. **Report partial batch failures** instead of failing the entire batch. Return individual failure IDs so successfully processed messages are not redelivered
 4. **Monitor DLQ depth** with alerts. Messages in the DLQ mean data is not being processed
 5. **Build a reprocessing path** so DLQ messages can be replayed after fixing the root cause
@@ -101,11 +101,11 @@ Every async processor must have a DLQ strategy:
 
 For calls to external services that may be degraded:
 
-- **Closed** (normal): requests pass through, failures are counted
-- **Open** (tripped): requests fail immediately without calling the service, checked periodically
-- **Half-open** (probing): limited requests pass through to test recovery. Send a single probe request on a timer. If it succeeds, move to Closed. If it fails, return to Open and reset the timer with backoff
+- **Closed**, normal: requests pass through, failures are counted
+- **Open**, tripped: requests fail immediately without calling the service, checked periodically
+- **Half-open**, probing: limited requests pass through to test recovery. Send a single probe request on a timer. If it succeeds, move to Closed. If it fails, return to Open and reset the timer with backoff
 
-Track: failure count, failure rate, response time. Trip on sustained failure, not a single error. For database-specific failures (deadlocks, lock timeouts), apply the same circuit breaker pattern. See [`standards/database.md`](database.md) Connection Management for retry-worthy transient errors.
+Track: failure count, failure rate, response time. Trip on sustained failure, not a single error. For database-specific failures, deadlocks, lock timeouts, apply the same circuit breaker pattern. See [`standards/database.md`](database.md) Connection Management for retry-worthy transient errors.
 
 **Error-type thresholds**: use separate counters per error class. A spike in timeouts must not trip the circuit for 5xx errors, and vice versa. Set independent thresholds for: connection refused, timeout, and 5xx. A mixed spike trips on the most severe class that crosses its own threshold.
 
@@ -120,7 +120,7 @@ When an operation involves multiple steps or items:
 - Process each item independently. One failure must not abort the batch
 - Track per-item success/failure status
 - Return detailed results: which items succeeded, which failed, and why
-- For multi-step workflows, ensure state is consistent after partial failure (compensating actions or saga pattern)
+- For multi-step workflows, ensure state is consistent after partial failure. Compensating actions or saga pattern
 
 ## Non-Critical Dependency Fallback
 
@@ -162,7 +162,7 @@ Every external call must have an explicit timeout:
 - Queue operations: visibility timeout aligned with processing time
 - Background jobs: execution timeout with cleanup
 
-Never rely on defaults. Defaults are often too generous (30s, 60s) and cascade into system-wide slowdowns. Database connection and query timeout values: see [`standards/database.md`](database.md) for per-query-type limits and statement timeout configuration.
+Never rely on defaults. Defaults are often too generous, 30s, 60s, and cascade into system-wide slowdowns. Database connection and query timeout values: see [`standards/database.md`](database.md) for per-query-type limits and statement timeout configuration.
 
 ## Back Pressure
 
@@ -211,6 +211,6 @@ Limit how many operations run in parallel to protect downstream systems and your
 | Internal rate limiter | Token bucket or sliding window within the application | Protecting a fragile downstream with a known capacity |
 | Batch + throttle | Collect items, process in batches with delay between batches | Bulk operations: backfills, migrations, mass notifications |
 
-- Default fan-out limit: start conservative (5-10), measure, then increase
+- Default fan-out limit: start conservative , 5 to 10, measure, then increase
 - Always instrument: track queue depth, active workers, and rejection count
 - Set a timeout on each unit of work. A stuck worker must not permanently reduce pool capacity

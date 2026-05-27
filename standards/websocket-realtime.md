@@ -15,7 +15,7 @@
 
 ### Handshake and Authentication
 
-Authenticate during the HTTP upgrade request, not after the WebSocket connection is open. The upgrade is the only point where standard HTTP middleware (cookies, headers, tokens) is available.
+Authenticate during the HTTP upgrade request, not after the WebSocket connection is open. The upgrade is the only point where standard HTTP middleware, cookies, headers, tokens, is available.
 
 ```typescript
 import { IncomingMessage } from "node:http";
@@ -538,7 +538,7 @@ interface ReauthResponse {
 Rules:
 
 - The client must initiate re-auth at least 60 seconds before token expiration
-- If re-auth fails, close the connection with code 4001 (TokenExpired) and trigger reconnect with a fresh token
+- If re-auth fails, close the connection with code 4001, TokenExpired and trigger reconnect with a fresh token
 - During re-auth, continue processing messages normally. Do not pause the connection
 - The server must reject all messages from a connection whose token has expired and not been refreshed
 
@@ -549,15 +549,15 @@ Rules:
 SSE is the right choice when:
 
 - Communication is server-to-client only
-- You need automatic reconnection built into the browser (SSE handles this natively)
-- You need to work through HTTP/2 without special infrastructure (SSE multiplexes over a single TCP connection)
+- You need automatic reconnection built into the browser. SSE handles this natively
+- You need to work through HTTP/2 without special infrastructure. SSE multiplexes over a single TCP connection
 - Clients are behind corporate proxies that block WebSocket upgrades
 
 SSE is wrong when:
 
-- The client must send frequent messages to the server (use WebSocket)
-- Binary data transfer is required (SSE is text-only)
-- You need sub-10ms latency (SSE adds HTTP framing overhead)
+- The client must send frequent messages to the server. Use WebSocket
+- Binary data transfer is required. SSE is text-only
+- You need sub-10ms latency. SSE adds HTTP framing overhead
 
 ### Implementation
 
