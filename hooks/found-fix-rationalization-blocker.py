@@ -211,7 +211,18 @@ def find_violations(text: str) -> list[tuple[str, str, str]]:
     return violations
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("found-fix-rationalization-blocker"):
+        _sys.exit(0)
     if os.environ.get("FOUND_FIX_RATIONALIZATION_DISABLE") == "1":
         _audit(
             hook="found-fix-rationalization-blocker",

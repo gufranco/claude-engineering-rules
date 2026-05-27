@@ -70,6 +70,17 @@ def _run(run_hook):
         "Resume in the next session.",
         "Would you like me to continue?",
         "I'll continue in the next session.",
+        "Ready for Phase B (Purchase, 1d). Proceed?",
+        "All gates passed. Continue?",
+        "Shall I proceed with Phase C?",
+        "Should I continue with the rebuild?",
+        "Sound good?",
+        "Let me know if you want me to start.",
+        "Ready for Phase C now.",
+        "Want me to start Phase D?",
+        "Do you want me to run the migrations?",
+        "Okay to proceed with the deploy?",
+        "Moving on?",
     ],
 )
 def test_blocks_checkpoint_patterns(tmp_path, phrase, _run):

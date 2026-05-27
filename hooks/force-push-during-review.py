@@ -108,7 +108,18 @@ def changes_requested_reviewer() -> str | None:
     return logins[0]
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> None:
+    if not should_run("force-push-during-review"):
+        _sys.exit(0)
     if os.environ.get("FORCE_PUSH_DURING_REVIEW_DISABLE") == "1":
         sys.exit(0)
 

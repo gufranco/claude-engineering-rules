@@ -51,7 +51,18 @@ GCLOUD_CONFIG_ACTIVATE = re.compile(
 GCLOUD_CONFIGURATION_FLAG = re.compile(r"--configuration[\s=]\S+")
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> None:
+    if not should_run("gcloud-config-guard"):
+        _sys.exit(0)
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, EOFError):

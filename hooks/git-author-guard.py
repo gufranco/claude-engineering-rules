@@ -300,7 +300,18 @@ def check_config_mutation(command: str) -> None:
     )
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> None:
+    if not should_run("git-author-guard"):
+        _sys.exit(0)
     if os.environ.get("GIT_AUTHOR_GUARD_DISABLE") == "1":
         sys.stderr.write(
             "git-author-guard: bypass active (GIT_AUTHOR_GUARD_DISABLE=1)\n"

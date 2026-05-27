@@ -455,11 +455,326 @@ def test_multiedit_with_non_dict_edit(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, assert_blocks):
+    # Arrange
+    body = tmp_path / "pr-body.md"
+    body.write_text(
+        "## Follow-ups\n\nThe spec folder lists more notes.\n",
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                f"gh pr create --base develop --title hello --body-file {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "spec folder")
+
+
+def test_blocks_gh_pr_body_file_with_equals_form(
+    tmp_path, tool_use, assert_blocks
+):
+    # Arrange
+    body = tmp_path / "pr-body.md"
+    body.write_text(
+        "Implements per the plan.\n",
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh pr edit 1234 --body-file={body}"},
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload)
+
+
+def test_blocks_glab_description_file_with_leak(
+    tmp_path, tool_use, assert_blocks
+):
+    # Arrange
+    body = tmp_path / "mr-body.md"
+    body.write_text(
+        "Refs: specs/2026-01-01-foo/plan.md\n",
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                f"glab mr create --description-file {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "Refs: specs/")
+
+
+def test_blocks_gh_release_notes_file_with_leak(
+    tmp_path, tool_use, assert_blocks
+):
+    # Arrange
+    body = tmp_path / "notes.md"
+    body.write_text(
+        "Phase 1 of the rollout.\n",
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                f"gh release create v1.0.0 --notes-file {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload)
+
+
+def test_allows_gh_pr_body_file_when_clean(tmp_path, tool_use, assert_allows):
+    # Arrange
+    body = tmp_path / "pr-body.md"
+    body.write_text(
+        "## What\n\nFix race condition in createUser.\n",
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                f"gh pr create --base develop --title fix --body-file {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_allows_when_body_file_missing(tool_use, assert_allows):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                "gh pr create --base develop --title fix"
+                " --body-file /tmp/definitely-not-there.md"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
 def test_write_non_string_content_is_skipped(tool_use, assert_allows):
     # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": 12345},
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "I ran the suite and it passed",
+        "i ran the tests locally",
+        "I ran jest on the affected files",
+        "I ran the full suite three times",
+    ],
+)
+def test_blocks_verification_loop_narration(tool_use, assert_blocks, phrase):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {"command": f'git commit -m "fix bug. {phrase}"'},
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "verification loop")
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "observed the actual status 500",
+        "observed the behavior under load",
+        "Observed the response shape",
+    ],
+)
+def test_blocks_observed_narration(tool_use, assert_blocks, phrase):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {"command": f'git commit -m "pin assertions. {phrase}"'},
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "Empirical-observation narration")
+
+
+def test_blocks_for_each_case_i_ran(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                'git commit -m "for each previously-permissive case I ran the assert"'
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "Meta-iteration")
+
+
+def test_blocks_pinned_to_match(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                'gh pr edit 42 --body "Pinned tests, with the asserts pinned to match the actual response"'
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "verification as the deliverable")
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "All 21 tests still pass",
+        "All 102 integration tests pass",
+        "All 4 unit tests still passed",
+    ],
+)
+def test_blocks_all_n_tests_pass_trailer(tool_use, assert_blocks, phrase):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {"command": f'gh pr comment 42 --body "Fixed. {phrase}"'},
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "Verification-summary trailer")
+
+
+def test_blocks_gh_pr_comment_with_leak(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {"command": 'gh pr comment 99 --body "Phase 2 work landed"'},
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "Phase")
+
+
+def test_blocks_gh_api_review_reply_input_file(tmp_path, tool_use, assert_blocks):
+    # Arrange
+    body = tmp_path / "reply.json"
+    body.write_text(
+        '{"body": "Pinned. I ran the suite and observed the actual status."}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                "gh api repos/o/r/pulls/1779/comments/12345/replies"
+                f" -X POST --input {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "verification loop")
+
+
+def test_blocks_gh_api_review_edit_patch_with_trailer(
+    tmp_path, tool_use, assert_blocks
+):
+    # Arrange
+    body = tmp_path / "edit.json"
+    body.write_text(
+        '{"body": "Fixed in 597d6d1c. All 21 redemption integration tests still pass."}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                "gh api repos/o/r/pulls/comments/12345 -X PATCH"
+                f" --input {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload, "Verification-summary trailer")
+
+
+def test_allows_gh_api_review_reply_when_clean(tmp_path, tool_use, assert_allows):
+    # Arrange
+    body = tmp_path / "reply.json"
+    body.write_text(
+        '{"body": "Pinned to 200 with empty array. The fixture seeds an empty store."}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                "gh api repos/o/r/pulls/1779/comments/12345/replies"
+                f" -X POST --input {body}"
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_allows(HOOK, payload)
+
+
+def test_blocks_glab_mr_note_with_leak(tool_use, assert_blocks):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                'glab mr note 42 --message "Following the plan, pushed the fix"'
+            )
+        },
+    )
+
+    # Act / Assert
+    assert_blocks(HOOK, payload)
+
+
+def test_allows_human_phrasing_about_tests(tool_use, assert_allows):
+    # Arrange
+    # A normal "ran ... locally" mention without the verification-loop
+    # framing should not trip the hook. The blocked phrase is specifically
+    # "I ran the suite/tests/jest" as a methodical narration.
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                'git commit -m "fix race in createUser; covered by an integration test"'
+            )
+        },
     )
 
     # Act / Assert
