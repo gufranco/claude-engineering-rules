@@ -95,28 +95,120 @@ def _summarise() -> tuple[int, int, list[str]]:
     return blocks, bypasses, hooks
 
 
+def _transcript_patterns(transcript_path: str) -> list[str]:
+    """Scan the session transcript for instinct-worthy patterns.
+
+    Returns a list of one-line pattern names. Empty list when none found.
+    Bounded scan: at most 200 lines of transcript tail.
+    """
+    if not transcript_path or not os.path.exists(transcript_path):
+        return []
+    try:
+        size = os.path.getsize(transcript_path)
+    except OSError:
+        return []
+    try:
+        with open(transcript_path, "rb") as fh:
+            if size > 256 * 1024:
+                fh.seek(-256 * 1024, os.SEEK_END)
+                fh.readline()
+            tail = fh.read().decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+
+    user_corrections = 0
+    repeated_errors: dict[str, int] = {}
+    failed_attempts = 0
+
+    for line in tail[-200:]:
+        line_lower = line.lower()
+        # User correction signals: short, terse, common patterns the user uses.
+        if any(
+            phrase in line_lower
+            for phrase in (
+                "no, not that",
+                "stop doing that",
+                "don't",
+                "wrong direction",
+                "i said",
+                "again,",
+            )
+        ):
+            user_corrections += 1
+        # Error patterns repeated within the session.
+        for err_marker in ("ERROR:", "Error:", "Traceback", "FAILED"):
+            if err_marker in line:
+                fragment = line.split(err_marker, 1)[-1][:80].strip()
+                if fragment:
+                    repeated_errors[fragment] = repeated_errors.get(fragment, 0) + 1
+        if "blocked" in line_lower or "exit code 2" in line_lower:
+            failed_attempts += 1
+
+    patterns: list[str] = []
+    if user_corrections >= 2:
+        patterns.append(f"user corrections ({user_corrections})")
+    repeats = [k for k, v in repeated_errors.items() if v >= 3]
+    if repeats:
+        patterns.append(f"repeated error: `{repeats[0][:40]}`")
+    if failed_attempts >= 4:
+        patterns.append(f"hook blocks ({failed_attempts})")
+    return patterns
+
+
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("retro-pointer"):
+        _sys.exit(0)
     try:
         if _already_shown():
             return 0
         blocks, bypasses, hooks = _summarise()
-        if blocks == 0 and bypasses == 0:
+
+        transcript_path = ""
+        try:
+            data = json.load(sys.stdin)
+            transcript_path = data.get("transcript_path", "")
+        except (ValueError, json.JSONDecodeError, OSError):
+            pass
+        instinct_patterns = _transcript_patterns(transcript_path)
+
+        if blocks == 0 and bypasses == 0 and not instinct_patterns:
             return 0
-        top = ", ".join(hooks[:3]) if hooks else ""
-        suffix = f" (top: {top})" if top else ""
+
         parts = []
         if blocks:
             parts.append(f"{blocks} block(s)")
         if bypasses:
             parts.append(f"{bypasses} bypass(es)")
-        msg = (
-            "[retro] "
-            + " and ".join(parts)
-            + " this session"
-            + suffix
-            + ". Run /retro to propose upstream fixes."
-        )
-        print(msg, file=sys.stderr)
+
+        if parts:
+            top = ", ".join(hooks[:3]) if hooks else ""
+            suffix = f" (top: {top})" if top else ""
+            msg = (
+                "[retro] "
+                + " and ".join(parts)
+                + " this session"
+                + suffix
+                + ". Run /retro to propose upstream fixes."
+            )
+            print(msg, file=sys.stderr)
+
+        if instinct_patterns:
+            print(
+                "[retro instinct] session patterns worth capturing: "
+                + "; ".join(instinct_patterns)
+                + ". Run /retro instinct to record.",
+                file=sys.stderr,
+            )
+
         _mark_shown()
         return 0
     except Exception:

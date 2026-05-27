@@ -162,7 +162,18 @@ def failure_messages(checks: dict[str, bool]) -> list[str]:
     return msgs
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("subagent-brief-quality"):
+        _sys.exit(0)
     if os.environ.get("SUBAGENT_BRIEF_DISABLE") == "1":
         _audit(
             hook="subagent-brief-quality",

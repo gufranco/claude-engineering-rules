@@ -37,7 +37,18 @@ GITLAB_TOKEN_SET = re.compile(r"GITLAB_TOKEN=|export\s+GITLAB_TOKEN=")
 GLAB_AUTH_LOGIN = re.compile(r"\bglab\s+auth\s+login\b")
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main():
+    if not should_run("glab-token-guard"):
+        sys.exit(0)
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, EOFError):

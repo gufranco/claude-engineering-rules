@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Keep ~/.claude/settings.json project-agnostic.
+"""Keep ~/.claude/settings.json project-agnostic and well-formed.
 
 Runs on PreToolUse for Write/Edit/MultiEdit when the target file is named
-`settings.json`. Parses the proposed content as JSON and walks every string
-value, rejecting payloads that leak machine- or project-specific data:
+`settings.json`. Parses the proposed content as JSON and runs two passes:
 
+Pass A: portability.
   1. Inline credentials in URLs, e.g. `postgresql://user:password@host/db`
      where the password is a literal, not `${VAR}` or empty.
   2. Absolute home paths (`/Users/<name>/...`, `/home/<name>/...`,
@@ -14,6 +14,14 @@ value, rejecting payloads that leak machine- or project-specific data:
      start with `#`. Useful for project names, internal hostnames, database
      names, and anything else the user wants to keep out of the global
      config but the regex above does not catch.
+
+Pass B: structural validation.
+  4. The `hooks` block, if present, uses known Claude Code event names
+     (PreToolUse, PostToolUse, Stop, SessionStart, etc.) and each hook entry
+     has the expected fields (type, command, matcher).
+  5. The `mcpServers` block, if present, has well-formed entries (either
+     command+args style or http url style, not both).
+  6. Top-level keys that exist are spelled the way Claude Code expects.
 
 Exit 0 = allow, exit 2 = block.
 
@@ -117,7 +125,96 @@ def _check_string(s: str, blocklist: list[str]) -> str | None:
     return None
 
 
+KNOWN_HOOK_EVENTS = {
+    "PreToolUse",
+    "PostToolUse",
+    "Stop",
+    "SubagentStop",
+    "PreCompact",
+    "PostCompact",
+    "UserPromptSubmit",
+    "SessionStart",
+    "SessionEnd",
+    "Notification",
+}
+
+
+def _check_structure(parsed: object) -> list[str]:
+    """Return a list of structural findings. Empty list means OK."""
+    findings: list[str] = []
+    if not isinstance(parsed, dict):
+        return findings
+
+    hooks = parsed.get("hooks")
+    if hooks is not None:
+        if not isinstance(hooks, dict):
+            findings.append("`hooks` must be an object keyed by event name.")
+        else:
+            for event, entries in hooks.items():
+                if event not in KNOWN_HOOK_EVENTS:
+                    findings.append(
+                        f"unknown hook event `{event}`. Known events: {', '.join(sorted(KNOWN_HOOK_EVENTS))}."
+                    )
+                    continue
+                if not isinstance(entries, list):
+                    findings.append(f"hooks.{event} must be a list of matcher groups.")
+                    continue
+                for i, group in enumerate(entries):
+                    if not isinstance(group, dict):
+                        findings.append(f"hooks.{event}[{i}] must be an object.")
+                        continue
+                    inner = group.get("hooks")
+                    if inner is not None and not isinstance(inner, list):
+                        findings.append(f"hooks.{event}[{i}].hooks must be a list.")
+                    if isinstance(inner, list):
+                        for j, h in enumerate(inner):
+                            if not isinstance(h, dict):
+                                findings.append(f"hooks.{event}[{i}].hooks[{j}] must be an object.")
+                                continue
+                            htype = h.get("type")
+                            if htype != "command":
+                                findings.append(
+                                    f"hooks.{event}[{i}].hooks[{j}].type must be `command`, got `{htype}`."
+                                )
+                            if not h.get("command"):
+                                findings.append(
+                                    f"hooks.{event}[{i}].hooks[{j}].command must be a non-empty string."
+                                )
+
+    mcp = parsed.get("mcpServers")
+    if mcp is not None:
+        if not isinstance(mcp, dict):
+            findings.append("`mcpServers` must be an object keyed by server name.")
+        else:
+            for name, cfg in mcp.items():
+                if not isinstance(cfg, dict):
+                    findings.append(f"mcpServers.{name} must be an object.")
+                    continue
+                has_command = "command" in cfg
+                has_url = "url" in cfg
+                if has_command and has_url:
+                    findings.append(
+                        f"mcpServers.{name} has both `command` and `url`. Pick one transport."
+                    )
+                if not has_command and not has_url:
+                    findings.append(
+                        f"mcpServers.{name} needs either `command` (stdio) or `url` (http)."
+                    )
+    return findings
+
+
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> None:
+    if not should_run("settings-hygiene"):
+        _sys.exit(0)
     if os.environ.get("SETTINGS_HYGIENE_DISABLE") == "1":
         sys.exit(0)
     try:
@@ -148,15 +245,29 @@ def main() -> None:
         if reason:
             findings.append((s[:120], reason))
 
-    if not findings:
+    structure_findings = _check_structure(scan_target)
+
+    if not findings and not structure_findings:
         sys.exit(0)
 
-    print(
-        "BLOCKED: settings.json contains project- or machine-specific data.\n",
-        file=sys.stderr,
-    )
-    for value, reason in findings[:10]:
-        print(f"  - {reason}\n    value: {value}", file=sys.stderr)
+    if findings:
+        print(
+            "BLOCKED: settings.json contains project- or machine-specific data.\n",
+            file=sys.stderr,
+        )
+        for value, reason in findings[:10]:
+            print(f"  - {reason}\n    value: {value}", file=sys.stderr)
+
+    if structure_findings:
+        if findings:
+            print("", file=sys.stderr)
+        print(
+            "BLOCKED: settings.json has structural problems.\n",
+            file=sys.stderr,
+        )
+        for reason in structure_findings[:10]:
+            print(f"  - {reason}", file=sys.stderr)
+
     print(
         "\nKeep ~/.claude/settings.json portable across machines and projects.\n"
         "Use `${ENV_VAR}` placeholders, `~` for home, and add per-project tokens to\n"
@@ -164,11 +275,14 @@ def main() -> None:
         "Bypass once: set SETTINGS_HYGIENE_DISABLE=1 in the environment.",
         file=sys.stderr,
     )
+    first_reason = (
+        findings[0][1] if findings else structure_findings[0] if structure_findings else "unknown"
+    )
     _audit(
         hook="settings-hygiene",
         decision="block",
         tool=data.get("tool_name", "Write"),
-        reason=findings[0][1],
+        reason=first_reason,
         file_path=file_path,
     )
     sys.exit(2)

@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-# Auto-format files after Edit/Write operations based on file extension.
+# Accumulate edited paths during the response. Batch-format at Stop.
 #
-# Runs the appropriate formatter silently. If the formatter is not
-# installed, does nothing. Never fails or blocks.
+# Previous behavior: format the file immediately after each Edit/Write.
+# On a 10-file refactor that meant 10 separate formatter invocations and
+# 10 separate tsc / typecheck passes when the type-check follower hook ran.
+#
+# New behavior: this script appends edited paths to a per-session batch
+# file. The Stop-event companion script (stop-format-typecheck.sh) reads
+# the file once, deduplicates, formats everything, runs typecheck once,
+# clears the batch file.
 #
 # Receives Edit/Write tool input as JSON on stdin.
 
@@ -10,6 +16,20 @@ set -euo pipefail
 
 # Surface unexpected aborts instead of failing silently.
 trap 'echo "smart-formatter: hook aborted at line ${LINENO}" >&2' ERR
+
+# Profile gate. Skip when the profile excludes this hook or it is in the
+# CLAUDE_DISABLED_HOOKS list. The Python helper is the source of truth.
+if ! python3 -c "
+import sys, os
+sys.path.insert(0, os.path.expanduser('~/.claude/hooks'))
+try:
+    from _lib.profile import should_run
+    sys.exit(0 if should_run('smart-formatter') else 1)
+except Exception:
+    sys.exit(0)
+" 2>/dev/null; then
+    exit 0
+fi
 
 INPUT=$(cat)
 
@@ -26,38 +46,16 @@ if [[ -z "${FILE_PATH}" ]] || [[ ! -f "${FILE_PATH}" ]]; then
     exit 0
 fi
 
-EXT="${FILE_PATH##*.}"
-
-format_with() {
-    if command -v "$1" >/dev/null 2>&1; then
-        "$@" >/dev/null 2>&1 || true
-    fi
-}
-
-case "${EXT}" in
-    js|jsx|ts|tsx|json|css|scss|html|md|yaml|yml)
-        format_with prettier --write "${FILE_PATH}"
-        ;;
-    py)
-        if command -v black >/dev/null 2>&1; then
-            black --quiet "${FILE_PATH}" >/dev/null 2>&1 || true
-        elif command -v ruff >/dev/null 2>&1; then
-            ruff format "${FILE_PATH}" >/dev/null 2>&1 || true
-        fi
-        ;;
-    go)
-        format_with gofmt -w "${FILE_PATH}"
-        ;;
-    rs)
-        format_with rustfmt "${FILE_PATH}"
-        ;;
-    rb)
-        format_with rubocop -A --fail-level E "${FILE_PATH}"
-        ;;
-    sh|bash|zsh)
-        format_with shfmt -w "${FILE_PATH}"
-        ;;
-    *) ;;
+# Skip the dot-everything: cache files, lock files, generated artifacts.
+case "${FILE_PATH}" in
+    */.claude/cache/*|*/node_modules/*|*/.git/*|*/dist/*|*/build/*) exit 0 ;;
 esac
+
+BATCH_DIR="${HOME}/.claude/cache"
+BATCH_FILE="${BATCH_DIR}/edit-batch.txt"
+
+mkdir -p "${BATCH_DIR}"
+# Append the path and flush. The Stop hook will dedupe.
+echo "${FILE_PATH}" >> "${BATCH_FILE}"
 
 exit 0

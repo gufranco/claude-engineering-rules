@@ -179,7 +179,18 @@ def analyze(kind: str, text: str) -> list[str]:
     return []  # pragma: no cover - defensive; collect() only emits known kinds
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("drizzle-schema-sync"):
+        _sys.exit(0)
     if os.environ.get("DRIZZLE_SCHEMA_SYNC_DISABLE") == "1":
         _audit(
             hook="drizzle-schema-sync",
