@@ -95,6 +95,52 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         re.compile(r"\bdone:\s.*\.\s*Next\s+(?:batch|step|phase)\b", re.IGNORECASE),
         "DONE summary that promises a next batch",
     ),
+    (
+        re.compile(
+            r"(?:^|\n|\s)proceed\??\s*$",
+            re.IGNORECASE,
+        ),
+        "ending the message with 'Proceed?'",
+    ),
+    (
+        re.compile(
+            r"(?:^|\n|\s)continue\??\s*$",
+            re.IGNORECASE,
+        ),
+        "ending the message with 'Continue?'",
+    ),
+    (
+        re.compile(r"(?:^|\s)shall\s+I\s+(?:proceed|continue|move\s+on|start)\b", re.IGNORECASE),
+        "asking 'Shall I proceed/continue/move on/start'",
+    ),
+    (
+        re.compile(r"(?:^|\s)should\s+I\s+(?:proceed|continue|move\s+on|start|begin|kick\s+off)\b", re.IGNORECASE),
+        "asking 'Should I proceed/continue/move on/start/begin/kick off'",
+    ),
+    (
+        re.compile(r"\bsound\s+good\??", re.IGNORECASE),
+        "asking 'Sound good?'",
+    ),
+    (
+        re.compile(r"\blet\s+me\s+know\s+(?:if|when|whether)\s+(?:you|I)\b", re.IGNORECASE),
+        "deferring with 'Let me know if/when/whether'",
+    ),
+    (
+        re.compile(r"\bready\s+(?:for|to\s+(?:start|move|continue))\s+phase\b", re.IGNORECASE),
+        "advertising readiness for next phase instead of executing it",
+    ),
+    (
+        re.compile(r"\b(?:want|do\s+you\s+want)\s+me\s+to\s+(?:start|begin|kick\s+off|run|execute|do)\b", re.IGNORECASE),
+        "asking whether the user wants you to start/begin/execute",
+    ),
+    (
+        re.compile(r"\bok(?:ay)?\s+to\s+(?:proceed|continue|start|move\s+on)\b", re.IGNORECASE),
+        "asking 'Okay to proceed/continue/start/move on'",
+    ),
+    (
+        re.compile(r"\bmoving\s+on\??\s*$", re.IGNORECASE),
+        "ending with 'Moving on?'",
+    ),
 ]
 
 
@@ -157,7 +203,18 @@ def find_violations(text: str) -> list[tuple[str, str]]:
     return out
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("auto-continue-stop-blocker"):
+        _sys.exit(0)
     if os.environ.get("AUTO_CONTINUE_DISABLE") == "1":
         return 0
 

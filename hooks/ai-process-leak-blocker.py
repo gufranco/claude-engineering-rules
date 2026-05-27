@@ -109,6 +109,46 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Referencing 'the plan/spec' as authority is AI workflow language",
     ),
+    # "I ran the suite", "I ran the tests", "I ran jest", "I ran the full suite"
+    (
+        re.compile(
+            r"\bI\s+ran\s+(?:the\s+)?(?:suite|tests?|jest|full\s+suite|spec|specs|coverage)\b",
+            re.IGNORECASE,
+        ),
+        "Narrating the verification loop. State the result, not the steps",
+    ),
+    # "observed the actual status", "observed the behavior", "observed the response"
+    (
+        re.compile(
+            r"\bobserved\s+(?:the\s+)?(?:actual\s+)?(?:status|behaviou?r|return|response|result|output)\b",
+            re.IGNORECASE,
+        ),
+        "Empirical-observation narration. Just state the result",
+    ),
+    # "for each X case I ran", "for each X I tried", "for each X I observed"
+    (
+        re.compile(
+            r"\bfor\s+each\s+\S+(?:[ -]\S+)?\s+(?:case|test|assertion),?\s+I\s+(?:ran|tried|observed|asserted|checked)\b",
+            re.IGNORECASE,
+        ),
+        "Meta-iteration over test cases reads as AI workflow self-talk",
+    ),
+    # "with the asserts pinned to match", "pinned to match the actual"
+    (
+        re.compile(
+            r"\b(?:with\s+the\s+asserts?\s+pinned\s+to\s+match|pinned\s+to\s+match\s+the\s+actual)\b",
+            re.IGNORECASE,
+        ),
+        "Frames verification as the deliverable. The deliverable is the code",
+    ),
+    # "All 21 tests still pass", "All 102 integration tests pass", "All N tests pass"
+    (
+        re.compile(
+            r"\bAll\s+\d+\s+(?:\w+\s+){0,3}tests?\s+(?:still\s+)?pass(?:es|ed)?\b",
+            re.IGNORECASE,
+        ),
+        "Verification-summary trailer. CI conveys this; the comment should not",
+    ),
 ]
 
 
@@ -146,21 +186,85 @@ def is_skipped_path(path: str) -> bool:
 
 # Inside Bash payloads, the leak only matters when the command is one
 # that publishes text to other humans: git commit, gh pr create/edit,
-# glab mr create, hub pr/issue. Other commands (cat, grep, tofu apply
-# with a -message flag) are not in scope.
+# glab mr create, hub pr/issue, and PR-review-comment endpoints reached
+# through `gh api`. Other commands (cat, grep, tofu apply with a
+# -message flag) are not in scope.
 GIT_AND_PR_PATTERNS = (
     re.compile(r"\bgit\s+commit\b"),
     re.compile(r"\bgit\s+tag\b.*-m\b"),
-    re.compile(r"\bgh\s+pr\s+(create|edit)\b"),
+    re.compile(r"\bgh\s+pr\s+(create|edit|comment)\b"),
     re.compile(r"\bgh\s+release\s+(create|edit)\b"),
     re.compile(r"\bgh\s+issue\s+(create|edit|comment)\b"),
-    re.compile(r"\bglab\s+mr\s+(create|update)\b"),
+    # PR review comment replies and edits via `gh api`. Covers paths
+    # like `repos/<owner>/<repo>/pulls/<n>/comments/<id>/replies` (POST)
+    # and `repos/<owner>/<repo>/pulls/comments/<id>` (PATCH). The check
+    # is loose on purpose: any `gh api` call that names a comments
+    # endpoint is treated as in-scope and its `--input` payload is read.
+    re.compile(r"\bgh\s+api\b.*\b(pulls|issues)\b.*\bcomments\b"),
+    re.compile(r"\bglab\s+mr\s+(create|update|note)\b"),
     re.compile(r"\bglab\s+release\s+create\b"),
 )
 
 
 def bash_command_in_scope(command: str) -> bool:
     return any(pat.search(command) for pat in GIT_AND_PR_PATTERNS)
+
+
+# Flags that point at a file whose contents are published by the command.
+# Example: `gh pr create --body-file /tmp/pr.md` writes the file's contents
+# into the PR description. The command string itself does not contain the
+# leak; the file does. Read those files at hook time so leaks in their
+# bodies are caught the same way an inline -m argument would be.
+BODY_FILE_FLAGS = (
+    "--body-file",
+    "--description-file",
+    "--notes-file",
+    "--notes-from-tag",
+    "--input",
+    "-F",
+)
+
+# Parse `--body-file PATH` (space-separated) and `--body-file=PATH` forms.
+# Tokenize on whitespace, then look for each flag and the next token. The
+# regex also handles single-quoted and double-quoted paths. `--input` is
+# the `gh api` payload flag; when present, the file is JSON whose `body`
+# field carries the comment text the rule must scan.
+_FLAG_VALUE_TOKEN = re.compile(
+    r"""(?P<flag>--body-file|--description-file|--notes-file|--notes-from-tag|--input|-F)
+        (?:\s*=\s*|\s+)
+        (?P<value>"[^"]+"|'[^']+'|\S+)""",
+    re.VERBOSE,
+)
+
+
+def extract_body_file_paths(command: str) -> list[str]:
+    """Return every path referenced by a body-file-like flag in the command."""
+    out: list[str] = []
+    for m in _FLAG_VALUE_TOKEN.finditer(command):
+        raw = m.group("value")
+        if raw.startswith(('"', "'")):
+            raw = raw[1:-1]
+        if raw:
+            out.append(raw)
+    return out
+
+
+def read_body_file(path: str) -> str | None:
+    """Read a body-file referenced by a CLI flag. Return None on any error.
+
+    The hook must not crash on a missing or unreadable file: the underlying
+    command will fail anyway, and the hook's job is to scan content, not
+    enforce file existence.
+    """
+    try:
+        from pathlib import Path
+
+        p = Path(path).expanduser()
+        if not p.is_file():
+            return None
+        return p.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return None
 
 
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
@@ -186,10 +290,29 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
         c = tool_input.get("command", "")
         if isinstance(c, str) and bash_command_in_scope(c):
             out.append(("command", c))
+            # Also scan the contents of any --body-file / --description-file
+            # / --notes-file the command points at. Without this the hook
+            # only inspects the command line and misses leaks that the body
+            # file carries into a PR/MR/release description.
+            for path in extract_body_file_paths(c):
+                body = read_body_file(path)
+                if body is not None:
+                    out.append((f"body-file:{path}", body))
     return out
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("ai-process-leak-blocker"):
+        _sys.exit(0)
     if os.environ.get("AI_PROCESS_LEAK_DISABLE") == "1":
         _audit(
             hook="ai-process-leak-blocker",

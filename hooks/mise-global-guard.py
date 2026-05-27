@@ -47,7 +47,18 @@ MISE_USE_GLOBAL = re.compile(r"\bmise\s+use\b[^|;&]*\s(?:--global\b|-g\b)")
 MISE_UNUSE_GLOBAL = re.compile(r"\bmise\s+unuse\b[^|;&]*\s(?:--global\b|-g\b)")
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> None:
+    if not should_run("mise-global-guard"):
+        _sys.exit(0)
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, EOFError):

@@ -119,7 +119,18 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     return out
 
 
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
+try:
+    from _lib.profile import should_run  # noqa: E402
+except ImportError:
+    def should_run(_id: str) -> bool:
+        return True
+
+
 def main() -> int:
+    if not should_run("ai-attribution-blocker"):
+        _sys.exit(0)
     if os.environ.get("AI_ATTRIBUTION_DISABLE") == "1":
         _audit(
             hook="ai-attribution-blocker",
