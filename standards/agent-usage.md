@@ -36,7 +36,7 @@ Spawning N agents in parallel is N× the rate pressure in the same window. Befor
 
 ## Parallelism Rule
 
-Use parallel **tool calls** (multiple tools in one message) freely for independent reads, searches, and lookups. This has near-zero overhead.
+Use parallel **tool calls**, multiple tools in one message, freely for independent reads, searches, and lookups. This has near-zero overhead.
 
 Use parallel **Agent launches** sparingly. At most two concurrent agents. Never three or more in one message unless the user explicitly requested it.
 
@@ -46,6 +46,30 @@ When in doubt, sequence. A sequential approach that takes 10% longer is always b
 
 Prefer: finish A, use A's results for B.
 Avoid: launch A, B, and C simultaneously to save time, then stall when rate limit triggers.
+
+## Multi-Perspective Analysis
+
+For complex review or design problems, split one task across several Agent launches with distinct **roles** instead of running one generic reviewer. Each role reads only the part of the diff or design that matters to it. Findings come back as independent reports the orchestrator merges.
+
+Use multi-perspective analysis when:
+
+- A change touches more than one concern at once, e.g., schema + auth + UX + perf.
+- The first single-agent review feels shallow, generic, or self-confirming.
+- The change is high-stakes, e.g., the boundary of an external system, a migration, or a security-sensitive surface.
+
+Do not use when the diff is small, single-concern, or already covered by a specialized agent like [`accessibility-auditor`](../agents/accessibility-auditor.md), [`api-reviewer`](../agents/api-reviewer.md), or [`red-team`](../agents/red-team.md).
+
+| Role | Lens | What to look for |
+|------|------|------------------|
+| Factual reviewer | Does the code do what the description claims? | Behavior gaps between PR description and diff, missing acceptance criteria coverage |
+| Senior engineer | Would a senior reviewer approve the design? | Module boundaries, leaks across layers, magic numbers, hidden mutability |
+| Security expert | Is this safe under hostile input? | Auth checks, input validation, secrets, SSRF, XSS, IDOR, deserialization |
+| Consistency reviewer | Does this match the rest of the codebase? | Naming drift, error-handling drift, log format drift, repeated patterns reinvented |
+| Redundancy reviewer | What duplicates existing code or specs? | Functions reimplemented, rules restated locally, tests covering the same case |
+
+**Run pattern, max two concurrent per the Parallelism Rule:** launch factual + senior in one message; merge; launch security + consistency in the next; merge; run redundancy last. The orchestrator deduplicates findings and assigns severity.
+
+**Briefing template per role:** give each agent its lens, the diff or design, the relevant rule file (e.g., [`rules/security.md`](../rules/security.md) for the security role), the existing agents to avoid duplicating, and a word cap on the response.
 
 ## Token Cost Anatomy
 

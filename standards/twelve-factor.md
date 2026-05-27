@@ -16,8 +16,8 @@ See [`rules/git-workflow.md`](../rules/git-workflow.md) for branching, commits, 
 
 Explicitly declare and isolate all dependencies.
 
-- Every dependency must appear in a manifest file (package.json, requirements.txt, go.mod, Cargo.toml). No implicit reliance on system-installed packages
-- Use dependency isolation tools (node_modules, virtualenv, Go modules, containers) so no undeclared system dependency leaks in
+- Every dependency must appear in a manifest file, package.json, requirements.txt, go.mod, Cargo.toml. No implicit reliance on system-installed packages
+- Use dependency isolation tools, node_modules, virtualenv, Go modules, containers so no undeclared system dependency leaks in
 - System tools like ImageMagick, ffmpeg, or curl must not be assumed available. If required, declare them in the Dockerfile or provision script, not just in documentation
 - Declaration and isolation must be used together. One without the other is insufficient
 
@@ -40,7 +40,7 @@ Store config in the environment. Strict separation between code and deploy-speci
 **Rules:**
 
 - Store config in environment variables. Not in code, not in checked-in config files
-- Never group env vars into named environments (development, staging, production) inside the app. Each variable is independent and granular
+- Never group env vars into named environments, development, staging, production inside the app. Each variable is independent and granular
 - Validate all required env vars at startup. Fail fast with a clear message listing what is missing
 - Document every env var in `.env.example` with placeholder values
 
@@ -72,7 +72,7 @@ Strictly separate the three stages.
 | Run | Execute the release in the target environment | Minimal moving parts |
 
 - Code changes cannot happen at runtime. Every change requires a new build and release
-- Every release has a unique identifier (Git SHA, timestamp, or incremental version)
+- Every release has a unique identifier such as Git SHA, timestamp, or or incremental version
 - Releases are append-only. Rollback means deploying a previous release, not mutating the current one
 - The run stage must be simple and predictable. Build complexity is acceptable because developers oversee it
 
@@ -82,9 +82,9 @@ See [`standards/infrastructure.md`](infrastructure.md) for CI/CD pipeline design
 
 Execute the app as one or more stateless, share-nothing processes.
 
-- Processes are stateless. Any data that needs to persist must live in a backing service (database, cache, object store)
+- Processes are stateless. Any data that needs to persist must live in a backing service such as database, cache, or object store
 - Local memory and filesystem are single-transaction scratch space only. Never assume cached data or temp files survive the next request
-- **No sticky sessions.** Session data belongs in a time-expiring external store (Redis, Memcached), not in process memory. Sticky sessions prevent horizontal scaling and make deployments fragile
+- **No sticky sessions.** Session data belongs in a time-expiring external store, Redis, Memcached, not in process memory. Sticky sessions prevent horizontal scaling and make deployments fragile
 - Asset compilation and preprocessing happen during the build stage, not at runtime
 
 See [`standards/distributed-systems.md`](distributed-systems.md) for stateless service design and [`standards/caching.md`](caching.md) for external cache strategies.
@@ -93,10 +93,10 @@ See [`standards/distributed-systems.md`](distributed-systems.md) for stateless s
 
 Export services via port binding. The app is completely self-contained.
 
-- The application binds to a port and listens for requests. It does not rely on an external webserver container (Apache, Tomcat) injected at runtime
-- A webserver library is a dependency declared in the manifest (Express, Uvicorn, Gin, Actix), not an external runtime
-- In development: `http://localhost:$PORT`. In production: a routing layer (load balancer, reverse proxy) maps public hostnames to the port-bound process
-- This applies beyond HTTP. Any protocol (gRPC, WebSocket, AMQP) is exported by binding to a port. For gRPC, bind the gRPC server to its own port. For WebSocket, bind on the same HTTP port with an upgrade path, or on a separate port if the transport layer requires it. For SSE, use the HTTP port with proper connection draining on shutdown
+- The application binds to a port and listens for requests. It does not rely on an external webserver container, Apache, Tomcat injected at runtime
+- A webserver library is a dependency declared in the manifest, Express, Uvicorn, Gin, Actix, not an external runtime
+- In development: `http://localhost:$PORT`. In production: a routing layer, load balancer, reverse proxy maps public hostnames to the port-bound process
+- This applies beyond HTTP. Any protocol, gRPC, WebSocket, AMQP is exported by binding to a port. For gRPC, bind the gRPC server to its own port. For WebSocket, bind on the same HTTP port with an upgrade path, or on a separate port if the transport layer requires it. For SSE, use the HTTP port with proper connection draining on shutdown
 - One port-bound app can become a backing service for another by providing its URL through config
 
 ## VIII. Concurrency
@@ -105,8 +105,8 @@ Scale out via the process model.
 
 - Processes are first-class citizens. Assign different work types to different process types: web processes handle HTTP, worker processes handle background jobs, scheduler processes handle cron
 - Scale horizontally by running more processes of each type, not by making individual processes larger
-- Never daemonize processes or write PID files. Delegate process lifecycle to the platform (systemd, Kubernetes, container orchestrator)
-- Internal concurrency (threads, async I/O, goroutines) is fine within a process but is not a substitute for the process model. A single process with 100 threads cannot scale across machines
+- Never daemonize processes or write PID files. Delegate process lifecycle to the platform such as systemd, Kubernetes, or container orchestrator
+- Internal concurrency via threads, async I/O, or goroutines is fine within a process but is not a substitute for the process model. A single process with 100 threads cannot scale across machines
 
 See [`standards/infrastructure.md`](infrastructure.md) for HPA, autoscaling, and process orchestration.
 
@@ -117,13 +117,13 @@ Maximize robustness with fast startup and graceful shutdown.
 **Fast startup:**
 
 - Minimize startup time to seconds. Fast startup enables rapid scaling, deployment, and process relocation
-- If initialization is expensive (loading ML models, warming caches, running migrations), do it in the build or release stage, not at process start
+- If initialization is expensive, loading ML models, warming caches, running migrations, do it in the build or release stage, not at process start
 
 **Graceful shutdown:**
 
 - Handle SIGTERM by stopping new work, completing in-flight requests, then exiting
-- Web processes: stop accepting connections, finish current requests (with a timeout), close cleanly
-- Worker processes: return the current job to the queue (NACK, release lock) before exiting. The job will be picked up by another worker
+- Web processes: stop accepting connections, finish current requests, with a timeout, close cleanly
+- Worker processes: return the current job to the queue, NACK, release lock before exiting. The job will be picked up by another worker
 
 **Crash resilience:**
 
@@ -152,8 +152,8 @@ Keep development, staging, and production as similar as possible.
 | Tools | SQLite locally, PostgreSQL in production | Same backing services everywhere |
 
 - Use the same type and version of every backing service across all environments. Containers make this practical and cheap
-- "Lightweight local substitutes" (SQLite for PostgreSQL, in-memory cache for Redis, local filesystem for S3) create subtle incompatibilities that only surface in production. Avoid them
-- Modern tools (Docker, docker-compose, devcontainers) eliminate the cost argument for running production-equivalent services locally
+- "Lightweight local substitutes", SQLite for PostgreSQL, in-memory cache for Redis, local filesystem for S3, create subtle incompatibilities that only surface in production. Avoid them
+- Modern tools, Docker, docker-compose, devcontainers eliminate the cost argument for running production-equivalent services locally
 
 See [`standards/infrastructure.md`](infrastructure.md) for environment parity and module-based provisioning.
 
@@ -161,9 +161,9 @@ See [`standards/infrastructure.md`](infrastructure.md) for environment parity an
 
 Treat logs as event streams.
 
-- The app writes to stdout (info, debug) and stderr (errors, warnings). It never manages log files, rotation, or routing
+- The app writes to stdout, info, debug and stderr, errors, warnings. It never manages log files, rotation, or routing
 - One event per line, unbuffered, as structured JSON
-- The execution environment (container runtime, log collector, systemd) captures, collates, and routes streams to their final destination
+- The execution environment, container runtime, log collector, systemd captures, collates, and routes streams to their final destination
 - The app is unaware of its log destination. The same code works in a terminal, Docker, and Kubernetes without changes
 
 See [`standards/observability.md`](observability.md) for structured logging, log levels, sensitive data masking, and correlation IDs.
@@ -180,7 +180,7 @@ Run admin and management tasks as one-off processes.
 
 **Rules:**
 
-- Admin processes run against the same release (code + config) as the app's long-running processes. A migration script must use the same database URL, the same ORM version, and the same connection settings as the web process
+- Admin processes run against the same release, code + config as the app's long-running processes. A migration script must use the same database URL, the same ORM version, and the same connection settings as the web process
 - Admin code ships with the application repository, not in separate scripts or repos. This prevents version drift between the admin task and the app it operates on
 - Admin processes use the same dependency isolation as the app. If the web process runs in a container, the migration runs in the same container image
-- In production, run admin tasks via the platform's one-off process mechanism (Kubernetes Job, ECS RunTask, Heroku one-off dyno, SSH + exec), not by modifying running processes
+- In production, run admin tasks via the platform's one-off process mechanism, Kubernetes Job, ECS RunTask, Heroku one-off dyno, SSH + exec, not by modifying running processes

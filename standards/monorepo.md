@@ -135,7 +135,7 @@ Use `pnpm create` with a workspace template, Nx generators, or Turborepo's `gen`
 
 ## CI Pipeline Structure
 
-Structure CI to leverage the orchestrator's dependency graph.
+Structure CI to use the orchestrator's dependency graph.
 
 1. Install dependencies: `pnpm install --frozen-lockfile`.
 2. Run affected tasks only: `turbo run build test lint --filter=...[origin/main]`.

@@ -82,7 +82,7 @@ SPDX license expressions combine identifiers with operators. Use the exact ident
 
 ### Operator Precedence (highest to lowest)
 
-1. `+` (unary suffix, no whitespace before it)
+1. `+` such as unary suffix, or no whitespace before it
 2. `WITH`
 3. `AND`
 4. `OR`
@@ -91,7 +91,7 @@ SPDX license expressions combine identifiers with operators. Use the exact ident
 
 ### Syntax Rules
 
-- Operators are case-sensitive: use all uppercase (`AND`, `OR`, `WITH`) or all lowercase (`and`, `or`, `with`). Do not mix
+- Operators are case-sensitive: use all uppercase, `AND`, `OR`, `WITH`, or all lowercase, `and`, `or`, `with`. Do not mix
 - No whitespace between license-id and `+`
 - Whitespace required on both sides of `WITH`, `AND`, `OR`
 - Expression must be a single line. No line breaks
@@ -169,12 +169,12 @@ function borrowedFunction() {
 Rules:
 - Every `SPDX-SnippetBegin` must have a matching `SPDX-SnippetEnd`
 - Snippets must contain both a copyright notice and a license identifier
-- Snippets can nest (inner tags apply to innermost snippet)
+- Snippets can nest. Inner tags apply to innermost snippet
 - Use snippet tags only when the license genuinely differs. Do not tag every function
 
 ## Ignore Blocks
 
-When license identifiers appear in documentation, examples, or output (not as actual file licensing), wrap them in ignore blocks to prevent false positives from compliance tools:
+When license identifiers appear in documentation, examples, or output, not as actual file licensing, wrap them in ignore blocks to prevent false positives from compliance tools:
 
 ```markdown
 <!-- REUSE-IgnoreStart -->
@@ -358,7 +358,7 @@ The `reuse spdx` command generates a complete SPDX document from the project's l
 - Do not add the full license text to every file. The SPDX identifier replaces boilerplate headers
 - Do not invent license identifiers. Use only identifiers from the SPDX License List or the `LicenseRef-` prefix
 - Do not add SPDX headers to files you do not own. Preserve original headers on vendored or third-party code
-- Do not use bare GNU identifiers (`GPL-2.0`, `LGPL-2.1`). Always append `-only` or `-or-later`
+- Do not use bare GNU identifiers, `GPL-2.0`, `LGPL-2.1`. Always append `-only` or `-or-later`
 - Do not use `SPDX-License-Identifier: UNLICENSED`. Use `LicenseRef-Proprietary` for proprietary code
 - Do not skip the header because "it is just a config file." If it supports comments and contains logic you wrote, it gets a header
 - Do not break expressions across lines. The entire expression must be a single line

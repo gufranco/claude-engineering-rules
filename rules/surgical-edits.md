@@ -54,7 +54,7 @@ The Completeness rule in [`rules/code-style.md`](code-style.md) and this rule ar
 
 Example. The user asks: "Add a `cancel` method to the order service." Completeness applies to the `cancel` method itself: validation, error paths, tests, idempotency, audit log. Surgical edits forbid retrofitting the existing `submit` method that has none of those, even though it lives in the same file.
 
-When the request is genuinely too narrow to be safe (a fix that introduces a vulnerability without an accompanying check), surface the missing piece as a question. Do not expand the diff unilaterally.
+When the request is genuinely too narrow to be safe, for example a fix that introduces a vulnerability without an accompanying check, surface the missing piece as a question. Do not expand the diff unilaterally.
 
 ## When This Rule Does Not Apply
 

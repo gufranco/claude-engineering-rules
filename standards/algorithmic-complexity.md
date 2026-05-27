@@ -41,7 +41,7 @@ Average case. Worst case in parentheses when different.
 
 ## Sorting Algorithm Selection
 
-Most languages ship a well-optimized general sort (Timsort in Python/JS, introsort in C++). Use the built-in sort by default. Only reach for a specialized algorithm when you have a specific reason.
+Most languages ship a well-optimized general sort such as Timsort in Python and JS, or introsort in C++. Use the built-in sort by default. Only reach for a specialized algorithm when you have a specific reason.
 
 | When | Use | Complexity | Space | Why |
 |:-----|:----|:-----------|:-----:|:----|
@@ -75,7 +75,7 @@ Most languages ship a well-optimized general sort (Timsort in Python/JS, introso
 
 ### Practical Thresholds
 
-These are rough ceilings for interactive applications (sub-second response). Batch processing and background jobs have higher tolerance.
+These are rough ceilings for interactive applications, sub-second response. Batch processing and background jobs have higher tolerance.
 
 | Complexity | Safe n for ~100ms | Safe n for ~1s |
 |:-----------|:-----------------:|:--------------:|
@@ -106,7 +106,7 @@ How to identify the complexity of code during review.
 
 Chained array methods look clean but multiply. Each `.filter()`, `.map()`, `.reduce()`, `.find()`, `.some()` is O(n). Chaining k of them is O(k * n), not O(n).
 
-When chained operations are independent (filter then map), O(k * n) is still linear and acceptable. The danger is chaining inside a loop:
+When chained operations are independent, filter then map, O(k * n) is still linear and acceptable. The danger is chaining inside a loop:
 
 ```typescript
 // O(n^2): .find() is O(n), called n times
@@ -129,7 +129,7 @@ users.map(user => ordersByUser.get(user.id));
 
 **Master theorem shortcut** for `T(n) = a * T(n/b) + O(n^d)`:
 - If d < log_b(a): O(n^(log_b(a)))
-- If d = log_b(a): O(n^d * log n)
+- If d equals log_b of a: O of n to the d times log n
 - If d > log_b(a): O(n^d)
 
 ### Amortized Complexity
@@ -137,11 +137,11 @@ users.map(user => ordersByUser.get(user.id));
 Some operations are expensive occasionally but cheap on average. Dynamic array `.push()` is O(1) amortized: most pushes are O(1), but when the array doubles its capacity, that single push is O(n). Over n pushes, total work is O(n), so each push is O(1) amortized.
 
 Common amortized O(1) operations:
-- Dynamic array append (ArrayList, Vec, JS Array push)
-- Hash table insert (when load factor is managed)
+- Dynamic array append such as ArrayList, Vec, or JS Array push
+- Hash table insert. When load factor is managed
 - Splay tree access (O(log n) amortized over a sequence)
 
-Amortized cost matters for throughput. Worst-case cost matters for latency. If a single slow operation is unacceptable (real-time systems, request handlers with SLOs), use the worst-case bound.
+Amortized cost matters for throughput. Worst-case cost matters for latency. If a single slow operation is unacceptable, real-time systems, request handlers with SLOs, use the worst-case bound.
 
 ## Common Anti-Patterns
 
@@ -183,7 +183,7 @@ Time gets measured. Space gets forgotten. Then the OOM kill arrives.
 - **Generators instead of arrays**: `function*` yields one item at a time, O(1) working memory
 - **Bounded caches**: every cache must have a max size and eviction policy. No unbounded `Map` used as cache
 - **WeakMap / WeakRef**: for caches keyed by objects. Entries are GC'd when the key is GC'd
-- **Pool and reuse**: for expensive objects (buffers, connections), reuse from a pool instead of allocating per request
+- **Pool and reuse**: for expensive objects, buffers, connections, reuse from a pool instead of allocating per request
 - **Pagination at every boundary**: database queries, API responses, file reads. Never load "all" without a limit
 
 ## Graph Algorithms

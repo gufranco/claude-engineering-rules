@@ -100,7 +100,7 @@ const token = jwt.sign({ userId: user.id }, secret, { expiresIn: '15m' })
 ```
 
 ### Session Cookie Missing Security Flags
-**CWE-1004.** Session cookies without HttpOnly (JS can read them), Secure (transmitted over HTTP), or SameSite (sent in cross-site requests).
+**CWE-1004.** Session cookies without HttpOnly, JS can read them, Secure, transmitted over HTTP, or SameSite, sent in cross-site requests.
 
 **Detect:** Cookie configuration missing `httpOnly`, `secure`, or `sameSite` properties.
 
@@ -239,7 +239,7 @@ if (result.count === 0) throw new Error('Insufficient funds')
 ```
 
 ### Single-Use Token Race (Find-Then-Update)
-**CWE-367.** A single-use resource (coupon, bonus, OTP) is checked in one query and marked used in another. Concurrent requests both see it as unused.
+**CWE-367.** A single-use resource, coupon, bonus, OTP, is checked in one query and marked used in another. Concurrent requests both see it as unused.
 
 **Detect:** `findFirst` with `usedAt: null` or `used: false` followed by a separate `update`.
 
@@ -431,7 +431,7 @@ app.get('/login', (req, res) => {
 ```
 
 ### GraphQL Missing Depth/Batching Limits
-**CWE-400.** No depth or complexity limits on GraphQL queries. Clients can construct deeply nested queries causing O(n^k) database queries, or batch hundreds of operations.
+**CWE-400.** No depth or complexity limits on GraphQL queries. Clients can construct deeply nested queries causing O of n to the k database queries, or batch hundreds of operations.
 
 **Detect:** `ApolloServer` without `validationRules`, missing `depthLimit` or `createComplexityLimitRule`.
 

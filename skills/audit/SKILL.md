@@ -1,6 +1,7 @@
 ---
 name: audit
 description: Security audit across dependencies, secrets, Docker, code patterns, images, STRIDE, and OWASP. Absorbs /deps for vulnerability scanning and /cso for threat modeling. Use when user says "security audit", "scan for vulnerabilities", "check dependencies", "find secrets", "audit Docker", "CVE scan", "cso", "threat model", "owasp audit", "deep security scan", or wants to find security issues across the full project. Do NOT use for code review (use /review), architecture completeness (use /assessment), or running tests (use /test).
+sensitive: true
 ---
 
 Multi-layer security audit, dependency management, and threat modeling. Replaces standalone `/audit`, `/deps`, and `/cso` skills.
@@ -23,7 +24,7 @@ Multi-layer security audit, dependency management, and threat modeling. Replaces
 | `/audit comprehensive` | Deep scan: daily checks plus OWASP Top 10, STRIDE per component, LLM/AI review |
 | `/audit trust` | Untrusted-project safety scan. Run before `npm install`, `pip install`, or any build command on a freshly received project |
 
-If no subcommand is given, run all layers (excluding threat modeling, daily, and comprehensive, which require focused analysis).
+If no subcommand is given, run all layers except threat modeling, daily, and full-scope, which require focused analysis.
 
 ---
 
@@ -31,11 +32,11 @@ If no subcommand is given, run all layers (excluding threat modeling, daily, and
 
 ### Steps
 
-1. **Detect project and tools** (parallel): identify languages from manifests, check for Dockerfiles, check available tools (`pnpm`, `pip-audit`, `cargo-audit`, `trivy`, `grype`, `semgrep`, `bandit`), read `.env.example`.
+1. **Detect project and tools**, parallel: identify languages from manifests, check for Dockerfiles, check available tools, `pnpm`, `pip-audit`, `cargo-audit`, `trivy`, `grype`, `semgrep`, `bandit`, read `.env.example`.
 2. **Dependency scan**: per-language audit (see deps section).
-3. **Secret scanning**: scan all tracked files (`git ls-files`) using patterns from `~/.claude/hooks/secret-scanner.py`. Skip binaries, lockfiles, vendored code. Check [`.gitignore`](../../.gitignore) covers `.env`, `*.pem`, `*.key`. Apply the extended provider-specific patterns below (see secrets section) for Stripe, Twilio, GCP, Azure, Slack, Shopify, and other services not covered by the hook's generic patterns.
+3. **Secret scanning**: scan all tracked files, `git ls-files` using patterns from `~/.claude/hooks/secret-scanner.py`. Skip binaries, lockfiles, vendored code. Check [`.gitignore`](../../.gitignore) covers `.env`, `*.pem`, `*.key`. Apply the extended provider-specific patterns below (see secrets section) for Stripe, Twilio, GCP, Azure, Slack, Shopify, and other services not covered by the hook's generic patterns.
 4. **Dockerfile and Compose checks**: see the `docker` subcommand section below. Run the full Dockerfile checklist and, when `compose*.yml` or `docker-compose*.yml` is present, the full Compose checklist. If `hadolint` is on `PATH`, run `hadolint Dockerfile`. If `docker scout` is available, run `docker scout quickview` and `docker scout cves`. If `trivy` is available, scan built images.
-5. **Code patterns**: SQL injection (string concatenation in queries), command injection (`exec`/`spawn`/`eval` with dynamic input), XSS (`dangerouslySetInnerHTML`/`innerHTML`), path traversal, hardcoded secrets, insecure randomness (`Math.random()` for security), empty catch blocks. Run `semgrep --config auto` if available. Also check supply chain risks: review `postinstall` scripts in dependencies (`cat node_modules/<pkg>/package.json | jq .scripts.postinstall`), verify scoped packages resolve to the private registry (`npm install --dry-run`), verify Docker secrets use `--mount=type=secret` not `ENV`/`ARG`, and confirm lockfile integrity hashes are present.
+5. **Code patterns**: SQL injection, string concatenation in queries, command injection via `exec`, `spawn`, or `eval` with dynamic input, XSS through `dangerouslySetInnerHTML` or `innerHTML`, path traversal, hardcoded secrets, insecure randomness using `Math.random()` for security, empty catch blocks. Run `semgrep --config auto` if available. Also check supply chain risks: review `postinstall` scripts in dependencies via `cat node_modules/<pkg>/package.json | jq .scripts.postinstall`, verify scoped packages resolve to the private registry, `npm install --dry-run`, verify Docker secrets use `--mount=type=secret` not `ENV` or `ARG`, and confirm lockfile integrity hashes are present.
 6. **Compile report** by severity:
 
 ```
@@ -87,7 +88,7 @@ Show what would change, ask for approval, run update, re-audit to verify no new 
 
 ### scan (deep)
 
-Check available tools (parallel): `trivy`, `snyk`, `gitleaks`. Run all available:
+Check available tools, parallel: `trivy`, `snyk`, `gitleaks`. Run all available:
 - `trivy fs .` for dependency + config + secret scanning.
 - `snyk test` + `snyk code test` for dependency + static analysis.
 - `gitleaks detect --source .` for hardcoded secrets.
@@ -136,28 +137,28 @@ Dockerfile, Compose, BuildKit, and image authoring audit. Authority for every ru
 
 For each Dockerfile in the repo, verify:
 
-- Base image pinned by digest (`FROM image:tag@sha256:...`), not floating tag (`latest`, `lts`, no tag)
+- Base image pinned by digest, `FROM image:tag@sha256:...`, not floating tag such as `latest`, `lts`, or no tag
 - `# syntax=docker/dockerfile:1` declared at the top to enable modern BuildKit frontend
 - Multi-stage build; runtime stage does not include compilers, source, or dev dependencies
 - `WORKDIR` absolute path
-- `USER` directive in final stage sets a non-root UID (numeric preferred for Kubernetes compatibility)
+- `USER` directive in final stage sets a non-root UID. Numeric preferred for Kubernetes compatibility
 - No `COPY .env*`, `COPY *.pem`, `COPY *.key`, `COPY *.crt`, `COPY id_rsa*`
-- No `ENV` or `ARG` containing literal secret values (`PASSWORD=`, `TOKEN=`, `API_KEY=`, `PRIVATE_KEY=`)
+- No `ENV` or `ARG` containing literal secret values such as `PASSWORD=`, `TOKEN=`, `API_KEY=`, or `PRIVATE_KEY=`
 - Build-time secrets use `RUN --mount=type=secret,id=<name>`, never `ENV` or `ARG`
-- Package installs use `--no-install-recommends` (apt), `--no-cache` (apk), or equivalent
+- Package installs use `--no-install-recommends`, apt, `--no-cache`, apk, or equivalent
 - Package manager caches purged in the same layer: `rm -rf /var/lib/apt/lists/*`, `pip cache purge`, etc.
 - BuildKit cache mounts used for package managers when build time matters: `--mount=type=cache,target=<path>`
 - `COPY --link` used to maximize layer cache hits
 - `HEALTHCHECK` declared with `--interval`, `--timeout`, `--start-period`, `--retries`
 - PID 1 covered by `tini`, `dumb-init`, `docker run --init`, or Compose `init: true`
 - `.dockerignore` exists and excludes `.env*`, `*.pem`, `*.key`, `.git/`, `node_modules/`, `.terraform/`
-- Hadolint clean on the file when `hadolint` is on `PATH` (run `hadolint Dockerfile`)
+- Hadolint clean on the file when `hadolint` is on `PATH`. Run `hadolint Dockerfile`
 
 ### Compose checklist
 
 For each `compose.yml`, `compose.*.yml`, `docker-compose.yml`, `docker-compose.*.yml`:
 
-- No top-level `version:` key (deprecated under Compose v2)
+- No top-level `version:` key. Deprecated under Compose v2
 - Every service has `read_only: true` unless the workload legitimately writes to its root
 - Every service has `cap_drop: ["ALL"]` followed by minimal `cap_add:` entries
 - Every service has `security_opt: ["no-new-privileges:true"]`
@@ -170,9 +171,9 @@ For each `compose.yml`, `compose.*.yml`, `docker-compose.yml`, `docker-compose.*
 - Networks are explicit per tier; backend networks marked `internal: true`
 - `depends_on:` uses `condition: service_healthy` form for ordering, paired with `healthcheck:`
 - Every service sets `init: true` or has `tini`/`dumb-init` as PID 1 in its Dockerfile
-- Resource limits set (`deploy.resources.limits.memory`, `cpus`, plus `pids_limit`, `ulimits.nofile`)
+- Resource limits set such as `deploy.resources.limits.memory`, `cpus`, plus `pids_limit`, or `ulimits.nofile`
 - `restart:` uses `on-failure:<n>` or `unless-stopped`, not unbounded `always`
-- Only namespaced `sysctls:` (no raw `net.core.*`)
+- Only namespaced `sysctls:`. No raw `net.core.*`
 - Dev-only services gated behind `profiles: ["dev"]`
 - Production deployment does not invoke `docker compose watch` or the `develop:` block
 
@@ -189,7 +190,7 @@ For each `compose.yml`, `compose.*.yml`, `docker-compose.yml`, `docker-compose.*
 
 ### Reporting
 
-Report findings in the standard severity buckets (Critical / High / Medium / Low). Critical: secrets in layers, `privileged: true`, host namespaces, `COPY .env`. High: missing `USER` non-root, floating tags, missing `cap_drop`, missing `no-new-privileges`, dev ports bound to `0.0.0.0`. Medium: missing `HEALTHCHECK`, missing `init: true`, missing `.dockerignore`, missing BuildKit cache mounts. Low: missing attestations, missing Hadolint config, image bloat.
+Report findings in the standard severity buckets: Critical, High, Medium, or Low. Critical: secrets in layers, `privileged: true`, host namespaces, `COPY .env`. High: missing `USER` non-root, floating tags, missing `cap_drop`, missing `no-new-privileges`, dev ports bound to `0.0.0.0`. Medium: missing `HEALTHCHECK`, missing `init: true`, missing `.dockerignore`, missing BuildKit cache mounts. Low: missing attestations, missing Hadolint config, image bloat.
 
 ---
 
@@ -346,7 +347,7 @@ Fast security gate for routine use. Three focused checks that catch the highest-
 
 ---
 
-## comprehensive
+## full-scope
 
 Deep scan that includes everything from daily mode plus OWASP Top 10, STRIDE threat modeling per component, and LLM/AI security review.
 
@@ -483,14 +484,14 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 9. **Scan editor configs.** Read `.vscode/settings.json`, `.vscode/tasks.json`, `.idea/workspace.xml`, `.envrc`, `.devcontainer/devcontainer.json`. Apply Section F patterns. Auto-run on folder open is HIGH. `eval` in `.envrc` is CRITICAL.
 
 10. **Scan dependencies.** For each direct dependency in the manifest:
-    - Query offline metadata first (lockfile, package cache).
+    - Query offline metadata first, lockfile, package cache.
     - If `npm` is available and the user has internet, run `npm view <name> time` to get age. Skip if offline.
     - Compare names against the typosquat list and known-malicious package list in [`trust-patterns.md`](trust-patterns.md).
     - Apply Section G patterns. Known-malicious match is CRITICAL. Age under 7 days is HIGH. Lockfile resolving to non-default registry is CRITICAL.
 
 11. **Scan binaries.** Walk the tree for files with executable bits, non-text content, in non-build directories. Apply Section H patterns. Pre-compiled binaries in source-only directories are HIGH.
 
-12. **Integrate external tools (auto-detect, parallel).**
+12. **Integrate external tools, auto-detect, parallel.**
     - `gitleaks` if installed: run `gitleaks detect --no-git --redact --report-path /tmp/gitleaks-trust.json`. Parse findings.
     - `semgrep` if installed and the `apiiro/malicious-code-ruleset` is reachable: run with that ruleset. Parse findings.
     - `trivy` if installed: run `trivy fs --scanners misconfig,secret,vuln .`. Parse findings.

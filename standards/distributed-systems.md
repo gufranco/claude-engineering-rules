@@ -48,7 +48,7 @@ Avoid session stickiness for read-your-writes. It is fragile and breaks on rebal
 
 ## Saga Pattern
 
-When a business transaction spans multiple services and a distributed transaction (2PC) is not feasible. Never use distributed transactions (2PC, XA) across services. They couple services at the protocol level, require all participants to be available simultaneously, and create a single point of failure in the transaction coordinator. Use sagas instead.
+When a business transaction spans multiple services and a distributed transaction, 2PC, is not feasible. Never use distributed transactions, 2PC, XA, across services. They couple services at the protocol level, require all participants to be available simultaneously, and create a single point of failure in the transaction coordinator. Use sagas instead.
 
 ### Orchestration vs Choreography
 
@@ -169,7 +169,7 @@ Without fencing, a lock only gives "best effort" mutual exclusion.
 ### Handling Out-of-Order Events
 
 - **Version check**: each event carries a version. Consumer rejects events older than current state
-- **Last-write-wins**: use the event's timestamp to resolve conflicts. Only works with synchronized clocks (NTP)
+- **Last-write-wins**: use the event's timestamp to resolve conflicts. Only works with synchronized clocks. NTP
 - **Buffer and reorder**: hold events in a short window, sort before processing. Adds latency equal to the buffer
 
 ## Schema Evolution
@@ -199,7 +199,7 @@ Events and messages outlive the code that created them. Consumers and producers 
 
 ## Distributed Transaction Anti-Pattern
 
-Distributed transactions (2PC, XA) across independent services are an anti-pattern. They couple services at the protocol level, require all participants to be available simultaneously to commit, and create a single point of failure in the transaction coordinator. Any participant that becomes unavailable blocks the entire transaction indefinitely.
+Distributed transactions, 2PC, XA, across independent services are an anti-pattern. They couple services at the protocol level, require all participants to be available simultaneously to commit, and create a single point of failure in the transaction coordinator. Any participant that becomes unavailable blocks the entire transaction indefinitely.
 
 Use sagas with compensating actions for long-running flows that span service boundaries. See the Saga Pattern section above.
 

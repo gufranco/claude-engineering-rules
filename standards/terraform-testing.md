@@ -45,7 +45,7 @@ run "test_default_configuration" {
 
 ### Variables
 
-Define at file level (applied to all run blocks) or per run block (overrides file level). Test-level variables take highest precedence over all other sources.
+Define at file level, applied to all run blocks, or per run block, overrides file level. Test-level variables take highest precedence over all other sources.
 
 ```hcl
 variables {
@@ -284,9 +284,9 @@ terraform test -verbose
 
 ## Rules
 
-- Every module must have at least one unit test (plan mode) for variable validation
+- Every module must have at least one unit test, plan mode for variable validation
 - Every variable with a `validation` block must have a corresponding `expect_failures` test
-- Integration tests (apply mode) must clean up after themselves. Terraform test does this automatically, but verify with `terraform state list` after test failures
+- Integration tests, apply mode must clean up after themselves. Terraform test does this automatically, but verify with `terraform state list` after test failures
 - Use mock providers for unit tests whenever possible. Reserve apply-mode tests for behaviors that require real infrastructure responses
 - Name test files descriptively: `validation_unit_test.tftest.hcl`, not `test1.tftest.hcl`
 - Test conditional resource creation for every `count` or `for_each` that depends on a variable

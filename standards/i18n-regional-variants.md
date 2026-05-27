@@ -99,8 +99,8 @@ Write a test or lint script that:
 
 1. Extracts all string values from each `messages/{locale}.json` file
 2. Tokenizes them into words
-3. Checks each word against the curated flagged word list (Tier 1)
-4. Optionally checks against the regional dictionary (Tier 2)
+3. Checks each word against the curated flagged word list. Tier 1
+4. Optionally checks against the regional dictionary. Tier 2
 5. Fails if any word from the wrong variant is found
 
 Example test structure:

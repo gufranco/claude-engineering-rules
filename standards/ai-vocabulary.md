@@ -1,6 +1,6 @@
 # AI Vocabulary
 
-Canonical glossary for AI coding terminology. Use these definitions in PRs, ADRs, retros, and rule files. Avoid synonym drift across the codebase. Inspired by Matt Pocock's dictionary of AI coding.
+Canonical glossary for AI coding terminology. Use these definitions in PRs, ADRs, retros, and rule files. Avoid synonym drift across the codebase.
 
 ## When to consult
 

@@ -68,14 +68,14 @@ Produce a numbered plan, plain markdown, not JSON. Each subquery has:
 
 Source allowlist for v1:
 
-- Web (WebSearch general)
-- GitHub (WebSearch `site:github.com` plus WebFetch on repos; gh CLI when authenticated)
-- Reddit (WebSearch `site:reddit.com`)
-- Hacker News (WebSearch `site:news.ycombinator.com`)
-- YouTube titles and descriptions (WebSearch `site:youtube.com`; transcripts NOT fetched)
-- X / Twitter (WebSearch `site:x.com OR site:twitter.com`; best-effort, often blocked)
-- Stack Overflow (WebSearch `site:stackoverflow.com`)
-- Package registries (WebFetch on resolved package URLs)
+- Web. WebSearch general
+- GitHub. WebSearch `site:github.com` plus WebFetch on repos; gh CLI when authenticated
+- Reddit. WebSearch `site:reddit.com`
+- Hacker News. WebSearch `site:news.ycombinator.com`
+- YouTube titles and descriptions. WebSearch `site:youtube.com`; transcripts NOT fetched
+- X / Twitter. WebSearch `site:x.com OR site:twitter.com`; best-effort, often blocked
+- Stack Overflow. WebSearch `site:stackoverflow.com`
+- Package registries. WebFetch on resolved package URLs
 
 Out of scope for v1: TikTok, Instagram, Threads, Pinterest, Bluesky, Polymarket, paid APIs.
 

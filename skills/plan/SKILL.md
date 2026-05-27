@@ -15,6 +15,7 @@ Unified planning skill for requirements gathering, architecture decisions, and c
 | `/plan adr supersede <number> <title>` | Supersede an existing ADR |
 | `/plan scaffold <type> <name>` | Generate boilerplate from project patterns |
 | `/plan to-issues` | Export the active spec folder's task breakdown to GitHub issues |
+| `/plan multi-execute <task>` | Plan and execute under a single-writer protocol with parallel model tiers |
 
 If no subcommand is recognized, treat the argument as a plan description.
 
@@ -98,15 +99,21 @@ Present the scope review findings. In `--auto` mode, only pause for user input i
    - Recent commits: <last 3 commit subjects>
    ```
 
-   This snapshot prevents context drift in long sessions. Re-read `context.md` at the start of each phase (steps 1, 5, 8). If the task has evolved, update the snapshot before continuing.
+   This snapshot prevents context drift in long sessions. Re-read `context.md` at the start of each phase, steps 1, 5, 8. If the task has evolved, update the snapshot before continuing.
 
-1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints? (Skip if discovery phase already covered this.)
+1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints?. Skip if discovery phase already covered this.
 
-2. **Search for existing work** (parallel):
-   - Grep codebase for related patterns.
-   - `gh pr list --search "<keywords>"` for open PRs.
-   - `git branch -a --list "*<keyword>*"` for branches.
-   - `gh pr list --state closed --search "<keywords>"` for prior attempts.
+2. **Search for existing work**. The tool ordering is mandatory; stop at first match:
+   1. Local codebase: `rg -i "<keyword>"`, including file names. Cover [`skills/`](../../skills), [`agents/`](../../agents), [`rules/`](../../rules), [`standards/`](../../standards), [`hooks/`](../../hooks) when the new work could land in `~/.claude/`.
+   2. Open PRs: `gh pr list --search "<keywords>"`.
+   3. Recent branches: `git branch -a --list "*<keyword>*"`.
+   4. Closed PRs: `gh pr list --state closed --search "<keywords>"`. A closed PR often names a dead-end or a postponed approach.
+   5. GitHub code search: `gh search code "<keywords>" --language=<lang>`.
+   6. Library docs: `llms.txt` first, then official docs of the major library in the area.
+   7. Package registry: `npm search`, `pip search`, `cargo search`, `gem search`.
+   8. Web search: last resort, only if 1-7 turned up nothing.
+
+   **Anti-duplication gate for skills, agents, hooks, standards, rules.** Before proposing a new file in `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/hooks/`, `~/.claude/standards/`, or `~/.claude/rules/`, run steps 1-2 against `~/.claude/` and the [`rules/index.yml`](../../rules/index.yml) on-demand entries first. Prefer extending an existing file, new subcommand, new section, new mode, over creating a new one. Justify the new file in writing when no extension fits. See [`rules/pre-flight.md`](../../rules/pre-flight.md) for the full rule.
 
 3. **Gather references.** Identify 2-5 files following patterns the new code should match. Read them. Note structure, naming, error handling, testing.
 
@@ -128,9 +135,9 @@ Present the scope review findings. In `--auto` mode, only pause for user input i
 
 7. **Append mandatory closing gates.** Every `plan.md` task breakdown must end with these two items, in this order, as the final tasks. They are not optional. They cannot be moved earlier or removed.
 
-   **Gate 1: Test Coverage (95%+).** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8 (Testing). Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
+   **Gate 1: Test Coverage, 95%+.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8, Testing. Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
 
-   **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50 (Clean Room). Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: `rules/clean-room.md`.
+   **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: `rules/clean-room.md`.
 
 8. **Present plan.** Wait for approval.
 
@@ -217,7 +224,7 @@ Create and manage Architecture Decision Records. ADRs capture context, alternati
 
 ## to-issues
 
-Export the active spec folder's task breakdown to GitHub issues. One issue per task. Borrowed from the `mattpocock/skills` exporter pattern.
+Export the active spec folder's task breakdown to GitHub issues. One issue per task.
 
 ### When to use
 
@@ -237,10 +244,10 @@ Export the active spec folder's task breakdown to GitHub issues. One issue per t
 1. **Resolve spec folder.** Default to the latest folder under `specs/` or `.claude/specs/`.
 2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue.
 3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
-4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists. Borrowed from the deduplication pattern.
+4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists.
 5. **Build issue body.** Include: the task description, the spec folder path, a link to `plan.md`, and any phase grouping.
 6. **Create issues.** GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label>`. GitLab: equivalent `glab issue create`.
-7. **Print summary.** Table of created issues with URLs. Skipped (duplicate) issues listed separately.
+7. **Print summary.** Table of created issues with URLs. Skipped, duplicate issues listed separately.
 
 ### Rules
 
@@ -268,7 +275,7 @@ Generate boilerplate by reading existing project patterns. No external generator
 ### Steps
 
 1. Parse type and name. If missing, list available types and ask.
-2. **Detect framework and find examples** (parallel): read manifest, map directory structure, search for existing examples of the type.
+2. **Detect framework and find examples**, parallel: read manifest, map directory structure, search for existing examples of the type.
 3. Analyze 2-3 examples: naming convention, export style, imports, code structure, test file location, TypeScript patterns.
 4. Generate: main file + test file following exact patterns. Placeholder `TODO` comments for business logic.
 5. Present for approval before writing.
@@ -282,6 +289,62 @@ Generate boilerplate by reading existing project patterns. No external generator
 - Never generate without at least one example.
 - Never install dependencies.
 - Keep generated code minimal: skeleton with TODOs.
+
+---
+
+## multi-execute
+
+Plan and execute a feature with parallel model tiers, Opus + Sonnet + Haiku, while keeping the running Claude Code session as the **sole filesystem writer**. Subagents propose; the orchestrator integrates and writes.
+
+### When to use
+
+- Feature is large enough to benefit from a planner-reviewer split.
+- Cost matters: route deep reasoning to Opus, broad searches to Sonnet, mechanical tasks to Haiku.
+- The risk of two writers conflicting on the same files is non-trivial.
+
+### When NOT to use
+
+- Small change, 1-3 files. Overhead exceeds value.
+- Time-critical hotfix. Use `/hotfix`.
+- The task is purely deterministic, rename, format, refactor. Use `/refactor`.
+
+### Single-Writer Invariant (NON-NEGOTIABLE)
+
+Only the running Claude Code session writes to disk. Subagents return text. The orchestrator parses, validates, and applies.
+
+| Role | Tools | Writes? |
+|------|-------|---------|
+| Orchestrator (this session) | All tools | YES |
+| Planner subagent | Read, Grep, Glob, WebSearch | NO |
+| Generator subagents | Read, Grep, Glob | NO |
+| Reviewer subagents | Read, Grep, Glob | NO |
+
+Subagents must be briefed with: "Return your proposed changes as unified diffs or full-file content in your response. Do NOT call Edit, Write, or MultiEdit." Violations are a wasted run.
+
+### Process
+
+1. **Plan with Opus.** Spawn a planner subagent, Opus tier to produce the task breakdown. Single agent, single pass.
+2. **Decompose.** Split the plan into chunks small enough for parallel generation, one chunk = one file or one cohesive change.
+3. **Generate in parallel.** Spawn generator subagents, Sonnet tier at most two at a time per the Parallelism Rule. Each receives one chunk plus the file content. Returns proposed text.
+4. **Review in parallel.** Spawn reviewer subagents, Sonnet tier on the proposed changes. Returns approval or rejection with rationale.
+5. **Integrate.** The orchestrator applies the approved changes with Edit / Write / MultiEdit. Conflicts between proposals get re-planned, back to step 2 for the conflicting subset.
+6. **Verify.** Run formatter + linter + test suite. Show output.
+
+### Cost discipline
+
+- Planner: Opus, 1 call.
+- Generator: Sonnet, N calls where N is the number of independent chunks. Cap at 6.
+- Reviewer: Sonnet, N calls matching the generators.
+- Orchestrator integration: this session.
+
+Estimate cost before running. Abort and run a simpler `/plan` flow when the cost exceeds the marginal benefit of parallelism.
+
+### Rules
+
+- Single-writer invariant is enforced by the briefing, not by the runtime. Audit subagent responses: if any names a write tool, discard the response.
+- Generator chunks must not overlap on the same file. The decomposition step is responsible for partitioning.
+- Reviewer subagents read the proposal, not the diff. Diffs hide context.
+- Failed verification rolls back the orchestrator's writes, `git stash` before re-planning.
 
 ---
 

@@ -8,7 +8,7 @@ All infrastructure must be defined in code, versioned, and reproducible. Manual 
 
 - **Declarative over imperative**: describe the desired state, let the tool converge. Terraform, Pulumi, CloudFormation, not bash scripts that `aws ec2 run-instances`.
 - **Idempotent provisioning**: running the same code twice produces the same infrastructure. No orphaned resources, no duplicates.
-- **Immutable infrastructure over configuration management**: bake dependencies into images (AMI, Docker), replace instances instead of patching them in place. Mutable servers drift over time and become unreproducible.
+- **Immutable infrastructure over configuration management**: bake dependencies into images, AMI, Docker, replace instances instead of patching them in place. Mutable servers drift over time and become unreproducible.
 
 ### State Management
 
@@ -28,13 +28,13 @@ All infrastructure must be defined in code, versioned, and reproducible. Manual 
 
 ### Drift Detection
 
-- Run `terraform plan` on a schedule (CI cron job). If the plan shows changes, something was modified manually.
+- Run `terraform plan` on a schedule, CI cron job. If the plan shows changes, something was modified manually.
 - Alert on drift. Manual changes to production infrastructure are an incident until proven otherwise.
-- Fix drift by importing or re-applying, not by updating the code to match the manual change (unless the manual change was correct).
+- Fix drift by importing or re-applying, not by updating the code to match the manual change, unless the manual change was correct.
 
 ### Module Design
 
-- Keep modules small and focused: one module per logical resource group (network, database, compute).
+- Keep modules small and focused: one module per logical resource group, network, database, compute.
 - Pin module versions. A module update should be an intentional change, not a surprise.
 - Modules must accept all configurable values as variables. No hardcoded region, account ID, or environment name inside a module.
 - Output everything downstream consumers need: ARNs, endpoints, security group IDs. Avoid forcing consumers to construct these from naming conventions.
@@ -91,7 +91,7 @@ Kubernetes and container orchestration add operational complexity in exchange fo
 
 - **Requests**: minimum resources guaranteed to the container. Set based on actual usage under normal load. Under-requesting causes contention.
 - **Limits**: maximum resources the container can use. Set based on peak usage plus headroom. Over-limiting causes OOM kills and CPU throttling.
-- **Right-sizing**: measure actual usage with metrics (Prometheus, CloudWatch Container Insights), not guesswork. Review quarterly.
+- **Right-sizing**: measure actual usage with metrics, Prometheus, CloudWatch Container Insights, not guesswork. Review quarterly.
 - **Resource quotas**: set per namespace to prevent one team or service from consuming the entire cluster.
 - **Limit ranges**: set defaults and maximums per namespace so pods without explicit requests/limits get sane defaults.
 
@@ -109,7 +109,7 @@ Kubernetes and container orchestration add operational complexity in exchange fo
 
 ### Availability
 
-- **Pod disruption budgets**: define minimum available or maximum unavailable during voluntary disruptions (node drain, cluster upgrade). Without PDBs, a node drain can kill all replicas simultaneously.
+- **Pod disruption budgets**: define minimum available or maximum unavailable during voluntary disruptions, node drain, cluster upgrade. Without PDBs, a node drain can kill all replicas simultaneously.
 - **Anti-affinity**: spread replicas across nodes and availability zones. Co-located replicas are a single point of failure.
 - **Topology spread constraints**: for finer control over how pods distribute across zones, regions, or node groups.
 - **Startup probes**: for slow-starting applications. Without a startup probe, the liveness probe may kill the container before it finishes initializing.
@@ -127,9 +127,9 @@ Kubernetes and container orchestration add operational complexity in exchange fo
 
 Sidecars handle cross-cutting concerns without modifying the application:
 
-- **Service mesh proxy** (Envoy): mTLS, retries, circuit breaking, observability
-- **Log collector** (Fluentd, Fluent Bit): ship logs to a central system without application changes
-- **Secrets injector** (Vault Agent): inject secrets at runtime without baking them into the image
+- **Service mesh proxy**, Envoy: mTLS, retries, circuit breaking, observability
+- **Log collector**, Fluentd, Fluent Bit: ship logs to a central system without application changes
+- **Secrets injector**, Vault Agent: inject secrets at runtime without baking them into the image
 
 ## Dockerfile and Compose
 
@@ -145,8 +145,8 @@ Stages should run in order of feedback speed: fastest checks first, slowest last
 
 1. **Lint and static analysis**: seconds. Catches formatting, type errors, known anti-patterns.
 2. **Unit tests**: seconds to minutes. Fast feedback on logic correctness.
-3. **Build**: minutes. Produces the deployable artifact (Docker image, binary, package).
-4. **Integration tests**: minutes. Verifies interactions with real dependencies (database, APIs).
+3. **Build**: minutes. Produces the deployable artifact, Docker image, binary, package.
+4. **Integration tests**: minutes. Verifies interactions with real dependencies, database, APIs.
 5. **Security scan**: minutes. Dependency audit, container scan, SAST.
 6. **Deploy to staging**: minutes. Apply infrastructure changes and deploy the artifact.
 7. **E2E / smoke tests**: minutes. Verify critical paths in a production-like environment.
@@ -169,7 +169,7 @@ Stages should run in order of feedback speed: fastest checks first, slowest last
 
 ### Progressive Delivery
 
-- **Canary**: deploy to a small percentage of traffic, monitor key metrics (error rate, latency, business metrics), auto-promote or auto-rollback based on thresholds.
+- **Canary**: deploy to a small percentage of traffic, monitor key metrics, error rate, latency, business metrics, auto-promote or auto-rollback based on thresholds.
 - **Feature flags**: deploy code to all instances, gate behavior behind a flag. Enable gradually per user segment, geography, or percentage.
 - **Dark launching**: deploy the new code path, run it in shadow mode alongside the old path, compare results. No user impact.
 
@@ -203,20 +203,20 @@ Cloud architecture decisions have long-lasting consequences. They affect cost, r
 | Active-passive | Primary region serves traffic, secondary on standby for failover | When RTO of minutes to an hour is acceptable | Medium |
 | Active-active | Both regions serve traffic simultaneously | When RTO must be near-zero, or users span geographies | Highest |
 
-Active-active introduces data replication complexity. Every write must reach both regions, and you must choose between synchronous replication (higher latency) and asynchronous (data loss window during failover).
+Active-active introduces data replication complexity. Every write must reach both regions, and you must choose between synchronous replication, higher latency, and asynchronous, data loss window during failover.
 
 ### Blast Radius Containment
 
-- **Account isolation**: separate AWS accounts or GCP projects per environment and per workload class (production, staging, shared services). One compromised account does not affect others.
-- **Cell-based architecture**: partition the system into independent cells (by geography, customer segment, or shard). A failure in one cell does not cascade to others.
-- **Service quotas**: know the cloud provider limits for your resources (EC2 instances, Lambda concurrency, API Gateway requests). Monitor usage against limits. Hitting a quota in production is an outage.
+- **Account isolation**: separate AWS accounts or GCP projects per environment and per workload class, production, staging, shared services. One compromised account does not affect others.
+- **Cell-based architecture**: partition the system into independent cells, by geography, customer segment, or shard. A failure in one cell does not cascade to others.
+- **Service quotas**: know the cloud provider limits for your resources, EC2 instances, Lambda concurrency, API Gateway requests. Monitor usage against limits. Hitting a quota in production is an outage.
 - **AZ-independent**: design so losing one availability zone does not degrade service. Spread resources across at least 2 AZs, prefer 3.
 
 ### Auto-scaling
 
-- **Predictive scaling**: use scheduled scaling or ML-based prediction for known traffic patterns (daily peaks, weekly cycles, marketing campaigns). Reactive scaling has a lag.
-- **Reactive scaling**: HPA, target tracking policies. Set the target metric (CPU, request count, queue depth) and let the autoscaler adjust. Always set a minimum and maximum.
-- **Scale-to-zero**: for event-driven or batch workloads (Lambda, Cloud Run, Knative). No cost when idle. Cold start latency is the trade-off.
+- **Predictive scaling**: use scheduled scaling or ML-based prediction for known traffic patterns, daily peaks, weekly cycles, marketing campaigns. Reactive scaling has a lag.
+- **Reactive scaling**: HPA, target tracking policies. Set the target metric, CPU, request count, queue depth and let the autoscaler adjust. Always set a minimum and maximum.
+- **Scale-to-zero**: for event-driven or batch workloads, Lambda, Cloud Run, Knative. No cost when idle. Cold start latency is the trade-off.
 - **Cooldown periods**: prevent thrashing by requiring a minimum time between scale-in events. Scale-out should be aggressive, scale-in conservative.
 
 ### Traffic Management
@@ -230,13 +230,13 @@ Active-active introduces data replication complexity. Every write must reach bot
 
 ### DDoS and Edge Protection
 
-- **WAF (Web Application Firewall)**: rate limiting, IP reputation, SQL injection blocking, bot detection at the edge.
+- **WAF, Web Application Firewall**: rate limiting, IP reputation, SQL injection blocking, bot detection at the edge.
 - **Shield / Armor**: cloud-native DDoS protection for volumetric attacks. Enable on all public-facing load balancers.
 - **Rate limiting at the edge**: CDN or API gateway level. Don't let attack traffic reach your application servers.
 
 ### Data Residency
 
-- Know where your data is stored and processed. Some regulations (GDPR, LGPD) restrict cross-border data transfer.
+- Know where your data is stored and processed. Some regulations, GDPR, LGPD restrict cross-border data transfer.
 - Choose cloud regions based on both latency and compliance requirements.
 - If multi-region, ensure replication respects residency constraints. Data from EU users must not replicate to US regions without a legal basis.
 
@@ -244,7 +244,7 @@ Active-active introduces data replication complexity. Every write must reach bot
 
 - **Tag everything**: environment, team, service, cost center. Without tags, cost attribution is guesswork.
 - **Reserved capacity**: for stable, predictable workloads. Savings Plans or Reserved Instances provide 30-60% savings.
-- **Spot / preemptible instances**: for fault-tolerant workloads (batch processing, CI runners, stateless workers). 60-90% savings with interruption risk.
+- **Spot / preemptible instances**: for fault-tolerant workloads, batch processing, CI runners, stateless workers. 60-90% savings with interruption risk.
 - **Right-sizing**: review instance types quarterly. Most services are over-provisioned after the initial launch.
 
 ## Alternative Orchestrators
@@ -260,7 +260,7 @@ Kubernetes is not the only option. Choose the orchestrator that matches your ope
 
 **ECS-specific guidance:**
 
-- Task definitions replace Pod specs. One container per task for simple services, multiple for sidecar patterns (log router, service mesh proxy).
+- Task definitions replace Pod specs. One container per task for simple services, multiple for sidecar patterns, log router, service mesh proxy.
 - Use Fargate for serverless container execution. Eliminates node management.
 - Service discovery via AWS Cloud Map or Application Load Balancer target groups.
 - IAM task roles replace Kubernetes service accounts for cloud resource permissions.
@@ -269,18 +269,18 @@ Kubernetes is not the only option. Choose the orchestrator that matches your ope
 **Nomad-specific guidance:**
 
 - Job files replace Kubernetes manifests. Jobs contain task groups, which contain tasks.
-- Supports Docker, Podman, raw exec (binary), Java, and QEMU drivers in the same cluster.
+- Supports Docker, Podman, raw exec, binary, Java, and QEMU drivers in the same cluster.
 - Consul integration provides service discovery and health checking without a separate Ingress controller.
 - Vault integration provides secrets injection directly into task environments at runtime.
 - Multi-region federation with `nomad namespace` and region routing. No need for separate clusters per region.
-- Use `nomad job plan` before `nomad job run` to preview scheduler decisions (equivalent to `kubectl apply --dry-run`).
+- Use `nomad job plan` before `nomad job run` to preview scheduler decisions, equivalent to `kubectl apply --dry-run`.
 
 **When not to use Kubernetes:**
 
 - Team has fewer than 10 engineers: operational burden exceeds benefit.
 - Workload is a single service or a small number of services: ECS or Nomad serves better.
 - Strict budget constraints: Kubernetes control plane costs add up, especially on managed providers.
-- Hybrid workloads (VMs, binaries, containers together): Nomad handles this natively.
+- Hybrid workloads, VMs, binaries, containers together: Nomad handles this natively.
 
 ## Regional Compliance
 

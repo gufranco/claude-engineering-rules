@@ -23,7 +23,7 @@
 
 ## Async
 
-- Pick one runtime per workspace (Tokio is the default). Mixing causes runtime panics
+- Pick one runtime per workspace, Tokio is the default. Mixing causes runtime panics
 - Spawn tasks with `tokio::spawn`; never `std::thread::spawn` for async work
 - Hold locks across `.await` only when the lock is async-aware (`tokio::sync::Mutex`); std `Mutex` deadlocks under task scheduling
 - Cancellation safety: every `.await` may be cancelled. Avoid partial state mutations between awaits

@@ -12,5 +12,5 @@ A project with one MEDIUM finding: a single `eval()` call in a non-test file. Sh
 ## Expected outcome
 
 - Verdict: **SUSPICIOUS**.
-- Worst severity: MEDIUM (single `eval` is HIGH per Section B, but appears in isolation without clustering signals; treated as MEDIUM in this fixture).
+- Worst severity: MEDIUM. A single `eval` is HIGH per Section B, but appears in isolation without clustering signals; treated as MEDIUM in this fixture.
 - Action: scan asks the user to review the finding before continuing.

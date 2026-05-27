@@ -44,11 +44,11 @@ Read the project thoroughly. Run these **in parallel**:
 
 1. **Project identity**: read `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Makefile`, or equivalent to get the project name, version, description, dependencies, and scripts.
 2. **Infrastructure and config**: read Terraform files, Docker files, CI/CD configs, `docker-compose.yml`, and deployment configs to understand the infrastructure.
-3. **Source code structure**: map the directory tree (`ls -R` or glob) to understand the project layout, modules, and organization.
+3. **Source code structure**: map the directory tree, `ls -R` or glob to understand the project layout, modules, and organization.
 4. **Existing README**: read the current [`README.md`](../../README.md) if it exists, to understand what the user already had and what to improve.
 5. **Environment and setup**: read `.env.example`, setup scripts, and Makefile targets to document prerequisites and setup steps.
 6. **Git context**: run `git remote -v` and `git log --oneline -10` to get the repo URL, recent activity, and contributor count.
-7. **Visual assets**: check for logo files (`logo.png`, `logo.svg`, `banner.png`, `.github/assets/`, `docs/images/`) and existing screenshots or demos.
+7. **Visual assets**: check for logo files like `logo.png`, `logo.svg`, `banner.png`, `.github/assets/`, or `docs/images/`, and existing screenshots or demos.
 8. **License and metadata**: read `LICENSE`, `.github/FUNDING.yml`, badges in existing README.
 
 ### Phase 2: Architecture and Identity Analysis
@@ -68,7 +68,7 @@ Write the README following the structure and visual guide below. Every section m
 
 ### Phase 4: Generate GitHub About
 
-Generate a concise repo description (max 350 characters) and a list of topic tags. See the "GitHub About" section below.
+Generate a concise repo description, max 350 characters, and a list of topic tags. See the "GitHub About" section below.
 
 ### Phase 5: Present and Apply
 
@@ -208,7 +208,7 @@ For richer tables, replace `Yes` with a short capability descriptor like "Built-
 
 Mermaid diagrams for projects with enough complexity to warrant them. Use the diagram type that best fits:
 
-- **Flowchart** (`graph LR` or `graph TD`): system architecture, data flow between components.
+- **Flowchart**, `graph LR` or `graph TD`: system architecture, data flow between components.
 - **Sequence diagram**: request/response flows, multi-service interactions.
 - **C4 Context**: high-level system boundaries for larger projects.
 
@@ -220,7 +220,6 @@ graph LR
     B --> D[Service B]
     C --> E[(Database)]
     D --> F[(Cache)]
-`` `
 ```
 
 **Diagram rules:**
@@ -228,7 +227,7 @@ graph LR
 - Use descriptive labels, not single letters.
 - Include the data flow direction.
 - For multi-layer architectures, use `subgraph` to group related components.
-- Skip this section entirely for simple projects (CLIs, small libraries).
+- Skip this section entirely for simple projects such as CLIs, or small libraries.
 
 ### 5. What's Included
 
@@ -247,7 +246,7 @@ Categories come from the project's actual domains: Infrastructure, Security, Dat
 
 ### 6. Demo / Screenshots
 
-If the project has visual output (web app, CLI with TUI, desktop app), this section is mandatory. If no screenshots or demos exist yet, add the section with a placeholder structure and a comment telling the user to add them.
+If the project has visual output such as a web app, CLI with TUI, or desktop app, this section is mandatory. If no screenshots or demos exist yet, add the section with a placeholder structure and a comment telling the user to add them.
 
 **For CLI tools**, show terminal output in a code block or reference an asciinema recording:
 
@@ -263,7 +262,7 @@ If the project has visual output (web app, CLI with TUI, desktop app), this sect
 </div>
 ```
 
-**For GitHub light/dark mode support** (when the project has both variants):
+**For GitHub light/dark mode support**, when the project has both variants:
 
 ```html
 <picture>
@@ -533,7 +532,7 @@ infra/          # Terraform modules
 </details>
 ```
 
-For smaller projects (< 10 directories), show the tree directly without collapsing.
+For smaller projects with under 10 directories, show the tree directly without collapsing.
 
 ### 9. Development Commands
 
@@ -616,7 +615,7 @@ Short and simple. One line with the license name and a link to the full text.
 
 ### Voice and Tone
 
-- **Confident and direct.** No hedging ("might", "should", "could potentially"). State what the project does.
+- **Confident and direct.** No hedging, "might", "should", "could potentially". State what the project does.
 - **Technical but magnetic.** Assume the reader is a developer. Respect their intelligence but make them excited.
 - **Show, don't tell.** Instead of "easy to set up", show a 3-line setup. Instead of "fast", show a benchmark. Instead of "flexible", show 3 different config examples.
 - **Opinionated is good.** If the project made deliberate choices, state them proudly. "We use X because Y" is more compelling than "supports X and Y".
@@ -636,11 +635,11 @@ The README should be scannable in 10 seconds. A developer scrolling fast should 
 
 - **Centered hero section** using `<div align="center">`. This is the only centered section.
 - **HTML tables for feature grids** when you need multi-column layouts that Markdown tables can't achieve.
-- **Markdown tables for data** (commands, env vars, endpoints, prerequisites).
+- **Markdown tables for data** such as commands, env vars, endpoints, or prerequisites.
 - **Mermaid diagrams** for architecture. Keep them readable, max 20 nodes.
-- **Collapsible sections** (`<details>`) for verbose content: project structure, FAQ, extended config.
+- **Collapsible sections**, `<details>` for verbose content: project structure, FAQ, extended config.
 - **Code blocks** for every command. Always include the language identifier.
-- **Horizontal rules** (`---`) to separate the hero from the content. Use sparingly elsewhere.
+- **Horizontal rules**, `---` to separate the hero from the content. Use sparingly elsewhere.
 - **Bold numbers** in the metrics bar to make them pop.
 - **Consistent alignment**: use `:--------` for left-align, `:--------:` for center-align in tables. Align columns purposefully: names left, statuses center, descriptions left.
 
@@ -707,11 +706,11 @@ Make the project's scope tangible with specific numbers. These are the most pers
 - **No "Built with" section** that just lists logos. The badges and stack description cover this.
 - **No placeholder text.** If information is unknown, skip the section entirely.
 - **No AI attribution.** Never add "Generated by AI" or similar markers.
-- **No marketing fluff words.** "Revolutionary", "game-changing", "next-generation", "cutting-edge", "blazing fast" are all banned. Let the numbers and features speak.
+- **No marketing fluff words.** See [`../../CLAUDE.md`](../../CLAUDE.md) "Banned Phrases" for the full list. Let the numbers and features speak.
 
 ## GitHub About
 
-The About description renders as the meta-description in Google SERP snippets. Topics drive GitHub search relevance and Topic-page rankings. The social preview image is what every Twitter, Slack, Discord, and LinkedIn unfurl will show. These three fields are the single highest-leverage SEO surface in a GitHub repo.
+The About description renders as the meta-description in Google SERP snippets. Topics drive GitHub search relevance and Topic-page rankings. The social preview image is what every Twitter, Slack, Discord, and LinkedIn unfurl will show. These three fields are the single highest-impact SEO surface in a GitHub repo.
 
 ### Description
 
@@ -725,7 +724,7 @@ The About description renders as the meta-description in Google SERP snippets. T
 
 GitHub enforces a hard limit of **20 topics per repo**, each up to **50 characters**, lowercase letters, numbers, and hyphens only. Underscores are not permitted. Use all 20 slots.
 
-- **Use all 20 slots.** Mix broad terms (`javascript`, `web-development`) with narrow ones (`react-component`, `ui-library`). Topics function as LSI keywords and tie the repo to GitHub's related-concepts graph.
+- **Use all 20 slots.** Mix broad terms, `javascript`, `web-development` with narrow ones, `react-component`, `ui-library`. Topics function as LSI keywords and tie the repo to GitHub's related-concepts graph.
 - **Drop terms already in the About or repo name.** GitHub already gives those high weight; topics that duplicate them waste slots.
 - **Skip the primary language.** GitHub auto-detects and surfaces it separately.
 - **Lowercase and hyphens only.** `multi-region`, not `MultiRegion` or `multi_region`. Hyphens are the GitHub convention; underscores are rejected.
@@ -783,7 +782,7 @@ A README upgrade should show up in measurable repo signals within 30 days. Captu
 | Daily stars detail | emanuelef/daily-stars-explorer | Deeper star-trajectory analysis |
 | Conversion ratios | Manual | Repo views to clones (intent), clones to stars (worth bookmarking), stars to contributors (worth contributing to) |
 
-Capture before the upgrade: baseline star count, weekly view count, clone count. Capture again after 30 days. Significant change correlates with the upgrade if no external mention (HN, Reddit, Twitter) coincided. View counts move first, stars follow.
+Capture before the upgrade: baseline star count, weekly view count, clone count. Capture again after 30 days. Significant change correlates with the upgrade if no external mention on HN, Reddit, or Twitter coincided. View counts move first, stars follow.
 
 ## Anti-Patterns
 
@@ -809,7 +808,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - **Check paths.** Every file path in the directory tree must exist. Use glob or ls to verify.
 - **Quantify accurately.** Count modules, services, and endpoints from the source. Don't estimate.
 - **Match project scale.** A small CLI tool gets a focused README with fewer sections. A multi-region infra project gets the full treatment. Never pad a small project with unnecessary sections.
-- **Preserve user customizations.** If the user already has sections they wrote (like a specific "About" or custom badges), keep them unless asked to replace.
+- **Preserve user customizations.** If the user already has sections they wrote, like a specific "About" or custom badges, keep them unless asked to replace.
 - **Visual assets must exist.** Never reference an image, logo, or screenshot that doesn't exist in the repo. If no visual assets exist, skip those elements and note it as a follow-up.
 - **Test the visual output.** After generating, mentally render the Markdown. Check that HTML tables, Mermaid diagrams, and collapsible sections are properly closed and will render on GitHub.
 - **5-second test.** A developer scrolling fast should know what the project does, that it works, and how to try it within 5 seconds of landing. If the hero stack does not pass this test, restructure.

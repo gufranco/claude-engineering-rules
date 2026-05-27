@@ -23,10 +23,10 @@ Rules:
 
 ### AsyncAPI (Event-Driven APIs)
 
-For message-based APIs (Kafka topics, RabbitMQ exchanges, WebSocket channels):
+For message-based APIs, Kafka topics, RabbitMQ exchanges, WebSocket channels:
 
 - Define message schemas with AsyncAPI spec
-- Include channel bindings (topic name, exchange type, routing key)
+- Include channel bindings such as topic name, exchange type, or routing key
 - Document message ordering guarantees and delivery semantics
 - Generate consumer SDKs from the spec when consumers are external
 
@@ -66,7 +66,7 @@ For message-based APIs (Kafka topics, RabbitMQ exchanges, WebSocket channels):
 
 - Documentation versions must match software versions. v2 docs for v2 API
 - Keep previous versions accessible. Users on v1 need v1 docs
-- Use a version selector in the documentation site (Docusaurus, MkDocs Material, GitBook all support this)
+- Use a version selector in the documentation site such as Docusaurus, MkDocs Material, or GitBook all support this
 - When deprecating a version, add a banner linking to the latest version. Do not delete old docs
 
 ## Validation in CI

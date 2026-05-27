@@ -12,10 +12,10 @@ Designed for self-assessment before submitting work, whether in an interview, a 
 | Invocation | Action |
 |-----------|--------|
 | `/assessment` or `/assessment <path>` | Architecture completeness audit on the named files or the current branch (default) |
-| `/assessment harness` | Audit `~/.claude/` itself against the 12-category harness rubric (see Harness Audit section below) |
+| `/assessment harness` | Audit `~/.claude/` itself against the twelve-category harness rubric (see Harness Audit section below) |
 | `/assessment skills` | Audit the user's skill portfolio for unused, stale, overlapping, or under-documented skills (see Skills Audit section below) |
 
-The default branch (no subcommand) is the architecture audit. The two new subcommands target `~/.claude/` itself, not the current project.
+The default branch with no subcommand is the architecture audit. The two new subcommands target `~/.claude/` itself, not the current project.
 
 ## When to use
 
@@ -24,7 +24,7 @@ The default branch (no subcommand) is the architecture audit. The two new subcom
 - Design validation: verify a solution covers all the patterns it should.
 - Pre-production readiness: verify deployment, security, and operational patterns.
 - Learning: understand which architecture concepts apply to a given problem.
-- Annual review of `~/.claude/` itself (`harness` and `skills` subcommands).
+- Annual review of `~/.claude/` itself, `harness` and `skills` subcommands.
 
 ## When NOT to use
 
@@ -46,26 +46,26 @@ This skill accepts optional arguments after `/assessment`:
 1. **Understand the requirements.** Before assessing the implementation, understand what was asked.
    - Scan the **entire project** for requirement and context documents, not just the root or [`docs/`](../../docs). Search all directories for files named README, INSTRUCTIONS, BRIEF, ASSIGNMENT, REQUIREMENTS, CHALLENGE, TASK, PROMPT, PROBLEM, SPEC, DESIGN, ARCHITECTURE, ADR, or similar, in any format: `.md`, `.txt`, `.pdf`, `.docx`, `.html`. Also check for hidden files like `.assignment`, `.brief`, or dotfiles that might contain instructions.
    - Read every document found. Extract: the problem statement, explicit requirements, evaluation criteria, constraints, time limits, and bonus/stretch goals if mentioned.
-   - Ask the user: **"Do you have additional instructions from email, a job posting, or other external sources that I should consider? If this is for a specific company, what is the company name? Were any external projects, codebases, or articles used as reference during implementation?"** Wait for a response before proceeding. If the user provides text, screenshots, or URLs, incorporate that as additional requirements context. If external sources were consulted, record them for category 50 (Clean Room) verification in step 7.
+   - Ask the user: **"Do you have additional instructions from email, a job posting, or other external sources that I should consider? If this is for a specific company, what is the company name? Were any external projects, codebases, or articles used as reference during implementation?"** Wait for a response before proceeding. If the user provides text, screenshots, or URLs, incorporate that as additional requirements context. If external sources were consulted, record them for category 50, Clean Room verification in step 7.
    - **Company research.** If a company name is provided, search for their engineering blog, tech blog, GitHub organization, open source projects, tech talks, and **Glassdoor interview reviews**. Glassdoor is especially valuable: candidates often share the exact take-home problem, evaluation criteria, interview questions, and what the company looks for. Search for `"<company name>" interview software engineer site:glassdoor.com` and similar queries. Also understand what technologies they use, what patterns they value, and what their engineering culture looks like. A company that blogs about event sourcing will notice if you didn't use it. A company with strict TypeScript repos will judge a loosely-typed submission. Use this context to prioritize which patterns matter most for the assessment.
    - Record all requirements, but treat them as a **floor, not a ceiling**. The explicit requirements define the minimum. The assessment should go well beyond them, identifying patterns and improvements that would make the implementation stand out. In interview contexts, what separates a passing submission from an impressive one is the engineering depth that was not explicitly asked for.
 
 2. **Gather the implementation.** Run these **in parallel**:
    - `git branch --show-current` to get the current branch.
-   - Detect the base branch (same logic as `/review`).
+   - Detect the base branch, using the same logic as `/review`.
    - `git fetch origin` to ensure remote is up to date.
    - If a path argument was given, use that. Otherwise, get the list of changed files: `git diff origin/<base>...HEAD --name-only`.
    - If `--scope` was provided, record the description for context.
 
 3. **Read the full implementation.** Read every changed file in full, not just the diff. The goal is to understand the complete solution, not just what changed. Also read key surrounding files: imports, configs, schemas, middleware, route definitions, environment files.
 
-4. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers (`package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`), import statements, directory names, and config files (`.graphqlrc`, `terraform/`, `k8s/`, `docker-compose.yml`, `.eslintrc`, `tsconfig.json`, `playwright.config.*`, `.proto` files, `i18n/` or `locales/` directories, `Dockerfile`, [`.github/workflows/`](../../.github/workflows)).
+4. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers, `package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`, import statements, directory names, and config files such as `.graphqlrc`, `terraform/`, `k8s/`, `docker-compose.yml`, `.eslintrc`, `tsconfig.json`, `playwright.config.*`, `.proto` files, `i18n/` or `locales/` directories, `Dockerfile`, and [`.github/workflows/`](../../.github/workflows).
 
    Match signals against trigger keywords in the `on_demand` section of the index. Load **every** matched standard file. Also load **all** `always_loaded` rules.
 
    Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 70-category checklist. A project using PostgreSQL loads [`standards/database.md`](../../standards/database.md). A project with GraphQL loads [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A project with Terraform loads [`standards/terraform-testing.md`](../../standards/terraform-testing.md). Every applicable standard is loaded, no exceptions.
 
-   Additionally, load these references for use during fix and convergence phases. The current setup keeps rules under [`rules/`](../../rules) and on-demand standards under [`standards/`](../../standards). Several files that were once in [`rules/`](../../rules) migrated to [`standards/`](../../standards); the list below uses the current paths.
+   Additionally, load these references for use during fix and convergence phases:
    - [`rules/architecture-defaults.md`](../../rules/architecture-defaults.md): universal principles, five-question architecture gate, hard rules, domain layer contract, idempotency and deduplication specifics. Always-loaded baseline that drives the DDD/hexagonal/state-machine decisions in step 7
    - [`rules/pre-flight.md`](../../rules/pre-flight.md): verify interfaces before implementing fixes
    - [`rules/verification.md`](../../rules/verification.md): evidence-based verification for every claim, zero warnings
@@ -88,19 +88,19 @@ This skill accepts optional arguments after `/assessment`:
    - [`standards/cost-awareness.md`](../../standards/cost-awareness.md): cloud and runtime cost trade-offs
    - [`standards/code-review.md`](../../standards/code-review.md): includes the "As Reviewee" section. When the assessment surfaces gaps that will be addressed via a PR, this is the reference for how the author should handle reviewer feedback
    - [`rules/lang/typescript-types.md`](../../rules/lang/typescript-types.md), `typescript-immutability.md`, `typescript-strict.md`: load when TypeScript is detected
-   - [`rules/lang/prisma-migrations.md`](../../rules/lang/prisma-migrations.md), `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`: load when the corresponding ORM is detected
+   - [`rules/lang/orm-migrations.md`](../../rules/lang/orm-migrations.md): consolidated ORM migrations rule covering Prisma, TypeORM, Drizzle, Sequelize, and MikroORM. Load when any ORM is detected
 
    Before coding any fix that calls a library API, check [`standards/llm-docs.md`](../../standards/llm-docs.md) for the library's documentation URL. Fetch the docs and verify the API exists. Never guess API signatures.
 
 5. **Verify the project works.** Before analyzing architecture, confirm the project actually builds and passes its own tests. A project that doesn't compile is worse than any missing pattern. Run these **in parallel** where possible:
 
-   - **Build**: detect the build system and run it (`pnpm build`, `npm run build`, `make`, `go build`, `cargo build`, etc.). Record success or failure with output.
-   - **Lint**: run the project's linter (`pnpm lint`, `eslint`, `golangci-lint`, `ruff`, etc.). Record warnings and errors.
-   - **Typecheck**: if applicable, run the type checker (`pnpm typecheck`, `tsc --noEmit`, `mypy`, etc.). Record any type errors.
-   - **Tests**: run the test suite with coverage (`pnpm test -- --coverage`, `pytest --cov`, `go test -cover`, etc.). Record pass/fail count and coverage percentage.
-   - **Runtime and language version**: check the language and runtime version the project uses. **Always upgrade to the latest stable LTS version.** If the project runs on a managed platform with version constraints (AWS Lambda, Google Cloud Functions, Azure Functions, Vercel, Heroku, etc.), use the latest stable version available on that platform. Check the platform's documentation to confirm which versions are supported. Update **all** version references: config files, CI pipelines, Dockerfiles, IaC templates (`Runtime` in SAM/CloudFormation/Terraform), and README. Verify the project builds and passes tests after the upgrade.
+   - **Build**: detect the build system and run it, `pnpm build`, `npm run build`, `make`, `go build`, `cargo build`, etc.. Record success or failure with output.
+   - **Lint**: run the project's linter, `pnpm lint`, `eslint`, `golangci-lint`, `ruff`, etc.. Record warnings and errors.
+   - **Typecheck**: if applicable, run the type checker, `pnpm typecheck`, `tsc --noEmit`, `mypy`, etc.. Record any type errors.
+   - **Tests**: run the test suite with coverage, `pnpm test -- --coverage`, `pytest --cov`, `go test -cover`, etc.. Record pass/fail count and coverage percentage.
+   - **Runtime and language version**: check the language and runtime version the project uses. **Always upgrade to the latest stable LTS version.** If the project runs on a managed platform with version constraints, AWS Lambda, Google Cloud Functions, Azure Functions, Vercel, Heroku, etc., use the latest stable version available on that platform. Check the platform's documentation to confirm which versions are supported. Update **all** version references: config files, CI pipelines, Dockerfiles, IaC templates like `Runtime` in SAM, CloudFormation, or Terraform, and README. Verify the project builds and passes tests after the upgrade.
 
-     **Runtime version pinning is mandatory.** The project must use a version manager config file so every developer and CI environment uses the same version. Prefer `mise` (single tool for every ecosystem, reads legacy files for compatibility). Add the appropriate file if missing:
+     **Runtime version pinning is mandatory.** The project must use a version manager config file so every developer and CI environment uses the same version. Prefer `mise`, single tool for every ecosystem, reads legacy files for compatibility. Add the appropriate file if missing:
 
      | Ecosystem | Recommended | Also accepted | Config file |
      |:----------|:------------|:--------------|:------------|
@@ -113,13 +113,13 @@ This skill accepts optional arguments after `/assessment`:
      | Java | mise | sdkman | `.mise.toml`, `.tool-versions`, `.sdkmanrc`, `.java-version` |
      | Terraform | mise | tfenv | `.mise.toml`, `.tool-versions`, `.terraform-version` |
 
-     Also set `engines` in `package.json` (Node.js), `requires-python` in `pyproject.toml` (Python), or the equivalent for other ecosystems. This enforces the version constraint in the package manager, not just the version manager.
+     Also set `engines` in `package.json`, Node.js, `requires-python` in `pyproject.toml`, Python, or the equivalent for other ecosystems. This enforces the version constraint in the package manager, not just the version manager.
 
      An outdated runtime is a MEDIUM finding. A runtime past end-of-life is HIGH. Missing version manager config is MEDIUM.
-   - **Dependency audit and update**: run the package manager's audit command (`pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc.). Record any known vulnerabilities by severity. Then check for outdated dependencies (`pnpm outdated`, `npm outdated`, `pip list --outdated`, etc.). **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest` (or equivalent) and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
+   - **Dependency audit and update**: run the package manager's audit command, `pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc.. Record any known vulnerabilities by severity. Then check for outdated dependencies, `pnpm outdated`, `npm outdated`, `pip list --outdated`, etc.. **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest`, or equivalent and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
    - **Output verification**: if the requirements include example inputs, expected outputs, or acceptance criteria, actually run the code with those inputs and verify the results match. Reading the code and believing it works is not proof.
 
-   Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Low test coverage (below 95%) is MEDIUM.
+   Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Low test coverage, below 95%, is MEDIUM.
 
    Record all results for inclusion in the assessment output.
 
@@ -129,7 +129,7 @@ This skill accepts optional arguments after `/assessment`:
 
 7. **Classify the implementation.** Determine what type of system this is, informed by both the code and the requirements gathered in step 1.
 
-   **Architecture gate (run first).** Before walking the trait table, answer the five questions from [`../../rules/architecture-defaults.md`](../../rules/architecture-defaults.md) Architecture Gate. Each "yes" forces the matching standard to load regardless of `--focus`:
+   **Architecture gate, run first.** Before walking the trait table, answer the five questions from [`../../rules/architecture-defaults.md`](../../rules/architecture-defaults.md) Architecture Gate. Each "yes" forces the matching standard to load regardless of `--focus`:
 
    | Question | If yes, force-load |
    |----------|-------------------|
@@ -178,7 +178,7 @@ This skill accepts optional arguments after `/assessment`:
    - `security`: categories 33, 34. Standards: `security.md`. Also read `~/.claude/skills/security-patterns.md` and check every applicable pattern against the implementation. Injection patterns covering raw query, second-order, ORM operator, and command. Auth patterns covering JWT weakness, session cookies, auth state, and OAuth code atomicity. Authorization patterns covering IDOR and mass assignment. Race conditions covering read-modify-write, find-then-update, transaction isolation, lock fail-open, lock TTL, missing idempotency, and retry without idempotency. Web security covering CORS, unvalidated redirect, GraphQL depth and batching. The financial-platform checklist applies if payments or balances are present
    - `resilience`: categories 20, 23, 24, 25, 35, 36, 38. Standards: `resilience.md`, `caching.md`, `distributed-systems.md`
    - `api`: categories 18, 34. Standards: `api-design.md`, `contract-testing.md` when downstream consumers exist
-   - `data`: categories 19, 21, 22, 30, 31, 39, 69. Standards: `database.md`, `identifiers.md`, `postgresql.md` when PostgreSQL is detected, `redis.md` when Redis is detected. ORM-specific schema-migration rules in [`rules/lang/prisma-migrations.md`](../../rules/lang/prisma-migrations.md), `typeorm-migrations.md`, `drizzle-migrations.md`, `sequelize-migrations.md`
+   - `data`: categories 19, 21, 22, 30, 31, 39, 69. Standards: `database.md`, `identifiers.md`, `postgresql.md` when PostgreSQL is detected, `redis.md` when Redis is detected. ORM-specific schema-migration rules in the consolidated [`rules/lang/orm-migrations.md`](../../rules/lang/orm-migrations.md), which covers Prisma, TypeORM, Drizzle, Sequelize, and MikroORM in one file
    - `ops`: categories 32, 36, 37, 40, 42, 44, 51. Standards: `observability.md`, `infrastructure.md`, `cost-awareness.md`, `sre-practices.md`
    - `quality`: categories 41, 50, 52. Standards: `algorithmic-complexity.md`, `state-machines.md`, `ddd-tactical-patterns.md`, `hexagonal-architecture.md`, `railway-oriented-programming.md` when functional error handling is in use
    - `infra`: categories 45, 46, 47, 48, 49. Standards: `infrastructure.md`, `twelve-factor.md`, `terraform-testing.md`, `multi-account-cli.md` when multiple cloud accounts are configured
@@ -187,7 +187,7 @@ This skill accepts optional arguments after `/assessment`:
    - `realtime`: categories 20, 24, 35. Standard: `websocket-realtime.md`
    - `queues`: categories 18, 27, 36, 57. Standard: `message-queues.md`. This entry now also covers what was previously labeled `events`, since `event-driven-architecture.md` was absorbed
    - `mobile`: categories 7, 33, 41. Standard: `mobile-development.md`
-   - `i18n`: category 7, plus 59 (time zones) and 61 (locale edge cases) when applicable. Standards: `i18n-l10n.md`, `i18n-regional-variants.md`
+   - `i18n`: category 7, plus 59, time zones and 61, locale edge cases when applicable. Standards: `i18n-l10n.md`, `i18n-regional-variants.md`
    - `docs`: category 14. Standard: `documentation-generation.md`, `documentation.md`
    - `frontend`: categories 7, 52, 54, 62. Standards: `frontend.md`, `accessibility-testing.md`, `browser-testing.md`, `performance-budgets.md`
    - `auth`: category 33. Standard: `authentication.md`
@@ -210,27 +210,27 @@ This skill accepts optional arguments after `/assessment`:
 
    Ask: **"The project uses [language]. Would you like me to convert it to [superset]? This adds type safety and is generally viewed favorably in assessments."** Only ask once per language detected. If the user declines, proceed without converting. If the user accepts, add the conversion as a task in the fix step, before other fixes. Do not ask about superset conversion when the requirements explicitly specify the base language.
 
-   **Strictest configuration possible.** When converting to a superset or when any tool, linter, compiler, or framework supports strictness levels, always configure the **maximum strictness**. TypeScript gets `strict: true` with all additional strict flags enabled (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, etc.). ESLint gets the strictest recommended config. tsconfig gets `noEmit`, `isolatedModules`, `verbatimModuleSyntax`. This applies to everything: compilers, linters, formatters, test runners, security scanners, CI checks. If there is a stricter option, enable it. No exceptions.
+   **Strictest configuration possible.** When converting to a superset or when any tool, linter, compiler, or framework supports strictness levels, always configure the **maximum strictness**. TypeScript gets `strict: true` with all additional strict flags enabled, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, etc.. ESLint gets the strictest recommended config. tsconfig gets `noEmit`, `isolatedModules`, `verbatimModuleSyntax`. This applies to everything: compilers, linters, formatters, test runners, security scanners, CI checks. If there is a stricter option, enable it. No exceptions.
 
    **Package compatibility with superset.** When converting to a superset, review every dependency for type support. For each package, follow this decision tree:
 
-   1. **Package ships types natively** (has its own type declarations bundled). No action needed. Most modern packages do this.
-   2. **Community type definitions exist** (separate package maintained by the community). Install them as dev dependencies. Examples by ecosystem:
+   1. **Package ships types natively**, has its own type declarations bundled. No action needed. Most modern packages do this.
+   2. **Community type definitions exist**, separate package maintained by the community. Install them as dev dependencies. Examples by ecosystem:
       - JS/TS: `@types/express`, `@types/node`, `@types/jest`, etc. from DefinitelyTyped.
       - Python: `types-requests`, `django-stubs`, `types-PyYAML`, `boto3-stubs`, etc.
       - Ruby/Sorbet: RBI files from `tapioca` gem or community sources.
    3. **A typed alternative exists** that replaces the original package entirely with better superset support. Prefer the alternative. Examples:
-      - `request` → `got` or `node-fetch` (typed, maintained, lighter)
-      - `moment` → `date-fns` or `dayjs` (typed, tree-shakeable, immutable)
-      - `underscore` → `lodash-es` (typed, tree-shakeable) or native methods
+      - `request` → `got` or `node-fetch` such as typed, maintained, or lighter
+      - `moment` → `date-fns` or `dayjs` such as typed, tree-shakeable, or immutable
+      - `underscore` → `lodash-es`, typed, tree-shakeable or native methods
       - `callback-based APIs` → their promise-based or async equivalents
-   4. **No types exist and no alternative exists**. Write a minimal type declaration file (`.d.ts`, stub file, etc.) for the parts of the API actually used. Never leave untyped imports.
+   4. **No types exist and no alternative exists**. Write a minimal type declaration file, `.d.ts`, stub file, etc. for the parts of the API actually used. Never leave untyped imports.
 
    This logic is language-agnostic. The principle is: every dependency must have full type support in the target superset. If it doesn't, either find types, find an alternative that has types, or write the types yourself.
 
 8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against [`../../checklists/checklist.md`](../../checklists/checklist.md). The checklist groups break down as: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, category 58 for licensing compliance, category 59 for time zone and calendar correctness, category 60 for numerical precision, category 61 for internationalization edge cases, category 62 for browser and device diversity, category 63 for backups and recovery, category 64 for disaster recovery, category 65 for capacity planning, category 66 for multi-region, category 67 for compliance and audit trail, category 68 for vendor and third-party risk, category 69 for schema-migration sync, and category 70 for question and communication quality. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
 
-   **Standard-based audit.** For every standard loaded in step 4, check whether the project follows the patterns described in that standard. Each standard contains specific, actionable rules. A project that uses a database but ignores [`standards/database.md`](../../standards/database.md) connection pooling guidance is a finding. A REST API that ignores [`standards/api-design.md`](../../standards/api-design.md) pagination conventions is a finding. Treat standard violations the same as checklist violations: assign status (PRESENT/PARTIAL/MISSING), severity, and effort. Reference the specific standard file in each finding.
+   **Standard-based audit.** For every standard loaded in step 4, check whether the project follows the patterns described in that standard. Each standard contains specific, actionable rules. A project that uses a database but ignores [`standards/database.md`](../../standards/database.md) connection pooling guidance is a finding. A REST API that ignores [`standards/api-design.md`](../../standards/api-design.md) pagination conventions is a finding. Treat standard violations the same as checklist violations: assign a status of PRESENT, PARTIAL, or MISSING, plus severity and effort. Reference the specific standard file in each finding.
 
    After auditing each file individually, perform a **cross-file consistency check**:
    - **Design contradictions:** Does one module assume graceful degradation while another enforces a hard dependency? Does one file treat a field as optional while another treats it as required?
@@ -243,11 +243,11 @@ This skill accepts optional arguments after `/assessment`:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
-   - **Git history quality.** For interview submissions, commit history signals engineering discipline. Check: are commits logical and atomic (one concern per commit)? Do messages follow conventional commit format? Is there a meaningful progression (infrastructure first, then core logic, then tests, then polish)? A single "initial commit" with everything is a MEDIUM finding. Messy or meaningless commit messages are LOW.
+   - **Git history quality.** For interview submissions, commit history signals engineering discipline. Check: are commits logical and atomic, one concern per commit? Do messages follow conventional commit format? Is there a meaningful progression, infrastructure first, then core logic, then tests, then polish? A single "initial commit" with everything is a MEDIUM finding. Messy or meaningless commit messages are LOW.
 
-   - **Dependency health and package selection.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 13 for the baseline checks (justified, maintained, pinned, licensed, typed, better alternatives). Beyond that, also check assessment-specific concerns:
-     - Is the runtime version the latest stable LTS, pinned with a version manager config file and `engines` (or equivalent) in the package manifest?
-     - Are there platform-specific issues (native modules failing on Apple Silicon, deprecated packages with no ARM64 support)?
+   - **Dependency health and package selection.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 13 for the baseline checks, justified, maintained, pinned, licensed, typed, better alternatives. Beyond that, also check assessment-specific concerns:
+     - Is the runtime version the latest stable LTS, pinned with a version manager config file and `engines`, or equivalent in the package manifest?
+     - Are there platform-specific issues such as native modules failing on Apple Silicon, or deprecated packages with no ARM64 support?
      - **Better alternatives signals**: no commits in 12+ months, open security issues, archived repository, missing type support when alternatives have it, large bundle size when a lighter option exists. Flag and include the replacement in the fix step.
      - **Type support completeness**: if using a typed language or superset, verify every dependency has type support (see step 6). Untyped dependencies in a typed codebase are a finding.
 
@@ -272,13 +272,13 @@ This skill accepts optional arguments after `/assessment`:
 
    **Status**: PRESENT, PARTIAL, or MISSING.
 
-   **Severity** (for PARTIAL and MISSING only):
+   **Severity**, for PARTIAL and MISSING only:
    - **CRITICAL**: data loss, security vulnerability, or correctness failure in production. Fix before shipping.
    - **HIGH**: resilience gap that causes outages under real-world conditions. Fix soon.
    - **MEDIUM**: performance, maintainability, or operational gap. Schedule for next iteration.
    - **LOW**: best practice not followed, but no immediate risk. Backlog.
 
-   **Effort** (for PARTIAL and MISSING only):
+   **Effort**, for PARTIAL and MISSING only:
    - **S**: hours. A focused change in 1-2 files.
    - **M**: a day. Touches 3-5 files, may need tests.
    - **L**: days. Cross-cutting change, new infrastructure, or significant refactor.
@@ -294,11 +294,11 @@ This skill accepts optional arguments after `/assessment`:
 - Would the fix introduce a new dependency or startup requirement?
 - Would the fix change error behavior that other code relies on?
 - Would the fix require coordinated changes in files not part of the current finding?
-- Would the fix behave differently across environments (dev vs production)?
+- Would the fix behave differently across environments, dev vs production?
 
    If any answer is yes, address the downstream effects in the same fix. Do not create fixes that introduce new problems for the convergence loop to catch. Front-loading this analysis reduces the number of convergence iterations.
 
-   **First, set up developer tooling** if missing: `.editorconfig`, formatter (Prettier, Black, gofmt, etc.), linter (ESLint, Ruff, golangci-lint, etc.), type checker, pre-commit hooks (husky + lint-staged, pre-commit framework, lefthook), and commit linter (commitlint). All at strictest settings. This is a single commit.
+   **First, set up developer tooling** if missing: `.editorconfig`, formatter, Prettier, Black, gofmt, etc., linter, ESLint, Ruff, golangci-lint, etc., type checker, pre-commit hooks, husky + lint-staged, pre-commit framework, lefthook, and commit linter, commitlint. All at strictest settings. This is a single commit.
 
    **Then, create a CI pipeline** if the project does not already have one. The pipeline must run on every push and pull request to the default branch. Detect the git platform from the remote URL and create the appropriate config file:
 
@@ -309,25 +309,25 @@ This skill accepts optional arguments after `/assessment`:
 
    The pipeline must execute every quality gate the project has, in order of feedback speed:
 
-   1. **Install dependencies**: use the lockfile-based install command (`npm ci`, `pnpm install --frozen-lockfile`, `pip install -r requirements.txt`, etc.). Never use `npm install` in CI as it can modify the lockfile.
-   2. **Lint**: run the project's linter (`npm run lint`, `pnpm lint`, `ruff check`, `golangci-lint run`, etc.).
-   3. **Type check**: if applicable, run the type checker (`npm run typecheck`, `tsc --noEmit`, `mypy .`, etc.).
-   4. **Build**: compile the project (`npm run build`, `pnpm build`, `go build`, `cargo build`, etc.).
-   5. **Test with coverage**: run the full test suite with coverage reporting (`npm test -- --coverage`, `pytest --cov`, `go test -cover`, etc.).
+   1. **Install dependencies**: use the lockfile-based install command, `npm ci`, `pnpm install --frozen-lockfile`, `pip install -r requirements.txt`, etc.. Never use `npm install` in CI as it can modify the lockfile.
+   2. **Lint**: run the project's linter such as `npm run lint`, `pnpm lint`, `ruff check`, `golangci-lint run`, or etc..
+   3. **Type check**: if applicable, run the type checker, `npm run typecheck`, `tsc --noEmit`, `mypy .`, etc..
+   4. **Build**: compile the project such as `npm run build`, `pnpm build`, `go build`, `cargo build`, or etc..
+   5. **Test with coverage**: run the full test suite with coverage reporting such as `npm test -- --coverage`, `pytest --cov`, `go test -cover`, or etc..
 
    Pin the runtime version in the pipeline to match the project's version manager config. Prefer `.mise.toml` or `.tool-versions` so a single `mise install` step pins every runtime. Legacy file fallbacks: `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, `.terraform-version`, `rust-toolchain.toml`. Use caching for dependencies to speed up runs. Set `fail-fast: true` so the pipeline stops at the first failure.
 
-   For GitHub Actions, use the latest stable action versions: `actions/checkout@v4`, `actions/setup-node@v4` (or equivalent for other runtimes), `actions/cache@v4`. Use matrix strategy only when the project needs to support multiple runtime versions.
+   For GitHub Actions, use the latest stable action versions: `actions/checkout@v4`, `actions/setup-node@v4`, or equivalent for other runtimes, `actions/cache@v4`. Use matrix strategy only when the project needs to support multiple runtime versions.
 
    This is a single commit: `ci: add GitHub Actions pipeline for lint, typecheck, build, and test`.
 
-   **Then, reorganize the project** applying all relevant software engineering patterns: DDD (bounded contexts, aggregates, domain events), SOLID, DRY, KISS, YAGNI, clean architecture (domain core without framework imports, infrastructure adapters at boundaries), composition over inheritance, CQS, repository pattern, and functional core/imperative shell. Rename files to `name.type.extension` (e.g., `user.service.ts`, `order.repository.ts`). Group by domain, not by technical layer. This reorganization is a single commit before the pattern fixes.
+   **Then, reorganize the project** applying all relevant software engineering patterns: DDD, bounded contexts, aggregates, domain events, SOLID, DRY, KISS, YAGNI, clean architecture, domain core without framework imports, infrastructure adapters at boundaries, composition over inheritance, CQS, repository pattern, and functional core/imperative shell. Rename files to `name.type.extension` (e.g., `user.service.ts`, `order.repository.ts`). Group by domain, not by technical layer. This reorganization is a single commit before the pattern fixes.
 
-   **Test data must use a faker library, not hardcoded literals.** Every test that generates input data, whether for names, emails, amounts, dates, or IDs, must use a faker library for the language ecosystem (`@faker-js/faker` for JS/TS, `Faker` for Python, `faker` for Ruby, etc.). Install the library as a dev dependency if not already present. Hardcoded test data like `"John"`, `"test@example.com"`, or `42` makes tests brittle and hides assumptions about valid input ranges. Faker generates realistic, randomized values that exercise more code paths and make tests more expressive. The exception is when a specific value is part of the test assertion, like verifying a known seed data record exists.
+   **Test data must use a faker library, not hardcoded literals.** Every test that generates input data, whether for names, emails, amounts, dates, or IDs, must use a faker library for the language ecosystem like `@faker-js/faker` for JS and TS, `Faker` for Python, or `faker` for Ruby. Install the library as a dev dependency if not already present. Hardcoded test data like `"John"`, `"test@example.com"`, or `42` makes tests brittle and hides assumptions about valid input ranges. Faker generates realistic, randomized values that exercise more code paths and make tests more expressive. The exception is when a specific value is part of the test assertion, like verifying a known seed data record exists.
 
    Faker values that need to be deterministic across runs, like IDs referencing seed data, should remain as literals. Use faker for values where the specific value does not matter: deposit amounts, invalid input strings, non-existent IDs, future dates, random names. This is a MEDIUM finding if tests use hardcoded data where faker would be appropriate.
 
-   **Mock policy (STRICT).** Tests must connect to real infrastructure. If the code talks to a database, the test connects to a real database. If it uses Redis, the test uses a real Redis instance. Same for queues, caches, and any other data store. Add test dependencies to docker-compose with a `beforeAll()` hook to seed required data. Only external third-party APIs outside your control, time, and randomness may be mocked. Mocking your own database, services, or modules is a CRITICAL finding: the test may pass while the actual integration is broken, which is worse than no test at all. When fixing mock violations, replace the mock with a real connection, add the dependency to docker-compose if missing, and use `beforeAll()` / `afterAll()` for setup and teardown.
+   **Mock policy, STRICT.** Tests must connect to real infrastructure. If the code talks to a database, the test connects to a real database. If it uses Redis, the test uses a real Redis instance. Same for queues, caches, and any other data store. Add test dependencies to docker-compose with a `beforeAll()` hook to seed required data. Only external third-party APIs outside your control, time, and randomness may be mocked. Mocking your own database, services, or modules is a CRITICAL finding: the test may pass while the actual integration is broken, which is worse than no test at all. When fixing mock violations, replace the mock with a real connection, add the dependency to docker-compose if missing, and use `beforeAll()` / `afterAll()` for setup and teardown.
 
    **For any fix involving transactions**, follow [`../../checklists/checklist.md`](../../checklists/checklist.md) category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
 
@@ -364,23 +364,23 @@ Comment guidelines:
 
 11. **Convergence loop.** Fixes can introduce new findings, reveal masked issues, or break existing quality gates. After completing all fixes in step 10, loop until the codebase is clean. **This loop runs autonomously with no user interaction.**
 
-    **For each iteration (max 20 iterations):**
+    **For each iteration, max 20 iterations:**
 
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
        - Did any fix violate [`../../checklists/checklist.md`](../../checklists/checklist.md)? Run all 70 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
-       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? (AAA comments, code style, naming, immutability, etc.)
+       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? such as AAA comments, code style, naming, immutability, or etc.
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
-       - Did any fix create a cross-file contradiction? (one module now assumes behavior that another module does not support)
-       - Did any fix introduce a new startup dependency or configuration requirement without updating all relevant config files (.env.example, Docker, CI)?
+       - Did any fix create a cross-file contradiction?. One module now assumes behavior that another module does not support
+       - Did any fix introduce a new startup dependency or configuration requirement without updating all relevant config files such as .env.example, Docker, or CI?
        - Did any fix change a public interface without updating all callers and consumers?
        - Did any fix leave dead code behind? Check for unused imports, orphaned functions, unreferenced variables, and stale exports after extractions or refactors.
-       - Are all new tests following project conventions? (faker for test data, AAA structure, no mocks for DB)
+       - Are all new tests following project conventions? such as faker for test data, AAA structure, or no mocks for DB
        - Did the README, CI config, or other generated artifacts become stale due to the fixes?
     4. **Classify new findings.** If there are new PARTIAL or MISSING findings, or new defects introduced by the fixes, collect them.
     5. **If no new findings:** break the loop. Convergence achieved.
-    6. **If new findings exist:** fix them using the same priority order (CRITICAL → HIGH → MEDIUM, lower effort first). Each fix gets its own commit. Then return to sub-step 1.
+    6. **If new findings exist:** fix them using the same priority order, CRITICAL → HIGH → MEDIUM, lower effort first. Each fix gets its own commit. Then return to sub-step 1.
 
     **Termination:** If after 20 iterations there are still new findings, stop the loop, list the remaining findings, and inform the user. Twenty iterations is enough for any reasonable convergence. Infinite loops indicate a structural problem that needs human judgment.
 
@@ -575,11 +575,11 @@ The steps above define **what** to do. These rules define **constraints** on how
 - Do not flag deployment readiness for code that is explicitly a prototype, proof-of-concept, or interview take-home unless `--focus ops` was specified.
 - When `--comments` is active, every comment must pass this test: would a senior engineer reading this code for the first time learn something from the comment that the code alone does not convey? If not, delete the comment. `--comments` only affects the fix step, not the assessment output.
 - The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in [`../../checklists/checklist.md`](../../checklists/checklist.md). Do not duplicate them here.
-- Every API must validate both sides of the boundary: inputs (request body, query params, path params, headers) AND outputs (response body) with a schema library. Missing output validation is a finding. See [`../../checklists/checklist.md`](../../checklists/checklist.md) category 33.
+- Every API must validate both sides of the boundary: inputs, request body, query params, path params, headers AND outputs, response body with a schema library. Missing output validation is a finding. See [`../../checklists/checklist.md`](../../checklists/checklist.md) category 33.
 
 ## Harness Audit (`/assessment harness`)
 
-Audits `~/.claude/` against a 12-category rubric. Inspired by ECC's harness-audit. Returns a prioritized scorecard with remediation links.
+Audits `~/.claude/` against a twelve-category rubric. Returns a prioritized scorecard with remediation links.
 
 ### Categories
 
@@ -611,9 +611,9 @@ Categories 9-12 are conditional. Skip them if the user does not work with the pl
 
 Each applicable category gets a 0-10 score with one of three statuses:
 
-- **PRESENT** (8-10): the category is covered with depth.
-- **PARTIAL** (4-7): the category is covered superficially or with gaps.
-- **MISSING** (0-3): the category is essentially absent.
+- **PRESENT** , 8 to 10: the category is covered with depth.
+- **PARTIAL** , 4 to 7: the category is covered superficially or with gaps.
+- **MISSING** , 0 to 3: the category is essentially absent.
 
 ### Output
 
@@ -647,8 +647,8 @@ Audits the user's skill portfolio. Returns a per-skill verdict with one of:
 One-line verdict per skill in a table. Then a prioritized action list:
 
 - Skills to archive
-- Skills to merge (paired)
-- Skills to expand (with what's missing)
+- Skills to merge. Paired
+- Skills to expand. With what's missing
 - Skills to link-fix
 
 ### Run

@@ -87,3 +87,24 @@ ToolSearch: "database query"
 - Log all MCP tool invocations for audit purposes.
 - When an MCP server fails, the agent must handle the failure gracefully, not retry indefinitely.
 - Test MCP server connectivity before relying on it in a task. A stale connection wastes time.
+
+## OWASP LLM Top 10 (2025 Edition)
+
+The OWASP Top 10 for LLM Applications was revised in 2025 with new categories that map directly to how MCP servers and agentic systems fail in production. Treat these as a checklist when adding a new MCP server, designing a new agent, or wiring an LLM into an external system.
+
+| OWASP ID | Category | MCP and agent expression |
+|----------|----------|--------------------------|
+| LLM01 | Prompt Injection | Treat every MCP tool response as untrusted user input. Validate and sanitize before the model sees it. Strip executable markup. Do not blindly forward tool output back into prompts |
+| LLM02 | Sensitive Information Disclosure | Scope MCP servers per the table above. Never expose secrets, PII, or production data through a general-purpose MCP server |
+| LLM03 | Supply Chain | Pin MCP server versions. Verify provenance of every third-party MCP server before installing. Review the source when the server runs in a privileged context |
+| LLM04 | Data and Model Poisoning | When MCP servers feed data into vector databases or training pipelines, validate the ingest. A poisoned document in a RAG store affects every later query |
+| LLM05 | Improper Output Handling | Validate the shape of every MCP tool response before acting on it. The "Output Validation" section above covers the baseline; add domain-specific schema checks for sensitive operations |
+| LLM06 | Excessive Agency | Default to read-only MCP servers. Require explicit user confirmation for any tool that mutates external state. The Scoping Rules table above is the first line of defense |
+| LLM07 | System Prompt Leakage (NEW in 2025) | System prompts and agent instructions must not contain secrets, credentials, or operational logic. Anything a leaked prompt would compromise belongs in a separate, gated tool call, not in the prompt |
+| LLM08 | Vector and Embedding Weaknesses (NEW in 2025) | When MCP servers write to or read from vector databases, validate the embedding source, scope the search by tenant or user, and rate-limit per-source ingestion. Stored prompt injection lives here |
+| LLM09 | Misinformation | Cite sources for MCP tool output that flows into user-visible responses. Track provenance through the agent pipeline so the user can verify |
+| LLM10 | Unbounded Consumption | Cap the number of MCP tool calls per agent turn. Cap token usage per tool response. A runaway agent that loops on a slow tool can consume the entire context window |
+
+For agentic workflows that go beyond single MCP tool calls, also reference the separate OWASP Agentic AI Top 10 published in late 2025. Its emphasis is multi-step plans, tool-use chains, and inter-agent communication, which extend beyond what this MCP-focused file covers.
+
+The LLM Output Trust Boundary section in [`code-style.md`](../rules/code-style.md) covers the application-side hardening: validate format and shape, sanitize before vector-DB inserts, allowlist URLs, verify tool-output schemas, never store raw LLM output in user-visible fields.

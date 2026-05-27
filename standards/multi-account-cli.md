@@ -23,7 +23,7 @@ These CLIs are covered. Each has a per-command form that bypasses global state, 
 | `helm` | `helm --kube-context <name> ...` | `kubectl config use-context` upstream | covered transitively via `kubectl-context-guard.py` |
 | `git` (author identity) | `~/.gitconfig` `includeIf "hasconfig:remote.*.url:..."` resolves identity per remote | `git config --local user.*`, `GIT_AUTHOR_EMAIL=` env on `git commit`, push of commits authored under a placeholder identity | [`hooks/git-author-guard.py`](../hooks/git-author-guard.py) |
 
-Niche CLIs not covered yet (vercel, netlify, fly, az, doctl, heroku, firebase, supabase) follow the same principle: prefer per-command tokens or flags. Add a hook when the user starts running them multi-account.
+Niche CLIs not covered yet, vercel, netlify, fly, az, doctl, heroku, firebase, supabase, follow the same principle: prefer per-command tokens or flags. Add a hook when the user starts running them multi-account.
 
 ## Detection order
 
@@ -114,7 +114,7 @@ mise x <tool>@<version> -- <command>
 mise use <tool>@<version>       # writes to .mise.toml in cwd, project-local
 ```
 
-mise resolves the active tool version from project config (`.mise.toml`, `.tool-versions`, `.nvmrc`, `.node-version`, `.python-version`, `.ruby-version`, `.terraform-version`) on every invocation. There is no shared "active version" that another terminal can change. `mise use --global` is the only command that writes to the shared `~/.config/mise/config.toml`; the hook blocks it. Pin runtimes per project with `.mise.toml` instead.
+mise resolves the active tool version from project config, `.mise.toml`, `.tool-versions`, `.nvmrc`, `.node-version`, `.python-version`, `.ruby-version`, `.terraform-version`, on every invocation. There is no shared "active version" that another terminal can change. `mise use --global` is the only command that writes to the shared `~/.config/mise/config.toml`; the hook blocks it. Pin runtimes per project with `.mise.toml` instead.
 
 ### `helm`
 
@@ -147,7 +147,7 @@ Every command in this table is blocked by a hook. The fix is always to use the p
 
 When the user starts running a new CLI multi-account, add coverage in five steps.
 
-1. **Verify the per-command form.** Read the CLI's help: `<cli> --help`, `<cli> auth --help`, `<cli> config --help`. Confirm a flag (`--profile`, `--context`) or env var works without mutating global state.
+1. **Verify the per-command form.** Read the CLI's help: `<cli> --help`, `<cli> auth --help`, `<cli> config --help`. Confirm a flag, `--profile`, `--context`, or env var works without mutating global state.
 2. **Identify the anti-pattern command.** The one that mutates the active account or context globally.
 3. **Write `hooks/<cli>-<context>-guard.py`** following the gh-token-guard template. Stdin JSON parse, regex match, allow read-only and per-command forms, hard-block the anti-pattern, exit 2 with a pointer to this standard.
 4. **Add fixtures** under [`tests/fixtures/`](../tests/fixtures): at minimum one blocked scenario and one allowed scenario, ideally also a read-only and a no-op fixture.

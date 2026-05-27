@@ -3,7 +3,7 @@
 ## Schema Rules
 
 - Always: `created_at`, `updated_at`
-- Soft delete: `deleted_at` (nullable). In event-driven systems, soft-delete events must still be published so downstream consumers can invalidate their caches and update projections. Do not suppress the delete event just because the record remains in the database. See [`standards/distributed-systems.md`](distributed-systems.md) Saga Pattern for cross-service consistency.
+- Soft delete: `deleted_at`, nullable. In event-driven systems, soft-delete events must still be published so downstream consumers can invalidate their caches and update projections. Do not suppress the delete event just because the record remains in the database. See [`standards/distributed-systems.md`](distributed-systems.md) Saga Pattern for cross-service consistency.
 - Dates in UTC
 
 ## Query Optimization
@@ -60,7 +60,7 @@ Prevent lost updates and race conditions by writing only when the current state 
 | MongoDB | `findOneAndUpdate` with filter on version field |
 | Redis | `WATCH/MULTI/EXEC` or Lua scripts for atomic read-modify-write |
 
-When a conditional write fails, classify it: conflict (retry with fresh read) or duplicate (skip safely).
+When a conditional write fails, classify it: conflict, retry with fresh read, or duplicate, skip safely.
 
 ### ORM-Native Equivalents (Prisma)
 
@@ -89,7 +89,7 @@ Design the schema around how data will be queried, not just how it is structured
 
 Time-series data and date-range filtering need explicit design:
 
-- **Partition by time period** (day, week, month) when the primary access pattern is "get data for date range"
+- **Partition by time period**, day, week, month when the primary access pattern is "get data for date range"
 - **Composite sort keys** with time component: `userId#2024-01-15` allows efficient range queries per user per date
 - **Pre-aggregate** when the consumer needs summaries, not raw events. Store daily/hourly rollups alongside raw data
 - **Avoid scanning when ranges cross partition boundaries**: if daily partitions are used but the query spans a month, the query must fan out across 30 partitions. Design partitions to match the most common query range
@@ -114,8 +114,8 @@ Daily partitions keyed on UTC date break when the consumer's "day" does not alig
 
 For DynamoDB, Cassandra, and similar:
 
-- **Partition key**: high cardinality, even distribution. Never use a low-cardinality field (status, type) as the sole partition key
-- **Sort key**: enables range queries within a partition. Use composite sort keys for hierarchical access (`type#timestamp`, `status#createdAt`)
+- **Partition key**: high cardinality, even distribution. Never use a low-cardinality field, status, type as the sole partition key
+- **Sort key**: enables range queries within a partition. Use composite sort keys for hierarchical access such as `type#timestamp`, or `status#createdAt`
 - **GSI/LSI**: design for specific access patterns. Each index has cost: storage, write amplification, eventual consistency
 - **Single-table design**: evaluate trade-offs. Reduces request count but increases query complexity. Use when access patterns are well-defined and stable
 - **Avoid hot partitions**: distribute writes across partitions. Add a random suffix or use write sharding if one key receives disproportionate traffic
@@ -162,9 +162,9 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 - Use connection pooling. Never open a connection per request
 - Set pool size based on expected concurrency, not a guess. Too large wastes resources, too small causes contention
 - Configure idle timeout to reclaim unused connections
-- Handle connection errors gracefully: retry on transient failures (deadlocks, lock timeouts), fail fast on auth errors. Classify transaction failures using the error classification in [`standards/resilience.md`](resilience.md).
-- Timeout values (acquisition timeout, idle timeout, statement timeout) must align with the circuit breaker thresholds in [`standards/resilience.md`](resilience.md).
-- For serverless: use a connection proxy (RDS Proxy, PgBouncer) to avoid connection exhaustion from cold starts
+- Handle connection errors gracefully: retry on transient failures, deadlocks, lock timeouts, fail fast on auth errors. Classify transaction failures using the error classification in [`standards/resilience.md`](resilience.md).
+- Timeout values, acquisition timeout, idle timeout, statement timeout must align with the circuit breaker thresholds in [`standards/resilience.md`](resilience.md).
+- For serverless: use a connection proxy, RDS Proxy, PgBouncer to avoid connection exhaustion from cold starts
 
 ## Locking Strategy
 
@@ -175,7 +175,7 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 
 ## Production Safety
 
-- Never run destructive operations (DELETE, TRUNCATE, DROP, schema changes) on production databases without explicit confirmation
+- Never run destructive operations, DELETE, TRUNCATE, DROP, schema changes on production databases without explicit confirmation
 - Use dev or test environments for experimentation and data exploration
 - When modifying production data, always wrap in a transaction and verify before committing
 

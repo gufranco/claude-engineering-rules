@@ -10,7 +10,7 @@ State machines earn their cost when:
 - Business rules depend on the current state (e.g., "only draft orders can be edited")
 - The state diagram is part of the domain language (e.g., order lifecycle, payment flow)
 
-Skip for: simple boolean flags (active/inactive), linear pipelines with no branching, or state that is derived from other data.
+Skip for: simple boolean flags like active versus inactive, linear pipelines with no branching, or state that is derived from other data.
 
 ## Two Approaches
 
@@ -19,7 +19,7 @@ Skip for: simple boolean flags (active/inactive), linear pipelines with no branc
 | Type state (compile-time) | Compiler prevents invalid transitions. Methods only exist on valid states | Workflows with well-known states that rarely change | Requires one class/type per state. Harder to serialize |
 | Runtime state machine | Guard conditions checked at runtime. Invalid transitions return errors | Dynamic workflows, UI state, configurable processes | Invalid transitions are runtime errors, not compile errors |
 
-Use type state when the state set is stable and the compiler catching bugs is worth the extra types. Use runtime machines when states are dynamic, configurable, or need serialization (persisted workflows, UI state charts).
+Use type state when the state set is stable and the compiler catching bugs is worth the extra types. Use runtime machines when states are dynamic, configurable, or need serialization, persisted workflows, UI state charts.
 
 ## Type State Pattern
 
@@ -62,7 +62,7 @@ class SubmittedOrder {
 ```
 
 Rules:
-- One class per state. All classes share the same aggregate identity (ID)
+- One class per state. All classes share the same aggregate identity. ID
 - Methods return the new state type, never `this`
 - Use `Result` return types when a transition has preconditions that can fail
 - Combine with branded types for state-specific IDs when functions should only accept entities in a specific state
@@ -139,7 +139,7 @@ const transitions: readonly Transition[] = [
 Rules:
 - Define transitions as data, not as conditional logic scattered across methods
 - Guard conditions validate preconditions for a transition. Return `Result`, not `boolean`
-- Actions execute side effects when a transition occurs (emit event, update timestamp)
+- Actions execute side effects when a transition occurs such as emit event, or update timestamp
 - The transition table is the single source of truth. All valid state changes are visible in one place
 
 ### Transition Function
@@ -255,10 +255,10 @@ it('should reject submit when order has no items', () => {
 
 ### Coverage checklist
 
-- Every state has at least one valid outgoing transition (or is explicitly terminal)
-- Every terminal state (Delivered, Cancelled) rejects all events
+- Every state has at least one valid outgoing transition. Or is explicitly terminal
+- Every terminal state, Delivered, Cancelled rejects all events
 - Every guard condition has both a passing and failing test
-- The full happy-path lifecycle is tested end-to-end (Draft → Submitted → Approved → Shipped → Delivered)
+- The full happy-path lifecycle is tested end-to-end. Draft → Submitted → Approved → Shipped → Delivered
 
 ## Serialization and Deserialization
 

@@ -313,7 +313,7 @@ const halfPrecision = new Float16Array(1024);
 
 ### Temporal API (ES2026, Stage 4)
 
-Temporal reached Stage 4 on 2026-03-11 and ships natively in Chrome 144+, Firefox 139+, and Edge 144+. Use the polyfill (`@js-temporal/polyfill` or `temporal-polyfill`) on older runtimes.
+Temporal reached Stage 4 on 2026-03-11 and ships natively in Chrome 144+, Firefox 139+, and Edge 144+. Use a polyfill like `@js-temporal/polyfill` or `temporal-polyfill` on older runtimes.
 
 ```typescript
 import { Temporal } from '@js-temporal/polyfill';

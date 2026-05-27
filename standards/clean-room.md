@@ -116,10 +116,10 @@ These cannot be owned by the source and do not require clean room treatment:
 
 - Programming language syntax and idioms
 - Standard library usage
-- Common design patterns (MVC, repository, factory, observer)
-- Well-known algorithms (binary search, quicksort, BFS/DFS) implemented in your own way
-- Framework conventions (NestJS module structure, React component patterns, Express middleware)
-- Industry-standard protocols and formats (REST conventions, JWT structure, OAuth flows)
+- Common design patterns such as MVC, repository, factory, or observer
+- Well-known algorithms such as binary search, quicksort, or BFS/DFS implemented in your own way
+- Framework conventions such as NestJS module structure, React component patterns, or Express middleware
+- Industry-standard protocols and formats such as REST conventions, JWT structure, or OAuth flows
 - Mathematical formulas and scientific facts
 - Publicly documented API contracts and specifications
 
@@ -130,7 +130,7 @@ These always require clean room treatment, regardless of how small:
 - Copying code blocks, even with variable renaming
 - Copying file/folder structures that reflect creative design choices
 - Copying error messages, help text, or user-facing strings
-- Copying test cases (the specific inputs and expected outputs, not the concept of testing a feature)
+- Copying test cases such as the specific inputs and expected outputs, or not the concept of testing a feature
 - Copying configuration values that reflect non-obvious design decisions
 - Copying documentation text or comments
 - Translating code from one language to another while preserving structure and logic

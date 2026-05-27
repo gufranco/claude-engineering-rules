@@ -34,9 +34,9 @@ When a popular cache key expires, hundreds of concurrent requests miss simultane
 
 **Prevention:**
 
-- **Lock-based recomputation**: first request acquires a distributed lock (Redis `SET NX PX ttl`) and recomputes. Other concurrent requests serve the stale value or wait on the lock rather than hitting the origin simultaneously. After recomputation, release the lock and update the cache
+- **Lock-based recomputation**: first request acquires a distributed lock, Redis `SET NX PX ttl` and recomputes. Other concurrent requests serve the stale value or wait on the lock rather than hitting the origin simultaneously. After recomputation, release the lock and update the cache
 - **Stale-while-revalidate**: serve the expired value while one background request refreshes
-- **Probabilistic early expiration (XFetch)**: each request, as the key approaches expiry, has a probability of refreshing early proportional to how close the TTL is to zero. This spreads the recomputation load across many requests rather than causing a cliff at exact expiry. Formula: refresh early if `currentTime - delta * beta * log(random()) > expiry`, where `beta` controls aggressiveness and `delta` is the recomputation time
+- **Probabilistic early expiration via XFetch**: each request, as the key approaches expiry, has a probability of refreshing early proportional to how close the TTL is to zero. This spreads the recomputation load across many requests rather than causing a cliff at exact expiry. Formula: refresh early if `currentTime - delta * beta * log(random()) > expiry`, where `beta` controls aggressiveness and `delta` is the recomputation time
 - **TTL jitter**: never set the same TTL on all keys. Add `TTL + random(0, TTL * 0.1)` to prevent synchronized expiration
 - **Cold-start after incidents**: when a cache is rebuilt after an outage, all keys are cold simultaneously. Use staggered TTLs with ±10% jitter on the initial warm-up writes so keys do not all expire together in the next cycle. Apply XFetch or lock-based recomputation from the first write rather than adding it only after a stampede is observed. Rate-limit cache-miss paths to protect the origin during the warm-up window. See [`standards/resilience.md`](resilience.md) Back Pressure for load shedding strategies
 

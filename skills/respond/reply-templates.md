@@ -12,7 +12,7 @@ Every reply must pass these gates before posting.
 - No em dashes. Use periods, commas, colons, or restructure.
 - No parentheses in prose. Use commas or separate sentences. Parens are allowed inside fenced code blocks and inline code spans because GitHub renders those as code.
 - No AI-attribution markers. No co-author trailers naming AI tools.
-- No banned phrases: `robust`, `comprehensive`, `seamless`, `elegant`, `powerful`, `streamlined`, "Great question!", "Hope this helps", "Let me know if".
+- No banned phrases. See [`CLAUDE.md`](../../CLAUDE.md) "Banned Phrases" for the full list of fluff adjectives, openers, closers, hedges, and transitions.
 - Plain ASCII. No emojis or decorative Unicode.
 
 ## Cell 1: issue:blocking-bug x implement
@@ -314,7 +314,3 @@ After a batch of fixes lands.
 1. "Done." No list of what changed.
 2. "All fixed." No detail.
 3. Re-request without comment. Forces the reviewer to re-read the entire diff.
-
-## Source Notes
-
-The good and bad exemplars draw on patterns documented in Google eng-practices "Handling reviewer comments", Tidyverse code review principles, GitLab handbook code review, Lara Hogan's Feedback Equation, the Conventional Comments specification, Greiler's "Respectful and constructive feedback", mtlynch on human code reviews, Pragmatic Engineer on PR cycle time, Tatham's antipatterns catalogue, and CodeRabbit best-practice docs. Phrasings are independently authored. Industry shorthand like `LGTM`, `PTAL`, `WDYT`, `NIT`, and `RFC` is used as is because those tokens are community standards.

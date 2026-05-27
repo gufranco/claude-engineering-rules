@@ -201,8 +201,8 @@ Rules:
 
 - Every queue must have a DLQ configured. No exceptions.
 - Set `maxReceiveCount` or equivalent to 3-5 attempts before DLQ routing.
-- Use visibility timeout (SQS) or nack with requeue delay (RabbitMQ) for delayed retries. Never use `setTimeout` or `sleep` in the consumer.
-- Classify errors before retrying. Permanent errors (validation failure, schema mismatch, missing required field) must go directly to the DLQ. Retrying permanent errors wastes time and delays the alert.
+- Use visibility timeout, SQS or nack with requeue delay, RabbitMQ for delayed retries. Never use `setTimeout` or `sleep` in the consumer.
+- Classify errors before retrying. Permanent errors, validation failure, schema mismatch, missing required field must go directly to the DLQ. Retrying permanent errors wastes time and delays the alert.
 
 ### Dead Letter Queue Configuration
 
@@ -229,7 +229,7 @@ A poison message is one that causes the consumer to fail on every attempt. Witho
 
 Detection rules:
 
-- Track the `ApproximateReceiveCount` (SQS) or delivery count (RabbitMQ, NATS) for each message.
+- Track the `ApproximateReceiveCount`, SQS or delivery count, RabbitMQ, NATS for each message.
 - If the count exceeds 1 and the error is a validation or parse error, route to DLQ immediately without further retries.
 - Log every DLQ routing with the full message envelope, the error, and the attempt count.
 
@@ -446,7 +446,7 @@ async function publishOutbox(): Promise<void> {
 
 The outbox poller must be idempotent. If it crashes between publishing and marking as published, it will publish again on the next run. The consumer's deduplication handles this.
 
-For high-throughput systems, use change data capture (Debezium, DynamoDB Streams) instead of polling. CDC reads the transaction log directly, eliminating polling delay and reducing database load.
+For high-throughput systems, use change data capture, Debezium, DynamoDB Streams, instead of polling. CDC reads the transaction log directly, eliminating polling delay and reducing database load.
 
 ### Consumer Offset Management
 
@@ -491,10 +491,10 @@ Every message queue system must have a dashboard with these panels:
 
 1. Queue depth over time (per queue)
 2. Consumer lag over time (per consumer group)
-3. Publish rate vs consume rate (shows divergence)
+3. Publish rate vs consume rate. Shows divergence
 4. Processing duration percentiles
 5. Error rate and DLQ depth
-6. Consumer instance count (correlate with lag)
+6. Consumer instance count. Correlate with lag
 
 ## Testing
 

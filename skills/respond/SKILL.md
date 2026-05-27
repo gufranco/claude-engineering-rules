@@ -88,10 +88,22 @@ query($owner: String!, $repo: String!, $pr: Int!) {
           submittedAt
         }
       }
+      comments(first: 100) {
+        nodes {
+          databaseId
+          author { login, ... on User { name } }
+          authorAssociation
+          body
+          createdAt
+          url
+        }
+      }
     }
   }
 }
 ```
+
+The `comments` field is mandatory. PR-level conversation comments, posted via the bottom "Add a comment" box and not attached to a review, are a third channel alongside `reviewThreads` and `reviews`. Skipping them caused a P0 deadlock report to be missed in an earlier session. Always fetch all three.
 
 Invocation pattern. Write the query to `/tmp/respond-query-<pr>.graphql` and run:
 
@@ -107,6 +119,11 @@ Filter rules.
 - Apply `--humans-only` filter unless `--include-bots` is set. The human filter keeps threads whose first comment is from `author.type == "User"` AND login is not in the AI bot allowlist.
 - Group threads by file path, then sort by line number within file.
 - Group reviews separately as summary-level entries.
+- Treat `pullRequest.comments` as a fourth bucket: PR-level conversation items. They have no `path`, no `line`, and no native resolve. Apply the same author-type and intent classification. Reply via `gh pr comment`, not the inline `/replies` endpoint. After replying, post a top-level acknowledgment when the comment was substantive at the P0 or P1 level. There is no resolve action.
+- Filter out PR-level comments whose body starts with auto-generated markers such as `<!-- LEAD_APPROVAL -->`, `<!-- linear-linkback -->`, or `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->`, since these are tracker or bot signals, not actionable.
+- Drop PR-level comments authored by the running account, your own prior replies unless they were quoted as part of a multi-round conversation.
+
+Cross-check after fetch. Sort all four buckets by `createdAt` descending. If the most recent item is newer than the most recent inline-thread reply by the running user, surface it explicitly in the Phase 5 table even if the inline threads are clean. The skill must never report "nothing to respond to" while a substantive PR-level comment is still unanswered.
 
 AI bot allowlist for classification: `coderabbitai[bot]`, `copilot-pull-request-reviewer[bot]`, `greptile-apps[bot]`, `sourcery-ai[bot]`, `korbit-ai[bot]`, `cursor[bot]`, `qodo-merge-pro[bot]`, `bito-pr-review[bot]`, `gemini-code-assist[bot]`, `claude[bot]`, `tabnine-ai[bot]`. Auxiliary lint or dependency bots: `github-actions[bot]`, `dependabot[bot]`, `renovate[bot]`, `pre-commit-ci[bot]`, `lefthook[bot]`.
 
@@ -179,7 +196,7 @@ For each thread, draft a reply and, when applicable, a code change. The reply fo
 
 ### Principle 1: Fix the code before explaining it
 
-When a reviewer did not understand, the code is the first thing to change. Renaming a confusing variable, extracting a helper, or adding a code-level comment beats writing a thread reply that future readers will not see. Source: Google eng-practices "Handling reviewer comments", Tidyverse code review guide.
+When a reviewer did not understand, the code is the first thing to change. Renaming a confusing variable, extracting a helper, or adding a code-level comment beats writing a thread reply that future readers will not see.
 
 ### Principle 2: Lead with reasoning when pushing back
 

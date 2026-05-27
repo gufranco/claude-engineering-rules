@@ -30,9 +30,9 @@ This skill accepts optional arguments after `/cleanup`:
 - `--dry-run`: explicit dry-run flag. Same as the default. Kept for clarity.
 - `--apply`: perform the cleanup. Required for any mutation. Without this flag, the skill prints the report and exits.
 
-Examples: `/cleanup branches` (dry-run), `/cleanup prs --apply`, `/cleanup --apply`.
+Examples: `/cleanup branches`, dry-run, `/cleanup prs --apply`, `/cleanup --apply`.
 
-The two-phase flow exists because cleanup is destructive. Borrowed from the `keep-codex-fast` two-phase pattern: read the report, decide, then re-run with `--apply`.
+The two-phase flow exists because cleanup is destructive: read the report, decide, then re-run with `--apply`.
 
 ## Steps
 
