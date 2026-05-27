@@ -37,7 +37,7 @@ type OrderId = Brand<string, 'OrderId'>;
 
 - Zero runtime cost. The brand is a phantom property that exists only in the type system
 - Combine with Zod's `.brand()` for runtime validation and compile-time branding in one step
-- Use for: IDs, validated strings (Email, URL), units of measure (Seconds vs Milliseconds), monetary amounts with currency
+- Use for: IDs, validated strings, Email, URL, units of measure, Seconds vs Milliseconds, monetary amounts with currency
 
 ## Type State Pattern
 
