@@ -148,6 +148,15 @@
             "command": "bash ~/.claude/hooks/smart-formatter.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mcp-health-check.py"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -168,6 +177,33 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/settings-hygiene.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/config-protection.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/gateguard-fact-force.py"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/mcp-health-check.py"
           }
         ]
       },
@@ -1019,6 +1055,33 @@
         ]
       },
       {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/normative-keyword-discipline.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/normative-keyword-discipline.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/normative-keyword-discipline.py"
+          }
+        ]
+      },
+      {
         "matcher": "Agent|Task",
         "hooks": [
           {
@@ -1083,6 +1146,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash ~/.claude/hooks/stop-format-typecheck.sh"
+          },
+          {
+            "type": "command",
             "command": "if command -v osascript >/dev/null 2>&1; then osascript -e 'display notification \"Response complete\" with title \"Claude Code\"'; elif command -v notify-send >/dev/null 2>&1; then notify-send 'Claude Code' 'Response complete'; fi"
           },
           {
@@ -1143,6 +1210,30 @@
         "BRAVE_API_KEY": "${BRAVE_API_KEY}"
       }
     },
+    "browser-use": {
+      "type": "http",
+      "url": "https://api.browser-use.com/mcp",
+      "headers": {
+        "x-browser-use-api-key": "${BROWSER_USE_API_KEY}"
+      },
+      "description": "AI browser agent for web tasks"
+    },
+    "browserbase": {
+      "args": [
+        "-y",
+        "@browserbasehq/mcp-server-browserbase"
+      ],
+      "command": "npx",
+      "env": {
+        "BROWSERBASE_API_KEY": "${BROWSERBASE_API_KEY}"
+      },
+      "description": "Cloud browser sessions via Browserbase"
+    },
+    "clickhouse": {
+      "type": "http",
+      "url": "https://mcp.clickhouse.cloud/mcp",
+      "description": "ClickHouse analytics queries"
+    },
     "cloudflare": {
       "args": [
         "-y",
@@ -1169,6 +1260,28 @@
         "mcp-server-docker"
       ],
       "command": "npx"
+    },
+    "exa-web-search": {
+      "args": [
+        "-y",
+        "exa-mcp-server"
+      ],
+      "command": "npx",
+      "env": {
+        "EXA_API_KEY": "${EXA_API_KEY}"
+      },
+      "description": "Web search and research via Exa API. Use after GitHub search and primary docs"
+    },
+    "fal-ai": {
+      "args": [
+        "-y",
+        "fal-ai-mcp-server"
+      ],
+      "command": "npx",
+      "env": {
+        "FAL_KEY": "${FAL_KEY}"
+      },
+      "description": "AI image, video, audio generation via fal.ai"
     },
     "figma": {
       "url": "https://mcp.figma.com/mcp"
@@ -1321,6 +1434,14 @@
         "TOOL_FIND_DESCRIPTION": "Search for code patterns, implementations, or architectural decisions by describing what you need in natural language",
         "TOOL_STORE_DESCRIPTION": "Store code snippets, patterns, and architecture decisions for semantic retrieval"
       }
+    },
+    "railway": {
+      "args": [
+        "-y",
+        "@railway/mcp-server"
+      ],
+      "command": "npx",
+      "description": "Railway deployments"
     },
     "redis": {
       "args": [

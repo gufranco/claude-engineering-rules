@@ -36,6 +36,7 @@ KNOWN_MATCHERS = {
     "Task",
     "NotebookEdit",
     "Skill",
+    "mcp__.*",  # regex matcher for all MCP tool calls
 }
 
 
