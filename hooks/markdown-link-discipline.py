@@ -18,11 +18,10 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path("/Users/gufranco/.claude").resolve()
-SCRIPTS_DIR = REPO_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS_DIR))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 try:
-    from audit_log import record as _audit  # type: ignore
+    from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
     def _audit(**_fields):  # type: ignore
@@ -30,7 +29,7 @@ except Exception:  # pragma: no cover
 
 
 try:
-    from markdown_link_detector import (  # type: ignore
+    from _lib.markdown_link_detector import (  # type: ignore
         Finding,
         detect_findings,
         is_advisory_file,
@@ -100,7 +99,7 @@ import os as _os  # noqa: E402
 
 _sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
 try:
-    from _lib.profile import should_run  # noqa: E402
+    from _lib.hook_profile import should_run  # noqa: E402
 except ImportError:
 
     def should_run(_id: str) -> bool:

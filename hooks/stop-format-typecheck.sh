@@ -13,7 +13,7 @@ if ! python3 -c "
 import sys, os
 sys.path.insert(0, os.path.expanduser('~/.claude/hooks'))
 try:
-    from _lib.profile import should_run
+    from _lib.hook_profile import should_run
     sys.exit(0 if should_run('stop-format-typecheck') else 1)
 except Exception:
     sys.exit(0)

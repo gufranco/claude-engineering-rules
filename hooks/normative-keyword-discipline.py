@@ -72,7 +72,7 @@ BULLET_SHOULD_RE = re.compile(
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
-    from _lib.profile import should_run  # type: ignore  # noqa: E402
+    from _lib.hook_profile import should_run  # type: ignore  # noqa: E402
 except ImportError:  # pragma: no cover
 
     def should_run(_id: str) -> bool:  # type: ignore

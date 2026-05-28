@@ -31,7 +31,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 HOOK = ROOT / "hooks" / "mutation-method-blocker.py"
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "hooks"))
 sys.path.insert(0, str(ROOT / "hooks"))
 
 
@@ -100,9 +100,9 @@ def test_no_zero_width_unbounded_repetition() -> None:
     groups.
     """
     pattern_files = [
-        ROOT / "scripts" / "mutation_detectors_methods.py",
-        ROOT / "scripts" / "mutation_detectors_assignments.py",
-        ROOT / "scripts" / "mutation_detectors_core.py",
+        ROOT / "hooks" / "_lib" / "mutation_detectors_methods.py",
+        ROOT / "hooks" / "_lib" / "mutation_detectors_assignments.py",
+        ROOT / "hooks" / "_lib" / "mutation_detectors_core.py",
     ]
     for path in pattern_files:
         text = path.read_text(encoding="utf-8")
@@ -130,7 +130,7 @@ def test_redos_pathological_input_completes_under_threshold() -> None:
 
 
 def test_redact_strips_aws_secret_keys() -> None:
-    from audit_log import redact
+    from _lib.audit_log import redact
 
     raw = "AKIAIOSFODNN7EXAMPLE secret"
     out = redact(raw)
@@ -138,7 +138,7 @@ def test_redact_strips_aws_secret_keys() -> None:
 
 
 def test_redact_strips_anthropic_keys() -> None:
-    from audit_log import redact
+    from _lib.audit_log import redact
 
     raw = "Authorization: Bearer sk-ant-api03-" + "a" * 40
     out = redact(raw)
@@ -146,7 +146,7 @@ def test_redact_strips_anthropic_keys() -> None:
 
 
 def test_redact_strips_github_tokens() -> None:
-    from audit_log import redact
+    from _lib.audit_log import redact
 
     raw = "ghp_" + "a" * 36
     out = redact(raw)
@@ -154,7 +154,7 @@ def test_redact_strips_github_tokens() -> None:
 
 
 def test_redact_strips_jwt() -> None:
-    from audit_log import redact
+    from _lib.audit_log import redact
 
     raw = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signaturehere"
     out = redact(raw)
@@ -163,7 +163,7 @@ def test_redact_strips_jwt() -> None:
 
 def test_audit_log_redacts_command_excerpt(tmp_path: Path) -> None:
     """A block payload that pastes a token into command_excerpt must be redacted on disk."""
-    from audit_log import record
+    from _lib.audit_log import record
 
     log_path = tmp_path / "hooks.log"
     os.environ["CLAUDE_AUDIT_LOG_PATH"] = str(log_path)

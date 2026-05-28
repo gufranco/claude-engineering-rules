@@ -14,7 +14,9 @@ import os
 import re
 import sys
 
-CLAUDE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CLAUDE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 
 
 def count_files(pattern):

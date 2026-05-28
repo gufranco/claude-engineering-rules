@@ -18,10 +18,10 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "hooks"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-import hook_contract_lint  # noqa: E402
+from _lib import hook_contract_lint  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
@@ -392,7 +392,7 @@ def test_lint_file_clean_for_legacy_hook_using_shim(hooks_dir: Path):
         "git-author-guard",
         """
         import sys
-        import hook_io
+        from _lib import hook_io
         sys.exit(hook_io.allow())
         """,
     )

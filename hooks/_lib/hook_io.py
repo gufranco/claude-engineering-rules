@@ -108,8 +108,7 @@ def _emit_audit(payload: dict[str, Any] | None) -> None:
     if not payload:
         return
     try:
-        sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
-        from audit_log import record as _record
+        from _lib.audit_log import record as _record
     except ImportError:
         return
     try:

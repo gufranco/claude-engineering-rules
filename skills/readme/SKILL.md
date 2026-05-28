@@ -747,7 +747,7 @@ The image GitHub shows on Twitter, Slack, Discord, LinkedIn, and any other platf
 
 ## File References (MANDATORY)
 
-Every file mention in generated README content is a clickable link to the actual file. The full rule lives at [`rules/markdown-links.md`](../../rules/markdown-links.md), which now governs every published markdown file in the repo. Validator at [`scripts/validate-markdown-links.py`](../../scripts/validate-markdown-links.py). Hook at [`hooks/markdown-link-discipline.py`](../../hooks/markdown-link-discipline.py).
+Every file mention in generated README content is a clickable link to the actual file. The full rule lives at [`rules/markdown-links.md`](../../rules/markdown-links.md), which now governs every published markdown file in the repo. Validator at [`.github/scripts/validate-markdown-links.py`](../../.github/scripts/validate-markdown-links.py). Hook at [`hooks/markdown-link-discipline.py`](../../hooks/markdown-link-discipline.py).
 
 Quick reference for README generation:
 

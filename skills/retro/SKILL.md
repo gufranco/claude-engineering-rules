@@ -196,7 +196,7 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
 
 - Never propose disabling a hook to silence noise. The hook is correct by definition; the upstream config is what changes.
 - Bypass events, `decision=bypass` deserve scrutiny too: a frequently bypassed hook signals a workflow gap.
-- Redact any value matching the secret patterns in [`scripts/audit_log.py`](../../scripts/audit_log.py) before quoting `command_excerpt` back to the user. The audit logger redacts on write, but treat the field as untrusted.
+- Redact any value matching the secret patterns in [`hooks/_lib/audit_log.py`](../../hooks/_lib/audit_log.py) before quoting `command_excerpt` back to the user. The audit logger redacts on write, but treat the field as untrusted.
 - Cursor file is advisory. If it points past the file end, after rotation, reset to 0.
 - One-shot mode: when invoked with `--dry-run`, show proposals and skip both writes and cursor advance.
 

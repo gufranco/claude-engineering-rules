@@ -19,10 +19,10 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from mutation_detectors_methods import (  # noqa: E402
+from _lib.mutation_detectors_methods import (  # noqa: E402
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
     detect_array_push,
     detect_array_sort,
@@ -248,7 +248,7 @@ def test_stage4_dirty_corpus_flags_for_await_and_uint8() -> None:
 def test_tc39_stage_filter_default_4_suppresses_stage3() -> None:
     # Arrange
     os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
-    import mutation_fix_lookup as mfl
+    from _lib import mutation_fix_lookup as mfl
 
     importlib.reload(mfl)
 
@@ -264,7 +264,7 @@ def test_tc39_stage_filter_default_4_suppresses_stage3() -> None:
 def test_tc39_stage_filter_3_includes_stage3() -> None:
     # Arrange
     os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = "3"
-    import mutation_fix_lookup as mfl
+    from _lib import mutation_fix_lookup as mfl
 
     importlib.reload(mfl)
 
@@ -284,7 +284,7 @@ def test_tc39_stage_filter_3_includes_stage3() -> None:
 def test_tc39_stage_filter_2_prepends_volatility_marker() -> None:
     # Arrange
     os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = "2"
-    import mutation_fix_lookup as mfl
+    from _lib import mutation_fix_lookup as mfl
 
     importlib.reload(mfl)
 
@@ -303,7 +303,7 @@ def test_tc39_stage_filter_2_prepends_volatility_marker() -> None:
 def test_tc39_stage_filter_invalid_value_falls_back_to_default() -> None:
     # Arrange
     os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = "notanumber"
-    import mutation_fix_lookup as mfl
+    from _lib import mutation_fix_lookup as mfl
 
     importlib.reload(mfl)
 
@@ -321,7 +321,7 @@ def test_tc39_stage_filter_invalid_value_falls_back_to_default() -> None:
 def test_tc39_stage_filter_clamps_above_4() -> None:
     # Arrange
     os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = "9"
-    import mutation_fix_lookup as mfl
+    from _lib import mutation_fix_lookup as mfl
 
     importlib.reload(mfl)
 

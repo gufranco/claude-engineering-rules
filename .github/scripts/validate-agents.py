@@ -18,7 +18,9 @@ import os
 import re
 import sys
 
-CLAUDE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CLAUDE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 AGENTS_DIR = os.path.join(CLAUDE_DIR, "agents")
 VALID_MODELS = {"haiku", "sonnet", "opus"}
 REQUIRED_FIELDS = {"name", "description", "tools", "model"}

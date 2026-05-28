@@ -418,7 +418,8 @@ $HOME/.claude/
   skills/                33 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
   hooks/                 52 runtime hooks
-  scripts/               Validation and maintenance scripts
+  .github/scripts/       Validation and maintenance scripts (CI helpers)
+  hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
   tests/                 Hook smoke tests and fixture trees
   .github/workflows/     Lint, validation, hook tests
 ```

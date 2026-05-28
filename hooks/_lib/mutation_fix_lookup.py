@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 from typing import Any, Final
 
-_HOOK_DIR: Final[Path] = Path(__file__).resolve().parent.parent / "hooks"
+_HOOK_DIR: Final[Path] = Path(__file__).resolve().parent.parent
 _FIX_TABLE_PATH: Final[Path] = _HOOK_DIR / "mutation_fix_suggestions.json"
 
 _TABLE: dict[str, Any] = {}
