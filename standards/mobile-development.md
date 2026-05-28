@@ -76,8 +76,39 @@ Mobile apps must handle network unavailability gracefully.
 - **Device matrix**: test on at least 3 screen sizes, small phone, large phone, tablet and 2 OS versions such as current, or minimum supported
 - **Performance tests**: measure startup time, scroll performance, and memory on a low-end device. CI should fail if metrics regress
 
+## Mobile Accessibility
+
+Native mobile apps follow the same WCAG 2.2 AA + AAA-aspirational targets as web. Per the strictest-wins policy in [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md):
+
+| Platform | Mapping |
+|----------|---------|
+| iOS | Apple HIG Accessibility + WCAG via Accessibility Inspector + VoiceOver testing |
+| Android | Material Design Accessibility + WCAG via Accessibility Scanner + TalkBack testing |
+| Cross-platform (React Native, Flutter) | Same WCAG criteria; verify on both VoiceOver and TalkBack |
+
+Target sizes: 44x44 pt on iOS (Apple HIG); 48x48 dp on Android (Material). Both exceed the WCAG 2.2 SC 2.5.8 AA floor of 24x24.
+
+Mobile-specific rules:
+
+- Honor system reduce-motion: `UIAccessibility.isReduceMotionEnabled` (iOS), `Settings.Global.TRANSITION_ANIMATION_SCALE` (Android)
+- Honor system text scale: support Dynamic Type (iOS) up to AX5; support font scale (Android) up to 200%
+- Honor system bold text and contrast settings
+- Provide accessible names for every UI element via `accessibilityLabel` (iOS) / `contentDescription` (Android)
+- Group decorative elements with `accessibilityElementsHidden` (iOS) / `importantForAccessibility="no"` (Android)
+- Support assistive switch control + keyboard navigation
+
+Mobile compliance also includes:
+
+- EN 301 549 mobile clauses (EU, mandatory under EAA from 28 June 2025)
+- ADA Title II DOJ Rule (US, applies to mobile apps from 24 April 2026 / 2027)
+- LGPD mobile app collection rules
+- COPPA when targeting under-13 users
+- App store accessibility requirements (Apple: VoiceOver compatibility for App Store Connect)
+
 ## Related Standards
 
 - [`standards/frontend.md`](frontend.md): Frontend Design
 - [`standards/authentication.md`](authentication.md): Authentication
 - [`standards/performance-budgets.md`](performance-budgets.md): Performance Budgets
+- [`accessibility-testing.md`](accessibility-testing.md): WCAG 2.2 AA + AAA targets
+- [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md): umbrella compliance rule

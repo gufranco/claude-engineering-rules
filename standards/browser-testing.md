@@ -105,17 +105,21 @@ await expect(submitButton).toBeVisible();
 await expect(submitButton).toBeEnabled();
 ```
 
-Combine with axe-core for automated WCAG compliance:
+Combine with axe-core for automated WCAG compliance. Per the strictest-wins policy in [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md), tag against WCAG 2.2 AA at minimum:
 
 ```typescript
 import AxeBuilder from '@axe-core/playwright';
 
-test('page passes WCAG AA', async ({ page }) => {
+test('page passes WCAG 2.2 AA', async ({ page }) => {
   await page.goto('/dashboard');
-  const results = await new AxeBuilder({ page }).analyze();
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
   expect(results.violations).toEqual([]);
 });
 ```
+
+For AAA-aspirational checks where the policy targets AAA, add `wcag2aaa`, `wcag21aaa`, `wcag22aaa` to the tag list and assert separately so AAA gaps surface as warnings while AA stays a hard gate.
 
 ## Visual Regression Testing
 

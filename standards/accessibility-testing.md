@@ -662,3 +662,168 @@ Add this as a build step: `pnpm check-contrast`. Zero failures to pass.
 | Text on gradients or images | Contrast varies across the background | Add a semi-transparent overlay or text shadow to guarantee minimum contrast |
 | Dark mode inversions | Swapping foreground and background without rechecking | Audit every color pair separately for dark mode |
 | Disabled states | Gray-on-gray with no other visual distinction | Add a pattern, border, or opacity change alongside reduced contrast |
+
+## WCAG 2.2 AAA Targets (Locked by Policy)
+
+Per [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md), several AAA criteria are applied by default even when only AA is legally required. The strictest-applicable-rule-wins policy locks these targets.
+
+### 1.4.6 Contrast (Enhanced) AAA
+
+Target ratio 7:1 for body text, 4.5:1 for large text. AA's 4.5:1 / 3:1 is the absolute floor.
+
+### 2.3.3 Animation from Interactions AAA
+
+`prefers-reduced-motion: reduce` is honored on every animation, transition, and parallax effect. No exceptions.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+### 2.4.12 Focus Not Obscured (Enhanced) AAA NEW 2.2
+
+No part of the focused element is hidden by author-created content. Stricter than 2.4.11 (AA) which permits partial obscuring.
+
+### 2.4.13 Focus Appearance AAA NEW 2.2
+
+The focus indicator meets:
+
+- Minimum area: 2 CSS pixels thick on the perimeter of the focused control
+- Contrast ratio of 3:1 between focused and unfocused state colors
+- No part of the indicator clipped or obscured
+
+### 2.5.5 Target Size (Enhanced) AAA
+
+Target size at least 44x44 CSS pixels. Locked at 44x44 (above the AA 2.5.8 floor of 24x24). On Android, prefer 48x48 per Material Design.
+
+### 3.3.9 Accessible Authentication (Enhanced) AAA NEW 2.2
+
+Authentication uses only:
+
+- Passkey (WebAuthn)
+- OAuth / SSO
+- Magic link via email
+- Password with a password manager
+
+No cognitive function test of any kind, including object recognition or personal content.
+
+## Accessibility Statement Template
+
+Required on every project per EAA, WAD, PSBAR. Recommended on every project per the strictest-wins policy.
+
+```markdown
+# Accessibility Statement
+
+**Last updated:** [DATE]
+
+[Organization name] is committed to making [Product name] accessible to users
+with disabilities. We aim for WCAG 2.2 Level AA conformance, with Level AAA
+applied where feasible.
+
+## Conformance status
+
+This service is **partially conformant** with WCAG 2.2 Level AA. The following
+known gaps remain and target completion dates apply:
+
+- [Known issue 1]: target completion [DATE]
+- [Known issue 2]: target completion [DATE]
+
+## Compatibility
+
+The service is compatible with the most recent versions of major screen
+readers (NVDA, JAWS, VoiceOver, TalkBack) on supported browsers (Chrome,
+Firefox, Safari, Edge).
+
+## Technical specifications
+
+Accessibility relies on HTML, WAI-ARIA 1.2, CSS, JavaScript, and modern
+browser support.
+
+## Limitations and alternatives
+
+[Describe any non-accessible content with explanation and alternative.]
+
+## Feedback
+
+If you find an accessibility issue, contact:
+
+- Email: [accessibility@example.com]
+- Phone: [number]
+- Form: [URL]
+
+We aim to respond within [5] working days.
+
+## Enforcement procedure
+
+If you are not satisfied with our response, you may contact:
+
+- [Local enforcement body, e.g., national accessibility ombudsman]
+- [EU member state competent authority]
+- [Civil rights complaint channel: US DOJ ADA, Brazil MPF, etc.]
+```
+
+Localize per supported language. Locale equivalence per the policy: every accessibility feature implemented for the primary language is implemented for every supported language.
+
+## Sign Language for Video
+
+Per the strictest-wins policy plus Brazil LBI Art. 67-IV + Decreto 5.626/2005: provide a sign-language video track for primary audiovisual content where a signing community exists for the target locale.
+
+| Locale | Sign language |
+|--------|---------------|
+| pt-BR | Libras (Brazilian Sign Language) |
+| en-US | ASL (American Sign Language) |
+| en-GB | BSL (British Sign Language) |
+| fr-FR | LSF (Langue des signes française) |
+| de-DE | DGS (Deutsche Gebärdensprache) |
+| es-ES | LSE (Lengua de signos española) |
+| it-IT | LIS (Lingua dei segni italiana) |
+| ja-JP | JSL (Japanese Sign Language) |
+| nl-NL | NGT (Nederlandse Gebarentaal) |
+
+When budget caps preclude full sign-language video on launch: at minimum, provide caption + transcript + audio description. Document the gap in the accessibility statement with a target completion date.
+
+## Locale Equivalence
+
+Per the strictest-wins policy plus Quebec Bill 96: every accessibility feature implemented for one supported language is implemented for every supported language. Specifically:
+
+- Alt text for images is provided in every supported language
+- Transcripts for audio are provided in every supported language
+- Captions are provided in every supported language
+- ARIA labels are localized
+- Form error messages are localized
+- Screen reader announcements are localized
+
+A page that has alt text only in English but supports Portuguese, Spanish, and French is non-conformant.
+
+## Per-Jurisdiction Overlay
+
+The above targets satisfy WCAG 2.2 AA + AAA. Per-jurisdiction overlays add:
+
+| Jurisdiction | Additional obligation |
+|--------------|---------------------|
+| EU (EAA + WAD) | Accessibility statement with the structure above; feedback mechanism; enforcement body link |
+| UK (PSBAR) | Accessibility statement per ICO template; review at least once a year |
+| Brazil (LBI + e-MAG) | Libras for primary video on government sites; e-MAG conformance for federal sites |
+| US (ADA Title II/III, Section 508) | WCAG 2.1 AA minimum; project targets 2.2 for safety margin |
+| Canada (AODA Ontario) | WCAG 2.0 AA minimum; project targets 2.2 for safety margin |
+| Argentina, Chile, Uruguay, Ecuador | WCAG 2.0 minimum; project targets 2.2 for safety margin |
+| Colombia | WCAG 2.1 AA per Resolución 1519/2020 |
+
+## Maintenance
+
+Review this standard:
+
+- When W3C publishes WCAG 2.3 or any errata to WCAG 2.2
+- When EN 301 549 is updated to align with WCAG 2.2
+- When ETSI publishes a new harmonized standard
+- When a jurisdiction passes a new accessibility law
+- When axe-core or Lighthouse changes coverage of any WCAG criterion
+- Yearly review on 1 January
