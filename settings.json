@@ -587,6 +587,23 @@
         ]
       },
       {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/accessibility-mechanical-checks.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/privacy-leakage-checks.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-disclosure-checks.py"
+          }
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {
