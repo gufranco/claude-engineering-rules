@@ -37,10 +37,10 @@ jobs:
           shellcheck --severity=warning --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
 
       - name: Python lint (ruff check)
-        run: ruff check hooks scripts tests
+        run: ruff check hooks .github/scripts tests
 
       - name: Python format check (ruff format)
-        run: ruff format --check hooks scripts tests
+        run: ruff format --check hooks .github/scripts tests
 
       - name: Validate counts
         run: python3 .github/scripts/validate-counts.py
