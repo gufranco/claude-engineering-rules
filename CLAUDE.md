@@ -31,7 +31,7 @@ Domain-specific standards live in [`standards/`](standards) and are NOT loaded a
 
 ## Core Principles
 
-Quick-scan before acting. The detailed verification items live in [`checklists/checklist.md`](checklists/checklist.md), spanning 70 categories and 782 items.
+Quick-scan before acting. The detailed verification items live in [`checklists/checklist.md`](checklists/checklist.md), spanning 71 categories.
 
 - [ ] **Verify.** Read actual code. Do not assume paths, signatures, or APIs.
 - [ ] **No secrets.** Never log, commit, or expose secrets. Use env vars. Document in `.env.example`.
@@ -44,6 +44,7 @@ Quick-scan before acting. The detailed verification items live in [`checklists/c
 - [ ] **Performance first.** When multiple solutions exist, choose the most performant one. Avoid unnecessary allocations, copies, iterations, and re-renders. Think about algorithmic complexity before writing the first line.
 - [ ] **Zero warnings.** Treat every warning as an error. Deprecation notices, linter warnings, build warnings, CI annotations, runtime warnings: all must be resolved, not ignored. A warning left unaddressed is a future breakage.
 - [ ] **Architecture defaults.** DRY, SOLID, KISS, YAGNI, immutability, idempotency, and deduplication apply to every line. Before any non-trivial work, run the five-question architecture gate to determine if DDD tactical patterns, hexagonal architecture, or state-machine modeling apply. See [`rules/architecture-defaults.md`](rules/architecture-defaults.md).
+- [ ] **Compliance defaults.** Every frontend task applies the strictest applicable compliance rule across accessibility (WCAG 2.2 AA + AAA where feasible), privacy and data protection (GDPR-grade), cookies, cybersecurity, consumer protection, children, AI, anti-spam, and sectoral or topical mandates when triggered. Existing-but-not-yet-mandatory rules count as mandatory. See [`rules/compliance-defaults.md`](rules/compliance-defaults.md).
 - [ ] **Found, fix.** A problem surfaced by any verification surface is in scope for the current task, regardless of when it was introduced. "Pre-existing", "not introduced by my change", "orthogonal" are banned rationalizations. See [`rules/found-fix.md`](rules/found-fix.md).
 
 ## Tone
@@ -124,7 +125,7 @@ Not everyone reading instructions will have CLI knowledge. When writing steps fo
 - Multiple valid approaches: state trade-offs briefly, pick the most performant, say why.
 - When the user's request is ambiguous (e.g., "compress", "clean up", "simplify"), confirm the specific meaning before executing. The cost of one clarifying question is near zero. The cost of wrong-direction work is a full revert.
 - **Execute, don't ask.** When the user gives a list of tasks or says "do everything," execute them all sequentially without pausing to ask for confirmation between steps. The user's default answer is "yes, do it." Only stop for genuinely blocking ambiguity that would cause wrong-direction work, not for permission to continue.
-- **Plan approval extends to every phase.** Once a multi-phase plan is approved, run every phase to completion without intermediate "Proceed?", "Continue?", "Shall I move on?", "Ready for Phase X?", "Sound good?", "Want me to start?", or equivalent confirmations. Status updates between phases are allowed and encouraged; questions that wait for permission are not. Stop only when the entire plan is verifiably complete, when a hard external blocker prevents progress, or when a real ambiguity, not a courtesy check, would cause wrong-direction work. Enforced mechanically by `~/.claude/hooks/auto-continue-stop-blocker.py`.
+- **Plan approval extends to every phase.** Once a multi-phase plan is approved, run every phase to completion without intermediate "Proceed?", "Continue?", "Shall I move on?", "Ready for Phase X?", "Sound good?", "Want me to start?", "Should I continue immediately?", "Do you want to review first?", "Continue or checkpoint?", or equivalent confirmations. Status updates between phases are allowed and encouraged; questions that wait for permission are not. **Never present a menu of options like "Continue" / "review" / "checkpoint" between phases. Never frame the volume of upcoming work as a reason to ask permission. Never offer to "pause for feedback" or "save state and resume" between phases. Token budget, context size, and "this is a lot of work" are not reasons to stop.** Stop only when the entire plan is verifiably complete, when a hard external blocker prevents progress, or when a real ambiguity, not a courtesy check, would cause wrong-direction work. Enforced mechanically by `~/.claude/hooks/auto-continue-stop-blocker.py`.
 - **Smart questions and reports.** When a clarifying question is unavoidable, when reporting status or errors, when briefing a subagent, or when closing a loop, follow [`rules/smart-questions.md`](rules/smart-questions.md). Specific question on the first line, what was investigated, options with trade-offs; symptom before theory; one-line `FIXED:`/`RESOLVED:`/`DONE:` on closure.
 
 ## Anti-Hallucination
