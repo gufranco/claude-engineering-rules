@@ -141,6 +141,46 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         re.compile(r"\bmoving\s+on\??\s*$", re.IGNORECASE),
         "ending with 'Moving on?'",
     ),
+    (
+        re.compile(r"\bshould\s+I\s+continue\s+(?:immediately|now|with|into|to)\b", re.IGNORECASE),
+        "asking 'Should I continue immediately/now/with/into/to'",
+    ),
+    (
+        re.compile(r"\b(?:do|would)\s+you\s+want\s+to\s+(?:review|pause|stop|wait|check|see|look)\b", re.IGNORECASE),
+        "asking if the user wants to review/pause before continuing",
+    ),
+    (
+        re.compile(r"\bpause\s+(?:for|to)\s+(?:feedback|review|input|approval|confirmation)\b", re.IGNORECASE),
+        "offering to pause for feedback/review/input/approval",
+    ),
+    (
+        re.compile(r"\bcheckpoint\s*=\s*(?:save|pause|stop)", re.IGNORECASE),
+        "offering a checkpoint option",
+    ),
+    (
+        re.compile(r"\bsave\s+state\s+and\s+resume\b", re.IGNORECASE),
+        "offering to save state and resume later",
+    ),
+    (
+        re.compile(r"\b(?:review|pause|checkpoint)\s*=\s*", re.IGNORECASE),
+        "presenting review/pause/checkpoint as a menu option",
+    ),
+    (
+        re.compile(r"\bphase\s+\d+\s+complete\b.*\?", re.IGNORECASE | re.DOTALL),
+        "concluding a phase with a question",
+    ),
+    (
+        re.compile(r"\b(?:next|the\s+next)\s+phase\s+(?:is|will\s+be|requires|drafts)\b", re.IGNORECASE),
+        "describing the next phase instead of executing it",
+    ),
+    (
+        re.compile(r"\bestimated\s+\d+\s*[-to]+\s*\d+\s*(?:kb|mb|files|hours|minutes)\b", re.IGNORECASE),
+        "estimating volume of next work as if to ask permission",
+    ),
+    (
+        re.compile(r"\b(?:status|progress)\s+(?:report|update|summary)\b\s*(?:before|prior to)\s+continuing", re.IGNORECASE),
+        "framing a status report as a pre-continuation gate",
+    ),
 ]
 
 
