@@ -82,7 +82,7 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 - [ ] Measure context size at session start with and without on-demand standards, verify savings claim in README
 - [ ] Run `rtk gain --history` to review token savings trend
 - [ ] Identify any rule or standard that loads frequently and could be merged into CLAUDE.md
-- [ ] Check [`scripts/context-monitor.py`](../scripts/context-monitor.py) thresholds against current Claude context window sizes
+- [ ] Check [`.github/scripts/context-monitor.py`](../.github/scripts/context-monitor.py) thresholds against current Claude context window sizes
 
 ---
 

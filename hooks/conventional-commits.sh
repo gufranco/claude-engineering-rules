@@ -13,7 +13,7 @@ set -euo pipefail
 trap 'echo "conventional-commits: hook aborted at line ${LINENO}" >&2' ERR
 
 _audit_block() {
-    python3 "$HOME/.claude/scripts/audit_log.py" --hook conventional-commits \
+    python3 "$HOME/.claude/hooks/_lib/audit_log.py" --hook conventional-commits \
         --decision block --tool Bash --reason "$1" --command "${COMMAND:-}" 2>/dev/null || true
 }
 
