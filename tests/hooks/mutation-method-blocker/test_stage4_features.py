@@ -338,7 +338,14 @@ def test_tc39_stage_filter_clamps_above_4() -> None:
 
 def test_maintenance_quarterly_message_mentions_finished_proposals() -> None:
     # Arrange
-    import maintenance
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "maintenance", REPO_ROOT / ".github" / "scripts" / "maintenance.py"
+    )
+    assert spec is not None and spec.loader is not None
+    maintenance = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(maintenance)
 
     # Act
     import datetime as _dt

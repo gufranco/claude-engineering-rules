@@ -358,7 +358,8 @@ def test_tracked_paths_lists_files_and_directories():
     assert "README.md" in paths
     assert "hooks/_lib/markdown_link_detector.py" in paths
     # And derived directory entries
-    assert "scripts" in paths
+    assert "hooks" in paths
+    assert "hooks/_lib" in paths
 
 
 def test_tracked_paths_returns_empty_for_non_git_dir(tmp_path):

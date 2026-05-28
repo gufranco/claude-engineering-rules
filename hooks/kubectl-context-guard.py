@@ -19,9 +19,9 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
-    from audit_log import record as _audit  # type: ignore
+    from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
     def _audit(**_fields):  # type: ignore

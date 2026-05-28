@@ -6,15 +6,15 @@ one backup so the on-disk footprint stays bounded.
 
 Usage from a Python hook:
 
-    sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
-    from audit_log import record, redact
+    sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+    from _lib.audit_log import record, redact
     record(hook="dangerous-command-blocker", decision="block",
            reason="rm -rf /", tool="Bash",
            command_excerpt=redact(cmd)[:200])
 
 Usage from a shell hook:
 
-    python3 ~/.claude/scripts/audit_log.py \
+    python3 ~/.claude/hooks/_lib/audit_log.py \
         --hook large-file-blocker --decision block --tool Bash \
         --reason "file > 5MB" --command "$cmd"
 

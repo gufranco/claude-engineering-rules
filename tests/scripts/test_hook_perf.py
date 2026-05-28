@@ -24,9 +24,9 @@ def test_under_budget_does_not_emit(monkeypatch):
     def fake_record(**fields):
         captured.append(fields)
 
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = fake_record  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=10000, hook_name="fast-hook")
     def fast_hook():
@@ -47,9 +47,9 @@ def test_over_budget_emits_event(monkeypatch):
     def fake_record(**fields):
         captured.append(fields)
 
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = fake_record  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1, hook_name="slow-hook")
     def slow_hook():
@@ -74,9 +74,9 @@ def test_disable_env_skips_emit(monkeypatch):
     # Arrange
     monkeypatch.setenv("CLAUDE_HOOK_PERF_DISABLE", "1")
     captured: list[dict[str, object]] = []
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1, hook_name="x")
     def hook():
@@ -108,9 +108,9 @@ def test_decorator_swallows_audit_exceptions(monkeypatch):
     def boom(**_fields):
         raise OSError("disk full")
 
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = boom  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1, hook_name="x")
     def slow():
@@ -126,9 +126,9 @@ def test_decorator_swallows_typeerror_from_record(monkeypatch):
     def boom(**_fields):
         raise TypeError("bad signature")
 
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = boom  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1, hook_name="x")
     def slow():
@@ -144,9 +144,9 @@ def test_decorator_swallows_valueerror_from_record(monkeypatch):
     def boom(**_fields):
         raise ValueError("invalid")
 
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = boom  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1, hook_name="x")
     def slow():
@@ -159,8 +159,8 @@ def test_decorator_swallows_valueerror_from_record(monkeypatch):
 
 def test_decorator_silent_when_audit_module_lacks_record(monkeypatch):
     # Arrange: audit_log module without `record` -> ImportError on `from import`
-    fake_module = type(sys)("audit_log")
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    fake_module = type(sys)("_lib.audit_log")
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1, hook_name="x")
     def slow():
@@ -174,9 +174,9 @@ def test_decorator_silent_when_audit_module_lacks_record(monkeypatch):
 def test_resolve_hook_name_uses_function_module(monkeypatch):
     # Arrange: function with non-__main__ module
     captured: list[dict[str, object]] = []
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     @with_perf_budget(budget_ms=1)
     def slow():
@@ -194,9 +194,9 @@ def test_resolve_hook_name_uses_function_module(monkeypatch):
 def test_resolve_hook_name_falls_back_to_main_module_basename(monkeypatch):
     # Arrange: function whose __module__ is __main__, real __main__ has __file__
     captured: list[dict[str, object]] = []
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     fake_main = type(sys)("__main__")
     fake_main.__file__ = "/some/path/to/my-hook.py"  # type: ignore[attr-defined]
@@ -220,9 +220,9 @@ def test_resolve_hook_name_falls_back_to_main_module_basename(monkeypatch):
 def test_resolve_hook_name_unknown_when_no_main_file(monkeypatch):
     # Arrange: __main__ exists but has empty __file__
     captured: list[dict[str, object]] = []
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     fake_main = type(sys)("__main__")
     fake_main.__file__ = ""  # type: ignore[attr-defined]
@@ -245,9 +245,9 @@ def test_resolve_hook_name_unknown_when_no_main_file(monkeypatch):
 def test_resolve_hook_name_unknown_when_main_module_missing(monkeypatch):
     # Arrange: no __main__ in sys.modules
     captured: list[dict[str, object]] = []
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
     monkeypatch.delitem(sys.modules, "__main__", raising=False)
 
     def slow():
@@ -267,9 +267,9 @@ def test_resolve_hook_name_unknown_when_main_module_missing(monkeypatch):
 def test_resolve_hook_name_unknown_when_function_has_no_module(monkeypatch):
     # Arrange
     captured: list[dict[str, object]] = []
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
     monkeypatch.delitem(sys.modules, "__main__", raising=False)
 
     def slow():

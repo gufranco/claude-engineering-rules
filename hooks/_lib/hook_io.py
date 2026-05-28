@@ -46,7 +46,6 @@ prints with `block(...)`, then drop the boilerplate around stdin parsing.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from dataclasses import dataclass, field
 from typing import Any
