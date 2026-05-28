@@ -464,20 +464,14 @@ def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, assert_blocks):
     )
     payload = tool_use(
         "Bash",
-        {
-            "command": (
-                f"gh pr create --base develop --title hello --body-file {body}"
-            )
-        },
+        {"command": (f"gh pr create --base develop --title hello --body-file {body}")},
     )
 
     # Act / Assert
     assert_blocks(HOOK, payload, "spec folder")
 
 
-def test_blocks_gh_pr_body_file_with_equals_form(
-    tmp_path, tool_use, assert_blocks
-):
+def test_blocks_gh_pr_body_file_with_equals_form(tmp_path, tool_use, assert_blocks):
     # Arrange
     body = tmp_path / "pr-body.md"
     body.write_text(
@@ -493,9 +487,7 @@ def test_blocks_gh_pr_body_file_with_equals_form(
     assert_blocks(HOOK, payload)
 
 
-def test_blocks_glab_description_file_with_leak(
-    tmp_path, tool_use, assert_blocks
-):
+def test_blocks_glab_description_file_with_leak(tmp_path, tool_use, assert_blocks):
     # Arrange
     body = tmp_path / "mr-body.md"
     body.write_text(
@@ -504,20 +496,14 @@ def test_blocks_glab_description_file_with_leak(
     )
     payload = tool_use(
         "Bash",
-        {
-            "command": (
-                f"glab mr create --description-file {body}"
-            )
-        },
+        {"command": (f"glab mr create --description-file {body}")},
     )
 
     # Act / Assert
     assert_blocks(HOOK, payload, "Refs: specs/")
 
 
-def test_blocks_gh_release_notes_file_with_leak(
-    tmp_path, tool_use, assert_blocks
-):
+def test_blocks_gh_release_notes_file_with_leak(tmp_path, tool_use, assert_blocks):
     # Arrange
     body = tmp_path / "notes.md"
     body.write_text(
@@ -526,11 +512,7 @@ def test_blocks_gh_release_notes_file_with_leak(
     )
     payload = tool_use(
         "Bash",
-        {
-            "command": (
-                f"gh release create v1.0.0 --notes-file {body}"
-            )
-        },
+        {"command": (f"gh release create v1.0.0 --notes-file {body}")},
     )
 
     # Act / Assert
@@ -546,11 +528,7 @@ def test_allows_gh_pr_body_file_when_clean(tmp_path, tool_use, assert_allows):
     )
     payload = tool_use(
         "Bash",
-        {
-            "command": (
-                f"gh pr create --base develop --title fix --body-file {body}"
-            )
-        },
+        {"command": (f"gh pr create --base develop --title fix --body-file {body}")},
     )
 
     # Act / Assert
@@ -715,12 +693,7 @@ def test_blocks_gh_api_review_edit_patch_with_trailer(
     )
     payload = tool_use(
         "Bash",
-        {
-            "command": (
-                "gh api repos/o/r/pulls/comments/12345 -X PATCH"
-                f" --input {body}"
-            )
-        },
+        {"command": (f"gh api repos/o/r/pulls/comments/12345 -X PATCH --input {body}")},
     )
 
     # Act / Assert
@@ -752,11 +725,7 @@ def test_blocks_glab_mr_note_with_leak(tool_use, assert_blocks):
     # Arrange
     payload = tool_use(
         "Bash",
-        {
-            "command": (
-                'glab mr note 42 --message "Following the plan, pushed the fix"'
-            )
-        },
+        {"command": ('glab mr note 42 --message "Following the plan, pushed the fix"')},
     )
 
     # Act / Assert

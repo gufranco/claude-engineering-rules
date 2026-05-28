@@ -262,9 +262,7 @@ def test_scan_links_handles_anchor_in_path(audit_mod, tmp_path):
 
 def test_scan_links_ignores_links_in_code_fence(audit_mod, tmp_path):
     doc = tmp_path / "doc.md"
-    doc.write_text(
-        "Real prose.\n```\n[ghost](missing.md)\n```\n"
-    )
+    doc.write_text("Real prose.\n```\n[ghost](missing.md)\n```\n")
     findings = audit_mod.scan_links("doc.md", doc, doc.read_text())
     assert all(f.category != "stale-link" for f in findings)
 

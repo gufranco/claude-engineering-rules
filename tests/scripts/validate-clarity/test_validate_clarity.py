@@ -47,19 +47,14 @@ def test_pronoun_this_flagged(clarity_mod, tmp_path):
 
 def test_pronoun_unflagged_when_no_prev_nouns(clarity_mod, tmp_path):
     f = tmp_path / "rule.md"
-    f.write_text(
-        "- It validates input.\n"
-    )
+    f.write_text("- It validates input.\n")
     findings = clarity_mod.scan(f)
     assert all(c != "pronoun-leading" for _, c, _ in findings)
 
 
 def test_pronoun_unflagged_when_prev_is_short(clarity_mod, tmp_path):
     f = tmp_path / "rule.md"
-    f.write_text(
-        "- ok.\n"
-        "- It must run.\n"
-    )
+    f.write_text("- ok.\n- It must run.\n")
     findings = clarity_mod.scan(f)
     assert all(c != "pronoun-leading" for _, c, _ in findings)
 
@@ -183,9 +178,13 @@ def test_main_clean_exits_zero(clarity_mod, tmp_path, monkeypatch, capsys):
     assert "Clean" in out
 
 
-def test_main_with_findings_still_exits_zero(clarity_mod, tmp_path, monkeypatch, capsys):
+def test_main_with_findings_still_exits_zero(
+    clarity_mod, tmp_path, monkeypatch, capsys
+):
     (tmp_path / "rules").mkdir()
-    (tmp_path / "rules" / "bad.md").write_text("- The input is validated before processing.\n")
+    (tmp_path / "rules" / "bad.md").write_text(
+        "- The input is validated before processing.\n"
+    )
     monkeypatch.setattr(
         "sys.argv",
         ["validate-clarity.py", "--root", str(tmp_path)],

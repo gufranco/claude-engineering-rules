@@ -56,11 +56,14 @@ WHILE_LOOP_PATTERN = re.compile(r"\bwhile\s+")
 XARGS_PATTERN = re.compile(r"\|\s*xargs\b")
 
 
-import sys as _sys, os as _os
+import sys as _sys  # noqa: E402
+import os as _os  # noqa: E402
+
 _sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
 try:
     from _lib.profile import should_run  # noqa: E402
 except ImportError:
+
     def should_run(_id: str) -> bool:
         return True
 

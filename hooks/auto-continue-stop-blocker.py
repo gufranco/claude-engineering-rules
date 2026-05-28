@@ -110,11 +110,16 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "ending the message with 'Continue?'",
     ),
     (
-        re.compile(r"(?:^|\s)shall\s+I\s+(?:proceed|continue|move\s+on|start)\b", re.IGNORECASE),
+        re.compile(
+            r"(?:^|\s)shall\s+I\s+(?:proceed|continue|move\s+on|start)\b", re.IGNORECASE
+        ),
         "asking 'Shall I proceed/continue/move on/start'",
     ),
     (
-        re.compile(r"(?:^|\s)should\s+I\s+(?:proceed|continue|move\s+on|start|begin|kick\s+off)\b", re.IGNORECASE),
+        re.compile(
+            r"(?:^|\s)should\s+I\s+(?:proceed|continue|move\s+on|start|begin|kick\s+off)\b",
+            re.IGNORECASE,
+        ),
         "asking 'Should I proceed/continue/move on/start/begin/kick off'",
     ),
     (
@@ -122,19 +127,28 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "asking 'Sound good?'",
     ),
     (
-        re.compile(r"\blet\s+me\s+know\s+(?:if|when|whether)\s+(?:you|I)\b", re.IGNORECASE),
+        re.compile(
+            r"\blet\s+me\s+know\s+(?:if|when|whether)\s+(?:you|I)\b", re.IGNORECASE
+        ),
         "deferring with 'Let me know if/when/whether'",
     ),
     (
-        re.compile(r"\bready\s+(?:for|to\s+(?:start|move|continue))\s+phase\b", re.IGNORECASE),
+        re.compile(
+            r"\bready\s+(?:for|to\s+(?:start|move|continue))\s+phase\b", re.IGNORECASE
+        ),
         "advertising readiness for next phase instead of executing it",
     ),
     (
-        re.compile(r"\b(?:want|do\s+you\s+want)\s+me\s+to\s+(?:start|begin|kick\s+off|run|execute|do)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:want|do\s+you\s+want)\s+me\s+to\s+(?:start|begin|kick\s+off|run|execute|do)\b",
+            re.IGNORECASE,
+        ),
         "asking whether the user wants you to start/begin/execute",
     ),
     (
-        re.compile(r"\bok(?:ay)?\s+to\s+(?:proceed|continue|start|move\s+on)\b", re.IGNORECASE),
+        re.compile(
+            r"\bok(?:ay)?\s+to\s+(?:proceed|continue|start|move\s+on)\b", re.IGNORECASE
+        ),
         "asking 'Okay to proceed/continue/start/move on'",
     ),
     (
@@ -142,15 +156,24 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "ending with 'Moving on?'",
     ),
     (
-        re.compile(r"\bshould\s+I\s+continue\s+(?:immediately|now|with|into|to)\b", re.IGNORECASE),
+        re.compile(
+            r"\bshould\s+I\s+continue\s+(?:immediately|now|with|into|to)\b",
+            re.IGNORECASE,
+        ),
         "asking 'Should I continue immediately/now/with/into/to'",
     ),
     (
-        re.compile(r"\b(?:do|would)\s+you\s+want\s+to\s+(?:review|pause|stop|wait|check|see|look)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:do|would)\s+you\s+want\s+to\s+(?:review|pause|stop|wait|check|see|look)\b",
+            re.IGNORECASE,
+        ),
         "asking if the user wants to review/pause before continuing",
     ),
     (
-        re.compile(r"\bpause\s+(?:for|to)\s+(?:feedback|review|input|approval|confirmation)\b", re.IGNORECASE),
+        re.compile(
+            r"\bpause\s+(?:for|to)\s+(?:feedback|review|input|approval|confirmation)\b",
+            re.IGNORECASE,
+        ),
         "offering to pause for feedback/review/input/approval",
     ),
     (
@@ -170,15 +193,24 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "concluding a phase with a question",
     ),
     (
-        re.compile(r"\b(?:next|the\s+next)\s+phase\s+(?:is|will\s+be|requires|drafts)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:next|the\s+next)\s+phase\s+(?:is|will\s+be|requires|drafts)\b",
+            re.IGNORECASE,
+        ),
         "describing the next phase instead of executing it",
     ),
     (
-        re.compile(r"\bestimated\s+\d+\s*[-to]+\s*\d+\s*(?:kb|mb|files|hours|minutes)\b", re.IGNORECASE),
+        re.compile(
+            r"\bestimated\s+\d+\s*[-to]+\s*\d+\s*(?:kb|mb|files|hours|minutes)\b",
+            re.IGNORECASE,
+        ),
         "estimating volume of next work as if to ask permission",
     ),
     (
-        re.compile(r"\b(?:status|progress)\s+(?:report|update|summary)\b\s*(?:before|prior to)\s+continuing", re.IGNORECASE),
+        re.compile(
+            r"\b(?:status|progress)\s+(?:report|update|summary)\b\s*(?:before|prior to)\s+continuing",
+            re.IGNORECASE,
+        ),
         "framing a status report as a pre-continuation gate",
     ),
 ]
@@ -243,11 +275,14 @@ def find_violations(text: str) -> list[tuple[str, str]]:
     return out
 
 
-import sys as _sys, os as _os
+import sys as _sys  # noqa: E402
+import os as _os  # noqa: E402
+
 _sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
 try:
     from _lib.profile import should_run  # noqa: E402
 except ImportError:
+
     def should_run(_id: str) -> bool:
         return True
 

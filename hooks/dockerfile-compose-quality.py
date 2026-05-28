@@ -365,8 +365,7 @@ def main() -> None:
         for b in blocks:
             print(f"  {b}", file=sys.stderr)
         print(
-            "Bypass for emergencies: export "
-            f"{BYPASS_ENV}=1 in the parent shell.",
+            f"Bypass for emergencies: export {BYPASS_ENV}=1 in the parent shell.",
             file=sys.stderr,
         )
         print(

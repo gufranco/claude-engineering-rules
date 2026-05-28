@@ -5,7 +5,6 @@ Source rule: `~/.claude/rules/accessibility-defaults.md`.
 
 from __future__ import annotations
 
-import pytest
 
 HOOK = "accessibility-mechanical-checks"
 
@@ -58,7 +57,7 @@ def test_blocks_positive_tabindex(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/src/Form.tsx",
-            "content": '<button tabIndex={3}>Submit</button>',
+            "content": "<button tabIndex={3}>Submit</button>",
         },
     )
 
@@ -72,7 +71,7 @@ def test_blocks_html_without_lang(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/public/index.html",
-            "content": '<html><head></head><body></body></html>',
+            "content": "<html><head></head><body></body></html>",
         },
     )
 
@@ -86,7 +85,7 @@ def test_blocks_anchor_without_href(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/src/Nav.tsx",
-            "content": '<a onClick={go}>Profile</a>',
+            "content": "<a onClick={go}>Profile</a>",
         },
     )
 
@@ -100,7 +99,7 @@ def test_blocks_click_on_div(tool_use, assert_blocks):
         "Write",
         {
             "file_path": "/repo/src/Card.tsx",
-            "content": '<div onClick={handle}>Card</div>',
+            "content": "<div onClick={handle}>Card</div>",
         },
     )
 
