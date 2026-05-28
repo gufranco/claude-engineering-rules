@@ -330,7 +330,9 @@ def test_invalid_payload_via_subprocess():
     import sys as _sys
     from pathlib import Path
 
-    hook_path = Path.home() / ".claude" / "hooks" / "privacy-leakage-checks.py"
+    hook_path = (
+        Path(__file__).resolve().parents[3] / "hooks" / "privacy-leakage-checks.py"
+    )
 
     # Act
     proc = sub.run(
