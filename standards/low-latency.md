@@ -205,4 +205,3 @@ Before deploying any latency-sensitive code to production:
 - [`performance.md`](performance.md) for web-stack and frontend performance.
 - [`performance-budgets.md`](performance-budgets.md) for SLO and budget framing.
 - [`algorithmic-complexity.md`](algorithmic-complexity.md) for the algorithm-level analysis that runs before any of this matters.
-

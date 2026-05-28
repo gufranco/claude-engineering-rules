@@ -57,7 +57,9 @@ def is_skipped(path: str) -> bool:
         return True
     if any(seg in path for seg in SKIP_SEGMENTS):
         return True
-    if any(part in os.path.basename(path) for part in (".test.", ".spec.", ".stories.")):
+    if any(
+        part in os.path.basename(path) for part in (".test.", ".spec.", ".stories.")
+    ):
         return True
     return False
 
@@ -90,7 +92,7 @@ def find_undisclosed_ai_output(content: str) -> list[tuple[int, str]]:
             findings.append(
                 (
                     line_num,
-                    f"AIC001: AI-produced variable rendered without a visible disclosure label (EU AI Act Art. 52 + California SB 942). Wrap with an AI badge or disclosure text",
+                    "AIC001: AI-produced variable rendered without a visible disclosure label (EU AI Act Art. 52 + California SB 942). Wrap with an AI badge or disclosure text",
                 )
             )
     return findings

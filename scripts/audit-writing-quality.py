@@ -58,9 +58,15 @@ EM_DASH = chr(0x2014)
 BOX_DRAWING_RE = re.compile("[" + chr(0x2500) + "-" + chr(0x257F) + "]")
 EMOJI_RE = re.compile(
     "["
-    + chr(0x1F300) + "-" + chr(0x1FAFF)
-    + chr(0x2600) + "-" + chr(0x27BF)
-    + chr(0x1F1E6) + "-" + chr(0x1F1FF)
+    + chr(0x1F300)
+    + "-"
+    + chr(0x1FAFF)
+    + chr(0x2600)
+    + "-"
+    + chr(0x27BF)
+    + chr(0x1F1E6)
+    + "-"
+    + chr(0x1F1FF)
     + chr(0xFE0F)
     + chr(0x200D)
     + "]"
@@ -82,7 +88,9 @@ VAGUE_QUANTIFIERS = [
 # subject is the bullet itself (the word starts the claim sentence). Plain
 # prose use of "often" or "usually" as connectors is allowed.
 VAGUE_RE = re.compile(
-    r"^\s*(?:[-*]|\d+\.)\s+(?:" + "|".join(re.escape(p) for p in VAGUE_QUANTIFIERS) + r")\b",
+    r"^\s*(?:[-*]|\d+\.)\s+(?:"
+    + "|".join(re.escape(p) for p in VAGUE_QUANTIFIERS)
+    + r")\b",
     re.IGNORECASE,
 )
 
@@ -190,6 +198,7 @@ def _fence_match(stripped: str) -> tuple[str, bool]:
     info = m.group(2).strip()
     return marker, info == ""
 
+
 # Carve-outs allowed by rules/writing-precision.md "No parentheses in prose".
 # When the inner text of a paren matches any of these patterns the audit
 # does not flag the paren as a violation.
@@ -198,7 +207,9 @@ PAREN_CARVEOUT_RES: list[re.Pattern[str]] = [
     re.compile(r"^\s*default\b", re.IGNORECASE),
     # Uppercase emphasis labels: (REQUIRED), (OPTIONAL), (RECOMMENDED)
     # plus the same labels followed by a comma and a short conditional clause.
-    re.compile(r"^\s*(REQUIRED|OPTIONAL|RECOMMENDED|REQUIRED DEFAULT|RECOMMENDED DEFAULT)\b"),
+    re.compile(
+        r"^\s*(REQUIRED|OPTIONAL|RECOMMENDED|REQUIRED DEFAULT|RECOMMENDED DEFAULT)\b"
+    ),
     # Clarifiers: (e.g., X) and (i.e., X)
     re.compile(r"^\s*e\.g\.", re.IGNORECASE),
     re.compile(r"^\s*i\.e\.", re.IGNORECASE),
@@ -209,20 +220,22 @@ PAREN_CARVEOUT_RES: list[re.Pattern[str]] = [
     re.compile(
         r"^\s*"
         r"(?:"
-        r"[a-z]|"                          # single math variable like (a)
-        r"\d+|"                            # plain number like (1) or (16)
-        r"n\^\d+|n\^\([^)]+\)|n\^d|"       # n^N variants
-        r"\w+\s*\*\s*\w+|"                 # variable times variable like k * n
-        r"[nk]\s+log\s+[nk]|"              # n log n, k log k
-        r"log\s+[nk]|"                     # log n, log k
-        r"log_\w+\s*\([^)]+\)|"            # log_b(a)
-        r"n\^?\(log_\w+\(\w+\)\)"           # n^(log_b(a))
+        r"[a-z]|"  # single math variable like (a)
+        r"\d+|"  # plain number like (1) or (16)
+        r"n\^\d+|n\^\([^)]+\)|n\^d|"  # n^N variants
+        r"\w+\s*\*\s*\w+|"  # variable times variable like k * n
+        r"[nk]\s+log\s+[nk]|"  # n log n, k log k
+        r"log\s+[nk]|"  # log n, log k
+        r"log_\w+\s*\([^)]+\)|"  # log_b(a)
+        r"n\^?\(log_\w+\(\w+\)\)"  # n^(log_b(a))
         r")"
         r"\s*$"
     ),
     # CSS media-query feature patterns inside docs: (min-width: ...),
     # (prefers-color-scheme: ...), (orientation: ...), etc.
-    re.compile(r"^\s*(min-width|max-width|prefers-color-scheme|orientation|hover|pointer):\s+"),
+    re.compile(
+        r"^\s*(min-width|max-width|prefers-color-scheme|orientation|hover|pointer):\s+"
+    ),
 ]
 
 
@@ -273,7 +286,11 @@ def scan_text(rel_path: str, text: str) -> list[Finding]:
                 continue
             # Already in a fence: only close if marker is bare and matches
             # the opener (same char type, length >= opener).
-            if can_close and marker[0] == fence_marker[0] and len(marker) >= len(fence_marker):
+            if (
+                can_close
+                and marker[0] == fence_marker[0]
+                and len(marker) >= len(fence_marker)
+            ):
                 in_code_fence = False
                 fence_marker = ""
             # If we get here while in_code_fence and can't close, the line is
@@ -452,7 +469,11 @@ def _mask_code_regions(text: str) -> str:
                 fence_marker = marker
                 result.append(" " * len(line))
                 continue
-            if can_close and marker[0] == fence_marker[0] and len(marker) >= len(fence_marker):
+            if (
+                can_close
+                and marker[0] == fence_marker[0]
+                and len(marker) >= len(fence_marker)
+            ):
                 in_fence = False
                 fence_marker = ""
             result.append(" " * len(line))
@@ -468,9 +489,7 @@ def _mask_code_regions(text: str) -> str:
 def walk_markdown(root: Path) -> Iterable[Path]:
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [
-            d
-            for d in dirnames
-            if d not in SKIP_DIR_NAMES and not d.startswith(".")
+            d for d in dirnames if d not in SKIP_DIR_NAMES and not d.startswith(".")
         ]
         for name in filenames:
             if name.lower().endswith(".md"):
@@ -516,9 +535,7 @@ def write_markdown(findings: list[Finding], out: Path) -> None:
         for finding in sorted(items, key=lambda f: f.line):
             snip = finding.snippet.replace("|", r"\|")
             detail = finding.detail.replace("|", r"\|")
-            lines.append(
-                f"| {finding.line} | {finding.category} | {detail} | {snip} |"
-            )
+            lines.append(f"| {finding.line} | {finding.category} | {detail} | {snip} |")
         lines.append("")
 
     out.write_text("\n".join(lines), encoding="utf-8")

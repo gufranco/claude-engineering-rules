@@ -5,7 +5,6 @@ Source rule: `~/.claude/rules/privacy-defaults.md`.
 
 from __future__ import annotations
 
-import pytest
 
 HOOK = "privacy-leakage-checks"
 
@@ -31,9 +30,7 @@ def test_allows_cookie_with_consent_context(tool_use, assert_allows):
         {
             "file_path": "/repo/src/track.ts",
             "content": (
-                "if (hasConsent('analytics')) {\n"
-                '  document.cookie = "uid=123";\n'
-                "}\n"
+                "if (hasConsent('analytics')) {\n  document.cookie = \"uid=123\";\n}\n"
             ),
         },
     )

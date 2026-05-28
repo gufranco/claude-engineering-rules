@@ -98,7 +98,9 @@ def _is_protected(path: str) -> bool:
     base = os.path.basename(path)
     if base in PROTECTED_BASENAMES:
         return True
-    if base.startswith(PROTECTED_PREFIXES) and base.endswith(PROTECTED_TSCONFIG_SUFFIXES):
+    if base.startswith(PROTECTED_PREFIXES) and base.endswith(
+        PROTECTED_TSCONFIG_SUFFIXES
+    ):
         # tsconfig.app.json, tsconfig.node.json, tsconfig.build.json, etc.
         return True
     return False
@@ -118,11 +120,14 @@ def _proposed_content(tool_input: dict) -> str | None:
     return None
 
 
-import sys as _sys, os as _os
+import sys as _sys  # noqa: E402
+import os as _os  # noqa: E402
+
 _sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
 try:
     from _lib.profile import should_run  # noqa: E402
 except ImportError:
+
     def should_run(_id: str) -> bool:
         return True
 

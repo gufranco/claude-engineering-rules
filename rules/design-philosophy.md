@@ -130,4 +130,3 @@ If the answer to all three is "neither, nothing, no", the change was strictly ta
 - [`surgical-edits.md`](surgical-edits.md): scope discipline at the diff level.
 - [`ai-guardrails.md`](ai-guardrails.md): mechanical review of AI-generated code.
 - [`verification.md`](verification.md): the completion gate.
-

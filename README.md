@@ -10,7 +10,7 @@
 
 </div>
 
-**17** always-on rules · **65** on-demand standards · **33** slash-command skills · **52** runtime hooks · **15** custom agents · **36** MCP servers · **782** review items across **70** categories
+**17** always-on rules · **65** on-demand standards · **33** slash-command skills · **52** runtime hooks · **15** custom agents · **36** MCP servers · **869** review items across **71** categories
 
 ---
 
@@ -46,8 +46,8 @@ Verify-before-claim is a rule, not a suggestion. Read the file, run the command,
 <tr>
 <td width="50%" valign="top">
 
-### 782-Item Review Checklist
-One file, 70 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
+### 869-Item Review Checklist
+One file, 71 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
 
 </td>
 <td width="50%" valign="top">
@@ -74,7 +74,7 @@ A layered config where each layer catches what the layer above missed.
 | [`hooks/`](hooks) | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
 | [`skills/`](skills) | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
 | [`agents/`](agents) | Specialized subagents for focused review tasks | When delegated explicitly |
-| [`checklists/`](checklists) | 782-item review checklist for code, infra, and process | On demand during review |
+| [`checklists/`](checklists) | 869-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
@@ -342,7 +342,7 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 | Ambiguity | Choose | Because |
 |:----------|:-------|:--------|
 | `/review` vs `/assessment` | `/review` for diff-level findings; `/assessment` for whole-system audit | `/review` catches bugs in what was written; `/assessment` finds patterns that should be present but are not |
-| `/review` vs `/audit` | `/audit` for security focus; `/review` for general quality | `/audit` runs STRIDE, dependency scans, and secret detection; `/review` runs the 70-category checklist |
+| `/review` vs `/audit` | `/audit` for security focus; `/review` for general quality | `/audit` runs STRIDE, dependency scans, and secret detection; `/review` runs the 71-category checklist |
 | `/respond` vs `/ship --pipeline` | `/respond` for human reviewer threads; `/ship --pipeline` for unattended AI-bot threads | Set `RESPOND_DRIVES_PIPELINE=1` to delegate the bot loop to `/respond` and unify the vocabulary across both flows |
 | `/investigate` vs `/profile` | `/investigate` for correctness; `/profile` for performance | `/investigate` debugs why something fails; `/profile` finds bottlenecks in working code |
 | `/refactor` vs `/migrate` | `/refactor` for internal restructure; `/migrate` for framework or version change | `/refactor` preserves behavior in your own code; `/migrate` follows the upstream's official upgrade docs |
@@ -408,9 +408,8 @@ The `env-file-guard.sh` hook adds a runtime layer that catches anything permissi
 $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
-  INTERVIEW-WORKFLOWS.md Playbook for live coding interviews
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 782-item review checklist across 70 categories
+  checklists/            Unified 869-item review checklist across 71 categories
   rules/                 17 always-on rules plus 7 language-specific
     index.yml            Rule and standard catalog with trigger keywords
     lang/                TypeScript, Prisma, TypeORM, Drizzle, Sequelize rules
