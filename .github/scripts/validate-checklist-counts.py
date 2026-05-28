@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 CHECKLIST = os.path.join(BASE_DIR, "checklists", "checklist.md")
 CLAUDE_MD = os.path.join(BASE_DIR, "CLAUDE.md")
 README_MD = os.path.join(BASE_DIR, "README.md")

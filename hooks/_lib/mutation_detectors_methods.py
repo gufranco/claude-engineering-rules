@@ -20,14 +20,14 @@ from __future__ import annotations
 
 import re
 
-from mutation_allowlists import (
+from .mutation_allowlists import (
     collect_temporal_receivers,
     collect_web_api_receivers,
     has_temporal_usage,
     is_temporal_chain_call,
     is_web_api_receiver,
 )
-from mutation_detectors_core import (
+from .mutation_detectors_core import (
     Match,
     strip_strings_comments,
     truncate_excerpt,

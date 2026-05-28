@@ -19,16 +19,15 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "hooks"))
 
-import hook_integrity  # noqa: E402
+from _lib import hook_integrity  # noqa: E402
 
 
 @pytest.fixture
 def isolated_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     repo = tmp_path / "repo"
     (repo / "hooks").mkdir(parents=True)
-    (repo / "scripts").mkdir(parents=True)
     monkeypatch.setattr(hook_integrity, "REPO_ROOT", repo)
     monkeypatch.setattr(hook_integrity, "HOOKS_DIR", repo / "hooks")
     monkeypatch.setattr(

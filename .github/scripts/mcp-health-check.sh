@@ -5,8 +5,8 @@
 # checks whether it exits cleanly or responds to a basic probe.
 #
 # Usage:
-#   bash scripts/mcp-health-check.sh
-#   bash scripts/mcp-health-check.sh --verbose
+#   bash .github/scripts/mcp-health-check.sh
+#   bash .github/scripts/mcp-health-check.sh --verbose
 
 set -euo pipefail
 

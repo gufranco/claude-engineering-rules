@@ -20,11 +20,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOKS_DIR = REPO_ROOT / "hooks"
-SCRIPTS_DIR = REPO_ROOT / "scripts"
 HOOK_PATH = HOOKS_DIR / "mutation-method-blocker.py"
 
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
 if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 

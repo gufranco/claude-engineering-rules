@@ -23,9 +23,9 @@ from __future__ import annotations
 
 import re
 
-from mutation_allowlists import is_dom_assignment, is_dom_receiver
-from mutation_detectors_core import Match, strip_strings_comments, truncate_excerpt
-from mutation_fix_lookup import tc39_stage_filter
+from .mutation_allowlists import is_dom_assignment, is_dom_receiver
+from .mutation_detectors_core import Match, strip_strings_comments, truncate_excerpt
+from .mutation_fix_lookup import tc39_stage_filter
 
 
 def _split_chain(chain: str) -> tuple[str, str]:

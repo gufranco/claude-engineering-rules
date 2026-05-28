@@ -16,9 +16,9 @@ sessions:
 
 Usage:
 
-    python3 scripts/maintenance.py watch-list
-    python3 scripts/maintenance.py quarterly-check
-    python3 scripts/maintenance.py quarterly-check --force
+    python3 .github/scripts/maintenance.py watch-list
+    python3 .github/scripts/maintenance.py quarterly-check
+    python3 .github/scripts/maintenance.py quarterly-check --force
 
 The script never modifies hook state and never produces a non-zero exit code
 for routine output. A non-zero exit indicates a CLI usage error.
@@ -169,7 +169,7 @@ def _quarterly_message(today: _dt.date) -> str:
         "an entry to hooks/mutation_fix_suggestions.json with the matching "
         'MMB code and a `"stage": 4` field; remove or update any pre-Stage-4 '
         "draft entry that referenced the same feature. "
-        "Run: python3 scripts/maintenance.py watch-list"
+        "Run: python3 .github/scripts/maintenance.py watch-list"
     )
 
 

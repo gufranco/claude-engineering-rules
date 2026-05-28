@@ -20,9 +20,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from mutation_allowlists import (  # noqa: E402
+from _lib.mutation_allowlists import (  # noqa: E402
     collect_state_mgmt_receivers,
     collect_svelte_state_raw_receivers,
     is_in_state_mgmt_scope,

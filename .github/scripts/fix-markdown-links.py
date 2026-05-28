@@ -8,10 +8,10 @@ findings, then rewrites each file in place, wrapping every flagged span as
 Idempotent: re-running on a clean file produces no changes.
 
 Usage:
-    python3 scripts/fix-markdown-links.py
-    python3 scripts/fix-markdown-links.py --include-advisory
-    python3 scripts/fix-markdown-links.py path/to/file.md ...
-    python3 scripts/fix-markdown-links.py --dry-run
+    python3 .github/scripts/fix-markdown-links.py
+    python3 .github/scripts/fix-markdown-links.py --include-advisory
+    python3 .github/scripts/fix-markdown-links.py path/to/file.md ...
+    python3 .github/scripts/fix-markdown-links.py --dry-run
 """
 
 from __future__ import annotations
@@ -23,10 +23,10 @@ from collections import defaultdict
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
-sys.path.insert(0, str(SCRIPT_DIR))
+REPO_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from markdown_link_detector import (  # noqa: E402
+from _lib.markdown_link_detector import (  # noqa: E402
     BrokenLinkFinding,
     Finding,
     detect_broken_link_targets,

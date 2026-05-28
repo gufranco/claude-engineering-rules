@@ -20,9 +20,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 HOOK = ROOT / "hooks" / "mutation-method-blocker.py"
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "hooks"))
 
-from mutation_detectors_assignments import detect_optional_chain_assignment  # noqa: E402
+from _lib.mutation_detectors_assignments import detect_optional_chain_assignment  # noqa: E402
 
 
 def _run_hook(

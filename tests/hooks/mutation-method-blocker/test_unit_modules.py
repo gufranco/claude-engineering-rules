@@ -21,7 +21,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "hooks"
 HOOKS_DIR = REPO_ROOT / "hooks"
 HOOK_PATH = HOOKS_DIR / "mutation-method-blocker.py"
 
@@ -42,11 +42,11 @@ def _load_hook_module():
 
 HOOK_MODULE = _load_hook_module()
 
-import mutation_allowlists as allowlists  # noqa: E402
-import mutation_detectors_assignments as assignments  # noqa: E402
-import mutation_detectors_core as core  # noqa: E402
-import mutation_detectors_methods as methods  # noqa: E402
-import suppression as supp  # noqa: E402
+from _lib import mutation_allowlists as allowlists  # noqa: E402
+from _lib import mutation_detectors_assignments as assignments  # noqa: E402
+from _lib import mutation_detectors_core as core  # noqa: E402
+from _lib import mutation_detectors_methods as methods  # noqa: E402
+from _lib import suppression as supp  # noqa: E402
 
 
 def test_detect_lang_empty_path():

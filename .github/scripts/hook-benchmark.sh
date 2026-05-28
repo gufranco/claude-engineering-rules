@@ -2,8 +2,8 @@
 # hook-benchmark.sh — Measure execution time of each hook against a safe fixture.
 #
 # Usage:
-#   bash scripts/hook-benchmark.sh
-#   bash scripts/hook-benchmark.sh --threshold 500  # fail if any hook exceeds 500ms
+#   bash .github/scripts/hook-benchmark.sh
+#   bash .github/scripts/hook-benchmark.sh --threshold 500  # fail if any hook exceeds 500ms
 #
 # Hooks must complete in under 500ms to avoid blocking Claude's response.
 

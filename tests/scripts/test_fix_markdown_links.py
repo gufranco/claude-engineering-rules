@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-FIX_SCRIPT = REPO_ROOT / "scripts" / "fix-markdown-links.py"
+FIX_SCRIPT = REPO_ROOT / ".github" / "scripts" / "fix-markdown-links.py"
 SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
 COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
 

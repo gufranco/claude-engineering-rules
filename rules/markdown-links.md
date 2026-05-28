@@ -10,7 +10,7 @@ GitHub renders relative paths as file or folder views. A bare backtick reference
 
 The rule applies to every `.md` file in the repo root, [`skills/`](../skills/), [`rules/`](../rules/), [`standards/`](../standards/), and [`checklists/`](../checklists/).
 
-The validator at [`scripts/validate-markdown-links.py`](../scripts/validate-markdown-links.py) is advisory for `specs/` files, blocking for everywhere else.
+The validator at [`.github/scripts/validate-markdown-links.py`](../.github/scripts/validate-markdown-links.py) is advisory for `specs/` files, blocking for everywhere else.
 
 Out of scope for v1: `.mdx`, `.rst`, `.adoc` formats.
 
@@ -57,12 +57,12 @@ Tables in the README skills and hooks sections always link the file column. Exam
 
 ## Validator Integration
 
-[`scripts/validate-markdown-links.py`](../scripts/validate-markdown-links.py) runs on every CI Lint job. It fails the build on any bare file reference that resolves to an existing repo file.
+[`.github/scripts/validate-markdown-links.py`](../.github/scripts/validate-markdown-links.py) runs on every CI Lint job. It fails the build on any bare file reference that resolves to an existing repo file.
 
 Run locally:
 
 ```bash
-python3 scripts/validate-markdown-links.py
+python3 .github/scripts/validate-markdown-links.py
 ```
 
 Exit code 1 with line-cited findings on failure. Exit code 0 when clean.
@@ -78,7 +78,6 @@ Bypass via `MARKDOWN_LINKS_DISABLE=1`. Export in the parent shell because inline
 Directories whose markdown intentionally shows bare-path examples, like test fixtures, validator self-tests, and CI definitions:
 
 - `tests/`
-- `scripts/`
 - `.github/`
 - `tools/`
 - `specs/`. Advisory only inside this tree.

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SCRIPT_PATH = REPO_ROOT / "scripts" / "validate-clarity.py"
+SCRIPT_PATH = REPO_ROOT / ".github" / "scripts" / "validate-clarity.py"
 
 
 @pytest.fixture(scope="module")

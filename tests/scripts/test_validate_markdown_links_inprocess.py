@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VALIDATOR_PATH = REPO_ROOT / "scripts" / "validate-markdown-links.py"
+VALIDATOR_PATH = REPO_ROOT / ".github" / "scripts" / "validate-markdown-links.py"
 
 # Load the module with a Python-safe name since the file has a hyphen.
 spec = importlib.util.spec_from_file_location(
