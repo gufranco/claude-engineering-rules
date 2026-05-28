@@ -226,7 +226,7 @@ Still forbidden:
 | Definition repetition | "the cache (the Redis store)" | Use a comma or a separate sentence |
 | Long parenthetical | Parens spanning more than 80 characters of inner text | Hide the main clause |
 
-The audit script [`scripts/audit-writing-quality.py`](../scripts/audit-writing-quality.py) skips the four allowed patterns and flags the rest. Authors apply judgment on lines the audit cannot mechanically classify.
+The audit script [`.github/scripts/audit-writing-quality.py`](../.github/scripts/audit-writing-quality.py) skips the four allowed patterns and flags the rest. Authors apply judgment on lines the audit cannot mechanically classify.
 
 ## Shareable Text
 

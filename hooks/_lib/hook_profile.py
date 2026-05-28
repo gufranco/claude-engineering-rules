@@ -3,7 +3,7 @@
 Every hook in ~/.claude/hooks/ should import `should_run` and short-circuit
 at the top of `main()`:
 
-    from _lib.profile import should_run
+    from _lib.hook_profile import should_run
     if not should_run("dangerous-command-blocker"):
         sys.exit(0)
 

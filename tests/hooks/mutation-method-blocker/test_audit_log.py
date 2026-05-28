@@ -20,8 +20,8 @@ import pytest
 from conftest import make_edit_payload, make_write_payload, run_hook_subprocess
 
 _ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(_ROOT / "scripts"))
-from mutation_version import VERSION as _MUTATION_VERSION  # noqa: E402
+sys.path.insert(0, str(_ROOT / "hooks"))
+from _lib.mutation_version import VERSION as _MUTATION_VERSION  # noqa: E402
 
 
 @pytest.fixture

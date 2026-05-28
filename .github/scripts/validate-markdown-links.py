@@ -9,9 +9,9 @@ Exit code 0 when clean. Exit code 1 when any blocking finding is present.
 Advisory findings (paths under ``specs/``) print to stdout but do not fail.
 
 Usage:
-    python3 scripts/validate-markdown-links.py
-    python3 scripts/validate-markdown-links.py --include-advisory
-    python3 scripts/validate-markdown-links.py path/to/file.md ...
+    python3 .github/scripts/validate-markdown-links.py
+    python3 .github/scripts/validate-markdown-links.py --include-advisory
+    python3 .github/scripts/validate-markdown-links.py path/to/file.md ...
 """
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
-sys.path.insert(0, str(SCRIPT_DIR))
+REPO_ROOT = SCRIPT_DIR.parent.parent
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from markdown_link_detector import (  # noqa: E402
+from _lib.markdown_link_detector import (  # noqa: E402
     BrokenLinkFinding,
     Finding,
     detect_broken_link_targets,
@@ -146,7 +146,7 @@ def main() -> int:
             print(f"  {bf.render()}")
         print()
         print("Rewrite each link target as a path relative to the document.")
-        print("Auto-fix: python3 scripts/fix-markdown-links.py")
+        print("Auto-fix: python3 .github/scripts/fix-markdown-links.py")
         print()
 
     print("Rule: rules/markdown-links.md")

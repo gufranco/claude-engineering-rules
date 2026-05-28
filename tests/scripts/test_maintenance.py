@@ -14,11 +14,15 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+SCRIPT_PATH = REPO_ROOT / ".github" / "scripts" / "maintenance.py"
 
-import maintenance  # noqa: E402
+import importlib.util  # noqa: E402
+
+_spec = importlib.util.spec_from_file_location("maintenance", SCRIPT_PATH)
+assert _spec is not None and _spec.loader is not None
+maintenance = importlib.util.module_from_spec(_spec)
+sys.modules["maintenance"] = maintenance
+_spec.loader.exec_module(maintenance)
 
 
 # --------------------------------------------------------------------------- #
@@ -234,7 +238,7 @@ def test_main_dispatches_quarterly_check_force(capsys) -> None:
 
 def test_main_module_entry_runs_as_subprocess(tmp_path: Path) -> None:
     # Arrange
-    script = SCRIPTS_DIR / "maintenance.py"
+    script = REPO_ROOT / ".github" / "scripts" / "maintenance.py"
 
     # Act
     proc = subprocess.run(

@@ -21,7 +21,7 @@ SPECIFIC_REFERENCE_SAMPLES = [
     "lib/api/handler.py",
     "internal/auth/main.go",
     "src/lib.rs",
-    "scripts/deploy.sh",
+    "hooks/_lib/deploy.sh",
     "config/database.yml",
     "schema.prisma",
     "models/User.kt",

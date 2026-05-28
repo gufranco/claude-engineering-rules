@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VALIDATOR = REPO_ROOT / "scripts" / "validate-markdown-links.py"
+VALIDATOR = REPO_ROOT / ".github" / "scripts" / "validate-markdown-links.py"
 
 
 def run_validator(path: Path, *extra_args: str) -> subprocess.CompletedProcess:

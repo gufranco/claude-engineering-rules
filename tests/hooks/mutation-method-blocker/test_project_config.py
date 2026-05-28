@@ -21,9 +21,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "hooks"))
 
-import mutation_project_config as mpc  # noqa: E402
+from _lib import mutation_project_config as mpc  # noqa: E402
 
 
 def _make_project(tmp_path: Path, marker: str = "package.json") -> Path:

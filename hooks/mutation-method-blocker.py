@@ -219,24 +219,19 @@ import sys
 import time
 from typing import Any
 
-sys.path.insert(
-    0,
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
-    ),
-)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from audit_log import record as _audit
+    from _lib.audit_log import record as _audit
 except Exception:  # pragma: no cover
 
     def _audit(**_fields: Any) -> None:
         return None
 
 
-from hook_io import block as _hio_block
+from _lib.hook_io import block as _hio_block
 
-from mutation_allowlists import (
+from _lib.mutation_allowlists import (
     JOTAI_CALLBACK_OPENER_PATTERN,
     collect_state_mgmt_receivers,
     collect_svelte_state_raw_receivers,
@@ -249,7 +244,7 @@ from mutation_allowlists import (
     skip_extension,
     skip_path,
 )
-from mutation_detectors_assignments import (
+from _lib.mutation_detectors_assignments import (
     detect_compound_assignment,
     detect_computed_or_index_assignment,
     detect_delete_operator,
@@ -278,25 +273,29 @@ from mutation_detectors_assignments import (
     detect_symbol_key_assignment,
     filter_matches_in_canonical_static_blocks,
 )
-from mutation_confidence import (
+from _lib.mutation_confidence import (
     TYPED_SUFFIX_HINTS,
     score_finding,
     to_sarif_level,
 )
-from mutation_detectors_core import (
+from _lib.mutation_detectors_core import (
     Match,
     ast_grep_path,
     detect_lang,
     strip_strings_comments,
 )
-from mutation_source_map import is_transpiled_path, load_source_map, map_to_original
-from mutation_ts_project_service import (
+from _lib.mutation_source_map import (
+    is_transpiled_path,
+    load_source_map,
+    map_to_original,
+)
+from _lib.mutation_ts_project_service import (
     is_available as ts_ps_available,
     is_enabled as ts_ps_enabled,
     query_receiver_type as ts_ps_query,
     shutdown as ts_ps_shutdown,
 )
-from mutation_detectors_methods import (
+from _lib.mutation_detectors_methods import (
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
     detect_array_push,
     detect_array_sort,
@@ -320,7 +319,7 @@ from mutation_detectors_methods import (
     detect_wasm_memory_grow,
     detect_weakref_then_mutate,
 )
-from suppression import (
+from _lib.suppression import (
     BlockState,
     compute_block_state,
     has_inline_marker,
@@ -329,7 +328,7 @@ from suppression import (
     is_suppressed,
 )
 
-from mutation_version import VERSION as _MUTATION_VERSION
+from _lib.mutation_version import VERSION as _MUTATION_VERSION
 
 VERSION = _MUTATION_VERSION
 __version__ = _MUTATION_VERSION
@@ -1025,14 +1024,9 @@ def _handle_cli_flags() -> int | None:
     if flag == "--list-allowlists":
         import json as _json
 
-        sys.path.insert(
-            0,
-            os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
-            ),
-        )
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         try:
-            import mutation_allowlists as _aw
+            from _lib import mutation_allowlists as _aw
         except ImportError as exc:
             sys.stderr.write(f"failed to import allowlists: {exc}\n")
             return 1
@@ -1054,10 +1048,10 @@ import os as _os  # noqa: E402
 
 _sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
 try:
-    from _lib.profile import should_run  # noqa: E402
+    from _lib.hook_profile import should_run  # noqa: E402
 except ImportError:
 
-    def should_run(_id: str) -> bool:
+    def should_run(hook_id: str) -> bool:
         return True
 
 

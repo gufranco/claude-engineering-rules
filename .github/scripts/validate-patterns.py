@@ -14,7 +14,9 @@ import os
 import re
 import sys
 
-CLAUDE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CLAUDE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 BLOCKER_PATH = os.path.join(CLAUDE_DIR, "hooks", "dangerous-command-blocker.py")
 
 # Lists treated as known and required. Other ALL_CAPS list assignments are

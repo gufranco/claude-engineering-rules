@@ -19,10 +19,10 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "hooks"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-import bench_hooks  # noqa: E402
+from _lib import bench_hooks  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
@@ -895,7 +895,7 @@ def test_main_module_runs_via_subprocess(
 ) -> None:
     # Arrange
     _write_hook(hooks_dir, "ok", _allow_hook())
-    script = SCRIPTS_DIR / "bench_hooks.py"
+    script = SCRIPTS_DIR / "_lib" / "bench_hooks.py"
 
     # Act
     proc = subprocess.run(

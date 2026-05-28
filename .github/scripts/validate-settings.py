@@ -16,7 +16,9 @@ import os
 import re
 import sys
 
-CLAUDE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CLAUDE_DIR = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 SETTINGS_PATH = os.path.join(CLAUDE_DIR, "settings.json")
 
 DENY_PATTERN = re.compile(r"^(Read|Write|Edit)\(.+\)$")

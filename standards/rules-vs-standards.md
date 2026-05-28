@@ -109,7 +109,7 @@ When designing new guidance, ask: is this content as a rule or standard, workflo
 
 - Every new file in [`rules/`](../rules) or [`standards/`](.) must be registered in [`rules/index.yml`](../rules/index.yml)
 - Every removed file must be unregistered in the same commit
-- Run `python3 scripts/validate-counts.py` and `python3 scripts/validate-cross-refs.py` before committing changes to either tier
+- Run `python3 .github/scripts/validate-counts.py` and `python3 .github/scripts/validate-cross-refs.py` before committing changes to either tier
 - Trigger words are part of the public API of a standard. Treat trigger changes as breaking changes
 - Cross-references between standards belong in the body, not in `index.yml` descriptions
 

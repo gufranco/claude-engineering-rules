@@ -10,9 +10,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from markdown_link_detector import (  # noqa: E402
+from _lib.markdown_link_detector import (  # noqa: E402
     BrokenLinkFinding,
     Finding,
     column_inside_ranges,
@@ -32,7 +32,7 @@ from markdown_link_detector import (  # noqa: E402
 
 def test_is_file_path_token_accepts_extension():
     assert is_file_path_token("README.md")
-    assert is_file_path_token("scripts/validate.py")
+    assert is_file_path_token("hooks/_lib/validate.py")
     assert is_file_path_token("foo/bar/")
 
 
@@ -356,7 +356,7 @@ def test_tracked_paths_lists_files_and_directories():
     paths = tracked_paths(REPO_ROOT)
     # tracked_paths should include some known files
     assert "README.md" in paths
-    assert "scripts/markdown_link_detector.py" in paths
+    assert "hooks/_lib/markdown_link_detector.py" in paths
     # And derived directory entries
     assert "scripts" in paths
 

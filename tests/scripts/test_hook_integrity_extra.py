@@ -15,11 +15,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "hooks"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-import hook_integrity  # noqa: E402
+from _lib import hook_integrity  # noqa: E402
 
 
 @pytest.fixture
@@ -147,7 +147,7 @@ def test_main_dispatches_verify(
 
 def test_main_module_entry_runs_as_subprocess(tmp_path: Path) -> None:
     # Arrange
-    script = SCRIPTS_DIR / "hook_integrity.py"
+    script = SCRIPTS_DIR / "_lib" / "hook_integrity.py"
 
     # Act
     proc = subprocess.run(

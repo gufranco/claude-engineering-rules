@@ -8,8 +8,8 @@ goal is detection, not enforcement (the hook still runs).
 
 Maintenance:
 
-    python3 scripts/hook_integrity.py --update     # regenerate baseline
-    python3 scripts/hook_integrity.py --verify     # verify all hooks
+    python3 hooks/_lib/hook_integrity.py --update     # regenerate baseline
+    python3 hooks/_lib/hook_integrity.py --verify     # verify all hooks
 
 Schema (`hooks/.integrity.json`):
 
@@ -29,7 +29,7 @@ import json
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 HOOKS_DIR = REPO_ROOT / "hooks"
 INTEGRITY_FILE = HOOKS_DIR / ".integrity.json"
 
@@ -120,7 +120,7 @@ def assert_self(script_path: str | Path) -> bool:
         sys.stderr.write(
             f"hook_integrity: {rel} hash drifted "
             f"(expected {expected[:12]}, got {actual[:12]}). "
-            "Run scripts/hook_integrity.py --update if intentional.\n"
+            "Run hooks/_lib/hook_integrity.py --update if intentional.\n"
         )
         return False
     return True

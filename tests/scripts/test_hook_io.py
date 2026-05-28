@@ -13,11 +13,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "scripts"
+SCRIPTS_DIR = REPO_ROOT / "hooks"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from hook_io import (  # noqa: E402
+from _lib.hook_io import (  # noqa: E402
     ToolUse,
     add_post_context,
     allow,
@@ -141,9 +141,9 @@ def test_block_records_audit_payload(monkeypatch, tmp_path):
     def fake_record(**fields):
         captured.append(fields)
 
-    fake_module = type(sys)("audit_log")
+    fake_module = type(sys)("_lib.audit_log")
     fake_module.record = fake_record  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "audit_log", fake_module)
+    monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
     # Act
     code = block(

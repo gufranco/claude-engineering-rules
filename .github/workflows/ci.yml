@@ -43,10 +43,10 @@ jobs:
         run: ruff format --check hooks scripts tests
 
       - name: Validate counts
-        run: python3 scripts/validate-counts.py
+        run: python3 .github/scripts/validate-counts.py
 
       - name: Validate markdown link discipline
-        run: python3 scripts/validate-markdown-links.py
+        run: python3 .github/scripts/validate-markdown-links.py
 
       - name: Validate JSON
         run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True) if 'node_modules' not in f]"
@@ -99,19 +99,19 @@ jobs:
           echo "All markdown files valid"
 
       - name: Validate agent definitions
-        run: python3 scripts/validate-agents.py
+        run: python3 .github/scripts/validate-agents.py
 
       - name: Validate settings.json
-        run: python3 scripts/validate-settings.py
+        run: python3 .github/scripts/validate-settings.py
 
       - name: Validate command blocker patterns
-        run: python3 scripts/validate-patterns.py
+        run: python3 .github/scripts/validate-patterns.py
 
       - name: Validate skill definitions
-        run: python3 scripts/validate-skills.py
+        run: python3 .github/scripts/validate-skills.py
 
       - name: Validate cross-references
-        run: python3 scripts/validate-cross-refs.py
+        run: python3 .github/scripts/validate-cross-refs.py
 
   workflow-lint:
     name: Workflow lint (actionlint + yamllint)
@@ -163,11 +163,11 @@ jobs:
         run: |
           mypy --strict \
             hooks/mutation-method-blocker.py \
-            scripts/mutation_detectors_core.py \
-            scripts/mutation_detectors_methods.py \
-            scripts/mutation_detectors_assignments.py \
-            scripts/suppression.py \
-            scripts/audit_log.py
+            hooks/_lib/mutation_detectors_core.py \
+            hooks/_lib/mutation_detectors_methods.py \
+            hooks/_lib/mutation_detectors_assignments.py \
+            hooks/_lib/suppression.py \
+            hooks/_lib/audit_log.py
 
   hooks:
     name: Hook tests
@@ -190,7 +190,7 @@ jobs:
         run: bash tests/test-hooks.sh
 
       - name: Hook performance check
-        run: bash scripts/hook-benchmark.sh --threshold 500
+        run: bash .github/scripts/hook-benchmark.sh --threshold 500
 
   pytest:
     name: Python unit + integration

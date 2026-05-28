@@ -23,11 +23,11 @@ otherwise so it can wire into pre-commit and CI.
 
 Usage:
 
-    python3 scripts/hook_contract_lint.py                 # lint all hooks
-    python3 scripts/hook_contract_lint.py --format json   # JSON report
-    python3 scripts/hook_contract_lint.py --hooks-dir ./hooks
-    python3 scripts/hook_contract_lint.py --include foo --include bar
-    python3 scripts/hook_contract_lint.py --strict        # treat info as warning
+    python3 hooks/_lib/hook_contract_lint.py                 # lint all hooks
+    python3 hooks/_lib/hook_contract_lint.py --format json   # JSON report
+    python3 hooks/_lib/hook_contract_lint.py --hooks-dir ./hooks
+    python3 hooks/_lib/hook_contract_lint.py --include foo --include bar
+    python3 hooks/_lib/hook_contract_lint.py --strict        # treat info as warning
 """
 
 from __future__ import annotations

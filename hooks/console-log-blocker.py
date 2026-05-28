@@ -33,22 +33,17 @@ import os
 import re
 import sys
 
-sys.path.insert(
-    0,
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"
-    ),
-)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from audit_log import record as _audit  # type: ignore
+    from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
     def _audit(**_fields):  # type: ignore
         return None
 
 
-from suppression import (
+from _lib.suppression import (
     compute_block_state,
     has_inline_marker,
     has_justification_trailer,
@@ -195,7 +190,7 @@ import os as _os  # noqa: E402
 
 _sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
 try:
-    from _lib.profile import should_run  # noqa: E402
+    from _lib.hook_profile import should_run  # noqa: E402
 except ImportError:
 
     def should_run(_id: str) -> bool:

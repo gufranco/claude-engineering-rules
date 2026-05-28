@@ -3,7 +3,7 @@
 
 Detects bare file-path mentions in markdown that should be wrapped in a
 link to the actual file. Used by both the validator at
-``scripts/validate-markdown-links.py`` and the hook at
+``.github/scripts/validate-markdown-links.py`` and the hook at
 ``hooks/markdown-link-discipline.py`` so the two cannot drift.
 
 Rule source: ``rules/markdown-links.md``.
@@ -45,7 +45,6 @@ FILE_PATH_TOKEN = re.compile(
 # Skip directories whose markdown is allowed to show bare paths.
 SKIP_DIR_PREFIXES = (
     "tests/",
-    "scripts/",
     ".github/",
     "tools/",
 )
