@@ -77,7 +77,7 @@ Run `ls` on the project root and each top-level directory. Classify each directo
 | Documentation | [`docs/`](../../docs), `doc/` |
 | Infrastructure | `infra/`, `terraform/`, `k8s/`, `docker/` |
 | Database | `prisma/`, `migrations/`, `db/` |
-| Scripts | [`scripts/`](../../scripts), `bin/`, `tools/` |
+| Scripts | `scripts/`, `bin/`, `tools/` |
 | Static assets | `public/`, `static/`, `assets/` |
 
 ### Step 3: Identify entry points

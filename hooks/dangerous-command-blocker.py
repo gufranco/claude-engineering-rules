@@ -33,9 +33,9 @@ import sys
 
 # Best-effort import of the shared audit log helper. Silent fallback keeps the
 # hook functional even if the script directory is not on sys.path.
-sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
-    from audit_log import record as _audit  # type: ignore
+    from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
     def _audit(**_fields):  # type: ignore

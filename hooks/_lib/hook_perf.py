@@ -83,8 +83,8 @@ def _resolve_hook_name(fn: Callable[..., object]) -> str:
 
 def _emit_budget_exceeded(*, hook: str, elapsed_ms: int, budget_ms: int) -> None:
     try:
-        sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
-        from audit_log import record as _record
+        sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+        from _lib.audit_log import record as _record
     except ImportError:
         return
     try:

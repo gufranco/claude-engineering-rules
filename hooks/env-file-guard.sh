@@ -9,7 +9,7 @@
 # Exit 0 = allow, exit 2 = block.
 
 _audit_block() {
-    python3 "$HOME/.claude/scripts/audit_log.py" --hook env-file-guard \
+    python3 "$HOME/.claude/hooks/_lib/audit_log.py" --hook env-file-guard \
         --decision block --tool "${TOOL:-}" --reason "$1" --command "${FILE_PATH:-}" 2>/dev/null || true
 }
 

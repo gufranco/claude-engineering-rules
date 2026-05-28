@@ -45,9 +45,9 @@ CACHE_DIR = os.path.expanduser("~/.claude/cache")
 STATE_FILE = os.path.join(CACHE_DIR, "gateguard-state.json")
 STATE_TTL_SECONDS = 24 * 60 * 60  # purge sessions older than 24 hours
 
-sys.path.insert(0, os.path.expanduser("~/.claude/scripts"))
+sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
-    from audit_log import record as _audit  # type: ignore
+    from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
     def _audit(**_fields):  # type: ignore
