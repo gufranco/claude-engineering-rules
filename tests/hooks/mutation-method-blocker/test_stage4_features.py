@@ -18,9 +18,29 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
-sys.path.insert(0, str(REPO_ROOT / "hooks"))
+
+
+@pytest.fixture(autouse=True)
+def _restore_tc39_stage_filter():
+    """Restore mutation_fix_lookup module state after every test in this file.
+
+    Several tests mutate `MUTATION_METHOD_TC39_STAGE_FILTER` and reload the
+    module. Without this fixture, an assertion failure mid-test leaks state
+    into the next test, which causes flaky failures in `test_mutation_fix_lookup`.
+    """
+    original = os.environ.get("MUTATION_METHOD_TC39_STAGE_FILTER")
+    yield
+    if original is None:
+        os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
+    else:
+        os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = original
+    if "_lib.mutation_fix_lookup" in sys.modules:
+        importlib.reload(sys.modules["_lib.mutation_fix_lookup"])
+
 
 from _lib.mutation_detectors_methods import (  # noqa: E402
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
@@ -345,6 +365,7 @@ def test_maintenance_quarterly_message_mentions_finished_proposals() -> None:
     )
     assert spec is not None and spec.loader is not None
     maintenance = importlib.util.module_from_spec(spec)
+    sys.modules["maintenance"] = maintenance
     spec.loader.exec_module(maintenance)
 
     # Act
