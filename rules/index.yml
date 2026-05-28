@@ -59,6 +59,42 @@ always_loaded:
     description: BCP 14 (RFC 2119 + RFC 8174) normative keyword vocabulary for rules, standards, skills, agents, and READMEs. Glossary for must, must not, should, should not, may, never, always with equivalent forms. Lowercase is the default register. Uppercase is opt-in for genuinely critical security, correctness, data-integrity, and irreversibility statements. Single-citation model avoids per-file RFC boilerplate. Composes with writing-precision.md "Eliminate weasel words"
     triggers: [must, "must not", should, "should not", shall, may, required, recommended, optional, never, always, normative, keyword, "normative keyword", bcp, "bcp 14", "rfc 2119", "rfc 8174", weasel, obligation, requirement]
 
+  compliance-defaults:
+    description: Master umbrella rule for ten frontend compliance domains. Strictest-applicable-rule-wins policy. Existing-but-not-yet-mandatory rules count as mandatory. Loads accessibility, privacy, cookies, cybersecurity, consumer protection by default. Children, AI, anti-spam, sectoral, topical load on keyword. Locked targets table (WCAG 2.2 AA + AAA, GDPR-grade privacy, opt-in cookies, NIST password, 44x44 target size, 7:1 contrast, 14-day withdrawal, AI disclosure, 72h breach notification).
+    triggers: [compliance, frontend, ui, component, form, modal, dialog, page, button, navigation, table, autocomplete, chart, image, video, icon, link, layout, theme]
+
+  accessibility-defaults:
+    description: WCAG 2.2 AA mandatory + AAA aspirational. Forbidden patterns list (img without alt, input without label, role on div without keyboard, tabindex > 0, missing lang, color-only meaning, image CAPTCHA). Mechanical hook accessibility-mechanical-checks.py.
+    triggers: [accessibility, a11y, wcag, aria, axe, axe-core, jest-axe, playwright-axe, cypress-axe, lighthouse, pa11y, screen reader, voiceover, nvda, talkback, focus management, contrast, keyboard navigation, alt text, label, semantic html]
+
+  privacy-defaults:
+    description: GDPR-grade privacy by default across all jurisdictions. Lawful basis, opt-in consent, 30-day DSAR, 72h breach notification, 24-month retention default, DPO designation, DPIA triggers, SCCs/BCRs for transfers, sensitive data union, ADM right to explanation. Forbidden patterns (soft delete for erasure, bundled consent, pre-ticked boxes, PII in logs/URLs).
+    triggers: [privacy, personal data, gdpr, lgpd, ccpa, cpra, pipeda, lfpdpp, dsar, dpia, dpo, consent, retention, erasure, breach notification, pseudonymization, sensitive data, anonymization, lawful basis, data subject, data minimization, signup, "sign up", "sign-up", registration, register, "create account", "user account", profile, "user data", contact form]
+
+  cookie-discipline:
+    description: ePrivacy + EDPB cookie rules. Opt-in default, reject-all parity with accept-all, granular categories, no pre-ticked boxes, no cookie walls, one-click withdrawal, banner accessibility (aria-modal, focus trap, ESC), consent record, CCPA Do Not Sell or Share link.
+    triggers: [cookie, cookies, eprivacy, banner, consent banner, gtm, google analytics, tracking pixel, localstorage, sessionstorage, indexeddb, "do not sell", "do not share"]
+
+  cybersecurity-baseline:
+    description: Frontend cybersecurity defaults. TLS 1.3, HSTS preload, nonce-based CSP, HttpOnly+Secure+SameSite cookies, NIST password policy, MFA mandate, session timeout matrix, rate limits, breach notification timeline matrix (GDPR 72h, SEC 4 business days, HIPAA 60d, state 30-90d, NIS2 24h+72h, ANPD 2 business days), SRI, open redirect prevention, SSRF prevention.
+    triggers: [cybersecurity, security baseline, nis2, dora, breach notification, csp, hsts, subresource integrity, sri, ssrf, open redirect, ratelimit, "rate limit", session timeout]
+
+  consumer-defaults:
+    description: EU Consumer Rights + Omnibus + Brazil CDC + FTC consumer protection. 14-day withdrawal, pre-contractual info, price transparency, auto-renewal disclosure, Click-to-Cancel, fake-review prohibition, dark pattern ban, Decreto 7.962 e-commerce specifics, refund window.
+    triggers: [consumer, e-commerce, ecommerce, checkout, purchase, subscription, withdrawal, refund, "free trial", auto-renewal, dark pattern, dark-pattern, "fake review", review platform, price, tax, shipping, "click to cancel"]
+
+  children-privacy-defaults:
+    description: COPPA + GDPR Art. 8 + UK Children's Code + California AADC + LGPD Art. 14. Default consent age 18 for profiling/ads, 16 for accounts, 13 minimum with verifiable parental consent under 13. High-privacy by default for under-18. No behavioral profiling. No nudge techniques. No streak counts. Geolocation off by default. Parental controls. Age threshold matrix per jurisdiction.
+    triggers: [child, children, kid, kids, minor, minors, "under 18", "under 16", "under 13", coppa, aadc, "age appropriate design code", "children's code", "parental consent", "age gate", "age verification", family, educational, gaming, ECA]
+
+  ai-compliance-defaults:
+    description: EU AI Act + Colorado AI Act + NYC LL 144 + California SB 942 + California AB 2013 + AIDA + Brazil PL 2338. Risk tier classification, Article 5 prohibitions (Feb 2025), GPAI obligations (Aug 2025), high-risk obligations (Aug 2026), disclosure tag on model output, chatbot self-identification, deepfake watermark, ADM right to explanation, annual bias audit, training data transparency. Mechanical hook ai-disclosure-checks.py.
+    triggers: [ai, llm, chatbot, recommender, ranking, generative, gpt, claude, anthropic, openai, deepfake, "automated decision", "model output", "ml model", "ai act", "bias audit", "algorithmic discrimination", "high-risk ai", gpai]
+
+  anti-spam-defaults:
+    description: CAN-SPAM + CASL + ePrivacy + LGPD marketing rules. Opt-in default everywhere, one-click unsubscribe, List-Unsubscribe header, identity disclosure (legal name + physical address), accurate subject lines, transactional vs marketing distinction, suppression list, frequency cap, CASL express vs implied consent, Brazil LGPD soft opt-in conditions.
+    triggers: [spam, "anti-spam", "anti spam", marketing, newsletter, broadcast, "push notification", email campaign, sms, unsubscribe, "list-unsubscribe", "can-spam", casl, transactional, opt-in, opt-out]
+
   markdown-links:
     description: Every file mention in published markdown is a clickable link to the actual file. Two acceptable forms, exception zones, validator and hook integration, skip-list for test fixtures and command examples
     triggers: [markdown, md, documentation, readme, link, file reference, file mention, bare path, backlink, doc link]
@@ -457,3 +493,43 @@ on_demand:
     path: standards/jvm.md
     description: JVM languages, Java and Kotlin tooling, Gradle, strictness, null handling with JSpecify and Kotlin types, immutability, virtual threads, coroutines, JUnit 5, Spring constructor injection
     triggers: [java, kotlin, jvm, gradle, maven, spring, junit, kotest, coroutine, virtual thread, jmh, mockito]
+
+  cookies-eprivacy:
+    path: standards/cookies-eprivacy.md
+    description: Cookie banner UX, opt-in default, reject-all parity, granular categories, no pre-ticked boxes, no cookie walls, withdrawal mechanism, ANPD cookie guide, CCPA Do Not Sell or Share link, banner accessibility patterns, consent record schema
+    triggers: [cookie, cookies, eprivacy, "cookie banner", "consent banner", gtm, "google analytics", "tracking pixel", "facebook pixel", "do not sell", "do not share", localstorage, sessionstorage]
+
+  cybersecurity-baseline:
+    path: standards/cybersecurity-baseline.md
+    description: Frontend cybersecurity baseline. Breach notification UI templates, NIS2 + DORA scope detail, US state breach window matrix, SEC 4-business-day disclosure UI, security headers full table, CSP nonce-based template, MFA implementation patterns
+    triggers: [cybersecurity, "breach notification", "data breach", incident, nis2, dora, "sec cybersecurity", csp, hsts, "session timeout", "subresource integrity", sri, ssrf, "open redirect"]
+
+  consumer-protection:
+    path: standards/consumer-protection.md
+    description: EU Consumer Rights + Omnibus + Brazil CDC + FTC. 14-day withdrawal UX, pre-contractual info, price transparency, auto-renewal disclosure pattern, Click-to-Cancel implementation, fake-review prohibition, dark pattern bans
+    triggers: [consumer, e-commerce, ecommerce, checkout, purchase, subscription, withdrawal, refund, cancellation, "free trial", auto-renewal, "dark pattern", "fake review", "price transparency", "click to cancel"]
+
+  children-privacy:
+    path: standards/children-privacy.md
+    description: COPPA + GDPR Art. 8 + UK Children's Code 15 standards + California AADC + LGPD Art. 14 + Brazil ECA. Age gate UI patterns, verifiable parental consent flows, high-privacy-by-default defaults, no nudge techniques, parental controls dashboard, age threshold matrix per jurisdiction
+    triggers: [child, children, kid, kids, minor, minors, "under 18", "under 16", "under 13", coppa, aadc, "age appropriate design code", "children's code", "parental consent", "age gate", family, educational, gaming, eca]
+
+  ai-compliance:
+    path: standards/ai-compliance.md
+    description: EU AI Act risk tiers + Colorado AI Act + NYC LL 144 + California SB 942 + California AB 2013 + AIDA + Brazil PL 2338. Transparency notice template, deepfake disclosure UI, automated decision UI patterns, ADM right-to-explanation flow, bias audit cadence, GPAI provider compliance, EU AI Act phase milestone calendar
+    triggers: [ai, llm, chatbot, recommender, "automated decision", "model output", "ai act", "bias audit", "algorithmic discrimination", "high-risk ai", gpai, deepfake, "ai disclosure", "transparency notice"]
+
+  marketing-compliance:
+    path: standards/marketing-compliance.md
+    description: CAN-SPAM + CASL + ePrivacy + LGPD + UK PECR marketing rules. Opt-in vs opt-out per-jurisdiction matrix, one-click unsubscribe pattern, List-Unsubscribe header, identity disclosure, transactional vs marketing distinction, suppression list discipline, soft opt-in conditions
+    triggers: [spam, "anti-spam", marketing, newsletter, broadcast, "push notification", "email campaign", sms, unsubscribe, "list-unsubscribe", "can-spam", casl, pecr, transactional, "soft opt-in"]
+
+  sectoral-compliance:
+    path: standards/sectoral-compliance.md
+    description: Sector-specific frontend compliance. Health (HIPAA Privacy + Security Rule + GDPR Art. 9 + LGPD sensitive + BAA). Financial (PCI DSS 4.0 client-side scripts + PSD2 SCA + GLBA + BCB 4.658 + Open Finance). Biometric (Illinois BIPA + Texas CUBI + Washington MHMD). Identity/KYC (BSA + AMLD6 + eIDAS 2). Crypto (MiCA + Brazil 14.478). Tax (EU VAT OSS + Wayfair + PIS/COFINS). Whistleblower (EU 2019/1937 + Brazil 13.608)
+    triggers: [hipaa, phi, health, medical, "health data", pci, "pci dss", payment, card, cardholder, psd2, sca, glba, biometric, bipa, fingerprint, face, voice, kyc, aml, "anti-money laundering", identity, eidas, "digital identity wallet", crypto, mica, "virtual asset", vat, "sales tax", wayfair, "pis/cofins", whistleblower, banking, bank, "financial institution", wallet, account, transfer, transaction, deposit, withdrawal, "open banking", "open finance", "credit card", "debit card", insurance, telemedicine, prescription, "patient record"]
+
+  topical-compliance:
+    path: standards/topical-compliance.md
+    description: EU DSA notice-and-action + recommender transparency + Art. 25 dark patterns. NetzDG. Brazil LAI + US FOIA + EU Reg. 1049/2001. EU Open Data Directive + US OPEN Government Data Act + Brazil Plano de Dados Abertos. EU Reg. 2024/900 political advertising. Washington MHMD geolocation as sensitive. Content moderation UI, transparency report, public-sector transparency request UI
+    triggers: [dsa, "digital services act", netzdg, "content moderation", "notice and action", "transparency report", foia, lai, "lei de acesso à informacao", "open data", "election advertising", "political advertising", geolocation]
