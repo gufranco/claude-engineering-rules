@@ -1311,3 +1311,124 @@ Apply on every message that asks a clarifying question, briefs a subagent, repor
 - [ ] Bug reports include exact error text verbatim, with codes, paths, and hashes, plus environment and reproduction steps; patching is deferred until the report is captured. Antelope rule
 - [ ] Subagent prompts include scope, file:line references from prior investigation, prior attempts with errors, expected output shape, and a response-length cap
 - [ ] Loop closure: every completed task ends with a one-line resolution tagged `FIXED:`, `RESOLVED:`, or `DONE:` that names what changed, where, file:line, and the verification evidence command
+
+### 71. Frontend Compliance Defaults
+
+Apply to every frontend change. Reference: [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md). Strictest-applicable-rule-wins; existing-but-not-yet-mandatory rules count as mandatory.
+
+**Accessibility (WCAG 2.2 AA + AAA where feasible):**
+
+- [ ] Every `<img>` has an `alt` attribute. Decorative images use `alt=""`. Icon-only buttons have `aria-label`
+- [ ] Every form input has a programmatic label via `<label>`, `aria-label`, or `aria-labelledby`
+- [ ] Every interactive element is keyboard-operable. Click handlers on non-interactive elements have `role`, `tabIndex`, and key handlers
+- [ ] Heading order: one `<h1>` per page, no skipped levels
+- [ ] `<html>` has `lang` attribute; multi-language content uses `lang` on inline elements
+- [ ] Focus indicator is visible with 3:1 contrast against adjacent colors
+- [ ] Target size is at least 44x44 CSS pixels (locked at AAA per `conflicts.md`); 48x48 on Android
+- [ ] Color contrast aims for 7:1 (AAA target); 4.5:1 is the absolute floor
+- [ ] `prefers-reduced-motion: reduce` is honored on every animation
+- [ ] Authentication uses passkey, OAuth, or magic link; no image-recognition CAPTCHA, no math puzzle
+- [ ] Time limits are user-adjustable with warning + extension within security envelope
+- [ ] Sign-language video provided where signing community exists for the locale
+- [ ] Every accessibility feature implemented per supported language (locale equivalence)
+- [ ] Accessibility statement present on every project
+- [ ] WCAG 2.2 new criteria covered: 2.4.11 Focus Not Obscured, 2.5.7 Dragging Movements, 2.5.8 Target Size, 3.2.6 Consistent Help, 3.3.7 Redundant Entry, 3.3.8 Accessible Authentication
+- [ ] WCAG 2.0 SC 4.1.1 Parsing still met despite removal in 2.2 (older laws reference it)
+- [ ] `<input type="password">` has `autocomplete` attribute (`current-password` or `new-password`)
+
+**Privacy and data protection (GDPR-grade default):**
+
+- [ ] Every processing activity has a documented lawful basis
+- [ ] Consent is opt-in, granular, withdrawable as easily as granted; no pre-ticked boxes, no bundled consents
+- [ ] DSAR endpoint exists; window 30 days max
+- [ ] Erasure is truly gone or irreversibly anonymized; soft delete with `isDeleted` flag rejected
+- [ ] Breach notification window observed: 72h external + 4 business days SEC for reporting entities
+- [ ] Retention default 24 months operational; longer only with explicit legal hold
+- [ ] DPO designated; DPIA triggered by profiling, sensitive data, monitoring, ADM, child data, biometric, geolocation
+- [ ] International transfers use SCCs or BCRs or adequacy; multi-region with EU data primary in EU
+- [ ] Pseudonymous data treated as personal data
+- [ ] Sensitive data union of all jurisdictions applied: encryption + access logging + separate consent
+- [ ] Personal data not logged; identifiers only
+- [ ] Personal data not in URLs, query parameters, or error messages
+
+**Cookies and ePrivacy:**
+
+- [ ] Cookie banner shows essential-only by default; non-essential requires explicit affirmative action
+- [ ] Reject-all parity with accept-all (same number of clicks)
+- [ ] Granular categories: strictly necessary, functional, analytics, marketing, personalization
+- [ ] No pre-ticked boxes; no cookie walls; one-click withdrawal
+- [ ] Banner is keyboard-operable, focus-trapped, ESC closes (default reject)
+- [ ] Consent record kept per user with timestamp, text version, categories, source
+- [ ] CCPA "Do Not Sell or Share My Personal Information" link in footer
+
+**Cybersecurity baseline:**
+
+- [ ] TLS 1.3 on new endpoints; HTTPS-only; HSTS preload + 2-year max-age
+- [ ] Cookies have HttpOnly + Secure + SameSite; `__Host-` prefix where applicable
+- [ ] CSP is nonce-based with strict-dynamic; no unsafe-inline; no unsafe-eval
+- [ ] Password: NIST 12-char minimum, no complexity, no rotation, breach-database check
+- [ ] MFA mandatory for any account touching personal, payment, health, or admin data
+- [ ] Session timeout 15 min sensitive, 60 min non-sensitive, with warning + extension
+- [ ] Access tokens never in localStorage; refresh tokens in httpOnly cookies
+- [ ] Subresource integrity on every external script
+- [ ] Open redirect prevented via allowlist
+- [ ] SSRF prevented: private IP ranges and cloud metadata blocked
+
+**Consumer protection and e-commerce (if applicable):**
+
+- [ ] 14-day withdrawal for distance-sale contracts, no questions asked
+- [ ] Pre-contractual info displayed: total price (incl. taxes + fees), seller identity, contact, complaint channel
+- [ ] Price transparency: total visible on first display
+- [ ] Auto-renewal disclosure pre-purchase with affirmative consent
+- [ ] Click-to-Cancel: cancellation requires same number of clicks as subscription
+- [ ] Fake-review prohibition observed
+- [ ] No dark patterns (countdown without genuine deadline, pre-selected upgrades, confusing decline buttons)
+
+**Children's privacy (when users may be under 18):**
+
+- [ ] Behavioral profiling and advertising disabled for under-18
+- [ ] High-privacy default for under-18 (no behavioral profiling, no targeted ads, geolocation off, profile not public)
+- [ ] Age verification proportional to risk; ID upload only when legally required
+- [ ] Verifiable parental consent under 13 (COPPA acceptable method documented)
+- [ ] No streak counts, "active now", or other nudge techniques for under-18
+- [ ] Plain-language age-appropriate transparency notice
+
+**AI compliance (when AI features present):**
+
+- [ ] Every AI feature classified per EU AI Act risk tier
+- [ ] EU AI Act Art. 5 prohibitions respected (no social scoring, no emotion recognition in workplace/education, etc.)
+- [ ] Visible AI disclosure label on every model-produced user-facing output
+- [ ] Chatbot identifies its nature on first interaction
+- [ ] Deepfake watermark on generated content depicting real persons
+- [ ] Automated decision with legal/significant effect provides human review path + plain-language explanation + appeal
+- [ ] Annual bias audit for any automated decision system
+- [ ] Training data transparency for large GenAI providers (California AB 2013)
+
+**Anti-spam and marketing (when sending communications):**
+
+- [ ] Marketing opt-in everywhere (GDPR + CASL + LGPD); CAN-SPAM opt-out treated as floor only
+- [ ] One-click unsubscribe + List-Unsubscribe header (RFC 8058)
+- [ ] Identity disclosure (legal name + physical address) in every commercial email
+- [ ] Accurate subject lines; no clickbait; no "Re:"/"Fwd:" abuse
+- [ ] Transactional vs marketing separation; > ~20% marketing content makes transactional become marketing
+- [ ] Suppression list permanent; re-imports re-apply suppression
+- [ ] Frequency cap respected
+
+**Sectoral overlays (if applicable):**
+
+- [ ] Health: HIPAA + GDPR Art. 9 + LGPD sensitive; BAA with vendors handling PHI; no analytics or marketing pixels on PHI pages
+- [ ] Financial: PCI DSS 4.0 client-side script management; PSD2 SCA; GLBA Safeguards
+- [ ] Biometric: BIPA-grade written consent + retention schedule everywhere; treated as sensitive
+- [ ] Identity/KYC: regulated provider; never store raw ID documents long-term
+- [ ] Crypto: MiCA authorization; reserve disclosure; FATF Travel Rule on transfers ≥ USD/EUR 1,000
+- [ ] Tax: EU VAT OSS/IOSS; US post-Wayfair sales tax; Brazil PIS/COFINS + ISS
+- [ ] Whistleblower: anonymous channel; 7-day acknowledgment; 3-month feedback (EU 2019/1937)
+
+**Topical (if applicable):**
+
+- [ ] DSA: notice-and-action UI, statement of reasons, internal complaint mechanism, recommender transparency
+- [ ] NetzDG (Germany social networks 2M+): 24h removal for manifestly unlawful, 7-day for other unlawful, transparency report
+- [ ] Government transparency: 15-working-day response window (strictest among FOIA/LAI/Reg 1049/2001)
+- [ ] Open data: machine-readable formats (CSV/JSON/RDF); open license; DCAT metadata
+- [ ] Election advertising: sponsor identification + targeting criteria disclosure + public ad repository
+- [ ] Geolocation truncated when full precision not needed
