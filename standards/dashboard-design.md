@@ -77,8 +77,19 @@ Apply both:
 
 A product dashboard must answer an operator question on entry. The first sentence of its README should read "this dashboard answers <question>". If it cannot be filled in, the dashboard is not ready to ship.
 
+## Compliance Defaults
+
+Dashboards apply the same compliance defaults as every other frontend surface. See [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md). Specifically:
+
+- **Accessibility**: WCAG 2.2 AA + AAA-aspirational; data tables use ARIA grid pattern; charts have accessible text alternatives; color is never the sole encoding
+- **Privacy**: dashboards that display personal data require access logging, role-based authorization, and audit trail per [`privacy-engineering.md`](privacy-engineering.md)
+- **Cybersecurity**: dashboards behind authentication require MFA and session timeout per [`cybersecurity-baseline.md`](cybersecurity-baseline.md)
+- **AI**: any predictive widget, recommendation, or AI-derived insight on the dashboard carries a disclosure label per [`ai-compliance.md`](ai-compliance.md)
+
 ## Related Standards
 
-- [`standards/observability.md`](observability.md): Observability
-- [`standards/sre-practices.md`](sre-practices.md): SRE Practices
-- [`standards/frontend.md`](frontend.md): Frontend. Anti-Template Policy
+- [`observability.md`](observability.md): Observability
+- [`sre-practices.md`](sre-practices.md): SRE Practices
+- [`frontend.md`](frontend.md): Frontend. Anti-Template Policy
+- [`accessibility-testing.md`](accessibility-testing.md): Data table accessibility, chart alternatives
+- [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md): Umbrella compliance rule

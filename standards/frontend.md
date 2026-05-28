@@ -579,8 +579,32 @@ Remove manual `useMemo` and `useCallback` calls in the same PR that enables the 
 - Avoid `@apply` in CSS files. Write utilities in JSX. Exception: base styles in `@layer base`
 - Group responsive variants left-to-right: `text-sm md:text-base lg:text-lg`
 
+## Compliance Defaults
+
+Every frontend task applies the strictest applicable rule across ten compliance domains. See [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md). Key cross-references per component pattern:
+
+| Pattern | Compliance cross-references |
+|---------|---------------------------|
+| Form (any) | [`accessibility-testing.md`](accessibility-testing.md) labels + autocomplete; [`privacy-engineering.md`](privacy-engineering.md) data minimization + consent; [`../rules/privacy-defaults.md`](../rules/privacy-defaults.md) lawful basis |
+| Login or signup | [`authentication.md`](authentication.md); [`accessibility-testing.md`](accessibility-testing.md) 3.3.8 + 3.3.9 accessible authentication; [`cybersecurity-baseline.md`](cybersecurity-baseline.md) rate limits + MFA |
+| Modal or dialog | [`accessibility-testing.md`](accessibility-testing.md) focus management; [`cookies-eprivacy.md`](cookies-eprivacy.md) banner UX when applicable |
+| Table (data) | [`accessibility-testing.md`](accessibility-testing.md) heading hierarchy + ARIA grid pattern |
+| Navigation | [`accessibility-testing.md`](accessibility-testing.md) landmarks + skip links |
+| Image | [`accessibility-testing.md`](accessibility-testing.md) alt text |
+| Video / audio | [`accessibility-testing.md`](accessibility-testing.md) captions + audio description + sign language for primary content |
+| Checkout | [`consumer-protection.md`](consumer-protection.md); [`sectoral-compliance.md`](sectoral-compliance.md) PCI DSS for card data |
+| Chatbot / AI feature | [`ai-compliance.md`](ai-compliance.md) disclosure + ADM transparency |
+| Cookie banner | [`cookies-eprivacy.md`](cookies-eprivacy.md) banner UX + accessibility |
+| Sign-up for kids | [`children-privacy.md`](children-privacy.md) age gate + parental consent |
+| Email or newsletter | [`marketing-compliance.md`](marketing-compliance.md) opt-in + unsubscribe |
+
 ## Related Standards
 
-- [`standards/accessibility-testing.md`](accessibility-testing.md): Accessibility Testing
-- [`standards/performance-budgets.md`](performance-budgets.md): Performance Budgets
-- [`standards/browser-testing.md`](browser-testing.md): Browser Testing
+- [`accessibility-testing.md`](accessibility-testing.md): Accessibility Testing
+- [`performance-budgets.md`](performance-budgets.md): Performance Budgets
+- [`browser-testing.md`](browser-testing.md): Browser Testing
+- [`cookies-eprivacy.md`](cookies-eprivacy.md): Cookie banner UX
+- [`cybersecurity-baseline.md`](cybersecurity-baseline.md): Frontend security headers
+- [`consumer-protection.md`](consumer-protection.md): E-commerce and consumer protection
+- [`children-privacy.md`](children-privacy.md): When users may be under 18
+- [`ai-compliance.md`](ai-compliance.md): When AI features are present
