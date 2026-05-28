@@ -90,7 +90,7 @@ def test_allows_env_with_var_reference(tool_use, assert_allows):
 
 def test_warns_floating_latest_tag(tool_use, assert_allows):
     # Arrange
-    content = "FROM node:latest\nUSER 1001\nCMD [\"node\"]\n"
+    content = 'FROM node:latest\nUSER 1001\nCMD ["node"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     # Act
@@ -102,7 +102,7 @@ def test_warns_floating_latest_tag(tool_use, assert_allows):
 
 def test_warns_lts_tag(tool_use, assert_allows):
     # Arrange
-    content = "FROM node:lts\nUSER 1001\nCMD [\"node\"]\n"
+    content = 'FROM node:lts\nUSER 1001\nCMD ["node"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     # Act
@@ -114,7 +114,7 @@ def test_warns_lts_tag(tool_use, assert_allows):
 
 def test_warns_no_tag(tool_use, assert_allows):
     # Arrange
-    content = "FROM ubuntu\nUSER 1001\nCMD [\"bash\"]\n"
+    content = 'FROM ubuntu\nUSER 1001\nCMD ["bash"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     # Act
@@ -126,7 +126,7 @@ def test_warns_no_tag(tool_use, assert_allows):
 
 def test_warns_user_root_in_final_stage(tool_use, assert_allows):
     # Arrange
-    content = "FROM node:22@sha256:abc\nUSER root\nCMD [\"node\"]\n"
+    content = 'FROM node:22@sha256:abc\nUSER root\nCMD ["node"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     # Act
@@ -138,7 +138,7 @@ def test_warns_user_root_in_final_stage(tool_use, assert_allows):
 
 def test_warns_missing_user_on_write(tool_use, assert_allows):
     # Arrange
-    content = "FROM node:22@sha256:abc\nCMD [\"node\"]\n"
+    content = 'FROM node:22@sha256:abc\nCMD ["node"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     # Act
@@ -150,7 +150,7 @@ def test_warns_missing_user_on_write(tool_use, assert_allows):
 
 def test_no_warn_when_non_root_user(tool_use, assert_allows):
     # Arrange
-    content = "FROM node:22@sha256:abc\nUSER 1001\nCMD [\"node\"]\n"
+    content = 'FROM node:22@sha256:abc\nUSER 1001\nCMD ["node"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     # Act
@@ -216,7 +216,7 @@ def test_blocks_compose_userns_mode_host(tool_use, assert_blocks):
 
 def test_warns_top_level_version(tool_use, assert_allows):
     # Arrange
-    content = "version: \"3.8\"\nservices:\n  app:\n    image: foo\n"
+    content = 'version: "3.8"\nservices:\n  app:\n    image: foo\n'
     payload = tool_use("Write", {"file_path": "/repo/compose.yml", "content": content})
 
     # Act
@@ -268,9 +268,7 @@ def test_no_warn_when_environment_uses_var(tool_use, assert_allows):
 def test_ignores_non_docker_file(tool_use, assert_allows):
     # Arrange
     content = "COPY .env /app/\nprivileged: true\n"
-    payload = tool_use(
-        "Write", {"file_path": "/repo/notes.txt", "content": content}
-    )
+    payload = tool_use("Write", {"file_path": "/repo/notes.txt", "content": content})
 
     # Act / Assert
     assert_allows(HOOK, payload)
@@ -312,9 +310,7 @@ def test_recognises_compose_override(tool_use, assert_blocks):
 def test_recognises_compose_yaml_extension(tool_use, assert_blocks):
     # Arrange
     content = "services:\n  app:\n    privileged: true\n"
-    payload = tool_use(
-        "Write", {"file_path": "/repo/compose.yaml", "content": content}
-    )
+    payload = tool_use("Write", {"file_path": "/repo/compose.yaml", "content": content})
 
     # Act / Assert
     assert_blocks(HOOK, payload, "privileged: true")
@@ -345,7 +341,10 @@ def test_multiedit_blocks_added_privileged(tool_use, assert_blocks):
         {
             "file_path": "/repo/compose.yml",
             "edits": [
-                {"old_string": "    image: foo\n", "new_string": "    image: foo\n    privileged: true\n"}
+                {
+                    "old_string": "    image: foo\n",
+                    "new_string": "    image: foo\n    privileged: true\n",
+                }
             ],
         },
     )
@@ -461,7 +460,7 @@ def test_multistage_user_before_final_from_warns(tool_use, assert_allows):
         "FROM node:22@sha256:abc AS builder\n"
         "USER 1001\n"
         "FROM gcr.io/distroless/nodejs22\n"
-        "CMD [\"node\"]\n"
+        'CMD ["node"]\n'
     )
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
@@ -482,7 +481,7 @@ def test_environment_block_exit_does_not_warn(tool_use, assert_allows):
         "    environment:\n"
         "      LOG_LEVEL: info\n"
         "    ports:\n"
-        "      - \"127.0.0.1:8080:8080\"\n"
+        '      - "127.0.0.1:8080:8080"\n'
     )
     payload = tool_use("Write", {"file_path": "/repo/compose.yml", "content": content})
 

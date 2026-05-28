@@ -113,7 +113,7 @@ def find_should_bullets(text: str) -> list[str]:
     hits: list[str] = []
     for m in BULLET_SHOULD_RE.finditer(text):
         line_end = text.find("\n", m.start())
-        line = text[m.start():line_end if line_end != -1 else len(text)]
+        line = text[m.start() : line_end if line_end != -1 else len(text)]
         hits.append(line.strip())
     return hits
 

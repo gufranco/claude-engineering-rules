@@ -36,7 +36,18 @@ except Exception:  # pragma: no cover
         return None
 
 
-SCAN_EXTS = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".vue", ".svelte", ".html", ".htm")
+SCAN_EXTS = (
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".vue",
+    ".svelte",
+    ".html",
+    ".htm",
+)
 
 SKIP_SEGMENTS = (
     "/__tests__/",
@@ -57,7 +68,9 @@ def is_skipped(path: str) -> bool:
         return True
     if any(seg in path for seg in SKIP_SEGMENTS):
         return True
-    if any(part in os.path.basename(path) for part in (".test.", ".spec.", ".stories.")):
+    if any(
+        part in os.path.basename(path) for part in (".test.", ".spec.", ".stories.")
+    ):
         return True
     return False
 
@@ -110,7 +123,12 @@ def find_cookies_without_consent(content: str) -> list[tuple[int, str]]:
         start_lookback = max(0, m.start() - 3000)
         preceding = content[start_lookback : m.start()]
         if not CONSENT_CONTEXT_PAT.search(preceding):
-            findings.append((line_num, "PLC001: cookie set without nearby consent check (ePrivacy Art. 5(3))"))
+            findings.append(
+                (
+                    line_num,
+                    "PLC001: cookie set without nearby consent check (ePrivacy Art. 5(3))",
+                )
+            )
     return findings
 
 
@@ -126,7 +144,12 @@ def find_console_pii(content: str) -> list[tuple[int, str]]:
         ]:
             if pat.search(span):
                 line_num = content[: m.start()].count("\n") + 1
-                findings.append((line_num, f"PLC002: console output contains {label}-like pattern. Use a structured logger and log the identifier, not the value"))
+                findings.append(
+                    (
+                        line_num,
+                        f"PLC002: console output contains {label}-like pattern. Use a structured logger and log the identifier, not the value",
+                    )
+                )
                 break
     return findings
 
@@ -137,7 +160,12 @@ def find_localstorage_pii(content: str) -> list[tuple[int, str]]:
         key = m.group(1)
         if PII_KEY_PAT.search(key):
             line_num = content[: m.start()].count("\n") + 1
-            findings.append((line_num, f"PLC003: localStorage key '{key}' looks like PII. Use httpOnly cookie for tokens; never store PII in client storage"))
+            findings.append(
+                (
+                    line_num,
+                    f"PLC003: localStorage key '{key}' looks like PII. Use httpOnly cookie for tokens; never store PII in client storage",
+                )
+            )
     return findings
 
 
@@ -149,7 +177,12 @@ def find_tracker_without_consent(content: str) -> list[tuple[int, str]]:
             start_lookback = max(0, m.start() - 3000)
             preceding = content[start_lookback : m.start()]
             if not CONSENT_CONTEXT_PAT.search(preceding):
-                findings.append((line_num, f"PLC004: {label} loaded without consent gate. Wrap in onConsentChange or equivalent"))
+                findings.append(
+                    (
+                        line_num,
+                        f"PLC004: {label} loaded without consent gate. Wrap in onConsentChange or equivalent",
+                    )
+                )
     return findings
 
 

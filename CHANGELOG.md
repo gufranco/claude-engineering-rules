@@ -11,10 +11,6 @@ All notable changes to this Claude Code configuration are documented here.
 - Phase 0 in [`skills/onboard/SKILL.md`](skills/onboard/SKILL.md). Asks the user whether to trust the project before any other step. When the user picks "No, scan it first", runs `/audit trust` and applies the verdict mapping: SAFE proceeds silently, SUSPICIOUS asks for confirmation, HIGH-RISK requires the override phrase, MALICIOUS has no override. Two non-interactive flags pre-decide the prompt: `--trust` skips the scan, `--verify` runs the scan. Both flags together is a conflict. The Start Here guide records the trust decision either way.
 - [`rules/index.yml`](rules/index.yml) on-demand entry `trust-patterns` so other skills can pull the IOC catalog when needed. Triggers include `untrusted`, `malicious code`, `supply chain`, `postinstall`, `typosquat`, `shai-hulud`, `axios compromise`, `discord webhook`, and others.
 
-### Changed
-
-- [`INTERVIEW-WORKFLOWS.md`](INTERVIEW-WORKFLOWS.md) Phase 1 sequence updated. For interview take-homes the playbook now recommends `/onboard --verify` to run the trust scan directly. For trusted repos the user can run `/onboard --trust` to skip the prompt entirely, or `/onboard` to be asked.
-
 ## 2026-05-21
 
 ### Added

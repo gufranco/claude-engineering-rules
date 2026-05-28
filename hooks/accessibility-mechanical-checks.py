@@ -60,7 +60,9 @@ def is_skipped(path: str) -> bool:
         return True
     if any(seg in path for seg in SKIP_SEGMENTS):
         return True
-    if any(part in os.path.basename(path) for part in (".test.", ".spec.", ".stories.")):
+    if any(
+        part in os.path.basename(path) for part in (".test.", ".spec.", ".stories.")
+    ):
         return True
     return False
 
@@ -82,7 +84,12 @@ def check_input_label(content: str) -> list[tuple[int, str]]:
     )
     for m in pat.finditer(content):
         line = content[: m.start()].count("\n") + 1
-        findings.append((line, "AMC002: <input> without label, aria-label, aria-labelledby, or id for label-for (WCAG 3.3.2 A)"))
+        findings.append(
+            (
+                line,
+                "AMC002: <input> without label, aria-label, aria-labelledby, or id for label-for (WCAG 3.3.2 A)",
+            )
+        )
     return findings
 
 
@@ -94,7 +101,12 @@ def check_role_on_div(content: str) -> list[tuple[int, str]]:
     )
     for m in pat.finditer(content):
         line = content[: m.start()].count("\n") + 1
-        findings.append((line, f"AMC003: role=\"{m.group(2)}\" on <{m.group(1)}> without keyboard handler (WCAG 2.1.1 A). Use a semantic element instead"))
+        findings.append(
+            (
+                line,
+                f'AMC003: role="{m.group(2)}" on <{m.group(1)}> without keyboard handler (WCAG 2.1.1 A). Use a semantic element instead',
+            )
+        )
     return findings
 
 
@@ -103,7 +115,12 @@ def check_tabindex_positive(content: str) -> list[tuple[int, str]]:
     pat = re.compile(r"\btabIndex\s*=\s*\{?\s*([1-9]\d*)", re.IGNORECASE)
     for m in pat.finditer(content):
         line = content[: m.start()].count("\n") + 1
-        findings.append((line, f"AMC004: tabIndex={m.group(1)} breaks logical tab order. Use 0 or -1"))
+        findings.append(
+            (
+                line,
+                f"AMC004: tabIndex={m.group(1)} breaks logical tab order. Use 0 or -1",
+            )
+        )
     return findings
 
 
@@ -121,7 +138,9 @@ def check_anchor_no_href(content: str) -> list[tuple[int, str]]:
     pat = re.compile(r"<a\b(?![^>]*\shref\s*=)[^>]*>", re.IGNORECASE)
     for m in pat.finditer(content):
         line = content[: m.start()].count("\n") + 1
-        findings.append((line, "AMC006: <a> without href attribute. Use <button> or add href"))
+        findings.append(
+            (line, "AMC006: <a> without href attribute. Use <button> or add href")
+        )
     return findings
 
 
@@ -133,7 +152,12 @@ def check_click_on_non_interactive(content: str) -> list[tuple[int, str]]:
     )
     for m in pat.finditer(content):
         line = content[: m.start()].count("\n") + 1
-        findings.append((line, f"AMC007: onClick on <{m.group(1)}> without role+tabIndex+onKeyDown (WCAG 2.1.1 A). Use <button>"))
+        findings.append(
+            (
+                line,
+                f"AMC007: onClick on <{m.group(1)}> without role+tabIndex+onKeyDown (WCAG 2.1.1 A). Use <button>",
+            )
+        )
     return findings
 
 
@@ -145,7 +169,12 @@ def check_password_autocomplete(content: str) -> list[tuple[int, str]]:
     )
     for m in pat.finditer(content):
         line = content[: m.start()].count("\n") + 1
-        findings.append((line, "AMC008: <input type=\"password\"> without autocomplete attribute (current-password or new-password)"))
+        findings.append(
+            (
+                line,
+                'AMC008: <input type="password"> without autocomplete attribute (current-password or new-password)',
+            )
+        )
     return findings
 
 

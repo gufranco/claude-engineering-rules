@@ -63,7 +63,7 @@ This skill accepts optional arguments after `/assessment`:
 
    Match signals against trigger keywords in the `on_demand` section of the index. Load **every** matched standard file. Also load **all** `always_loaded` rules.
 
-   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 70-category checklist. A project using PostgreSQL loads [`standards/database.md`](../../standards/database.md). A project with GraphQL loads [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A project with Terraform loads [`standards/terraform-testing.md`](../../standards/terraform-testing.md). Every applicable standard is loaded, no exceptions.
+   Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 71-category checklist. A project using PostgreSQL loads [`standards/database.md`](../../standards/database.md). A project with GraphQL loads [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A project with Terraform loads [`standards/terraform-testing.md`](../../standards/terraform-testing.md). Every applicable standard is loaded, no exceptions.
 
    Additionally, load these references for use during fix and convergence phases:
    - [`rules/architecture-defaults.md`](../../rules/architecture-defaults.md): universal principles, five-question architecture gate, hard rules, domain layer contract, idempotency and deduplication specifics. Always-loaded baseline that drives the DDD/hexagonal/state-machine decisions in step 7
@@ -239,7 +239,7 @@ This skill accepts optional arguments after `/assessment`:
    - **Contract alignment:** Do types, field names, and data formats align across module boundaries? Does the API match what the consumer sends? Do error types thrown in one layer match what the caller catches?
    - **Behavioral symmetry:** If a resource is acquired, is it released on all code paths? If a feature is enabled, can it be disabled? If data is written, can it be read back consistently?
 
-   In addition to the 70 checklist categories, also assess:
+   In addition to the 71 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
 
@@ -369,7 +369,7 @@ Comment guidelines:
     1. **Re-verify.** Run all quality gates in parallel: lint, typecheck, build, tests. If any gate fails, fix the failure before continuing. A fix that breaks the build is worse than no fix.
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
-       - Did any fix violate [`../../checklists/checklist.md`](../../checklists/checklist.md)? Run all 70 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
+       - Did any fix violate [`../../checklists/checklist.md`](../../checklists/checklist.md)? Run all 71 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
        - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? such as AAA comments, code style, naming, immutability, or etc.
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction?. One module now assumes behavior that another module does not support
@@ -411,7 +411,7 @@ Comment guidelines:
 
 ## Assessment Checklist Categories
 
-The full 70-category checklist lives in [`../../checklists/checklist.md`](../../checklists/checklist.md), shared with completion gates, `/review`, and `/respond`. Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Clean Room is category 50, Deployment Verification 51, Design Quality 52, LLM Trust Boundary 53, Performance Budget 54, Zero-Downtime Deployment 55, Supply Chain 56, Event-Driven 57, Licensing 58, Time Zone and Calendar 59, Numerical Precision 60, i18n Edge Cases 61, Browser and Device Diversity 62, Backups and Recovery 63, Disaster Recovery 64, Capacity Planning 65, Multi-Region 66, Compliance and Audit Trail 67, Vendor and Third-Party Risk 68, Schema-Migration Sync 69, and Question and Communication Quality 70.
+The full 71-category checklist lives in [`../../checklists/checklist.md`](../../checklists/checklist.md), shared with completion gates, `/review`, and `/respond`. Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Clean Room is category 50, Deployment Verification 51, Design Quality 52, LLM Trust Boundary 53, Performance Budget 54, Zero-Downtime Deployment 55, Supply Chain 56, Event-Driven 57, Licensing 58, Time Zone and Calendar 59, Numerical Precision 60, i18n Edge Cases 61, Browser and Device Diversity 62, Backups and Recovery 63, Disaster Recovery 64, Capacity Planning 65, Multi-Region 66, Compliance and Audit Trail 67, Vendor and Third-Party Risk 68, Schema-Migration Sync 69, and Question and Communication Quality 70.
 
 ## Output Format
 
@@ -459,7 +459,7 @@ The full report follows the format below.
 | Output verification | PASS / FAIL / N/A | [Expected vs actual results] |
 
 ## Classification
-[System traits detected and which applicable categories from the 70-category checklist apply]
+[System traits detected and which applicable categories from the 71-category checklist apply]
 
 ### Conventional Comments Taxonomy
 
@@ -539,7 +539,7 @@ The lines are observational, not blocking. They surface the timing pressure to t
 |---|----------|--------|----------|--------|
 | 1 | ... | PRESENT / PARTIAL / MISSING | none / CRITICAL / HIGH / MEDIUM / LOW | none / S / M / L / XL |
 
-**Coverage**: X of Y applicable categories fully covered. Y is the count of categories triggered by the trait table in step 7 and the `--focus` filter, drawn from the 70-category checklist.
+**Coverage**: X of Y applicable categories fully covered. Y is the count of categories triggered by the trait table in step 7 and the `--focus` filter, drawn from the 71-category checklist.
 **Critical gaps**: N findings require immediate attention.
 
 ## Priority Matrix

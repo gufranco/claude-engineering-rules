@@ -5,7 +5,6 @@ Source rule: `~/.claude/rules/ai-compliance-defaults.md`.
 
 from __future__ import annotations
 
-import pytest
 
 HOOK = "ai-disclosure-checks"
 
@@ -35,9 +34,7 @@ def test_blocks_llmOutput_without_disclosure(tool_use, assert_blocks):
         {
             "file_path": "/repo/src/X.tsx",
             "content": (
-                "function X({ llmOutput }) {\n"
-                "  return <div>{llmOutput}</div>;\n"
-                "}\n"
+                "function X({ llmOutput }) {\n  return <div>{llmOutput}</div>;\n}\n"
             ),
         },
     )
@@ -53,9 +50,7 @@ def test_blocks_modelOutput_without_disclosure(tool_use, assert_blocks):
         {
             "file_path": "/repo/src/X.tsx",
             "content": (
-                "function X({ data }) {\n"
-                "  return <p>{data.modelOutput}</p>;\n"
-                "}\n"
+                "function X({ data }) {\n  return <p>{data.modelOutput}</p>;\n}\n"
             ),
         },
     )
@@ -74,7 +69,7 @@ def test_allows_aiResponse_with_disclosure(tool_use, assert_allows):
                 "function Answer({ aiResponse }) {\n"
                 "  return (\n"
                 "    <article>\n"
-                '      <AiDisclosure>AI generated</AiDisclosure>\n'
+                "      <AiDisclosure>AI generated</AiDisclosure>\n"
                 "      <p>{aiResponse}</p>\n"
                 "    </article>\n"
                 "  );\n"
@@ -164,9 +159,7 @@ def test_allows_non_ai_variables(tool_use, assert_allows):
         {
             "file_path": "/repo/src/X.tsx",
             "content": (
-                "function X({ userName }) {\n"
-                "  return <p>Hello {userName}</p>;\n"
-                "}\n"
+                "function X({ userName }) {\n  return <p>Hello {userName}</p>;\n}\n"
             ),
         },
     )
