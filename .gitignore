@@ -24,6 +24,7 @@ history.jsonl
 .compact-context
 .settings-hygiene-blocklist
 .last-cleanup
+settings.local.json
 
 # Caches
 cache/
