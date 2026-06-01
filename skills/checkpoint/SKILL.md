@@ -76,9 +76,23 @@ Checkpoints are stored in `~/.claude/checkpoints/`. Each file is named `<session
    ## Blockers
 
    - <blocker or open question, if any>
+
+   ## Suggested skills
+
+   - <skill 1> -- <why the resuming agent should consider it>
+   - <skill 2> -- <why>
    ```
 
-4. **Confirm.** State the checkpoint ID and file path to the user.
+4. **Redact sensitive content.** Before writing the file, scan every section for sensitive material and replace with a `[REDACTED:<reason>]` token. Patterns to redact:
+   - API keys, tokens, bearer credentials. Heuristics: high-entropy strings 32 chars or more, strings prefixed with `sk_`, `pk_`, `ghp_`, `Bearer `, `AKIA`.
+   - Passwords, private keys, certificates. Patterns: `-----BEGIN`, `password=`, `pwd=`, `secret=`.
+   - PII: email addresses, phone numbers, national identifiers, full names tied to non-public records.
+   - Internal hostnames, internal URLs (`*.internal`, `*.corp`, `*.lan`), IP addresses in RFC 1918 ranges when paired with a service name.
+   The token must name the reason so a human reading the checkpoint can decide whether to fetch the real value: `[REDACTED:api-key]`, `[REDACTED:email]`.
+
+5. **Pick suggested skills.** Choose 2 to 5 skills the resuming agent should consider, ranked by likely value. Examples: `/plan` if there is an open spec, `/test` if there are unrun tests, `/ship pr` if the work is ready to land, `/investigate` if a blocker is a bug.
+
+6. **Confirm.** State the checkpoint ID and file path to the user.
 
 ### Resume
 

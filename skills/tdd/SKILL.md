@@ -12,6 +12,30 @@ allowed-tools:
 
 Red-green-refactor loop. One behavior at a time. The test must fail before any production code is written.
 
+## Anti-pattern: write-all-tests-then-all-code
+
+Never write the full test suite first and then implement against it in one batch. That pattern produces tests that describe an imagined shape, not the actual behavior the code ends up needing. The tests pass on shape and fail on behavior; they fail on shape and pass on behavior. Either way they stop being a safety net.
+
+Always work in vertical slices: one test, then the smallest implementation that turns the test green, then the next test.
+
+```mermaid
+flowchart LR
+    A[test 1 red] --> B[impl 1 green]
+    B --> C[test 2 red]
+    C --> D[impl 2 green]
+    D --> E[test 3 red]
+    E --> F[impl 3 green]
+```
+
+Not this:
+
+```mermaid
+flowchart LR
+    A[test 1 red] --> B[test 2 red] --> C[test 3 red] --> D[impl 1+2+3 green]
+```
+
+When tests use domain terms (`createCustomer`, `applyDiscount`), pull the terms from the project glossary if one exists. See [`rules/project-glossary.md`](../../rules/project-glossary.md).
+
 ## Arguments
 
 - `<description>`: the behavior to implement, in plain English. Example: `/tdd user.create rejects empty email`.
