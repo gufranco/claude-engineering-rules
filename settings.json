@@ -1250,7 +1250,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "python3 ~/.claude/scripts/context-monitor.py"
+    "command": "python3 ~/.claude/scripts/statusline.py"
   },
   "outputStyle": "Concise",
   "language": "english",
