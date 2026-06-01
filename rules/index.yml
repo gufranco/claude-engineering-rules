@@ -164,6 +164,26 @@ lang:
 #   debugging, agent-usage, github-accounts, gitlab-accounts
 
 on_demand:
+  project-glossary:
+    path: rules/project-glossary.md
+    description: Per-project domain glossary convention. GLOSSARY.md at root for single-context repos, GLOSSARY-INDEX.md plus per-context files for multi-context repos. Lazy creation, one-or-two-sentence definitions, Avoid clauses for rejected synonyms. Loaded by interview-me, tdd, module-audit, zoom-out, onboard.
+    triggers: [glossary, "domain glossary", "ubiquitous language", "domain vocabulary", "project glossary", "shared language", "domain terms", "context map", "bounded context"]
+
+  everyday-engineering:
+    path: rules/everyday-engineering.md
+    description: Daily checklist of engineering principles. Thin-slice before depth, spike to answer one question, orthogonality, reversibility, Law of Demeter, configure-not-integrate, view-model split, feedback loop before hypothesis, prove assumptions, blame-free debugging, regression test on every prod bug, no broken windows, signed work, communication discipline.
+    triggers: [engineering, "thin slice", "tracer", spike, orthogonality, reversibility, "law of demeter", "configure not integrate", broken window, "fix the blame", "prove assumption", "saboteur", "state coverage", "find bugs once", "manual procedure", "sign your work", pragmatic]
+
+  engineering-discipline:
+    path: standards/engineering-discipline.md
+    description: Deep reference of daily-engineering principles drawn from Hunt and Thomas. End-to-end thin slice, prototype-to-learn, orthogonality, reversibility, critical reading, communication, estimating to learn, fix-the-problem-not-the-blame, prove-every-assumption, Law of Demeter, configure-not-integrate, services with explicit concurrency, view-model split, refactor as gardening, design for test, dig for requirements, find the box, broken windows, no manual procedures, find bugs once, build documentation in.
+    triggers: [engineering, discipline, "pragmatic programmer", hunt, thomas, "thin slice", "tracer bullet", orthogonality, reversibility, "law of demeter", "saboteur", "state coverage", "manual procedure", "broken window", "knowledge portfolio", "design for test", "wizard code", "dig for requirements", "find the box"]
+
+  software-complexity:
+    path: standards/software-complexity.md
+    description: Deep reference of design principles drawn from Ousterhout. Reader-judges complexity, incremental design, informal-interface, false abstractions, default-private, hierarchy hiding, six tests for generality, layer-rename test, do-the-right-thing, indexes-and-caches as complexity sinks, five combine-or-split tests, extract subtask vs divide-in-two, long methods may be fine, defensive programming as complexity, fewer exception types, second-design improves first, naming-is-designing, three requirements for consistent conventions, invariants reduce special cases, three obviousness techniques, event-driven invocation context, generic-container tax, cost-of-operations table, critical path design, deep-modules-are-faster, evaluate-trend-against-complexity.
+    triggers: [complexity, "philosophy of software design", ousterhout, "deep module", "shallow module", "information hiding", "information leakage", overexposure, "general purpose", "pull complexity downward", layering, "design it twice", "define errors out", "defensive programming", consistency, "code obvious", obviousness, "event-driven", "generic container", "critical path", "tactical tornado", "hard to pick name", "hard to describe"]
+
   performance:
     path: standards/performance.md
     description: Core Web Vitals budgets, API latency targets, database query limits, JS and CSS bundle budgets, image optimization, DOM rendering rules
