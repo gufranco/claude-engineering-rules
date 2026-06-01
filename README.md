@@ -10,7 +10,7 @@
 
 </div>
 
-**17** always-on rules · **65** on-demand standards · **33** slash-command skills · **52** runtime hooks · **15** custom agents · **36** MCP servers · **869** review items across **71** categories
+**17** always-on rules · **69** on-demand standards · **36** slash-command skills · **52** runtime hooks · **15** custom agents · **36** MCP servers · **869** review items across **71** categories
 
 ---
 
@@ -148,12 +148,15 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`/retro`](skills/retro/SKILL.md) | Session retrospective with pattern extraction |
 | [`/session-log`](skills/session-log/SKILL.md) | Session activity logger for handoff |
 | [`/setup`](skills/setup/SKILL.md) | Interactive project environment setup |
-| [`/tdd`](skills/tdd/SKILL.md) | Test-driven development loop |
+| [`/tdd`](skills/tdd/SKILL.md) | Test-driven development loop. Vertical slices, no horizontal write-tests-then-all-impl |
 | [`/zoom-out`](skills/zoom-out/SKILL.md) | Step back from tactical work to strategic view |
+| [`/spike`](skills/spike/SKILL.md) | Throwaway artifact that answers one design question, two routes (state-branch terminal program, view-branch side-by-side variations) |
+| [`/module-audit`](skills/module-audit/SKILL.md) | Codebase audit for shallow modules with before-and-after Mermaid recommendations and deletion-test classification |
+| [`/concise-mode`](skills/concise-mode/SKILL.md) | Opt-in terse-reply mode. Drops filler and pleasantries while preserving code blocks, error strings, and destructive-action confirmations |
 
 ### Hooks
 
-52 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+58 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
@@ -180,9 +183,11 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | Blocks rationalization phrases that defer verification-surface findings to a later session. Targets commit messages, PR bodies, release notes, and code comments |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
+| [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget. Bypass `GH_RUN_WATCH_DISABLE=1` |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch` |
 | [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login |
+| [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | Blocks `cp`/`mv`/`rm` without `-f`. macOS aliases these to `-i`, which hangs the agent on confirmation prompts. Bypass `INTERACTIVE_CMD_DISABLE=1` |
 | [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse Bash/Write/Edit | Prevents internal config references in external output |
 | [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
 | [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse Bash | Blocks commits with files over 5MB |
@@ -196,17 +201,21 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |
+| [`read-injection-scanner.py`](hooks/read-injection-scanner.py) | PostToolUse Read/WebFetch/WebSearch | Scans fetched content for prompt-injection patterns (instruction override, tool redirection, authority claims, base64 runs, unicode confusables) and emits a warning. Bypass `READ_INJECTION_DISABLE=1` |
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
 | [`rtk-rewrite.sh`](hooks/rtk-rewrite.sh) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
+| [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Reads the most recent active `specs/*/plan.md` (modified within 60min). Asks confirmation when the edit target is not in the plan's declared file list. Bypass `SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 40+ secret patterns before git commit |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
+| [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | Surfaces the most recent checkpoint or active spec plan (within 7 days) as `additionalContext` on startup, clear, or compact so the session resumes with a pointer to in-progress work |
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | Blocks credentials and absolute home paths in settings |
 | [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt. Batches files for the Stop hook |
 | [`stop-format-typecheck.sh`](hooks/stop-format-typecheck.sh) | Stop | Reads the batched edit list from `smart-formatter.sh`, deduplicates, formats once, then runs typecheck once per touched workspace |
 | [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | Enforces subagent prompt quality with shape, file references, and length cap |
+| [`tdd-gate.py`](hooks/tdd-gate.py) | PreToolUse Write/Edit/MultiEdit | Blocks creation of a new production source file when no companion test file can be located. Bypass `TDD_GATE_DISABLE=1` |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | Forces `TF_WORKSPACE` per call |
 | [`todo-marker-blocker.py`](hooks/todo-marker-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks TODO/FIXME/HACK/XXX/WIP markers in source code, allows issue-linked form `TODO(#123)` |
 | [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks TypeORM raw query escape hatches |

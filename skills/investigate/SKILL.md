@@ -1,6 +1,9 @@
 ---
 name: investigate
 description: Systematic debugging with hypothesis testing, bounded retries, and optional edit freeze. Use when user says "debug this", "investigate", "why is this failing", "find the bug", "trace this error", "root cause", or needs structured debugging beyond reading an error message. Do NOT use for incident postmortems (use /incident), code review (use /review), or running tests (use /test).
+argument-hint: "/investigate <symptom or error>"
+allowed-tools: "Read, Grep, Glob, Bash, AskUserQuestion"
+user-invocable: true
 ---
 
 Structured debugging workflow that enforces hypothesis-driven investigation with a hard limit on fix attempts. Prevents the common failure mode of guessing at fixes in a loop.
@@ -15,6 +18,37 @@ The full debugging methodology is in `../../rules/debugging.md`. This skill oper
 - `--unfreeze`: remove any active freeze scope and exit.
 
 ## Process
+
+### Phase 0: Build a feedback loop
+
+Before anything else, construct a deterministic, fast, agent-runnable signal that says pass or fail for the bug. Every later phase consumes that signal. Without one, hypothesis testing degenerates into staring at code.
+
+Spend disproportionate effort here. The right loop turns a debugging session into a mechanical exercise.
+
+**Ten ways to construct one, roughly in this order:**
+
+1. Failing test at the right seam. Unit if the bug fits one. Integration if the bug needs collaborators. End-to-end if the bug only shows through the public interface.
+2. Scripted HTTP probe. curl or httpie against a running dev server, asserting on status code, headers, or body.
+3. Fixture-driven CLI invocation. A known input file fed to the binary, output diffed against a known-good snapshot.
+4. Headless browser script. Playwright or Puppeteer driving the UI, asserting on DOM, console, or network.
+5. Captured-trace replay. Save a real network request, payload, or event log to disk. Replay it through the code path in isolation.
+6. Throwaway test harness. A minimal subset of the system, one service plus mocked dependencies, that runs the buggy path with one function call.
+7. Property or fuzz loop. When the bug is "sometimes the output is wrong", run a thousand random inputs and look for the failure pattern.
+8. Automated bisection. When the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so `git bisect run` can drive it.
+9. Differential run. Feed the same input through old vs. new (or two configs) and diff outputs.
+10. Structured human-in-the-loop script. Last resort. When a human has to click, drive them with a checklist script so the loop is still structured. Their output feeds back as the signal.
+
+**Iterate on the loop itself.** Once one exists, ask:
+
+- Can it run faster? Cache setup. Skip unrelated init. Narrow the scope.
+- Can the signal be sharper? Assert on the specific symptom, not "did not crash".
+- Can it be more deterministic? Pin time. Seed RNG. Isolate filesystem. Freeze network.
+
+A 30-second flaky loop is barely better than no loop. A 2-second deterministic loop is a debugging superpower.
+
+**Non-deterministic bugs.** The goal is not a clean repro but a higher reproduction rate. Loop the trigger 100 times. Parallelize. Add stress. Narrow timing windows. Inject sleeps. A 50% flake is debuggable. 1% is not. Raise the rate until the loop is fast enough to iterate against.
+
+**When a loop is genuinely not buildable.** Stop and say so. List what was tried. Ask the user for one of: access to an environment where the bug reproduces, a captured artifact such as a HAR file or core dump, or permission to add temporary production instrumentation. Do not proceed to Phase 1 without a loop.
 
 ### Phase 1: Reproduce
 
