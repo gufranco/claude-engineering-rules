@@ -2,6 +2,26 @@
 
 Heuristics for reasoning about software complexity. Drawn from John Ousterhout, "A Philosophy of Software Design", and from the user's accumulated practice. This rule extends, never replaces, the existing rules in [`code-style.md`](code-style.md), [`pre-flight.md`](pre-flight.md), [`surgical-edits.md`](surgical-edits.md), and [`ai-guardrails.md`](ai-guardrails.md). Where this rule conflicts with another, the existing rule wins.
 
+## Vocabulary
+
+Use these terms consistently across reviews, planning, and conversation. Substituting "component" or "boundary" for these blurs distinctions that matter.
+
+| Term | Meaning |
+|---|---|
+| Module | Anything with an interface and an implementation. A function, a class, a package, a slice of code. Scale-agnostic. |
+| Interface | Everything a caller must know to use the module correctly: types, invariants, error modes, ordering constraints, configuration, performance characteristics. Not only the type signature. |
+| Implementation | What lives inside the module. |
+| Depth | How much behavior a caller can drive per unit of interface they have to learn. Deep means small interface and large implementation. Shallow means interface nearly as large as implementation. |
+| Seam | The place an interface lives. A spot in the code where behavior can change without editing the call site. |
+| Adapter | A concrete thing that satisfies an interface at a seam. Describes the role the thing plays. |
+
+Two principles work alongside the vocabulary:
+
+- **Deletion test.** Imagine deleting the module. If complexity vanishes, the module was a pass-through. If complexity reappears across N callers, the module was earning its place.
+- **One adapter is hypothetical, two are real.** A seam is worth its cost only when at least two concrete adapters justify it. A single-adapter seam is indirection without payoff. Do not invent ports for "maybe one day".
+
+When the team needs a deeper drill on a candidate consolidation, use `/module-audit`.
+
 ## Core Principle
 
 Complexity is the only enemy that scales with project age. Every other defect category, bugs, performance, security, can be fixed in a release. Complexity, once accumulated, resists removal because it is now load-bearing. Treat complexity as the primary cost axis of every design decision.
@@ -89,8 +109,30 @@ Patterns that signal a complexity problem. Each is a smell, not a rule. Investig
 | Adjacent layers, same abstraction | Two layers naming the same nouns and verbs | One layer is empty |
 | Temporal decomposition | Module boundaries follow the order of operations rather than the knowledge each module needs | Coupling on schedule, not on data |
 | Repeated try/catch | The same exception caught and handled in many places | Missing aggregation or masking site |
+| Information leakage | One design decision (a format, a key shape, a protocol detail) shows up in multiple modules; changing it forces parallel edits | The decision is not encapsulated in any single module |
+| Overexposure | An API forces callers to learn rare features in order to use common ones | The common case has not been pulled to the front of the interface |
+| Special-general mixture | A unit holds general-purpose logic and a specific caller's special-case logic side by side | The general part should be extracted into a clean module |
+| Conjoined methods | Two methods so tightly coupled that you cannot understand one without reading the other | Coupling that the interface does not expose |
+| Hard to pick a name | Choosing a precise name for a function, field, or type takes more than a minute | The concept is muddled; naming pressure is a design signal, not a vocabulary problem |
+| Hard to describe | The documentation for an interface element has to be long to be complete | The interface is doing too much, or the wrong things together |
+| Tactical tornado | A teammate ships features fast and leaves a mess that slows everyone else | Velocity-on-the-individual measured but the team-level cost is unaccounted for |
 
 Mechanical detection of these patterns is unreliable. Review catches them by reading. The hook in [`../hooks/todo-marker-blocker.py`](../hooks/todo-marker-blocker.py) covers the one mechanically-enforceable case, the marker comment that explicitly admits tactical debt.
+
+## Maxims
+
+A small set of one-line rules that capture the day-to-day shape of the philosophy. The deep reference and per-principle treatment lives in [`../standards/software-complexity.md`](../standards/software-complexity.md).
+
+- **Designed for ease of reading, not ease of writing.** Code is written once, by one person; it is read many times, by many people. The asymmetry decides every trade-off between author convenience and reader convenience.
+- **Increments of development should be abstractions, not features.** Ship a thin slice that exposes a real abstraction the rest of the work will reuse. A feature delivered without an abstraction underneath is debt by another name.
+- **Each change leaves the structure the code would have had if designed for that change from the start.** Maintenance accumulates entropy unless every modification counters it.
+- **If you are not making the design better, you are probably making it worse.** No change is neutral. The strategic budget says how much to invest; this maxim says you cannot opt out.
+- **When in Rome.** New code in an existing area follows the local conventions even if you would prefer different ones. Having a better idea is not sufficient excuse to introduce inconsistency. Change the convention deliberately in its own change, or live with it.
+- **Resist the cheapest place.** Make the change in the right place, even when a nearby place is cheaper. The cheap place compounds entropy; the right place compounds clarity.
+- **Generality needs a second concrete caller, not a hypothetical one.** The line between YAGNI and general-purpose design is whether the second use case has a name and an owner today. Without one, you are speculating.
+- **Context object for pass-through variables.** When the same value threads through five functions and is used by one of them, the fix is a shared context object the relevant function reads from. Globals are the last resort, not the first.
+- **Aggregate exceptions at the top.** One top-level handler in a dispatcher beats forty handlers in leaf functions. The leaf functions throw; the handler decides what the user sees.
+- **Just crash.** For conditions the program cannot recover from, terminate. Propagating an unrecoverable error through layers that cannot do anything with it adds code paths nobody tests.
 
 ## Design Taste
 
