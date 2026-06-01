@@ -157,6 +157,15 @@
             "command": "python3 ~/.claude/hooks/mcp-health-check.py"
           }
         ]
+      },
+      {
+        "matcher": "Read|WebFetch|WebSearch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/read-injection-scanner.py"
+          }
+        ]
       }
     ],
     "PreCompact": [
@@ -1133,6 +1142,42 @@
             "command": "python3 ~/.claude/hooks/redis-atomicity.py"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/tdd-gate.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/scope-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/interactive-cmd-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/gh-run-watch-blocker.py"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -1142,6 +1187,15 @@
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/session-resume-context.py"
           }
         ]
       }
