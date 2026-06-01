@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "gufranco-claude-engineering",
+  "version": "0.1.0",
+  "description": "Curated bundles of rules, hooks, and standards extracted from the gufranco/claude-engineering-rules config. Install one slice at a time instead of the whole config.",
+  "owner": {
+    "name": "gufranco",
+    "url": "https://github.com/gufranco"
+  },
+  "plugins": [
+    {
+      "name": "compliance-pack",
+      "source": "./plugins/compliance-pack",
+      "version": "0.1.0",
+      "description": "GDPR-grade privacy, WCAG 2.2 AA+ accessibility, ePrivacy cookies, cybersecurity, anti-spam, AI compliance defaults and the standards they cite. Strictest-applicable-rule-wins policy.",
+      "category": "compliance",
+      "tags": ["privacy", "accessibility", "security", "compliance", "gdpr", "wcag", "ai-act"],
+      "status": "skeleton"
+    },
+    {
+      "name": "ts-strictness-pack",
+      "source": "./plugins/ts-strictness-pack",
+      "version": "0.1.0",
+      "description": "Maximum TypeScript strictness: immutability by default, branded types, ORM migration parity, the mutation-method-blocker hook covering 90+ patterns across 16 categories.",
+      "category": "language",
+      "tags": ["typescript", "immutability", "strict-mode", "orm", "lint"],
+      "status": "skeleton"
+    }
+  ]
+}
