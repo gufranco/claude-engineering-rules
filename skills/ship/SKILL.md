@@ -1,6 +1,9 @@
 ---
 name: ship
 description: Ship code through the full delivery pipeline. Subcommands: commit, pr, release, checks, worktree. Handles semantic commits, pull requests with CI monitoring, tagged releases, pipeline diagnosis, and parallel worktree management. Use when user says "commit", "create a PR", "push", "release", "check CI", "pipeline status", "worktree", or wants to move code from working directory to production. Do NOT use for code review (use /review), running tests (use /test), or planning (use /plan).
+argument-hint: "/ship commit | /ship pr | /ship release | /ship checks | /ship worktree <new|list|prune>"
+allowed-tools: "Read, Bash, Grep, Glob, AskUserQuestion"
+user-invocable: true
 sensitive: true
 ---
 Unified delivery skill for getting code from working directory to production. Replaces standalone `/commit`, `/pr`, `/release`, `/checks`, and `/worktree` skills.

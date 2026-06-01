@@ -1,6 +1,9 @@
 ---
 name: audit
 description: Security audit across dependencies, secrets, Docker, code patterns, images, STRIDE, and OWASP. Absorbs /deps for vulnerability scanning and /cso for threat modeling. Use when user says "security audit", "scan for vulnerabilities", "check dependencies", "find secrets", "audit Docker", "CVE scan", "cso", "threat model", "owasp audit", "deep security scan", or wants to find security issues across the full project. Do NOT use for code review (use /review), architecture completeness (use /assessment), or running tests (use /test).
+argument-hint: "/audit [full|deps|secrets|docker|images|stride|owasp]"
+allowed-tools: "Read, Grep, Glob, Bash, WebFetch"
+user-invocable: true
 sensitive: true
 ---
 

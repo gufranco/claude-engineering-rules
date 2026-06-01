@@ -1,6 +1,9 @@
 ---
 name: review
 description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 71-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. Do NOT use for full architecture assessment (use /assessment), security scanning (use /audit), or shipping code (use /ship).
+argument-hint: "/review [code|qa|design] <target>"
+allowed-tools: "Read, Grep, Glob, Bash, WebFetch"
+user-invocable: true
 sensitive: true
 ---
 Unified review skill covering code quality, QA analysis, and visual design audit. Replaces standalone `/review`, `/qa`, and `/design-review` skills.
