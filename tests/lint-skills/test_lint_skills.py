@@ -7,8 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 LINTER = Path.home() / ".claude" / "tools" / "lint-skills.py"
 
 
