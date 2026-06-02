@@ -176,10 +176,10 @@ Compiled artifacts in places that suggest they were added as payloads, not as bu
 
 | Pattern | Severity | Target | Rationale | Known false positives |
 |---------|----------|--------|-----------|----------------------|
-| Executable file (`+x` bit) in `scripts/`, `bin`, `tools` without a corresponding source file in the same repo | HIGH | All files | Pre-compiled payload | Vendored tools documented in README |
+| Executable file (`+x` bit) in [`scripts/`](../../scripts), `bin`, `tools` without a corresponding source file in the same repo | HIGH | All files | Pre-compiled payload | Vendored tools documented in README |
 | ELF, Mach-O, PE binary in a directory other than `dist`, `build`, `target`, `out`, `bin` | HIGH | All files | Foreign binary | Documented vendor binaries |
 | Compressed archive (`.tar.gz`, `.zip`, `.7z`) committed to the repo with no extraction step in a build script | MEDIUM | All files | Hidden payload | Test fixtures |
-| Shell script in a non-`scripts/`, non-`.husky` directory | MEDIUM | All files | Unexpected location | Project conventions |
+| Shell script in a non-[`scripts/`](../../scripts), non-`.husky` directory | MEDIUM | All files | Unexpected location | Project conventions |
 | Single-file installer (`*.sh`, `*.bat`, `*.ps1`) committed to a JavaScript or Python project | HIGH | All files | Cross-platform payload | Documented installers |
 | WASM binary (`*.wasm`) committed without a corresponding `.wat` text source or a build script | MEDIUM | All files | Pre-compiled WASM payload | Documented WASM dependencies |
 
