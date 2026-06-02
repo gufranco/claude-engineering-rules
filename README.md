@@ -25,7 +25,7 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-17 universal rules ship with every conversation. 65 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 65.
+18 universal rules ship with every conversation. 65 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 65.
 
 </td>
 </tr>
@@ -80,7 +80,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-17 rules in [`rules/`](rules/), loaded into every conversation.
+18 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -93,6 +93,7 @@ A layered config where each layer catches what the layer above missed.
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
 | [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output, plus pronoun discipline, active voice, and tone calibration with Claude-conversation examples |
 | [`normative-keywords`](rules/normative-keywords.md) | BCP 14 (RFC 2119 + RFC 8174) keyword glossary. Lowercase primary, uppercase opt-in for critical correctness, security, data integrity, and irreversibility |
+| [`repo-analysis`](rules/repo-analysis.md) | Clone external repos to a temp directory instead of fetching files via `gh`/raw URLs. Mandatory shallow-clone workflow, carve-outs for issue/PR/search ops, subagent briefing |
 | [`pre-flight`](rules/pre-flight.md) | Duplicate check, market research, architecture fit, interface verification |
 | [`surgical-edits`](rules/surgical-edits.md) | Every changed line traces to the request |
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
@@ -185,6 +186,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget. Bypass `GH_RUN_WATCH_DISABLE=1` |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch` |
+| [`repo-fetch-blocker.py`](hooks/repo-fetch-blocker.py) | PreToolUse Bash | Blocks per-file source fetching via `gh api .../contents`, `gh repo view <o>/<r> <path>`, `glab api .../repository/files`, and `raw.githubusercontent.com` curl/wget. Forces a shallow clone instead. Bypass `REPO_FETCH_DISABLE=1` |
 | [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login |
 | [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | Blocks `cp`/`mv`/`rm` without `-f`. macOS aliases these to `-i`, which hangs the agent on confirmation prompts. Bypass `INTERACTIVE_CMD_DISABLE=1` |

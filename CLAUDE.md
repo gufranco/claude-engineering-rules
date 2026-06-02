@@ -169,6 +169,7 @@ Before using any external tool or CLI command:
 5. **Preferred package manager.** Use pnpm for JavaScript and TypeScript projects. Never default to npm.
 6. **Respect rate limits.** Before polling any API or service in a loop, check the rate limit first. For GitHub: `gh api rate_limit`. For other services: check headers or docs. Never use tight polling loops (e.g. every 3 seconds) without confirming sufficient quota. When rate limited, wait for the reset window instead of retrying immediately.
 7. **Local binaries first.** Never run a CLI tool through Docker when a local binary exists or can be installed. Check `which <tool>` first. If not installed, ask to install it locally (e.g., `brew install postgresql` for `psql`). Only fall back to Docker when local installation is not viable or the user explicitly prefers it. Docker wrappers add complexity, consume extra tokens, and obscure errors. When the user accepts a brew install, check `~/.dotfiles/Brewfile` and ask whether the package should be added there.
+8. **Clone over fetch.** When analyzing source from a repo not already on disk, clone it to a `mktemp -d` directory and work locally. Never fetch source files one at a time via `gh api .../contents`, `gh repo view`, or `raw.githubusercontent.com`. The break-even is two files; at three, clone. Full rule, carve-outs, and subagent briefing: [`rules/repo-analysis.md`](rules/repo-analysis.md).
 
 ### Shell Alias Safety
 
