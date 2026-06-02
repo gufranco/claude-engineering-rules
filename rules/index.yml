@@ -31,6 +31,10 @@ always_loaded:
     description: Pre-implementation verification gates for duplicates, architecture fit, interface verification, scope agreement
     triggers: [planning, pre-flight, scope, interface, duplicate, architecture fit]
 
+  repo-analysis:
+    description: Clone external repos to a temp directory for analysis instead of fetching files through gh/GitLab APIs. Forbids per-file API reads when more than two source files are needed, defines a mandatory mktemp + shallow-clone workflow, lists carve-outs (issues, PRs, single README probe, cross-repo search), and briefs subagents to use Read/Grep/Glob against the clone path
+    triggers: [repo analysis, repository analysis, clone, external repo, gh api contents, raw.githubusercontent, fetch files, read repo, analyze repository, third-party repo, reference repo]
+
   surgical-edits:
     description: Every changed line traces to the user's request, no adjacent improvements, cleanup boundaries for orphan removal, diff self-test
     triggers: [edit, surgical, diff, refactor, cleanup, scope creep, adjacent, orphan, dead code]
