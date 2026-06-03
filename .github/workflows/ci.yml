@@ -209,6 +209,13 @@ jobs:
       - name: Install bats-core
         run: sudo apt-get update -qq && sudo apt-get install -y -qq bats
 
+      - name: Symlink checkout to ~/.claude
+        run: |
+          mkdir -p "$HOME"
+          if [ ! -e "$HOME/.claude" ]; then
+            ln -s "$GITHUB_WORKSPACE" "$HOME/.claude"
+          fi
+
       - name: Bootstrap venv
         run: |
           python3 -m venv .venv
