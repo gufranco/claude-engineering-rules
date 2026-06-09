@@ -234,3 +234,7 @@ The rules above operationalize five canonical sources on question quality. They 
 - "No Hello". <https://nohello.net/>. Fetched 2026-05-13.
 
 The original config enforced self-investigation, evidence-based completion, and writing precision. It did not codify question format. Without an explicit format, drift is predictable: clarifying questions become "How should I do this?", error reports lead with theory, loop closure becomes "Done.". This rule names the format and the failure modes so future sessions stay coherent.
+
+## Enforcement
+
+Enforced by: [`hooks/subagent-brief-quality.py`](../hooks/subagent-brief-quality.py).

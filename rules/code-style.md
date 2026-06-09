@@ -332,3 +332,10 @@ Structure commits for easy `git bisect`:
 ## Code Examples
 
 Every code snippet in any output must follow all rules. A code example that violates a rule is a defect. If a fix suggestion introduces a violation, the suggestion itself is a review defect.
+
+## Enforcement
+
+Enforced by: [`hooks/config-protection.py`](../hooks/config-protection.py).
+Enforced by: [`hooks/console-log-blocker.py`](../hooks/console-log-blocker.py).
+Enforced by: [`hooks/interactive-cmd-blocker.py`](../hooks/interactive-cmd-blocker.py).
+Enforced by: [`hooks/settings-hygiene.py`](../hooks/settings-hygiene.py).

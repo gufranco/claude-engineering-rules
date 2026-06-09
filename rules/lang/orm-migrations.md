@@ -741,3 +741,15 @@ These patterns produce schema drift in any ORM project. Detect them in review.
 - [`rules/code-style.md`](../code-style.md) "No raw SQL" and "Service layer for data access" cover the cross-ORM boundary
 - [`standards/postgresql.md`](../../standards/postgresql.md) covers PostgreSQL-specific concerns including PG 18 features and native `uuidv7()`
 - [`standards/identifiers.md`](../../standards/identifiers.md) covers identifier choice for primary keys
+
+## Enforcement
+
+Enforced by: [`hooks/drizzle-raw-sql-blocker.py`](../hooks/drizzle-raw-sql-blocker.py).
+Enforced by: [`hooks/drizzle-schema-sync.py`](../hooks/drizzle-schema-sync.py).
+Enforced by: [`hooks/migration-idempotency.py`](../hooks/migration-idempotency.py).
+Enforced by: [`hooks/prisma-raw-sql-blocker.py`](../hooks/prisma-raw-sql-blocker.py).
+Enforced by: [`hooks/prisma-schema-sync.py`](../hooks/prisma-schema-sync.py).
+Enforced by: [`hooks/sequelize-raw-sql-blocker.py`](../hooks/sequelize-raw-sql-blocker.py).
+Enforced by: [`hooks/sequelize-schema-sync.py`](../hooks/sequelize-schema-sync.py).
+Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../hooks/typeorm-raw-sql-blocker.py).
+Enforced by: [`hooks/typeorm-schema-sync.py`](../hooks/typeorm-schema-sync.py).

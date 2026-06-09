@@ -197,3 +197,9 @@ Runtime hooks in `~/.claude/hooks/` provide advisory enforcement against dangero
 See `~/.claude/hooks/` for the wired hook scripts and `~/.claude/settings.json` for activation. Hooks cover filesystem destruction, privilege escalation, cloud CLI safety, multi-account isolation, secret scanning, mutation enforcement, commit hygiene, and language drift.
 
 **Limitations:** hooks are advisory, not kernel-level enforcement. An agent could bypass a hook by using an equivalent command not covered by the patterns. For untrusted code execution, use container or VM isolation.
+
+## Enforcement
+
+Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
+Enforced by: [`hooks/env-file-guard.py`](../hooks/env-file-guard.py).
+Enforced by: [`hooks/secret-scanner.py`](../hooks/secret-scanner.py).

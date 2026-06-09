@@ -172,3 +172,7 @@ The bypass `AI_PROCESS_LEAK_DISABLE=1` is for editing planning artifacts that le
 - `~/.claude/rules/writing-precision.md` covers the broader precision floor.
 - `~/.claude/standards/code-review.md` "No Internal Config Leakage" covers the related class of `~/.claude/` path leaks, different hook.
 - `~/.claude/hooks/ai-process-leak-blocker.py` is the enforcement layer.
+
+## Enforcement
+
+Enforced by: [`hooks/ai-attribution-blocker.py`](../hooks/ai-attribution-blocker.py).
