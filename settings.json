@@ -116,7 +116,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+            "command": "python3 ~/.claude/hooks/compact-context-saver.py post"
           }
         ]
       }
@@ -127,7 +127,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+            "command": "python3 ~/.claude/hooks/smart-formatter.py"
           }
         ]
       },
@@ -136,7 +136,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+            "command": "python3 ~/.claude/hooks/smart-formatter.py"
           }
         ]
       },
@@ -145,7 +145,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/smart-formatter.sh"
+            "command": "python3 ~/.claude/hooks/smart-formatter.py"
           }
         ]
       },
@@ -174,7 +174,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/compact-context-saver.sh pre"
+            "command": "python3 ~/.claude/hooks/compact-context-saver.py pre"
           }
         ]
       }
@@ -239,7 +239,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/conventional-commits.sh",
+            "command": "python3 ~/.claude/hooks/conventional-commits.py",
             "if": "Bash(git commit *)"
           }
         ]
@@ -357,7 +357,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/large-file-blocker.sh"
+            "command": "python3 ~/.claude/hooks/large-file-blocker.py"
           }
         ]
       },
@@ -366,7 +366,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+            "command": "python3 ~/.claude/hooks/env-file-guard.py"
           }
         ]
       },
@@ -375,7 +375,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+            "command": "python3 ~/.claude/hooks/env-file-guard.py"
           }
         ]
       },
@@ -384,7 +384,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/env-file-guard.sh"
+            "command": "python3 ~/.claude/hooks/env-file-guard.py"
           }
         ]
       },
@@ -393,7 +393,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/rtk-rewrite.sh"
+            "command": "python3 ~/.claude/hooks/rtk-rewrite.py"
           }
         ]
       },
@@ -1195,7 +1195,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/compact-context-saver.sh post"
+            "command": "python3 ~/.claude/hooks/compact-context-saver.py post"
           }
         ]
       },
@@ -1215,7 +1215,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/english-only-reminder.sh"
+            "command": "python3 ~/.claude/hooks/english-only-reminder.py"
           }
         ]
       }
@@ -1226,7 +1226,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/stop-format-typecheck.sh"
+            "command": "python3 ~/.claude/hooks/stop-format-typecheck.py"
           },
           {
             "type": "command",
@@ -1234,7 +1234,7 @@
           },
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/notify-webhook.sh"
+            "command": "python3 ~/.claude/hooks/notify-webhook.py"
           },
           {
             "type": "command",
