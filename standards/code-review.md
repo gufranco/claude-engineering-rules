@@ -237,3 +237,7 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17 during
 ## Pre-Completion Checklist
 
 Run through [`checklists/checklist.md`](../checklists/checklist.md). All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.
+
+## Enforcement
+
+Enforced by: [`hooks/internal-config-leakage.py`](../hooks/internal-config-leakage.py).

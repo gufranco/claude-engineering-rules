@@ -64,3 +64,7 @@ class ShippedOrder {
 - Use when: order workflows, payment processing, document lifecycles, connection states, authentication flows
 - Different from discriminated unions: unions model "what states exist" as data. Type state models "what transitions are legal" through method availability. The compiler prevents invalid transitions, not runtime checks
 - Combine with branded types for state identifiers: `DraftOrderId` vs `ShippedOrderId` prevents passing the wrong order to the wrong function
+
+## Enforcement
+
+Enforced by: [`hooks/as-any-blocker.py`](../hooks/as-any-blocker.py).

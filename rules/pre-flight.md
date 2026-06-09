@@ -216,3 +216,7 @@ Then proceed. One sentence is enough for small tasks.
 - Fixing a bug based on a theory that was never tested
 - Implementing a feature that already exists in a different module
 - Expanding scope mid-implementation without checking with the user
+
+## Enforcement
+
+Enforced by: [`hooks/scope-guard.py`](../hooks/scope-guard.py).

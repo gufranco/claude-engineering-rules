@@ -86,3 +86,7 @@ This keeps the convention traceable to its source without turning every rule fil
 - RFC 2119: <https://www.rfc-editor.org/rfc/rfc2119>
 - RFC 8174: <https://www.rfc-editor.org/rfc/rfc8174>
 - BCP 14 index: <https://www.rfc-editor.org/info/bcp14>
+
+## Enforcement
+
+Enforced by: [`hooks/normative-keyword-discipline.py`](../hooks/normative-keyword-discipline.py).

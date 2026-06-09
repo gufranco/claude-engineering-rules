@@ -159,6 +159,13 @@ Topics: API design, authentication, caching, code review, container security, co
 
 58 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
+**Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
+
+1. Parent-shell env var `<NAME>_DISABLE=1` (set before launching Claude Code).
+2. In-session file registry `~/.claude/.bypass-state.json`. Engage from a live session via `python scripts/bypass.py set <hook> --ttl 600 --reason "<why>"`; clear with `python scripts/bypass.py clear [<hook>]`; inspect with `list`. TTL clamps to [60, 3600] seconds; the 60-minute ceiling is intentional so a forgotten bypass cannot stick. Wildcard entries (`set "*"`) short-circuit every hook until expiry, with a tighter default TTL of 5 minutes. File mode is 0600. See [`hooks/_lib/bypass.py`](hooks/_lib/bypass.py).
+
+**Block-message schema.** New hooks render their stderr through [`hooks/_lib/output.py`](hooks/_lib/output.py) `block(...)`. Five sections in fixed order (`What was detected`, `Why this rule exists`, `How to fix`, `If the rule does not apply here`, `Decision guidance for Claude`), one of four decision verbs (`STOP-AND-ASK`, `FIX-AND-RETRY`, `BYPASS-ONCE`, `BYPASS-WITH-REASON`), both bypass channels named in every message. Validator at `output.validate_block_message(...)`. See [`hooks/large-file-blocker.py`](hooks/large-file-blocker.py) for a worked example.
+
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
@@ -169,17 +176,17 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
-| [`compact-context-saver.sh`](hooks/compact-context-saver.sh) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
+| [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code |
-| [`conventional-commits.sh`](hooks/conventional-commits.sh) | PreToolUse Bash | Validates conventional commit format |
+| [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
 | [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | Blocks `.env` and key/cert copies, secret-named `ENV`/`ARG` with literal values, Compose `privileged: true`, and host-namespace toggles. Warns on floating tags, `USER root`, deprecated top-level `version:`, and literal secrets in `environment:`. Bypass `DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Drizzle raw query escape hatches |
 | [`drizzle-schema-sync.py`](hooks/drizzle-schema-sync.py) | PreToolUse Write/Edit | Enforces Drizzle schema vs migration parity |
-| [`english-only-reminder.sh`](hooks/english-only-reminder.sh) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
-| [`env-file-guard.sh`](hooks/env-file-guard.sh) | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
+| [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
+| [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | Blocks history-rewriting pushes when a `CHANGES_REQUESTED` review is open |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | Blocks rationalization phrases that defer verification-surface findings to a later session. Targets commit messages, PR bodies, release notes, and code comments |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
@@ -192,7 +199,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | Blocks `cp`/`mv`/`rm` without `-f`. macOS aliases these to `-i`, which hangs the agent on confirmation prompts. Bypass `INTERACTIVE_CMD_DISABLE=1` |
 | [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse Bash/Write/Edit | Prevents internal config references in external output |
 | [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
-| [`large-file-blocker.sh`](hooks/large-file-blocker.sh) | PreToolUse Bash | Blocks commits with files over 5MB |
+| [`large-file-blocker.py`](hooks/large-file-blocker.py) | PreToolUse Bash | Blocks commits with files over 5MB |
 | [`markdown-link-discipline.py`](hooks/markdown-link-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks new bare file mentions in markdown when the path resolves to a real repo file |
 | [`mcp-health-check.py`](hooks/mcp-health-check.py) | PreToolUse/PostToolUse `mcp__*` | Tracks MCP server health in `cache/mcp-health.json`. Short-circuits calls to servers past the unhealthy-failure threshold |
 | [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse Write/Edit | Forces `IF NOT EXISTS` / `IF EXISTS` on DDL |
@@ -200,22 +207,22 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse Write/Edit | Blocks mocking own services, DB, Redis, queues in tests |
 | [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks 90+ in-place mutation patterns in JS/TS |
 | [`normative-keyword-discipline.py`](hooks/normative-keyword-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks bullet items starting with `Should ` or `should ` in rules, standards, checklists, and [`CLAUDE.md`](CLAUDE.md). Enforces the BCP 14 weasel-words rule. Bypass `NORMATIVE_KEYWORD_DISABLE=1` |
-| [`notify-webhook.sh`](hooks/notify-webhook.sh) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
+| [`notify-webhook.py`](hooks/notify-webhook.py) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |
 | [`read-injection-scanner.py`](hooks/read-injection-scanner.py) | PostToolUse Read/WebFetch/WebSearch | Scans fetched content for prompt-injection patterns (instruction override, tool redirection, authority claims, base64 runs, unicode confusables) and emits a warning. Bypass `READ_INJECTION_DISABLE=1` |
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
-| [`rtk-rewrite.sh`](hooks/rtk-rewrite.sh) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
+| [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Reads the most recent active `specs/*/plan.md` (modified within 60min). Asks confirmation when the edit target is not in the plan's declared file list. Bypass `SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 40+ secret patterns before git commit |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | Surfaces the most recent checkpoint or active spec plan (within 7 days) as `additionalContext` on startup, clear, or compact so the session resumes with a pointer to in-progress work |
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | Blocks credentials and absolute home paths in settings |
-| [`smart-formatter.sh`](hooks/smart-formatter.sh) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt. Batches files for the Stop hook |
-| [`stop-format-typecheck.sh`](hooks/stop-format-typecheck.sh) | Stop | Reads the batched edit list from `smart-formatter.sh`, deduplicates, formats once, then runs typecheck once per touched workspace |
+| [`smart-formatter.py`](hooks/smart-formatter.py) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt. Batches files for the Stop hook |
+| [`stop-format-typecheck.py`](hooks/stop-format-typecheck.py) | Stop | Reads the batched edit list from `smart-formatter.py`, deduplicates, formats once, then runs typecheck once per touched workspace |
 | [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | Enforces subagent prompt quality with shape, file references, and length cap |
 | [`tdd-gate.py`](hooks/tdd-gate.py) | PreToolUse Write/Edit/MultiEdit | Blocks creation of a new production source file when no companion test file can be located. Bypass `TDD_GATE_DISABLE=1` |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | Forces `TF_WORKSPACE` per call |
@@ -410,7 +417,7 @@ The hooks, rules, and skills activate automatically.
 - **76 deny rules** protect sensitive files: `.env` variants, SSH keys, AWS creds, GnuPG, `*.pem`, `*.key`, `*.tfstate`, `node_modules`
 - **21 allow rules** enable read-only operations without prompting: `git diff`, `git log`, `git status`, `pnpm run`, `npx`
 
-The `env-file-guard.sh` hook adds a runtime layer that catches anything permissions miss.
+The `env-file-guard.py` hook adds a runtime layer that catches anything permissions miss.
 
 <details>
 <summary><strong>Project structure</strong></summary>

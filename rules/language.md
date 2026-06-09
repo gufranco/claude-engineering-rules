@@ -32,3 +32,7 @@ If any non-English text appears, rewrite before sending.
 ## Why This Rule Exists
 
 The user is Brazilian and writes in Portuguese for speed. They consume technical output in English: PR descriptions, commit messages, documentation read by international teammates and tooling. Mixed-language output forces them to translate before sharing. English-only output is shareable as-is.
+
+## Enforcement
+
+Enforced by: [`hooks/english-only-reminder.py`](../hooks/english-only-reminder.py).

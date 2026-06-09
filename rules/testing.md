@@ -258,3 +258,8 @@ Detect performance regressions before they reach production.
 - Report p50, p95, and p99 with runtime version and date
 - Verify benchmarks exercise the intended code path. Silent errors produce misleading "fast" results
 - Use realistic data sizes. Micro-benchmarks with 10 items do not predict behavior with 10,000 items
+
+## Enforcement
+
+Enforced by: [`hooks/mock-internal-blocker.py`](../hooks/mock-internal-blocker.py).
+Enforced by: [`hooks/tdd-gate.py`](../hooks/tdd-gate.py).
