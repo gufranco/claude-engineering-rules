@@ -41,9 +41,7 @@ def test_file_bypass_short_circuits_hook(hook_path: Path, tmp_path: Path) -> Non
     state = tmp_path / ".bypass-state.json"
     set_bypass(hook_path.stem, ttl_seconds=120, state_path=state)
     payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "echo noop"}})
-    env = apply_coverage_env(
-        {**os.environ, "CLAUDE_BYPASS_STATE": str(state)}
-    )
+    env = apply_coverage_env({**os.environ, "CLAUDE_BYPASS_STATE": str(state)})
     # Act
     result = subprocess.run(
         [sys.executable, str(hook_path)],
