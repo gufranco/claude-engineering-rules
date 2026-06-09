@@ -102,6 +102,9 @@ CD_PREFIX = re.compile(r"^\s*cd\s+(?P<dir>\S+)\s*&&\s*")
 # `git -C <dir>` flag capture.
 GIT_C_FLAG = re.compile(r"\bgit\s+-C\s+(?P<dir>\S+)")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def repo_dir(command: str) -> Path:
     """Best-effort resolution of the working directory the command targets."""

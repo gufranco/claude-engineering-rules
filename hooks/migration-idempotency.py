@@ -61,6 +61,9 @@ CREATE_INDEX_BLOCKING = re.compile(
     re.IGNORECASE,
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_migration_path(path: str) -> bool:
     if not path:
@@ -138,6 +141,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="MIGRATION_IDEMPOTENCY_DISABLE",
         )
+        return 0
+    if is_bypassed("migration-idempotency"):
         return 0
 
     try:

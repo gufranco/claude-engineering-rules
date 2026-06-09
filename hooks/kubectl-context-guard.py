@@ -53,8 +53,15 @@ except ImportError:
     def should_run(_id: str) -> bool:
         return True
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def main() -> None:
+    if os.environ.get("KUBECTL_CONTEXT_GUARD_DISABLE") == "1":
+        _sys.exit(0)
+    if is_bypassed("kubectl-context-guard"):
+        _sys.exit(0)
     if not should_run("kubectl-context-guard"):
         _sys.exit(0)
     try:

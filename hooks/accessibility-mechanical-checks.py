@@ -54,6 +54,9 @@ SKIP_SEGMENTS = (
     "/.next/",
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped(path: str) -> bool:
     if not path.endswith(UI_EXTS):
@@ -205,6 +208,8 @@ def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
 
 def main() -> int:
     if os.environ.get("ACCESSIBILITY_CHECKS_DISABLE") == "1":
+        return 0
+    if is_bypassed("accessibility-mechanical-checks"):
         return 0
     try:
         payload = json.load(sys.stdin)

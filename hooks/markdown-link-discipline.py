@@ -41,6 +41,9 @@ except ImportError:  # pragma: no cover
 
 MARKDOWN_EXTENSIONS = (".md", ".mdx")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_markdown_path(path: str) -> bool:
     return any(path.lower().endswith(ext) for ext in MARKDOWN_EXTENSIONS)
@@ -110,6 +113,8 @@ def main() -> None:
     if not should_run("markdown-link-discipline"):
         _sys.exit(0)
     if os.environ.get("MARKDOWN_LINKS_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("markdown-link-discipline"):
         sys.exit(0)
 
     try:

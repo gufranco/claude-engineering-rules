@@ -93,6 +93,9 @@ ALLOW_FILE_MARKER = "@allow-console"
 ALLOW_LINE_MARKER = "allow-console"
 TOP_OF_FILE_SCAN = 10
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped(path: str) -> bool:
     """Skip non-JS/TS files, test directories, error boundaries, and configs."""
@@ -206,6 +209,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="CONSOLE_LOG_DISABLE",
         )
+        return 0
+    if is_bypassed("console-log-blocker"):
         return 0
 
     try:

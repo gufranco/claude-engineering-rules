@@ -48,8 +48,15 @@ except ImportError:
     def should_run(_id: str) -> bool:
         return True
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def main():
+    if os.environ.get("GH_TOKEN_GUARD_DISABLE") == "1":
+        return 0
+    if is_bypassed("gh-token-guard"):
+        return 0
     if not should_run("gh-token-guard"):
         sys.exit(0)
     try:

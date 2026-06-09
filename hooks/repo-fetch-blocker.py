@@ -56,6 +56,9 @@ RAW_FETCH = re.compile(
 # (`--json`, `--web`, `--branch`) are metadata probes and stay allowed.
 GH_REPO_VIEW_FILE = re.compile(r"\bgh\s+repo\s+view\s+\S+/\S+\s+(?!-)\S+")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def find_offender(command: str) -> tuple[str, str] | None:
     if GH_API_CONTENTS.search(command):
@@ -123,6 +126,8 @@ def emit_block(label: str, why: str, command: str) -> None:
 
 def main() -> int:
     if os.environ.get("REPO_FETCH_DISABLE") == "1":
+        return 0
+    if is_bypassed("repo-fetch-blocker"):
         return 0
 
     try:

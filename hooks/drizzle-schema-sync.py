@@ -80,6 +80,9 @@ SKIP_PATH_HINTS = (
     "/e2e/",
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def looks_like_drizzle_schema(text: str) -> bool:
     return (
@@ -200,6 +203,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="DRIZZLE_SCHEMA_SYNC_DISABLE",
         )
+        return 0
+    if is_bypassed("drizzle-schema-sync"):
         return 0
 
     try:

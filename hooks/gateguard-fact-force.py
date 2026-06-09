@@ -53,6 +53,9 @@ except Exception:  # pragma: no cover
     def _audit(**_fields):  # type: ignore
         return None
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _load_state() -> dict[str, Any]:
     if not os.path.exists(STATE_FILE):
@@ -127,6 +130,8 @@ def main() -> None:
     if not should_run("gateguard-fact-force"):
         _sys.exit(0)
     if os.environ.get("GATEGUARD_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("gateguard-fact-force"):
         sys.exit(0)
     try:
         data = json.load(sys.stdin)

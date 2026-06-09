@@ -40,6 +40,9 @@ MIGRATION_PATH_RE = re.compile(
     r"/prisma/migrations/[^/]+/migration\.sql$", re.IGNORECASE
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_prisma_migration(path: str) -> bool:
     if not path:
@@ -289,6 +292,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="PRISMA_SCHEMA_SYNC_DISABLE",
         )
+        return 0
+    if is_bypassed("prisma-schema-sync"):
         return 0
 
     try:

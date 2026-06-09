@@ -151,6 +151,9 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
     ),
 ]
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _snippet(text: str, idx: int) -> str:
     start = max(0, idx - 40)
@@ -322,6 +325,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="AI_PROCESS_LEAK_DISABLE",
         )
+        return 0
+    if is_bypassed("ai-process-leak-blocker"):
         return 0
 
     try:

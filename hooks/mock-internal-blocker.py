@@ -85,6 +85,9 @@ PY_MOCK_CALL = re.compile(
     r"""(?:patch|patch\.object|mock\.patch|unittest\.mock\.patch)\s*\(\s*['"]([^'"]+)['"]"""
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_test_file(path: str) -> bool:
     if not path:
@@ -148,6 +151,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="MOCK_INTERNAL_DISABLE",
         )
+        return 0
+    if is_bypassed("mock-internal-blocker"):
         return 0
 
     try:

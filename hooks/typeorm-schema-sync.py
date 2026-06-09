@@ -82,6 +82,9 @@ CHECK_DECORATOR_RE = re.compile(
     re.DOTALL,
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped_path(path: str) -> bool:
     if not path:
@@ -223,6 +226,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="TYPEORM_SCHEMA_SYNC_DISABLE",
         )
+        return 0
+    if is_bypassed("typeorm-schema-sync"):
         return 0
 
     try:
