@@ -67,4 +67,4 @@ class ShippedOrder {
 
 ## Enforcement
 
-Enforced by: [`hooks/as-any-blocker.py`](../hooks/as-any-blocker.py).
+Enforced by: [`hooks/as-any-blocker.py`](../../hooks/as-any-blocker.py).

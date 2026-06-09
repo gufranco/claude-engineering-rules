@@ -53,8 +53,8 @@ except Exception:  # pragma: no cover
     def _audit(**_fields):  # type: ignore
         return None
 
-from _lib.bypass import is_bypassed  # noqa: E402
 
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def _load_state() -> dict[str, Any]:

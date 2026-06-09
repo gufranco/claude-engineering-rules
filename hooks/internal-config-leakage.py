@@ -204,7 +204,6 @@ NON_PUBLISHING_PREFIXES = (
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_publishing_bash(cmd: str) -> bool:
     """True if the Bash command publishes externally. False for inert commands."""
     if not cmd:

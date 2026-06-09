@@ -86,15 +86,22 @@ class TestIsBypassed:
 
     def test_skips_entries_with_invalid_expiry_type(self, state_path: Path) -> None:
         # Arrange
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": 12345}]})
+        _write_raw(
+            state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": 12345}]}
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
         assert result is False
 
-    def test_skips_entries_with_unparseable_expiry_string(self, state_path: Path) -> None:
+    def test_skips_entries_with_unparseable_expiry_string(
+        self, state_path: Path
+    ) -> None:
         # Arrange
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": "yesterday"}]})
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": "h", "expires_at": "yesterday"}]},
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
@@ -111,7 +118,10 @@ class TestIsBypassed:
     def test_returns_true_for_exact_match_within_ttl(self, state_path: Path) -> None:
         # Arrange
         future = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]})
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]},
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
@@ -120,7 +130,9 @@ class TestIsBypassed:
     def test_returns_false_for_expired_entry(self, state_path: Path) -> None:
         # Arrange
         past = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": past}]})
+        _write_raw(
+            state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": past}]}
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
@@ -129,7 +141,10 @@ class TestIsBypassed:
     def test_wildcard_entry_matches_any_hook(self, state_path: Path) -> None:
         # Arrange
         future = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": WILDCARD, "expires_at": future}]})
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": WILDCARD, "expires_at": future}]},
+        )
         # Act
         result = is_bypassed("anything", state_path=state_path)
         # Assert
@@ -138,7 +153,10 @@ class TestIsBypassed:
     def test_non_matching_hook_returns_false(self, state_path: Path) -> None:
         # Arrange
         future = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "other", "expires_at": future}]})
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": "other", "expires_at": future}]},
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
@@ -146,8 +164,16 @@ class TestIsBypassed:
 
     def test_accepts_z_suffix_iso_timestamp(self, state_path: Path) -> None:
         # Arrange
-        future = (datetime.now(timezone.utc) + timedelta(minutes=5)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]})
+        future = (
+            (datetime.now(timezone.utc) + timedelta(minutes=5))
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]},
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
@@ -155,19 +181,30 @@ class TestIsBypassed:
 
     def test_naive_timestamp_treated_as_utc(self, state_path: Path) -> None:
         # Arrange
-        future = (datetime.now(timezone.utc) + timedelta(minutes=5)).replace(tzinfo=None).isoformat()
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]})
+        future = (
+            (datetime.now(timezone.utc) + timedelta(minutes=5))
+            .replace(tzinfo=None)
+            .isoformat()
+        )
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]},
+        )
         # Act
         result = is_bypassed("h", state_path=state_path)
         # Assert
         assert result is True
 
-    def test_uses_module_default_path_when_none_supplied(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_uses_module_default_path_when_none_supplied(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         # Arrange
         default = tmp_path / ".bypass-state.json"
         monkeypatch.setattr("_lib.bypass.STATE_PATH", default)
         future = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
-        _write_raw(default, {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]})
+        _write_raw(
+            default, {"version": 1, "bypasses": [{"hook": "h", "expires_at": future}]}
+        )
         # Act
         result = is_bypassed("h")
         # Assert
@@ -177,10 +214,15 @@ class TestIsBypassed:
         # Arrange
         fixed = datetime(2026, 1, 1, tzinfo=timezone.utc)
         expires_at = (fixed + timedelta(minutes=2)).isoformat()
-        _write_raw(state_path, {"version": 1, "bypasses": [{"hook": "h", "expires_at": expires_at}]})
+        _write_raw(
+            state_path,
+            {"version": 1, "bypasses": [{"hook": "h", "expires_at": expires_at}]},
+        )
         # Act
         before = is_bypassed("h", state_path=state_path, now=fixed)
-        after = is_bypassed("h", state_path=state_path, now=fixed + timedelta(minutes=3))
+        after = is_bypassed(
+            "h", state_path=state_path, now=fixed + timedelta(minutes=3)
+        )
         # Assert
         assert before is True
         assert after is False
@@ -312,7 +354,9 @@ class TestSetBypass:
 
     def test_recovers_when_existing_file_wrong_version(self, state_path: Path) -> None:
         # Arrange
-        state_path.write_text(json.dumps({"version": 99, "bypasses": [{"hook": "x"}]}), encoding="utf-8")
+        state_path.write_text(
+            json.dumps({"version": 99, "bypasses": [{"hook": "x"}]}), encoding="utf-8"
+        )
         # Act
         set_bypass("h", state_path=state_path)
         # Assert
@@ -333,7 +377,9 @@ class TestSetBypass:
         hooks = {entry.get("hook") for entry in data["bypasses"]}
         assert hooks == {"good", "h"}
 
-    def test_uses_module_default_path_when_none(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_uses_module_default_path_when_none(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         # Arrange
         default = tmp_path / "state.json"
         monkeypatch.setattr("_lib.bypass_writer.STATE_PATH", default)
@@ -353,7 +399,9 @@ class TestSetBypass:
         delta = (expires - datetime.now(timezone.utc)).total_seconds()
         assert 590 <= delta <= 610
 
-    def test_atomic_write_cleans_tempfile_on_failure(self, monkeypatch: pytest.MonkeyPatch, state_path: Path) -> None:
+    def test_atomic_write_cleans_tempfile_on_failure(
+        self, monkeypatch: pytest.MonkeyPatch, state_path: Path
+    ) -> None:
         # Arrange
         def boom(*_args: object, **_kwargs: object) -> None:
             raise RuntimeError("disk full")
@@ -362,7 +410,11 @@ class TestSetBypass:
         # Act / Assert
         with pytest.raises(RuntimeError):
             set_bypass("h", state_path=state_path)
-        leftovers = [p for p in state_path.parent.iterdir() if p.name.startswith(".bypass-state.")]
+        leftovers = [
+            p
+            for p in state_path.parent.iterdir()
+            if p.name.startswith(".bypass-state.")
+        ]
         assert leftovers == []
 
 
@@ -414,7 +466,9 @@ class TestClearBypass:
         # Assert
         assert state_path.stat().st_mtime_ns == mtime_before
 
-    def test_uses_module_default_path_when_none(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_uses_module_default_path_when_none(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         # Arrange
         default = tmp_path / "state.json"
         monkeypatch.setattr("_lib.bypass.STATE_PATH", default)

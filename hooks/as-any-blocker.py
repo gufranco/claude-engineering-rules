@@ -75,7 +75,6 @@ MAX_HITS_PER_FILE = 8
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_skipped_path(path: str) -> bool:
     """Skip non-TypeScript paths and the hooks directory."""
     if not path:

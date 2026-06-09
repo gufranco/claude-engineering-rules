@@ -48,7 +48,6 @@ BACKTICK_PATH = re.compile(r"`([^`\s]+\.[a-zA-Z0-9]+|[^`\s]+/[^`\s]*)`")
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def find_active_plan(cwd: Path) -> Path | None:
     """Return the most recently modified plan.md within the freshness window."""
     candidates: list[tuple[float, Path]] = []

@@ -134,7 +134,6 @@ AGENT_META_QUESTIONS = [
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def build_pattern(phrases: list[str], boundary: bool = True) -> re.Pattern:
     escaped = [re.escape(p) for p in phrases]
     body = "|".join(escaped)

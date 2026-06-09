@@ -52,9 +52,11 @@ Public API:
     has_python_file_disable(lines) -> bool
 The function never raises. Suppression is best-effort.
 """
+
 from __future__ import annotations
 import re
 from dataclasses import dataclass, field
+
 ESLINT_BLOCK_OPEN = re.compile(r"/\*\s*eslint-disable\s*\*/")
 ESLINT_BLOCK_CLOSE = re.compile(r"/\*\s*eslint-enable\s*\*/")
 ESLINT_LINE_OPEN = re.compile(r"//\s*eslint-disable\b(?!-(?:line|next-line))")
@@ -87,10 +89,15 @@ PYTHON_FILE_DISABLE_PATTERNS = (
 )
 JUSTIFICATION_TRAILER = re.compile(r"--\s*\S")
 TOP_OF_FILE_SCAN_LIMIT = 10
+
+
 @dataclass
 class BlockState:
     """Tracks `/* eslint-disable */`-style block ranges."""
+
     disabled_lines: frozenset[int] = field(default_factory=frozenset)
+
+
 def compute_block_state(lines: list[str]) -> BlockState:
     """Scan once and record indices inside any eslint-disable block.
     Indices are zero-based, matching `lines[i]` access. Ranges include the
@@ -109,6 +116,8 @@ def compute_block_state(lines: list[str]) -> BlockState:
             continue
         disabled.add(i)
     return BlockState(disabled_lines=frozenset(disabled))
+
+
 def _is_lone_block_disable(line: str) -> bool:
     stripped = line.strip()
     if not stripped.startswith("/*") and not stripped.startswith("//"):
@@ -116,10 +125,14 @@ def _is_lone_block_disable(line: str) -> bool:
     if not ESLINT_LINE_OPEN.search(line) and not _looks_like_blanket_disable(line):
         return False
     return True
+
+
 def _looks_like_blanket_disable(line: str) -> bool:
     if "eslint-disable-line" in line or "eslint-disable-next-line" in line:
         return False
     return "eslint-disable" in line and "enable" not in line
+
+
 def has_inline_marker(line: str, marker: str) -> bool:
     """Detect an exact-token inline marker on `line`.
     Marker must be preceded by `//` or `/*` to count as a real comment-form
@@ -133,6 +146,8 @@ def has_inline_marker(line: str, marker: str) -> bool:
     idx = sanitized.find(marker)
     prefix = sanitized[:idx]
     return "//" in prefix or "/*" in prefix
+
+
 def has_top_of_file_marker(lines: list[str], marker: str) -> bool:
     """True when `marker` appears in the first non-blank lines of the file.
     Scans up to TOP_OF_FILE_SCAN_LIMIT lines, skipping leading blanks.
@@ -149,6 +164,8 @@ def has_top_of_file_marker(lines: list[str], marker: str) -> bool:
         if has_inline_marker(line, marker):
             return True
     return False
+
+
 def has_python_file_disable(lines: list[str]) -> bool:
     """True when the file opens with a Python file-wide disable directive.
     Recognized markers: `# mypy: ignore-errors`, `# ruff: noqa`, `# flake8: noqa`.
@@ -165,9 +182,13 @@ def has_python_file_disable(lines: list[str]) -> bool:
             if pattern.search(line):
                 return True
     return False
+
+
 def _has_python_inline_suppression(line: str) -> bool:
     sanitized = _strip_strings(line)
     return any(p.search(sanitized) for p in PYTHON_SAME_LINE_PATTERNS)
+
+
 def has_ts_nocheck_directive(lines: list[str]) -> bool:
     """True when `@ts-nocheck` appears at the top of the file as a comment.
     `@ts-nocheck` is the TypeScript directive that disables type checking for
@@ -176,12 +197,16 @@ def has_ts_nocheck_directive(lines: list[str]) -> bool:
     suit and treats the marker as a file-wide suppression.
     """
     return has_top_of_file_marker(lines, "@ts-nocheck")
+
+
 def has_justification_trailer(line: str) -> bool:
     """Recognize the ` -- justification` trailer.
     Used to surface advisory warnings when suppressions lack a reason. The
     hook does not enforce the trailer; ESLint does.
     """
     return bool(JUSTIFICATION_TRAILER.search(line))
+
+
 def is_suppressed(
     lines: list[str],
     i: int,
@@ -216,6 +241,8 @@ def is_suppressed(
         if _has_python_inline_suppression(prev):
             return True
     return False
+
+
 def line_or_prev_has_suppression(
     lines: list[str],
     line_no: int,
@@ -229,6 +256,8 @@ def line_or_prev_has_suppression(
     `line_no` is zero-based to match list indexing across hook payloads.
     """
     return is_suppressed(lines, line_no, hook_marker=hook_marker)
+
+
 def _strip_strings(line: str) -> str:
     """Mask string contents so substring matches do not pick up code samples.
     Conservative: replaces single-quoted, double-quoted, and backtick-quoted

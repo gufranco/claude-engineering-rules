@@ -34,6 +34,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+from _lib.bypass import is_bypassed  # noqa: E402
+
 try:
     from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
@@ -129,9 +131,6 @@ COMPOSE_ENV_LITERAL_SECRET = re.compile(
     """,
     re.VERBOSE,
 )
-
-from _lib.bypass import is_bypassed  # noqa: E402
-
 
 
 def detect_kind(path: str) -> str:
@@ -324,6 +323,8 @@ def scan_compose(text: str, full_file: bool) -> tuple[list[str], list[str]]:
 
 def main() -> None:
     if os.environ.get(BYPASS_ENV) == "1":
+        sys.exit(0)
+    if is_bypassed("dockerfile-compose-quality"):
         sys.exit(0)
     if not should_run("dockerfile-compose-quality"):
         sys.exit(0)

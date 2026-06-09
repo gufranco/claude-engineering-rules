@@ -163,7 +163,6 @@ TOP_OF_FILE_SCAN = 10
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_skipped(path: str) -> bool:
     """Skip non-source files, planning paths, templates, tests, the .claude tree."""
     if not path:

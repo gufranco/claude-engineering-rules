@@ -62,7 +62,6 @@ HOME_PATH_RE = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def _load_blocklist() -> list[str]:
     if not os.path.exists(BLOCKLIST_PATH):
         return []

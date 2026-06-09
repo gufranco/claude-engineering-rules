@@ -26,7 +26,6 @@ MAX_AGE_SECONDS = (
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def _session_id() -> str:
     return os.environ.get("CLAUDE_SESSION_ID") or os.environ.get("SESSION_ID") or ""
 

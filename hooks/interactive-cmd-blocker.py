@@ -42,7 +42,6 @@ INTERACTIVE_PRONE = ("rm", "cp", "mv")
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def split_commands(command: str) -> list[str]:
     """Split a bash command line by shell separators ; && || | &."""
     # Keep the boundary cheap; not aiming for full bash parsing

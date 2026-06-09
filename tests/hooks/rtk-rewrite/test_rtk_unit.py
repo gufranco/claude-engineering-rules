@@ -36,7 +36,9 @@ def _stdin_with(payload: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
 
 
-def test_read_payload_returns_empty_on_malformed_json(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_read_payload_returns_empty_on_malformed_json(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
     # Act
@@ -45,7 +47,9 @@ def test_read_payload_returns_empty_on_malformed_json(hook, monkeypatch: pytest.
     assert result == {}
 
 
-def test_read_payload_returns_empty_on_non_dict_root(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_read_payload_returns_empty_on_non_dict_root(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("[1,2,3]"))
     # Act
@@ -54,7 +58,9 @@ def test_read_payload_returns_empty_on_non_dict_root(hook, monkeypatch: pytest.M
     assert result == {}
 
 
-def test_command_too_old_true_when_binary_missing(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_command_too_old_true_when_binary_missing(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     def raise_fnf(*_args: object, **_kwargs: object) -> object:
         raise FileNotFoundError
@@ -66,7 +72,9 @@ def test_command_too_old_true_when_binary_missing(hook, monkeypatch: pytest.Monk
     assert result is True
 
 
-def test_command_too_old_false_when_recent(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_command_too_old_false_when_recent(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     def fake(*_args: object, **_kwargs: object) -> object:
         return SimpleNamespace(stdout="rtk 0.25.0\n", returncode=0)
@@ -173,7 +181,9 @@ def test_main_returns_zero_when_too_old(hook, monkeypatch: pytest.MonkeyPatch) -
     assert result == 0
 
 
-def test_main_passes_through_when_no_command(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_passes_through_when_no_command(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(hook.shutil, "which", lambda _name: "/usr/bin/rtk")
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
@@ -211,7 +221,9 @@ def test_main_noop_when_rewrite_matches(hook, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
     _stdin_with({"tool_input": {"command": "x"}}, monkeypatch)
     monkeypatch.setattr(
-        hook.subprocess, "run", lambda *_a, **_k: SimpleNamespace(stdout="x", returncode=0)
+        hook.subprocess,
+        "run",
+        lambda *_a, **_k: SimpleNamespace(stdout="x", returncode=0),
     )
     # Act
     result = hook.main()
@@ -219,13 +231,17 @@ def test_main_noop_when_rewrite_matches(hook, monkeypatch: pytest.MonkeyPatch) -
     assert result == 0
 
 
-def test_main_no_equivalent_passes_through(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_no_equivalent_passes_through(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(hook.shutil, "which", lambda _name: "/usr/bin/rtk")
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
     _stdin_with({"tool_input": {"command": "x"}}, monkeypatch)
     monkeypatch.setattr(
-        hook.subprocess, "run", lambda *_a, **_k: SimpleNamespace(stdout="", returncode=1)
+        hook.subprocess,
+        "run",
+        lambda *_a, **_k: SimpleNamespace(stdout="", returncode=1),
     )
     # Act
     result = hook.main()
@@ -239,7 +255,9 @@ def test_main_deny_rule_passes_through(hook, monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
     _stdin_with({"tool_input": {"command": "rm -rf /"}}, monkeypatch)
     monkeypatch.setattr(
-        hook.subprocess, "run", lambda *_a, **_k: SimpleNamespace(stdout="", returncode=2)
+        hook.subprocess,
+        "run",
+        lambda *_a, **_k: SimpleNamespace(stdout="", returncode=2),
     )
     # Act
     result = hook.main()
@@ -255,7 +273,9 @@ def test_main_ask_rule_emits_envelope(
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
     _stdin_with({"tool_input": {"command": "x"}}, monkeypatch)
     monkeypatch.setattr(
-        hook.subprocess, "run", lambda *_a, **_k: SimpleNamespace(stdout="rtk x", returncode=3)
+        hook.subprocess,
+        "run",
+        lambda *_a, **_k: SimpleNamespace(stdout="rtk x", returncode=3),
     )
     # Act
     result = hook.main()
@@ -266,13 +286,17 @@ def test_main_ask_rule_emits_envelope(
     assert "permissionDecision" not in body["hookSpecificOutput"]
 
 
-def test_main_returns_zero_on_unknown_rtk_exit_code(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_returns_zero_on_unknown_rtk_exit_code(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(hook.shutil, "which", lambda _name: "/usr/bin/rtk")
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
     _stdin_with({"tool_input": {"command": "x"}}, monkeypatch)
     monkeypatch.setattr(
-        hook.subprocess, "run", lambda *_a, **_k: SimpleNamespace(stdout="", returncode=99)
+        hook.subprocess,
+        "run",
+        lambda *_a, **_k: SimpleNamespace(stdout="", returncode=99),
     )
     # Act
     result = hook.main()
@@ -280,7 +304,9 @@ def test_main_returns_zero_on_unknown_rtk_exit_code(hook, monkeypatch: pytest.Mo
     assert result == 0
 
 
-def test_main_returns_zero_on_rtk_invocation_failure(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_returns_zero_on_rtk_invocation_failure(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(hook.shutil, "which", lambda _name: "/usr/bin/rtk")
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
@@ -296,7 +322,9 @@ def test_main_returns_zero_on_rtk_invocation_failure(hook, monkeypatch: pytest.M
     assert result == 0
 
 
-def test_main_returns_zero_on_non_dict_tool_input(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_returns_zero_on_non_dict_tool_input(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(hook.shutil, "which", lambda _name: "/usr/bin/rtk")
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)
@@ -307,7 +335,9 @@ def test_main_returns_zero_on_non_dict_tool_input(hook, monkeypatch: pytest.Monk
     assert result == 0
 
 
-def test_main_returns_zero_on_non_string_command(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_returns_zero_on_non_string_command(
+    hook, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.setattr(hook.shutil, "which", lambda _name: "/usr/bin/rtk")
     monkeypatch.setattr(hook, "_command_too_old", lambda: False)

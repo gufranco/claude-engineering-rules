@@ -20,7 +20,6 @@ import sys
 import textwrap
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "rtk-rewrite.py"
@@ -31,7 +30,6 @@ from _lib.bypass_writer import set_bypass  # noqa: E402
 _TESTS_DIR = ROOT / "tests"
 if str(_TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(_TESTS_DIR))
-from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 
 def _make_rtk_stub(

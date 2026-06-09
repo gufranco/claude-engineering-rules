@@ -22,6 +22,7 @@ Usage:
     python3 scripts/bench_hooks.py --hook secret-scanner --hook redis-atomicity
     python3 scripts/bench_hooks.py --write-baseline notes/perf-baseline.md
 """
+
 from __future__ import annotations
 import argparse
 import json
@@ -34,6 +35,7 @@ import time
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass, field
 from typing import Any
+
 DEFAULT_HOOKS_DIR = os.path.expanduser("~/.claude/hooks")
 DEFAULT_ITERATIONS = 20
 DEFAULT_TIMEOUT_S = 10.0
@@ -70,17 +72,23 @@ PAYLOADS: dict[str, dict[str, Any]] = {
         "hook_event_name": "PreToolUse",
     },
 }
+
+
 @dataclass(frozen=True)
 class Sample:
     """One subprocess invocation result."""
+
     hook: str
     payload: str
     duration_ms: float
     exit_code: int
     timed_out: bool = False
+
+
 @dataclass(frozen=True)
 class HookStats:
     """Aggregate latency stats for a single hook."""
+
     hook: str
     n: int
     mean_ms: float
@@ -91,6 +99,8 @@ class HookStats:
     timeouts: int = 0
     nonzero_exits: int = 0
     payloads: list[str] = field(default_factory=list)
+
+
 # --------------------------------------------------------------------------- #
 # core helpers
 # --------------------------------------------------------------------------- #
@@ -106,6 +116,8 @@ def _percentile(sorted_values: list[float], p: float) -> float:
         return float(sorted_values[lo])
     weight = rank - lo
     return float(sorted_values[lo] * (1 - weight) + sorted_values[hi] * weight)
+
+
 def discover_hooks(hooks_dir: str) -> list[str]:
     """Return absolute paths of `hooks_dir/*.py`, skipping underscore files."""
     if not os.path.isdir(hooks_dir):
@@ -120,11 +132,15 @@ def discover_hooks(hooks_dir: str) -> list[str]:
         if os.path.isfile(path):
             out.append(path)
     return out
+
+
 def _hook_basename(path: str) -> str:
     base = os.path.basename(path)
     if base.endswith(".py"):
         base = base[: -len(".py")]
     return base
+
+
 def run_one(
     hook_path: str,
     payload: dict[str, Any],
@@ -153,6 +169,8 @@ def run_one(
     except subprocess.TimeoutExpired:
         duration_ms = (time.perf_counter() - start) * 1000.0
         return duration_ms, -1, True
+
+
 def iter_samples(
     hook_paths: Iterable[str],
     *,
@@ -184,6 +202,8 @@ def iter_samples(
                     exit_code=code,
                     timed_out=timed_out,
                 )
+
+
 def aggregate(samples: Iterable[Sample]) -> list[HookStats]:
     """Group samples by hook, compute summary stats for each."""
     grouped: dict[str, list[Sample]] = {}
@@ -210,6 +230,8 @@ def aggregate(samples: Iterable[Sample]) -> list[HookStats]:
             )
         )
     return out
+
+
 # --------------------------------------------------------------------------- #
 # rendering
 # --------------------------------------------------------------------------- #
@@ -240,8 +262,12 @@ def _format_table(stats: list[HookStats]) -> str:
     for row in rows:
         out.append("  ".join(cell.ljust(widths[i]) for i, cell in enumerate(row)))
     return "\n".join(out) + "\n"
+
+
 def _format_json(stats: list[HookStats]) -> str:
     return json.dumps([asdict(s) for s in stats], ensure_ascii=False, indent=2) + "\n"
+
+
 def _format_markdown(
     stats: list[HookStats], *, iterations: int, payloads: list[str]
 ) -> str:
@@ -265,6 +291,8 @@ def _format_markdown(
             f"{s.p95_ms:.2f} | {s.p99_ms:.2f} | {s.max_ms:.2f} | {s.timeouts} |"
         )
     return "\n".join(lines) + "\n"
+
+
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
@@ -274,6 +302,8 @@ def _filter_hooks(paths: list[str], include: Iterable[str] | None) -> list[str]:
     wanted = set(include)
     out = [p for p in paths if _hook_basename(p) in wanted]
     return out
+
+
 def _cli(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Benchmark Claude Code Python hooks for regression detection."
@@ -354,5 +384,7 @@ def _cli(argv: list[str]) -> int:
     else:
         sys.stdout.write(_format_table(stats))
     return 0
+
+
 if __name__ == "__main__":
     sys.exit(_cli(sys.argv[1:]))

@@ -59,7 +59,6 @@ GH_REPO_VIEW_FILE = re.compile(r"\bgh\s+repo\s+view\s+\S+/\S+\s+(?!-)\S+")
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def find_offender(command: str) -> tuple[str, str] | None:
     if GH_API_CONTENTS.search(command):
         return (

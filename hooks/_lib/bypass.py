@@ -72,7 +72,7 @@ def _parse_expiry(raw: object) -> datetime | None:
     return value
 
 
-def _load_entries(path: Path) -> list[dict]:
+def _load_entries(path: Path) -> list[dict[str, object]]:
     try:
         with path.open("r", encoding="utf-8") as fh:
             data = json.load(fh)

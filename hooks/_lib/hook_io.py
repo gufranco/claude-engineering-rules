@@ -30,11 +30,14 @@ The functions follow the tool-protocol used by every existing hook in this
 repo, so callers can adopt incrementally: replace `sys.exit(2)` and stderr
 prints with `block(...)`, then drop the boilerplate around stdin parsing.
 """
+
 from __future__ import annotations
 import json
 import sys
 from dataclasses import dataclass, field
 from typing import Any
+
+
 @dataclass(frozen=True)
 class ToolUse:
     """Parsed PreToolUse / PostToolUse payload.
@@ -42,6 +45,7 @@ class ToolUse:
     Claude Code hooks reference. Unknown fields land in `extra` so callers
     can read v2-only fields without forcing every hook to know about them.
     """
+
     tool_name: str = ""
     tool_input: dict[str, Any] = field(default_factory=dict)
     cwd: str = ""
@@ -49,6 +53,8 @@ class ToolUse:
     transcript_path: str = ""
     hook_event_name: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
+
+
 def read_input() -> ToolUse:
     """Parse JSON from stdin into a `ToolUse`. Empty payload on parse failure."""
     raw = sys.stdin.read()
@@ -81,6 +87,8 @@ def read_input() -> ToolUse:
         hook_event_name=str(payload.get("hook_event_name") or ""),
         extra=extra,
     )
+
+
 def _emit_audit(payload: dict[str, Any] | None) -> None:
     if not payload:
         return
@@ -92,6 +100,8 @@ def _emit_audit(payload: dict[str, Any] | None) -> None:
         _record(**payload)
     except (OSError, TypeError, ValueError):
         return
+
+
 def block(
     reason: str,
     *,
@@ -126,17 +136,25 @@ def block(
             pass
     _emit_audit(audit_payload)
     return 2
+
+
 def allow() -> int:
     """Return exit 0. Used when the hook explicitly approves the tool call."""
     return 0
+
+
 def defer() -> int:
     """Return exit 0 with no output. Used when the hook does not apply."""
     return 0
+
+
 def ask(message: str) -> int:
     """Print `message` to stderr, return exit 1 so the model can revise."""
     if message:
         print(message, file=sys.stderr)
     return 1
+
+
 def modify_input(updates: dict[str, Any], *, original: ToolUse) -> int:
     """Emit a v2 modifiedInput response. Falls back to allow() on serialization error."""
     if not isinstance(updates, dict) or not updates:
@@ -155,6 +173,8 @@ def modify_input(updates: dict[str, Any], *, original: ToolUse) -> int:
     except (OSError, TypeError, ValueError):
         return allow()
     return 0
+
+
 def add_post_context(text: str) -> int:
     """Emit a v2 PostToolUse additionalContext body. Falls back to allow()."""
     if not text:
