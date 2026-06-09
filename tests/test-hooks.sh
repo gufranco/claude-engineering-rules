@@ -203,27 +203,27 @@ echo ""
 echo "=== Conventional Commits ==="
 
 run_test "allows valid conventional commit" \
-    "${HOOKS}/conventional-commits.sh" \
+    "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/commit-valid.json" 0
 
 run_test "blocks non-conventional commit message" \
-    "${HOOKS}/conventional-commits.sh" \
+    "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/commit-invalid.json" 2
 
 run_test "ignores non-commit commands" \
-    "${HOOKS}/conventional-commits.sh" \
+    "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/commit-not-a-commit.json" 0
 
 run_test "blocks commit with subject over 72 chars" \
-    "${HOOKS}/conventional-commits.sh" \
+    "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/bash-commit-long-subject.json" 2
 
 run_test "allows valid heredoc commit" \
-    "${HOOKS}/conventional-commits.sh" \
+    "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/bash-commit-heredoc.json" 0
 
 run_test "handles malformed JSON gracefully" \
-    "${HOOKS}/conventional-commits.sh" \
+    "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
@@ -251,102 +251,102 @@ echo ""
 echo "=== Smart Formatter ==="
 
 run_test "handles nonexistent file gracefully" \
-    "${HOOKS}/smart-formatter.sh" \
+    "${HOOKS}/smart-formatter.py" \
     "${FIXTURES}/edit-nonexistent-file.json" 0
 
 echo ""
 echo "=== Large File Blocker ==="
 
 run_test "allows safe commands" \
-    "${HOOKS}/large-file-blocker.sh" \
+    "${HOOKS}/large-file-blocker.py" \
     "${FIXTURES}/bash-safe-command.json" 0
 
 run_test "allows non-commit commands" \
-    "${HOOKS}/large-file-blocker.sh" \
+    "${HOOKS}/large-file-blocker.py" \
     "${FIXTURES}/commit-not-a-commit.json" 0
 
 # Note: positive large file detection requires staged files exceeding 5MB
 # in a real git repo. The blocker correctly passes when there are no large staged files.
 run_test "allows commit when no staged files are large" \
-    "${HOOKS}/large-file-blocker.sh" \
+    "${HOOKS}/large-file-blocker.py" \
     "${FIXTURES}/commit-valid.json" 0
 
 echo ""
 echo "=== Env File Guard ==="
 
 run_test "blocks writing to .env" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-env-file.json" 2
 
 run_test "allows writing to .env.example" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-env-example.json" 0
 
 run_test "blocks editing private key files" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/edit-private-key.json" 2
 
 run_test "blocks writing to secrets directory" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-secrets-dir.json" 2
 
 run_test "blocks writing to .env.staging" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-env-staging.json" 2
 
 run_test "blocks writing to .env.testing" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-env-testing.json" 2
 
 run_test "allows writing to .env.defaults" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-env-defaults.json" 0
 
 run_test "allows safe file writes" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-tool-input.json" 0
 
 run_test "ignores non-Write/Edit tools" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/bash-safe-command.json" 0
 
 run_test "handles malformed JSON gracefully" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/malformed-json.txt" 0
 
 echo ""
 echo "=== Env File Guard: Credential Files ==="
 
 run_test "blocks writing to .aws/credentials" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-aws-credentials.json" 2
 
 run_test "blocks writing to .kube/config" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-kube-config.json" 2
 
 run_test "blocks writing to .docker/config.json" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-docker-config.json" 2
 
 run_test "blocks writing to .npmrc" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-npmrc.json" 2
 
 run_test "blocks writing to .tfstate" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-tfstate.json" 2
 
 run_test "blocks writing to .tfvars" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-tfvars.json" 2
 
 run_test "blocks writing to .ssh key" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-ssh-key.json" 2
 
 run_test "blocks writing to service account JSON" \
-    "${HOOKS}/env-file-guard.sh" \
+    "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/write-service-account.json" 2
 
 echo ""
@@ -683,7 +683,7 @@ echo ""
 echo "=== English-Only Reminder ==="
 
 run_test "emits system-reminder injection (always exit 0)" \
-    "${HOOKS}/english-only-reminder.sh" \
+    "${HOOKS}/english-only-reminder.py" \
     "${FIXTURES}/english-only-reminder.json" 0
 
 echo ""
