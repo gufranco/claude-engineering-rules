@@ -1,65 +1,47 @@
 """Shared I/O contract for `~/.claude/hooks/*.py` PreToolUse and PostToolUse hooks.
-
-Spec: `specs/2026-05-09-claude-config-state-of-art/plan.md` 1.1.4.
-
 Hides the contract drift between the v1 (stderr + exit 2) and v2
 (`hookSpecificOutput` JSON on stdout) Claude Code hook formats. Every Python
 hook in this repo can import the small set of helpers below and stop owning
 the contract details.
-
 Public API:
-
     read_input() -> ToolUse
         Parse JSON from stdin. Never raises. On parse failure, returns an
         empty ToolUse so callers fall through to allow().
-
     block(reason: str, *, audit_payload=None, suggestion=None) -> int
         Print `reason` (and optional fix `suggestion`) to stderr and return
         exit code 2 so the orchestrator blocks the tool call. Records a
         block decision in the audit log when `audit_payload` is provided.
-
     allow() -> int
         Return exit code 0 (the orchestrator allows the tool call).
-
     defer() -> int
         Return exit code 0 with no message. Used by hooks that decide a
         condition is out of scope (e.g., file extension not handled).
-
     ask(message: str) -> int
         Print `message` to stderr and return exit code 1. The orchestrator
         forwards the message to the model, which can revise its tool call.
-
     modify_input(updates: dict, *, original: ToolUse) -> int
         Emit the v2 `hookSpecificOutput.permissionDecision = "allow"` shape
         with a `modifiedInput` body. Falls back to allow() when v2 is
         unavailable. Used by smart-formatter and similar rewriters.
-
     add_post_context(text: str) -> int
         Emit the v2 `additionalContext` body. Used by PostToolUse hooks that
         feed information back to the model (per Claude Code v2 hooks).
-
 The functions follow the tool-protocol used by every existing hook in this
 repo, so callers can adopt incrementally: replace `sys.exit(2)` and stderr
 prints with `block(...)`, then drop the boilerplate around stdin parsing.
 """
-
 from __future__ import annotations
-
 import json
 import sys
 from dataclasses import dataclass, field
 from typing import Any
-
-
 @dataclass(frozen=True)
 class ToolUse:
     """Parsed PreToolUse / PostToolUse payload.
-
     `tool_name`, `tool_input`, and `cwd` mirror the schema documented in the
     Claude Code hooks reference. Unknown fields land in `extra` so callers
     can read v2-only fields without forcing every hook to know about them.
     """
-
     tool_name: str = ""
     tool_input: dict[str, Any] = field(default_factory=dict)
     cwd: str = ""
@@ -67,8 +49,6 @@ class ToolUse:
     transcript_path: str = ""
     hook_event_name: str = ""
     extra: dict[str, Any] = field(default_factory=dict)
-
-
 def read_input() -> ToolUse:
     """Parse JSON from stdin into a `ToolUse`. Empty payload on parse failure."""
     raw = sys.stdin.read()
@@ -101,8 +81,6 @@ def read_input() -> ToolUse:
         hook_event_name=str(payload.get("hook_event_name") or ""),
         extra=extra,
     )
-
-
 def _emit_audit(payload: dict[str, Any] | None) -> None:
     if not payload:
         return
@@ -114,8 +92,6 @@ def _emit_audit(payload: dict[str, Any] | None) -> None:
         _record(**payload)
     except (OSError, TypeError, ValueError):
         return
-
-
 def block(
     reason: str,
     *,
@@ -124,13 +100,11 @@ def block(
     suggestion: str | None = None,
 ) -> int:
     """Dual-emit deny.
-
     v1: prints `reason` (and optional `suggestion`) to stderr.
     v2: emits a `hookSpecificOutput.permissionDecision = "deny"` envelope on
     stdout so v2-aware orchestrators can read the structured reason without
     parsing free-form stderr text. Both channels carry the same content so
     rolling between v1 and v2 orchestrators is loss-free.
-
     Returns exit code 2 in both cases.
     """
     if reason:
@@ -152,25 +126,17 @@ def block(
             pass
     _emit_audit(audit_payload)
     return 2
-
-
 def allow() -> int:
     """Return exit 0. Used when the hook explicitly approves the tool call."""
     return 0
-
-
 def defer() -> int:
     """Return exit 0 with no output. Used when the hook does not apply."""
     return 0
-
-
 def ask(message: str) -> int:
     """Print `message` to stderr, return exit 1 so the model can revise."""
     if message:
         print(message, file=sys.stderr)
     return 1
-
-
 def modify_input(updates: dict[str, Any], *, original: ToolUse) -> int:
     """Emit a v2 modifiedInput response. Falls back to allow() on serialization error."""
     if not isinstance(updates, dict) or not updates:
@@ -189,8 +155,6 @@ def modify_input(updates: dict[str, Any], *, original: ToolUse) -> int:
     except (OSError, TypeError, ValueError):
         return allow()
     return 0
-
-
 def add_post_context(text: str) -> int:
     """Emit a v2 PostToolUse additionalContext body. Falls back to allow()."""
     if not text:
