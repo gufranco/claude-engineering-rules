@@ -43,6 +43,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+from _lib.bypass import is_bypassed  # noqa: E402
+
 try:
     from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
@@ -101,9 +103,6 @@ CD_PREFIX = re.compile(r"^\s*cd\s+(?P<dir>\S+)\s*&&\s*")
 
 # `git -C <dir>` flag capture.
 GIT_C_FLAG = re.compile(r"\bgit\s+-C\s+(?P<dir>\S+)")
-
-from _lib.bypass import is_bypassed  # noqa: E402
-
 
 
 def repo_dir(command: str) -> Path:
@@ -318,6 +317,8 @@ except ImportError:
 def main() -> None:
     if not should_run("git-author-guard"):
         _sys.exit(0)
+    if is_bypassed("git-author-guard"):
+        sys.exit(0)
     if os.environ.get("GIT_AUTHOR_GUARD_DISABLE") == "1":
         sys.stderr.write(
             "git-author-guard: bypass active (GIT_AUTHOR_GUARD_DISABLE=1)\n"

@@ -96,7 +96,6 @@ PROTECTED_TSCONFIG_SUFFIXES = (".json",)
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def _is_protected(path: str) -> bool:
     base = os.path.basename(path)
     if base in PROTECTED_BASENAMES:

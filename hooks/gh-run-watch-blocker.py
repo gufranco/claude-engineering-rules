@@ -51,7 +51,6 @@ GLAB_CI_LIVE = re.compile(r"\bglab\s+ci\s+view\b[^\n;&|]*?(?:--live|\s-l\b)")
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def find_offender(command: str) -> str | None:
     if GH_RUN_WATCH.search(command):
         return "gh run watch"

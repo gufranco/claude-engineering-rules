@@ -44,7 +44,6 @@ MARKDOWN_EXTENSIONS = (".md", ".mdx")
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_markdown_path(path: str) -> bool:
     return any(path.lower().endswith(ext) for ext in MARKDOWN_EXTENSIONS)
 

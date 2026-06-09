@@ -78,8 +78,8 @@ except ImportError:  # pragma: no cover
     def should_run(_id: str) -> bool:  # type: ignore
         return True
 
-from _lib.bypass import is_bypassed  # noqa: E402
 
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def is_in_scope(path: str) -> bool:

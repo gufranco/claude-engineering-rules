@@ -337,7 +337,6 @@ PERF_BUDGET_MS = 200
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def _receiver_known(match: Match) -> bool:
     """True when the match has a typed-suffix receiver hint.
 

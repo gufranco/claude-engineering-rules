@@ -43,7 +43,6 @@ MIGRATION_PATH_RE = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_prisma_migration(path: str) -> bool:
     if not path:
         return False

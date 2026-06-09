@@ -15,7 +15,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "english-only-reminder.py"

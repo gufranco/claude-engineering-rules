@@ -67,7 +67,6 @@ DELETE_REVIEW_ALT = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def detect_violation(command: str) -> tuple[str, str] | None:
     if REQUEST_CHANGES_PATTERN.search(command):
         return (

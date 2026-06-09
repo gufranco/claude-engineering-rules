@@ -20,6 +20,7 @@ Usage:
     python3 hooks/_lib/hook_contract_lint.py --include foo --include bar
     python3 hooks/_lib/hook_contract_lint.py --strict        # treat info as warning
 """
+
 from __future__ import annotations
 import argparse
 import ast
@@ -29,6 +30,7 @@ import sys
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
 from typing import Any
+
 DEFAULT_HOOKS_DIR = os.path.expanduser("~/.claude/hooks")
 DEFAULT_HOOK_IO_MODULE = "hook_io"
 MIGRATION_TARGETS: frozenset[str] = frozenset(
@@ -41,20 +43,27 @@ MIGRATION_TARGETS: frozenset[str] = frozenset(
     }
 )
 SEVERITIES: tuple[str, ...] = ("info", "warning", "error")
+
+
 @dataclass(frozen=True)
 class Finding:
     """A single contract-lint issue tied to a hook file."""
+
     hook: str
     path: str
     severity: str
     code: str
     message: str
     line: int = 0
+
+
 def _hook_basename(path: str) -> str:
     base = os.path.basename(path)
     if base.endswith(".py"):
         base = base[: -len(".py")]
     return base
+
+
 def _iter_hook_files(hooks_dir: str) -> Iterator[str]:
     if not os.path.isdir(hooks_dir):
         return
@@ -66,17 +75,23 @@ def _iter_hook_files(hooks_dir: str) -> Iterator[str]:
         path = os.path.join(hooks_dir, entry)
         if os.path.isfile(path):
             yield path
+
+
 def _read_source(path: str) -> str:
     try:
         with open(path, encoding="utf-8") as fh:
             return fh.read()
     except OSError:
         return ""
+
+
 def _parse_module(source: str) -> ast.Module | None:
     try:
         return ast.parse(source)
     except SyntaxError:
         return None
+
+
 def _collect_imports(tree: ast.Module) -> set[str]:
     """Return the set of module names imported anywhere in the file."""
     seen: set[str] = set()
@@ -88,6 +103,8 @@ def _collect_imports(tree: ast.Module) -> set[str]:
             if node.module:
                 seen.add(node.module.split(".")[0])
     return seen
+
+
 def _find_sys_exit_two_lines(tree: ast.Module) -> list[int]:
     """Return line numbers where `sys.exit(2)` (or equivalent) is called."""
     lines: list[int] = []
@@ -112,8 +129,12 @@ def _find_sys_exit_two_lines(tree: ast.Module) -> list[int]:
         if value == 2:
             lines.append(getattr(node, "lineno", 0))
     return sorted(lines)
+
+
 def _uses_hook_io(imports: set[str]) -> bool:
     return DEFAULT_HOOK_IO_MODULE in imports
+
+
 def lint_file(path: str) -> list[Finding]:
     """Return findings for a single hook file."""
     source = _read_source(path)
@@ -179,6 +200,8 @@ def lint_file(path: str) -> list[Finding]:
                 )
             )
     return findings
+
+
 def lint_directory(
     hooks_dir: str,
     *,
@@ -192,6 +215,8 @@ def lint_directory(
             continue
         findings.extend(lint_file(path))
     return findings
+
+
 def _format_table(findings: list[Finding]) -> str:
     if not findings:
         return "No findings.\n"
@@ -205,10 +230,14 @@ def _format_table(findings: list[Finding]) -> str:
             f"{f.hook:<{width_hook}}  {f.message}\n  -> {location}"
         )
     return "\n".join(lines) + "\n"
+
+
 def _format_json(findings: list[Finding]) -> str:
     return (
         json.dumps([asdict(f) for f in findings], ensure_ascii=False, indent=2) + "\n"
     )
+
+
 def _exit_code_for(findings: list[Finding], *, strict: bool) -> int:
     if not findings:
         return 0
@@ -218,6 +247,8 @@ def _exit_code_for(findings: list[Finding], *, strict: bool) -> int:
         if SEVERITIES.index(finding.severity) >= threshold_idx:
             return 1
     return 0
+
+
 def _cli(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Lint Claude Code hooks for v1/v2 contract compliance.",
@@ -251,5 +282,7 @@ def _cli(argv: list[str]) -> int:
     else:
         sys.stdout.write(_format_table(findings))
     return _exit_code_for(findings, strict=args.strict)
+
+
 if __name__ == "__main__":
     sys.exit(_cli(sys.argv[1:]))

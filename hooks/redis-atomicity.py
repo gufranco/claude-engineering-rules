@@ -91,7 +91,6 @@ WINDOW_LINES = 5
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_skipped(path: str) -> bool:
     if not path:
         return True

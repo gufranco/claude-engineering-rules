@@ -130,7 +130,6 @@ META_LEADING_PATTERN = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def evaluate(prompt: str) -> dict[str, bool]:
     return {
         "specific_reference": bool(FILE_LINE_PATTERN.search(prompt)),

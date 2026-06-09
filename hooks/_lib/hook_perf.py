@@ -11,16 +11,20 @@ Why a decorator and not a manual timer?
   - Easy to disable per-hook via `CLAUDE_HOOK_PERF_DISABLE=1`.
 The decorator never raises and never alters the hook's exit code.
 """
+
 from __future__ import annotations
 import functools
 import os
 import sys
 import time
 from typing import Callable, TypeVar
+
 ExitCode = int
 Wrapped = Callable[[], ExitCode]
 T = TypeVar("T", bound=Wrapped)
 DEFAULT_BUDGET_MS = 200
+
+
 def with_perf_budget(
     budget_ms: int = DEFAULT_BUDGET_MS,
     *,
@@ -32,6 +36,7 @@ def with_perf_budget(
     does not match the hook (e.g., shared modules running on behalf of
     multiple hooks).
     """
+
     def decorator(fn: T) -> T:
         @functools.wraps(fn)
         def wrapped() -> ExitCode:
@@ -49,8 +54,12 @@ def with_perf_budget(
                         budget_ms=budget_ms,
                     )
             return code
+
         return wrapped  # type: ignore[return-value]
+
     return decorator
+
+
 def _resolve_hook_name(fn: Callable[..., object]) -> str:
     module = getattr(fn, "__module__", "")
     if module and module != "__main__":
@@ -61,6 +70,8 @@ def _resolve_hook_name(fn: Callable[..., object]) -> str:
         if path:
             return os.path.basename(path).removesuffix(".py")
     return "unknown"
+
+
 def _emit_budget_exceeded(*, hook: str, elapsed_ms: int, budget_ms: int) -> None:
     try:
         sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))

@@ -113,7 +113,6 @@ EXCLUDED_NAME_MARKERS = (
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_test_file(path: Path) -> bool:
     parts = set(path.parts)
     if parts & TEST_DIR_PARTS:

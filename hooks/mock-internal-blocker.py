@@ -88,7 +88,6 @@ PY_MOCK_CALL = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_test_file(path: str) -> bool:
     if not path:
         return False

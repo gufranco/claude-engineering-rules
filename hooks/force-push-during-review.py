@@ -42,7 +42,6 @@ FORCE_REFSPEC = re.compile(r"\+[^\s]+:?[^\s]*")
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_force_push(command: str) -> bool:
     if not GIT_PUSH_PATTERN.search(command):
         return False

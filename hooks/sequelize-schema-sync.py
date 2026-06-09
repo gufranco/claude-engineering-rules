@@ -73,7 +73,6 @@ UMZUG_NONE_STORAGE_RE = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_skipped_path(path: str) -> bool:
     if not path:
         return False

@@ -218,7 +218,6 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def read_transcript_messages(path: str) -> list[dict]:
     p = Path(path)
     if not p.exists():

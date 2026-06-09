@@ -125,7 +125,6 @@ SECRET_PATTERNS = [
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def should_skip(filepath):
     """Check if a file should be skipped."""
     if any(filepath.startswith(p) or f"/{p}" in filepath for p in SKIP_PATHS):
