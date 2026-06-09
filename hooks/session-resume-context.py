@@ -58,7 +58,6 @@ MAX_PREVIEW_LINES = 30
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def find_recent(cwd: Path, patterns: tuple[str, ...]) -> list[Path]:
     """Return matching paths within the freshness window, newest first."""
     found: list[tuple[float, Path]] = []

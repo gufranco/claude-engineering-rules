@@ -40,7 +40,7 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 
 - [ ] Review [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py) CATASTROPHIC and CRITICAL_PATHS lists, add new cloud services and tools
 - [ ] Review [`hooks/secret-scanner.py`](../hooks/secret-scanner.py) patterns, add new API key formats
-- [ ] Run [`hooks/conventional-commits.sh`](../hooks/conventional-commits.sh) on edge case commit messages to verify correctness
+- [ ] Run [`hooks/conventional-commits.py`](../hooks/conventional-commits.py) on edge case commit messages to verify correctness
 
 ### Agent output format audit
 

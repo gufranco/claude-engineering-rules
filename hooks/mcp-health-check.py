@@ -59,7 +59,6 @@ TTL_SECONDS = 5 * 60  # forget failures older than 5 minutes
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def _load_state() -> dict[str, dict]:
     if not os.path.exists(STATE_FILE):
         return {}

@@ -34,7 +34,7 @@ jobs:
       - name: ShellCheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck --severity=warning --shell=bash --enable=all hooks/*.sh tests/test-hooks.sh
+          shellcheck --severity=warning --shell=bash --enable=all tests/test-hooks.sh
 
       - name: Python lint (ruff check)
         run: ruff check hooks .github/scripts tests
@@ -184,7 +184,7 @@ jobs:
           python-version: "3.12"
 
       - name: Make hooks executable
-        run: chmod +x hooks/*.sh hooks/*.py tests/test-hooks.sh
+        run: chmod +x hooks/*.py tests/test-hooks.sh
 
       - name: Run hook smoke tests
         run: bash tests/test-hooks.sh

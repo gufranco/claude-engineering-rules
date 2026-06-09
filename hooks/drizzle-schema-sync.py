@@ -83,7 +83,6 @@ SKIP_PATH_HINTS = (
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def looks_like_drizzle_schema(text: str) -> bool:
     return (
         "drizzle-orm" in text

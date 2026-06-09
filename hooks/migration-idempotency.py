@@ -64,7 +64,6 @@ CREATE_INDEX_BLOCKING = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def is_migration_path(path: str) -> bool:
     if not path:
         return False

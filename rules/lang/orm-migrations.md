@@ -744,12 +744,12 @@ These patterns produce schema drift in any ORM project. Detect them in review.
 
 ## Enforcement
 
-Enforced by: [`hooks/drizzle-raw-sql-blocker.py`](../hooks/drizzle-raw-sql-blocker.py).
-Enforced by: [`hooks/drizzle-schema-sync.py`](../hooks/drizzle-schema-sync.py).
-Enforced by: [`hooks/migration-idempotency.py`](../hooks/migration-idempotency.py).
-Enforced by: [`hooks/prisma-raw-sql-blocker.py`](../hooks/prisma-raw-sql-blocker.py).
-Enforced by: [`hooks/prisma-schema-sync.py`](../hooks/prisma-schema-sync.py).
-Enforced by: [`hooks/sequelize-raw-sql-blocker.py`](../hooks/sequelize-raw-sql-blocker.py).
-Enforced by: [`hooks/sequelize-schema-sync.py`](../hooks/sequelize-schema-sync.py).
-Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../hooks/typeorm-raw-sql-blocker.py).
-Enforced by: [`hooks/typeorm-schema-sync.py`](../hooks/typeorm-schema-sync.py).
+Enforced by: [`hooks/drizzle-raw-sql-blocker.py`](../../hooks/drizzle-raw-sql-blocker.py).
+Enforced by: [`hooks/drizzle-schema-sync.py`](../../hooks/drizzle-schema-sync.py).
+Enforced by: [`hooks/migration-idempotency.py`](../../hooks/migration-idempotency.py).
+Enforced by: [`hooks/prisma-raw-sql-blocker.py`](../../hooks/prisma-raw-sql-blocker.py).
+Enforced by: [`hooks/prisma-schema-sync.py`](../../hooks/prisma-schema-sync.py).
+Enforced by: [`hooks/sequelize-raw-sql-blocker.py`](../../hooks/sequelize-raw-sql-blocker.py).
+Enforced by: [`hooks/sequelize-schema-sync.py`](../../hooks/sequelize-schema-sync.py).
+Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../../hooks/typeorm-raw-sql-blocker.py).
+Enforced by: [`hooks/typeorm-schema-sync.py`](../../hooks/typeorm-schema-sync.py).

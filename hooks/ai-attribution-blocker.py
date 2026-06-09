@@ -49,7 +49,6 @@ PATTERNS = [
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
-
 def _snippet(text: str, idx: int) -> str:
     start = max(0, idx - 40)
     end = min(len(text), idx + 60)

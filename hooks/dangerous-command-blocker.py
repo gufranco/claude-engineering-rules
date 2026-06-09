@@ -461,8 +461,8 @@ except ImportError:
     def should_run(_id: str) -> bool:
         return True
 
-from _lib.bypass import is_bypassed  # noqa: E402
 
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def main():

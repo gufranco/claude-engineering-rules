@@ -4,6 +4,7 @@ build synthetic hook scripts under `tmp_path`, capture deterministic samples,
 and exercise every formatter and CLI branch without touching the real
 `~/.claude/hooks/` tree.
 """
+
 from __future__ import annotations
 import json
 import subprocess
@@ -11,10 +12,13 @@ import sys
 import textwrap
 from pathlib import Path
 import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
 sys.path.insert(0, str(SCRIPTS_DIR))
 from _lib import bench_hooks  # noqa: E402
+
+
 # --------------------------------------------------------------------------- #
 # fixtures
 # --------------------------------------------------------------------------- #
@@ -24,27 +28,37 @@ def hooks_dir(tmp_path: Path) -> Path:
     target = tmp_path / "hooks"
     target.mkdir()
     return target
+
+
 def _write_hook(directory: Path, name: str, source: str) -> Path:
     path = directory / f"{name}.py"
     path.write_text(textwrap.dedent(source).lstrip() + "\n", encoding="utf-8")
     path.chmod(0o755)
     return path
+
+
 def _allow_hook() -> str:
     return """
         import sys
         sys.exit(0)
     """
+
+
 def _block_hook() -> str:
     return """
         import sys
         sys.exit(2)
     """
+
+
 def _slow_hook(sleep_s: float) -> str:
     return f"""
         import time, sys
         time.sleep({sleep_s})
         sys.exit(0)
     """
+
+
 # --------------------------------------------------------------------------- #
 # _percentile
 # --------------------------------------------------------------------------- #
@@ -55,6 +69,8 @@ def test_percentile_empty_returns_zero() -> None:
     result = bench_hooks._percentile(values, 0.5)
     # Assert
     assert result == 0.0
+
+
 def test_percentile_single_value_returns_value() -> None:
     # Arrange
     values = [42.5]
@@ -62,6 +78,8 @@ def test_percentile_single_value_returns_value() -> None:
     result = bench_hooks._percentile(values, 0.99)
     # Assert
     assert result == 42.5
+
+
 def test_percentile_p50_of_three() -> None:
     # Arrange
     values = [1.0, 2.0, 3.0]
@@ -69,6 +87,8 @@ def test_percentile_p50_of_three() -> None:
     result = bench_hooks._percentile(values, 0.5)
     # Assert
     assert result == 2.0
+
+
 def test_percentile_interpolates_between_ranks() -> None:
     # Arrange
     values = [10.0, 20.0, 30.0, 40.0]
@@ -76,6 +96,8 @@ def test_percentile_interpolates_between_ranks() -> None:
     result = bench_hooks._percentile(values, 0.5)
     # Assert
     assert result == 25.0
+
+
 def test_percentile_p95_picks_upper_rank() -> None:
     # Arrange
     values = [float(i) for i in range(1, 11)]
@@ -83,6 +105,8 @@ def test_percentile_p95_picks_upper_rank() -> None:
     result = bench_hooks._percentile(values, 0.95)
     # Assert
     assert result == pytest.approx(9.55)
+
+
 def test_percentile_p99_max_when_only_one_above_rank() -> None:
     # Arrange
     values = [1.0, 2.0]
@@ -90,6 +114,8 @@ def test_percentile_p99_max_when_only_one_above_rank() -> None:
     result = bench_hooks._percentile(values, 0.99)
     # Assert
     assert result == pytest.approx(1.99)
+
+
 # --------------------------------------------------------------------------- #
 # discover_hooks
 # --------------------------------------------------------------------------- #
@@ -103,6 +129,8 @@ def test_discover_hooks_returns_sorted_python_files(hooks_dir: Path) -> None:
     # Assert
     names = [Path(p).name for p in discovered]
     assert names == ["a-first.py", "m-mid.py", "z-last.py"]
+
+
 def test_discover_hooks_skips_underscore_prefixed_files(hooks_dir: Path) -> None:
     # Arrange
     _write_hook(hooks_dir, "_helper", _allow_hook())
@@ -111,6 +139,8 @@ def test_discover_hooks_skips_underscore_prefixed_files(hooks_dir: Path) -> None
     discovered = bench_hooks.discover_hooks(str(hooks_dir))
     # Assert
     assert [Path(p).name for p in discovered] == ["real.py"]
+
+
 def test_discover_hooks_skips_non_python_files(hooks_dir: Path) -> None:
     # Arrange
     (hooks_dir / "config.txt").write_text("data", encoding="utf-8")
@@ -120,6 +150,8 @@ def test_discover_hooks_skips_non_python_files(hooks_dir: Path) -> None:
     discovered = bench_hooks.discover_hooks(str(hooks_dir))
     # Assert
     assert [Path(p).name for p in discovered] == ["real.py"]
+
+
 def test_discover_hooks_skips_directories_with_py_suffix(
     hooks_dir: Path,
 ) -> None:
@@ -130,6 +162,8 @@ def test_discover_hooks_skips_directories_with_py_suffix(
     discovered = bench_hooks.discover_hooks(str(hooks_dir))
     # Assert
     assert [Path(p).name for p in discovered] == ["real.py"]
+
+
 def test_discover_hooks_returns_empty_for_missing_dir(tmp_path: Path) -> None:
     # Arrange
     missing = tmp_path / "does-not-exist"
@@ -137,6 +171,8 @@ def test_discover_hooks_returns_empty_for_missing_dir(tmp_path: Path) -> None:
     discovered = bench_hooks.discover_hooks(str(missing))
     # Assert
     assert discovered == []
+
+
 def test_discover_hooks_returns_empty_for_empty_dir(hooks_dir: Path) -> None:
     # Arrange
     # hooks_dir fixture leaves it empty.
@@ -144,6 +180,8 @@ def test_discover_hooks_returns_empty_for_empty_dir(hooks_dir: Path) -> None:
     discovered = bench_hooks.discover_hooks(str(hooks_dir))
     # Assert
     assert discovered == []
+
+
 # --------------------------------------------------------------------------- #
 # _hook_basename
 # --------------------------------------------------------------------------- #
@@ -154,6 +192,8 @@ def test_hook_basename_strips_dotpy() -> None:
     result = bench_hooks._hook_basename(path)
     # Assert
     assert result == "foo"
+
+
 def test_hook_basename_returns_basename_for_no_extension() -> None:
     # Arrange
     path = "/tmp/hooks/foo"
@@ -161,6 +201,8 @@ def test_hook_basename_returns_basename_for_no_extension() -> None:
     result = bench_hooks._hook_basename(path)
     # Assert
     assert result == "foo"
+
+
 # --------------------------------------------------------------------------- #
 # run_one
 # --------------------------------------------------------------------------- #
@@ -175,6 +217,8 @@ def test_run_one_returns_zero_for_allow_hook(hooks_dir: Path) -> None:
     assert code == 0
     assert timed_out is False
     assert duration_ms > 0.0
+
+
 def test_run_one_returns_two_for_block_hook(hooks_dir: Path) -> None:
     # Arrange
     path = _write_hook(hooks_dir, "blocker", _block_hook())
@@ -185,6 +229,8 @@ def test_run_one_returns_two_for_block_hook(hooks_dir: Path) -> None:
     # Assert
     assert code == 2
     assert timed_out is False
+
+
 def test_run_one_marks_timeout(hooks_dir: Path) -> None:
     # Arrange
     path = _write_hook(hooks_dir, "slow", _slow_hook(2.0))
@@ -198,6 +244,8 @@ def test_run_one_marks_timeout(hooks_dir: Path) -> None:
     assert timed_out is True
     assert code == -1
     assert duration_ms > 0.0
+
+
 def test_run_one_passes_through_extra_env(hooks_dir: Path, tmp_path: Path) -> None:
     # Arrange
     marker = tmp_path / "marker.txt"
@@ -223,6 +271,8 @@ def test_run_one_passes_through_extra_env(hooks_dir: Path, tmp_path: Path) -> No
     )
     # Assert
     assert marker.read_text(encoding="utf-8") == "captured"
+
+
 def test_run_one_disables_audit_emission_by_default(
     hooks_dir: Path, tmp_path: Path
 ) -> None:
@@ -248,6 +298,8 @@ def test_run_one_disables_audit_emission_by_default(
     )
     # Assert
     assert marker.read_text(encoding="utf-8") == "1"
+
+
 # --------------------------------------------------------------------------- #
 # iter_samples
 # --------------------------------------------------------------------------- #
@@ -268,6 +320,8 @@ def test_iter_samples_yields_one_sample_per_iteration_per_payload(
     assert len(samples) == 6
     assert {s.payload for s in samples} == {"p1", "p2"}
     assert all(s.hook == "ok" for s in samples)
+
+
 def test_iter_samples_runs_warmup_without_yielding(hooks_dir: Path) -> None:
     # Arrange
     counter = hooks_dir / "counter.txt"
@@ -298,6 +352,8 @@ def test_iter_samples_runs_warmup_without_yielding(hooks_dir: Path) -> None:
     assert len(samples) == 2
     invocations = int(counter.read_text(encoding="utf-8"))
     assert invocations == 2 + 2
+
+
 def test_iter_samples_handles_negative_warmup(hooks_dir: Path) -> None:
     # Arrange
     path = _write_hook(hooks_dir, "ok", _allow_hook())
@@ -310,6 +366,8 @@ def test_iter_samples_handles_negative_warmup(hooks_dir: Path) -> None:
     )
     # Assert
     assert len(samples) == 1
+
+
 def test_iter_samples_falls_back_to_default_payloads(hooks_dir: Path) -> None:
     # Arrange
     path = _write_hook(hooks_dir, "ok", _allow_hook())
@@ -319,6 +377,8 @@ def test_iter_samples_falls_back_to_default_payloads(hooks_dir: Path) -> None:
     )
     # Assert
     assert {s.payload for s in samples} == set(bench_hooks.PAYLOADS)
+
+
 # --------------------------------------------------------------------------- #
 # aggregate
 # --------------------------------------------------------------------------- #
@@ -336,6 +396,8 @@ def test_aggregate_groups_samples_by_hook() -> None:
     assert set(by_hook) == {"a", "b"}
     assert by_hook["a"].n == 2
     assert by_hook["b"].n == 1
+
+
 def test_aggregate_returns_sorted_by_hook_name() -> None:
     # Arrange
     samples = [
@@ -346,6 +408,8 @@ def test_aggregate_returns_sorted_by_hook_name() -> None:
     stats = bench_hooks.aggregate(samples)
     # Assert
     assert [s.hook for s in stats] == ["alpha", "zeta"]
+
+
 def test_aggregate_counts_timeouts_and_nonzero_exits() -> None:
     # Arrange
     samples = [
@@ -369,6 +433,8 @@ def test_aggregate_counts_timeouts_and_nonzero_exits() -> None:
     s = stats[0]
     assert s.timeouts == 1
     assert s.nonzero_exits == 2
+
+
 def test_aggregate_computes_mean_p50_p95_p99() -> None:
     # Arrange
     samples = [
@@ -385,6 +451,8 @@ def test_aggregate_computes_mean_p50_p95_p99() -> None:
     assert s.p95_ms == pytest.approx(95.05)
     assert s.p99_ms == pytest.approx(99.01)
     assert s.max_ms == 100.0
+
+
 def test_aggregate_includes_unique_payloads_sorted() -> None:
     # Arrange
     samples = [
@@ -397,6 +465,8 @@ def test_aggregate_includes_unique_payloads_sorted() -> None:
     stats = bench_hooks.aggregate(samples)
     # Assert
     assert stats[0].payloads == ["bash", "edit", "write"]
+
+
 def test_aggregate_with_no_samples_returns_empty() -> None:
     # Arrange
     samples: list[bench_hooks.Sample] = []
@@ -404,6 +474,8 @@ def test_aggregate_with_no_samples_returns_empty() -> None:
     stats = bench_hooks.aggregate(samples)
     # Assert
     assert stats == []
+
+
 # --------------------------------------------------------------------------- #
 # rendering
 # --------------------------------------------------------------------------- #
@@ -420,6 +492,8 @@ def _stat(hook: str = "demo", n: int = 5) -> bench_hooks.HookStats:
         nonzero_exits=0,
         payloads=["bash", "edit", "write"],
     )
+
+
 def test_format_table_includes_header_and_row() -> None:
     # Arrange
     stats = [_stat()]
@@ -430,6 +504,8 @@ def test_format_table_includes_header_and_row() -> None:
     assert "demo" in table
     assert "12.34" in table
     assert table.endswith("\n")
+
+
 def test_format_table_no_stats_returns_placeholder() -> None:
     # Arrange
     stats: list[bench_hooks.HookStats] = []
@@ -437,6 +513,8 @@ def test_format_table_no_stats_returns_placeholder() -> None:
     table = bench_hooks._format_table(stats)
     # Assert
     assert table == "No hooks benchmarked.\n"
+
+
 def test_format_json_returns_parseable_array() -> None:
     # Arrange
     stats = [_stat("alpha"), _stat("beta")]
@@ -446,6 +524,8 @@ def test_format_json_returns_parseable_array() -> None:
     parsed = json.loads(rendered)
     assert [item["hook"] for item in parsed] == ["alpha", "beta"]
     assert parsed[0]["p95_ms"] == 15.5
+
+
 def test_format_markdown_includes_header_table_and_iteration_count() -> None:
     # Arrange
     stats = [_stat("demo")]
@@ -458,6 +538,8 @@ def test_format_markdown_includes_header_table_and_iteration_count() -> None:
     assert "iterations=42" in rendered
     assert "| `demo` |" in rendered
     assert "p99" in rendered
+
+
 # --------------------------------------------------------------------------- #
 # _filter_hooks
 # --------------------------------------------------------------------------- #
@@ -468,6 +550,8 @@ def test_filter_hooks_returns_all_when_no_include() -> None:
     result = bench_hooks._filter_hooks(paths, None)
     # Assert
     assert result == paths
+
+
 def test_filter_hooks_returns_empty_when_include_empty_iterable() -> None:
     # Arrange
     paths = ["/h/a.py", "/h/b.py"]
@@ -475,6 +559,8 @@ def test_filter_hooks_returns_empty_when_include_empty_iterable() -> None:
     result = bench_hooks._filter_hooks(paths, [])
     # Assert
     assert result == paths
+
+
 def test_filter_hooks_keeps_only_matching_basenames() -> None:
     # Arrange
     paths = ["/h/a.py", "/h/b.py", "/h/c.py"]
@@ -482,6 +568,8 @@ def test_filter_hooks_keeps_only_matching_basenames() -> None:
     result = bench_hooks._filter_hooks(paths, ["a", "c"])
     # Assert
     assert result == ["/h/a.py", "/h/c.py"]
+
+
 # --------------------------------------------------------------------------- #
 # _cli
 # --------------------------------------------------------------------------- #
@@ -506,6 +594,8 @@ def test_cli_table_format_writes_to_stdout(
     assert rc == 0
     assert "ok" in captured.out
     assert "p95" in captured.out
+
+
 def test_cli_json_format_writes_array(
     hooks_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -529,6 +619,8 @@ def test_cli_json_format_writes_array(
     assert rc == 0
     parsed = json.loads(captured.out)
     assert parsed[0]["hook"] == "ok"
+
+
 def test_cli_markdown_format_includes_header(
     hooks_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -551,6 +643,8 @@ def test_cli_markdown_format_includes_header(
     # Assert
     assert rc == 0
     assert "# Hook performance baseline" in captured.out
+
+
 def test_cli_writes_baseline_file(
     hooks_dir: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -576,6 +670,8 @@ def test_cli_writes_baseline_file(
     body = baseline.read_text(encoding="utf-8")
     assert "# Hook performance baseline" in body
     assert "| `ok` |" in body
+
+
 def test_cli_returns_one_when_no_hooks_match(
     hooks_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -598,6 +694,8 @@ def test_cli_returns_one_when_no_hooks_match(
     # Assert
     assert rc == 1
     assert "No hooks selected." in captured.err
+
+
 def test_cli_returns_one_when_directory_missing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -618,6 +716,8 @@ def test_cli_returns_one_when_directory_missing(
     # Assert
     assert rc == 1
     assert "No hooks selected." in captured.err
+
+
 def test_cli_clamps_iterations_to_minimum_one(
     hooks_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -641,6 +741,8 @@ def test_cli_clamps_iterations_to_minimum_one(
     assert rc == 0
     parsed = json.loads(captured.out)
     assert parsed[0]["n"] >= 1
+
+
 def test_cli_filters_to_named_hook(
     hooks_dir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -667,6 +769,8 @@ def test_cli_filters_to_named_hook(
     assert rc == 0
     parsed = json.loads(captured.out)
     assert [item["hook"] for item in parsed] == ["alpha"]
+
+
 # --------------------------------------------------------------------------- #
 # module entrypoint
 # --------------------------------------------------------------------------- #
