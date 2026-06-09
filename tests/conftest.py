@@ -1,25 +1,19 @@
 """Top-level pytest harness for `~/.claude/hooks/*.py` and `~/.claude/scripts/*.py`.
-
-Spec: `specs/2026-05-09-claude-config-state-of-art/plan.md` 1.2.1.
-
 This is the canonical harness. Per-hook conftest files (e.g.,
 `tests/hooks/mutation-method-blocker/conftest.py`) layer extra
 hook-specific fixtures on top, but every hook can be exercised through
 the four primitives exported here:
-
   - `tool_use(...)`            build a Claude Code v1 payload dict
   - `assert_blocks(...)`       run the hook, assert exit 2 + stderr substring
   - `assert_allows(...)`       run the hook, assert exit 0
   - `assert_modifies_input(...)` run the hook, parse the v2 envelope,
                                  assert `modifiedInput` matches `expected_diff`
-
 The harness invokes the hook as a subprocess to test entry/exit
 end-to-end. Coverage of the subprocess is stitched back into the parent
 run via `COVERAGE_PROCESS_START` plus `tests/_subprocess_cov`.
 """
 
 from __future__ import annotations
-
 import json
 import os
 import subprocess
@@ -27,7 +21,6 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -49,13 +42,11 @@ def _hook_path(name: str) -> Path:
 
 def _coverage_active() -> bool:
     """True when the parent pytest run is collecting coverage data.
-
     Detects four independent signals:
       1. `COVERAGE_PROCESS_START` already set (manual coverage run).
       2. `COVERAGE_RUN` set (legacy detection).
       3. `coverage` module loaded with an active controller.
       4. `pytest_cov` plugin loaded (pytest-cov 7.x path).
-
     Returning True triggers the harness to propagate coverage env vars to
     every subprocess so hook lines run in subprocesses are stitched into
     the parent report.
@@ -84,6 +75,15 @@ def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
             if existing_pp
             else str(SUBPROCESS_COV_DIR)
         )
+        # Anchor the subprocess coverage data file to the repo root so tests
+        # that change cwd (e.g., into a git tmp_path) do not lose their
+        # `.coverage.<host>.<pid>` data when the temp dir is cleaned up.
+        env.setdefault("COVERAGE_FILE", str(REPO_ROOT / ".coverage"))
+        # Python 3.12+ defaults to the `sysmon` tracer core, which silently
+        # records zero line hits for some subprocess Python scripts (observed
+        # on Python 3.14 with coverage 7.14.x). Force the C tracer instead so
+        # every subprocess hook is measured deterministically.
+        env.setdefault("COVERAGE_CORE", "ctrace")
     if extra:
         env.update(extra)
     return env
@@ -110,14 +110,12 @@ def _run_hook(
 @pytest.fixture
 def tool_use() -> Callable[..., dict[str, Any]]:
     """Build a Claude Code PreToolUse / PostToolUse payload.
-
     Required:
       tool_name          one of Write, Edit, MultiEdit, Bash, Read, ...
       tool_input         dict matching the tool's input schema
     Optional:
       hook_event_name    PreToolUse (default), PostToolUse, ...
       cwd, session_id, transcript_path, permission_mode
-
     Returns a fresh dict so callers can mutate without cross-test leakage.
     """
 
@@ -202,7 +200,6 @@ def assert_allows() -> Callable[..., tuple[int, str]]:
 def assert_modifies_input() -> Callable[..., dict[str, Any]]:
     """Run `hook` against `payload`. Assert exit 0 and a v2
     `hookSpecificOutput.modifiedInput` envelope matching `expected_diff`.
-
     `expected_diff` is a partial dict. Every key/value listed must equal
     the corresponding entry in the parsed `modifiedInput`. Extra keys in
     `modifiedInput` are tolerated. Returns the full parsed envelope.
