@@ -262,3 +262,8 @@ This rule governs all text output without exception:
 - Code comments
 - Error messages in code
 - Skill and prompt files
+
+## Enforcement
+
+Enforced by: [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
+Enforced by: [`hooks/banned-prose-chars.py`](../hooks/banned-prose-chars.py).
