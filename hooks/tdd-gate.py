@@ -110,6 +110,9 @@ EXCLUDED_NAME_MARKERS = (
     ".generated.",
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_test_file(path: Path) -> bool:
     parts = set(path.parts)
@@ -204,6 +207,8 @@ def emit_block(reason: str, file_path: str) -> None:
 
 def main() -> int:
     if os.environ.get("TDD_GATE_DISABLE") == "1":
+        return 0
+    if is_bypassed("tdd-gate"):
         return 0
 
     try:

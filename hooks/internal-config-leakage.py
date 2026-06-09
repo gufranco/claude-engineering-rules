@@ -201,6 +201,9 @@ NON_PUBLISHING_PREFIXES = (
     "unzip ",
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_publishing_bash(cmd: str) -> bool:
     """True if the Bash command publishes externally. False for inert commands."""
@@ -490,6 +493,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="CONFIG_LEAKAGE_DISABLE",
         )
+        return 0
+    if is_bypassed("internal-config-leakage"):
         return 0
 
     try:

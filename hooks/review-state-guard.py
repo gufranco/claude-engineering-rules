@@ -64,6 +64,9 @@ DELETE_REVIEW_ALT = re.compile(
     re.IGNORECASE,
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def detect_violation(command: str) -> tuple[str, str] | None:
     if REQUEST_CHANGES_PATTERN.search(command):
@@ -108,6 +111,8 @@ def main() -> None:
     if not should_run("review-state-guard"):
         _sys.exit(0)
     if os.environ.get("REVIEW_STATE_GUARD_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("review-state-guard"):
         sys.exit(0)
 
     try:

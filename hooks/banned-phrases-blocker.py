@@ -131,6 +131,9 @@ AGENT_META_QUESTIONS = [
     "Just wondering",
 ]
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def build_pattern(phrases: list[str], boundary: bool = True) -> re.Pattern:
     escaped = [re.escape(p) for p in phrases]
@@ -252,6 +255,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="BANNED_PHRASES_DISABLE",
         )
+        return 0
+    if is_bypassed("banned-phrases-blocker"):
         return 0
 
     try:

@@ -122,6 +122,9 @@ SECRET_PATTERNS = [
     ("Basic Auth", r"(?i)authorization\s*[:=]\s*basic\s+[A-Za-z0-9+/=]{10,}"),
 ]
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def should_skip(filepath):
     """Check if a file should be skipped."""
@@ -198,6 +201,10 @@ except ImportError:
 
 
 def main():
+    if os.environ.get("SECRET_SCANNER_DISABLE") == "1":
+        return 0
+    if is_bypassed("secret-scanner"):
+        return 0
     if not should_run("secret-scanner"):
         sys.exit(0)
     try:

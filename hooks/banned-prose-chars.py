@@ -58,6 +58,9 @@ EMOJI_RE = re.compile(
     "]"
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _snippet(text: str, idx: int) -> str:
     start = max(0, idx - 40)
@@ -150,6 +153,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="BANNED_PROSE_CHARS_DISABLE",
         )
+        return 0
+    if is_bypassed("banned-prose-chars"):
         return 0
 
     try:

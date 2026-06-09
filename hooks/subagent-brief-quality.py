@@ -127,6 +127,9 @@ META_LEADING_PATTERN = re.compile(
     re.IGNORECASE | re.VERBOSE,
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def evaluate(prompt: str) -> dict[str, bool]:
     return {
@@ -183,6 +186,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="SUBAGENT_BRIEF_DISABLE",
         )
+        return 0
+    if is_bypassed("subagent-brief-quality"):
         return 0
 
     try:

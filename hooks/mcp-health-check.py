@@ -56,6 +56,9 @@ STATE_FILE = os.path.join(CACHE_DIR, "mcp-health.json")
 UNHEALTHY_THRESHOLD = 3  # consecutive failures before short-circuit
 TTL_SECONDS = 5 * 60  # forget failures older than 5 minutes
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _load_state() -> dict[str, dict]:
     if not os.path.exists(STATE_FILE):
@@ -151,6 +154,8 @@ def main() -> None:
     if not should_run("mcp-health-check"):
         sys.exit(0)
     if os.environ.get("MCP_HEALTH_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("mcp-health-check"):
         sys.exit(0)
     try:
         data = json.load(sys.stdin)

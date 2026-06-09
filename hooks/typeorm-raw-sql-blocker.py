@@ -44,6 +44,9 @@ PATTERN = re.compile(
     r"queryRunner|qr|repository|repo|orm|ds)\s*\.\s*query\s*\(",
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped_path(path: str) -> bool:
     if not path:
@@ -117,6 +120,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="TYPEORM_RAW_SQL_DISABLE",
         )
+        return 0
+    if is_bypassed("typeorm-raw-sql-blocker"):
         return 0
 
     try:

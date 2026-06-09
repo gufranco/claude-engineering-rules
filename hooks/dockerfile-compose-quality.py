@@ -130,6 +130,9 @@ COMPOSE_ENV_LITERAL_SECRET = re.compile(
     re.VERBOSE,
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def detect_kind(path: str) -> str:
     """Return 'dockerfile', 'compose', or 'other' based on the file path."""

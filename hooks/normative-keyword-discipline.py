@@ -78,6 +78,9 @@ except ImportError:  # pragma: no cover
     def should_run(_id: str) -> bool:  # type: ignore
         return True
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_in_scope(path: str) -> bool:
     if not path or not path.lower().endswith(".md"):
@@ -127,6 +130,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="NORMATIVE_KEYWORD_DISABLE",
         )
+        return 0
+    if is_bypassed("normative-keyword-discipline"):
         return 0
 
     try:

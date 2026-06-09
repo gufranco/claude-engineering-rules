@@ -88,6 +88,9 @@ ATOMIC_MARKERS = re.compile(
 
 WINDOW_LINES = 5
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped(path: str) -> bool:
     if not path:
@@ -180,6 +183,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="REDIS_ATOMICITY_DISABLE",
         )
+        return 0
+    if is_bypassed("redis-atomicity"):
         return 0
 
     try:
