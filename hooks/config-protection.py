@@ -93,6 +93,9 @@ PROTECTED_PREFIXES = ("tsconfig.",)
 # Substring markers in tsconfig.* names that should always be protected.
 PROTECTED_TSCONFIG_SUFFIXES = (".json",)
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _is_protected(path: str) -> bool:
     base = os.path.basename(path)
@@ -136,6 +139,8 @@ def main() -> None:
     if not should_run("config-protection"):
         _sys.exit(0)
     if os.environ.get("CONFIG_PROTECTION_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("config-protection"):
         sys.exit(0)
     try:
         data = json.load(sys.stdin)

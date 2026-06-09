@@ -461,8 +461,15 @@ except ImportError:
     def should_run(_id: str) -> bool:
         return True
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def main():
+    if os.environ.get("DANGEROUS_COMMAND_BLOCKER_DISABLE") == "1":
+        return 0
+    if is_bypassed("dangerous-command-blocker"):
+        return 0
     if not should_run("dangerous-command-blocker"):
         sys.exit(0)
     try:

@@ -46,6 +46,9 @@ PATTERNS = [
     re.compile(r"\[Claude(?:\s+Code)?\]", re.IGNORECASE),
 ]
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _snippet(text: str, idx: int) -> str:
     start = max(0, idx - 40)
@@ -140,6 +143,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="AI_ATTRIBUTION_DISABLE",
         )
+        return 0
+    if is_bypassed("ai-attribution-blocker"):
         return 0
 
     try:

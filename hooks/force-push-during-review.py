@@ -39,6 +39,9 @@ GIT_PUSH_PATTERN = re.compile(r"\bgit\s+push\b")
 FORCE_FLAGS = re.compile(r"--force(?:-with-lease)?\b|(?:^|\s)-f(?:\s|$)")
 FORCE_REFSPEC = re.compile(r"\+[^\s]+:?[^\s]*")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_force_push(command: str) -> bool:
     if not GIT_PUSH_PATTERN.search(command):
@@ -124,6 +127,8 @@ def main() -> None:
     if not should_run("force-push-during-review"):
         _sys.exit(0)
     if os.environ.get("FORCE_PUSH_DURING_REVIEW_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("force-push-during-review"):
         sys.exit(0)
 
     try:

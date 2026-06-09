@@ -48,6 +48,9 @@ GH_WORKFLOW_WATCH = re.compile(r"\bgh\s+workflow\s+run\b[^\n;&|]*?--watch")
 # `glab ci view --live`
 GLAB_CI_LIVE = re.compile(r"\bglab\s+ci\s+view\b[^\n;&|]*?(?:--live|\s-l\b)")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def find_offender(command: str) -> str | None:
     if GH_RUN_WATCH.search(command):
@@ -84,6 +87,8 @@ def emit_block(reason: str, command: str) -> None:
 
 def main() -> int:
     if os.environ.get("GH_RUN_WATCH_DISABLE") == "1":
+        return 0
+    if is_bypassed("gh-run-watch-blocker"):
         return 0
 
     try:

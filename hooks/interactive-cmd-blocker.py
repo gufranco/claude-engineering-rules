@@ -39,6 +39,9 @@ COMMAND_BOUNDARY = r"(?:^|[;&|]\s*|&&\s*|\|\|\s*)"
 # Commands that prompt interactively when -i is the default alias
 INTERACTIVE_PRONE = ("rm", "cp", "mv")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def split_commands(command: str) -> list[str]:
     """Split a bash command line by shell separators ; && || | &."""
@@ -117,6 +120,8 @@ def emit_block(reason: str, command: str) -> None:
 
 def main() -> int:
     if os.environ.get("INTERACTIVE_CMD_DISABLE") == "1":
+        return 0
+    if is_bypassed("interactive-cmd-blocker"):
         return 0
 
     try:

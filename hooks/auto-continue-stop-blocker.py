@@ -215,6 +215,9 @@ CHECKPOINT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     ),
 ]
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def read_transcript_messages(path: str) -> list[dict]:
     p = Path(path)
@@ -291,6 +294,8 @@ def main() -> int:
     if not should_run("auto-continue-stop-blocker"):
         _sys.exit(0)
     if os.environ.get("AUTO_CONTINUE_DISABLE") == "1":
+        return 0
+    if is_bypassed("auto-continue-stop-blocker"):
         return 0
 
     try:

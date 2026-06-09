@@ -334,6 +334,9 @@ VERSION = _MUTATION_VERSION
 __version__ = _MUTATION_VERSION
 PERF_BUDGET_MS = 200
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _receiver_known(match: Match) -> bool:
     """True when the match has a typed-suffix receiver hint.
@@ -1071,6 +1074,8 @@ def main() -> int:
             bypass_env="MUTATION_METHOD_DISABLE",
             version=VERSION,
         )
+        return 0
+    if is_bypassed("mutation-method-blocker"):
         return 0
 
     batch_mode = _batch_mode_enabled()

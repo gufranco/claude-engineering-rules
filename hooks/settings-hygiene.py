@@ -59,6 +59,9 @@ HOME_PATH_RE = re.compile(
     r"(?:^|[\s\"'=:])(?:/Users/[^/\s\"']+|/home/[^/\s\"']+|[A-Za-z]:\\Users\\[^\\\s\"']+)/"
 )
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _load_blocklist() -> list[str]:
     if not os.path.exists(BLOCKLIST_PATH):
@@ -221,6 +224,8 @@ def main() -> None:
     if not should_run("settings-hygiene"):
         _sys.exit(0)
     if os.environ.get("SETTINGS_HYGIENE_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("settings-hygiene"):
         sys.exit(0)
     try:
         data = json.load(sys.stdin)

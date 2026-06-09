@@ -23,6 +23,9 @@ MAX_AGE_SECONDS = (
     6 * 60 * 60
 )  # only consider entries from last 6 hours when no session id
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def _session_id() -> str:
     return os.environ.get("CLAUDE_SESSION_ID") or os.environ.get("SESSION_ID") or ""
@@ -168,6 +171,10 @@ except ImportError:
 
 
 def main() -> int:
+    if os.environ.get("RETRO_POINTER_DISABLE") == "1":
+        _sys.exit(0)
+    if is_bypassed("retro-pointer"):
+        _sys.exit(0)
     if not should_run("retro-pointer"):
         _sys.exit(0)
     try:

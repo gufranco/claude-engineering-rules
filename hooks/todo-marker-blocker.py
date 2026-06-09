@@ -160,6 +160,9 @@ ALLOW_FILE_MARKER = "@allow-todo"
 ALLOW_LINE_MARKER = "allow-todo"
 TOP_OF_FILE_SCAN = 10
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped(path: str) -> bool:
     """Skip non-source files, planning paths, templates, tests, the .claude tree."""
@@ -275,6 +278,8 @@ def main() -> int:
             decision="bypass",
             bypass_env="TODO_MARKER_DISABLE",
         )
+        return 0
+    if is_bypassed("todo-marker-blocker"):
         return 0
 
     try:

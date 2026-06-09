@@ -55,6 +55,9 @@ SESSION_GLOBS = (
 
 MAX_PREVIEW_LINES = 30
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def find_recent(cwd: Path, patterns: tuple[str, ...]) -> list[Path]:
     """Return matching paths within the freshness window, newest first."""
@@ -153,6 +156,10 @@ def emit_context(context: str, source: str) -> None:
 
 
 def main() -> int:
+    if os.environ.get("SESSION_RESUME_CONTEXT_DISABLE") == "1":
+        return 0
+    if is_bypassed("session-resume-context"):
+        return 0
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):

@@ -67,11 +67,16 @@ except ImportError:
     def should_run(_id: str) -> bool:
         return True
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def main() -> None:
     if not should_run("bulk-resolve-blocker"):
         _sys.exit(0)
     if os.environ.get("BULK_RESOLVE_DISABLE") == "1":
+        sys.exit(0)
+    if is_bypassed("bulk-resolve-blocker"):
         sys.exit(0)
 
     try:

@@ -79,6 +79,9 @@ URGENCY_ACTION = re.compile(
 # Long base64 runs (potential encoded instructions hidden in noise)
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/]{200,}={0,2}")
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def has_unicode_confusables(text: str) -> bool:
     """Detect runs of non-ASCII characters in what looks like English prose.
@@ -170,6 +173,8 @@ def emit_context(findings: list[str], tool_name: str) -> None:
 
 def main() -> int:
     if os.environ.get("READ_INJECTION_DISABLE") == "1":
+        return 0
+    if is_bypassed("read-injection-scanner"):
         return 0
 
     try:

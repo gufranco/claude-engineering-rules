@@ -72,6 +72,9 @@ ALLOW_LINE_MARKER = "allow-any"
 TOP_OF_FILE_SCAN = 10
 MAX_HITS_PER_FILE = 8
 
+from _lib.bypass import is_bypassed  # noqa: E402
+
+
 
 def is_skipped_path(path: str) -> bool:
     """Skip non-TypeScript paths and the hooks directory."""
@@ -190,6 +193,8 @@ def main() -> int:
         _sys.exit(0)
     if os.environ.get("AS_ANY_DISABLE") == "1":
         _audit(hook="as-any-blocker", decision="bypass", bypass_env="AS_ANY_DISABLE")
+        return 0
+    if is_bypassed("as-any-blocker"):
         return 0
 
     try:
