@@ -44,8 +44,8 @@ always_loaded:
     triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls, pentest, penetration, exploit, vulnerability, ssrf, idor, xxe, ssti, rce]
 
   smart-questions:
-    description: Question and report quality across all dialogue directions, self-investigation gate, XY-aware framing, one blocking question format, ship the question, symptom-first status reports, Tatham bug-report essentials, subagent briefing requirements, FIXED/RESOLVED/DONE loop closure
-    triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation"]
+    description: Question and report quality across all dialogue directions, self-investigation gate, XY-aware framing, one blocking question format, mandatory recommendation when presenting a choice, ship the question, symptom-first status reports, Tatham bug-report essentials, subagent briefing requirements, FIXED/RESOLVED/DONE loop closure
+    triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation", recommendation, "recommend an option", "which do you recommend", "option trade-off", "pick an option", choice, options]
 
   testing:
     description: Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot guidelines
@@ -118,6 +118,10 @@ always_loaded:
   found-fix:
     description: A problem surfaced by any verification surface (CI annotations, deprecations, linter warnings, security advisories, hook blockers, broken docs links) is in scope for the current task regardless of when it was introduced. Bans the "pre-existing", "not introduced by my change", "orthogonal", "out of scope" rationalizations in commit messages, PR descriptions, and code comments. Enforced by hooks/found-fix-rationalization-blocker.py with FOUND_FIX_RATIONALIZATION_DISABLE parent-shell bypass for writing about the rule itself
     triggers: [found-fix, "pre-existing", "not introduced", "orthogonal", "leave for later", "out of scope", deprecation, annotation, "verification gate", "broken windows"]
+
+  living-specs:
+    description: Maintain a living, testable statement of current behavior for non-trivial changes. specs/current/ organized by domain, requirements with normative keywords, Given/When/Then scenarios, delta discipline (ADDED/MODIFIED/REMOVED) against the current spec, and a close-out merge owned by /plan archive and reachable from /ship and /retro. Trivial changes skip per the surgical-edits skip list. Distinct from dated plan folders which record why; living specs record what
+    triggers: [living spec, "living specs", behavioral spec, source of truth, requirement, scenario, "given/when/then", delta spec, "specs/current", archive spec, close-out merge, spec-driven]
 
 
 # Tier 1b: Language-specific (rules/lang/)

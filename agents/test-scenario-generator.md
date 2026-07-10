@@ -23,8 +23,8 @@ Do not push to remote. The orchestrator pushes; agents must not. Do not spawn su
 
 ## Process
 
-1. **Understand scope.** Read the files or feature description provided by the orchestrator.
-2. **Identify requirements.** Extract implicit and explicit requirements from the code: input validation rules, authorization checks, state transitions, error paths, integration points.
+1. **Understand scope.** Read the files or feature description provided by the orchestrator. If the plan folder's `plan.md` has a `## Requirements` section, or a `specs/current/` spec covers the feature, read those first: they carry requirements already written as normative statements with Given/When/Then scenarios. Reuse that vocabulary instead of inventing a parallel one.
+2. **Identify requirements.** Prefer the requirements already stated in `plan.md` or `specs/current/`. For anything they do not cover, extract implicit and explicit requirements from the code: input validation rules, authorization checks, state transitions, error paths, integration points.
 3. **Categorize scenarios.** Group by the categories below. Every feature must have P0 scenarios.
 4. **Apply critical scenario patterns.** Check if any of the special patterns, hidden effect, overdoing, zombie process, slow collaborator, poisoned message, contract drift, apply.
 5. **Build traceability matrix.** Map each requirement to its test scenarios.
