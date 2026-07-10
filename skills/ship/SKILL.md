@@ -105,6 +105,7 @@ Create or update a pull request with a structured description. Supports GitHub a
     - Changed APIs with stale examples.
     - New environment variables not in `.env.example`.
     - New CLI commands or scripts not documented.
+    - A `specs/current/` living spec that no longer matches the change. If the plan folder carries a spec delta, remind the user to run `/plan archive` once the PR merges, to fold the delta into the living spec. See [`rules/living-specs.md`](../../rules/living-specs.md).
     If stale documentation is found, list the gaps and offer to update. If `--docs` flag is passed, update automatically without asking.
 14. **Restore account** per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 15. Enter Pipeline Monitoring loop unless `--no-pipeline`. The loop monitors both CI checks AND AI-tool review threads, and only exits when both are clean.
@@ -118,6 +119,7 @@ Conventional commit style when it fits. Max 70 chars. Prefix ticket ID if availa
 - **Small PR**: one paragraph, no headers.
 - **Standard PR**: What, How, Testing sections. Add Breaking Changes only if applicable.
 - Concise, direct. No filler.
+- Do not hard-wrap the body. The platform renders single newlines as line breaks, so write each paragraph as one long line. The 72-column wrap is for commit bodies only. See [`rules/git-workflow.md`](../../rules/git-workflow.md) "PR/MR Creation".
 
 ---
 

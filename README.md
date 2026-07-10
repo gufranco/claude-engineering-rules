@@ -25,7 +25,7 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-18 universal rules ship with every conversation. 65 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 65.
+19 universal rules ship with every conversation. 65 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 65.
 
 </td>
 </tr>
@@ -80,7 +80,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-18 rules in [`rules/`](rules/), loaded into every conversation.
+19 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -99,10 +99,11 @@ A layered config where each layer catches what the layer above missed.
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
 | [`memory-supersede`](rules/memory-supersede.md) | Supersede-not-delete for project and feedback memories |
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
-| [`smart-questions`](rules/smart-questions.md) | Question format, status reports, FIXED/RESOLVED/DONE loop closure, Tatham bug-report essentials |
+| [`smart-questions`](rules/smart-questions.md) | Question format, mandatory recommendation when presenting a choice, status reports, FIXED/RESOLVED/DONE loop closure, Tatham bug-report essentials |
 | [`found-fix`](rules/found-fix.md) | Any verification-surface finding is in scope for the current task. Bans the rationalization phrases that defer fixes to a later session |
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, hyperbole tells from commit messages and PR descriptions |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
+| [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas, and a close-out merge that folds a completed change into the spec |
 
 Plus 7 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `prisma-migrations`, `typeorm-migrations`, `drizzle-migrations`, `sequelize-migrations`.
 

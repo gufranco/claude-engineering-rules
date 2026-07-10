@@ -71,7 +71,9 @@ Analyze the current conversation to extract directives, corrections, preferences
 
 6. **Verify.** Read modified files. Check for contradictions.
 
-7. **Offer commit/push** for `~/.claude/` changes. Stage specific files, conventional commit, push.
+7. **Close out living specs.** If the session implemented a non-trivial change whose plan folder carries an unmerged `specs/current/` delta, offer to run the `/plan archive` merge now so the living spec reflects the new behavior. This calls the same shared merge routine `/plan archive` owns; do not reimplement it here. See [`rules/living-specs.md`](../../rules/living-specs.md).
+
+8. **Offer commit/push** for `~/.claude/` changes. Stage specific files, conventional commit, push.
 
 ---
 
