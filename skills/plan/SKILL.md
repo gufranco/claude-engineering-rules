@@ -19,6 +19,7 @@ Unified planning skill for requirements gathering, architecture decisions, and c
 | `/plan scaffold <type> <name>` | Generate boilerplate from project patterns |
 | `/plan to-issues` | Export the active spec folder's task breakdown to GitHub issues |
 | `/plan multi-execute <task>` | Plan and execute under a single-writer protocol with parallel model tiers |
+| `/plan archive` | Merge a completed change's spec delta into the living spec and stamp the plan folder archived |
 
 If no subcommand is recognized, treat the argument as a plan description.
 
@@ -72,6 +73,8 @@ Challenge the scope with four lenses before proceeding to architecture:
 Present the scope review findings. In `--auto` mode, only pause for user input if the review suggests changes. If the scope is clean across all four lenses, proceed.
 
 ### Process
+
+The steps below are enablers, not gates. Their order shows what becomes possible next, not a one-way waterfall. Discovery, scope review, alternatives, and the plan itself are revisitable at any time: if implementation reveals the design was wrong, reopen the relevant artifact and update it rather than forcing the original plan through. The dependencies exist so each step has the context the next one needs, not to lock the work.
 
 0. **Context snapshot.** Before anything else, write `context.md` in the spec folder:
 
@@ -131,10 +134,24 @@ Present the scope review findings. In `--auto` mode, only pause for user input i
 6. **Create spec folder:**
    ```
    specs/<YYYY-MM-DD>-<slug>/
-     plan.md        (goal, approach, task breakdown, risks, validation)
+     plan.md        (goal, approach, requirements, task breakdown, risks, validation)
      decisions.md   (context, options, chosen with reasoning)
      references.md  (patterns, related work, applicable rules)
    ```
+
+   For a non-trivial change, `plan.md` carries a **Requirements** section before the task breakdown. Each requirement is one observable behavior stated with a normative keyword, and each carries at least one Given/When/Then scenario. See [`rules/living-specs.md`](../../rules/living-specs.md) for the format and [`rules/normative-keywords.md`](../../rules/normative-keywords.md) for keyword strength. These requirements are the plan's acceptance criteria: each scenario maps to a row in the test traceability matrix (Gate 1) and feeds the 95% coverage gate. The `test-scenario-generator` agent reads this section when present.
+
+   ```markdown
+   ## Requirements
+
+   ### Requirement: <one observable behavior, one MUST/SHALL/SHOULD>
+   #### Scenario: <names the case>
+   - GIVEN <precondition>
+   - WHEN <action>
+   - THEN <expected, checkable outcome>
+   ```
+
+   **Living-spec delta.** When the change touches behavior already covered by a `specs/current/` spec, `plan.md` also carries a delta section against that spec using `## ADDED Requirements`, `## MODIFIED Requirements`, and `## REMOVED Requirements`. Describe the diff, not the whole spec. If the project has no `specs/current/` yet and the change is non-trivial, seed it with only the requirements this change establishes. Full delta discipline and the triviality boundary: [`rules/living-specs.md`](../../rules/living-specs.md). This is the spec-level analogue of [`rules/surgical-edits.md`](../../rules/surgical-edits.md).
 
 7. **Append mandatory closing gates.** Every `plan.md` task breakdown must end with these two items, in this order, as the final tasks. They are not optional. They cannot be moved earlier or removed.
 
@@ -170,6 +187,40 @@ When an approach fails during planning or research:
 2. **Strike 2: Alternative approach.** Same error? Try a different method, tool, or data source. Never repeat the exact same failing action.
 3. **Strike 3: Broader rethink.** Question the assumptions behind the approach. Search for solutions. Consider updating the plan's approach entirely.
 4. **After 3 strikes: Escalate.** Explain what was tried, share the specific errors, and ask for guidance. Do not continue guessing.
+
+---
+
+## archive
+
+Fold a completed change's spec delta into the living spec, then stamp the plan folder archived. This is the step that keeps `specs/current/` from going stale. It owns the shared merge routine that `/ship` and `/retro` also call, so the result is identical from any entry point, per the delivery-path-consistency rule in [`rules/code-style.md`](../../rules/code-style.md).
+
+### When to use
+
+- After the tasks in a plan folder are implemented, verified, and merged.
+- When `/ship` or `/retro` prompts to close out a change that has a `specs/current/` delta.
+
+### Arguments
+
+- No arguments: resolve the most recent plan folder under `specs/` that has an unmerged delta.
+- `<spec-folder>`: explicit path to the plan folder to archive.
+- `--dry-run`: print the merge that would happen without writing.
+
+### Steps
+
+1. **Resolve the plan folder** and read its `plan.md` delta sections (`ADDED`, `MODIFIED`, `REMOVED`). If the plan has no delta and no `Requirements` section, there is nothing to merge; only stamp it archived.
+2. **Locate the target spec** under `specs/current/<domain>/spec.md` for each requirement. Create the domain spec if the delta is all `ADDED` and no spec exists yet.
+3. **Idempotency check.** For each delta requirement, compare against the current spec. If it is already merged (ADDED requirement already present with identical text, MODIFIED already applied, REMOVED already absent), skip it and report a no-op. Re-running a completed archive must change nothing.
+4. **Name the target before writing.** For every MODIFIED and REMOVED requirement, state which requirement in the current spec it replaces or deletes, per the destructive-action discipline in [`rules/code-style.md`](../../rules/code-style.md). In `--dry-run`, stop here and print the plan.
+5. **Apply the merge.** ADDED appended to the domain spec, MODIFIED replaces the prior requirement in place, REMOVED deleted with the reason recorded in `decisions.md`.
+6. **Stamp archived.** Add an `Archived: <YYYY-MM-DD>` line to the plan folder's `plan.md` header. The plan folder stays in place, dated and permanent; only the living spec moves forward.
+7. **Report.** Table of merged requirements per domain, plus any skipped no-ops.
+
+### Rules
+
+- Idempotent. Re-running on an already-merged delta is a no-op, never a duplicate append.
+- Never rewrite a whole spec. Apply only the delta.
+- Never delete the plan folder. It records why; the living spec records what.
+- The merge logic lives here. `/ship` and `/retro` invoke it, never reimplement it.
 
 ---
 
@@ -355,7 +406,7 @@ Estimate cost before running. Abort and run a simpler `/plan` flow when the cost
 
 - Planning is investigation, not implementation. Do not write production code during `/plan`.
 - Every decision must document at least two alternatives.
-- Spec folders are permanent. They record WHY decisions were made.
+- Plan folders are permanent and dated. They record WHY decisions were made. The living spec under `specs/current/` records WHAT the system does now and is maintained by `/plan archive`. See [`rules/living-specs.md`](../../rules/living-specs.md).
 - The plan must reference verified file paths.
 - Search for existing work before designing new solutions.
 - Spec folders go in `specs/` or `.claude/specs/` within the project, never in `~/.claude/`.
