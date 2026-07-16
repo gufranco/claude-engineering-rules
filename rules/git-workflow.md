@@ -164,6 +164,8 @@ When a ticket ID exists, prefix it: `<TICKET-ID>: <description>`
 - **Testing**: How the changes were verified. Include commands, screenshots, or steps to reproduce.
 - **Breaking changes**: If any, list them with migration steps.
 
+**Never hard-wrap the description body.** GitHub and GitLab render a single newline inside a paragraph as a literal line break, so wrapping prose at 72 columns produces a jagged, broken-looking description. The "wrap at 72" convention applies to commit-message bodies only, never to PR/MR/issue descriptions. Write each paragraph as one long line and let the platform soft-wrap it. The only newlines in a description body are blank lines between blocks and one newline per list item. Same rule for `gh issue create`, `gh pr comment`, and review-comment bodies.
+
 Before opening:
 
 1. Identify the base branch from git, never hardcode it
