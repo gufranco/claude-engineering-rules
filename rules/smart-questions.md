@@ -51,7 +51,8 @@ Format every clarifying question this way, in this order:
 
 1. **The specific question**, as the first line. One blocking question per turn.
 2. **What was investigated.** File reads, greps, doc lookups, prior PRs. Cite paths and line numbers when relevant.
-3. **The options with their trade-offs.** Name the two or three viable approaches and one decisive trade-off per option.
+3. **The options, each explained in depth.** Name the two or three viable approaches. For each, give a detailed explanation: what it does, how it behaves, and its decisive trade-off. A bare label with no explanation is not an option.
+4. **The recommendation.** Name one option as preferred and state the decisive reason. This element is mandatory. Never present a choice as a flat menu and leave the decision fully to the user; always say which one you would take and why. When the options are genuinely equivalent, say so and pick one on a stated tiebreaker.
 
 Constraints:
 
@@ -59,6 +60,8 @@ Constraints:
 - Ship the question in the first message. No "Can I ask you something?", no hello-only opener, no "Quick question?".
 - No rhetorical closers, "Let me know if that helps", "Sound good?". Already enforced by [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 - No apologies, no repeated thanks, no hyper-courtesy.
+- When the choice is put through the `AskUserQuestion` tool, the recommended option must be first and its label must end with `(Recommended)`. The reason for the recommendation goes in the question body or the option description.
+- Carve-out: when one option is the obvious default, take it and say so in a sentence rather than manufacturing a menu. The recommendation obligation applies when a real choice is genuinely put to the user, not to every branch the assistant could resolve on its own. This composes with the "Execute, don't ask" and Confidence rules in [`../CLAUDE.md`](../CLAUDE.md).
 
 ```
 Bad: "How should I implement this?"
@@ -75,6 +78,10 @@ Good:
   couples reason to row lifecycle (lost on hard delete).
   Option B: insert into `OrderAudit` with reason. Preserves history,
   one extra join for every cancellation read.
+
+  Recommend: Option B. The cancellation reason is audit data, and
+  losing it on a hard delete is the failure mode most likely to bite
+  later; the extra join is cheap next to that.
 ```
 
 ## 4. Status and Error Reports
@@ -209,6 +216,7 @@ Before sending any message that asks a question, reports a status, briefs a suba
 | Theory order | Did I lead with the symptom, not the diagnosis? |
 | XY | Did I verify the underlying goal, or did I execute the literal request without checking? |
 | Scope | Is this one blocking question, or did I bundle three? |
+| Recommendation | If I presented a choice, did I explain each option in depth and name a preferred one with its reason? |
 | Ship | Does the first line contain the actual question or report, not a meta-prompt? |
 | Tag | If this is a closing message, does it have `FIXED:`, `RESOLVED:`, or `DONE:` and a one-line resolution that names what changed and where? |
 
