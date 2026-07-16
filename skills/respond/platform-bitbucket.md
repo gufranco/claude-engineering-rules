@@ -4,7 +4,7 @@ Reference for `/respond` when the detected platform is Bitbucket Cloud. The work
 
 ## Status
 
-Bitbucket support is light. The lack of a first-party CLI and the absence of a thread-resolution concept similar to GitHub mean some workflow steps require manual confirmation. The skill detects Bitbucket, switches to REST mode, and surfaces the limitations to the user.
+Bitbucket support is light. The lack of a first-party CLI means all interactions go through `curl`, and some workflow steps require manual confirmation. The skill detects Bitbucket, switches to REST mode, and surfaces the limitations to the user. Comment resolution is supported and is used the same way as on GitHub.
 
 ## Detection
 
@@ -33,10 +33,13 @@ The skill never invents credentials. If neither auth pair is present, it stops P
 |---------|----------|
 | Find PR for current branch | `GET /2.0/repositories/{workspace}/{repo}/pullrequests?q=source.branch.name="<branch>"` |
 | Get PR detail | `GET /2.0/repositories/{workspace}/{repo}/pullrequests/{id}` |
-| List inline comments | `GET /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments` |
+| List all comments, inline and PR-level | `GET /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments` |
 | Get one comment | `GET /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments/{cid}` |
 | Reply to an inline comment | `POST /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments` with `parent.id` set |
 | PR-level comment | Same endpoint without `parent.id` |
+| Resolve a comment | `POST /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments/{cid}/resolve` |
+| Unresolve a comment | `DELETE /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments/{cid}/resolve` |
+| List commit comments | `GET /2.0/repositories/{workspace}/{repo}/commit/{sha}/comments` |
 | Re-request review | `PUT /2.0/repositories/{workspace}/{repo}/pullrequests/{id}` with the `reviewers` array |
 
 ## Phase 2 Fetch on Bitbucket
@@ -49,9 +52,14 @@ curl -s -u "$BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD" \
 
 The response paginates via `next` URL. The skill follows pagination and concatenates pages until exhausted.
 
+The `/comments` endpoint returns both inline and PR-level comments. A comment with an `inline` object is inline; a comment without one is PR-level. Both are in scope.
+
 Filter rules:
 
 - Drop comments where `deleted == true`.
+- Drop comments where `resolution` is non-null. Those are resolved.
+- Drop comments where `pending == true`. Those are unpublished drafts, not yet visible to anyone else.
+- Keep comments with no `inline` object. Their absence marks them as PR-level, not as handled.
 - Group by `inline.path` and `inline.to` line to reconstruct thread structure. Bitbucket does not return explicit thread IDs; replies use `parent.id`.
 - Apply the `--humans-only` filter by checking `user.account_id` against any known bot accounts in the workspace. Bitbucket does not surface a `type` field per user.
 
@@ -61,13 +69,21 @@ Bitbucket has no convention like GitHub's `[bot]` suffix. The skill maintains a 
 
 ## Resolve Concept
 
-**Bitbucket Cloud does not have a "resolve thread" concept.** A comment can be `deleted`, `replied to`, or left as is. The skill handles this by:
+Bitbucket Cloud supports comment resolution. The comment object carries a `resolution` field, non-null once resolved, and the API exposes a resolve and unresolve pair on the same path.
 
-1. Posting a reply with the action taken or the reason for dismissal.
-2. Optionally setting a custom marker in the reply body, like a leading `RESOLVED:` token, so future readers can scan for closed threads.
-3. Never deleting the original comment.
+```bash
+# Resolve
+curl -s -X POST -H "Authorization: Bearer $BITBUCKET_TOKEN" \
+  "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
 
-When `/respond` runs on Bitbucket and the user picks the `resolve` decision, the skill warns: "Bitbucket has no resolve action. Posting the reply only." The user can opt to add the `RESOLVED:` prefix via `--bitbucket-resolved-marker`.
+# Unresolve
+curl -s -X DELETE -H "Authorization: Bearer $BITBUCKET_TOKEN" \
+  "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
+```
+
+Resolution applies to both inline and PR-level comments, since both live on the same `/comments` endpoint. The workflow is therefore the same as GitHub: post the reply, then resolve.
+
+Never delete the original comment. Deletion is not resolution and it destroys the review record.
 
 ## Phase 6 Step 5 Reply on Bitbucket
 
@@ -114,10 +130,10 @@ The `reviewers` array replaces the entire reviewer list. The skill fetches the c
 | GitHub term | Bitbucket term |
 |-------------|----------------|
 | Pull Request | Pull Request |
-| Review thread | Comment thread (no native concept) |
-| Review comment | Inline comment |
+| Review thread | Comment thread reconstructed from `parent.id` |
+| Review comment | Inline comment, carries an `inline` object |
 | Reply chain | Comments with `parent.id` |
-| `resolve thread` | No equivalent; reply is the closure signal |
+| `resolve thread` | `POST .../comments/{cid}/resolve`, state in the `resolution` field |
 | `re-request review` | PUT the PR with the reviewers array |
 | `dismiss review` | No equivalent |
 
@@ -125,7 +141,7 @@ The `reviewers` array replaces the entire reviewer list. The skill fetches the c
 
 | Concern | Bitbucket limitation |
 |---------|---------------------|
-| Thread resolution | No native concept. Reply is the closure signal |
+| Thread IDs | No explicit thread ID. Structure is reconstructed from `parent.id` |
 | Bot detection | No `[bot]` suffix convention. Per-workspace allowlist required |
 | Pending review batching | No native concept. Comments post one at a time |
 | Suggestion blocks | Bitbucket renders fenced code blocks but has no native "apply suggestion" button |
@@ -133,4 +149,4 @@ The `reviewers` array replaces the entire reviewer list. The skill fetches the c
 
 ## Recommendation
 
-For projects where Bitbucket usage is regular, consider migrating PR review workflows to GitHub or GitLab if feasible. Bitbucket's review API is older and the absence of a thread-resolution concept makes it the weakest of the three platforms for this kind of structured workflow. `/respond` supports Bitbucket but cannot deliver the same level of automation.
+For projects where Bitbucket usage is regular, consider migrating PR review workflows to GitHub or GitLab if feasible. Bitbucket's review API is older, has no first-party CLI, and exposes no thread IDs or bot-account convention, which makes it the weakest of the three platforms for this kind of structured workflow. `/respond` supports Bitbucket but cannot deliver the same level of automation.
