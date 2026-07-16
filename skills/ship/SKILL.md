@@ -231,11 +231,13 @@ Manage git worktrees for parallel development.
 The monitoring loop has **two parallel exit conditions that must BOTH hold on the latest pushed SHA**:
 
 1. Every functional CI check is green, manual gates like `lead-approval` are excluded.
-2. Every actionable AI-tool review thread is resolved such as CodeRabbit, GitHub Copilot, Greptile, Sourcery, Korbit, Bito, Codium, Qodo, or etc..
+2. Every actionable AI-tool comment is closed, across all four comment channels, such as CodeRabbit, GitHub Copilot, Greptile, Sourcery, Korbit, Bito, Codium, Qodo, or etc..
+
+Condition 2 spans every channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md), not just inline review threads. A bot summary posted as a review body or a PR-level comment holds the loop open exactly like an inline thread does.
 
 Do not declare the loop complete while either condition is open. If a fix is pushed for one condition, both conditions must be re-verified on the new SHA before exiting.
 
-**Human-authored review threads are out of scope of this loop.** They require judgment per thread and are handled by `/respond`. When a human reviewer adds a thread during pipeline monitoring, this loop ignores it; the author runs `/respond` separately to triage and reply.
+**Human-authored comments are out of scope of this loop.** They require judgment per comment and are handled by `/respond`. When a human reviewer comments during pipeline monitoring, this loop ignores it; the author runs `/respond` separately to triage and reply. The loop still reports the count of open human comments per channel on exit, so a human concern is never silently buried by a green pipeline.
 
 ### Step 1: Detect platform and locate checks
 
@@ -266,41 +268,25 @@ Fetch failed logs, parallel. Search for existing fixes first. Present diagnosis 
 
 ### Step 6: AI-tool comment sweep
 
-Fetch every open review thread authored by AI bots and resolve them all. This step is mandatory in `--pipeline` mode and runs every time CI is green, including after a CI fix push.
+Fetch every open comment authored by AI bots, across every channel, and close them all. This step is mandatory in `--pipeline` mode and runs every time CI is green, including after a CI fix push.
 
 **Optional delegation to `/respond`.** When the environment variable `RESPOND_DRIVES_PIPELINE=1` is set, this step delegates to `/respond --auto --include-bots` instead of running the inline sweep below. The delegated workflow gives unified vocabulary and unified bot triage with the human-thread flow, and routes through the same hooks. To take effect, the user must also set `RESPOND_AUTO_ACK=1` since `/respond --auto` requires the second lock. The default behavior, when the env var is unset, is the inline sweep documented in 6a through 6e.
 
 The delegation is opt-in to preserve backward compatibility. Existing `--pipeline` invocations continue to work without changes.
 
-#### 6a: Fetch open AI-tool threads
+#### 6a: Fetch open AI-tool comments across every channel
 
-Use the platform's GraphQL API to enumerate review threads with `isResolved: false` whose first comment author matches a known AI bot. The match is case-insensitive on the login and includes, non-exhaustive: `coderabbit`, `copilot`, `greptile`, `sourcery`, `korbit`, `bito`, `qodo`, `codium`, `cursor`, `tabnine`, `gemini-code-assist`, `claude`.
+Read [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) and use its canonical fetch. Inline review threads are one channel of four. AI reviewers post their summary and often their highest-severity findings as a review body or a PR-level conversation comment, neither of which appears in `reviewThreads`. Sweeping only inline threads lets a bot's blocking finding through while the loop reports the PR as clean.
 
-GitHub example:
+The four GitHub channels are `reviewThreads`, `reviews`, `comments`, and `timelineItems` filtered to `PULL_REQUEST_COMMIT_COMMENT_THREAD`. The standard carries the exact query. Do not hand-roll a narrower one.
 
-```bash
-gh api graphql -f query='query($owner: String!, $repo: String!, $pr: Int!) {
-  repository(owner: $owner, name: $repo) {
-    pullRequest(number: $pr) {
-      reviewThreads(first: 100) {
-        nodes {
-          id
-          isResolved
-          comments(first: 1) {
-            nodes { databaseId author { login } path body }
-          }
-        }
-      }
-    }
-  }
-}' -F owner=<owner> -F repo=<repo> -F pr=<number>
-```
+Filter the result to comments that are non-terminal per the standard's Terminal States table, then keep those whose author login matches the AI-bot list. The match is case-insensitive on the login and includes, non-exhaustive: `coderabbit`, `copilot`, `greptile`, `sourcery`, `korbit`, `bito`, `qodo`, `codium`, `cursor`, `tabnine`, `gemini-code-assist`, `claude`.
 
-Filter the result to threads where `isResolved == false` and the first comment's author login matches the AI-bot list.
+Two filters that look right and are not: `isResolved == false` alone misses the three channels that have no `isResolved` field, and `isOutdated == true` is not a terminal state.
 
 #### 6b: Triage each finding
 
-For every open thread, read the full comment body via `gh api repos/<owner>/<repo>/pulls/comments/<databaseId> --jq '.body'` for the unabridged text, then classify:
+For every open item, read the full comment body for the unabridged text, then classify. Inline thread comments come from `gh api repos/<owner>/<repo>/pulls/comments/<databaseId> --jq '.body'`. Review bodies, PR-level comments, and commit comments already arrive in full from the canonical fetch.
 
 | Classification | Action |
 |---------------|--------|
@@ -315,19 +301,23 @@ Never close a thread without either fixing the issue or posting a reply that jus
 
 Group related fixes per file when possible. Run formatter, linter, typechecker, tests, and build locally before committing. Push once per logical fix group.
 
-#### 6d: Resolve threads
+#### 6d: Close each item
 
-After the fix is verified and pushed, or after a justified dismissal reply, resolve the thread. GitHub:
+After the fix is verified and pushed, or after a justified dismissal reply, close the item. How to close depends on the channel, per the standard's "Handling Channels Without Native Resolve" table.
+
+Inline review threads resolve through GraphQL:
 
 ```bash
-gh api graphql -f query='mutation($threadId: ID!) {
+GH_TOKEN=$(gh auth token --user <account>) gh api graphql -f query='mutation($threadId: ID!) {
   resolveReviewThread(input: { threadId: $threadId }) {
     thread { id isResolved }
   }
 }' -F threadId=<thread-node-id>
 ```
 
-GitLab uses `glab api` with the equivalent `mark_thread_as_resolved` mutation, or `glab mr resolve-thread`.
+Review bodies, PR-level comments, and commit comments have no resolve action. For those, the posted reply is the closure signal and is mandatory: with no platform state to record the decision, skipping the reply leaves no evidence the finding was considered. Minimizing a bot's PR-level comment is an acceptable additional signal once the reply is posted, never a substitute for it.
+
+GitLab uses `glab api` with the discussion resolve endpoint. Bitbucket Cloud resolves via `POST .../comments/<cid>/resolve`.
 
 #### 6e: Loop back
 
@@ -338,9 +328,18 @@ After every push triggered by Step 6, return to Step 2. New AI tools often re-re
 Only when **both** conditions hold on the latest SHA:
 
 - `gh pr checks <pr>` shows every functional check as `pass`, manual gates excluded.
-- `gh api graphql` review-thread query returns zero AI-bot threads with `isResolved == false`.
+- The canonical four-channel fetch returns zero non-terminal AI-bot comments, across `reviewThreads`, `reviews`, `comments`, and commit-comment threads.
 
-Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count of AI threads resolved.
+Run the Completeness Cross-Check from [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) before exiting.
+
+Report per-channel counts, never a single total. A bare "0 open threads" cannot distinguish "all four channels are clean" from "only one channel was queried", which is the ambiguity that let a blocking comment through in the first place.
+
+```
+PR #1234  SHA a1b2c3d
+CI: 12/12 functional checks passed
+AI comments closed:  inline 3 | review bodies 1 | PR-level 2 | commit 0
+Human comments open: inline 0 | review bodies 0 | PR-level 1 | commit 0  -> run /respond
+```
 
 ### Guardrails
 
@@ -348,8 +347,9 @@ Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count 
 - Only fix what you can confidently fix. Dismiss with a reply when in doubt; never silently close.
 - Each fix is its own commit with a conventional-commit message.
 - Never skip hooks. `--no-verify`.
-- Never resolve a thread without verifying the fix is on the pushed SHA.
-- Never resolve threads authored by humans automatically, Step 6 covers AI bots only.
+- Never close an item without verifying the fix is on the pushed SHA.
+- Never close comments authored by humans automatically, Step 6 covers AI bots only.
+- Never scope the sweep to inline review threads. All four channels in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) are in scope every pass.
 - Use `ScheduleWakeup`, or equivalent when waiting on CI or AI re-review to avoid burning context on tight polling loops.
 - **Restore account** on exit.
 
@@ -368,7 +368,7 @@ Report a one-line summary: PR URL, latest SHA, count of CI checks passed, count 
 - Never merge PRs. Only create or update.
 - Never auto-approve Terraform applies or releases without user approval.
 - Always restore account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
-- `--pipeline` and any `pr` flow that opens a PR must run the full Pipeline Monitoring loop. The loop only exits when CI is 100% green AND every AI-tool review thread is resolved on the latest pushed SHA. Resolving partial state, CI green but threads open, or threads resolved but CI red is not "done".
+- `--pipeline` and any `pr` flow that opens a PR must run the full Pipeline Monitoring loop. The loop only exits when CI is 100% green AND every AI-tool comment across all four channels is closed on the latest pushed SHA. Resolving partial state, CI green but comments open, or comments closed but CI red is not "done".
 
 ## Related skills
 

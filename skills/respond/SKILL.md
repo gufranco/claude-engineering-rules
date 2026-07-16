@@ -1,6 +1,6 @@
 ---
 name: respond
-description: Respond to incoming code review comments on a PR you authored. Fetches unresolved threads, classifies each by author and intent, verifies against the current code, drafts replies in a natural voice, applies code changes with local validation, posts replies, resolves threads, and monitors CI. Use when user says "respond to review", "address comments", "handle reviewer feedback", "reply to PR comments", "my PR has comments", or wants a structured pass over reviewer feedback. Do NOT use for performing a review (use /review), or for unattended AI bot thread handling (use /ship --pipeline).
+description: Respond to incoming code review comments on a PR you authored. Fetches every unresolved comment across all channels, inline threads, review bodies, PR-level conversation, and commit comments, classifies each by author and intent, verifies against the current code, drafts replies in a natural voice, applies code changes with local validation, posts replies, resolves threads, and monitors CI. Use when user says "respond to review", "address comments", "handle reviewer feedback", "reply to PR comments", "my PR has comments", or wants a structured pass over reviewer feedback. Do NOT use for performing a review (use /review), or for unattended AI bot thread handling (use /ship --pipeline).
 sensitive: true
 ---
 Receive-side counterpart to `/review`. Turns the loose, error-prone workflow of "respond to PR review comments" into a structured, validated pipeline. The seven phases take the user from "I see comments on my PR" to "every thread is replied to or resolved, code changes are validated and pushed, CI is green".
@@ -50,80 +50,33 @@ If no subcommand is given, default to the full workflow.
 5. Validate. If PR is `CLOSED` or `MERGED`, ask before proceeding. If no PR is found and no argument is passed, stop.
 6. Warn on uncommitted changes that conflict with the working tree the skill will modify.
 
-## Phase 2: Fetch Threads
+## Phase 2: Fetch Comments
 
-Use a single GraphQL query to pull all unresolved threads plus the review-level state.
+Read [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) and use its canonical fetch verbatim. That standard is the single source of truth for what a PR comment is, on all three platforms. Do not hand-roll a narrower query here; a narrower query is exactly how the P0 deadlock report was missed.
 
-```graphql
-query($owner: String!, $repo: String!, $pr: Int!) {
-  repository(owner: $owner, name: $repo) {
-    pullRequest(number: $pr) {
-      reviewThreads(first: 100) {
-        nodes {
-          id
-          isResolved
-          isOutdated
-          path
-          line
-          startLine
-          diffSide
-          comments(first: 50) {
-            nodes {
-              databaseId
-              author { login, ... on User { name } }
-              authorAssociation
-              body
-              createdAt
-              url
-            }
-          }
-        }
-      }
-      reviews(first: 100, states: [APPROVED, CHANGES_REQUESTED, COMMENTED]) {
-        nodes {
-          databaseId
-          author { login }
-          body
-          state
-          submittedAt
-        }
-      }
-      comments(first: 100) {
-        nodes {
-          databaseId
-          author { login, ... on User { name } }
-          authorAssociation
-          body
-          createdAt
-          url
-        }
-      }
-    }
-  }
-}
-```
+The four GitHub channels, all mandatory:
 
-The `comments` field is mandatory. PR-level conversation comments, posted via the bottom "Add a comment" box and not attached to a review, are a third channel alongside `reviewThreads` and `reviews`. Skipping them caused a P0 deadlock report to be missed in an earlier session. Always fetch all three.
+| Bucket | Source | Native resolve |
+|--------|--------|----------------|
+| Inline threads | `reviewThreads`, `subjectType` `LINE` or `FILE` | Yes |
+| Review bodies | `reviews` | No |
+| PR-level conversation | `comments` | No |
+| Commit comments | `timelineItems`, `PULL_REQUEST_COMMIT_COMMENT_THREAD` | No |
 
-Invocation pattern. Write the query to `/tmp/respond-query-<pr>.graphql` and run:
-
-```bash
-GH_TOKEN=$(gh auth token --user <account>) gh api graphql \
-  -f query="$(cat /tmp/respond-query-<pr>.graphql)" \
-  -F owner=<owner> -F repo=<repo> -F pr=<number>
-```
+Fetch every review state, not only `[APPROVED, CHANGES_REQUESTED, COMMENTED]`. Filter states after fetching so a `DISMISSED` review carrying an unanswered question stays visible.
 
 Filter rules.
 
-- Drop threads with `isResolved == true`.
-- Apply `--humans-only` filter unless `--include-bots` is set. The human filter keeps threads whose first comment is from `author.type == "User"` AND login is not in the AI bot allowlist.
-- Group threads by file path, then sort by line number within file.
-- Group reviews separately as summary-level entries.
-- Treat `pullRequest.comments` as a fourth bucket: PR-level conversation items. They have no `path`, no `line`, and no native resolve. Apply the same author-type and intent classification. Reply via `gh pr comment`, not the inline `/replies` endpoint. After replying, post a top-level acknowledgment when the comment was substantive at the P0 or P1 level. There is no resolve action.
+- Drop only what the standard's Terminal States table marks terminal. Everything else is in scope.
+- Never drop on `isOutdated` or `isCollapsed` alone. An outdated comment can still name a live bug.
+- Honor `isMinimized == true`. It is the closest thing the three non-resolvable channels have to a resolve action, on any of the seven `minimizedReason` values.
+- Apply `--humans-only` unless `--include-bots` is set. The human filter keeps items whose first comment is from `author.type == "User"` AND login is not in the AI bot allowlist.
+- Group inline threads by file path, then sort by line number within file. Group the other three buckets separately.
+- Reply to PR-level comments and review bodies via `gh pr comment`, not the inline `/replies` endpoint. Commit comments have no reply endpoint; answer with a PR-level comment that quotes the commit and the point.
 - Filter out PR-level comments whose body starts with auto-generated markers such as `<!-- LEAD_APPROVAL -->`, `<!-- linear-linkback -->`, or `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->`, since these are tracker or bot signals, not actionable.
-- Drop PR-level comments authored by the running account, your own prior replies unless they were quoted as part of a multi-round conversation.
+- Drop items authored by the running account, your own prior replies unless they were quoted as part of a multi-round conversation.
 
-Cross-check after fetch. Sort all four buckets by `createdAt` descending. If the most recent item is newer than the most recent inline-thread reply by the running user, surface it explicitly in the Phase 5 table even if the inline threads are clean. The skill must never report "nothing to respond to" while a substantive PR-level comment is still unanswered.
+Cross-check after fetch. Run the Completeness Cross-Check from the standard. Report per-channel counts in Phase 5, never a single total. The skill must never report "nothing to respond to" while a substantive comment in any channel is still unanswered.
 
 AI bot allowlist for classification: `coderabbitai[bot]`, `copilot-pull-request-reviewer[bot]`, `greptile-apps[bot]`, `sourcery-ai[bot]`, `korbit-ai[bot]`, `cursor[bot]`, `qodo-merge-pro[bot]`, `bito-pr-review[bot]`, `gemini-code-assist[bot]`, `claude[bot]`, `tabnine-ai[bot]`. Auxiliary lint or dependency bots: `github-actions[bot]`, `dependabot[bot]`, `renovate[bot]`, `pre-commit-ci[bot]`, `lefthook[bot]`.
 
@@ -245,15 +198,22 @@ For `issue:blocking-*` decisions, plan a named regression test like `it('rejects
 
 ## Phase 5: Present and Approve
 
-Print a batched table to the terminal. One row per thread.
+Print a batched table to the terminal. One row per item. The `Channel` column is mandatory: it is what makes an omitted channel visible to the user rather than invisible.
 
 ```
-#  Author          File:Line              Intent                 Decision      Reply preview                 Code change
-1  alice           src/auth.ts:42         issue:blocking-bug     implement     "You're right. Pushed..."     +12 -3 in src/auth.ts
-2  bob             src/auth.ts:78         suggestion             push-back     "Considered that. Went..."    none
-3  coderabbitai    src/orders.ts:120      nitpick                implement     "Fixed."                       +1 -1 in src/orders.ts
-4  alice           README.md:5            question               ack           "The flow is described..."    none
-5  carol           src/db.ts:200          issue:blocking-bug     conflict      flagged, see Conflict tab     held
+#  Channel     Author          Location               Intent                 Decision      Reply preview                 Code change
+1  inline      alice           src/auth.ts:42         issue:blocking-bug     implement     "You're right. Pushed..."     +12 -3 in src/auth.ts
+2  inline      bob             src/auth.ts:78         suggestion             push-back     "Considered that. Went..."    none
+3  inline      coderabbitai    src/orders.ts:120      nitpick                implement     "Fixed."                       +1 -1 in src/orders.ts
+4  review-body carol           review #4 CHANGES_REQ  issue:blocking-bug     implement     "Good catch. Pushed..."       +8 -1 in src/db.ts
+5  pr-level    dave            conversation           issue:blocking-bug     implement     "Confirmed the deadlock..."   +4 -2 in src/lock.ts
+6  commit      erin            a1b2c3d src/api.ts     question               ack           "That branch is dead..."      none
+```
+
+Close the table with per-channel counts so a zero is never ambiguous:
+
+```
+inline 3 | review bodies 1 | PR-level 1 | commit 1
 ```
 
 If the batch exceeds 25 rows, paginate with `--filter` suggestions.
@@ -294,6 +254,15 @@ Confirm the latest SHA is on the PR and no new threads landed during execution.
 
 ### Step 5: Post replies via REST
 
+Route the reply by channel, per the standard's "Handling Channels Without Native Resolve" table.
+
+| Channel | Reply mechanism |
+|---------|-----------------|
+| Inline thread | `POST repos/<o>/<r>/pulls/<pr>/comments/<comment-id>/replies` |
+| Review body | `gh pr comment <pr>`, quoting the point being answered |
+| PR-level conversation | `gh pr comment <pr>` |
+| Commit comment | `gh pr comment <pr>`, quoting the commit SHA and the point. There is no reply endpoint for commit comments |
+
 For inline threads, write a JSON file to `/tmp/respond-reply-<thread-id>.json`. Single-quoted heredoc to prevent shell expansion.
 
 ```bash
@@ -318,7 +287,9 @@ GH_TOKEN=$(gh auth token --user <account>) gh pr comment <pr> \
 
 ### Step 6: Resolve threads via GraphQL
 
-For each thread whose decision is `implement`, `push-back`, `defer`, `accept-with-modification`, or `ack`, post the reply first, then resolve. Threads with decision `clarify` stay open. Threads with decision `conflict` stay open until the conflicting reviewers align.
+Only inline threads can be resolved. For each inline thread whose decision is `implement`, `push-back`, `defer`, `accept-with-modification`, or `ack`, post the reply first, then resolve. Threads with decision `clarify` stay open. Threads with decision `conflict` stay open until the conflicting reviewers align.
+
+Review bodies, PR-level comments, and commit comments have no resolve action. The posted reply is their closure signal, which makes the reply mandatory rather than optional: with no platform state to record the decision, an unanswered item is indistinguishable from an ignored one.
 
 ```bash
 GH_TOKEN=$(gh auth token --user <account>) gh api graphql \
@@ -357,14 +328,18 @@ After every push triggered by the batch, enter the Pipeline Monitoring loop from
 Final output:
 
 ```
-RESOLVED: 7 threads addressed on PR #1234.
+RESOLVED: 7 comments addressed on PR #1234.
+  Channels swept: inline 4 | review bodies 1 | PR-level 1 | commit 1
   - 3 implemented (commits: a1b2c3d, e4f5g6h, i7j8k9l)
   - 2 pushed back with reasoning
   - 1 deferred to ticket TICKET-456
   - 1 acknowledged
+  Inline threads resolved: 4. Non-resolvable channels closed by reply: 3
   CI: 12 of 12 checks passed
   Re-requested review from: alice, bob
 ```
+
+The "Channels swept" line is mandatory. It is the evidence that all four channels were queried, and it is the line a user can check when they suspect a comment was missed.
 
 ## Ticket Tracker Integration
 
@@ -566,7 +541,9 @@ In both conventions, the skill never bulk-resolves. Each resolve is a single Gra
 
 ### Outdated vs Resolved
 
-GitHub auto-marks comments as `outdated` when the cited line changes. Outdated is not the same as resolved. The skill never relies on `isOutdated == true` as a substitute for an explicit resolution. Force-pushing to mark threads outdated is an anti-pattern flagged in the "As Reviewee" section of [`../../standards/code-review.md`](../../standards/code-review.md).
+GitHub auto-marks comments as `outdated` when the cited line changes. Outdated is not the same as resolved. An outdated comment can still name a live bug: the line moved, the concern did not. The skill never relies on `isOutdated == true` as a substitute for an explicit resolution, and never drops an item on that basis. The same holds for `isCollapsed`, which is a display hint. Force-pushing to mark threads outdated is an anti-pattern flagged in the "As Reviewee" section of [`../../standards/code-review.md`](../../standards/code-review.md).
+
+`isMinimized == true` is different: minimizing is a deliberate human decision recorded on the platform, and it is the nearest thing to a resolve action that the three non-resolvable channels have. Honor it as terminal.
 
 ## Commit Credit Conventions
 
@@ -584,6 +561,8 @@ The skill prompts before adding any credit trailer. The default is no trailer un
 
 ## Rules
 
+- Every comment channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) is swept every run. Inline threads are one channel of four. Never report "nothing to respond to" without per-channel counts backing the claim.
+- Only the Terminal States table drops an item. `isOutdated` and `isCollapsed` are never drop criteria.
 - Every drafted reply passes the no-internal-config-leakage check before posting. No `~/.claude/` paths, no rule citations, no checklist numbers in any external output.
 - Every code change goes through the full local quality gate before push.
 - Resolution requires either a reply or an implemented fix. Silent resolve is forbidden.
