@@ -10,7 +10,7 @@
 
 </div>
 
-**17** always-on rules · **69** on-demand standards · **36** slash-command skills · **52** runtime hooks · **15** custom agents · **36** MCP servers · **869** review items across **71** categories
+**29** always-on rules · **76** on-demand standards · **39** slash-command skills · **63** runtime hooks · **17** custom agents · **42** MCP servers · **869** review items across **71** categories
 
 ---
 
@@ -19,21 +19,21 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-52 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+63 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-19 universal rules ship with every conversation. 65 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 65.
+29 universal rules ship with every conversation. 76 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 76.
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 33 Slash-Command Skills
-`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/onboard`, `/investigate`, `/research`, and 24 more. Each is a documented multi-step workflow with subcommands, not a one-liner. `/audit trust` and `/onboard --verify` catch malicious code in untrusted projects before any install runs.
+### 39 Slash-Command Skills
+`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/onboard`, `/investigate`, `/research`, and 30 more. Each is a documented multi-step workflow with subcommands, not a one-liner. `/audit trust` and `/onboard --verify` catch malicious code in untrusted projects before any install runs.
 
 </td>
 <td width="50%" valign="top">
@@ -80,7 +80,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-19 rules in [`rules/`](rules/), loaded into every conversation.
+29 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -104,14 +104,23 @@ A layered config where each layer catches what the layer above missed.
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, hyperbole tells from commit messages and PR descriptions |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
 | [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas, and a close-out merge that folds a completed change into the spec |
+| [`compliance-defaults`](rules/compliance-defaults.md) | Umbrella for the compliance family. Strictest applicable rule wins, and a published standard counts as binding before its effective date |
+| [`accessibility-defaults`](rules/accessibility-defaults.md) | WCAG 2.2 AA floor with AAA where it does not conflict. Keyboard operability, 44x44 targets, reduced motion, no image CAPTCHA |
+| [`privacy-defaults`](rules/privacy-defaults.md) | GDPR-grade by default in every market. Lawful basis, 30-day DSAR, true erasure, 24-month retention, pseudonymous data treated as personal |
+| [`cookie-discipline`](rules/cookie-discipline.md) | Opt-in for every non-essential cookie, reject-all at click parity with accept-all, no cookie walls, no pre-ticked boxes |
+| [`cybersecurity-baseline`](rules/cybersecurity-baseline.md) | Frontend security defaults: nonce-based CSP, TLS 1.3, NIST password policy, session timeouts, breach-notification windows |
+| [`consumer-defaults`](rules/consumer-defaults.md) | 14-day withdrawal, total price up front, click-to-cancel parity, no fake scarcity or fake reviews |
+| [`children-privacy-defaults`](rules/children-privacy-defaults.md) | 18 for profiling and ads, 16 for accounts, verifiable parental consent under 13. Bans engagement-pressure patterns for minors |
+| [`ai-compliance-defaults`](rules/ai-compliance-defaults.md) | EU AI Act risk tiers, visible disclosure on model output, human review for automated decisions, annual bias audits |
+| [`anti-spam-defaults`](rules/anti-spam-defaults.md) | Opt-in marketing consent, one-click unsubscribe, permanent suppression lists, strict transactional and marketing separation |
 
-Plus 7 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `prisma-migrations`, `typeorm-migrations`, `drizzle-migrations`, `sequelize-migrations`.
+Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
 ### Standards, loaded on demand
 
-65 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+76 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
-Topics: API design, authentication, caching, code review, container security, contract testing, database, DDD, debugging, distributed systems, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
+Topics: API design, authentication, caching, code review, container security, contract testing, database, DDD, debugging, distributed systems, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
 ### Skills
 
@@ -158,7 +167,7 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Hooks
 
-58 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+63 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -428,14 +437,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 869-item review checklist across 71 categories
-  rules/                 17 always-on rules plus 7 language-specific
+  rules/                 31 rules, 29 always-on plus 2 loaded on demand
     index.yml            Rule and standard catalog with trigger keywords
-    lang/                TypeScript, Prisma, TypeORM, Drizzle, Sequelize rules
-  standards/             65 on-demand domain standards
-  agents/                15 specialized subagents
-  skills/                33 slash-command skills
+    lang/                5 language-specific rules: TypeScript, Python, ORM migrations
+  standards/             76 on-demand domain standards
+  agents/                17 specialized subagents
+  skills/                39 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 52 runtime hooks
+  hooks/                 63 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
   tests/                 Hook smoke tests and fixture trees
