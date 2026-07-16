@@ -172,7 +172,6 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
 | [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, and hyperbole tells |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any` |
-| [`auto-continue-stop-blocker.py`](hooks/auto-continue-stop-blocker.py) | Stop | Blocks the "checkpoint and wait" pattern. Forces continued execution unless the model called AskUserQuestion for a real decision or finished every task in the active plan |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
