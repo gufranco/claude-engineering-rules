@@ -78,7 +78,6 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "stop-format-typecheck",
         "compact-context-saver",
         "notify-webhook",
-        "auto-continue-stop-blocker",
         "bulk-resolve-blocker",
         "force-push-during-review",
         "gh-token-guard",
