@@ -37,10 +37,19 @@ GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
   --paginate
 ```
 
+Commit discussions live on a separate endpoint and are not returned by the MR discussions endpoint. Fetch them too when the MR has commit-level feedback:
+
+```bash
+GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
+  "projects/<encoded-project-path>/repository/commits/<sha>/discussions"
+```
+
 Filter rules:
 
 - Drop discussions where every note has `resolved == true`.
 - Drop discussions where every note has `system == true`. System notes are auto-generated activity entries, not review comments.
+- **Never drop on `resolvable == false`.** That flag is true for system notes, which the rule above already drops, and it is equally true for individual notes, which are actionable MR-level comments posted on the overview page. Dropping on `resolvable` silently discards every top-level comment on the MR.
+- Keep discussions where `individual_note == true`. These are standalone MR-level comments. They carry no `resolved` field, so any filter keyed on resolution state must treat their absence as unresolved, never as handled.
 - Apply the `--humans-only` filter by checking each first note's `author.username` against the AI bot allowlist below.
 
 ### AI Bot Allowlist on GitLab
@@ -125,11 +134,22 @@ When `/respond` drafts a reply for a GitLab discussion, the reply text avoids Gi
 
 GitLab distinguishes `resolvable` from `resolved`:
 
-- `resolvable == true`: the discussion can be resolved or unresolved.
-- `resolvable == false`: system or activity discussion, no resolve UI.
+- `resolvable == true`: the discussion can be resolved or unresolved. True for both diff discussions and non-diff discussions on the MR overview.
+- `resolvable == false`: the discussion has no resolve UI. This covers system notes AND individual notes, which are two very different things.
 - `resolved == true`: the discussion is in the resolved state.
 
-The skill treats `resolvable == false` discussions the same way it treats GitHub `isOutdated == true`: out of scope for the workflow.
+`resolvable` is not a scope filter. An individual note is `resolvable == false` because GitLab gives it no resolve button, not because it has been handled. Treating `resolvable == false` as out of scope discards every top-level MR comment, which is the GitLab form of the inline-only bug this workflow exists to prevent.
+
+Scope is decided by `system`, not by `resolvable`:
+
+| Note shape | `resolvable` | In scope |
+|-----------|--------------|----------|
+| Diff discussion, unresolved | true | Yes |
+| Non-diff discussion on the overview, unresolved | true | Yes |
+| Individual note, MR-level comment | false | Yes. Closed by reply, since there is nothing to resolve |
+| System note, automated activity | false | No |
+
+Non-diff discussions are resolvable on GitLab, contrary to a common assumption. Do not skip resolving them just because they carry no `position`.
 
 ## Project Path Encoding
 
