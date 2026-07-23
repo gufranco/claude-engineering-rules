@@ -615,6 +615,15 @@
         ]
       },
       {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/comment-blocker.py"
+          }
+        ]
+      },
+      {
         "matcher": "Write",
         "hooks": [
           {
@@ -1551,5 +1560,6 @@
     "vercel": {
       "url": "https://mcp.vercel.com"
     }
-  }
+  },
+  "skipWorkflowUsageWarning": true
 }

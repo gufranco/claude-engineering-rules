@@ -55,6 +55,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "banned-prose-chars",
         "normative-keyword-discipline",
         "console-log-blocker",
+        "comment-blocker",
         "as-any-blocker",
         "mock-internal-blocker",
         "todo-marker-blocker",
