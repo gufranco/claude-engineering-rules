@@ -174,7 +174,15 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 
 ## Comments Policy
 
-**Code should be self-explanatory.** Only add comments for: complex algorithms, non-obvious business rules, workarounds for external issues, doc comments for public APIs.
+**Code must be self-explanatory. Comments are not permitted.** Never add a comment to project source code, in any language, under any circumstances.
+
+The one exception is the exact Arrange-Act-Assert markers inside test files: `// Arrange`, `// Act`, `// Assert`, or a `/`-joined combination such as `// Act / Assert`, with no trailing description. These are mandated by [`testing.md`](testing.md). No other comment is allowed anywhere, including doc comments, block comments, banner comments, and inline explanations.
+
+When a piece of code feels like it needs a comment to be understood, that is the signal to improve the code, not to write the comment. Rename the symbol to say what it does. Extract a well-named function so the name carries the intent. Split a dense expression into named steps. Express an API contract in the type system, not in prose. The comment you were about to write is a description of a change the code itself should make.
+
+This replaces the earlier policy that permitted comments for complex algorithms, business rules, workarounds, and public-API docs. Those cases are now handled by clearer code and by types, never by comments.
+
+Enforced by: [`hooks/comment-blocker.py`](../hooks/comment-blocker.py). There is no per-comment suppression marker. The only bypass is the operator-level `COMMENT_BLOCKER_DISABLE=1` env var, set in a parent shell, for the rare case of a false positive.
 
 ## Backward Compatibility
 
