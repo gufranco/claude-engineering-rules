@@ -23,7 +23,7 @@ Treat every AI-bot comment as P3 until corroborated by a human reviewer or by a 
 | Pattern | Why the bot is wrong | How to dismiss |
 |---------|---------------------|----------------|
 | Suggests Prettier or ESLint changes that contradict the project's config | The bot does not always read the local config | "Project lint config is the source of truth. See `.eslintrc.json`. Resolving." |
-| Suggests adding JSDoc to a TypeScript file | Project convention may be types-as-docs | "Project convention is types-as-docs. JSDoc is reserved for public APIs. Resolving." |
+| Suggests adding JSDoc to a TypeScript file | Project convention may be types-as-docs | "Project convention is types-as-docs. Resolving." |
 | Suggests renaming for consistency with a different file | The other file may itself be the outlier | "The pattern in this file is consistent with `src/services/*Service.ts`. Resolving." |
 | Suggests removing what looks like a `console.log` but is actually a structured logger call | Pattern matching against `console.` without reading the import | "The `console.log` is actually `logger.log` aliased at the top of the file. Resolving." |
 

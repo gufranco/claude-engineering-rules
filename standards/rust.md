@@ -37,7 +37,7 @@
 
 ## Unsafe
 
-- `unsafe` blocks require a `// SAFETY:` comment explaining the invariants the caller must uphold
+- `unsafe` blocks require a `// SAFETY:` comment naming the invariants the caller must uphold. This is the one comment the Rust toolchain itself demands: clippy's `undocumented_unsafe_blocks` fails without it, which makes it a tool directive under [`../rules/code-style.md`](../rules/code-style.md) "Comments Policy", not prose
 - Encapsulate `unsafe` behind safe abstractions; never expose raw pointers to library consumers
 - Run `cargo miri` on test suites that exercise `unsafe` code
 

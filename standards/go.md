@@ -20,7 +20,7 @@
 - `context.Context` flows as the first parameter through all I/O paths. Never store a context in a struct
 - Always derive a child context with a deadline before calling external services
 - `errgroup.Group` for fan-out work that must short-circuit on first failure
-- Mutex protects state, not just access. Document what each mutex guards in a comment
+- Mutex protects state, not just access. Make the pairing structural: group the mutex and the fields it guards in a dedicated struct so the scope is visible without prose
 - `sync.Once` for lazy initialization. `sync/atomic` for single-word counters
 - Channel close is a signal; never close from the receiver side
 

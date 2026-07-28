@@ -39,7 +39,8 @@ This skill accepts optional arguments after `/assessment`:
 - A file or directory path: assess those specific files.
 - `--scope <description>`: provide a description of what was implemented so the assessment can focus on relevant patterns.
 - `--focus <area>`: narrow the assessment to a specific concern: `security`, `resilience`, `api`, `data`, `ops`, `quality`, `tenancy`, `infra`, or `all` (default).
-- `--comments`: when fixing gaps, add inline comments explaining the reasoning behind each change. Useful for interview take-homes where reviewers need to understand your decision-making process.
+- `--rationale`: when fixing gaps, collect the reasoning behind each change into a `DECISIONS.md` at the repo root. Useful for interview take-homes where reviewers need to follow your decision-making. The reasoning goes in that file, never in a source comment. This is the default way to explain a change.
+- `--comments`: same reasoning, written as inline comments above each change instead. Only for an external take-home whose reviewer expects annotated source. This deliberately violates [`../../rules/code-style.md`](../../rules/code-style.md) "Comments Policy", so it requires `COMMENT_BLOCKER_DISABLE=1` exported in the parent shell before the session starts. Without that export, [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks every write and the flag cannot work.
 
 ## Steps
 
@@ -73,7 +74,7 @@ This skill accepts optional arguments after `/assessment`:
    - [`rules/git-workflow.md`](../../rules/git-workflow.md): commit format during fix phase
    - [`rules/security.md`](../../rules/security.md): security criteria beyond the checklist categories, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
    - [`rules/code-style.md`](../../rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x patterns
-   - [`rules/testing.md`](../../rules/testing.md): mock policy, AAA pattern, faker, deterministic tests, coverage, contract testing, performance regression
+   - [`rules/testing.md`](../../rules/testing.md): mock policy, comment-free test structure, faker, deterministic tests, coverage, contract testing, performance regression
    - [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md): when code processes LLM output, validate trust boundaries
    - [`rules/smart-questions.md`](../../rules/smart-questions.md): question format, status reports, FIXED/RESOLVED/DONE loop closure
    - [`rules/surgical-edits.md`](../../rules/surgical-edits.md): each diff line must trace to the request
@@ -331,18 +332,45 @@ This skill accepts optional arguments after `/assessment`:
 
    **For any fix involving transactions**, follow [`../../checklists/checklist.md`](../../checklists/checklist.md) category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
 
-**If `--comments` was passed**, add an inline comment above each significant code change explaining:
+**If `--rationale` was passed**, append one entry per significant change to `DECISIONS.md` at the repo root, each naming:
 
 - **What** pattern is being applied and **why** it matters here.
 - **What would go wrong** without this pattern, using a concrete scenario.
+- **Where** it landed, as a `file:line` reference.
 
-Comment guidelines:
+Rationale guidelines:
 
-- Write comments as short, direct explanations. One to three lines per comment. No essays.
-- Use the language's comment syntax. No doc-comment format unless it is a public API.
-- Only comment on non-obvious decisions. Do not comment self-explanatory code like variable declarations or standard error handling.
-- Focus on the "why", not the "what". The code shows what; the comment shows the reasoning.
+- Short and direct. Two to four sentences per entry. No essays.
+- Only non-obvious decisions. Skip anything the code states plainly on its own.
+- Focus on the "why". The reader can already see the "what" in the diff.
 - Sound like a human engineer, not a generated template. Vary phrasing. No labels like "Pattern:" or "Reason:".
+- Never write this reasoning as a source comment unless `--comments` was passed. [`../../rules/code-style.md`](../../rules/code-style.md) "Comments Policy" bans prose comments, and [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks them.
+
+   Example entry:
+
+   ```markdown
+   ### Payment dedup by orderId
+
+   `src/payments/create-payment.service.ts:48`. A network retry from the payment
+   gateway would otherwise charge the customer twice, since the gateway retries
+   on timeout even when the first call succeeded.
+   ```
+
+**If `--comments` was passed**, write that same reasoning as an inline comment above each significant change instead of into `DECISIONS.md`. The two flags are mutually exclusive; if both arrive, take `--comments` and say so in the output.
+
+Before writing anything, verify the bypass is active:
+
+```bash
+[ "$COMMENT_BLOCKER_DISABLE" = "1" ] && echo "bypass active" || echo "bypass missing"
+```
+
+If the bypass is missing, stop and tell the user to export `COMMENT_BLOCKER_DISABLE=1` in the parent shell and restart the session. Never try to work around the hook, and never set the variable inline on a single command: the hook reads the payload before the assignment takes effect.
+
+Comment guidelines, on top of the rationale guidelines above:
+
+- One to three lines per comment. Use the language's line-comment syntax, not a doc-comment block.
+- Comment only the changes the assessment flagged. Untouched code stays bare.
+- Never annotate self-explanatory lines: variable declarations, standard error handling, framework boilerplate.
 
    Example:
 
@@ -353,14 +381,7 @@ Comment guidelines:
    if (existing) return existing;
    ```
 
-   ```typescript
-   // Circuit breaker: if the recommendation service is down, return an
-   // empty list instead of failing the entire product page.
-   const recommendations = await withFallback(
-     () => recommendationClient.getFor(productId),
-     () => [],
-   );
-   ```
+State in the assessment output that the branch carries explanatory comments and must not merge into a repository that enforces the comments policy.
 
 11. **Convergence loop.** Fixes can introduce new findings, reveal masked issues, or break existing quality gates. After completing all fixes in step 10, loop until the codebase is clean. **This loop runs autonomously with no user interaction.**
 
@@ -370,13 +391,13 @@ Comment guidelines:
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
        - Did any fix violate [`../../checklists/checklist.md`](../../checklists/checklist.md)? Run all 71 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
-       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? such as AAA comments, code style, naming, immutability, or etc.
+       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? such as comments in source, code style, naming, immutability, or etc.
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
        - Did any fix create a cross-file contradiction?. One module now assumes behavior that another module does not support
        - Did any fix introduce a new startup dependency or configuration requirement without updating all relevant config files such as .env.example, Docker, or CI?
        - Did any fix change a public interface without updating all callers and consumers?
        - Did any fix leave dead code behind? Check for unused imports, orphaned functions, unreferenced variables, and stale exports after extractions or refactors.
-       - Are all new tests following project conventions? such as faker for test data, AAA structure, or no mocks for DB
+       - Are all new tests following project conventions? such as faker for test data, comment-free test bodies, or no mocks for DB
        - Did the README, CI config, or other generated artifacts become stale due to the fixes?
     4. **Classify new findings.** If there are new PARTIAL or MISSING findings, or new defects introduced by the fixes, collect them.
     5. **If no new findings:** break the loop. Convergence achieved.
@@ -573,7 +594,8 @@ The steps above define **what** to do. These rules define **constraints** on how
 - Security findings are always at least HIGH severity. A missing auth check or exposed secret is CRITICAL.
 - Reference the dynamically loaded standards and rules for each finding. The full list of what was loaded appears in the Standards Applied section of the output. Every finding must cite the specific standard or rule file that defines the violated pattern.
 - Do not flag deployment readiness for code that is explicitly a prototype, proof-of-concept, or interview take-home unless `--focus ops` was specified.
-- When `--comments` is active, every comment must pass this test: would a senior engineer reading this code for the first time learn something from the comment that the code alone does not convey? If not, delete the comment. `--comments` only affects the fix step, not the assessment output.
+- When `--rationale` or `--comments` is active, every entry must pass this test: would a senior engineer reading this code for the first time learn something the diff alone does not convey? If not, drop the entry. Neither flag affects the assessment output, only the fix step.
+- `--comments` is the one place in this config where writing a source comment is sanctioned, and only for an external take-home. It needs `COMMENT_BLOCKER_DISABLE=1` in the parent shell. Everywhere else, the comment ban holds.
 - The detailed criteria for input/output validation, query performance, transaction locks, and structural quality live in [`../../checklists/checklist.md`](../../checklists/checklist.md). Do not duplicate them here.
 - Every API must validate both sides of the boundary: inputs, request body, query params, path params, headers AND outputs, response body with a schema library. Missing output validation is a finding. See [`../../checklists/checklist.md`](../../checklists/checklist.md) category 33.
 

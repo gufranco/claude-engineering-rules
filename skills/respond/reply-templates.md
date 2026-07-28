@@ -34,7 +34,7 @@ Every reply must pass these gates before posting.
 ### Good
 
 1. "Looked at this again. The current code handles the empty-array case at `src/parser.ts:78` because `Array.isArray(input) && input.length === 0` falls through to the default branch and returns `[]`. The test `parser.spec.ts:42` covers that path. Did I miss something?"
-2. "I think the current code is correct. Observation: `validateUser` returns `Result<User, ValidationError>` and the caller at `src/auth.ts:120` already unwraps with `.match`. Impact: adding a null check there would never trigger because the type forbids null. Want me to add a comment explaining the invariant?"
+2. "I think the current code is correct. Observation: `validateUser` returns `Result<User, ValidationError>` and the caller at `src/auth.ts:120` already unwraps with `.match`. Impact: adding a null check there would never trigger because the type forbids null. Want me to encode the invariant in the type so it cannot be missed?"
 3. "Couldn't reproduce. Steps I tried: cloned fresh, ran `npm install`, ran `npm test`, all green. Tried with `NODE_ENV=production`, still green. Can you share the exact command or input you used?"
 
 ### Bad

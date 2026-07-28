@@ -33,13 +33,10 @@ import { axe, toHaveNoViolations } from "jest-axe";
 expect.extend(toHaveNoViolations);
 
 test("LoginForm has no accessibility violations", async () => {
-  // Arrange
   const { container } = render(<LoginForm />);
 
-  // Act
   const results = await axe(container);
 
-  // Assert
   expect(results).toHaveNoViolations();
 });
 ```
@@ -52,15 +49,12 @@ import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test("dashboard page passes axe audit", async ({ page }) => {
-  // Arrange
   await page.goto("/dashboard");
 
-  // Act
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
 
-  // Assert
   expect(results.violations).toEqual([]);
 });
 ```
@@ -265,12 +259,10 @@ Multiple `<nav>` elements on the same page must each have a unique `aria-label`.
 Use live regions to announce dynamic content changes: toast notifications, form validation summaries, loading states, search result counts.
 
 ```tsx
-// Polite: announces after current speech finishes (default for non-urgent)
 <div role="status" aria-live="polite">
   {searchResults.length} results found
 </div>
 
-// Assertive: interrupts current speech (errors and urgent alerts only)
 <div role="alert" aria-live="assertive">
   {errorMessage}
 </div>
@@ -500,39 +492,30 @@ expect.extend(toHaveNoViolations);
 
 describe("Dropdown", () => {
   test("has no accessibility violations when closed", async () => {
-    // Arrange
     const { container } = render(<Dropdown options={options} />);
 
-    // Act
     const results = await axe(container);
 
-    // Assert
     expect(results).toHaveNoViolations();
   });
 
   test("has no accessibility violations when open", async () => {
-    // Arrange
     const user = userEvent.setup();
     const { container } = render(<Dropdown options={options} />);
 
-    // Act
     await user.click(screen.getByRole("combobox"));
     const results = await axe(container);
 
-    // Assert
     expect(results).toHaveNoViolations();
   });
 
   test("supports keyboard navigation", async () => {
-    // Arrange
     const user = userEvent.setup();
     render(<Dropdown options={options} />);
 
-    // Act
     await user.tab();
     await user.keyboard("{Enter}");
 
-    // Assert
     expect(screen.getByRole("listbox")).toBeVisible();
   });
 });
@@ -544,16 +527,13 @@ Page-level tests verify that components integrate correctly: heading hierarchy i
 
 ```typescript
 test("dashboard page has valid heading hierarchy", async () => {
-  // Arrange
   const { container } = render(<DashboardPage />);
 
-  // Act
   const headings = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
   const levels = Array.from(headings).map((h) =>
     parseInt(h.tagName.substring(1), 10)
   );
 
-  // Assert, no skipped heading levels
   for (let i = 1; i < levels.length; i++) {
     expect(levels[i]).toBeLessThanOrEqual(levels[i - 1] + 1);
   }

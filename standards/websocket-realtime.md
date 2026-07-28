@@ -637,12 +637,10 @@ import { WebSocket } from "ws";
 
 describe("connection lifecycle", () => {
   it("must reject connection with invalid token", async () => {
-    // Arrange
     const ws = new WebSocket("ws://localhost:3000", {
       headers: { Authorization: "Bearer invalid-token" },
     });
 
-    // Act
     const closeEvent = await new Promise<CloseEvent>((resolve) => {
       ws.on("error", () => {});
       ws.on("close", (code, reason) => {
@@ -650,7 +648,6 @@ describe("connection lifecycle", () => {
       });
     });
 
-    // Assert
     expect(closeEvent.code).toBe(1006); // Abnormal closure (upgrade rejected)
   });
 });
@@ -670,7 +667,6 @@ describe("connection lifecycle", () => {
 
 ```typescript
 it("must deliver messages in sequence order", async () => {
-  // Arrange
   const received: number[] = [];
   const messageCount = 100;
 
@@ -679,7 +675,6 @@ it("must deliver messages in sequence order", async () => {
     received.push(msg.sequence);
   });
 
-  // Act
   for (let i = 0; i < messageCount; i++) {
     await publishToChannel("test-channel", {
       type: "test",
@@ -688,7 +683,6 @@ it("must deliver messages in sequence order", async () => {
   }
   await waitForMessages(client, messageCount);
 
-  // Assert
   const expected = Array.from({ length: messageCount }, (_, i) => i + 1);
   expect(received).toEqual(expected);
 });
