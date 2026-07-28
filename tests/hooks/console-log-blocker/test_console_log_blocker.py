@@ -167,7 +167,7 @@ def test_skips_non_js_extension(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_line_marker_with_justification_suppresses(tool_use, assert_allows):
+def test_line_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -176,10 +176,10 @@ def test_line_marker_with_justification_suppresses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "console")
 
 
-def test_file_marker_with_justification_suppresses_all(tool_use, assert_allows):
+def test_file_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -192,7 +192,7 @@ def test_file_marker_with_justification_suppresses_all(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "console")
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
@@ -260,7 +260,7 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_line_marker_above_call_suppresses(tool_use, assert_allows):
+def test_allow_marker_above_call_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -272,7 +272,7 @@ def test_line_marker_above_call_suppresses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "console")
 
 
 def test_block_comment_with_console_pattern_is_ignored(tool_use, assert_allows):
@@ -301,7 +301,7 @@ def test_eslint_disable_next_line_suppresses(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_blank_lines_at_top_skipped_in_file_marker_scan(tool_use, assert_allows):
+def test_file_allow_marker_after_blank_lines_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -309,6 +309,18 @@ def test_blank_lines_at_top_skipped_in_file_marker_scan(tool_use, assert_allows)
             "content": (
                 "\n\n\n// @allow-console -- CLI entry point\nconsole.log('ready');\n"
             ),
+        },
+    )
+
+    assert_blocks(HOOK, payload, "console")
+
+
+def test_eslint_directive_still_suppresses(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/app.ts",
+            "content": "console.log('boot'); // eslint-disable-line no-console\n",
         },
     )
 

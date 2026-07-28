@@ -12,7 +12,7 @@ Every hook in this repo supports two bypass channels:
 Both channels coexist. Either one grants a pass. Neither is required.
 
 This module is read-side only. The writer (`bypass_writer.py`) and CLI
-(`tools/scripts/bypass.py`) handle creation, modification, and removal.
+(`scripts/bypass.py`) handle creation, modification, and removal.
 
 Public API:
 

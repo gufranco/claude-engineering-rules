@@ -1,4 +1,3 @@
-// @allow-mutation -- corpus fixture; this file is the dirty input for Phase 34 detector tests
 //
 // WebAssembly / Atomics / DataView / Proxy / WeakRef dirty fixture.
 //

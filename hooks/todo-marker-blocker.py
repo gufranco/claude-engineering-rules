@@ -21,17 +21,17 @@ Skipped paths:
   - The ~/.claude/ tree itself (rules document the patterns, hooks self-test them)
   - Markdown, YAML, TOML, JSON, ini, config files
 
-Suppression markers (per line):
-  - `// allow-todo -- justification` honored with explicit reason.
-  - `// @allow-todo -- justification` at the top of the file suppresses
-    every marker in that file.
-  - Standard ESLint and TypeScript markers honored:
-    `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-    `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-    block ranges `/* eslint-disable */ ... /* eslint-enable */`.
+Third-party tool directives are honored, since they are the one comment form
+the project ban exempts:
+  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
+  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
+  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
+
+There is no allow marker of our own. A legitimate marker uses the
+issue-linked form `TODO(#123)`, which passes without any comment annotation.
 
 Bypass:
-  TODO_MARKER_DISABLE=1
+  TODO_MARKER_DISABLE=1, or a TTL entry via scripts/bypass.py
 """
 
 from __future__ import annotations
@@ -53,8 +53,6 @@ except Exception:  # pragma: no cover
 
 from _lib.suppression import (
     compute_block_state,
-    has_inline_marker,
-    has_justification_trailer,
     is_suppressed,
 )
 
@@ -156,9 +154,6 @@ ISSUE_LINKED_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-ALLOW_FILE_MARKER = "@allow-todo"
-ALLOW_LINE_MARKER = "allow-todo"
-TOP_OF_FILE_SCAN = 10
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
@@ -198,55 +193,18 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
     return out
 
 
-def _file_marker_active(lines: list[str]) -> bool:
-    """True when a top-of-file allow marker exists with a justification trailer."""
-    seen = 0
-    for line in lines:
-        if seen >= TOP_OF_FILE_SCAN:
-            break
-        if not line.strip():
-            continue
-        seen += 1
-        if has_inline_marker(line, ALLOW_FILE_MARKER) and has_justification_trailer(
-            line
-        ):
-            return True
-    return False
-
-
-def _line_allow_marker_active(lines: list[str], idx: int) -> bool:
-    """True when the per-line marker is on the offending line or directly above."""
-    if idx < 0 or idx >= len(lines):
-        return False
-    line = lines[idx]
-    if has_inline_marker(line, ALLOW_LINE_MARKER) and has_justification_trailer(line):
-        return True
-    if idx > 0:
-        prev = lines[idx - 1]
-        if has_inline_marker(prev, ALLOW_LINE_MARKER) and has_justification_trailer(
-            prev
-        ):
-            return True
-    return False
-
-
 def _mask_issue_linked(line: str) -> str:
     """Replace TODO(#123) / FIXME(issue-42) with spaces so they don't match the bare pattern."""
     return ISSUE_LINKED_PATTERN.sub(lambda m: " " * len(m.group(0)), line)
 
 
 def find(text: str) -> list[str]:
-    """Return marker hits per line, honoring suppression markers and the issue-link allowlist."""
+    """Return marker hits per line, honoring tool directives and the issue-link allowlist."""
     lines = text.splitlines()
-    if _file_marker_active(lines):
-        return []
-
     block_state = compute_block_state(lines)
     hits: list[str] = []
     for i, line in enumerate(lines):
         if is_suppressed(lines, i, block_state=block_state):
-            continue
-        if _line_allow_marker_active(lines, i):
             continue
         masked = _mask_issue_linked(line)
         for m in MARKER_PATTERN.finditer(masked):
@@ -313,11 +271,10 @@ def main() -> int:
         "  1. Complete the work now. The marginal cost of finishing is near zero with AI assistance.\n"
         "  2. Open a tracked issue. Reference it as TODO(#123) or FIXME(#issue-42) for the issue-linked form to pass.\n"
         "  3. Delete the marker if the work is not actually needed.\n"
-        "Suppression (when the marker is legitimate, e.g. test fixture, demo, doc example):\n"
-        "  - Per-line: append `// allow-todo -- <reason>` (justification required).\n"
-        "  - Per-file: top-of-file `// @allow-todo -- <reason>`.\n"
-        "  - Standard ESLint and TypeScript markers honored.\n"
-        "Bypass (rare, prefer the issue-linked form): set TODO_MARKER_DISABLE=1.",
+        "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
+        "Bypass (rare, prefer the issue-linked form): set TODO_MARKER_DISABLE=1, "
+        "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
+        "set todo-marker-blocker`.",
         file=sys.stderr,
     )
     _audit(

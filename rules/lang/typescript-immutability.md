@@ -63,7 +63,7 @@ The hook governs JS values, not Web platform side-effect APIs. The boundary is c
 | Web Storage (`localStorage.setItem`, `sessionStorage.setItem`, `*.removeItem`, `*.clear`) | Out of scope | Side-effect API. The "no module-level side effects" rule governs placement, not the mutation hook |
 | `URLSearchParams.{append,set,delete,sort}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `new URLSearchParams([...params, [k, v]])` |
 | `Headers.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `new Headers([...headers, [k, v]])` |
-| `FormData.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `Array.from(form.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())` (uses fresh-instance reducer initializer; mark with `@allow-mutation` for XHR.send pointer-stability cases) |
+| `FormData.{append,set,delete}` | **In scope** | Plain JS value with non-mutating fresh-instance alternative: `Array.from(form.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())`. The detector recognizes a reducer accumulator seeded with a fresh `new FormData()` and stays silent, so this pattern needs no annotation |
 
 The principle: if the API mutates a JavaScript value that has a feasible non-mutating alternative via fresh-instance construction, the hook flags it. If the API mutates external state, DOM, persistence, storage, that has no in-memory equivalent, the hook is silent.
 
@@ -209,25 +209,26 @@ The hook recognizes these scopes without a suppression marker:
 - State-management filename patterns: `*Slice.ts`, `*Store.ts`, `*reducer.ts`, `*.pinia.ts`, `*.mobx.ts`, `*.valtio.ts`, `*.proxy.ts`, `*.machine.ts`, `*.actor.ts`, `*.svelte`, `*.svelte.ts`, `*.signal.ts`, `*.qwik.tsx`, `*.component.ts`, `*.service.ts`, `*.effect.ts`
 - TypedArray hot-path directories: `crypto`, `codec`, `image`, `audio`, `parser`, `wasm`, `canvas`, `encoder`, `decoder`, `simd`, `webgl`, `pixel`, `hash`, `cipher`, `dsp`, `signal`, `fft`, `ml`, `tensor`
 
-Outside these scopes, the rule is absolute. Suppression markers exist for genuine exceptions and require a justification trailer (`-- <reason>`).
+Outside these scopes, the rule is absolute. There is no allow marker: the hook honors third-party tool directives (`eslint-disable`, `@ts-expect-error`, `@ts-nocheck`) because another tool parses them, and nothing else. A comment invented to silence our own hook would be banned by the comments policy in [`../code-style.md`](../code-style.md), so the escape hatch lives out-of-band instead.
 
 ## Bypass
 
-When working in a project where the rate of legitimate mutations is high enough that scattered suppression markers would pollute the source, such as transaction accumulators, advisory-lock patterns, in-memory caches that mirror persisted state, or fire-and-forget Redis `client.set` flagged as false-positive `Map.set`, set the env var instead of writing markers into the project's files.
+When working in a project where the rate of legitimate mutations is high, such as transaction accumulators, advisory-lock patterns, in-memory caches that mirror persisted state, or fire-and-forget Redis `client.set` flagged as false-positive `Map.set`, silence the hook out-of-band. Project source is never annotated.
 
 ```sh
 export MUTATION_METHOD_DISABLE=1
 ```
 
-Markers in source code are a personal-tooling artifact; they should not appear in the project repository. Prefer one of these per-machine activation paths:
+The hook is personal tooling, so the opt-out belongs to the machine, never to the repository. Prefer one of these activation paths:
 
 | Scope | How |
 |-------|-----|
 | Single Claude Code session | Export `MUTATION_METHOD_DISABLE=1` in the parent shell before launching the CLI |
+| Bounded window inside a live session | `python3 ~/.claude/scripts/bypass.py set mutation-method-blocker`, which writes a TTL-bound entry that expires on its own |
 | Per-project, machine-side | A `.envrc` in the local checkout with `export MUTATION_METHOD_DISABLE=1`. Loaded by `direnv`. The `.envrc` is not committed |
 | Always-on for one workspace | The `env` block in `~/.claude/settings.local.json` for that workspace |
 
-Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_LEAKAGE_DISABLE`: the env var is fully audit-logged. Use it when the alternative is dozens of `// allow-mutation -- ...` comments staining a shared repository.
+Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_LEAKAGE_DISABLE`: every channel is audit-logged. Each one leaves the project's own files untouched, which is the point.
 
 ## Three Legs of Data Integrity
 

@@ -148,8 +148,7 @@ def test_form_data_mutation_blocked(run_hook, snippet, detector):
 FORM_DATA_ALLOWED: list[str] = [
     (
         "const next = Array.from(form.entries()).reduce("
-        "(fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())\n"
-        "// @allow-mutation -- reducer initializer is fresh"
+        "(fd, [k, v]) => { fd.append(k, v); return fd }, new FormData())"
     ),
     "const value = form.get('name')",
     "const present = form.has('avatar')",
@@ -166,27 +165,52 @@ def test_form_data_allowed_pattern_passes(run_hook, snippet):
     assert code == 0, f"unexpected block:\n{stderr}"
 
 
-SUPPRESSION_CASES: list[tuple[str, str]] = [
+ALLOW_MARKER_CASES: list[tuple[str, str]] = [
     (
         "const params = new URLSearchParams(q)\n"
         "params.append('q', t) // @allow-mutation -- third-party SDK retains pointer",
-        "url-search-params suppression",
+        "url-search-params",
     ),
     (
         "const headers = new Headers(init)\n"
         "headers.set('X', v) // @allow-mutation -- middleware mutates in place by contract",
-        "headers suppression",
+        "headers",
     ),
     (
         "const fd = new FormData()\n"
         "fd.append('file', f) // @allow-mutation -- XHR.send keeps the reference",
-        "form-data suppression",
+        "form-data",
+    ),
+]
+
+TOOL_DIRECTIVE_CASES: list[tuple[str, str]] = [
+    (
+        "const params = new URLSearchParams(q)\n"
+        "params.append('q', t) // eslint-disable-line",
+        "url-search-params",
+    ),
+    (
+        "const headers = new Headers(init)\nheaders.set('X', v) // eslint-disable-line",
+        "headers",
+    ),
+    (
+        "const fd = new FormData()\nfd.append('file', f) // eslint-disable-line",
+        "form-data",
     ),
 ]
 
 
-@pytest.mark.parametrize(("snippet", "label"), SUPPRESSION_CASES)
-def test_web_api_suppression_marker_bypasses_detector(run_hook, snippet, label):
+@pytest.mark.parametrize(("snippet", "label"), ALLOW_MARKER_CASES)
+def test_web_api_allow_marker_does_not_bypass_detector(run_hook, snippet, label):
+    payload = make_edit_payload("/repo/src/web.ts", snippet)
+
+    code, _stderr = run_hook(payload)
+
+    assert code == 2, f"{label}: allow marker must not suppress"
+
+
+@pytest.mark.parametrize(("snippet", "label"), TOOL_DIRECTIVE_CASES)
+def test_web_api_tool_directive_bypasses_detector(run_hook, snippet, label):
     payload = make_edit_payload("/repo/src/web.ts", snippet)
 
     code, stderr = run_hook(payload)

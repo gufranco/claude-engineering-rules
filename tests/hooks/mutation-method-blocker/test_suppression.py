@@ -1,12 +1,9 @@
-"""Suppression marker coverage.
+"""Suppression coverage.
 
-Item 124 of the plan. Validates ESLint and TypeScript markers
+Validates that third-party tool directives suppress a finding
 (eslint-disable-next-line, eslint-disable-line, eslint-disable block,
-@ts-expect-error, @ts-ignore) and the hook-specific
-`allow-mutation` markers (per-line and top-of-file).
-
-Also validates the justification trailer requirement: the hook-specific
-markers without a `-- <reason>` trailer do NOT bypass the hook.
+@ts-expect-error, @ts-ignore), and that allow markers of our own
+invention do not, in either the per-line or top-of-file form.
 """
 
 from __future__ import annotations
@@ -70,24 +67,24 @@ def test_ts_ignore_same_line_suppresses(run_hook):
     assert code == 0, stderr
 
 
-def test_claude_allow_mutation_per_line_with_trailer(run_hook):
+def test_claude_allow_mutation_per_line_does_not_suppress(run_hook):
     snippet = "items.push(value) // allow-mutation -- legacy callback API\n"
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    code, _stderr = run_hook(payload)
 
-    assert code == 0, stderr
+    assert code == 2
 
 
-def test_claude_allow_mutation_preceding_line_with_trailer(run_hook):
+def test_claude_allow_mutation_preceding_line_does_not_suppress(run_hook):
     snippet = """// allow-mutation -- legacy callback
 items.push(value)
 """
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    code, _stderr = run_hook(payload)
 
-    assert code == 0, stderr
+    assert code == 2
 
 
 def test_claude_allow_mutation_without_trailer_does_not_suppress(run_hook):
@@ -96,11 +93,11 @@ def test_claude_allow_mutation_without_trailer_does_not_suppress(run_hook):
 
     code, stderr = run_hook(payload)
 
-    assert code == 2, "marker without trailer must still block"
+    assert code == 2, "no form of our own allow marker may suppress"
     assert "array.push" in stderr
 
 
-def test_claude_allow_file_marker_with_trailer(run_hook):
+def test_claude_allow_file_marker_does_not_suppress(run_hook):
     snippet = """// @allow-mutation -- legacy migration shim
 items.push(value)
 items.sort()
@@ -108,9 +105,9 @@ arr.splice(0, 1)
 """
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    code, _stderr = run_hook(payload)
 
-    assert code == 0, stderr
+    assert code == 2
 
 
 def test_claude_allow_file_marker_without_trailer_does_not_suppress(run_hook):

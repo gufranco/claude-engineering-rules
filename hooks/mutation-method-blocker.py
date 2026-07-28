@@ -34,15 +34,15 @@ Auto-allowed scopes (no flag):
   - State-management filenames (`*Slice.ts`, `*Store.ts`, `*reducer.ts`).
   - TypedArray hot paths.
 
-Suppression markers (per line):
+Third-party tool directives are honored, since they are the one comment form
+the project ban exempts:
+  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
+  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
+  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
 
-  - `// allow-mutation -- justification` honored when justified.
-  - `// @allow-mutation -- justification` at the top of the file
-    suppresses every detector for that file.
-  - Standard ESLint and TypeScript markers honored:
-    `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-    `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-    block ranges `/* eslint-disable */ ... /* eslint-enable */`.
+There is no allow marker of our own. A mutation that is genuinely correct
+belongs to one of the auto-allowed scopes below; anything else is rewritten
+non-mutatingly or cleared out-of-band via the bypass channels.
 
 Skipped paths:
 
@@ -175,16 +175,6 @@ Source-map remapping (plan item 389):
   surface with the original `src/...` path and line, not the bundled
   output. The remap is best-effort: failures fall back silently to
   the transpiled coordinates. See `scripts/mutation_source_map.py`.
-
-Suppression budget (plan item 392):
-
-  Per-project budget config at
-  `<project-root>/.claude/mutation-budget.{yml,yaml,json}`. The
-  budget caps total `@allow-mutation` markers, per-detector
-  marker counts, and optionally requires justification trailers
-  (`-- <reason>`). Run `python3 scripts/mutation_budget_check.py`
-  in CI to enforce. Schema:
-  `~/.claude/schemas/mutation-budget.schema.json`.
 
 Detector tuning report (plan item 393):
 
@@ -320,8 +310,6 @@ from _lib.mutation_detectors_methods import (
 from _lib.suppression import (
     BlockState,
     compute_block_state,
-    has_inline_marker,
-    has_justification_trailer,
     has_ts_nocheck_directive,
     is_suppressed,
 )
@@ -422,10 +410,6 @@ def _batch_mode_enabled() -> bool:
 
 SAMPLE_LINE_CAP = 100
 MAX_HITS_PER_FILE = 8
-TOP_OF_FILE_SCAN = 10
-
-ALLOW_FILE_MARKER = "@allow-mutation"
-ALLOW_LINE_MARKER = "allow-mutation"
 
 PROPERTY_DETECTORS: frozenset[str] = frozenset(
     {
@@ -569,59 +553,6 @@ def _detect_all(
     return matches
 
 
-def _file_marker_active(lines: list[str]) -> bool:
-    """Return True when a top-of-file allow marker exists with justification.
-
-    Without a justification trailer the marker is ignored (per plan item 96):
-    `// @allow-mutation` alone does not bypass the hook; the writer
-    must append `-- <reason>` to make the suppression auditable.
-    """
-    seen = 0
-    for line in lines:
-        if seen >= TOP_OF_FILE_SCAN:
-            break
-        if not line.strip():
-            continue
-        seen += 1
-        if has_inline_marker(line, ALLOW_FILE_MARKER) and has_justification_trailer(
-            line
-        ):
-            return True
-    return False
-
-
-def _is_line_only_marker(line: str) -> bool:
-    """True when the line carries the bare line-marker without the file `@` form.
-
-    `ALLOW_LINE_MARKER` is a substring of `ALLOW_FILE_MARKER`, so a naive
-    `has_inline_marker(line, ALLOW_LINE_MARKER)` returns True for both. This
-    helper excludes lines that carry the file marker so a stray
-    `// @allow-mutation -- too late` past the top-of-file scan does
-    not silently suppress the next line as if it were a line marker.
-    """
-    return (
-        has_inline_marker(line, ALLOW_LINE_MARKER)
-        and not has_inline_marker(line, ALLOW_FILE_MARKER)
-        and has_justification_trailer(line)
-    )
-
-
-def _line_allow_marker_active(lines: list[str], idx: int) -> bool:
-    """Return True when the per-line allow marker is present with justification.
-
-    The marker may live on the offending line or on the line directly above,
-    matching the convention used by `eslint-disable-line` and
-    `eslint-disable-next-line`.
-    """
-    if idx < 0 or idx >= len(lines):
-        return False
-    if _is_line_only_marker(lines[idx]):
-        return True
-    if idx > 0 and _is_line_only_marker(lines[idx - 1]):
-        return True
-    return False
-
-
 _YJS_VAR_DECL_PATTERN = __import__("re").compile(
     r"\b(?:const|let|var)\s+([a-zA-Z_$][\w$]*)\s*[=:]\s*new\s+Y\.(?:Array|Map|Text|XmlElement|XmlFragment|XmlText|Doc)\b"
 )
@@ -712,8 +643,6 @@ def _filter_matches(
     the detectors found but the orchestrator suppressed.
     """
     lines = text.splitlines()
-    if _file_marker_active(lines):
-        return [], {"file-marker": len(matches)}
     if has_ts_nocheck_directive(lines):
         return [], {"ts-nocheck": len(matches)}
 
@@ -726,10 +655,6 @@ def _filter_matches(
             allow_reasons["eslint-or-ts-marker"] = (
                 allow_reasons.get("eslint-or-ts-marker", 0) + 1
             )
-            continue
-
-        if _line_allow_marker_active(lines, idx):
-            allow_reasons["allow-mutation"] = allow_reasons.get("allow-mutation", 0) + 1
             continue
 
         if m.detector == "array.push":

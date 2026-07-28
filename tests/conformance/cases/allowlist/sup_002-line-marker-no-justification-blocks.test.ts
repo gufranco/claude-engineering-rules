@@ -1,5 +1,5 @@
 ---
-description: line marker without justification still blocks
+description: bare allow marker blocks, same as the justified form
 verdict: block
 detector: array.
 payload: edit
