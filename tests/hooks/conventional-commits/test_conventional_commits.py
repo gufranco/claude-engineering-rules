@@ -42,6 +42,41 @@ def test_allows_valid_conventional_commit() -> None:
     assert result.returncode == 0
 
 
+def test_long_subject_shows_cut_marker_and_overflow() -> None:
+    subject = "refactor: rewrite the nine remaining shell hooks into python modules"
+    result = _run(f"git commit -m '{subject}'")
+
+    assert result.returncode == 2
+    assert f"Drop {len(subject) - 50} character(s)" in result.stderr
+    assert f"{subject[:50]}|{subject[50:]}" in result.stderr
+
+
+def test_long_subject_suggests_dropping_scope_when_that_fits() -> None:
+    subject = "feat(authentication): add single sign on with Google"
+    result = _run(f"git commit -m '{subject}'")
+
+    assert result.returncode == 2
+    assert "Dropping the scope fits: feat: add single sign on with Google" in (
+        result.stderr
+    )
+
+
+def test_long_subject_omits_scope_hint_when_it_does_not_fit() -> None:
+    subject = "feat(hooks): allow tool directives and ban every prose comment"
+    result = _run(f"git commit -m '{subject}'")
+
+    assert result.returncode == 2
+    assert "Dropping the scope fits" not in result.stderr
+
+
+def test_long_subject_without_scope_omits_scope_hint() -> None:
+    subject = "refactor: rewrite the nine remaining shell hooks into python modules"
+    result = _run(f"git commit -m '{subject}'")
+
+    assert result.returncode == 2
+    assert "Dropping the scope fits" not in result.stderr
+
+
 def test_allows_breaking_change_bang() -> None:
     result = _run("git commit -m 'feat(api)!: drop v1 endpoints'")
     assert result.returncode == 0

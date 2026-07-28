@@ -98,6 +98,17 @@ def _block(message: str, reason: str, command: str) -> int:
     return 2
 
 
+def _shortening_hint(subject: str) -> str:
+    """Return a ready-to-use shorter subject when dropping the scope fits."""
+    match = SUBJECT_RE.match(subject)
+    if match is None or not match.group(2):
+        return ""
+    unscoped = subject.replace(match.group(2), "", 1)
+    if len(unscoped) > 50:
+        return ""
+    return f"  Dropping the scope fits: {unscoped}\n"
+
+
 def _validate(message: str, command: str) -> int:
     lines = message.splitlines()
     if not lines:
@@ -115,8 +126,11 @@ def _validate(message: str, command: str) -> int:
     if len(subject) > 50:
         body = (
             f"BLOCKED: Commit subject line is {len(subject)} characters (max 50).\n\n"
-            f"  Got: {subject}\n\n"
-            "  Keep the subject concise. Use the body for details.\n"
+            f"  Got:    {subject}\n"
+            f"  Cut at: {subject[:50]}|{subject[50:]}\n\n"
+            f"  Drop {len(subject) - 50} character(s) before the `|`.\n"
+            + _shortening_hint(subject)
+            + "  Move the detail you cut into the commit body.\n"
         )
         return _block(body, "subject too long", command)
     for idx, line in enumerate(lines[1:], start=2):
