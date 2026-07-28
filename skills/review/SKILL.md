@@ -64,7 +64,7 @@ When `--backend` or `--frontend` is passed, classify each file:
    - [`rules/security.md`](../../rules/security.md): security criteria, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
    - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for review comments themselves
    - [`rules/code-style.md`](../../rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
-   - [`rules/testing.md`](../../rules/testing.md): mock policy, AAA pattern, faker, deterministic tests, contract testing, performance regression
+   - [`rules/testing.md`](../../rules/testing.md): mock policy, comment-free test structure, faker, deterministic tests, contract testing, performance regression
    - `rules/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
    - `rules/privacy.md`: data minimization, retention, erasure when the diff touches personal data
    - [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md): when the diff processes, stores, or acts on LLM-generated output
@@ -87,7 +87,7 @@ When `--backend` or `--frontend` is passed, classify each file:
    | SCOPE_INFRA | Dockerfile, terraform, k8s manifests, CI config | Container security, zero-downtime (cat 55) |
    | SCOPE_LLM | LLM client calls, prompt templates, AI output processing | LLM trust boundary (cat 53), output validation |
    | SCOPE_WEBHOOK | Webhook handlers, signature verification, external system callbacks | Idempotency key stability, replay protection, concurrent delivery, input canonicalization, startup secret validation |
-   | SCOPE_TESTS | Test files | Mock policy, coverage, AAA pattern, faker |
+   | SCOPE_TESTS | Test files | Mock policy, coverage, comment-free test bodies, faker |
    | SCOPE_DOCS | README, docs/, CHANGELOG | Documentation accuracy, stale references |
    | SCOPE_CONFIG | .env, config files, settings | Secret exposure, env var completeness |
 
@@ -376,7 +376,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
    - If the project has Playwright or Cypress: load [`standards/browser-testing.md`](standards/browser-testing.md) and check test patterns against it
    - If the project has `.tftest.hcl` files or Terraform: load [`standards/terraform-testing.md`](standards/terraform-testing.md)
    - If the project has axe-core, jest-axe, or pa11y dependencies: load [`standards/accessibility-testing.md`](standards/accessibility-testing.md)
-   - Always load [`rules/testing.md`](rules/testing.md) for the base test methodology such as AAA, mock policy, faker, or coverage
+   - Always load [`rules/testing.md`](rules/testing.md) for the base test methodology such as comment-free test bodies, mock policy, faker, or coverage
    - Findings from these standards become QA findings with the same severity/rule citation format
 3. **Map behavior paths**: for each file, extract happy paths, input variations, validation failures, authorization paths, state transitions, error recovery, boundary values, concurrency, data integrity, side effects.
 4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, [`tests/`](tests), `e2e/`. Map each `it()`/`test()` to behavior paths.
@@ -418,7 +418,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 ```
 
 1. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths, auth, data writes, error handling is a blocking finding.
-2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](rules/testing.md): AAA pattern, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
+2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](rules/testing.md): comment-free test bodies, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
 
 ### 30 QA Rules Reference
 

@@ -561,14 +561,11 @@ describe("OrderConsumer", () => {
   });
 
   it("must process order.created and persist to database", async () => {
-    // Arrange
     const envelope = createOrderCreatedEnvelope();
 
-    // Act
     await broker.publish("order.created", envelope);
     await waitForConsumption("order.created", envelope.id);
 
-    // Assert
     const order = await database.order.findUnique({
       where: { id: envelope.payload.orderId },
     });
@@ -597,7 +594,6 @@ describe("OrderConsumer", () => {
 
 ```typescript
 it("must process events for the same order in sequence order", async () => {
-  // Arrange
   const orderId = generateULID();
   const events = [
     createEnvelope("order.created", { orderId, sequenceNumber: 1 }),
@@ -605,13 +601,11 @@ it("must process events for the same order in sequence order", async () => {
     createEnvelope("order.shipped", { orderId, sequenceNumber: 3 }),
   ];
 
-  // Act
   for (const event of events) {
     await broker.publish("order.events", event, { orderingKey: orderId });
   }
   await waitForAllConsumed(events);
 
-  // Assert
   const order = await database.order.findUnique({ where: { id: orderId } });
   expect(order!.status).toBe("SHIPPED");
   expect(order!.lastSequenceNumber).toBe(3);

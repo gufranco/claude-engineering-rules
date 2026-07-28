@@ -66,7 +66,7 @@ Add the test file if missing. Match the existing folder layout exactly.
 
 ### 3. Red: write the failing test
 
-- Use the AAA comment pattern from [`rules/testing.md`](../../rules/testing.md). Three markers, no other comments in the test body.
+- Write the body comment-free per [`rules/testing.md`](../../rules/testing.md) Test Structure. The test name states the behavior; blank lines separate setup, call, and assertions.
 - Use the most specific assertion available. No `toBeTruthy`. Apply the Assertion Specificity table.
 - Seed any fake data generator deterministically.
 

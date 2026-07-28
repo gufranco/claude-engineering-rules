@@ -42,7 +42,6 @@ const provider = new PactV4({
 
 describe("UserService contract", () => {
   it("should return user by ID", async () => {
-    // Arrange
     await provider
       .addInteraction()
       .given("user 42 exists")
@@ -56,7 +55,6 @@ describe("UserService contract", () => {
         });
       });
 
-    // Act & Assert
     await provider.executeTest(async (mockServer) => {
       const client = new UserClient(mockServer.url);
       const user = await client.getUser(42);
@@ -75,7 +73,6 @@ import { Verifier } from "@pact-foundation/pact";
 
 describe("UserService provider verification", () => {
   it("should satisfy all consumer contracts", async () => {
-    // Arrange
     const verifier = new Verifier({
       providerBaseUrl: "http://localhost:3000",
       pactBrokerUrl: process.env.PACT_BROKER_URL,
@@ -89,7 +86,6 @@ describe("UserService provider verification", () => {
       },
     });
 
-    // Act & Assert
     await verifier.verifyProvider();
   });
 });

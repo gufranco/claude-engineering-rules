@@ -210,13 +210,10 @@ When hand-rolled is enough:
 ```typescript
 describe('OrderStateMachine', () => {
   it('should transition from draft to submitted on submit', () => {
-    // Arrange
     const state = OrderState.Draft;
 
-    // Act
     const result = transition(state, { kind: 'submit' }, context);
 
-    // Assert
     expect(result).toEqual(ok(OrderState.Submitted));
   });
 });
@@ -226,13 +223,10 @@ describe('OrderStateMachine', () => {
 
 ```typescript
 it('should reject ship from draft state', () => {
-  // Arrange
   const state = OrderState.Draft;
 
-  // Act
   const result = transition(state, { kind: 'ship', tracking }, context);
 
-  // Assert
   expect(result.ok).toBe(false);
 });
 ```
@@ -241,14 +235,11 @@ it('should reject ship from draft state', () => {
 
 ```typescript
 it('should reject submit when order has no items', () => {
-  // Arrange
   const state = OrderState.Draft;
   const emptyContext = { ...context, items: [] };
 
-  // Act
   const result = transition(state, { kind: 'submit' }, emptyContext);
 
-  // Assert
   expect(result).toEqual(err(expect.objectContaining({ kind: 'validation' })));
 });
 ```

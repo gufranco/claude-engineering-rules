@@ -182,8 +182,8 @@ Generate test file stubs for code that lacks tests.
 3. Check for existing test files. Skip already-tested exports.
 4. Generate a test stub per untested export following project conventions:
    - Read existing test files in the same module for patterns.
-   - Follow [`rules/testing.md`](../../rules/testing.md): AAA pattern, faker for data, real database.
-   - Include: one happy-path test, one error-path test, placeholder `// TODO: add edge cases`.
+   - Follow [`rules/testing.md`](../../rules/testing.md): comment-free test bodies, faker for data, real database.
+   - Include one happy-path test and one error-path test. Edge cases are listed in the approval message, never as a marker comment in the file.
 5. Present stubs for approval before writing.
 6. After writing, run the test suite to verify stubs compile, they may fail on TODO assertions, which is expected.
 

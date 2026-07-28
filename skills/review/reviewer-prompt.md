@@ -113,30 +113,21 @@ connection instead of mocks:
 
 ```typescript
 it('should return 400 when email format is invalid', async () => {
-  // Arrange
   const invalidPayload = { email: faker.string.alpha(10), name: faker.person.fullName() };
 
-  // Act
   const response = await request(app).post('/users').send(invalidPayload);
 
-  // Assert
   expect(response.status).toBe(400);
   expect(response.body.error.code).toBe('VALIDATION_ERROR');
 });
 
 it('should return 500 when the database is unavailable', async () => {
-  // Arrange
-  await db.destroy(); // tear down the real connection to simulate unavailability
+  await simulateDatabaseOutage();
   const validPayload = { email: faker.internet.email(), name: faker.person.fullName() };
 
-  // Act
   const response = await request(app).post('/users').send(validPayload);
 
-  // Assert
   expect(response.status).toBe(500);
-
-  // Restore for other tests
-  await db.initialize();
 });
 ```
 ````
