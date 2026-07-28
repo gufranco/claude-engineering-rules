@@ -95,7 +95,7 @@ def changes_requested_reviewer() -> str | None:
             ],
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=3,
             env={**os.environ, "NO_COLOR": "1"},
         )
     except (subprocess.SubprocessError, FileNotFoundError):
