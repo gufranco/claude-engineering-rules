@@ -229,8 +229,6 @@ except Exception:  # pragma: no cover
         return None
 
 
-from _lib.hook_io import block as _hio_block
-
 from _lib.mutation_allowlists import (
     JOTAI_CALLBACK_OPENER_PATTERN,
     collect_state_mgmt_receivers,
@@ -949,6 +947,31 @@ def _build_message(findings: list[str]) -> str:
     return title + "\n\n" + rendered
 
 
+def _deny(reason: str) -> int:
+    """Emit a deny on both hook channels and return exit code 2.
+
+    v1 orchestrators read `reason` from stderr. v2 orchestrators read the
+    same text from the `hookSpecificOutput` envelope on stdout, so rolling
+    between the two is loss-free.
+    """
+    if not reason:
+        return 2
+    print(reason, file=sys.stderr)
+    body = {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": reason,
+        }
+    }
+    try:
+        sys.stdout.write(json.dumps(body, ensure_ascii=False))
+        sys.stdout.flush()
+    except (OSError, TypeError, ValueError):
+        pass
+    return 2
+
+
 def _read_batch_items() -> list[tuple[str, str, str, bool]]:
     """Plan item 227: batch mode reads file paths from stdin or argv.
 
@@ -1190,7 +1213,7 @@ def main() -> int:
             files_scanned=files_scanned,
         )
 
-    return _hio_block(message)
+    return _deny(message)
 
 
 def _entrypoint() -> int:
