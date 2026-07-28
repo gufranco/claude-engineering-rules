@@ -65,10 +65,10 @@ ifndef BATS
 	@echo "bats not installed. brew install bats-core"
 	@exit 1
 else
-	@if [ -d tests/bats ]; then \
+	@if [ -n "$$(find tests/bats -name '*.bats' 2>/dev/null)" ]; then \
 		$(BATS) -r tests/bats; \
 	else \
-		echo "tests/bats/ not present; skipping"; \
+		echo "no .bats files under tests/bats/; skipping"; \
 	fi
 endif
 
