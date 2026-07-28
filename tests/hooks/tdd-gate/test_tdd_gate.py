@@ -272,6 +272,64 @@ def test_handles_empty_file_path(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+@pytest.mark.parametrize(
+    "rel_path",
+    [
+        "tsup.config.ts",
+        "vite.config.ts",
+        "jest.config.js",
+        "src/__init__.py",
+        "tests/conftest.py",
+        "setup.py",
+        "src/types.ts",
+        "src/types.py",
+    ],
+)
+def test_allows_config_and_declaration_files(
+    tool_use, assert_allows, tmp_path, rel_path
+):
+    target = tmp_path / rel_path
+    payload = tool_use(
+        "Write", {"file_path": str(target), "content": "export default {}"}
+    )
+
+    assert_allows(HOOK, payload)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "export * from './a';\nexport { b } from './b';",
+        "import { x } from './x';\nexport { x };",
+        "export {\n  a,\n  b,\n} from './ab';",
+        "export type { T } from './t';",
+        "",
+    ],
+)
+def test_allows_barrel_index(tool_use, assert_allows, tmp_path, content):
+    target = tmp_path / "src/index.ts"
+    payload = tool_use("Write", {"file_path": str(target), "content": content})
+
+    assert_allows(HOOK, payload)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "export function compute(x) { return x * 2; }",
+        "export * from './a';\nexport const K = 1;",
+        "const internal = 1;\nexport { internal };",
+    ],
+)
+def test_blocks_index_that_declares_behavior(
+    tool_use, assert_blocks, tmp_path, content
+):
+    target = tmp_path / "src/index.ts"
+    payload = tool_use("Write", {"file_path": str(target), "content": content})
+
+    assert_blocks(HOOK, payload, "without a companion test")
+
+
 def test_handles_malformed_json(run_hook, tmp_path):
     import subprocess
     import sys

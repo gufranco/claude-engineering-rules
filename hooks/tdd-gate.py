@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -108,6 +109,30 @@ EXCLUDED_NAME_MARKERS = (
     ".min.js",
     ".bundle.js",
     ".generated.",
+    ".config.",
+)
+
+EXCLUDED_EXACT_NAMES = {
+    "__init__.py",
+    "conftest.py",
+    "setup.py",
+    "types.ts",
+    "types.tsx",
+    "types.py",
+    "types.go",
+    "next-env.d.ts",
+}
+
+BARREL_STATEMENT = re.compile(
+    r"""(?xs)
+    \s*(?:
+        //[^\n]*
+      | /\*.*?\*/
+      | import\s[^;\n]*;?
+      | export\s+(?:type\s+)?\*\s*(?:as\s+\w+\s*)?from\s*['"][^'"]+['"]\s*;?
+      | export\s+(?:type\s+)?\{[^}]*\}\s*(?:from\s*['"][^'"]+['"]\s*)?;?
+    )\s*
+    """
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -121,8 +146,27 @@ def is_test_file(path: Path) -> bool:
     return any(marker in name for marker in TEST_NAME_MARKERS)
 
 
+def is_barrel(content: str) -> bool:
+    """True when `content` only imports and re-exports.
+
+    A barrel forwards names defined elsewhere, so it carries no behavior of
+    its own to test. An `index` file that declares anything is not a barrel.
+    """
+    if not content.strip():
+        return True
+    pos = 0
+    while pos < len(content):
+        match = BARREL_STATEMENT.match(content, pos)
+        if match is None or match.end() == pos:
+            return not content[pos:].strip()
+        pos = match.end()
+    return True
+
+
 def is_production_source(path: Path) -> bool:
     if path.suffix not in SOURCE_EXTS:
+        return False
+    if path.name in EXCLUDED_EXACT_NAMES:
         return False
     if any(marker in path.name for marker in EXCLUDED_NAME_MARKERS):
         return False
@@ -227,6 +271,9 @@ def main() -> int:
     target = Path(file_path_str)
 
     if not is_production_source(target):
+        return 0
+
+    if target.stem == "index" and is_barrel(tool_input.get("content", "")):
         return 0
 
     if tool_name in {"Edit", "MultiEdit"} and target.exists():
