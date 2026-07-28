@@ -56,6 +56,19 @@ Every catch classifies the error: transient (retry with backoff),
 permanent (fail immediately), or ambiguous (retry with limit, then fail).
 ```
 
+**Name the API, not the quality.** When guidance is about an API surface, the concrete form is the API's own name. Describing the desired quality leaves the reader to guess which call satisfies it, and the guess defaults to whatever is most common rather than whatever is best. Naming the call removes the guess.
+
+```
+# Bad: names a quality
+Use modern JavaScript. Prefer native platform features.
+
+# Good: names the call and what it replaces
+Use AbortSignal.timeout(ms) instead of pairing setTimeout with an
+AbortController. The manual pair leaks the timer on any early return.
+```
+
+This is why the replacement tables in [`lang/typescript-immutability.md`](lang/typescript-immutability.md) and [`../standards/typescript-5x.md`](../standards/typescript-5x.md) are built as "instead of X, use Y" rows rather than as prose about preferring immutable or native code. Each row names both sides, so there is nothing left to interpret. Write new API guidance the same way.
+
 ### 4. One idea per sentence
 
 If a sentence contains "and" connecting two unrelated ideas, split it.

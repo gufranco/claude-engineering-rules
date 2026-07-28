@@ -154,7 +154,9 @@ Use the right element, not a styled div.
 
 ## Component Library
 
-Use a headless or pre-built component library for all interactive UI elements. Never build custom implementations of components that the library already provides. Never use native HTML elements for complex interactions when a library component exists.
+Use a headless or pre-built component library for all interactive UI elements. Never build custom implementations of components that the library already provides. Never use native HTML elements for complex interactions when a library component exists, unless the element appears in "When native is acceptable" below.
+
+This section governs projects that ship a component library. For projects that do not, see "When no component library is in play".
 
 ### Preferred stack
 
@@ -172,7 +174,6 @@ Use a headless or pre-built component library for all interactive UI elements. N
 |:-----------|:----|:----|
 | `<select>` | `Select` from shadcn/ui | Native select cannot be styled, has inconsistent behavior across browsers and mobile OS versions, and cannot support search, multi-select, or grouped options |
 | `<input type="date">` | `DatePicker` from shadcn/ui | Native date input renders differently on every browser, cannot be styled, and has poor mobile UX on some Android devices |
-| `<dialog>` | `Dialog` or `AlertDialog` from shadcn/ui | Native dialog has limited animation support, inconsistent backdrop behavior, and no built-in focus trap on older browsers |
 | `window.confirm()` | `AlertDialog` from shadcn/ui | Blocks the main thread, cannot be styled, and shows different text on different browsers |
 | `<input type="file">` | `Dropzone` component with drag-and-drop | Native file input cannot be styled and offers no drag-and-drop, preview, or validation UX |
 | `<details>` / `<summary>` | `Accordion` from shadcn/ui | Native implementation cannot animate open/close and has limited ARIA support |
@@ -184,6 +185,9 @@ Use a headless or pre-built component library for all interactive UI elements. N
 - `<input type="text">`, `<textarea>`: native text inputs are acceptable when paired with the `Input` component from shadcn/ui for consistent styling. The native element is the base; the library wraps it
 - `<a>`: native links are correct. Use `Link` from Next.js for client-side navigation
 - `<form>`: native form element is the correct semantic choice. The library handles field rendering, not the form itself
+- `<dialog>`: acceptable, and the right default when the project does not already ship a dialog component. `showModal()` makes the rest of the page `inert`, and the browser provides that behavior, so outside content is unreachable by keyboard and by assistive technology without any custom focus code. Note that the W3C Accessible Platform Architectures Working Group concluded `showModal()` should deliberately not trap focus in the strict sense, so users can still tab to browser chrome. That is intended, not a gap. `::backdrop` has been Baseline widely available since March 2022, alongside `showModal()`, `show()`, `close()`, and the close and cancel events. **One caveat decides it:** entry animation works through `@starting-style` and keyframes, but a clean exit transition needs the `overlay` property, which is still limited availability. When an exit transition matters, or when the project already uses shadcn/ui, use `Dialog` or `AlertDialog` instead
+
+The "Native elements to avoid" table above used to carry a `<dialog>` row giving three reasons. All three were checked on 2026-07-27. Inconsistent backdrop behavior and the absence of a built-in focus trap no longer hold, so the row was removed. Limited animation support survives only in the narrow `overlay` form stated above.
 
 ### Rules
 
@@ -191,6 +195,20 @@ Use a headless or pre-built component library for all interactive UI elements. N
 - Never reimplement a component that the library provides. The library has been tested across browsers, screen readers, and devices. A custom implementation has not
 - When the project uses shadcn/ui, use its components for all UI elements before considering alternatives. Only reach for a different library when shadcn/ui genuinely does not cover the use case
 - When building a new project, install shadcn/ui as the first UI dependency. Configure it before writing any components
+
+### When no component library is in play
+
+Everything above assumes a project that ships a component library. Some do not, and the library-first rule must not be read as a requirement to install one. Contexts where no component library exists or belongs:
+
+- Server-rendered pages and templates with no client bundle
+- Transactional email, where almost no CSS and no JavaScript survive the client
+- Deno, Bun, Workers, and other edge handlers returning HTML directly
+- Documentation sites, landing pages, and throwaway prototypes
+- Any surface where adding a UI dependency costs more than the component is worth
+
+In those contexts native semantic HTML is the correct default, not a fallback: `<dialog>` for modals, `<details>` and `<summary>` for disclosure, `<form>` with native constraint validation for input. Constraint validation through `required`, `type`, `pattern`, `min`, `max`, and `setCustomValidity` covers most client-side validation with no library and no custom state.
+
+The accessibility bar does not move. [`accessibility-defaults.md`](../rules/accessibility-defaults.md) applies identically whether the markup came from a library or from the platform. What changes is which tool meets the bar most cheaply, and with no library present the platform usually does.
 
 ## Component Patterns
 
