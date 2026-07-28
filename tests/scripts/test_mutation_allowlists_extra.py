@@ -36,10 +36,8 @@ def test_is_dom_receiver_returns_false_for_whitespace_only() -> None:
 
 
 def test_is_dom_assignment_returns_false_when_no_signals() -> None:
-    # Arrange / Act
     result = ma.is_dom_assignment("notADomReceiver", "someRandomProp")
 
-    # Assert
     assert result is False
 
 
@@ -57,24 +55,18 @@ def test_is_temporal_chain_call_returns_false_for_empty_line() -> None:
 
 
 def test_is_temporal_chain_call_matches_chain_pattern_without_owner() -> None:
-    # Arrange
     line = "const result = Temporal.Now.instant().add({hours: 1});"
 
-    # Act
     result = ma.is_temporal_chain_call(line, None, frozenset())
 
-    # Assert
     assert result is True
 
 
 def test_is_temporal_chain_call_returns_false_when_temporal_unrelated() -> None:
-    # Arrange
     line = "const x = something.else.entirely();"
 
-    # Act
     result = ma.is_temporal_chain_call(line, None, frozenset())
 
-    # Assert
     assert result is False
 
 
@@ -170,14 +162,11 @@ def test_hit_uses_receiver_returns_false_for_empty_receivers() -> None:
 
 
 def test_hit_uses_receiver_skips_empty_name_in_set() -> None:
-    # Arrange: receivers contains an empty string mixed with a real name.
     receivers = frozenset({"", "state"})
     line = "state.value += 1"
 
-    # Act
     result = ma.hit_uses_receiver(line, receivers)
 
-    # Assert
     assert result is True
 
 
@@ -268,10 +257,8 @@ def test_state_scope_returns_false_for_empty_window() -> None:
 
 
 def test_state_scope_falls_back_to_filename_pattern() -> None:
-    # Arrange: window has no library imports, but filename matches state-mgmt pattern
     window = "function makeReducer() { return (state) => state; }"
     matched, label = ma.is_in_state_mgmt_scope(window, "src/userSlice.ts")
 
-    # Assert
     assert matched is True
     assert label == "state-mgmt-filename"

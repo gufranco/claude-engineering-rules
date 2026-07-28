@@ -22,13 +22,11 @@ HOOK = "found-fix-rationalization-blocker"
     ],
 )
 def test_blocks_not_introduced_in_commit(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not introduced")
 
 
@@ -42,13 +40,11 @@ def test_blocks_not_introduced_in_commit(tool_use, assert_blocks, phrase):
     ],
 )
 def test_blocks_pre_existing_inaction(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "pre-existing")
 
 
@@ -61,13 +57,11 @@ def test_blocks_pre_existing_inaction(tool_use, assert_blocks, phrase):
     ],
 )
 def test_blocks_orthogonal_inaction(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "orthogonal")
 
 
@@ -80,13 +74,11 @@ def test_blocks_orthogonal_inaction(tool_use, assert_blocks, phrase):
     ],
 )
 def test_blocks_out_of_scope_inaction(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "out of scope")
 
 
@@ -101,52 +93,43 @@ def test_blocks_out_of_scope_inaction(tool_use, assert_blocks, phrase):
     ],
 )
 def test_blocks_leave_for_later(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload)
 
 
 def test_blocks_not_blocking_the_run(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix - Not blocking the run"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not blocking")
 
 
 def test_blocks_in_pr_create_body(tool_use, assert_blocks):
-    # Arrange
     body = "Upgrades action X. Deprecation will be addressed later."
     payload = tool_use(
         "Bash",
         {"command": f'gh pr create --title "chore" --body "{body}"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "addressed later")
 
 
 def test_blocks_in_gh_release_create(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh release create v1.0 --notes "Not introduced by this PR"'},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload)
 
 
 def test_blocks_in_write_payload_to_code(tool_use, assert_blocks, tmp_path):
-    # Arrange: a code comment with rationalization wording
     target = tmp_path / "module.py"
     payload = tool_use(
         "Write",
@@ -156,56 +139,46 @@ def test_blocks_in_write_payload_to_code(tool_use, assert_blocks, tmp_path):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload)
 
 
 def test_allows_clean_commit_message(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix: upgrade action X to clear deprecation"'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_non_publishing_bash_with_phrase(tool_use, assert_allows):
-    # Arrange: grep for the phrase in the repo is fine
     payload = tool_use(
         "Bash",
         {"command": 'grep -r "not introduced by this PR" .'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_history_use_of_pre_existing(tool_use, assert_allows):
-    # Arrange: "pre-existing" without an inaction trailing word is fine
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "docs: explain pre-existing test fixture"'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_history_use_of_orthogonal(tool_use, assert_allows):
-    # Arrange: "orthogonal" without the inaction object is fine
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "refactor: separate orthogonal concerns"'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_write_to_rule_file(tool_use, assert_allows, tmp_path):
-    # Arrange: editing the rule file itself is exempt
     target = tmp_path / "rules" / "found-fix.md"
     target.parent.mkdir(parents=True)
     payload = tool_use(
@@ -216,17 +189,14 @@ def test_allows_write_to_rule_file(tool_use, assert_allows, tmp_path):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_bypass_env(monkeypatch, tool_use, assert_allows):
-    # Arrange
     monkeypatch.setenv("FOUND_FIX_RATIONALIZATION_DISABLE", "1")
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix - Not introduced by this PR"'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

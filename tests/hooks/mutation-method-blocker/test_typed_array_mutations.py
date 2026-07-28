@@ -49,13 +49,10 @@ TYPED_ARRAY_BLOCKED: list[tuple[str, str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet", "detector"), TYPED_ARRAY_BLOCKED)
 def test_typed_array_mutation_blocked_in_app_code(run_hook, label, snippet, detector):
-    # Arrange
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"{label}: expected block, got {code}\n{stderr}"
     assert detector in stderr, f"{label}: detector {detector} missing"
 
@@ -80,38 +77,29 @@ HOT_PATHS: list[str] = [
 
 @pytest.mark.parametrize("path", HOT_PATHS)
 def test_typed_array_mutation_skipped_in_hot_path(run_hook, path):
-    # Arrange
     snippet = (
         "const buffer = new Uint8Array(64)\nbuffer.set(source, 0)\nbuffer.fill(0)\n"
     )
     payload = make_write_payload(path, snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"hot path {path} unexpectedly blocked\n{stderr}"
 
 
 def test_typed_array_no_buffer_hint_does_not_trigger(run_hook):
-    # Arrange
     snippet = "const value = something.set(key, 1)"
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, _ = run_hook(payload)
 
-    # Assert
     assert code == 0
 
 
 def test_typed_array_immutable_methods_pass(run_hook):
-    # Arrange
     snippet = "const audioBuffer = new Uint8Array(64)\nconst sortedBuffer = audioBuffer.toSorted()\n"
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, stderr

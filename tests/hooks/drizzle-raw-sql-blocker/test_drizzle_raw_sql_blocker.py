@@ -19,7 +19,6 @@ HOOK = "drizzle-raw-sql-blocker"
 @pytest.mark.parametrize("method", ["execute", "run", "all", "get"])
 @pytest.mark.parametrize("receiver", ["db", "database", "drizzle", "conn", "client"])
 def test_blocks_db_method_with_sql_tag(tool_use, assert_blocks, receiver, method):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -31,12 +30,10 @@ def test_blocks_db_method_with_sql_tag(tool_use, assert_blocks, receiver, method
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, f"{receiver}.{method}")
 
 
 def test_blocks_sql_raw_call(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -48,12 +45,10 @@ def test_blocks_sql_raw_call(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "sql.raw")
 
 
 def test_blocks_on_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -63,12 +58,10 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "db.execute")
 
 
 def test_blocks_on_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -80,12 +73,10 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "db.run")
 
 
 def test_allows_db_select(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -97,12 +88,10 @@ def test_allows_db_select(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_sql_fragment_in_where(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -115,12 +104,10 @@ def test_allows_sql_fragment_in_where(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_migration_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -129,12 +116,10 @@ def test_skips_migration_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_drizzle_meta_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -143,12 +128,10 @@ def test_skips_drizzle_meta_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_drizzle_dir_non_sql_file(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -157,12 +140,10 @@ def test_skips_drizzle_dir_non_sql_file(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_schema_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -177,12 +158,10 @@ def test_skips_schema_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_paths(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -194,12 +173,10 @@ def test_skips_test_paths(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -208,12 +185,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"DRIZZLE_RAW_SQL_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -222,7 +197,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -232,7 +206,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "drizzle-raw-sql-blocker.py"
     )
@@ -242,7 +215,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -253,42 +225,34 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
 
 
 def test_invalid_json_via_run_hook(run_hook):
-    # Arrange / Act
     code, _stdout, _stderr = run_hook("drizzle-raw-sql-blocker", {"_invalid": True})
 
-    # Assert
     assert code == 0
 
 
 def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const rows = await db.select().from(t);\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/x.ts", "content": 42},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -297,12 +261,10 @@ def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -311,16 +273,13 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/services/x.service.ts"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

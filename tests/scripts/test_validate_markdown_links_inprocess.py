@@ -40,51 +40,40 @@ def test_collect_findings_empty_for_no_files():
 
 
 def test_collect_findings_handles_missing_file():
-    # Arrange: a path that does not exist
     bare, broken = validate_module.collect_findings(["does-not-exist.md"], REPO_ROOT)
-    # Assert: silently skip missing files
     assert bare == []
     assert broken == []
 
 
 def test_main_returns_zero_when_repo_clean(monkeypatch, capsys):
-    # Arrange
     monkeypatch.setattr(sys, "argv", ["validate-markdown-links.py"])
 
-    # Act
     code = validate_module.main()
 
-    # Assert
     assert code == 0
     captured = capsys.readouterr()
     assert "PASSED" in captured.out
 
 
 def test_main_accepts_absolute_path_outside_repo(monkeypatch, capsys, tmp_path):
-    # Arrange
     target = tmp_path / "doc.md"
     target.write_text("Plain text, no references.\n")
     monkeypatch.setattr(sys, "argv", ["validate-markdown-links.py", str(target)])
 
-    # Act
     code = validate_module.main()
 
-    # Assert
     assert code == 0
     captured = capsys.readouterr()
     assert "PASSED" in captured.out
 
 
 def test_main_with_include_advisory_flag(monkeypatch, capsys):
-    # Arrange
     monkeypatch.setattr(
         sys, "argv", ["validate-markdown-links.py", "--include-advisory"]
     )
 
-    # Act
     code = validate_module.main()
 
-    # Assert
     # Repo is clean, advisory or otherwise.
     assert code == 0
     captured = capsys.readouterr()
@@ -92,14 +81,11 @@ def test_main_with_include_advisory_flag(monkeypatch, capsys):
 
 
 def test_main_reports_findings_for_bare_reference(monkeypatch, capsys, tmp_path):
-    # Arrange
     target = REPO_ROOT / "tmp-validator-inprocess.md"
     target.write_text("Look at `README.md` here.\n")
     try:
         monkeypatch.setattr(sys, "argv", ["validate-markdown-links.py", str(target)])
-        # Act
         code = validate_module.main()
-        # Assert
         assert code == 1
         captured = capsys.readouterr()
         assert "FAILED" in captured.out
@@ -109,14 +95,11 @@ def test_main_reports_findings_for_bare_reference(monkeypatch, capsys, tmp_path)
 
 
 def test_main_reports_broken_link_target(monkeypatch, capsys, tmp_path):
-    # Arrange: link target does not exist
     target = REPO_ROOT / "tmp-validator-broken-link.md"
     target.write_text("See [missing](ghost-file.md).\n")
     try:
         monkeypatch.setattr(sys, "argv", ["validate-markdown-links.py", str(target)])
-        # Act
         code = validate_module.main()
-        # Assert
         assert code == 1
         captured = capsys.readouterr()
         assert "FAILED" in captured.out
@@ -127,7 +110,6 @@ def test_main_reports_broken_link_target(monkeypatch, capsys, tmp_path):
 
 
 def test_main_reports_advisory_bare_findings_in_specs(monkeypatch, capsys):
-    # Arrange: bare reference in specs/ is advisory, not blocking
     spec_target = REPO_ROOT / "specs" / "tmp-validator-advisory-bare.md"
     spec_target.parent.mkdir(parents=True, exist_ok=True)
     spec_target.write_text("Look at `README.md` here.\n")
@@ -135,9 +117,7 @@ def test_main_reports_advisory_bare_findings_in_specs(monkeypatch, capsys):
         monkeypatch.setattr(
             sys, "argv", ["validate-markdown-links.py", str(spec_target)]
         )
-        # Act
         code = validate_module.main()
-        # Assert: passes (advisory only) but reports the advisory finding
         assert code == 0
         captured = capsys.readouterr()
         assert "Advisory" in captured.out
@@ -147,7 +127,6 @@ def test_main_reports_advisory_bare_findings_in_specs(monkeypatch, capsys):
 
 
 def test_main_reports_advisory_broken_targets_in_specs(monkeypatch, capsys):
-    # Arrange: broken link target in specs/ is advisory
     spec_target = REPO_ROOT / "specs" / "tmp-validator-advisory-broken.md"
     spec_target.parent.mkdir(parents=True, exist_ok=True)
     spec_target.write_text("See [missing](ghost.md).\n")
@@ -155,9 +134,7 @@ def test_main_reports_advisory_broken_targets_in_specs(monkeypatch, capsys):
         monkeypatch.setattr(
             sys, "argv", ["validate-markdown-links.py", str(spec_target)]
         )
-        # Act
         code = validate_module.main()
-        # Assert
         assert code == 0
         captured = capsys.readouterr()
         assert "Advisory" in captured.out

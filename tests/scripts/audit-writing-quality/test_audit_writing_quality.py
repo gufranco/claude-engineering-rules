@@ -269,7 +269,6 @@ def test_scan_links_ignores_links_in_code_fence(audit_mod, tmp_path):
 
 def test_scan_links_repo_root_fallback(audit_mod, tmp_path):
     """Links that use repo-root-relative paths resolve via the fallback."""
-    # Arrange
     (tmp_path / "standards").mkdir()
     target = tmp_path / "standards" / "real.md"
     target.write_text("# Real")
@@ -278,29 +277,24 @@ def test_scan_links_repo_root_fallback(audit_mod, tmp_path):
     doc = nested / "SKILL.md"
     doc.write_text("See [real](standards/real.md) for details.")
 
-    # Act
     findings = audit_mod.scan_links(
         "skills/feature/SKILL.md", doc, doc.read_text(), repo_root=tmp_path
     )
 
-    # Assert: no stale-link because repo-root fallback resolves it.
     assert all(f.category != "stale-link" for f in findings)
 
 
 def test_scan_links_repo_root_fallback_still_flags_missing(audit_mod, tmp_path):
     """Repo-root fallback should not mask truly missing targets."""
-    # Arrange
     nested = tmp_path / "skills" / "feature"
     nested.mkdir(parents=True)
     doc = nested / "SKILL.md"
     doc.write_text("See [ghost](nowhere/missing.md) for details.")
 
-    # Act
     findings = audit_mod.scan_links(
         "skills/feature/SKILL.md", doc, doc.read_text(), repo_root=tmp_path
     )
 
-    # Assert
     assert any(f.category == "stale-link" for f in findings)
 
 

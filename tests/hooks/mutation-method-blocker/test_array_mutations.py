@@ -29,13 +29,10 @@ ARRAY_BLOCKED_CASES: list[tuple[str, str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet", "detector"), ARRAY_BLOCKED_CASES)
 def test_array_mutating_method_is_blocked(run_hook, label, snippet, detector):
-    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"{label}: expected block, got exit {code}"
     assert detector in stderr, f"{label}: detector {detector} not in stderr"
 
@@ -60,54 +57,41 @@ ARRAY_ALLOWED_CASES: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet"), ARRAY_ALLOWED_CASES)
 def test_array_allowed_pattern_passes(run_hook, label, snippet):
-    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"{label}: expected allow, got exit {code}\nstderr: {stderr}"
 
 
 def test_string_literal_mentioning_push_is_not_flagged(run_hook):
-    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", 'log("arr.push(x) is forbidden")')
 
-    # Act
     code, _ = run_hook(payload)
 
-    # Assert
     assert code == 0
 
 
 def test_comment_mentioning_push_is_not_flagged(run_hook):
-    # Arrange
     payload = make_edit_payload(
         "/repo/src/app.ts", "// items.push(x) -- legacy reference"
     )
 
-    # Act
     code, _ = run_hook(payload)
 
-    # Assert
     assert code == 0
 
 
 def test_chained_array_mutation(run_hook):
-    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", "obj.list.push(value)")
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2
     assert "array.push" in stderr
 
 
 def test_full_file_write_with_multiple_array_mutations(run_hook):
-    # Arrange
     content = """export function broken(items: number[]): number[] {
   items.push(1);
   items.sort();
@@ -117,10 +101,8 @@ def test_full_file_write_with_multiple_array_mutations(run_hook):
 """
     payload = make_write_payload("/repo/src/broken.ts", content)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2
     assert "array.push" in stderr
     assert "array.sort" in stderr

@@ -77,21 +77,15 @@ def _run(env: dict) -> subprocess.CompletedProcess[str]:
 
 
 def test_exits_silently_when_webhook_unset(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Arrange
     monkeypatch.delenv("CLAUDE_NOTIFY_WEBHOOK", raising=False)
-    # Act
     result = _run({"CLAUDE_NOTIFY_WEBHOOK": ""})
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_posts_payload_when_webhook_set(webhook: tuple[str, list[bytes]]) -> None:
-    # Arrange
     url, posts = webhook
-    # Act
     result = _run({"CLAUDE_NOTIFY_WEBHOOK": url})
-    # Assert
     assert result.returncode == 0
     assert len(posts) == 1
     assert b"Claude Code" in posts[0]
@@ -99,19 +93,13 @@ def test_posts_payload_when_webhook_set(webhook: tuple[str, list[bytes]]) -> Non
 
 
 def test_network_failure_swallowed() -> None:
-    # Arrange
-    # Act
     result = _run({"CLAUDE_NOTIFY_WEBHOOK": "http://127.0.0.1:1/never-listens"})
-    # Assert
     assert result.returncode == 0
 
 
 def test_env_disable_suppresses_post(webhook: tuple[str, list[bytes]]) -> None:
-    # Arrange
     url, posts = webhook
-    # Act
     result = _run({"CLAUDE_NOTIFY_WEBHOOK": url, "NOTIFY_WEBHOOK_DISABLE": "1"})
-    # Assert
     assert result.returncode == 0
     assert posts == []
 
@@ -119,12 +107,9 @@ def test_env_disable_suppresses_post(webhook: tuple[str, list[bytes]]) -> None:
 def test_file_bypass_suppresses_post(
     webhook: tuple[str, list[bytes]], tmp_path: Path
 ) -> None:
-    # Arrange
     url, posts = webhook
     state = tmp_path / "state.json"
     set_bypass("notify-webhook", ttl_seconds=120, state_path=state)
-    # Act
     result = _run({"CLAUDE_NOTIFY_WEBHOOK": url, "CLAUDE_BYPASS_STATE": str(state)})
-    # Assert
     assert result.returncode == 0
     assert posts == []

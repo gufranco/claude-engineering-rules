@@ -65,19 +65,16 @@ PY_PATCH = "pat" + "ch"
     ],
 )
 def test_blocks_jest_mock_internal_targets(tool_use, assert_blocks, target):
-    # Arrange
     content = f"{JEST}('{target}');\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/user.test.ts", "content": content},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_vi_mock_in_spec(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -86,12 +83,10 @@ def test_blocks_vi_mock_in_spec(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_vitest_mock(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -100,12 +95,10 @@ def test_blocks_vitest_mock(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_sinon_mock(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -114,12 +107,10 @@ def test_blocks_sinon_mock(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_python_patch_of_prisma_in_tests_dir(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -128,12 +119,10 @@ def test_blocks_python_patch_of_prisma_in_tests_dir(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_python_mock_patch_in_underscore_test(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -142,12 +131,10 @@ def test_blocks_python_mock_patch_in_underscore_test(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_in_underscored_tests_dir(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -156,12 +143,10 @@ def test_blocks_in_underscored_tests_dir(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_on_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -171,12 +156,10 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_blocks_on_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -188,12 +171,10 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "internal infrastructure")
 
 
 def test_allows_jest_mock_external_axios(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -202,12 +183,10 @@ def test_allows_jest_mock_external_axios(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_jest_mock_external_stripe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -216,12 +195,10 @@ def test_allows_jest_mock_external_stripe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_mock_in_non_test_file(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -230,12 +207,10 @@ def test_allows_mock_in_non_test_file(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -244,12 +219,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"MOCK_INTERNAL_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -258,7 +231,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -268,26 +240,21 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/user.test.ts"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/user.test.ts", "content": 42},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -297,12 +264,10 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -311,12 +276,10 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -325,23 +288,19 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_file_path_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": f"{JEST}('./services/x');\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_clean_test_file_passes(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -350,12 +309,10 @@ def test_clean_test_file_passes(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "mock-internal-blocker.py"
     )
@@ -365,7 +322,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -376,5 +332,4 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0

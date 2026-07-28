@@ -31,15 +31,12 @@ HOOK = "config-protection"
     ],
 )
 def test_blocks_protected_config_writes(tool_use, assert_blocks, file_path):
-    # Arrange
     payload = tool_use("Write", {"file_path": file_path, "content": "{}"})
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "weaken type or lint strictness")
 
 
 def test_blocks_edit_to_protected_config(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -49,12 +46,10 @@ def test_blocks_edit_to_protected_config(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "weaken type or lint strictness")
 
 
 def test_blocks_multiedit_to_protected_config(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -63,32 +58,24 @@ def test_blocks_multiedit_to_protected_config(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "weaken type or lint strictness")
 
 
 def test_allows_unprotected_file(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Write", {"file_path": "/repo/src/index.ts", "content": "x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_with_bypass_env(tool_use, run_hook):
-    # Arrange
     payload = tool_use("Write", {"file_path": "/repo/tsconfig.json", "content": "{}"})
 
-    # Act
     code, _out, _err = run_hook(HOOK, payload, env={"CONFIG_PROTECTION_DISABLE": "1"})
 
-    # Assert
     assert code == 0
 
 
 def test_allows_missing_file_path(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Write", {"content": "x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
