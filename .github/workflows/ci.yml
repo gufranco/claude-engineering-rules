@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install linters
-        run: pip install ruff pyyaml
+        run: pip install ruff==0.15.15 pyyaml==6.0.3
 
       - name: ShellCheck
         run: |
@@ -37,10 +37,10 @@ jobs:
           shellcheck --severity=warning --shell=bash --enable=all tests/test-hooks.sh
 
       - name: Python lint (ruff check)
-        run: ruff check hooks .github/scripts tests
+        run: ruff check hooks scripts .github/scripts tests
 
       - name: Python format check (ruff format)
-        run: ruff format --check hooks .github/scripts tests
+        run: ruff format --check hooks scripts .github/scripts tests
 
       - name: Validate counts
         run: python3 .github/scripts/validate-counts.py
@@ -128,7 +128,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install yamllint
-        run: pip install yamllint
+        run: pip install yamllint==1.38.0
 
       - name: Install actionlint
         run: |
@@ -157,7 +157,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install mypy
-        run: pip install mypy types-PyYAML
+        run: pip install mypy==2.1.0 types-PyYAML
 
       - name: mypy --strict (mutation hook)
         run: |
@@ -220,7 +220,7 @@ jobs:
         run: |
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install pytest pytest-cov pytest-xdist pytest-randomly coverage ruff mypy
+          .venv/bin/python -m pip install pytest==9.0.3 pytest-cov==7.1.0 pytest-xdist==3.8.0 pytest-randomly==4.1.0 coverage==7.14.1 ruff==0.15.15 mypy==2.1.0
 
       - name: make test-cov
         run: make test-cov
