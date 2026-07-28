@@ -21,19 +21,28 @@ Tests should verify real behavior, not mock behavior.
 
 A test that mocks infrastructure it depends on may pass while the actual integration is broken. This is worse than having no test at all. During code review, mocking internal infrastructure is a **blocking issue**.
 
-## Test Structure (AAA Pattern)
+## Test Structure
 
-Every test MUST use these exact Arrange-Act-Assert comments:
+A test body carries zero comments. No section markers, no inline notes, no explanatory labels. The comment ban in [`code-style.md`](code-style.md) "Comments Policy" applies to test files exactly as it applies to production code, with the same single exemption for tool directives.
 
+Structure a test with three things instead:
+
+- **The test name.** It states the behavior under test, so no header is needed to announce what follows.
+- **Blank lines.** One blank line separates setup from the call under test, and the call from the assertions. The shape is visible without labeling it.
+- **Named helpers.** When setup needs explaining, extract it into a function whose name does the explaining.
+
+If a step inside a test would need a comment to make sense, the test is too complex. Extract a helper or split the test.
+
+```typescript
+it('rejects a transfer that exceeds the daily limit', async () => {
+  const account = await seedAccount({ dailyLimit: 500, transferredToday: 450 });
+
+  const result = await transfer(account.id, 100);
+
+  expect(result.status).toBe(TransferStatus.Rejected);
+  expect(result.reason).toBe(RejectionReason.DailyLimitExceeded);
+});
 ```
-// Arrange
-// Act
-// Assert
-```
-
-Never append descriptions or colons: `// Act`, not `// Act: do something`. If a test needs more context, it is too complex. Split or rename.
-
-No other comments are permitted anywhere in a test body. No inline comments between statements, no section labels, no explanatory notes. The three markers are the complete comment budget for a test. If a line between `// Arrange` and `// Act` needs a comment to make sense, the test setup is too complex: extract a helper or split the test.
 
 ## Assertion Specificity
 

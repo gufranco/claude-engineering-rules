@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """comment-blocker
 
-PreToolUse hook that blocks ANY newly added source-code comment.
-Rule source: ~/.claude/rules/code-style.md "Comments Policy" (code must be
-self-explanatory; comments are not permitted). There is no code-level
-suppression: a comment is always blocked. The single exception is the exact
-Arrange-Act-Assert markers inside test files, mandated by
-~/.claude/rules/testing.md.
+PreToolUse hook that blocks ANY newly added source-code comment written as
+prose. Rule source: ~/.claude/rules/code-style.md "Comments Policy" (code must
+be self-explanatory; comments are not permitted). There is no code-level
+suppression: prose is blocked in every scanned file, test files included.
+
+The one class that passes is a tool directive: a comment a tool parses and
+acts on, where the comment syntax is the only channel the tool offers.
+`// eslint-disable-next-line`, `// @ts-expect-error`, `//go:build`,
+`# noqa: E501`, `# type: ignore`, `# pragma: no cover`,
+`# shellcheck disable=SC2086`, `// prettier-ignore`. These are machine input,
+not explanation, so the drift argument behind the rule does not apply: when
+the directive goes stale the tool reports it. A directive is matched at the
+start of the comment body, so a trailing justification stays allowed
+(`// eslint-disable-next-line no-console -- CLI entry point`), while prose
+that merely mentions a tool name is still blocked.
 
 What is blocked (per language family, string-literal aware):
   - C family (`//` line, `/* ... */` block): ts, tsx, js, jsx, mjs, cjs,
@@ -20,9 +29,9 @@ tokens, so `https://` inside a string, a JS private field `this.#x`, and a
 `#` inside a Python docstring do not trigger a false positive.
 
 Test files (`*.test.*`, `*.spec.*`, `test_*.py`, `*_test.go`,
-`**/__tests__/**`, `**/tests/**`, `**/e2e/**`) are scanned, not skipped:
-every comment is blocked EXCEPT a standalone `// Arrange`, `// Act`,
-`// Assert`, or a `/`-joined combination of those.
+`**/__tests__/**`, `**/tests/**`, `**/e2e/**`) are scanned like any other
+source file. A test body carries zero comments; structure it with the test
+name, blank lines, and named helpers instead.
 
 Out of scope (not project source we author):
   - Planning artifacts: **/specs/**, **/docs/adr/**, **/docs/plan*/**
@@ -32,6 +41,9 @@ Out of scope (not project source we author):
 
 Bypass (operator kill switch, not a per-comment escape hatch):
   COMMENT_BLOCKER_DISABLE=1
+
+To allow a directive from a tool not yet covered, add it to TOOL_DIRECTIVE.
+Never widen that pattern to admit prose.
 """
 
 from __future__ import annotations
@@ -116,35 +128,64 @@ SKIP_SEGMENTS: tuple[str, ...] = (
     "/build/",
 )
 
-TEST_SEGMENTS: tuple[str, ...] = (
-    "/__tests__/",
-    "/__test__/",
-    "/tests/",
-    "/test/",
-    "/e2e/",
-)
-
-TEST_SUFFIXES: tuple[str, ...] = (
-    ".test.ts",
-    ".test.tsx",
-    ".test.js",
-    ".test.jsx",
-    ".test.mjs",
-    ".test.cjs",
-    ".test.py",
-    ".test.rs",
-    ".test.go",
-    ".spec.ts",
-    ".spec.tsx",
-    ".spec.js",
-    ".spec.jsx",
-    ".spec.mjs",
-    ".spec.cjs",
-    ".spec.py",
-)
-
-AAA_MARKER = re.compile(
-    r"^(?://|#)\s*(?:Arrange|Act|Assert)(?:\s*/\s*(?:Arrange|Act|Assert))*$"
+TOOL_DIRECTIVE = re.compile(
+    r"""^(?:
+        eslint- (?: disable | enable ) \b
+      | eslint-env \b
+      | eslint \s+ [\w@/-]+ \s* :
+      | oxlint- (?: disable | enable ) \b
+      | biome-ignore \b
+      | prettier-ignore \b
+      | stylelint- (?: disable | enable ) \b
+      | tslint:
+      | jshint \s
+      | jslint \s
+      | @ts- (?: expect-error | ignore | nocheck | check ) \b
+      | @jsx \w* \b
+      | @formatter: \s* (?: off | on ) \b
+      | / \s* <reference \b
+      | \#\s* source (?: MappingURL | URL ) =
+      | \#__ (?: PURE | NO_SIDE_EFFECTS ) __
+      | webpack (?: ChunkName | Ignore | Mode | Prefetch | Preload ) \b
+      | (?: @ )? vite-ignore \b
+      | istanbul \s+ ignore \b
+      | [cv]8 \s+ ignore \b
+      | go: (?: build | generate | embed | linkname | noinline | nosplit ) \b
+      | \+build \b
+      | nolint \b
+      | swiftlint: (?: disable | enable ) \b
+      | ktlint- (?: disable | enable ) \b
+      | detekt:
+      | NOPMD \b
+      | NOSONAR \b
+      | CHECKSTYLE: (?: OFF | ON ) \b
+      | noinspection \b
+      | ReSharper \s+ (?: disable | restore ) \b
+      | ignore (?: _for_file )? : \s* \S
+      | noqa \s* (?: : \s* \S+ )? \s* $
+      | nosec \b (?: \s+ B\d+ )* \s* $
+      | type: \s* ignore \b
+      | pragma: \s* \S
+      | mypy:
+      | pyright:
+      | ruff:
+      | flake8:
+      | pylint: \s* (?: disable | enable | skip-file ) \b
+      | fmt: \s* (?: off | on | skip ) \b
+      | yapf: \s* (?: disable | enable ) \b
+      | isort:
+      | coverage: \s* ignore \b
+      | shellcheck \s+ (?: disable | shell | source | source-path | external-sources ) \b
+      | shfmt:
+      | -\*- \s* coding: \s* \S
+      | SAFETY:
+      | SPDX- [\w-]+ :
+      | REUSE-Ignore (?: Start | End ) \b
+      | cSpell:
+      | spell-checker:
+      | codespell:
+    )""",
+    re.VERBOSE | re.IGNORECASE,
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -168,21 +209,6 @@ def resolve_family(path: str) -> "dict[str, Any] | None":
     return None
 
 
-def is_test_file(path: str) -> bool:
-    """True for files where the AAA markers are the one permitted comment."""
-    p = path.lower()
-    base = p.rsplit("/", 1)[-1]
-    if (
-        base.startswith("test_")
-        or base.endswith("_test.py")
-        or base.endswith("_test.go")
-    ):
-        return True
-    if any(p.endswith(suf) for suf in TEST_SUFFIXES):
-        return True
-    return any(seg in p for seg in TEST_SEGMENTS)
-
-
 def collect(tool: str, tool_input: dict[str, Any]) -> list[tuple[str, str, str]]:
     """Return (file_path, field_name, text) tuples for Write/Edit/MultiEdit."""
     out: list[tuple[str, str, str]] = []
@@ -204,17 +230,29 @@ def collect(tool: str, tool_input: dict[str, Any]) -> list[tuple[str, str, str]]
     return out
 
 
-def scan_comment_lines(text: str, family: dict[str, Any]) -> set[int]:
-    """Return 0-based indices of lines that begin or continue a comment.
+def scan_comments(text: str, family: dict[str, Any]) -> dict[int, "str | None"]:
+    """Map 0-based line index to the body of the comment opened on that line.
 
-    A string-literal aware char scanner. Comment tokens inside strings or
-    template literals are ignored. A first-line `#!` shebang is ignored.
+    A line that only continues a block comment maps to None, so it can never
+    qualify as a tool directive. A string-literal aware char scanner: comment
+    tokens inside strings or template literals are ignored, and a first-line
+    `#!` shebang is ignored.
     """
     block = family["block"]
     line_tokens = family["line"]
     strings = family["strings"]
 
-    hits: set[int] = set()
+    hits: dict[int, str | None] = {}
+
+    def open_comment(start: int, token: str) -> None:
+        line_end = text.find("\n", start)
+        body = text[start + len(token) : line_end if line_end != -1 else len(text)]
+        if block:
+            closed = body.find(block[1])
+            if closed != -1:
+                body = body[:closed]
+        hits.setdefault(line_idx, body.strip().lstrip("*").strip())
+
     i = 0
     n = len(text)
     line_idx = 0
@@ -236,7 +274,7 @@ def scan_comment_lines(text: str, family: dict[str, Any]) -> set[int]:
 
         if state == "normal":
             if block and text.startswith(block[0], i):
-                hits.add(line_idx)
+                open_comment(i, block[0])
                 state = "block_comment"
                 i += len(block[0])
                 continue
@@ -244,7 +282,7 @@ def scan_comment_lines(text: str, family: dict[str, Any]) -> set[int]:
                 (lt for lt in line_tokens if text.startswith(lt, i)), None
             )
             if matched_line:
-                hits.add(line_idx)
+                open_comment(i, matched_line)
                 state = "line_comment"
                 i += len(matched_line)
                 continue
@@ -269,7 +307,7 @@ def scan_comment_lines(text: str, family: dict[str, Any]) -> set[int]:
             continue
 
         if state == "block_comment":
-            hits.add(line_idx)
+            hits.setdefault(line_idx, None)
             if block and text.startswith(block[1], i):
                 state = "normal"
                 i += len(block[1])
@@ -282,20 +320,21 @@ def scan_comment_lines(text: str, family: dict[str, Any]) -> set[int]:
     return hits
 
 
-def find(text: str, family: dict[str, Any], allow_aaa: bool) -> list[str]:
-    """Return comment snippets per line. Only the AAA test markers are exempt."""
-    comment_lines = scan_comment_lines(text, family)
-    if not comment_lines:
+def find(text: str, family: dict[str, Any]) -> list[str]:
+    """Return prose-comment snippets per line. Tool directives are exempt."""
+    comments = scan_comments(text, family)
+    if not comments:
         return []
 
     lines = text.splitlines()
     hits: list[str] = []
-    for idx in sorted(comment_lines):
+    for idx in sorted(comments):
         if idx >= len(lines):
             continue
-        stripped = lines[idx].strip()
-        if allow_aaa and AAA_MARKER.match(stripped):
+        body = comments[idx]
+        if body and TOOL_DIRECTIVE.match(body):
             continue
+        stripped = lines[idx].strip()
         snippet = stripped if len(stripped) <= 60 else stripped[:57] + "..."
         hits.append(f"L{idx + 1}: {snippet}")
     return hits
@@ -343,7 +382,7 @@ def main() -> int:
         family = resolve_family(path)
         if family is None:
             continue
-        hits = find(text, family, allow_aaa=is_test_file(path))
+        hits = find(text, family)
         if hits:
             findings.append(f"  - {field} ({path}):\n      " + "\n      ".join(hits))
 
@@ -360,8 +399,13 @@ def main() -> int:
         "     the signal to improve the code: rename the symbol, extract a\n"
         "     well-named function, or split the expression until it reads clearly.\n"
         "  2. For a public-API contract, express intent in types, not prose.\n"
-        "  3. In test files, the only permitted comments are `// Arrange`, `// Act`,\n"
-        "     and `// Assert` (or a `/`-joined combination), with no description.",
+        "  3. Test files have no carve-out. Structure a test with its name, blank\n"
+        "     lines between setup, call, and assertions, and named helpers.\n"
+        "  4. Tool directives are the one exempt class and are already allowed:\n"
+        "     `// eslint-disable-next-line`, `// @ts-expect-error`, `//go:build`,\n"
+        "     `# noqa`, `# type: ignore`, `# shellcheck disable=SC2086`. If a real\n"
+        "     directive was flagged, it is missing from the allowlist in\n"
+        "     ~/.claude/hooks/comment-blocker.py.",
         file=sys.stderr,
     )
     _audit(
