@@ -176,13 +176,28 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 
 **Code must be self-explanatory. Comments are not permitted.** Never add a comment to project source code, in any language, under any circumstances.
 
-The one exception is the exact Arrange-Act-Assert markers inside test files: `// Arrange`, `// Act`, `// Assert`, or a `/`-joined combination such as `// Act / Assert`, with no trailing description. These are mandated by [`testing.md`](testing.md). No other comment is allowed anywhere, including doc comments, block comments, banner comments, and inline explanations.
+The ban covers every file, including test files, and every prose comment form: line comments, block comments, doc comments, banner comments, section labels, and inline explanations. Test bodies carry zero comments; structure a test with blank lines and a name that states the behavior. See [`testing.md`](testing.md).
+
+The one exempt class is the tool directive: a comment a tool parses and acts on, where the comment syntax is the only channel the tool offers.
+
+| Family | Examples |
+|--------|----------|
+| Linters | `// eslint-disable-next-line no-console`, `// biome-ignore lint: reason`, `// oxlint-disable`, `# ruff: noqa`, `# noqa: E501`, `# pylint: disable=too-many-locals`, `# shellcheck disable=SC2086` |
+| Type checkers | `// @ts-expect-error`, `// @ts-check`, `/// <reference types="node" />`, `# type: ignore[no-any-return]`, `# pyright: ignore` |
+| Formatters | `// prettier-ignore`, `# fmt: off`, `# fmt: on`, `# isort: skip` |
+| Coverage | `// istanbul ignore next`, `/* c8 ignore start */`, `# pragma: no cover` |
+| Compilers and bundlers | `//go:build linux`, `//nolint:errcheck`, `/* webpackChunkName: "x" */`, `/* #__PURE__ */`, `//# sourceMappingURL=` |
+| Licensing and safety | `// SPDX-License-Identifier: Apache-2.0`, `# SPDX-FileCopyrightText: ...`, Rust `// SAFETY:` required by clippy's `undocumented_unsafe_blocks` |
+
+The drift argument does not apply to these: a directive that goes stale is reported by the tool that reads it, so nothing silently misleads a later reader. Two limits keep the carve-out from becoming an escape hatch. The directive must sit at the start of the comment, which leaves a trailing justification allowed (`// eslint-disable-next-line no-console -- CLI entry point`) and blocks prose that merely names a tool. And a directive is written because a tool requires it, never because a line needs explaining.
 
 When a piece of code feels like it needs a comment to be understood, that is the signal to improve the code, not to write the comment. Rename the symbol to say what it does. Extract a well-named function so the name carries the intent. Split a dense expression into named steps. Express an API contract in the type system, not in prose. The comment you were about to write is a description of a change the code itself should make.
 
 This replaces the earlier policy that permitted comments for complex algorithms, business rules, workarounds, and public-API docs. Those cases are now handled by clearer code and by types, never by comments.
 
-Enforced by: [`hooks/comment-blocker.py`](../hooks/comment-blocker.py). There is no per-comment suppression marker. The only bypass is the operator-level `COMMENT_BLOCKER_DISABLE=1` env var, set in a parent shell, for the rare case of a false positive.
+There is a second reason beyond the design argument above. A comment is the only part of a file that no compiler, linter, or test can verify, so it is the only part free to drift out of sync with the code it sits next to. Once it has drifted it is worse than absent: it actively misleads every later reader, and that now includes models. Published work on LLM code reasoning reports measurable degradation when the natural language in a file contradicts the code, with the misleading comment doing more damage than no comment at all. A comment that must stay true and has nothing enforcing it will eventually be false. The code cannot lie in the same way, because it is what runs.
+
+Enforced by: [`hooks/comment-blocker.py`](../hooks/comment-blocker.py). There is no per-comment suppression marker. A directive from a tool the hook does not yet know about is added to the allowlist in that file, never worked around. The only bypass is the operator-level `COMMENT_BLOCKER_DISABLE=1` env var, set in a parent shell. Two cases justify it: a false positive on a real directive, and `/assessment --comments`, which annotates an external take-home whose reviewer expects commented source. Neither case relaxes the rule for ordinary work.
 
 ## Backward Compatibility
 
@@ -192,7 +207,7 @@ Enforced by: [`hooks/comment-blocker.py`](../hooks/comment-blocker.py). There is
 ## Dependencies
 
 1. **Ask permission.** Never add without approval.
-2. **Check existing.** Maybe already solved natively.
+2. **Check the platform first.** Before evaluating any package, check whether the language, the runtime, or the browser already solves it. This is a distinct step from checking the codebase, which [`pre-flight.md`](pre-flight.md) "Duplicate Check" covers, and it is the one most often skipped: the default reflex is to reach for a dependency or to hand-roll, when `URL`, `URLSearchParams`, `FormData`, `AbortSignal.timeout`, `Promise.allSettled`, `structuredClone`, and `crypto.randomUUID` already cover the case. Hand-rolling also reintroduces defect classes the platform closed, such as the prototype-pollution surface of manual query parsing. The replacement table and the cases where hand-rolling is still correct live in [`../standards/typescript-5x.md`](../standards/typescript-5x.md) under "Platform APIs".
 3. **Evaluate.** Compare the top 3-5 options in the category using a structured table with measurable criteria: maintenance activity counted as commits in the last 6 months, community size measured by stars and dependents, known vulnerabilities, bundle size, and API quality. Never pick by gut feeling.
 4. **Size.** Avoid heavy packages for simple tasks.
 5. Pin exact versions. Separate dev dependencies. Commit lockfile.
