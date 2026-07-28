@@ -178,7 +178,11 @@ def record(**fields: Any) -> None:
             fields["command_excerpt"] = redact(fields["command_excerpt"])[:MAX_EXCERPT]
         # Auto-fill cwd and session id from environment when caller did not pass them.
         fields.setdefault("cwd", os.getcwd())
-        sid = os.environ.get("CLAUDE_SESSION_ID") or os.environ.get("SESSION_ID")
+        sid = (
+            os.environ.get("CLAUDE_CODE_SESSION_ID")
+            or os.environ.get("CLAUDE_SESSION_ID")
+            or os.environ.get("SESSION_ID")
+        )
         if sid and "session_id" not in fields:
             fields["session_id"] = sid
         entry = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **fields}
