@@ -11,6 +11,10 @@ COVERAGE   := $(VENV)/bin/coverage
 RUFF       := $(VENV)/bin/ruff
 MYPY       := $(VENV)/bin/mypy
 
+# Must match the paths the CI Lint job passes to ruff. When the two drift,
+# a lint failure only ever surfaces after a push.
+LINT_PATHS := hooks scripts .github/scripts tests
+
 BATS       := $(shell command -v bats 2>/dev/null)
 SHELLCHECK := $(shell command -v shellcheck 2>/dev/null)
 ACTIONLINT := $(shell command -v actionlint 2>/dev/null)
@@ -45,8 +49,9 @@ help:
 
 install:
 	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install pytest pytest-cov pytest-xdist pytest-randomly \
-	                        coverage ruff mypy
+	$(PYTHON) -m pip install pytest==9.0.3 pytest-cov==7.1.0 pytest-xdist==3.8.0 \
+	                        pytest-randomly==4.1.0 coverage==7.14.1 ruff==0.15.15 \
+	                        mypy==2.1.0
 
 test:
 	$(PYTEST) -n $(PYTEST_N) --no-cov $(PYTEST_OPTS)
@@ -77,7 +82,7 @@ test-all: test-cov test-bats lint typecheck
 lint: lint-py lint-sh lint-yaml lint-actions
 
 lint-py:
-	$(RUFF) check hooks scripts tests
+	$(RUFF) check $(LINT_PATHS)
 
 lint-sh:
 ifndef SHELLCHECK
@@ -109,12 +114,12 @@ else
 endif
 
 format:
-	$(RUFF) format hooks scripts tests
-	$(RUFF) check --fix hooks scripts tests
+	$(RUFF) format $(LINT_PATHS)
+	$(RUFF) check --fix $(LINT_PATHS)
 
 format-check:
-	$(RUFF) format --check hooks scripts tests
-	$(RUFF) check hooks scripts tests
+	$(RUFF) format --check $(LINT_PATHS)
+	$(RUFF) check $(LINT_PATHS)
 
 typecheck:
 	$(MYPY) --strict scripts hooks
