@@ -30,6 +30,11 @@ GH_COMMAND = re.compile(r"(?:^|&&|\|\||;|\|)\s*gh\s+")
 # gh auth commands are exempt (needed to list accounts, get tokens)
 GH_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\|)\s*gh\s+auth\s+")
 
+# Invocations that reach no GitHub API and therefore need no account scoping
+GH_NO_API_EXEMPT = re.compile(
+    r"(?:^|&&|\|\||;|\|)\s*gh\s+(?:--version|--help|-h|version|help|completion\b|config\b|alias\b|extension\s+list\b)"
+)
+
 # GH_TOKEN is set inline before the gh command
 GH_TOKEN_SET = re.compile(r"GH_TOKEN=|export\s+GH_TOKEN=")
 
@@ -94,8 +99,8 @@ def main():
     # Allow gh auth commands (e.g., gh auth token, gh auth status)
     # but only if ALL gh commands in the string are gh auth
     gh_calls = GH_COMMAND.findall(command)
-    gh_auth_calls = GH_AUTH_EXEMPT.findall(command)
-    if len(gh_calls) == len(gh_auth_calls):
+    exempt_calls = GH_AUTH_EXEMPT.findall(command) + GH_NO_API_EXEMPT.findall(command)
+    if len(gh_calls) == len(exempt_calls):
         sys.exit(0)
 
     # Check if GH_TOKEN is set somewhere in the command
