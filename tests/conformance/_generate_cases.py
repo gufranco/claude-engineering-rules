@@ -761,10 +761,11 @@ def gen_suppression_cases() -> int:
     n = 0
     n += 1
     write_case(
-        f"allowlist/sup_{n:03d}-line-marker-allows.test.ts",
+        f"allowlist/sup_{n:03d}-line-marker-blocks.test.ts",
         {
-            "description": "line marker with justification allows",
-            "verdict": "allow",
+            "description": "our own line allow marker does not suppress",
+            "verdict": "block",
+            "detector": "array.",
             "payload": "edit",
         },
         "const items = []\nitems.push(1) // allow-mutation -- legacy hot path\n",
@@ -773,7 +774,7 @@ def gen_suppression_cases() -> int:
     write_case(
         f"allowlist/sup_{n:03d}-line-marker-no-justification-blocks.test.ts",
         {
-            "description": "line marker without justification still blocks",
+            "description": "bare allow marker blocks, same as the justified form",
             "verdict": "block",
             "detector": "array.",
             "payload": "edit",
@@ -782,10 +783,11 @@ def gen_suppression_cases() -> int:
     )
     n += 1
     write_case(
-        f"allowlist/sup_{n:03d}-file-marker-allows.test.ts",
+        f"allowlist/sup_{n:03d}-file-marker-blocks.test.ts",
         {
-            "description": "file-level marker with justification allows",
-            "verdict": "allow",
+            "description": "our own file allow marker does not suppress",
+            "verdict": "block",
+            "detector": "array.",
             "payload": "write",
         },
         "// @allow-mutation -- ported from legacy module\nconst items = []\nitems.push(1)\n",

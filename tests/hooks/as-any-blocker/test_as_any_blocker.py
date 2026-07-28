@@ -215,7 +215,7 @@ def test_allows_line_with_ts_expect_error_above(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_allows_line_with_inline_allow_marker(tool_use, assert_allows):
+def test_inline_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -224,10 +224,10 @@ def test_allows_line_with_inline_allow_marker(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "any")
 
 
-def test_allows_preceding_line_allow_marker(tool_use, assert_allows):
+def test_preceding_line_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -236,10 +236,10 @@ def test_allows_preceding_line_allow_marker(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "any")
 
 
-def test_allows_top_of_file_marker(tool_use, assert_allows):
+def test_top_of_file_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -249,6 +249,18 @@ def test_allows_top_of_file_marker(tool_use, assert_allows):
                 "const x = value as any;\n"
                 "const y: any[] = [];\n"
             ),
+        },
+    )
+
+    assert_blocks(HOOK, payload, "any")
+
+
+def test_ts_expect_error_directive_still_suppresses(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/x.ts",
+            "content": ("// @ts-expect-error\nconst x = value as any;\n"),
         },
     )
 

@@ -209,7 +209,7 @@ def test_allows_marker_in_tests_dir(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_allows_marker_with_line_suppression(tool_use, assert_allows):
+def test_line_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -218,10 +218,10 @@ def test_allows_marker_with_line_suppression(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "TODO")
 
 
-def test_allows_marker_with_file_suppression(tool_use, assert_allows):
+def test_file_allow_marker_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -234,7 +234,7 @@ def test_allows_marker_with_file_suppression(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "TODO")
 
 
 def test_bypass_env_var_allows(tool_use, assert_allows):
@@ -403,7 +403,7 @@ def test_file_marker_only_in_first_ten_lines(tool_use, assert_blocks):
     assert_blocks(HOOK, payload, "TODO")
 
 
-def test_file_marker_after_blank_lines(tool_use, assert_allows):
+def test_file_allow_marker_after_blank_lines_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -412,10 +412,10 @@ def test_file_marker_after_blank_lines(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    assert_blocks(HOOK, payload, "TODO")
 
 
-def test_line_marker_on_previous_line(tool_use, assert_allows):
+def test_allow_marker_on_previous_line_does_not_suppress(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {
@@ -424,6 +424,18 @@ def test_line_marker_on_previous_line(tool_use, assert_allows):
                 "// allow-todo -- this is a documented example\n"
                 "// TODO: documented example\n"
             ),
+        },
+    )
+
+    assert_blocks(HOOK, payload, "TODO")
+
+
+def test_eslint_directive_still_suppresses(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/app.ts",
+            "content": "// eslint-disable-next-line\n// TODO: documented example\n",
         },
     )
 

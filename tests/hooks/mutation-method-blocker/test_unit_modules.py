@@ -409,12 +409,12 @@ def test_suppression_is_suppressed_block_state_none_computes():
     assert result is True
 
 
-def test_suppression_is_suppressed_hook_marker():
+def test_suppression_ignores_our_own_allow_marker():
     lines = ["items.push(x); // allow-mutation -- justified"]
 
-    result = supp.is_suppressed(lines, 0, hook_marker="allow-mutation")
+    result = supp.is_suppressed(lines, 0)
 
-    assert result is True
+    assert result is False
 
 
 def test_suppression_strip_strings_backslash():
@@ -438,22 +438,6 @@ def test_suppression_has_inline_marker_in_block_comment():
     line = "/* @ts-ignore */ items.push(x);"
 
     result = supp.has_inline_marker(line, "@ts-ignore")
-
-    assert result is True
-
-
-def test_suppression_has_justification_trailer_no_match():
-    line = "// allow-mutation"
-
-    result = supp.has_justification_trailer(line)
-
-    assert result is False
-
-
-def test_suppression_has_justification_trailer_present():
-    line = "// allow-mutation -- legitimate use"
-
-    result = supp.has_justification_trailer(line)
 
     assert result is True
 
@@ -865,76 +849,18 @@ def test_methods_collection_kind_inconclusive():
     assert result is None
 
 
-def test_hook_file_marker_blank_lines_then_marker():
-    lines = ["", "", "// @allow-mutation -- justified", "items.push(x);"]
+def test_hook_exposes_no_allow_marker_api():
+    removed = (
+        "_file_marker_active",
+        "_line_allow_marker_active",
+        "_is_line_only_marker",
+        "ALLOW_FILE_MARKER",
+        "ALLOW_LINE_MARKER",
+    )
 
-    result = HOOK_MODULE._file_marker_active(lines)
+    present = [name for name in removed if hasattr(HOOK_MODULE, name)]
 
-    assert result is True
-
-
-def test_hook_file_marker_without_justification_inactive():
-    lines = ["// @allow-mutation", "items.push(x);"]
-
-    result = HOOK_MODULE._file_marker_active(lines)
-
-    assert result is False
-
-
-def test_hook_file_marker_past_top_scan_limit():
-    lines = [f"const v{i} = 1;" for i in range(15)] + ["// @allow-mutation -- late"]
-
-    result = HOOK_MODULE._file_marker_active(lines)
-
-    assert result is False
-
-
-def test_hook_line_only_marker_excludes_file_form():
-    line = "// @allow-mutation -- file form"
-
-    result = HOOK_MODULE._is_line_only_marker(line)
-
-    assert result is False
-
-
-def test_hook_line_only_marker_with_justification():
-    line = "items.push(x); // allow-mutation -- justified"
-
-    result = HOOK_MODULE._is_line_only_marker(line)
-
-    assert result is True
-
-
-def test_hook_line_allow_marker_invalid_index():
-    lines = ["a"]
-
-    result = HOOK_MODULE._line_allow_marker_active(lines, 5)
-
-    assert result is False
-
-
-def test_hook_line_allow_marker_negative_index():
-    lines = ["a"]
-
-    result = HOOK_MODULE._line_allow_marker_active(lines, -1)
-
-    assert result is False
-
-
-def test_hook_line_allow_marker_same_line():
-    lines = ["items.push(x); // allow-mutation -- justified"]
-
-    result = HOOK_MODULE._line_allow_marker_active(lines, 0)
-
-    assert result is True
-
-
-def test_hook_line_allow_marker_preceding_line():
-    lines = ["// allow-mutation -- justified", "items.push(x);"]
-
-    result = HOOK_MODULE._line_allow_marker_active(lines, 1)
-
-    assert result is True
+    assert present == []
 
 
 def test_hook_inside_state_mgmt_scope_empty_lines_state_filename():
@@ -1086,7 +1012,7 @@ def test_hook_build_message_contains_rule_reference():
     assert "array.push" in msg
 
 
-def test_hook_filter_matches_file_marker_suppresses_all():
+def test_hook_filter_matches_file_allow_marker_does_not_suppress():
     text = "// @allow-mutation -- justified\nitems.push(x);\n"
     matches = [core.Match(line=2, col=1, text="items.push(x);", detector="array.push")]
     block_state = supp.compute_block_state(text.splitlines())
@@ -1095,8 +1021,21 @@ def test_hook_filter_matches_file_marker_suppresses_all():
         matches, text, "/repo/src/app.ts", block_state
     )
 
+    assert len(survived) == 1
+    assert reasons == {}
+
+
+def test_hook_filter_matches_ts_nocheck_still_suppresses():
+    text = "// @ts-nocheck\nitems.push(x);\n"
+    matches = [core.Match(line=2, col=1, text="items.push(x);", detector="array.push")]
+    block_state = supp.compute_block_state(text.splitlines())
+
+    survived, reasons = HOOK_MODULE._filter_matches(
+        matches, text, "/repo/src/app.ts", block_state
+    )
+
     assert survived == []
-    assert reasons == {"file-marker": 1}
+    assert reasons == {"ts-nocheck": 1}
 
 
 def test_hook_filter_matches_param_allowlist_property_skipped():

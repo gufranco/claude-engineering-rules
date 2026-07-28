@@ -44,9 +44,7 @@ try:
     from suppression import line_or_prev_has_suppression  # type: ignore
 except Exception:  # pragma: no cover
 
-    def line_or_prev_has_suppression(  # type: ignore
-        lines, line_no, *, hook_marker=None
-    ):
+    def line_or_prev_has_suppression(lines, line_no):  # type: ignore
         return False
 
 
@@ -134,16 +132,14 @@ def find(text: str) -> list[str]:
     for i, line in enumerate(lines):
         if not (INCR_LIKE.search(line) or GET_LIKE.search(line)):
             continue
-        if line_or_prev_has_suppression(lines, i, hook_marker="@allow-redis-atomicity"):
+        if line_or_prev_has_suppression(lines, i):
             continue
         for j in range(i + 1, min(i + 1 + WINDOW_LINES, len(lines))):
             window = "\n".join(lines[i : j + 1])
             if ATOMIC_MARKERS.search(window):
                 break
             target = lines[j]
-            if line_or_prev_has_suppression(
-                lines, j, hook_marker="@allow-redis-atomicity"
-            ):
+            if line_or_prev_has_suppression(lines, j):
                 break
             if INCR_LIKE.search(line) and EXPIRE_LIKE.search(target):
                 hits.append(
