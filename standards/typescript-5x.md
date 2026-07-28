@@ -328,7 +328,85 @@ Every Temporal value is immutable. Methods like `add`, `subtract`, `with`, `unti
 
 When introducing Temporal in a new module, prefer it over `Date` and over date-fns. Use date-fns only when interop with a legacy Date-based API is required.
 
+## Platform APIs
+
+The section above covers language built-ins. This one covers the layer underneath: APIs the runtime and the browser already implement. Current Node, Deno, Bun, Cloudflare Workers, and every current browser ship them, so the same code runs unchanged across all of them.
+
+Reach for the platform API first. Hand-rolling an equivalent produces more code to review and reintroduces defect classes the platform already closed.
+
+Two caveats before the table. The newer entries have higher runtime floors than the rest, `AbortSignal.any` and `URL.canParse` most of all, so check the floor for the specific runtime the project targets rather than assuming the whole table lands together. And `crypto.randomUUID` and `crypto.subtle` require a secure context in browsers, meaning HTTPS or localhost.
+
+### Replacement table
+
+| Task | Hand-rolled default | Platform API | Defect class it removes |
+|------|--------------------|--------------|-------------------------|
+| Read query parameters | Split on `&` and `=`, assign into a plain object | `new URL(raw).searchParams` | Prototype pollution. Assigning a `__proto__` key into `{}` mutates the prototype chain. `URLSearchParams` stores entries internally and is immune |
+| Build a query string | Concatenate and call `encodeURIComponent` per field | `new URLSearchParams(record).toString()` | Missed or double encoding on any field the author forgets |
+| Validate a URL | `try { new URL(s) } catch { }` | `URL.canParse(s)` | Control flow through exceptions for an expected input case |
+| Read every form field | One `useState` and one `onChange` per field | `new FormData(form)` | State drift between the DOM and the component. Cost stays flat as fields are added |
+| Convert form data to an object | Loop and assign | `Object.fromEntries(formData)` | Same prototype-pollution surface as manual query parsing |
+| Time out a request | `setTimeout` paired with an `AbortController` | `AbortSignal.timeout(ms)` | Leaked timers. A manual pair leaks whenever an early return skips `clearTimeout` |
+| Cancel on any of several conditions | Track controllers and abort each by hand | `AbortSignal.any([a, b])` | Missed cancellation paths when one source is forgotten |
+| Remove event listeners on teardown | Keep a handler reference, call `removeEventListener` | Pass `{ signal }` to `addEventListener`, then abort once | Listener leaks from a mismatched or unreachable handler reference |
+| Run independent work in parallel | `Promise.all` plus per-item error flags | `Promise.allSettled` | One rejection discarding the results that did succeed |
+| Take the first success | Race with manual bookkeeping | `Promise.any` | Treating the first rejection as the outcome |
+| Deep copy a value | Recursive clone helper, or `JSON.parse(JSON.stringify(x))` | `structuredClone(x)` | Silent loss of `Date`, `Map`, `Set`, `BigInt`, and cyclic references |
+| Generate an identifier | Hand-rolled random string | `crypto.randomUUID()` | Weak entropy and collisions |
+| Hash a value | A hashing dependency | `crypto.subtle.digest` | An added dependency for something already present |
+| Text to bytes and back | Manual char-code loops | `TextEncoder`, `TextDecoder` | Broken handling of multi-byte and astral-plane characters |
+| Manipulate headers | Plain object with ad-hoc casing | `new Headers(init)` | Case-sensitivity bugs. HTTP header names are case-insensitive and `Headers` normalizes them |
+
+### Worked examples
+
+```typescript
+const params = new URL(request.url).searchParams;
+const page = Number(params.get('page') ?? '1');
+const tags = params.getAll('tag');
+```
+
+```typescript
+const response = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
+```
+
+```typescript
+function handleSubmit(event: SubmitEvent): void {
+  event.preventDefault();
+  const form = event.currentTarget as HTMLFormElement;
+  const values = Object.fromEntries(new FormData(form));
+}
+```
+
+`Object.fromEntries` keeps only the last value for a repeated field name. When a field can repeat, such as a multi-select or a checkbox group, read it with `formData.getAll(name)` instead.
+
+```typescript
+const results = await Promise.allSettled(ids.map((id) => load(id)));
+const loaded = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+const failures = results.filter((r) => r.status === 'rejected');
+```
+
+```typescript
+const controller = new AbortController();
+element.addEventListener('scroll', onScroll, { signal: controller.signal });
+element.addEventListener('resize', onResize, { signal: controller.signal });
+controller.abort();
+```
+
+One `abort()` removes every listener registered with that signal. No handler references to store, and no way to leak one by mismatching the function identity passed to `removeEventListener`.
+
+### When hand-rolling is correct
+
+The directive is platform-first, not platform-only. Write the custom version when one of these holds, and say which one in the code review:
+
+- The format is one the API does not model. `URLSearchParams` handles flat key-value pairs; deeply nested bracket notation needs a real parser.
+- A benchmark shows the platform API is the bottleneck. A measured number, not a suspicion. See [`performance.md`](performance.md).
+- The target runtime lacks the API and a polyfill costs more than the custom code.
+- The platform API's behavior is close but wrong for the case, and the difference is stated. `structuredClone` throws on functions and DOM nodes, so a structure holding either needs different handling.
+
+Absent one of those, the platform API wins.
+
 ## Related Standards
 
-- [`standards/frontend.md`](frontend.md): Frontend Design
-- `~/.claude/rules/code-style.md` "ES2024+ Fix Suggestions" lists every mutating call and its non-mutating replacement.
+- [`frontend.md`](frontend.md): Frontend Design
+- [`performance.md`](performance.md): benchmark thresholds for the hot-path carve-out above
+- [`../rules/lang/typescript-immutability.md`](../rules/lang/typescript-immutability.md) "ES2024+ Fix Suggestions" lists every mutating call and its non-mutating replacement.
+- [`../checklists/checklist.md`](../checklists/checklist.md) category 4 carries the `Promise.all` and `Promise.allSettled` check from the concurrency-safety angle.
