@@ -19,6 +19,30 @@ def test_blocks_gh_pr_without_token(tool_use, assert_blocks):
     assert_blocks(HOOK, payload)
 
 
+def test_allows_gh_version(tool_use, assert_allows):
+    payload = tool_use("Bash", {"command": "gh --version"})
+
+    assert_allows(HOOK, payload)
+
+
+def test_allows_gh_help(tool_use, assert_allows):
+    payload = tool_use("Bash", {"command": "gh --help"})
+
+    assert_allows(HOOK, payload)
+
+
+def test_allows_gh_config_get(tool_use, assert_allows):
+    payload = tool_use("Bash", {"command": "gh config get editor"})
+
+    assert_allows(HOOK, payload)
+
+
+def test_blocks_no_api_call_chained_with_api_call(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "gh --version && gh pr list"})
+
+    assert_blocks(HOOK, payload)
+
+
 def test_blocks_gh_auth_switch(tool_use, assert_blocks):
     payload = tool_use("Bash", {"command": "gh auth switch --user alice"})
 
