@@ -34,13 +34,10 @@ PROPERTY_BLOCKED: list[tuple[str, str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet", "detector"), PROPERTY_BLOCKED)
 def test_property_mutation_blocks(run_hook, label, snippet, detector):
-    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"{label}: expected block, got {code}\n{stderr}"
     assert detector in stderr, f"{label}: detector {detector} missing"
 
@@ -68,18 +65,14 @@ PROPERTY_ALLOWED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet"), PROPERTY_ALLOWED)
 def test_property_allowed_passes(run_hook, label, snippet):
-    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"{label}: unexpected block\n{stderr}"
 
 
 def test_object_initializer_does_not_trigger(run_hook):
-    # Arrange
     content = """export const palette = {
   primary: '#000',
   secondary: '#fff',
@@ -88,21 +81,16 @@ def test_object_initializer_does_not_trigger(run_hook):
 """
     payload = make_write_payload("/repo/src/palette.ts", content)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, stderr
 
 
 def test_property_assignment_inside_class_constructor_blocks(run_hook):
-    # Arrange
     snippet = "this.tally = 0"
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2
     assert "property.assignment" in stderr

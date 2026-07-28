@@ -28,7 +28,6 @@ ZERO_WIDTH_JOINER = chr(0x200D)
 
 
 def test_blocks_em_dash_in_write(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -37,12 +36,10 @@ def test_blocks_em_dash_in_write(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
 def test_blocks_em_dash_in_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -52,12 +49,10 @@ def test_blocks_em_dash_in_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
 def test_blocks_em_dash_in_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -69,18 +64,15 @@ def test_blocks_em_dash_in_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
 def test_blocks_em_dash_in_bash(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"git commit -m 'fix: handle null{EM_DASH}user id'"},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
@@ -89,7 +81,6 @@ def test_blocks_em_dash_in_bash(tool_use, assert_blocks):
     [BOX_DRAWING_LIGHT_HORIZONTAL, BOX_DRAWING_DOUBLE_VERTICAL, chr(0x257F)],
 )
 def test_blocks_box_drawing(tool_use, assert_blocks, box_char):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -98,7 +89,6 @@ def test_blocks_box_drawing(tool_use, assert_blocks, box_char):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "box-drawing")
 
 
@@ -114,7 +104,6 @@ def test_blocks_box_drawing(tool_use, assert_blocks, box_char):
     ],
 )
 def test_blocks_emoji(tool_use, assert_blocks, emoji):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -123,12 +112,10 @@ def test_blocks_emoji(tool_use, assert_blocks, emoji):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "emoji")
 
 
 def test_blocks_multiple_violations_collected(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -141,12 +128,10 @@ def test_blocks_multiple_violations_collected(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Blocked")
 
 
 def test_blocks_em_dash_at_start_of_text(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -155,12 +140,10 @@ def test_blocks_em_dash_at_start_of_text(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
 def test_blocks_em_dash_at_end_of_text(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -169,12 +152,10 @@ def test_blocks_em_dash_at_end_of_text(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
 def test_blocks_em_dash_with_newline_in_snippet(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -183,12 +164,10 @@ def test_blocks_em_dash_with_newline_in_snippet(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "em dash")
 
 
 def test_allows_clean_ascii_write(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -197,23 +176,19 @@ def test_allows_clean_ascii_write(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_clean_bash(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix: handle null user id'"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_clean_multiedit(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -225,12 +200,10 @@ def test_allows_clean_multiedit(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_non_box_drawing_unicode(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -239,12 +212,10 @@ def test_allows_non_box_drawing_unicode(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -253,12 +224,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"BANNED_PROSE_CHARS_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -267,7 +236,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -277,26 +245,21 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/x.md"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/x.md", "content": 12345},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -306,12 +269,10 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -320,12 +281,10 @@ def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -334,20 +293,16 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_bash_non_string_command_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash", {"command": 42})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "banned-prose-chars.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
@@ -355,7 +310,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -366,5 +320,4 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0

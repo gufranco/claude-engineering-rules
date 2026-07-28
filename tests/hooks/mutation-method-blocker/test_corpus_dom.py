@@ -22,7 +22,6 @@ CORPUS_FILE = (
 
 
 def test_dom_clean_corpus_passes(hook_path: Path) -> None:
-    # Arrange
     content = CORPUS_FILE.read_text(encoding="utf-8")
     payload = {
         "tool_name": "Write",
@@ -32,8 +31,6 @@ def test_dom_clean_corpus_passes(hook_path: Path) -> None:
         },
     }
 
-    # Act
     code, stdout, stderr = run_hook_subprocess(hook_path, payload)
 
-    # Assert
     assert_allows(code, stdout, stderr)

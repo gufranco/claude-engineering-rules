@@ -14,7 +14,6 @@ HOOK = "sequelize-schema-sync"
 
 
 def test_blocks_sync_force_true(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -26,12 +25,10 @@ def test_blocks_sync_force_true(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "force: true")
 
 
 def test_blocks_sync_alter_true(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -41,12 +38,10 @@ def test_blocks_sync_alter_true(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "alter: true")
 
 
 def test_blocks_umzug_storage_none(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -60,12 +55,10 @@ def test_blocks_umzug_storage_none(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "storage: 'none'")
 
 
 def test_blocks_indexes_entry_without_name(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -82,12 +75,10 @@ def test_blocks_indexes_entry_without_name(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "indexes entry")
 
 
 def test_allows_indexes_entry_with_name(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -104,12 +95,10 @@ def test_allows_indexes_entry_with_name(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_sync_with_no_options(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -118,12 +107,10 @@ def test_allows_sync_with_no_options(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_umzug_with_sequelize_storage(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -137,12 +124,10 @@ def test_allows_umzug_with_sequelize_storage(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -151,12 +136,10 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_spec_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -166,12 +149,10 @@ def test_skips_spec_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_non_ts_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -180,12 +161,10 @@ def test_skips_non_ts_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -194,12 +173,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"SEQUELIZE_SCHEMA_SYNC_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -208,7 +185,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -218,7 +194,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "sequelize-schema-sync.py"
     )
@@ -228,7 +203,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -239,42 +213,34 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
 
 
 def test_invalid_json_via_run_hook(run_hook):
-    # Arrange / Act
     code, _stdout, _stderr = run_hook("sequelize-schema-sync", {"_invalid": True})
 
-    # Assert
     assert code == 0
 
 
 def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const x = 1;\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/server.ts", "content": 42},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -283,12 +249,10 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_indexes_entry_with_complex_fields_and_name_is_allowed(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -306,12 +270,10 @@ def test_indexes_entry_with_complex_fields_and_name_is_allowed(tool_use, assert_
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_indexes_array_with_no_entries_is_allowed(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -326,23 +288,19 @@ def test_indexes_array_with_no_entries_is_allowed(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/server.ts"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_collects_findings(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -354,5 +312,4 @@ def test_multiedit_collects_findings(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Blocked")

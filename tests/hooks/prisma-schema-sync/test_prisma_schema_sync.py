@@ -24,7 +24,6 @@ def _write_schema(tmp_path: Path, body: str) -> Path:
 
 
 def test_blocks_create_index_missing_in_schema(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n  homeTeam String\n}\n"),
@@ -37,12 +36,10 @@ def test_blocks_create_index_missing_in_schema(tmp_path, tool_use, assert_blocks
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Game_homeTeam_idx")
 
 
 def test_blocks_add_column_not_in_schema(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -55,12 +52,10 @@ def test_blocks_add_column_not_in_schema(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "ADD COLUMN")
 
 
 def test_blocks_create_table_no_model(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -73,12 +68,10 @@ def test_blocks_create_table_no_model(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "CREATE TABLE")
 
 
 def test_blocks_drop_index_still_in_schema(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         (
@@ -97,12 +90,10 @@ def test_blocks_drop_index_still_in_schema(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "DROP INDEX")
 
 
 def test_blocks_drop_column_field_still_present(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n  homeTeam String\n}\n"),
@@ -115,12 +106,10 @@ def test_blocks_drop_column_field_still_present(tmp_path, tool_use, assert_block
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "DROP COLUMN")
 
 
 def test_blocks_drop_table_model_still_present(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -133,14 +122,12 @@ def test_blocks_drop_table_model_still_present(tmp_path, tool_use, assert_blocks
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "DROP TABLE")
 
 
 def test_blocks_create_unique_index_missing_in_schema(
     tmp_path, tool_use, assert_blocks
 ):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model User {\n  id String @id\n  email String\n}\n"),
@@ -153,12 +140,10 @@ def test_blocks_create_unique_index_missing_in_schema(
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "User_email_key")
 
 
 def test_allows_migration_matching_schema(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         (
@@ -183,12 +168,10 @@ def test_allows_migration_matching_schema(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_non_migration_path(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -197,12 +180,10 @@ def test_skips_non_migration_path(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -215,12 +196,10 @@ def test_disable_env_bypasses(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"PRISMA_SCHEMA_SYNC_DISABLE": "1"})
 
 
 def test_disable_env_other_value_still_blocks(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -233,7 +212,6 @@ def test_disable_env_other_value_still_blocks(tmp_path, tool_use, assert_blocks)
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -243,7 +221,6 @@ def test_disable_env_other_value_still_blocks(tmp_path, tool_use, assert_blocks)
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "prisma-schema-sync.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
@@ -251,7 +228,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -262,34 +238,28 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/prisma/migrations/20260101000000_init/migration.sql"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_file_path_is_allowed(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": 'CREATE INDEX "x_idx" ON "x" ("y");\n'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_edit_tool_is_analyzed(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -303,12 +273,10 @@ def test_edit_tool_is_analyzed(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Game_missing_idx")
 
 
 def test_multiedit_tool_is_analyzed(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -327,12 +295,10 @@ def test_multiedit_tool_is_analyzed(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Game_missing_idx")
 
 
 def test_no_schema_found_is_reported(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migrations_dir = tmp_path / "noschema" / "prisma" / "migrations" / "init"
     migrations_dir.mkdir(parents=True)
     migration_sql = migrations_dir / "migration.sql"
@@ -344,12 +310,10 @@ def test_no_schema_found_is_reported(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "no schema.prisma found")
 
 
 def test_add_column_table_with_no_model(tmp_path, tool_use, assert_blocks):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -362,12 +326,10 @@ def test_add_column_table_with_no_model(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "no model")
 
 
 def test_strip_comments_block_and_line(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -384,12 +346,10 @@ def test_strip_comments_block_and_line(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_schema_with_at_map_table_override(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         (
@@ -413,12 +373,10 @@ def test_schema_with_at_map_table_override(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -428,12 +386,10 @@ def test_write_non_string_content_is_safe(tmp_path, tool_use, assert_allows):
         {"file_path": str(migration_sql), "content": 12345},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_edit_non_string_new_string_is_safe(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -447,12 +403,10 @@ def test_edit_non_string_new_string_is_safe(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_edits_safe(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -465,12 +419,10 @@ def test_multiedit_non_dict_edits_safe(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_drop_column_for_unknown_table_allowed(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -483,12 +435,10 @@ def test_drop_column_for_unknown_table_allowed(tmp_path, tool_use, assert_allows
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_drop_table_unknown_allowed(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -501,12 +451,10 @@ def test_drop_table_unknown_allowed(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_drop_index_not_in_schema_is_allowed(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -519,12 +467,10 @@ def test_drop_index_not_in_schema_is_allowed(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_schema_via_sibling_prisma_directory(tmp_path, tool_use, assert_blocks):
-    # Arrange
     pkg = tmp_path / "packages" / "database"
     (pkg / "prisma" / "migrations" / "init").mkdir(parents=True)
     (pkg / "prisma" / "schema.prisma").write_text(
@@ -540,12 +486,10 @@ def test_schema_via_sibling_prisma_directory(tmp_path, tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Game_x_idx")
 
 
 def test_schema_nested_braces_in_model_body(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         (
@@ -565,12 +509,10 @@ def test_schema_nested_braces_in_model_body(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_schema_with_unmatched_field_lines(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         (
@@ -589,12 +531,10 @@ def test_schema_with_unmatched_field_lines(tmp_path, tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_schema_via_parent_with_sibling_prisma(tmp_path, tool_use, assert_blocks):
-    # Arrange
     monorepo = tmp_path / "monorepo"
     (monorepo / "prisma").mkdir(parents=True)
     (monorepo / "prisma" / "schema.prisma").write_text(
@@ -613,12 +553,10 @@ def test_schema_via_parent_with_sibling_prisma(tmp_path, tool_use, assert_blocks
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "Game_x_idx")
 
 
 def test_multiedit_with_dict_non_string_new_string(tmp_path, tool_use, assert_allows):
-    # Arrange
     migration_sql = _write_schema(
         tmp_path,
         ("model Game {\n  id String @id\n}\n"),
@@ -631,12 +569,10 @@ def test_multiedit_with_dict_non_string_new_string(tmp_path, tool_use, assert_al
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_schema_read_failure_is_reported(tmp_path, tool_use, assert_blocks):
-    # Arrange
     prisma_dir = tmp_path / "prisma"
     prisma_dir.mkdir()
     schema = prisma_dir / "schema.prisma"
@@ -654,7 +590,6 @@ def test_schema_read_failure_is_reported(tmp_path, tool_use, assert_blocks):
             },
         )
 
-        # Act / Assert
         assert_blocks(HOOK, payload, "failed to read")
     finally:
         schema.chmod(0o644)

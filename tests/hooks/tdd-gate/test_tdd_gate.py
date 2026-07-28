@@ -31,20 +31,16 @@ HOOK = "tdd-gate"
 def test_blocks_new_production_source_without_test(
     tool_use, assert_blocks, tmp_path, rel_path
 ):
-    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "without a companion test")
 
 
 def test_blocks_typescript_service(tool_use, assert_blocks, tmp_path):
-    # Arrange
     target = tmp_path / "src/api/orders.service.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "BLOCKED")
 
 
@@ -66,13 +62,11 @@ def test_blocks_typescript_service(tool_use, assert_blocks, tmp_path):
     ],
 )
 def test_allows_test_file_creation(tool_use, assert_allows, tmp_path, rel_path):
-    # Arrange
     target = tmp_path / rel_path
     payload = tool_use(
         "Write", {"file_path": str(target), "content": "test('x', () => {})"}
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -95,11 +89,9 @@ def test_allows_test_file_creation(tool_use, assert_allows, tmp_path, rel_path):
     ],
 )
 def test_allows_non_source_files(tool_use, assert_allows, tmp_path, rel_path):
-    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -121,11 +113,9 @@ def test_allows_non_source_files(tool_use, assert_allows, tmp_path, rel_path):
     ],
 )
 def test_allows_excluded_directories(tool_use, assert_allows, tmp_path, rel_path):
-    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -146,11 +136,9 @@ def test_allows_excluded_directories(tool_use, assert_allows, tmp_path, rel_path
 def test_allows_generated_and_minified_files(
     tool_use, assert_allows, tmp_path, rel_path
 ):
-    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -160,43 +148,36 @@ def test_allows_generated_and_minified_files(
 
 
 def test_allows_when_sibling_test_exists(tool_use, assert_allows, tmp_path):
-    # Arrange
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     (src_dir / "calculator.test.ts").write_text("test('x', () => {})")
     target = src_dir / "calculator.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_when_spec_sibling_exists(tool_use, assert_allows, tmp_path):
-    # Arrange
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     (src_dir / "calculator.spec.ts").write_text("test('x', () => {})")
     target = src_dir / "calculator.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_when_go_test_sibling_exists(tool_use, assert_allows, tmp_path):
-    # Arrange
     pkg = tmp_path / "internal" / "api"
     pkg.mkdir(parents=True)
     (pkg / "handler_test.go").write_text("package api\n")
     target = pkg / "handler.go"
     payload = tool_use("Write", {"file_path": str(target), "content": "package api"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_when_tests_dir_mirror_exists(tool_use, assert_allows, tmp_path):
-    # Arrange
     pkg = tmp_path / "src" / "services"
     pkg.mkdir(parents=True)
     tests = tmp_path / "tests"
@@ -205,12 +186,10 @@ def test_allows_when_tests_dir_mirror_exists(tool_use, assert_allows, tmp_path):
     target = pkg / "user.py"
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_when_nested_tests_subfolder_exists(tool_use, assert_allows, tmp_path):
-    # Arrange
     pkg = tmp_path / "src"
     pkg.mkdir()
     subtests = pkg / "__tests__"
@@ -219,7 +198,6 @@ def test_allows_when_nested_tests_subfolder_exists(tool_use, assert_allows, tmp_
     target = pkg / "Button.tsx"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -229,7 +207,6 @@ def test_allows_when_nested_tests_subfolder_exists(tool_use, assert_allows, tmp_
 
 
 def test_allows_edit_of_existing_file(tool_use, assert_allows, tmp_path):
-    # Arrange
     target = tmp_path / "src" / "user.py"
     target.parent.mkdir(parents=True)
     target.write_text("x = 1\n")
@@ -242,18 +219,15 @@ def test_allows_edit_of_existing_file(tool_use, assert_allows, tmp_path):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_write_overwriting_existing_file(tool_use, assert_allows, tmp_path):
-    # Arrange
     target = tmp_path / "src" / "user.py"
     target.parent.mkdir(parents=True)
     target.write_text("x = 1\n")
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 2\n"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -264,10 +238,8 @@ def test_allows_write_overwriting_existing_file(tool_use, assert_allows, tmp_pat
 
 @pytest.mark.parametrize("tool_name", ["Bash", "Read", "Grep", "Glob", "WebFetch"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
-    # Arrange
     payload = tool_use(tool_name, {"command": "echo hi"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -277,11 +249,9 @@ def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows, tmp_path):
-    # Arrange
     target = tmp_path / "src/user.py"
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1"})
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"TDD_GATE_DISABLE": "1"})
 
 
@@ -291,29 +261,23 @@ def test_bypass_env_var_disables_check(tool_use, assert_allows, tmp_path):
 
 
 def test_handles_missing_tool_input(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Write")
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_handles_empty_file_path(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Write", {"file_path": "", "content": "x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_handles_malformed_json(run_hook, tmp_path):
-    # Arrange
     import subprocess
     import sys
 
     hook_path = Path.home() / ".claude" / "hooks" / "tdd-gate.py"
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not json at all",
@@ -323,5 +287,4 @@ def test_handles_malformed_json(run_hook, tmp_path):
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0

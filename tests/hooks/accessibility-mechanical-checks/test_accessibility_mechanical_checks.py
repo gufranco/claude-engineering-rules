@@ -10,7 +10,6 @@ HOOK = "accessibility-mechanical-checks"
 
 
 def test_blocks_img_without_alt(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -19,12 +18,10 @@ def test_blocks_img_without_alt(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC001")
 
 
 def test_blocks_input_without_label(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -33,12 +30,10 @@ def test_blocks_input_without_label(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC002")
 
 
 def test_blocks_role_button_on_div(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -47,12 +42,10 @@ def test_blocks_role_button_on_div(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC003")
 
 
 def test_blocks_positive_tabindex(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -61,12 +54,10 @@ def test_blocks_positive_tabindex(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC004")
 
 
 def test_blocks_html_without_lang(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -75,12 +66,10 @@ def test_blocks_html_without_lang(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC005")
 
 
 def test_blocks_anchor_without_href(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -89,12 +78,10 @@ def test_blocks_anchor_without_href(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC006")
 
 
 def test_blocks_click_on_div(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -103,12 +90,10 @@ def test_blocks_click_on_div(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC007")
 
 
 def test_blocks_password_without_autocomplete(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -117,12 +102,10 @@ def test_blocks_password_without_autocomplete(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC008")
 
 
 def test_allows_img_with_alt(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -131,12 +114,10 @@ def test_allows_img_with_alt(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_decorative_image_with_empty_alt(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -145,12 +126,10 @@ def test_allows_decorative_image_with_empty_alt(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_input_with_aria_label(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -159,12 +138,10 @@ def test_allows_input_with_aria_label(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_password_with_autocomplete(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -173,12 +150,10 @@ def test_allows_password_with_autocomplete(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_html_with_lang(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -187,12 +162,10 @@ def test_allows_html_with_lang(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -201,12 +174,10 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_non_ui_extensions(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -215,12 +186,10 @@ def test_skips_non_ui_extensions(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_bypass_env_disables(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -229,12 +198,10 @@ def test_bypass_env_disables(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"ACCESSIBILITY_CHECKS_DISABLE": "1"})
 
 
 def test_works_on_edit_payload(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -244,12 +211,10 @@ def test_works_on_edit_payload(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC001")
 
 
 def test_works_on_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -260,23 +225,19 @@ def test_works_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AMC001")
 
 
 def test_ignores_bash_tool(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "echo '<img src=x>'"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_node_modules(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -285,12 +246,10 @@ def test_skips_node_modules(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_content_allows(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -299,5 +258,4 @@ def test_empty_content_allows(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

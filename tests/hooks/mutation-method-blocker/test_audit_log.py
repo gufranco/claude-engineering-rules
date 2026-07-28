@@ -42,18 +42,15 @@ def _read_records(log_path: Path) -> list[dict]:
 
 
 def test_block_emits_audit_record(hook_path, audit_home):
-    # Arrange
     home, log_path = audit_home
     payload = make_edit_payload("/repo/src/app.ts", "items.push(value)")
 
-    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
         env={"HOME": str(home), "CLAUDE_HOOK_AUDIT_DISABLE": "0"},
     )
 
-    # Assert
     assert code == 2
     records = _read_records(log_path)
     assert records, "expected at least one audit record"
@@ -71,18 +68,15 @@ def test_block_emits_audit_record(hook_path, audit_home):
 
 
 def test_allow_emits_audit_record_when_files_scanned(hook_path, audit_home):
-    # Arrange
     home, log_path = audit_home
     payload = make_edit_payload("/repo/src/app.ts", "const next = [...items, value]")
 
-    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
         env={"HOME": str(home), "CLAUDE_HOOK_AUDIT_DISABLE": "0"},
     )
 
-    # Assert
     assert code == 0
     records = _read_records(log_path)
     allow_records = [r for r in records if r.get("decision") == "allow"]
@@ -95,11 +89,9 @@ def test_allow_emits_audit_record_when_files_scanned(hook_path, audit_home):
 
 
 def test_bypass_env_emits_audit_record(hook_path, audit_home):
-    # Arrange
     home, log_path = audit_home
     payload = make_edit_payload("/repo/src/app.ts", "items.push(value)")
 
-    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
@@ -110,7 +102,6 @@ def test_bypass_env_emits_audit_record(hook_path, audit_home):
         },
     )
 
-    # Assert
     assert code == 0
     records = _read_records(log_path)
     bypass_records = [r for r in records if r.get("decision") == "bypass"]
@@ -119,7 +110,6 @@ def test_bypass_env_emits_audit_record(hook_path, audit_home):
 
 
 def test_block_record_includes_state_mgmt_allow_reasons(hook_path, audit_home):
-    # Arrange
     home, log_path = audit_home
     snippet = """import { produce } from 'immer';
 const next = produce(state, (draft) => {
@@ -129,14 +119,12 @@ items.push(direct);
 """
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
-    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
         env={"HOME": str(home), "CLAUDE_HOOK_AUDIT_DISABLE": "0"},
     )
 
-    # Assert
     assert code == 2
     records = _read_records(log_path)
     block = next((r for r in records if r.get("decision") == "block"), None)
