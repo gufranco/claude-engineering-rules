@@ -17,23 +17,29 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 
-def _reset_module():
-    if "mutation_fix_lookup" in sys.modules:
-        del sys.modules["mutation_fix_lookup"]
-
-
 @pytest.fixture(autouse=True)
-def _ensure_clean_module():
+def _restore_table_globals():
+    """Restore the module-level lookup cache after every test in this file.
+
+    `_load_table()` memoizes into `_TABLE`, `_EXACT`, and `_BY_CATEGORY`. The
+    tests below overwrite those to exercise the load error paths. Without a
+    restore, every later test sharing the worker sees an empty table and
+    `suggest_fix` returns None, which surfaces as an order-dependent failure.
+    """
+    from _lib import mutation_fix_lookup as fl
+
+    saved = (fl._TABLE, fl._EXACT, fl._BY_CATEGORY)
     yield
-    _reset_module()
-    from _lib import mutation_fix_lookup  # noqa: F401, E402
+    fl._TABLE, fl._EXACT, fl._BY_CATEGORY = saved
 
 
-def test_load_table_short_circuits_when_already_loaded() -> None:
+def test_load_table_short_circuits_when_already_loaded(monkeypatch) -> None:
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
 
-    fl._TABLE = {"_meta": {}, "exact": {"foo": {"code": "X", "fix": "y"}}}
-    fl._EXACT = fl._TABLE["exact"]
+    monkeypatch.setattr(
+        fl, "_TABLE", {"_meta": {}, "exact": {"foo": {"code": "X", "fix": "y"}}}
+    )
+    monkeypatch.setattr(fl, "_EXACT", fl._TABLE["exact"])
 
     fl._load_table()
 
@@ -41,13 +47,12 @@ def test_load_table_short_circuits_when_already_loaded() -> None:
 
 
 def test_load_table_handles_missing_file(monkeypatch, tmp_path: Path) -> None:
-    _reset_module()
     missing = tmp_path / "missing.json"
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
 
-    fl._TABLE = {}
-    fl._EXACT = {}
-    fl._BY_CATEGORY = {}
+    monkeypatch.setattr(fl, "_TABLE", {})
+    monkeypatch.setattr(fl, "_EXACT", {})
+    monkeypatch.setattr(fl, "_BY_CATEGORY", {})
     monkeypatch.setattr(fl, "_FIX_TABLE_PATH", missing)
 
     fl._load_table()
@@ -58,14 +63,13 @@ def test_load_table_handles_missing_file(monkeypatch, tmp_path: Path) -> None:
 
 
 def test_load_table_handles_invalid_json(monkeypatch, tmp_path: Path) -> None:
-    _reset_module()
     bad = tmp_path / "bad.json"
     bad.write_text("not json {", encoding="utf-8")
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
 
-    fl._TABLE = {}
-    fl._EXACT = {}
-    fl._BY_CATEGORY = {}
+    monkeypatch.setattr(fl, "_TABLE", {})
+    monkeypatch.setattr(fl, "_EXACT", {})
+    monkeypatch.setattr(fl, "_BY_CATEGORY", {})
     monkeypatch.setattr(fl, "_FIX_TABLE_PATH", bad)
 
     fl._load_table()
