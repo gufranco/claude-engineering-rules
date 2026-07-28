@@ -1,0 +1,15 @@
+# Repositories with no pull-request workflow, where pushing straight to the
+# default branch is the intended path rather than an accident.
+#
+# Read by hooks/dangerous-command-blocker.py. One absolute path or fnmatch
+# glob per line. Blank lines and lines starting with `#` are ignored.
+# `~` is expanded. A match suppresses the protected-branch block for that
+# repository only; every other dangerous-command rule still applies.
+#
+# Add a repository here only when you own it alone. For anything with
+# reviewers, use a feature branch and a PR.
+
+~/.claude
+~/.dotfiles
+~/DoomNG
+~/Dropbox/Workspace/@ Pessoal/*

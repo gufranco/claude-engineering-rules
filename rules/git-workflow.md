@@ -244,6 +244,14 @@ If a change causes problems:
 
 **Never** force push or amend pushed commits.
 
+## Protected Branches
+
+Pushing straight to `main`, `master`, or `develop` is blocked. Use a feature branch and open a PR.
+
+Solo repositories are the exception: a repository with no reviewers has no PR workflow to protect. List those in [`solo-repos.txt`](../solo-repos.txt), one absolute path or fnmatch glob per line, and the block lifts for that repository only. Add an entry the first time the repository comes up rather than setting `ALLOW_PROTECTED_BRANCH_PUSH=1` on every push; a bypass repeated per-command is a missing config entry.
+
+Never add a repository with reviewers to that file.
+
 ## Migration Ordering
 
 When a project uses sequential migrations, Prisma, Flyway, Knex, etc., migrations for the current task must always have the latest timestamps. Other team members may merge migrations while you work.

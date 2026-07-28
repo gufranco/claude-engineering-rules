@@ -88,6 +88,69 @@ def test_allows_empty_command(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+def _load_module():
+    import importlib.util as _util
+    from pathlib import Path as _Path
+
+    hook = _Path.home() / ".claude" / "hooks" / "dangerous-command-blocker.py"
+    spec = _util.spec_from_file_location("_dcb_mod", str(hook))
+    module = _util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _with_allowlist(monkeypatch, tmp_path, body: str):
+    module = _load_module()
+    listing = tmp_path / "solo-repos.txt"
+    listing.write_text(body, encoding="utf-8")
+    monkeypatch.setattr(module, "SOLO_REPO_ALLOWLIST", str(listing))
+    return module
+
+
+def test_solo_repo_matches_exact_path(monkeypatch, tmp_path):
+    module = _with_allowlist(monkeypatch, tmp_path, "/repos/solo\n")
+
+    assert module._is_solo_repo("/repos/solo") is True
+
+
+def test_solo_repo_matches_glob(monkeypatch, tmp_path):
+    module = _with_allowlist(monkeypatch, tmp_path, "/repos/personal/*\n")
+
+    assert module._is_solo_repo("/repos/personal/toy") is True
+
+
+def test_solo_repo_rejects_unlisted_path(monkeypatch, tmp_path):
+    module = _with_allowlist(monkeypatch, tmp_path, "/repos/solo\n")
+
+    assert module._is_solo_repo("/repos/team-service") is False
+
+
+def test_solo_repo_ignores_blank_and_comment_lines(monkeypatch, tmp_path):
+    module = _with_allowlist(monkeypatch, tmp_path, "\n# /repos/team\n\n/repos/solo\n")
+
+    assert module._is_solo_repo("/repos/team") is False
+    assert module._is_solo_repo("/repos/solo") is True
+
+
+def test_solo_repo_tolerates_trailing_slash(monkeypatch, tmp_path):
+    module = _with_allowlist(monkeypatch, tmp_path, "/repos/solo/\n")
+
+    assert module._is_solo_repo("/repos/solo") is True
+
+
+def test_solo_repo_false_for_empty_root(monkeypatch, tmp_path):
+    module = _with_allowlist(monkeypatch, tmp_path, "/repos/solo\n")
+
+    assert module._is_solo_repo("") is False
+
+
+def test_solo_repo_false_when_allowlist_missing(monkeypatch, tmp_path):
+    module = _load_module()
+    monkeypatch.setattr(module, "SOLO_REPO_ALLOWLIST", str(tmp_path / "absent.txt"))
+
+    assert module._is_solo_repo("/repos/solo") is False
+
+
 def test_invalid_json_stdin_does_not_crash():
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "dangerous-command-blocker.py"
