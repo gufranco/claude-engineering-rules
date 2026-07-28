@@ -19,18 +19,17 @@ Skipped:
   - Type declaration files where `any` is unavoidable: *.d.ts (still warned).
   - Hooks directory itself (~/.claude/).
 
-Suppression markers (per line):
+Third-party tool directives are honored, since they are the one comment form
+the project ban exempts:
+  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
+  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
+  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
 
-  - `// allow-any -- justification` honored when justified.
-  - `// @allow-any -- justification` at the top of the file
-    suppresses every `any` in that file.
-  - Standard ESLint and TypeScript markers honored:
-    `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-    `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-    block ranges `/* eslint-disable */ ... /* eslint-enable */`.
+There is no allow marker of our own. The fix for an unavoidable `any` is
+`unknown` plus a narrowing guard, which the type system checks.
 
 Bypass:
-  AS_ANY_DISABLE=1
+  AS_ANY_DISABLE=1, or a TTL entry via scripts/bypass.py
 """
 
 from __future__ import annotations
@@ -52,8 +51,6 @@ except Exception:  # pragma: no cover
 
 from _lib.suppression import (
     compute_block_state,
-    has_inline_marker,
-    has_justification_trailer,
     is_suppressed,
 )
 
@@ -67,9 +64,6 @@ PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"<[^<>]*\bany\b[^<>]*>"), "generic with any"),
 )
 
-ALLOW_FILE_MARKER = "@allow-any"
-ALLOW_LINE_MARKER = "allow-any"
-TOP_OF_FILE_SCAN = 10
 MAX_HITS_PER_FILE = 8
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -110,49 +104,14 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
     return out
 
 
-def _file_marker_active(lines: list[str]) -> bool:
-    """True when a top-of-file allow marker exists with a justification trailer."""
-    seen = 0
-    for line in lines:
-        if seen >= TOP_OF_FILE_SCAN:
-            break
-        if not line.strip():
-            continue
-        seen += 1
-        if has_inline_marker(line, ALLOW_FILE_MARKER) and has_justification_trailer(
-            line
-        ):
-            return True
-    return False
-
-
-def _line_allow_marker_active(lines: list[str], idx: int) -> bool:
-    """True when the per-line marker is on the offending line or directly above."""
-    if idx < 0 or idx >= len(lines):
-        return False
-    line = lines[idx]
-    if has_inline_marker(line, ALLOW_LINE_MARKER) and has_justification_trailer(line):
-        return True
-    if idx > 0:
-        prev = lines[idx - 1]
-        if has_inline_marker(prev, ALLOW_LINE_MARKER) and has_justification_trailer(
-            prev
-        ):
-            return True
-    return False
-
-
 def find(text: str) -> list[str]:
     """Return formatted hits for every line carrying an `any` pattern.
 
-    Honors block-level eslint-disable, line-level eslint and TypeScript
-    markers, and the hook-specific `allow-any` markers when they
-    carry a justification trailer.
+    Honors block-level eslint-disable plus line-level eslint and TypeScript
+    directives. There is no allow marker of our own: narrow the type, or
+    disable the hook out-of-band.
     """
     lines = text.splitlines()
-    if _file_marker_active(lines):
-        return []
-
     block_state = compute_block_state(lines)
     hits: list[str] = []
     for i, line in enumerate(lines):
@@ -164,8 +123,6 @@ def find(text: str) -> list[str]:
         ):
             continue
         if is_suppressed(lines, i, block_state=block_state):
-            continue
-        if _line_allow_marker_active(lines, i):
             continue
         for pat, label in PATTERNS:
             m = pat.search(line)
@@ -229,11 +186,10 @@ def main() -> int:
         + "\n\nFix: replace `any` with `unknown` and narrow at the boundary, or define a "
         "proper type. For ORM queries use the generated types (Prisma.WhereInput, etc.). "
         "For payloads use Zod parsing.\n"
-        "Suppression:\n"
-        "  - Per-line: append `// allow-any -- <reason>` (justification required).\n"
-        "  - Per-file: top-of-file `// @allow-any -- <reason>`.\n"
-        "  - Standard ESLint and TypeScript markers honored.\n"
-        "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1.",
+        "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
+        "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1, "
+        "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
+        "set as-any-blocker`.",
         file=sys.stderr,
     )
     _audit(

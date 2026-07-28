@@ -16,8 +16,6 @@
   ],
   "suppression_header": "Supressão:",
   "suppression_lines": [
-    "Por linha: adicione `// allow-mutation -- <razão>` (justificativa obrigatória).",
-    "Por arquivo: no topo `// @allow-mutation -- <razão>`.",
     "Marcadores padrão do ESLint e TypeScript são reconhecidos."
   ],
   "bypass_header": "Variáveis de ambiente de bypass:",

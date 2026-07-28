@@ -1,8 +1,14 @@
 """Shared suppression helper for ~/.claude hooks.
 Centralizes the suppression-scan logic that was duplicated in
 `as-any-blocker.py`, `console-log-blocker.py`, and `mutation-method-blocker.py`.
-Hooks import this module to recognize standard ignore comments and any
-hook-specific allow markers.
+
+Only directives belonging to third-party tools are honored. A directive is a
+comment another tool parses and acts on, which is the one comment form
+`rules/code-style.md` exempts from the project-wide ban. This module never
+recognizes an allow marker of our own invention: to silence one of these
+hooks, use its `<NAME>_DISABLE=1` env var or the TTL-bound registry in
+`_lib/bypass.py`, both of which leave project source untouched.
+
 Honored markers:
   Same-line:
     // eslint-disable-line
@@ -37,17 +43,15 @@ Honored markers:
   File-level:
     // @ts-nocheck                 (top of file)
     /* eslint-disable */            (single occurrence on its own line)
-    // @allow-<category>    (top-of-file allow for this hook category)
     # mypy: ignore-errors          (top-of-file mypy file disable)
     # type: ignore                 (top-of-file when sole content of header)
     # ruff: noqa                   (top-of-file ruff file disable)
 Public API:
-    is_suppressed(lines, i, *, hook_marker=None, block_state=None) -> bool
-    line_or_prev_has_suppression(lines, line_no, *, hook_marker=None) -> bool
+    is_suppressed(lines, i, *, block_state=None) -> bool
+    line_or_prev_has_suppression(lines, line_no) -> bool
     compute_block_state(lines) -> BlockState
     has_top_of_file_marker(lines, marker) -> bool
     has_inline_marker(line, marker) -> bool
-    has_justification_trailer(line) -> bool
     has_ts_nocheck_directive(lines) -> bool
     has_python_file_disable(lines) -> bool
 The function never raises. Suppression is best-effort.
@@ -87,7 +91,6 @@ PYTHON_FILE_DISABLE_PATTERNS = (
     re.compile(r"#\s*ruff\s*:\s*noqa"),
     re.compile(r"#\s*flake8\s*:\s*noqa"),
 )
-JUSTIFICATION_TRAILER = re.compile(r"--\s*\S")
 TOP_OF_FILE_SCAN_LIMIT = 10
 
 
@@ -199,19 +202,10 @@ def has_ts_nocheck_directive(lines: list[str]) -> bool:
     return has_top_of_file_marker(lines, "@ts-nocheck")
 
 
-def has_justification_trailer(line: str) -> bool:
-    """Recognize the ` -- justification` trailer.
-    Used to surface advisory warnings when suppressions lack a reason. The
-    hook does not enforce the trailer; ESLint does.
-    """
-    return bool(JUSTIFICATION_TRAILER.search(line))
-
-
 def is_suppressed(
     lines: list[str],
     i: int,
     *,
-    hook_marker: str | None = None,
     block_state: BlockState | None = None,
 ) -> bool:
     """True when `lines[i]` is covered by any honored suppression form."""
@@ -221,8 +215,6 @@ def is_suppressed(
     if block_state is None:
         block_state = compute_block_state(lines)
     if i in block_state.disabled_lines:
-        return True
-    if hook_marker and has_inline_marker(line, hook_marker):
         return True
     sanitized_line = _strip_strings(line)
     for tok in SAME_LINE_TOKENS:
@@ -243,19 +235,14 @@ def is_suppressed(
     return False
 
 
-def line_or_prev_has_suppression(
-    lines: list[str],
-    line_no: int,
-    *,
-    hook_marker: str | None = None,
-) -> bool:
+def line_or_prev_has_suppression(lines: list[str], line_no: int) -> bool:
     """Canonical contract: True when `lines[line_no]` or the preceding line is suppressed.
     This is the
     single entrypoint hooks should call. Internally delegates to `is_suppressed`,
     which already handles preceding-line tokens, block ranges, and Python markers.
     `line_no` is zero-based to match list indexing across hook payloads.
     """
-    return is_suppressed(lines, line_no, hook_marker=hook_marker)
+    return is_suppressed(lines, line_no)
 
 
 def _strip_strings(line: str) -> str:

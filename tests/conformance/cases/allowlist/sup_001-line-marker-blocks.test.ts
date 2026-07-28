@@ -1,6 +1,7 @@
 ---
-description: line marker with justification allows
-verdict: allow
+description: our own line allow marker does not suppress
+verdict: block
+detector: array.
 payload: edit
 ---
 const items = []

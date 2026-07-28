@@ -185,14 +185,26 @@ def test_new_hot_paths_dsp_signal_fft_ml_tensor_allowed(run_hook, hot_path):
     assert code == 0, f"{hot_path}: unexpected block\n{stderr}"
 
 
-def test_typed_array_suppression_marker_bypasses_detector(run_hook):
-    """Per-line suppression marker honored on TypedArray mutations."""
+def test_typed_array_allow_marker_does_not_bypass_detector(run_hook):
+    """Our own allow marker carries no weight; only tool directives do."""
     snippet = (
         "const buffer = new Uint8Array(1024)\n"
         "buffer.set([1, 2, 3], 0) // @allow-mutation -- WebGL upload requires stable buffer\n"
     )
     payload = make_edit_payload("/repo/src/business/orders.ts", snippet)
 
+    code, _stderr = run_hook(payload)
+
+    assert code == 2
+
+
+def test_typed_array_eslint_directive_bypasses_detector(run_hook):
+    snippet = (
+        "const buffer = new Uint8Array(1024)\n"
+        "buffer.set([1, 2, 3], 0) // eslint-disable-line\n"
+    )
+    payload = make_edit_payload("/repo/src/business/orders.ts", snippet)
+
     code, stderr = run_hook(payload)
 
-    assert code == 0, f"suppression failed:\n{stderr}"
+    assert code == 0, f"tool directive should suppress:\n{stderr}"

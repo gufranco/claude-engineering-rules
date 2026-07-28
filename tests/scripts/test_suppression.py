@@ -18,7 +18,6 @@ from _lib.suppression import (  # noqa: E402
     BlockState,
     compute_block_state,
     has_inline_marker,
-    has_justification_trailer,
     has_python_file_disable,
     has_top_of_file_marker,
     has_ts_nocheck_directive,
@@ -126,11 +125,6 @@ def test_has_python_file_disable_absent() -> None:
     assert has_python_file_disable(lines) is False
 
 
-def test_has_justification_trailer_detects_reason() -> None:
-    assert has_justification_trailer("// eslint-disable-line -- legacy code") is True
-    assert has_justification_trailer("// eslint-disable-line") is False
-
-
 def test_line_or_prev_has_suppression_alias_matches_is_suppressed() -> None:
     lines = ["// eslint-disable-next-line", "items.push(v)"]
     via_alias = line_or_prev_has_suppression(lines, 1)
@@ -139,10 +133,16 @@ def test_line_or_prev_has_suppression_alias_matches_is_suppressed() -> None:
     assert via_alias == via_canonical
 
 
-def test_line_or_prev_has_suppression_with_hook_marker() -> None:
+def test_our_own_allow_marker_does_not_suppress() -> None:
     lines = ["arr.push(v) // @allow-mutation -- ok"]
-    actual = line_or_prev_has_suppression(lines, 0, hook_marker="@allow-mutation")
-    assert actual is True
+
+    assert line_or_prev_has_suppression(lines, 0) is False
+
+
+def test_third_party_directive_still_suppresses() -> None:
+    lines = ["arr.push(v) // eslint-disable-line"]
+
+    assert line_or_prev_has_suppression(lines, 0) is True
 
 
 def test_is_suppressed_out_of_range_returns_false() -> None:

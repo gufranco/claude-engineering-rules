@@ -12,18 +12,17 @@ Skipped paths:
   - Config files: **/*.config.{js,ts,mjs}
   - Hooks themselves: ~/.claude/hooks/**
 
-Suppression markers (per line):
+Third-party tool directives are honored, since they are the one comment form
+the project ban exempts:
+  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
+  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
+  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
 
-  - `// allow-console -- justification` honored when justified.
-  - `// @allow-console -- justification` at the top of the file
-    suppresses every console.* call in that file.
-  - Standard ESLint and TypeScript markers honored:
-    `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-    `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-    block ranges `/* eslint-disable */ ... /* eslint-enable */`.
+There is no allow marker of our own. Legitimate console use lives in the
+skipped paths above; everything else uses the project logger.
 
 Bypass:
-  CONSOLE_LOG_DISABLE=1
+  CONSOLE_LOG_DISABLE=1, or a TTL entry via scripts/bypass.py
 """
 
 from __future__ import annotations
@@ -45,8 +44,6 @@ except Exception:  # pragma: no cover
 
 from _lib.suppression import (
     compute_block_state,
-    has_inline_marker,
-    has_justification_trailer,
     is_suppressed,
 )
 
@@ -89,10 +86,6 @@ SKIP_SUFFIXES: tuple[str, ...] = (
     ".stories.tsx",
 )
 
-ALLOW_FILE_MARKER = "@allow-console"
-ALLOW_LINE_MARKER = "allow-console"
-TOP_OF_FILE_SCAN = 10
-
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
@@ -134,44 +127,9 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
     return out
 
 
-def _file_marker_active(lines: list[str]) -> bool:
-    """True when a top-of-file allow marker exists with a justification trailer."""
-    seen = 0
-    for line in lines:
-        if seen >= TOP_OF_FILE_SCAN:
-            break
-        if not line.strip():
-            continue
-        seen += 1
-        if has_inline_marker(line, ALLOW_FILE_MARKER) and has_justification_trailer(
-            line
-        ):
-            return True
-    return False
-
-
-def _line_allow_marker_active(lines: list[str], idx: int) -> bool:
-    """True when the per-line marker is on the offending line or directly above."""
-    if idx < 0 or idx >= len(lines):
-        return False
-    line = lines[idx]
-    if has_inline_marker(line, ALLOW_LINE_MARKER) and has_justification_trailer(line):
-        return True
-    if idx > 0:
-        prev = lines[idx - 1]
-        if has_inline_marker(prev, ALLOW_LINE_MARKER) and has_justification_trailer(
-            prev
-        ):
-            return True
-    return False
-
-
 def find(text: str) -> list[str]:
-    """Return console.* matches per line, honoring shared suppression markers."""
+    """Return console.* matches per line, honoring third-party tool directives."""
     lines = text.splitlines()
-    if _file_marker_active(lines):
-        return []
-
     block_state = compute_block_state(lines)
     hits: list[str] = []
     for i, line in enumerate(lines):
@@ -179,8 +137,6 @@ def find(text: str) -> list[str]:
         if stripped.startswith("//") or stripped.startswith("*"):
             continue
         if is_suppressed(lines, i, block_state=block_state):
-            continue
-        if _line_allow_marker_active(lines, i):
             continue
         for m in PATTERN.finditer(line):
             hits.append(m.group(0))
@@ -241,11 +197,9 @@ def main() -> int:
         + "\n".join(findings)
         + "\n\nFix: use the project's structured logger (Pino, Winston, @repo/logger, etc.). "
         "console is allowed only in tests, scripts, and Next.js error boundaries.\n"
-        "Suppression:\n"
-        "  - Per-line: append `// allow-console -- <reason>` (justification required).\n"
-        "  - Per-file: top-of-file `// @allow-console -- <reason>`.\n"
-        "  - Standard ESLint and TypeScript markers honored.\n"
-        "Bypass (one-off, rare): set CONSOLE_LOG_DISABLE=1.",
+        "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
+        "Bypass (one-off, rare): set CONSOLE_LOG_DISABLE=1, or register a TTL-bound "
+        "pass with `python3 ~/.claude/scripts/bypass.py set console-log-blocker`.",
         file=sys.stderr,
     )
     _audit(
