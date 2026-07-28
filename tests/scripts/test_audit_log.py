@@ -362,7 +362,16 @@ def test_record_autofills_cwd_when_missing(isolated_log):
     assert records[0]["cwd"]
 
 
+def test_record_autofills_session_id_from_claude_code_env(monkeypatch, isolated_log):
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "primary-123")
+    monkeypatch.setenv("CLAUDE_SESSION_ID", "secondary-456")
+    audit_log.record(hook="x", decision="allow")
+    records = _read_records(isolated_log)
+    assert records[0]["session_id"] == "primary-123"
+
+
 def test_record_autofills_session_id_from_env(monkeypatch, isolated_log):
+    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
     monkeypatch.setenv("CLAUDE_SESSION_ID", "abc-123")
     audit_log.record(hook="x", decision="allow")
     records = _read_records(isolated_log)
@@ -370,6 +379,7 @@ def test_record_autofills_session_id_from_env(monkeypatch, isolated_log):
 
 
 def test_record_falls_back_to_legacy_session_id_env(monkeypatch, isolated_log):
+    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
     monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
     monkeypatch.setenv("SESSION_ID", "legacy-xyz")
     audit_log.record(hook="x", decision="allow")
@@ -378,7 +388,7 @@ def test_record_falls_back_to_legacy_session_id_env(monkeypatch, isolated_log):
 
 
 def test_record_explicit_session_id_overrides_env(monkeypatch, isolated_log):
-    monkeypatch.setenv("CLAUDE_SESSION_ID", "from-env")
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "from-env")
     audit_log.record(hook="x", decision="allow", session_id="from-caller")
     records = _read_records(isolated_log)
     assert records[0]["session_id"] == "from-caller"
