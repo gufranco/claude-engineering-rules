@@ -38,13 +38,11 @@ CLAUDE_MD_PATH = "/Users/anyone/.claude/CLAUDE.md"
     ],
 )
 def test_blocks_should_bullet(tool_use, assert_blocks, content):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": IN_SCOPE_PATH, "new_string": content},
     )
 
-    # Act / Assert
     code, stderr = assert_blocks(HOOK, payload, "Should ")
     assert "normative-keywords.md" in stderr
 
@@ -65,13 +63,11 @@ def test_blocks_should_bullet(tool_use, assert_blocks, content):
     ],
 )
 def test_silent_on_compliant_content(tool_use, assert_allows, content):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": IN_SCOPE_PATH, "new_string": content},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
@@ -80,61 +76,51 @@ def test_silent_on_compliant_content(tool_use, assert_allows, content):
 
 
 def test_out_of_scope_path_is_silent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": OUT_OF_SCOPE_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_non_markdown_file_is_silent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": NON_MARKDOWN_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_normative_keywords_rule_file_is_silent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": SELF_REF_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_writing_precision_rule_file_is_silent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": WRITING_PRECISION_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_claude_md_is_in_scope(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": CLAUDE_MD_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_blocks(HOOK, payload, "Should")
 
 
@@ -142,18 +128,15 @@ def test_claude_md_is_in_scope(tool_use, assert_blocks):
 
 
 def test_write_tool_handled(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": IN_SCOPE_PATH, "content": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_blocks(HOOK, payload, "Should")
 
 
 def test_multiedit_tool_handled(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -165,18 +148,15 @@ def test_multiedit_tool_handled(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     code, stderr = assert_blocks(HOOK, payload, "Should")
 
 
 def test_bash_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m '- Should validate input.'"},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
@@ -185,13 +165,11 @@ def test_bash_tool_is_ignored(tool_use, assert_allows):
 
 
 def test_bypass_env_var_silences_hook(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": IN_SCOPE_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(
         HOOK,
         payload,
@@ -204,13 +182,11 @@ def test_bypass_env_var_silences_hook(tool_use, assert_allows):
 
 
 def test_malformed_json_does_not_crash(hooks_dir):
-    # Arrange
     import subprocess
     import sys as _sys
 
     hook_path = hooks_dir / "normative-keyword-discipline.py"
 
-    # Act
     proc = subprocess.run(
         [_sys.executable, str(hook_path)],
         input="this is not json",
@@ -221,58 +197,48 @@ def test_malformed_json_does_not_crash(hooks_dir):
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
     assert proc.stderr.strip() == ""
 
 
 def test_missing_tool_input_is_handled(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Edit", {})
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_read_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": IN_SCOPE_PATH},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_non_string_content_is_silent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": IN_SCOPE_PATH, "content": 12345},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_non_string_new_string_is_silent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": IN_SCOPE_PATH, "new_string": None},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_multiedit_skips_non_dict_edits(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -281,30 +247,25 @@ def test_multiedit_skips_non_dict_edits(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
 
 
 def test_content_without_trailing_newline(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": IN_SCOPE_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_blocks(HOOK, payload, "Should validate input.")
 
 
 def test_should_run_disabled_via_env(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": IN_SCOPE_PATH, "new_string": "- Should validate input."},
     )
 
-    # Act / Assert
     code, stderr = assert_allows(
         HOOK,
         payload,

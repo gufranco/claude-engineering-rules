@@ -30,21 +30,17 @@ HOOK = "repo-fetch-blocker"
     ],
 )
 def test_blocks_per_file_fetch(tool_use, assert_blocks, cmd):
-    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "repo-analysis")
 
 
 def test_blocks_in_compound_command(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "cd /tmp && curl https://raw.githubusercontent.com/o/r/main/x"},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload)
 
 
@@ -73,10 +69,8 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
     ],
 )
 def test_allows_carve_outs(tool_use, assert_allows, cmd):
-    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -95,19 +89,15 @@ def test_allows_carve_outs(tool_use, assert_allows, cmd):
     ],
 )
 def test_allows_unrelated(tool_use, assert_allows, cmd):
-    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
-    # Arrange
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -117,27 +107,21 @@ def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "curl https://raw.githubusercontent.com/o/r/main/x.py"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"REPO_FETCH_DISABLE": "1"})
 
 
 def test_handles_empty_command(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_handles_missing_tool_input(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash")
 
-    # Act / Assert
     assert_allows(HOOK, payload)

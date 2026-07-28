@@ -234,20 +234,17 @@ def test_broken_link_finding_render_without_correction():
 
 
 def test_detect_broken_link_targets_wrong_relative_path(tmp_path):
-    # Arrange: two files in subdir/, one with a repo-root-relative link
     (tmp_path / "subdir").mkdir()
     (tmp_path / "subdir" / "neighbor.md").write_text("# Neighbor\n")
     target_file = tmp_path / "subdir" / "doc.md"
     target_file.write_text("See [`neighbor.md`](subdir/neighbor.md).\n")
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
         tmp_path,
     )
 
-    # Assert
     assert len(findings) == 1
     f = findings[0]
     assert f.link_target == "subdir/neighbor.md"
@@ -255,86 +252,71 @@ def test_detect_broken_link_targets_wrong_relative_path(tmp_path):
 
 
 def test_detect_broken_link_targets_truly_missing(tmp_path):
-    # Arrange
     target_file = tmp_path / "doc.md"
     target_file.write_text("See [`ghost.md`](ghost.md).\n")
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
         tmp_path,
     )
 
-    # Assert
     assert len(findings) == 1
     assert findings[0].correct_path is None
 
 
 def test_detect_broken_link_targets_skips_valid_link(tmp_path):
-    # Arrange
     (tmp_path / "ok.md").write_text("# OK\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("See [`ok.md`](ok.md).\n")
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
         tmp_path,
     )
 
-    # Assert
     assert findings == []
 
 
 def test_detect_broken_link_targets_skips_external_urls(tmp_path):
-    # Arrange
     target_file = tmp_path / "doc.md"
     target_file.write_text(
         "[anchor](#section), [external](https://example.com), [mail](mailto:a@b).\n"
     )
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
         tmp_path,
     )
 
-    # Assert
     assert findings == []
 
 
 def test_detect_broken_link_targets_ignores_inline_code(tmp_path):
-    # Arrange: pattern that looks like a link inside backticks
     target_file = tmp_path / "doc.md"
     target_file.write_text("Use `arr['push'](item)` to mutate.\n")
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
         tmp_path,
     )
 
-    # Assert
     assert findings == []
 
 
 def test_detect_broken_link_targets_skips_fenced_block(tmp_path):
-    # Arrange
     target_file = tmp_path / "doc.md"
     target_file.write_text("```\n[broken](nowhere.md)\n```\n")
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
         tmp_path,
     )
 
-    # Assert
     assert findings == []
 
 
@@ -368,7 +350,6 @@ def test_tracked_paths_returns_empty_for_non_git_dir(tmp_path):
 
 
 def test_detect_broken_link_targets_flags_gitignored_target(tmp_path):
-    # Arrange: target exists on disk but is not tracked.
     (tmp_path / "untracked.md").write_text("# Not tracked\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("See [untracked](untracked.md).\n")
@@ -384,7 +365,6 @@ def test_detect_broken_link_targets_flags_gitignored_target(tmp_path):
 
 
 def test_detect_findings_skips_bare_ref_to_untracked_file(tmp_path):
-    # Arrange: file exists on disk but isn't in tracked set
     (tmp_path / "untracked.md").write_text("# Not tracked\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("Mention `untracked.md` here.\n")
@@ -400,17 +380,14 @@ def test_detect_findings_skips_bare_ref_to_untracked_file(tmp_path):
 
 def test_detect_broken_link_targets_respects_skip_dirs(tmp_path):
     """Files under SKIP_DIR_PREFIXES (tests/, scripts/, .github/, tools/) are skipped."""
-    # Arrange
     (tmp_path / "tests").mkdir()
     target_file = tmp_path / "tests" / "fixture.md"
     target_file.write_text("[ghost](ghost.md)\n")
 
-    # Act
     findings = detect_broken_link_targets(
         target_file.read_text(),
         "tests/fixture.md",
         tmp_path,
     )
 
-    # Assert
     assert findings == []

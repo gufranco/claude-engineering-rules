@@ -27,13 +27,11 @@ HOOK = "ai-attribution-blocker"
     ],
 )
 def test_blocks_coauthored_by_ai(tool_use, assert_blocks, line):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"git commit -m 'fix: handle null\n\n{line}'"},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
@@ -49,7 +47,6 @@ def test_blocks_coauthored_by_ai(tool_use, assert_blocks, line):
     ],
 )
 def test_blocks_generated_by_ai(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -58,12 +55,10 @@ def test_blocks_generated_by_ai(tool_use, assert_blocks, phrase):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_blocks_ai_assisted(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -72,12 +67,10 @@ def test_blocks_ai_assisted(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_blocks_ai_assisted_with_space(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -86,7 +79,6 @@ def test_blocks_ai_assisted_with_space(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
@@ -99,7 +91,6 @@ def test_blocks_ai_assisted_with_space(tool_use, assert_blocks):
     ],
 )
 def test_blocks_written_by(tool_use, assert_blocks, phrase):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -109,18 +100,15 @@ def test_blocks_written_by(tool_use, assert_blocks, phrase):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_blocks_authored_by_claude(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr create --body 'Authored-by-Claude\nSee diff.'"},
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
@@ -129,7 +117,6 @@ def test_blocks_authored_by_claude(tool_use, assert_blocks):
     ["[Claude]", "[Claude Code]", "[claude]", "[CLAUDE CODE]"],
 )
 def test_blocks_claude_tag(tool_use, assert_blocks, tag):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -138,12 +125,10 @@ def test_blocks_claude_tag(tool_use, assert_blocks, tag):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_blocks_multiedit_with_attribution_in_one_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -158,12 +143,10 @@ def test_blocks_multiedit_with_attribution_in_one_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_blocks_bash_heredoc(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -177,23 +160,19 @@ def test_blocks_bash_heredoc(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_allows_clean_commit(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix: handle null user id'"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_clean_write(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -202,12 +181,10 @@ def test_allows_clean_write(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_human_coauthored_by(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -218,7 +195,6 @@ def test_allows_human_coauthored_by(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -234,7 +210,6 @@ def test_allows_human_coauthored_by(tool_use, assert_allows):
     ],
 )
 def test_skipped_paths_allow_attribution_examples(tool_use, assert_allows, doc_path):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -243,12 +218,10 @@ def test_skipped_paths_allow_attribution_examples(tool_use, assert_allows, doc_p
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skipped_path_for_edit(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -258,12 +231,10 @@ def test_skipped_path_for_edit(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skipped_path_for_multiedit(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -274,12 +245,10 @@ def test_skipped_path_for_multiedit(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skipped_tests_directory(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -288,29 +257,24 @@ def test_skipped_tests_directory(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix\n\nCo-authored-by: Claude'"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"AI_ATTRIBUTION_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix\n\nCo-authored-by: Claude'"},
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -320,26 +284,21 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/x.ts"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/x.ts", "content": 42},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -349,12 +308,10 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -363,12 +320,10 @@ def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -377,31 +332,25 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_bash_non_string_command_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash", {"command": 42})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_file_path_with_clean_content(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "Clean content.\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_long_attribution_snippet_truncates(tool_use, assert_blocks):
-    # Arrange
     long_prefix = "x" * 200
     long_suffix = "y" * 200
     payload = tool_use(
@@ -412,12 +361,10 @@ def test_long_attribution_snippet_truncates(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AI attribution detected")
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "ai-attribution-blocker.py"
     )
@@ -427,7 +374,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -438,5 +384,4 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0

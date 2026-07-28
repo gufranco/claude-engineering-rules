@@ -29,7 +29,6 @@ HOOK = "typeorm-raw-sql-blocker"
     ],
 )
 def test_blocks_query_call_on_known_receivers(tool_use, assert_blocks, receiver):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -42,12 +41,10 @@ def test_blocks_query_call_on_known_receivers(tool_use, assert_blocks, receiver)
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, f"{receiver}.query")
 
 
 def test_blocks_query_on_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -57,12 +54,10 @@ def test_blocks_query_on_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "repo.query")
 
 
 def test_blocks_query_on_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -74,12 +69,10 @@ def test_blocks_query_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "manager.query")
 
 
 def test_allows_repository_find(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -92,12 +85,10 @@ def test_allows_repository_find(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_query_builder(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -108,12 +99,10 @@ def test_allows_query_builder(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_migration_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -124,12 +113,10 @@ def test_skips_migration_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_sql_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -138,12 +125,10 @@ def test_skips_sql_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_paths(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -152,12 +137,10 @@ def test_skips_test_paths(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_spec_paths(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -167,12 +150,10 @@ def test_skips_spec_paths(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -181,12 +162,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"TYPEORM_RAW_SQL_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -195,7 +174,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -205,7 +183,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "typeorm-raw-sql-blocker.py"
     )
@@ -215,7 +192,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -226,44 +202,35 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
 
 
 def test_invalid_json_via_run_hook(run_hook):
-    # Arrange
     # Empty bytes payload triggers the json.load except branch.
-    # Act
     code, _stdout, _stderr = run_hook("typeorm-raw-sql-blocker", {"_invalid": True})
 
-    # Assert
     assert code == 0
 
 
 def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const x = repo.findOne({});\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_with_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/x.ts", "content": 99},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_with_non_dict_items_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -272,12 +239,10 @@ def test_multiedit_with_non_dict_items_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -286,23 +251,19 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/services/user.service.ts"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_query_on_unknown_receiver_is_not_flagged(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -311,5 +272,4 @@ def test_query_on_unknown_receiver_is_not_flagged(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

@@ -10,7 +10,6 @@ HOOK = "privacy-leakage-checks"
 
 
 def test_blocks_cookie_without_consent(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -19,12 +18,10 @@ def test_blocks_cookie_without_consent(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC001")
 
 
 def test_allows_cookie_with_consent_context(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -35,12 +32,10 @@ def test_allows_cookie_with_consent_context(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_blocks_console_log_email(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -49,12 +44,10 @@ def test_blocks_console_log_email(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC002")
 
 
 def test_blocks_console_log_phone(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -63,12 +56,10 @@ def test_blocks_console_log_phone(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC002")
 
 
 def test_blocks_console_log_ssn(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -77,12 +68,10 @@ def test_blocks_console_log_ssn(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC002")
 
 
 def test_blocks_console_log_jwt(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -93,12 +82,10 @@ def test_blocks_console_log_jwt(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC002")
 
 
 def test_blocks_localstorage_email_key(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -107,12 +94,10 @@ def test_blocks_localstorage_email_key(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC003")
 
 
 def test_blocks_localstorage_token_key(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -121,12 +106,10 @@ def test_blocks_localstorage_token_key(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC003")
 
 
 def test_blocks_ga4_tracker(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -135,12 +118,10 @@ def test_blocks_ga4_tracker(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC004")
 
 
 def test_blocks_gtm_tracker(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -149,12 +130,10 @@ def test_blocks_gtm_tracker(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC004")
 
 
 def test_blocks_facebook_pixel(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -163,12 +142,10 @@ def test_blocks_facebook_pixel(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC004")
 
 
 def test_allows_tracker_with_consent(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -183,12 +160,10 @@ def test_allows_tracker_with_consent(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_clean_code(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -197,12 +172,10 @@ def test_allows_clean_code(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_logger_with_identifier(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -211,12 +184,10 @@ def test_allows_logger_with_identifier(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -225,12 +196,10 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_bypass_env_disables(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -239,12 +208,10 @@ def test_bypass_env_disables(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"PRIVACY_CHECKS_DISABLE": "1"})
 
 
 def test_works_on_edit_payload(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -254,12 +221,10 @@ def test_works_on_edit_payload(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC002")
 
 
 def test_works_on_multiedit_payload(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -270,23 +235,19 @@ def test_works_on_multiedit_payload(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "PLC002")
 
 
 def test_ignores_bash_tool(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'echo "alice@example.com"'},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_node_modules(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -295,12 +256,10 @@ def test_skips_node_modules(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_content_allows(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -309,23 +268,19 @@ def test_empty_content_allows(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_unknown_tool_allows(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/login.ts"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_invalid_payload_via_subprocess():
-    # Arrange
     import subprocess as sub
     import sys as _sys
     from pathlib import Path
@@ -334,7 +289,6 @@ def test_invalid_payload_via_subprocess():
         Path(__file__).resolve().parents[3] / "hooks" / "privacy-leakage-checks.py"
     )
 
-    # Act
     proc = sub.run(
         [_sys.executable, str(hook_path)],
         input="not valid json",
@@ -344,12 +298,10 @@ def test_invalid_payload_via_subprocess():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
 
 
 def test_skips_non_scan_extensions(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -358,5 +310,4 @@ def test_skips_non_scan_extensions(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

@@ -34,7 +34,6 @@ BYPASS_ENV = {"MIGRATION_ALLOW_BLOCKING_INDEX": "1"}
     ],
 )
 def test_blocks_create_without_if_not_exists(tool_use, assert_blocks, stmt):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -43,12 +42,10 @@ def test_blocks_create_without_if_not_exists(tool_use, assert_blocks, stmt):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_blocks_create_index_without_concurrently(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -57,12 +54,10 @@ def test_blocks_create_index_without_concurrently(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "CONCURRENTLY")
 
 
 def test_allows_create_index_concurrently_if_not_exists(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -74,12 +69,10 @@ def test_allows_create_index_concurrently_if_not_exists(tool_use, assert_allows)
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_blocking_index_bypass_env_allows(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -88,7 +81,6 @@ def test_blocking_index_bypass_env_allows(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"MIGRATION_ALLOW_BLOCKING_INDEX": "1"})
 
 
@@ -113,7 +105,6 @@ def test_blocking_index_bypass_env_allows(tool_use, assert_allows):
     ],
 )
 def test_blocks_drop_without_if_exists(tool_use, assert_blocks, stmt):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -122,12 +113,10 @@ def test_blocks_drop_without_if_exists(tool_use, assert_blocks, stmt):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_allows_idempotent_create_table(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -136,12 +125,10 @@ def test_allows_idempotent_create_table(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_idempotent_drop_table(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -150,12 +137,10 @@ def test_allows_idempotent_drop_table(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_create_or_replace_function(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -167,12 +152,10 @@ def test_allows_create_or_replace_function(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_block_comments_are_stripped(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -181,12 +164,10 @@ def test_block_comments_are_stripped(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_line_comments_are_stripped(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -195,12 +176,10 @@ def test_line_comments_are_stripped(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_blocks_in_prisma_migrations_path(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -209,12 +188,10 @@ def test_blocks_in_prisma_migrations_path(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_blocks_in_database_migrations_path(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -223,12 +200,10 @@ def test_blocks_in_database_migrations_path(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_blocks_in_flyway_filename(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -237,12 +212,10 @@ def test_blocks_in_flyway_filename(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_blocks_on_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -252,12 +225,10 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_blocks_on_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -269,12 +240,10 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "not idempotent", env=BYPASS_ENV)
 
 
 def test_skips_non_migration_path(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -283,23 +252,19 @@ def test_skips_non_migration_path(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_unknown_tool(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/db/migrations/20260101000000_init.sql"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -308,12 +273,10 @@ def test_write_non_string_content_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -323,12 +286,10 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -337,12 +298,10 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -351,23 +310,19 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_file_path_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "CREATE TABLE users (id uuid);\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -376,12 +331,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"MIGRATION_IDEMPOTENCY_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -390,7 +343,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -403,7 +355,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "migration-idempotency.py"
     )
@@ -413,7 +364,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -424,5 +374,4 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0

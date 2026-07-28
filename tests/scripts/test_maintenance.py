@@ -41,10 +41,8 @@ def test_watch_list_is_non_empty() -> None:
 
 
 def test_format_watch_list_renders_each_entry() -> None:
-    # Arrange / Act
     rendered = maintenance._format_watch_list(maintenance.WATCH_LIST)
 
-    # Assert
     assert "# TC39 Watch List" in rendered
     for entry in maintenance.WATCH_LIST:
         assert entry.name in rendered
@@ -52,10 +50,8 @@ def test_format_watch_list_renders_each_entry() -> None:
 
 
 def test_format_watch_list_with_empty_tuple() -> None:
-    # Arrange / Act
     rendered = maintenance._format_watch_list(())
 
-    # Assert
     assert "# TC39 Watch List" in rendered
     # Body lines after the heading should not contain entry-specific markers.
     assert "## " not in rendered
@@ -80,10 +76,8 @@ def test_format_watch_list_with_empty_tuple() -> None:
     ],
 )
 def test_quarter_first_monday_known_dates(input_date, expected) -> None:
-    # Arrange / Act
     result = maintenance._quarter_first_monday(input_date)
 
-    # Assert
     assert result == expected
 
 
@@ -103,7 +97,6 @@ def test_is_quarterly_review_day_false_on_other_days() -> None:
 
 
 def test_is_quarterly_review_day_uses_today_by_default(monkeypatch) -> None:
-    # Arrange
     fake_today = _dt.date(2026, 1, 5)
 
     class _FakeDate(_dt.date):
@@ -113,10 +106,8 @@ def test_is_quarterly_review_day_uses_today_by_default(monkeypatch) -> None:
 
     monkeypatch.setattr(maintenance._dt, "date", _FakeDate)
 
-    # Act
     result = maintenance.is_quarterly_review_day()
 
-    # Assert
     assert result is True
 
 
@@ -126,13 +117,10 @@ def test_is_quarterly_review_day_uses_today_by_default(monkeypatch) -> None:
 
 
 def test_quarterly_message_includes_iso_date() -> None:
-    # Arrange
     today = _dt.date(2026, 5, 10)
 
-    # Act
     message = maintenance._quarterly_message(today)
 
-    # Assert
     assert "2026-05-10" in message
     assert "watch-list" in message
 
@@ -143,11 +131,9 @@ def test_quarterly_message_includes_iso_date() -> None:
 
 
 def test_cmd_watch_list_prints_to_stdout(capsys) -> None:
-    # Arrange / Act
     rc = maintenance._cmd_watch_list(None)
     captured = capsys.readouterr()
 
-    # Assert
     assert rc == 0
     assert "# TC39 Watch List" in captured.out
 
@@ -158,21 +144,17 @@ def test_cmd_watch_list_prints_to_stdout(capsys) -> None:
 
 
 def test_cmd_quarterly_check_force_prints_message(capsys) -> None:
-    # Arrange
     class _Args:
         force = True
 
-    # Act
     rc = maintenance._cmd_quarterly_check(_Args())
     captured = capsys.readouterr()
 
-    # Assert
     assert rc == 0
     assert "Quarterly review due" in captured.out
 
 
 def test_cmd_quarterly_check_silent_when_not_due(monkeypatch, capsys) -> None:
-    # Arrange
     class _Args:
         force = False
 
@@ -185,17 +167,14 @@ def test_cmd_quarterly_check_silent_when_not_due(monkeypatch, capsys) -> None:
 
     monkeypatch.setattr(maintenance._dt, "date", _FakeDate)
 
-    # Act
     rc = maintenance._cmd_quarterly_check(_Args())
     captured = capsys.readouterr()
 
-    # Assert
     assert rc == 0
     assert captured.out == ""
 
 
 def test_cmd_quarterly_check_due_prints_message(monkeypatch, capsys) -> None:
-    # Arrange
     class _Args:
         force = False
 
@@ -208,11 +187,9 @@ def test_cmd_quarterly_check_due_prints_message(monkeypatch, capsys) -> None:
 
     monkeypatch.setattr(maintenance._dt, "date", _FakeDate)
 
-    # Act
     rc = maintenance._cmd_quarterly_check(_Args())
     captured = capsys.readouterr()
 
-    # Assert
     assert rc == 0
     assert "Quarterly review due" in captured.out
 
@@ -237,10 +214,8 @@ def test_main_dispatches_quarterly_check_force(capsys) -> None:
 
 
 def test_main_module_entry_runs_as_subprocess(tmp_path: Path) -> None:
-    # Arrange
     script = REPO_ROOT / ".github" / "scripts" / "maintenance.py"
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(script), "watch-list"],
         capture_output=True,
@@ -249,6 +224,5 @@ def test_main_module_entry_runs_as_subprocess(tmp_path: Path) -> None:
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
     assert "TC39 Watch List" in proc.stdout

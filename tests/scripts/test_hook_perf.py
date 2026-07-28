@@ -13,7 +13,6 @@ from _lib.hook_perf import DEFAULT_BUDGET_MS, with_perf_budget  # noqa: E402
 
 
 def test_under_budget_does_not_emit(monkeypatch):
-    # Arrange
     captured: list[dict[str, object]] = []
 
     def fake_record(**fields):
@@ -27,15 +26,12 @@ def test_under_budget_does_not_emit(monkeypatch):
     def fast_hook():
         return 0
 
-    # Act
     code = fast_hook()
-    # Assert
     assert code == 0
     assert captured == []
 
 
 def test_over_budget_emits_event(monkeypatch):
-    # Arrange
     captured: list[dict[str, object]] = []
 
     def fake_record(**fields):
@@ -50,9 +46,7 @@ def test_over_budget_emits_event(monkeypatch):
         time.sleep(0.05)
         return 7
 
-    # Act
     code = slow_hook()
-    # Assert
     assert code == 7
     assert len(captured) == 1
     entry = captured[0]
@@ -64,7 +58,6 @@ def test_over_budget_emits_event(monkeypatch):
 
 
 def test_disable_env_skips_emit(monkeypatch):
-    # Arrange
     monkeypatch.setenv("CLAUDE_HOOK_PERF_DISABLE", "1")
     captured: list[dict[str, object]] = []
     fake_module = type(sys)("_lib.audit_log")
@@ -76,9 +69,7 @@ def test_disable_env_skips_emit(monkeypatch):
         time.sleep(0.05)
         return 0
 
-    # Act
     code = hook()
-    # Assert
     assert code == 0
     assert captured == []
 
@@ -96,7 +87,6 @@ def test_decorator_preserves_function_name():
 
 
 def test_decorator_swallows_audit_exceptions(monkeypatch):
-    # Arrange
     def boom(**_fields):
         raise OSError("disk full")
 
@@ -109,12 +99,10 @@ def test_decorator_swallows_audit_exceptions(monkeypatch):
         time.sleep(0.05)
         return 3
 
-    # Act/Assert
     assert slow() == 3
 
 
 def test_decorator_swallows_typeerror_from_record(monkeypatch):
-    # Arrange
     def boom(**_fields):
         raise TypeError("bad signature")
 
@@ -127,12 +115,10 @@ def test_decorator_swallows_typeerror_from_record(monkeypatch):
         time.sleep(0.05)
         return 3
 
-    # Act/Assert
     assert slow() == 3
 
 
 def test_decorator_swallows_valueerror_from_record(monkeypatch):
-    # Arrange
     def boom(**_fields):
         raise ValueError("invalid")
 
@@ -145,12 +131,10 @@ def test_decorator_swallows_valueerror_from_record(monkeypatch):
         time.sleep(0.05)
         return 3
 
-    # Act/Assert
     assert slow() == 3
 
 
 def test_decorator_silent_when_audit_module_lacks_record(monkeypatch):
-    # Arrange: audit_log module without `record` -> ImportError on `from import`
     fake_module = type(sys)("_lib.audit_log")
     monkeypatch.setitem(sys.modules, "_lib.audit_log", fake_module)
 
@@ -159,12 +143,10 @@ def test_decorator_silent_when_audit_module_lacks_record(monkeypatch):
         time.sleep(0.05)
         return 5
 
-    # Act/Assert: must not raise
     assert slow() == 5
 
 
 def test_resolve_hook_name_uses_function_module(monkeypatch):
-    # Arrange: function with non-__main__ module
     captured: list[dict[str, object]] = []
     fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
@@ -175,15 +157,12 @@ def test_resolve_hook_name_uses_function_module(monkeypatch):
         time.sleep(0.05)
         return 0
 
-    # Act
     slow()
-    # Assert
     assert len(captured) == 1
     assert captured[0]["hook"] != "unknown"
 
 
 def test_resolve_hook_name_falls_back_to_main_module_basename(monkeypatch):
-    # Arrange: function whose __module__ is __main__, real __main__ has __file__
     captured: list[dict[str, object]] = []
     fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
@@ -198,15 +177,12 @@ def test_resolve_hook_name_falls_back_to_main_module_basename(monkeypatch):
 
     slow.__module__ = "__main__"
     decorated = with_perf_budget(budget_ms=1)(slow)
-    # Act
     decorated()
-    # Assert
     assert len(captured) == 1
     assert captured[0]["hook"] == "my-hook"
 
 
 def test_resolve_hook_name_unknown_when_no_main_file(monkeypatch):
-    # Arrange: __main__ exists but has empty __file__
     captured: list[dict[str, object]] = []
     fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
@@ -221,14 +197,11 @@ def test_resolve_hook_name_unknown_when_no_main_file(monkeypatch):
 
     slow.__module__ = "__main__"
     decorated = with_perf_budget(budget_ms=1)(slow)
-    # Act
     decorated()
-    # Assert
     assert captured[0]["hook"] == "unknown"
 
 
 def test_resolve_hook_name_unknown_when_main_module_missing(monkeypatch):
-    # Arrange: no __main__ in sys.modules
     captured: list[dict[str, object]] = []
     fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
@@ -241,14 +214,11 @@ def test_resolve_hook_name_unknown_when_main_module_missing(monkeypatch):
 
     slow.__module__ = "__main__"
     decorated = with_perf_budget(budget_ms=1)(slow)
-    # Act
     decorated()
-    # Assert
     assert captured[0]["hook"] == "unknown"
 
 
 def test_resolve_hook_name_unknown_when_function_has_no_module(monkeypatch):
-    # Arrange
     captured: list[dict[str, object]] = []
     fake_module = type(sys)("_lib.audit_log")
     fake_module.record = lambda **f: captured.append(f)  # type: ignore[attr-defined]
@@ -261,7 +231,5 @@ def test_resolve_hook_name_unknown_when_function_has_no_module(monkeypatch):
 
     slow.__module__ = ""
     decorated = with_perf_budget(budget_ms=1)(slow)
-    # Act
     decorated()
-    # Assert
     assert captured[0]["hook"] == "unknown"

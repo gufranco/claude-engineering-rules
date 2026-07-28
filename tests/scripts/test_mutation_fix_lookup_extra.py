@@ -30,21 +30,17 @@ def _ensure_clean_module():
 
 
 def test_load_table_short_circuits_when_already_loaded() -> None:
-    # Arrange
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
 
     fl._TABLE = {"_meta": {}, "exact": {"foo": {"code": "X", "fix": "y"}}}
     fl._EXACT = fl._TABLE["exact"]
 
-    # Act
     fl._load_table()
 
-    # Assert
     assert fl._TABLE["exact"]["foo"]["code"] == "X"
 
 
 def test_load_table_handles_missing_file(monkeypatch, tmp_path: Path) -> None:
-    # Arrange
     _reset_module()
     missing = tmp_path / "missing.json"
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
@@ -54,17 +50,14 @@ def test_load_table_handles_missing_file(monkeypatch, tmp_path: Path) -> None:
     fl._BY_CATEGORY = {}
     monkeypatch.setattr(fl, "_FIX_TABLE_PATH", missing)
 
-    # Act
     fl._load_table()
 
-    # Assert
     assert fl._EXACT == {}
     assert fl._BY_CATEGORY == {}
     assert fl._TABLE.get("exact") == {}
 
 
 def test_load_table_handles_invalid_json(monkeypatch, tmp_path: Path) -> None:
-    # Arrange
     _reset_module()
     bad = tmp_path / "bad.json"
     bad.write_text("not json {", encoding="utf-8")
@@ -75,31 +68,23 @@ def test_load_table_handles_invalid_json(monkeypatch, tmp_path: Path) -> None:
     fl._BY_CATEGORY = {}
     monkeypatch.setattr(fl, "_FIX_TABLE_PATH", bad)
 
-    # Act
     fl._load_table()
 
-    # Assert
     assert fl._EXACT == {}
     assert fl._BY_CATEGORY == {}
 
 
 def test_category_lookup_returns_none_for_empty() -> None:
-    # Arrange
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
 
-    # Act
     result = fl._category_lookup("")
 
-    # Assert
     assert result is None
 
 
 def test_detector_code_to_mmb_returns_none_for_empty() -> None:
-    # Arrange
     from _lib import mutation_fix_lookup as fl  # noqa: WPS433
 
-    # Act
     result = fl.detector_code_to_mmb("")
 
-    # Assert
     assert result is None

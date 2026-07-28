@@ -31,18 +31,14 @@ HOOK = "gh-run-watch-blocker"
     ],
 )
 def test_blocks_polling_commands(tool_use, assert_blocks, cmd):
-    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "polls every 3 seconds")
 
 
 def test_blocks_in_compound_command(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use("Bash", {"command": "git push && gh run watch"})
 
-    # Act / Assert
     assert_blocks(HOOK, payload)
 
 
@@ -66,10 +62,8 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
     ],
 )
 def test_allows_one_shot_commands(tool_use, assert_allows, cmd):
-    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -88,10 +82,8 @@ def test_allows_one_shot_commands(tool_use, assert_allows, cmd):
     ],
 )
 def test_allows_unrelated(tool_use, assert_allows, cmd):
-    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -102,10 +94,8 @@ def test_allows_unrelated(tool_use, assert_allows, cmd):
 
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
-    # Arrange
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
@@ -115,24 +105,18 @@ def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash", {"command": "gh run watch"})
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"GH_RUN_WATCH_DISABLE": "1"})
 
 
 def test_handles_empty_command(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_handles_missing_tool_input(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Bash")
 
-    # Act / Assert
     assert_allows(HOOK, payload)

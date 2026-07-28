@@ -20,7 +20,6 @@ HOOK = "prisma-raw-sql-blocker"
     ["queryRaw", "executeRaw", "queryRawUnsafe", "executeRawUnsafe", "queryRawTyped"],
 )
 def test_blocks_dollar_method_on_prisma(tool_use, assert_blocks, method):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -29,12 +28,10 @@ def test_blocks_dollar_method_on_prisma(tool_use, assert_blocks, method):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "raw SQL")
 
 
 def test_blocks_dollar_query_raw_tagged(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -43,12 +40,10 @@ def test_blocks_dollar_query_raw_tagged(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "raw SQL")
 
 
 def test_blocks_on_alternative_client_names(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -57,12 +52,10 @@ def test_blocks_on_alternative_client_names(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "raw SQL")
 
 
 def test_blocks_on_edit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -72,12 +65,10 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "raw SQL")
 
 
 def test_blocks_on_multiedit(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -89,12 +80,10 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "raw SQL")
 
 
 def test_allows_findMany(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -103,12 +92,10 @@ def test_allows_findMany(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_clean_create(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -117,12 +104,10 @@ def test_allows_clean_create(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_migration_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -131,12 +116,10 @@ def test_skips_migration_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_sql_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -145,12 +128,10 @@ def test_skips_sql_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_paths(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -159,12 +140,10 @@ def test_skips_test_paths(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_disable_env_bypasses(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -173,12 +152,10 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"PRISMA_RAW_SQL_DISABLE": "1"})
 
 
 def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -187,7 +164,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(
         HOOK,
         payload,
@@ -197,7 +173,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "prisma-raw-sql-blocker.py"
     )
@@ -207,7 +182,6 @@ def test_invalid_json_stdin_does_not_crash():
         if k in os.environ:
             env[k] = os.environ[k]
 
-    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -218,31 +192,25 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
-    # Assert
     assert proc.returncode == 0
 
 
 def test_unknown_tool_is_ignored(tool_use, assert_allows):
-    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/services/x.ts"})
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_write_non_string_content_is_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/x.ts", "content": 42},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -251,23 +219,19 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_file_path_with_clean_content(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const x = await prisma.user.findMany();\n"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_seed_sql_path(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -276,12 +240,10 @@ def test_skips_seed_sql_path(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_multiedit_with_non_string_new_string(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -290,5 +252,4 @@ def test_multiedit_with_non_string_new_string(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

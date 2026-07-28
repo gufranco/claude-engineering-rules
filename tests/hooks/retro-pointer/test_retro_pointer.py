@@ -41,19 +41,15 @@ def _run(env: dict[str, str], stdin_text: str = "{}") -> tuple[int, str, str]:
 
 
 def test_exits_zero_on_empty_log():
-    # Arrange
     with tempfile.TemporaryDirectory() as tmpdir:
         env = _make_env({"HOME": tmpdir, "CLAUDE_SESSION_ID": "test-session-1"})
 
-        # Act
         code, _stdout, _stderr = _run(env)
 
-        # Assert
         assert code == 0
 
 
 def test_exits_zero_on_unknown_session():
-    # Arrange
     with tempfile.TemporaryDirectory() as tmpdir:
         logs_dir = Path(tmpdir) / ".claude" / "logs"
         logs_dir.mkdir(parents=True)
@@ -63,15 +59,12 @@ def test_exits_zero_on_unknown_session():
         )
         env = _make_env({"HOME": tmpdir, "CLAUDE_SESSION_ID": "test-session-2"})
 
-        # Act
         code, _stdout, _stderr = _run(env)
 
-        # Assert
         assert code == 0
 
 
 def test_prints_nudge_when_blocks_present():
-    # Arrange
     with tempfile.TemporaryDirectory() as tmpdir:
         logs_dir = Path(tmpdir) / ".claude" / "logs"
         logs_dir.mkdir(parents=True)
@@ -83,16 +76,13 @@ def test_prints_nudge_when_blocks_present():
         log.write_text("\n".join(json.dumps(e) for e in entries) + "\n")
         env = _make_env({"HOME": tmpdir, "CLAUDE_SESSION_ID": "sess-3"})
 
-        # Act
         code, _stdout, stderr = _run(env)
 
-        # Assert
         assert code == 0
         assert "[retro]" in stderr or stderr == ""
 
 
 def test_invalid_json_log_lines_do_not_crash():
-    # Arrange
     with tempfile.TemporaryDirectory() as tmpdir:
         logs_dir = Path(tmpdir) / ".claude" / "logs"
         logs_dir.mkdir(parents=True)
@@ -100,19 +90,14 @@ def test_invalid_json_log_lines_do_not_crash():
         log.write_text("not json\n{also not json\n")
         env = _make_env({"HOME": tmpdir, "CLAUDE_SESSION_ID": "sess-4"})
 
-        # Act
         code, _stdout, _stderr = _run(env)
 
-        # Assert
         assert code == 0
 
 
 def test_invalid_json_stdin_does_not_crash():
-    # Arrange
     env = _make_env()
 
-    # Act
     code, _stdout, _stderr = _run(env, stdin_text="not valid json")
 
-    # Assert
     assert code == 0

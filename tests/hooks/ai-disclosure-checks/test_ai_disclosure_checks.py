@@ -10,7 +10,6 @@ HOOK = "ai-disclosure-checks"
 
 
 def test_blocks_aiResponse_without_disclosure(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -23,12 +22,10 @@ def test_blocks_aiResponse_without_disclosure(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AIC001")
 
 
 def test_blocks_llmOutput_without_disclosure(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -39,12 +36,10 @@ def test_blocks_llmOutput_without_disclosure(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AIC001")
 
 
 def test_blocks_modelOutput_without_disclosure(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -55,12 +50,10 @@ def test_blocks_modelOutput_without_disclosure(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AIC001")
 
 
 def test_allows_aiResponse_with_disclosure(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -78,12 +71,10 @@ def test_allows_aiResponse_with_disclosure(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_aiResponse_with_powered_by_AI_label(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -101,12 +92,10 @@ def test_allows_aiResponse_with_powered_by_AI_label(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_blocks_chatbot_without_AI_label(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -123,12 +112,10 @@ def test_blocks_chatbot_without_AI_label(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AIC002")
 
 
 def test_allows_chatbot_with_AI_label(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -148,12 +135,10 @@ def test_allows_chatbot_with_AI_label(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_allows_non_ai_variables(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -164,12 +149,10 @@ def test_allows_non_ai_variables(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_test_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -182,12 +165,10 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_non_jsx_files(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -196,12 +177,10 @@ def test_skips_non_jsx_files(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_bypass_env_disables(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -214,12 +193,10 @@ def test_bypass_env_disables(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload, env={"AI_DISCLOSURE_DISABLE": "1"})
 
 
 def test_works_on_edit_payload(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -229,12 +206,10 @@ def test_works_on_edit_payload(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AIC001")
 
 
 def test_works_on_multiedit_payload(tool_use, assert_blocks):
-    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -248,23 +223,19 @@ def test_works_on_multiedit_payload(tool_use, assert_blocks):
         },
     )
 
-    # Act / Assert
     assert_blocks(HOOK, payload, "AIC001")
 
 
 def test_ignores_bash_tool(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "echo aiResponse"},
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_skips_dist_folder(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -273,12 +244,10 @@ def test_skips_dist_folder(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)
 
 
 def test_empty_content_allows(tool_use, assert_allows):
-    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -287,5 +256,4 @@ def test_empty_content_allows(tool_use, assert_allows):
         },
     )
 
-    # Act / Assert
     assert_allows(HOOK, payload)

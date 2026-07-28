@@ -76,11 +76,9 @@ def _run(
 
 
 def test_missing_rtk_warns_and_exits_zero(tmp_path: Path) -> None:
-    # Arrange
     empty = tmp_path / "empty-bin"
     empty.mkdir()
     payload = {"tool_input": {"command": "ls"}}
-    # Act
     result = subprocess.run(
         [sys.executable, str(HOOK)],
         input=json.dumps(payload),
@@ -89,31 +87,24 @@ def test_missing_rtk_warns_and_exits_zero(tmp_path: Path) -> None:
         env={"PATH": str(empty)},
         timeout=5,
     )
-    # Assert
     assert result.returncode == 0
     assert "rtk" in result.stderr.lower()
 
 
 def test_old_rtk_warns_and_exits_zero(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(tmp_path, version="0.20.0", rewrite_exit=1)
     payload = {"tool_input": {"command": "ls"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     assert "too old" in result.stderr
 
 
 def test_rewrite_allow_emits_updated_input(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(
         tmp_path, version="0.25.0", rewrite_exit=0, rewrite_stdout="rtk git status"
     )
     payload = {"tool_input": {"command": "git status"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     body = json.loads(result.stdout)
     output = body["hookSpecificOutput"]
@@ -122,49 +113,37 @@ def test_rewrite_allow_emits_updated_input(tmp_path: Path) -> None:
 
 
 def test_rewrite_same_command_is_no_op(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(
         tmp_path, version="0.25.0", rewrite_exit=0, rewrite_stdout="git status"
     )
     payload = {"tool_input": {"command": "git status"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_no_equivalent_passes_through(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(tmp_path, version="0.25.0", rewrite_exit=1)
     payload = {"tool_input": {"command": "do-nothing"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_deny_rule_passes_through(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(tmp_path, version="0.25.0", rewrite_exit=2)
     payload = {"tool_input": {"command": "rm -rf /"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_ask_rule_emits_without_permission_decision(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(
         tmp_path, version="0.25.0", rewrite_exit=3, rewrite_stdout="rtk ask cmd"
     )
     payload = {"tool_input": {"command": "ask cmd"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     body = json.loads(result.stdout)
     output = body["hookSpecificOutput"]
@@ -173,50 +152,39 @@ def test_ask_rule_emits_without_permission_decision(tmp_path: Path) -> None:
 
 
 def test_empty_command_passes_through(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(
         tmp_path, version="0.25.0", rewrite_exit=0, rewrite_stdout="x"
     )
     payload = {"tool_input": {"command": ""}}
-    # Act
     result = _run(payload, bin_dir=bin_dir)
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_env_disable_short_circuits(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(
         tmp_path, version="0.25.0", rewrite_exit=0, rewrite_stdout="rtk x"
     )
     payload = {"tool_input": {"command": "x"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir, env={"RTK_REWRITE_DISABLE": "1"})
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_file_bypass_short_circuits(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(
         tmp_path, version="0.25.0", rewrite_exit=0, rewrite_stdout="rtk x"
     )
     state = tmp_path / "state.json"
     set_bypass("rtk-rewrite", ttl_seconds=120, state_path=state)
     payload = {"tool_input": {"command": "x"}}
-    # Act
     result = _run(payload, bin_dir=bin_dir, env={"CLAUDE_BYPASS_STATE": str(state)})
-    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_malformed_json(tmp_path: Path) -> None:
-    # Arrange
     bin_dir = _make_rtk_stub(tmp_path, version="0.25.0", rewrite_exit=0)
-    # Act
     result = subprocess.run(
         [sys.executable, str(HOOK)],
         input="not json",
@@ -225,5 +193,4 @@ def test_malformed_json(tmp_path: Path) -> None:
         env={**os.environ, "PATH": f"{bin_dir}:{os.environ.get('PATH', '')}"},
         timeout=5,
     )
-    # Assert
     assert result.returncode == 0

@@ -42,14 +42,11 @@ def test_typed_array_set_in_business_path_blocked(run_hook, subtype):
     """Item 213: each of the 12 TypedArray subtypes triggers the detector
     in a non-hot-path directory.
     """
-    # Arrange
     snippet = f"const buffer = new {subtype}(1024)\nbuffer.set([1, 2, 3], 0)\n"
     payload = make_edit_payload("/repo/src/business/orders.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"{subtype}: expected block, got exit {code}\n{stderr}"
     assert "typed-array.set" in stderr, f"{subtype}: detector missing\n{stderr}"
 
@@ -57,28 +54,22 @@ def test_typed_array_set_in_business_path_blocked(run_hook, subtype):
 @pytest.mark.parametrize("subtype", TYPED_ARRAY_SUBTYPES)
 def test_typed_array_fill_in_business_path_blocked(run_hook, subtype):
     """Items 211, 213: TypedArray.fill is one of the watched methods."""
-    # Arrange
     snippet = f"const buffer = new {subtype}(1024)\nbuffer.fill(0)\n"
     payload = make_edit_payload("/repo/src/services/payment.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"{subtype}: expected block, got exit {code}\n{stderr}"
     assert "typed-array.fill" in stderr, f"{subtype}: detector missing\n{stderr}"
 
 
 def test_float16_array_es2025_recognized(run_hook):
     """Item 214: Float16Array (ES2025) is recognized as a TypedArray."""
-    # Arrange
     snippet = "const halfFloats = new Float16Array(buffer)\nhalfFloats.fill(0.5)\n"
     payload = make_edit_payload("/repo/src/business/dashboard.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"Float16Array: expected block, got exit {code}\n{stderr}"
     assert "typed-array.fill" in stderr, f"detector missing in:\n{stderr}"
 
@@ -112,7 +103,6 @@ def test_typed_array_in_hot_path_allowed(run_hook, hot_path):
     allowlisted. The orchestrator short-circuits the detector for these
     paths so crypto, codec, image, etc. never trip.
     """
-    # Arrange
     snippet = (
         "const buffer = new Uint8Array(1024)\n"
         "buffer.set([0xAA, 0xBB, 0xCC], 0)\n"
@@ -123,10 +113,8 @@ def test_typed_array_in_hot_path_allowed(run_hook, hot_path):
     )
     payload = make_edit_payload(hot_path, snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"{hot_path}: unexpected block\n{stderr}"
 
 
@@ -134,7 +122,6 @@ def test_typed_array_in_business_path_flagged_full_method_set(run_hook):
     """Item 216: TypedArray mutation in a non-hot-path business directory
     triggers the detector for every watched method.
     """
-    # Arrange
     snippet = (
         "const buffer = new Uint8Array(1024)\n"
         "buffer.set([1, 2, 3], 0)\n"
@@ -144,10 +131,8 @@ def test_typed_array_in_business_path_flagged_full_method_set(run_hook):
     )
     payload = make_edit_payload("/repo/src/business/orders.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 2, f"expected block, got exit {code}\n{stderr}"
     for method in ("set", "fill", "sort", "reverse"):
         assert f"typed-array.{method}" in stderr, (
@@ -161,7 +146,6 @@ def test_typed_array_hot_path_short_circuit(run_hook):
     files; we verify by asserting zero TypedArray hits in stderr even
     when the file contains many mutations.
     """
-    # Arrange
     snippet = (
         "\n".join(f"buffer{i}.set([{i}, {i + 1}], 0)" for i in range(50))
         + "\n"
@@ -169,10 +153,8 @@ def test_typed_array_hot_path_short_circuit(run_hook):
     )
     payload = make_edit_payload("/repo/src/crypto/cipher.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"hot-path short-circuit failed:\n{stderr}"
     assert "typed-array" not in stderr
 
@@ -191,7 +173,6 @@ def test_new_hot_paths_dsp_signal_fft_ml_tensor_allowed(run_hook, hot_path):
     """Item 212: dsp, signal, fft, ml, tensor were added to the hot-path
     list. Verify each new directory triggers the allowlist.
     """
-    # Arrange
     snippet = (
         "const samples = new Float32Array(1024)\n"
         "samples.fill(0)\n"
@@ -199,24 +180,19 @@ def test_new_hot_paths_dsp_signal_fft_ml_tensor_allowed(run_hook, hot_path):
     )
     payload = make_edit_payload(hot_path, snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"{hot_path}: unexpected block\n{stderr}"
 
 
 def test_typed_array_suppression_marker_bypasses_detector(run_hook):
     """Per-line suppression marker honored on TypedArray mutations."""
-    # Arrange
     snippet = (
         "const buffer = new Uint8Array(1024)\n"
         "buffer.set([1, 2, 3], 0) // @allow-mutation -- WebGL upload requires stable buffer\n"
     )
     payload = make_edit_payload("/repo/src/business/orders.ts", snippet)
 
-    # Act
     code, stderr = run_hook(payload)
 
-    # Assert
     assert code == 0, f"suppression failed:\n{stderr}"
