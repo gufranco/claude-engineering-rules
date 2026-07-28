@@ -11,9 +11,9 @@
 | Framework | Generation method |
 |-----------|------------------|
 | NestJS | `@nestjs/swagger` decorators on controllers and DTOs |
-| Express | `swagger-jsdoc` with JSDoc comments, or `tsoa` for code-first |
+| Express | `tsoa` for code-first. `swagger-jsdoc` is rejected: it drives the spec from JSDoc prose |
 | FastAPI | Automatic from type hints and Pydantic models |
-| Go (Gin/Echo) | `swaggo/swag` from comments, or code-first with `ogen` |
+| Go (Gin/Echo) | `ogen` for code-first. `swaggo/swag` is rejected: it drives the spec from comments |
 
 Rules:
 - Every endpoint has a description, request/response schema, and error responses documented

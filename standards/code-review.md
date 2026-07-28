@@ -202,7 +202,7 @@ Not all tech debt is bad. Intentional debt taken with a plan to repay is a valid
 
 **When reviewing or completing work:**
 
-- If you introduce a shortcut or known limitation, document it with a `TODO(debt):` comment explaining what the ideal solution is and why it wasn't done now
+- If you introduce a shortcut or known limitation, file a tracked issue naming the ideal solution and why it was not done now, then link it from the PR description. Never a `TODO` comment in the source
 - If you encounter existing debt while working, note it but do not fix it in the same PR. File it separately
 - Classify debt by impact: **blocks future work**, fix soon, **slows development**, schedule, **cosmetic**. Backlog
 

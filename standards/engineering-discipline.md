@@ -244,9 +244,9 @@ Source: Ch 8, Sec 42.
 
 ### 28. Build documentation in, do not bolt it on
 
-Documentation generated from the code stays in sync. Documentation added at the end goes stale immediately. Comments describe why, not how. API docs derive from the code (TypeDoc, JSDoc, docstring extraction).
+Documentation generated from the code stays in sync. Documentation added at the end goes stale immediately. API docs derive from the signatures and types, not from prose the compiler cannot check.
 
-How we encode it: [`../rules/code-style.md`](../rules/code-style.md) "Comments Policy" already restricts comments to non-obvious why. This principle adds the source-derived API doc rule.
+How we encode it: [`../rules/code-style.md`](../rules/code-style.md) "Comments Policy" already bans prose comments outright. This principle adds the source-derived API doc rule.
 
 Source: Ch 8, Sec 44.
 

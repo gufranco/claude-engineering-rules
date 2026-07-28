@@ -155,7 +155,7 @@ When a reviewer did not understand, the code is the first thing to change. Renam
 
 Bare "I disagree" is a known failure mode. Use the Feedback Equation pattern: Observation, Impact, Request. State what the code does, what would change if you took the reviewer's path, and what you want from the reviewer next.
 
-Example. Observation: "The current code uses `setTimeout` instead of `requestAnimationFrame`." Impact: "Switching to `requestAnimationFrame` would skip the ping when the tab is backgrounded, breaking the keep-alive contract documented in `docs/keepalive.md`." Request: "Want me to add a code comment explaining the constraint, or do you see a way to keep the behavior with a different API?"
+Example. Observation: "The current code uses `setTimeout` instead of `requestAnimationFrame`." Impact: "Switching to `requestAnimationFrame` would skip the ping when the tab is backgrounded, breaking the keep-alive contract documented in `docs/keepalive.md`." Request: "Want me to name the constraint in the function itself, say `pingWhileTabBackgrounded`, or do you see a way to keep the behavior with a different API?"
 
 ### Principle 3: Switch to synchronous after two round trips
 
@@ -180,7 +180,7 @@ Full exemplars with good and bad counterparts live in [`reply-templates.md`](rep
 | `suggestion` x `accept-with-modification` | "Took a variant in `<SHA>`. <Difference from the original>." |
 | `suggestion` x `push-back` | "Considered that. Went with the current approach because <reason>. The alternative would <downside>." |
 | `question` x `ack` | "<Direct answer>." If the answer reveals confusing code, fix the code instead |
-| `clarification-request` x `ack` | "<Plain explanation>." If non-trivial, add a code comment |
+| `clarification-request` x `ack` | "<Plain explanation>." If non-trivial, make the code say it: rename, extract, or tighten the type |
 | `nitpick` x `implement` | "Fixed in `<SHA>`." |
 | `nitpick` x `push-back` | "Sticking with the current style for consistency with <other pattern>." |
 | `chore:out-of-scope` x `defer` | "Filed as `<ticket-link>`. Out of scope for this PR." Never defer without a ticket |

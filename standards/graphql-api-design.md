@@ -564,23 +564,18 @@ import { describe, it, expect } from 'vitest';
 
 describe('schema validation', () => {
   it('must have zero schema errors', () => {
-    // Arrange
     const schema = buildSchema(typeDefs);
 
-    // Act
     const errors = validateSchema(schema);
 
-    // Assert
     expect(errors).toHaveLength(0);
   });
 
   it('must have all connection types follow relay spec', () => {
-    // Arrange
     const schema = buildSchema(typeDefs);
     const typeMap = schema.getTypeMap();
     const connectionTypes = Object.keys(typeMap).filter((name) => name.endsWith('Connection'));
 
-    // Act & Assert
     for (const name of connectionTypes) {
       const type = typeMap[name];
       if ('getFields' in type) {
@@ -615,7 +610,6 @@ describe('createUser mutation', () => {
   });
 
   it('must create a user with valid input', async () => {
-    // Arrange
     const mutation = `
       mutation CreateUser($input: CreateUserInput!) {
         createUser(input: $input) {
@@ -636,13 +630,11 @@ describe('createUser mutation', () => {
       },
     };
 
-    // Act
     const result = await server.executeOperation({
       query: mutation,
       variables,
     });
 
-    // Assert
     expect(result.body.kind).toBe('single');
     const data = result.body.singleResult.data?.createUser;
     expect(data.__typename).toBe('CreateUserSuccess');
@@ -650,7 +642,6 @@ describe('createUser mutation', () => {
   });
 
   it('must return ValidationError for invalid email', async () => {
-    // Arrange
     const mutation = `
       mutation CreateUser($input: CreateUserInput!) {
         createUser(input: $input) {
@@ -667,13 +658,11 @@ describe('createUser mutation', () => {
       input: { email: 'not-an-email', name: faker.person.fullName(), role: 'VIEWER' },
     };
 
-    // Act
     const result = await server.executeOperation({
       query: mutation,
       variables,
     });
 
-    // Assert
     const data = result.body.singleResult.data?.createUser;
     expect(data.__typename).toBe('ValidationError');
     expect(data.fields[0].field).toBe('email');
@@ -691,13 +680,10 @@ import { describe, it, expect } from 'vitest';
 
 describe('schema snapshots', () => {
   it('must match the approved schema', () => {
-    // Arrange
     const schema = buildSchema(typeDefs);
 
-    // Act
     const sdl = printSchema(schema);
 
-    // Assert
     expect(sdl).toMatchSnapshot();
   });
 });
