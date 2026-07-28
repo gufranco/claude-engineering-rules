@@ -25,6 +25,7 @@ Exit 0 = allow, exit 2 = block.
 Cross-platform: works on macOS and Linux (Ubuntu).
 """
 
+import fnmatch
 import json
 import os
 import re
@@ -464,6 +465,49 @@ except ImportError:
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
+SOLO_REPO_ALLOWLIST = _os.path.expanduser("~/.claude/solo-repos.txt")
+
+
+def _repo_root() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+    except Exception:
+        return ""
+
+
+def _solo_repo_entries() -> list[str]:
+    """Return the allowlist entries, minus blank lines and `#` comments."""
+    try:
+        with open(SOLO_REPO_ALLOWLIST, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return []
+    return [
+        stripped
+        for stripped in (raw.strip() for raw in lines)
+        if stripped and not stripped.startswith("#")
+    ]
+
+
+def _is_solo_repo(root: str) -> bool:
+    """True when `root` is listed in the solo-repo allowlist.
+
+    Entries are absolute paths or fnmatch globs. A solo repo has no PR
+    workflow, so pushing to its default branch is the intended path rather
+    than an accident.
+    """
+    if not root:
+        return False
+    for entry in _solo_repo_entries():
+        expanded = _os.path.expanduser(entry).rstrip("/")
+        if root == expanded or fnmatch.fnmatch(root, expanded):
+            return True
+    return False
+
 
 def main():
     if os.environ.get("DANGEROUS_COMMAND_BLOCKER_DISABLE") == "1":
@@ -547,6 +591,17 @@ def main():
             and not re.search(r"\borigin\s+\w", command)
         )
         if targets_protected:
+            repo_root = _repo_root() if _solo_repo_entries() else ""
+            if repo_root and _is_solo_repo(repo_root):
+                _audit(
+                    hook="dangerous-command-blocker",
+                    decision="allow",
+                    level="protected-branch",
+                    reason=f"solo repo allowlisted ({repo_root})",
+                    branch=branch,
+                    command=command[:300],
+                )
+                sys.exit(0)
             inline_bypass = re.search(r"\bALLOW_PROTECTED_BRANCH_PUSH=1\b", command)
             if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1" or inline_bypass:
                 _audit(
@@ -570,7 +625,9 @@ def main():
                 print(
                     f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
                     "Use a feature branch and create a PR instead.\n"
-                    "Bypass (rare, e.g. personal config repo): ALLOW_PROTECTED_BRANCH_PUSH=1.\n"
+                    "Solo repo with no PR workflow? Add it to ~/.claude/solo-repos.txt "
+                    "once instead of bypassing on every push.\n"
+                    "Bypass (one-off): ALLOW_PROTECTED_BRANCH_PUSH=1.\n"
                     f"Command: {command}",
                     file=sys.stderr,
                 )
