@@ -205,7 +205,7 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 
 #### Test quality
 
-- [ ] Tests follow AAA pattern with those exact comments: `// Arrange`, `// Act`, `// Assert`. No other comments in test bodies. See [`rules/testing.md`](../rules/testing.md) for the full AAA policy
+- [ ] Test bodies carry zero comments. Structure comes from the test name, blank lines between setup, call, and assertions, and named helpers. See [`rules/testing.md`](../rules/testing.md) for the full policy
 - [ ] Test names describe behavior, not implementation. Prefer `"should reject expired token"` over `"test validateToken"`
 - [ ] Assertions specific enough to catch regressions. Not just `toBeTruthy()` when a specific value matters
 - [ ] No test-only backdoors in production code
@@ -277,7 +277,7 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] No misleading names (e.g. `getUser` that also modifies state)
 - [ ] Abbreviations avoided unless universally understood where `url`, `id`, `html` are fine; `usr`, `mgr`, `cfg` are not)
 - [ ] File and module names consistent with the project's naming convention
-- [ ] Code readable without comments. Comments explain WHY, not WHAT
+- [ ] Code readable without comments. Every prose comment is a defect; the intent belongs in the name, the extracted function, or the type
 - [ ] File ordering: main export first, then subcomponents, helpers, static content, types
 - [ ] File naming follows domain convention: `name-of-content.type.ext`
 
@@ -324,14 +324,14 @@ See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rati
 - [ ] README updated if setup, env vars, API, or architecture changed
 - [ ] New env vars documented in `.env.example`
 - [ ] Breaking changes documented with migration steps
-- [ ] API documentation updated for new or changed endpoints such as OpenAPI, JSDoc, or or inline
+- [ ] API documentation updated for new or changed endpoints, generated from decorators, types, or schemas rather than from doc comments
 - [ ] Changelog entry added for user-facing changes
 - [ ] Migration guide provided when upgrading dependencies with breaking changes
-- [ ] Inline code comments explain non-obvious decisions such as the "why", or not the "what"
+- [ ] Non-obvious decisions are recorded outside the code: an ADR, the PR description, or the commit body. Never an inline comment
 - [ ] PR description explains what changed and why. Review mode only
 - [ ] PR scope focused: one logical change, not a grab-bag of unrelated fixes. Review mode only
-- [ ] Public API types and interfaces have JSDoc or equivalent doc comments describing purpose and constraints
-- [ ] Inline comments explain the "why" for non-obvious decisions. No comments restating what the code does
+- [ ] Public API purpose and constraints are expressed in the types, not in JSDoc or doc comments
+- [ ] No inline comments. Rationale for a non-obvious decision goes in the ADR, the PR description, or the commit body
 
 ### 15. Cross-File Consistency
 
@@ -388,8 +388,8 @@ Treat every warning as an error. A warning ignored today becomes a broken build 
 
 #### Suppression policy
 
-- [ ] No warning suppression without a documented justification. `// eslint-disable`, `@ts-ignore`, `#pragma warning disable`, `@SuppressWarnings`, `# type: ignore`: each requires an inline comment explaining why the warning is a false positive
-- [ ] Suppression comments never say just "it works" or "not needed". State the specific reason
+- [ ] No warning suppression without a documented justification. `// eslint-disable`, `@ts-ignore`, `#pragma warning disable`, `@SuppressWarnings`, `# type: ignore`: each carries the reason on the directive itself, in the trailing `-- reason` slot the tool provides
+- [ ] Suppression justifications never say just "it works" or "not needed". State the specific reason
 - [ ] When modifying a file with existing suppressions, verify each suppression is still necessary. Remove stale ones
 
 #### Warning baseline

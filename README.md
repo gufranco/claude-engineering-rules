@@ -85,9 +85,9 @@ A layered config where each layer catches what the layer above missed.
 | Rule | What it covers |
 |:-----|:---------------|
 | [`architecture-defaults`](rules/architecture-defaults.md) | Five-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
-| [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule |
+| [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule, platform-first API selection, no-comments policy |
 | [`design-philosophy`](rules/design-philosophy.md) | Complexity manifestations and root causes, deep modules, strategic vs tactical, design it twice, red flags, design taste |
-| [`testing`](rules/testing.md) | Integration-first, strict mock policy, AAA pattern, fake data, deterministic tests |
+| [`testing`](rules/testing.md) | Integration-first, strict mock policy, comment-free test structure, fake data, deterministic tests |
 | [`security`](rules/security.md) | Secrets, auth, encryption, data privacy, audit logging, supply chain |
 | [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs |
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
@@ -185,7 +185,7 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
-| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks any comment added to source code. Only exact `// Arrange`/`// Act`/`// Assert` markers in test files are exempt. No suppression marker; operator bypass `COMMENT_BLOCKER_DISABLE=1` |
+| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks any prose comment added to source code, test files included. Only tool directives (`eslint-disable`, `@ts-expect-error`, `go:build`, `noqa`, `type: ignore`, `shellcheck disable`) are exempt. No suppression marker; operator bypass `COMMENT_BLOCKER_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code |
@@ -484,7 +484,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 63 standards total roughly 12,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 76 standards total roughly 16,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
 
 </details>
 

@@ -12,7 +12,7 @@ always_loaded:
     triggers: [architecture, defaults, ddd, hexagonal, ports, adapters, aggregate, domain, idempotency, deduplication, dedup, immutability, dry, solid, yagni, kiss, service, controller, repository, use case, feature]
 
   code-style:
-    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; only AAA markers in test files are allowed) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass
+    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; every prose comment is banned in every file, test files included, with tool directives like eslint-disable, @ts-expect-error, noqa, type ignore and shellcheck disable as the one exempt class) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass
     triggers: [style, completeness, fundamentals, "command-query", cqs, "data safety", "delivery path", "defensive invariants", analyzability, validation, zod, dto, "removal safety", "locale-aware", i18n, accent, diacritical, "destructive action", "llm output", "trust boundary", "bisect", comment, comments, "no comments", "comments policy"]
 
   design-philosophy:
@@ -48,7 +48,7 @@ always_loaded:
     triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation", recommendation, "recommend an option", "which do you recommend", "option trade-off", "pick an option", choice, options]
 
   testing:
-    description: Integration-first philosophy, strict mock policy, AAA pattern, fake data generators, deterministic tests, snapshot guidelines
+    description: Integration-first philosophy, strict mock policy, comment-free test structure, fake data generators, deterministic tests, snapshot guidelines
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e]
 
   verification:
@@ -504,8 +504,8 @@ on_demand:
 
   typescript-5x:
     path: standards/typescript-5x.md
-    description: using and await using for resource management, NoInfer, verbatimModuleSyntax, regex syntax checking, inferred type predicates
-    triggers: [typescript 5, using, await using, NoInfer, verbatimModuleSyntax, symbol.dispose, ts 5, typescript pattern]
+    description: using and await using for resource management, NoInfer, verbatimModuleSyntax, regex syntax checking, inferred type predicates, decorator metadata, isolated declarations, strictness flag adoption, ES2024+ and ES2026 built-ins (Set composition, iterator helpers, Object.groupBy, Promise.withResolvers, Promise.try, Array.fromAsync, RegExp.escape, Float16Array, Temporal), and platform-first API selection (URL, URLSearchParams, FormData, AbortSignal.timeout, AbortSignal.any, Promise.allSettled, Promise.any, structuredClone, crypto.randomUUID, TextEncoder, Headers) with the defect class each one removes
+    triggers: [typescript 5, using, await using, NoInfer, verbatimModuleSyntax, symbol.dispose, ts 5, typescript pattern, es2024, es2026, temporal, groupby, iterator helper, query string, query params, search params, url parsing, form data, form submit, request timeout, abortcontroller, abortsignal, cancel request, deep copy, deep clone, structuredclone, parallel promises, allsettled, web api, platform api, fetch api, http headers, uuid, native api]
 
   postgresql:
     path: standards/postgresql.md

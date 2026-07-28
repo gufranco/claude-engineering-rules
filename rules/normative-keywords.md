@@ -33,7 +33,7 @@ Uppercase is permitted for genuinely critical statements where misreading would 
 | Category | Example |
 |----------|---------|
 | Security boundary | "Required env vars MUST be documented in `.env.example`." [`security.md`](security.md):7 |
-| Correctness invariant | "Every test MUST use these exact Arrange-Act-Assert comments." [`testing.md`](testing.md):26 |
+| Correctness invariant | "Every test MUST produce the same result on every run, on every machine." Paraphrased from the deterministic-tests rule in [`testing.md`](testing.md) |
 | Data integrity | "Every mutating operation MUST be safe to run twice with the same input." Hypothetical illustration |
 | Irreversibility | "Migrations MUST be safe to run more than once." Paraphrased from the migration idempotency rule |
 | Verbatim citation | Quoting an RFC, standard, or external authority that already uses uppercase. [`../standards/identifiers.md`](../standards/identifiers.md):90 |
@@ -69,7 +69,7 @@ This keeps the convention traceable to its source without turning every rule fil
 
 | Bad | Good |
 |-----|------|
-| You can add a comment if you want. | A comment is optional. Add one when the WHY is non-obvious. |
+| You can add a helper if you want. | A helper is optional. Extract one when the expression reads poorly inline. |
 | The helper is available if needed. | Use of the helper is optional. The default path stays the same. |
 
 ## Cross-References
