@@ -248,7 +248,7 @@ If a change causes problems:
 
 Pushing straight to `main`, `master`, or `develop` is blocked. Use a feature branch and open a PR.
 
-Solo repositories are the exception: a repository with no reviewers has no PR workflow to protect. List those in [`solo-repos.txt`](../solo-repos.txt), one absolute path or fnmatch glob per line, and the block lifts for that repository only. Add an entry the first time the repository comes up rather than setting `ALLOW_PROTECTED_BRANCH_PUSH=1` on every push; a bypass repeated per-command is a missing config entry.
+Solo repositories are the exception: a repository with no reviewers has no PR workflow to protect. List those in `solo-repos.txt`, one absolute path or fnmatch glob per line, and the block lifts for that repository only. The listing is machine-local and never committed, since it names directories on one workstation; copy [`solo-repos.example.txt`](../solo-repos.example.txt) to create it. A missing listing is an empty allowlist, so every protected branch stays protected. Add an entry the first time the repository comes up rather than setting `ALLOW_PROTECTED_BRANCH_PUSH=1` on every push; a bypass repeated per-command is a missing config entry.
 
 Never add a repository with reviewers to that file.
 
