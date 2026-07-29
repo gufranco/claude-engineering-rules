@@ -284,6 +284,7 @@ Before removing or renaming any resource, verify all consumers. A resource is an
 | Translation key | All `t('key')`, `t.raw('key')`, message JSON files |
 | CSS class or design token | All `className`, Tailwind config, component files |
 | Package dependency | All imports from that package across `src/` and [`tests/`](../tests) |
+| File untracked from git but kept on disk | Every markdown link and doc reference pointing at it. Link validators resolve against tracked files, so the link breaks even though the file is still on the author's disk |
 
 A removal without a consumer search is a latent runtime error.
 
