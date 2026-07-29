@@ -73,6 +73,55 @@ def test_blocks_git_notes_with_internal_reference(tool_use, assert_blocks):
     assert_blocks(HOOK, payload, "internal Claude config")
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git add rules/git-workflow.md && git commit -m 'docs: cover ignore hygiene'",
+        "git add standards/code-review.md && git commit -am 'docs: tighten wording'",
+        "git add checklists/checklist.md && git commit --message='docs: add a row'",
+        "git add rules/security.md && git commit -F - <<'MSG'\ndocs: tighten wording\nMSG",
+    ],
+)
+def test_allows_internal_paths_as_git_arguments(tool_use, assert_allows, command):
+    payload = tool_use("Bash", {"command": command})
+
+    assert_allows(HOOK, payload)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git add x.py && git commit -m 'docs: per rules/security.md'",
+        "git add x.py && git commit -am 'docs: per rules/security.md'",
+        "git add x.py && git commit --message='docs: per rules/security.md'",
+        "git add x.py && git commit -F - <<'MSG'\ndocs: tighten\n\nSee rules/security.md\nMSG",
+    ],
+)
+def test_still_blocks_internal_paths_inside_the_message(
+    tool_use, assert_blocks, command
+):
+    payload = tool_use("Bash", {"command": command})
+
+    assert_blocks(HOOK, payload, "internal Claude config")
+
+
+def test_blocks_whole_command_when_message_cannot_be_isolated(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "git commit --fixup rules/security.md"})
+
+    assert_blocks(HOOK, payload, "internal Claude config")
+
+
+def test_blocks_gh_body_paired_with_a_clean_git_commit(tool_use, assert_blocks):
+    payload = tool_use(
+        "Bash",
+        {
+            "command": "git commit -m 'docs: tighten wording' && gh pr comment 1 --body 'see rules/security.md'"
+        },
+    )
+
+    assert_blocks(HOOK, payload, "internal Claude config")
+
+
 def test_blocks_slack_send_with_category_reference(tool_use, assert_blocks):
     payload = tool_use(
         "Bash",
