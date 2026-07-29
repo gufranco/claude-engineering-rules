@@ -67,6 +67,22 @@ Use AbortSignal.timeout(ms) instead of pairing setTimeout with an
 AbortController. The manual pair leaks the timer on any early return.
 ```
 
+**Show the artifact, not a description of it.** When explaining what a tool, hook, command, or test actually did, paste the literal text and point at the part that matters. A prose summary of a mechanism asks the reader to reconstruct the artifact from the description, and the reconstruction is usually wrong. The obligation is strongest for the case that looks least like instructional text: a conversational explanation of why something failed. A reader who says "I did not understand" is almost always missing the artifact.
+
+```
+# Bad: describes the mechanism
+The hook inspects the entire bash command as one string, so a file
+path in an unrelated argument reads as a leak.
+
+# Good: shows the artifact, then points at it
+This command was blocked:
+
+    git add path/to/file.md && git commit -m 'docs: tighten wording'
+
+The guard saw the path next to `git commit` and read it as published
+text. It was an argument to `git add`, not a word in the message.
+```
+
 This is why the replacement tables in [`lang/typescript-immutability.md`](lang/typescript-immutability.md) and [`../standards/typescript-5x.md`](../standards/typescript-5x.md) are built as "instead of X, use Y" rows rather than as prose about preferring immutable or native code. Each row names both sides, so there is nothing left to interpret. Write new API guidance the same way.
 
 ### 4. One idea per sentence
@@ -257,7 +273,7 @@ After writing any text, read it back and verify:
 1. **Ambiguity test.** Could a developer follow this text and arrive at a wrong interpretation? If yes, add the constraint or example that blocks the wrong path.
 2. **Redundancy test.** Does any sentence restate something already said? Remove the duplicate.
 3. **Format test.** Is there a paragraph that should be a list or table? Convert it.
-4. **Example test.** Is there an instruction where the meaning could vary across readers? Add the example that anchors it. Examples are non-negotiable for rules, standards, and any instructional text.
+4. **Example test.** Is there an instruction where the meaning could vary across readers? Add the example that anchors it. Examples are non-negotiable for rules, standards, and any instructional text. The same applies when explaining what a tool did: show the command or output rather than describing it.
 5. **Obligation test.** Does every "should" actually mean "must"? If yes, say "must". If optional, say "optional".
 
 For question messages, status updates, error reports, subagent prompts, and loop-closure lines, apply [`rules/smart-questions.md`](smart-questions.md) in addition to this gate. When a message presents a choice, that rule also requires explaining each option in depth and naming a recommended one with its reason.
