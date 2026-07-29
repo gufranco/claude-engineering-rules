@@ -172,6 +172,39 @@ def test_blocks_md_multiedit_with_internal_reference(tool_use, assert_blocks):
     assert_blocks(HOOK, payload, "internal Claude config")
 
 
+@pytest.mark.parametrize(
+    "verb",
+    ["commit -F -", "tag -a v1.2.0 -F -", "notes add -F -"],
+)
+def test_allows_chore_commit_type_in_git_messages(tool_use, assert_allows, verb):
+    payload = tool_use(
+        "Bash",
+        {"command": f"git {verb} <<'MSG'\nchore: ignore daemon runtime state\nMSG"},
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_blocks_chore_label_in_gh_comment(tool_use, assert_blocks):
+    payload = tool_use(
+        "Bash",
+        {
+            "command": "gh pr comment 1 --body \"$(cat <<'BODY'\nchore: rename the helper\nBODY\n)\""
+        },
+    )
+
+    assert_blocks(HOOK, payload, "internal Claude config")
+
+
+def test_blocks_review_label_in_git_commit_message(tool_use, assert_blocks):
+    payload = tool_use(
+        "Bash",
+        {"command": "git commit -F -\nnitpick: rename the helper\nMSG"},
+    )
+
+    assert_blocks(HOOK, payload, "internal Claude config")
+
+
 def test_allows_clean_gh_comment(tool_use, assert_allows):
     payload = tool_use(
         "Bash",

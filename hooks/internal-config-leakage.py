@@ -19,7 +19,9 @@ Patterns flagged:
   - Internal path tokens: ~/.claude/, .claude/<dir>/, rules/<name>.md,
     standards/<name>.md, checklists/checklist.md, rules/index.yml
   - Bare internal file names: CLAUDE.md when cited as authority
-  - Conventional Comments labels at line start (issue (blocking):, nitpick:, ...)
+  - Conventional Comments labels at line start (issue (blocking):, nitpick:, ...).
+    `chore:` is exempt in a git commit, tag, or notes message, where it is a
+    Conventional Commits type rather than a review label.
   - Internal severity tokens: P0, P1, P2, P3 as standalone scaffolding labels
   - Skill invocation flags: --backend, --frontend, --local, --post, --focus,
     --severity (when treated as authoritative scaffolding rather than legitimate
@@ -58,12 +60,16 @@ except Exception:  # pragma: no cover
 
 # Bash commands that publish text externally. The hook scans the command text
 # AND any payload file referenced with --input, --body-file, -F file=@, or @file.
-PUBLISHING_BASH_PATTERNS = [
-    re.compile(r"\bgh\s+(?:pr|issue|api|release|gist)\b"),
-    re.compile(r"\bglab\s+(?:mr|issue|api|release)\b"),
+GIT_MESSAGE_BASH_PATTERNS = [
     re.compile(r"\bgit\s+commit\b"),
     re.compile(r"\bgit\s+tag\b"),
     re.compile(r"\bgit\s+notes\b"),
+]
+
+PUBLISHING_BASH_PATTERNS = [
+    re.compile(r"\bgh\s+(?:pr|issue|api|release|gist)\b"),
+    re.compile(r"\bglab\s+(?:mr|issue|api|release)\b"),
+    *GIT_MESSAGE_BASH_PATTERNS,
     re.compile(r"\bslack(?:-cli)?\s+(?:send|post|chat)\b"),
     re.compile(r"\bcurl\b.*\b(?:slack|discord|teams|telegram)\b"),
 ]
@@ -101,8 +107,15 @@ CATEGORY_LEAK_PATTERNS = [
 ]
 
 # Conventional Comments label prefix at line start.
+LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT = r"issue\s*\((?:blocking|non-blocking)\)|nitpick|suggestion|question|thought|praise|todo"
+
 CONVENTIONAL_LABEL_PATTERN = re.compile(
-    r"(?m)^\s*(?:issue\s*\((?:blocking|non-blocking)\)|nitpick|suggestion|question|thought|praise|chore|todo)\s*:",
+    rf"(?m)^\s*(?:{LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT}|chore)\s*:",
+    re.IGNORECASE,
+)
+
+CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE = re.compile(
+    rf"(?m)^\s*(?:{LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT})\s*:",
     re.IGNORECASE,
 )
 
@@ -213,6 +226,13 @@ def is_publishing_bash(cmd: str) -> bool:
         if stripped.startswith(pref):
             return False
     return any(p.search(cmd) for p in PUBLISHING_BASH_PATTERNS)
+
+
+def is_git_message_bash(cmd: str) -> bool:
+    """True if the Bash command authors a git commit, tag, or notes message."""
+    if not cmd:
+        return False
+    return any(p.search(cmd) for p in GIT_MESSAGE_BASH_PATTERNS)
 
 
 def is_skipped_md_path(path: str) -> bool:
@@ -356,7 +376,11 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
         cmd = tool_input.get("command", "")
         if not isinstance(cmd, str) or not is_publishing_bash(cmd):
             return out
-        out.append(("bash", "command", "command", cmd))
+        bash_kind = "git-message" if is_git_message_bash(cmd) else "command"
+        payload_kind = (
+            "git-message-payload" if bash_kind == "git-message" else "payload"
+        )
+        out.append(("bash", "command", bash_kind, cmd))
         # Follow --input/--body-file/--file references and scan the file contents
         # too, so a clean command that references a leaky payload still gets blocked.
         for ref in extract_referenced_files(cmd):
@@ -368,9 +392,9 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
             blocks = extract_publishing_text_blocks(payload)
             if blocks:
                 for label, text in blocks:
-                    out.append((f"bash-payload:{ref}", label, "payload", text))
+                    out.append((f"bash-payload:{ref}", label, payload_kind, text))
             else:
-                out.append(("bash-payload", ref, "payload", payload))
+                out.append(("bash-payload", ref, payload_kind, payload))
 
     elif tool in ("Write", "Edit", "MultiEdit"):
         if is_skipped_md_path(fp):
@@ -438,7 +462,12 @@ def find_leaks(text: str, content_kind: str) -> list[str]:
         if m:
             add(label, m)
 
-    m = CONVENTIONAL_LABEL_PATTERN.search(text)
+    label_pattern = (
+        CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE
+        if content_kind in ("git-message", "git-message-payload")
+        else CONVENTIONAL_LABEL_PATTERN
+    )
+    m = label_pattern.search(text)
     if m:
         add("Conventional Comments label prefix", m)
 
@@ -450,7 +479,7 @@ def find_leaks(text: str, content_kind: str) -> list[str]:
     if m:
         add("internal section heading", m)
 
-    if content_kind in ("payload", "markdown"):
+    if content_kind in ("payload", "markdown", "git-message-payload"):
         head = text[:300]
         m = SKILL_FLAG_HEAD_PATTERN.search(head)
         if m:
