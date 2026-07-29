@@ -289,6 +289,18 @@ Build output directories must never be committed:
 - `dist/`, `build/`, `.next/`, `out/`, `coverage/`, `node_modules/`
 - Verify these are in [`.gitignore`](../.gitignore) when setting up or reviewing a project
 
+The repository's own ignore file must cover every ignorable path on its own. A machine-global ignore file, configured through `core.excludesFile`, does not travel with a clone, so a path protected only there is exposed in every other checkout and in CI. The gap is invisible during normal work because the local `git status` stays clean.
+
+Audit the repository's coverage by disabling the global file for one command:
+
+```bash
+git -c core.excludesFile=/dev/null status --porcelain -uall
+```
+
+Every line it prints is either a file to commit or a pattern missing from that file. Runtime state, daemon and job directories, caches, and local session data belong to the second group. Run the audit before making a repository public, and when adding any tool that writes state into the working tree.
+
+Machine-local configuration stays untracked when it names paths, hosts, or accounts that exist on one workstation. Commit a `<name>.example.<ext>` beside it carrying the format and placeholder entries, and point the documentation at the example rather than at the real file. The code that reads it must treat a missing file as the safe default: an empty allowlist, never an open one.
+
 ## Enforcement
 
 Enforced by: [`hooks/bulk-resolve-blocker.py`](../hooks/bulk-resolve-blocker.py).
