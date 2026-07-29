@@ -8,6 +8,11 @@ Rule source: ~/.claude/standards/code-review.md "No Internal Config Leakage".
 External output channels covered:
   - Bash commands that publish text: gh pr/issue/api, glab mr/issue/api, git commit -m,
     git tag, git notes, slack-cli send.
+  - For a git commit, tag, or notes command, only the message is scanned: the -m
+    value, a --message= value, and any heredoc body. Other arguments, such as the
+    paths handed to `git add` in the same command, never reach a reader. The whole
+    command is scanned when the message cannot be isolated, or when a non-git
+    publishing command appears alongside it.
   - Bash commands that publish via a payload file referenced with --input,
     --body-file, -F file=@..., or @file shorthand. The hook reads the referenced
     file and scans its content.
@@ -66,13 +71,23 @@ GIT_MESSAGE_BASH_PATTERNS = [
     re.compile(r"\bgit\s+notes\b"),
 ]
 
-PUBLISHING_BASH_PATTERNS = [
+NON_GIT_PUBLISHING_BASH_PATTERNS = [
     re.compile(r"\bgh\s+(?:pr|issue|api|release|gist)\b"),
     re.compile(r"\bglab\s+(?:mr|issue|api|release)\b"),
-    *GIT_MESSAGE_BASH_PATTERNS,
     re.compile(r"\bslack(?:-cli)?\s+(?:send|post|chat)\b"),
     re.compile(r"\bcurl\b.*\b(?:slack|discord|teams|telegram)\b"),
 ]
+
+PUBLISHING_BASH_PATTERNS = [
+    *NON_GIT_PUBLISHING_BASH_PATTERNS,
+    *GIT_MESSAGE_BASH_PATTERNS,
+]
+
+HEREDOC_HEADER_PATTERN = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+
+GIT_MESSAGE_SHORT_FLAG_PATTERN = re.compile(r"^-[A-Za-z]*m$")
+
+GIT_MESSAGE_LONG_FLAGS = ("--message", "-m")
 
 # Path / file reference leaks.
 PATH_LEAK_PATTERNS = [
@@ -232,7 +247,63 @@ def is_git_message_bash(cmd: str) -> bool:
     """True if the Bash command authors a git commit, tag, or notes message."""
     if not cmd:
         return False
+    if any(p.search(cmd) for p in NON_GIT_PUBLISHING_BASH_PATTERNS):
+        return False
     return any(p.search(cmd) for p in GIT_MESSAGE_BASH_PATTERNS)
+
+
+def split_heredoc_bodies(cmd: str) -> tuple[list[str], str]:
+    """Split a command into its heredoc bodies and the command without them."""
+    bodies: list[str] = []
+    remainder: list[str] = []
+    lines = cmd.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        remainder.append(line)
+        delimiters = [m.group(2) for m in HEREDOC_HEADER_PATTERN.finditer(line)]
+        i += 1
+        for delimiter in delimiters:
+            body: list[str] = []
+            while i < len(lines) and lines[i].strip() != delimiter:
+                body.append(lines[i])
+                i += 1
+            if i < len(lines):
+                i += 1
+            bodies.append("\n".join(body))
+    return bodies, "\n".join(remainder)
+
+
+def extract_git_message_texts(cmd: str) -> list[str] | None:
+    """Return the message text a git commit, tag, or notes command publishes.
+
+    None means the message could not be isolated from the command, so the
+    caller must scan the whole command rather than assume it carries none.
+    """
+    bodies, without_heredocs = split_heredoc_bodies(cmd)
+    texts = [body for body in bodies if body.strip()]
+    try:
+        tokens = shlex.split(without_heredocs, comments=False, posix=True)
+    except Exception:
+        return None
+
+    saw_message_flag = False
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok.startswith("--message="):
+            saw_message_flag = True
+            texts.append(tok[len("--message=") :])
+        elif tok in GIT_MESSAGE_LONG_FLAGS or GIT_MESSAGE_SHORT_FLAG_PATTERN.match(tok):
+            saw_message_flag = True
+            if i + 1 < len(tokens):
+                texts.append(tokens[i + 1])
+                i += 1
+        i += 1
+
+    if not texts and not saw_message_flag:
+        return None
+    return texts
 
 
 def is_skipped_md_path(path: str) -> bool:
@@ -376,11 +447,20 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
         cmd = tool_input.get("command", "")
         if not isinstance(cmd, str) or not is_publishing_bash(cmd):
             return out
-        bash_kind = "git-message" if is_git_message_bash(cmd) else "command"
-        payload_kind = (
-            "git-message-payload" if bash_kind == "git-message" else "payload"
+        authors_git_message = is_git_message_bash(cmd)
+        git_message_texts = (
+            extract_git_message_texts(cmd) if authors_git_message else None
         )
-        out.append(("bash", "command", bash_kind, cmd))
+        payload_kind = "git-message-payload" if authors_git_message else "payload"
+
+        if git_message_texts is not None:
+            # Only the message reaches a reader, so command arguments such as the
+            # paths handed to `git add` are not published text.
+            for idx, text in enumerate(git_message_texts):
+                out.append(("bash", f"git message[{idx}]", "git-message", text))
+        else:
+            kind = "git-message" if authors_git_message else "command"
+            out.append(("bash", "command", kind, cmd))
         # Follow --input/--body-file/--file references and scan the file contents
         # too, so a clean command that references a leaky payload still gets blocked.
         for ref in extract_referenced_files(cmd):
