@@ -7,6 +7,12 @@
 .claude/
 .credentials.json
 
+# Background daemon and job runner
+daemon/
+daemon-auth-cooldown
+daemon-auth-status.json
+jobs/
+
 # Session and conversation data
 debug/
 projects/
@@ -47,6 +53,18 @@ telemetry/
 changes.log
 *.log
 logs/
+
+################################################################################
+# Secrets
+################################################################################
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+credentials.json
 
 ################################################################################
 # macOS
