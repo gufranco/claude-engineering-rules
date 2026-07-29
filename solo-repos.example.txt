@@ -1,6 +1,9 @@
 # Repositories with no pull-request workflow, where pushing straight to the
 # default branch is the intended path rather than an accident.
 #
+# Copy this file to `solo-repos.txt`, which is machine-local and never
+# committed, then add your own entries.
+#
 # Read by hooks/dangerous-command-blocker.py. One absolute path or fnmatch
 # glob per line. Blank lines and lines starting with `#` are ignored.
 # `~` is expanded. A match suppresses the protected-branch block for that
@@ -8,8 +11,9 @@
 #
 # Add a repository here only when you own it alone. For anything with
 # reviewers, use a feature branch and a PR.
+#
+# A missing `solo-repos.txt` means an empty allowlist, so every protected
+# branch stays protected.
 
-~/.claude
-~/.dotfiles
-~/DoomNG
-~/Dropbox/Workspace/@ Pessoal/*
+# ~/.claude
+# ~/scratch/*
