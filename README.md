@@ -10,7 +10,7 @@
 
 </div>
 
-**29** always-on rules · **76** on-demand standards · **39** slash-command skills · **63** runtime hooks · **17** custom agents · **42** MCP servers · **869** review items across **71** categories
+**31** always-on rules · **79** on-demand standards · **39** slash-command skills · **69** runtime hooks · **18** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -19,13 +19,13 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-63 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+69 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-29 universal rules ship with every conversation. 76 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 76.
+31 universal rules ship with every conversation. 79 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 79.
 
 </td>
 </tr>
@@ -46,7 +46,7 @@ Verify-before-claim is a rule, not a suggestion. Read the file, run the command,
 <tr>
 <td width="50%" valign="top">
 
-### 869-Item Review Checklist
+### 885-Item Review Checklist
 One file, 71 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
 
 </td>
@@ -74,7 +74,7 @@ A layered config where each layer catches what the layer above missed.
 | [`hooks/`](hooks) | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
 | [`skills/`](skills) | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
 | [`agents/`](agents) | Specialized subagents for focused review tasks | When delegated explicitly |
-| [`checklists/`](checklists) | 869-item review checklist for code, infra, and process | On demand during review |
+| [`checklists/`](checklists) | 885-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
@@ -87,7 +87,7 @@ A layered config where each layer catches what the layer above missed.
 | [`architecture-defaults`](rules/architecture-defaults.md) | Five-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
 | [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule, platform-first API selection, no-comments policy |
 | [`design-philosophy`](rules/design-philosophy.md) | Complexity manifestations and root causes, deep modules, strategic vs tactical, design it twice, red flags, design taste |
-| [`testing`](rules/testing.md) | Integration-first, strict mock policy, comment-free test structure, fake data, deterministic tests |
+| [`testing`](rules/testing.md) | Integration-first, strict mock policy, unlabeled Arrange-Act-Assert test structure, fake data, deterministic tests |
 | [`security`](rules/security.md) | Secrets, auth, encryption, data privacy, audit logging, supply chain |
 | [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs |
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
@@ -118,9 +118,9 @@ Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immu
 
 ### Standards, loaded on demand
 
-76 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+79 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
-Topics: API design, authentication, caching, code review, container security, contract testing, database, DDD, debugging, distributed systems, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
+Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
 ### Skills
 
@@ -167,7 +167,7 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Hooks
 
-63 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+69 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -175,6 +175,14 @@ Topics: API design, authentication, caching, code review, container security, co
 2. In-session file registry `~/.claude/.bypass-state.json`. Engage from a live session via `python scripts/bypass.py set <hook> --ttl 600 --reason "<why>"`; clear with `python scripts/bypass.py clear [<hook>]`; inspect with `list`. TTL clamps to [60, 3600] seconds; the 60-minute ceiling is intentional so a forgotten bypass cannot stick. Wildcard entries (`set "*"`) short-circuit every hook until expiry, with a tighter default TTL of 5 minutes. File mode is 0600. See [`hooks/_lib/bypass.py`](hooks/_lib/bypass.py).
 
 **Block-message schema.** New hooks render their stderr through [`hooks/_lib/output.py`](hooks/_lib/output.py) `block(...)`. Five sections in fixed order (`What was detected`, `Why this rule exists`, `How to fix`, `If the rule does not apply here`, `Decision guidance for Claude`), one of four decision verbs (`STOP-AND-ASK`, `FIX-AND-RETRY`, `BYPASS-ONCE`, `BYPASS-WITH-REASON`), both bypass channels named in every message. Validator at `output.validate_block_message(...)`. See [`hooks/large-file-blocker.py`](hooks/large-file-blocker.py) for a worked example.
+
+**Adding a hook.** Five steps, in order. Skipping step 2 is the quiet failure: the hook runs, exits 0 on every payload, and looks like it is passing.
+
+1. Write the test suite first under `tests/hooks/<hook-name>/`. [`hooks/tdd-gate.py`](hooks/tdd-gate.py) blocks the source file until a matching test exists. The fixtures `tool_use`, `assert_blocks`, `assert_allows`, and `run_hook` come from [`tests/conftest.py`](tests/conftest.py); a hand-rolled subprocess call must propagate `COVERAGE_PROCESS_START` and `PYTHONPATH` or its lines are never measured.
+2. Register the hook ID in `STANDARD_HOOKS` in [`hooks/_lib/hook_profile.py`](hooks/_lib/hook_profile.py). `should_run` returns False for any ID the active profile does not list, so an unregistered hook silently no-ops.
+3. Wire the matchers into [`settings.json`](settings.json), one entry per tool: `Write`, `Edit`, `MultiEdit`.
+4. Import shared infrastructure from `_lib`: `_lib.suppression` for third-party directives, `_lib.bypass` for the file registry, `_lib.audit_log` for the trail, `_lib.output` for `block(...)` and `warn(...)`. The module is `_lib.suppression`, never a bare `suppression`; the bare form does not resolve and the fallback silently disables directive support.
+5. Ship detection-heavy hooks in warn mode first, blocking behind a `<NAME>_ENFORCE=1` env var, and promote once the false-positive rate is known against real code.
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
@@ -221,7 +229,12 @@ Topics: API design, authentication, caching, code review, container security, co
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |
 | [`read-injection-scanner.py`](hooks/read-injection-scanner.py) | PostToolUse Read/WebFetch/WebSearch | Scans fetched content for prompt-injection patterns (instruction override, tool redirection, authority claims, base64 runs, unicode confusables) and emits a warning. Bypass `READ_INJECTION_DISABLE=1` |
-| [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI. No allow marker; only third-party tool directives are honored. |
+| [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI, and flags locks taken without a TTL. No allow marker; only third-party tool directives are honored. |
+| [`check-then-act-blocker.py`](hooks/check-then-act-blocker.py) | PreToolUse Write/Edit/MultiEdit | Flags a read that decides a write followed by that write. Warns by default; blocks under `CHECK_THEN_ACT_ENFORCE=1` |
+| [`transaction-scope-guard.py`](hooks/transaction-scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Flags network I/O and timers inside a transaction, and array-mode transactions carrying dependent writes |
+| [`dedup-store-guard.py`](hooks/dedup-store-guard.py) | PreToolUse Write/Edit/MultiEdit | Flags in-memory deduplication ledgers that empty on restart |
+| [`concurrent-fanout-guard.py`](hooks/concurrent-fanout-guard.py) | PreToolUse Write/Edit/MultiEdit | Flags unbounded `Promise.all` over caller-supplied input |
+| [`python-mutation-guard.py`](hooks/python-mutation-guard.py) | PreToolUse Write/Edit/MultiEdit | AST-based Python immutability: mutable defaults and parameter mutation |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
@@ -242,11 +255,12 @@ Topics: API design, authentication, caching, code review, container security, co
 
 ### Custom Agents
 
-15 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
+18 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
 
 | Agent | Purpose |
 |:------|:--------|
 | [`accessibility-auditor`](agents/accessibility-auditor.md) | WCAG 2.1 AA accessibility review |
+| [`concurrency-auditor`](agents/concurrency-auditor.md) | Actor timelines per write path, race conditions, idempotency and dedup durability |
 | [`api-reviewer`](agents/api-reviewer.md) | API backward compatibility and design review |
 | [`blast-radius`](agents/blast-radius.md) | Trace all consumers of changed interfaces |
 | [`conversation-analyzer`](agents/conversation-analyzer.md) | Read a session transcript and surface patterns worth capturing as instincts, hooks, or rule revisions |
@@ -437,7 +451,7 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 869-item review checklist across 71 categories
+  checklists/            Unified 885-item review checklist across 71 categories
   rules/                 31 rules, 29 always-on plus 2 loaded on demand
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific rules: TypeScript, Python, ORM migrations

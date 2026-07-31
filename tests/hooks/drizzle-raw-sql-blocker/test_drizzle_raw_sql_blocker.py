@@ -283,3 +283,26 @@ def test_unknown_tool_is_ignored(tool_use, assert_allows):
     )
 
     assert_allows(HOOK, payload)
+
+
+def test_allows_the_anti_pattern_inside_documentation(tool_use, assert_allows):
+    content = "# Locking\n\nNever do this in application code:\n\n```typescript\nawait db.execute(sql`SELECT 1`);\n```\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/standards/concurrency.md", "content": content}
+    )
+
+    _code, stderr = assert_allows(HOOK, payload)
+
+    assert stderr.strip() == ""
+
+
+def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/services/account.service.ts",
+            "content": "await db.execute(sql`SELECT 1`);\n",
+        },
+    )
+
+    assert_blocks(HOOK, payload)

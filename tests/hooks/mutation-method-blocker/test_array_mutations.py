@@ -52,6 +52,11 @@ ARRAY_ALLOWED_CASES: list[tuple[str, str]] = [
     ("results-push", "results.push(record)"),
     ("ws-push", "ws.push(msg)"),
     ("queue-push", "queue.push(job)"),
+    ("gtm-datalayer-push", "dataLayer.push({ event: 'purchase' })"),
+    ("window-datalayer-push", "window.dataLayer.push({ event: 'signup' })"),
+    ("consent-queue-push", "window.dgEvent.push(['consent', 'granted'])"),
+    ("matomo-push", "_paq.push(['trackPageView'])"),
+    ("hubspot-push", "_hsq.push(['setPath', path])"),
 ]
 
 

@@ -107,6 +107,8 @@ The steps below are enablers, not gates. Their order shows what becomes possible
 
    This snapshot prevents context drift in long sessions. Re-read `context.md` at the start of each phase, steps 1, 5, 8. If the task has evolved, update the snapshot before continuing.
 
+   **When the complaint is about quality rather than a missing feature, diagnose the layer before proposing content.** A report that output is weak in some dimension reads as a request for more guidance, and writing more guidance is usually the wrong fix. Ask when each existing layer fires relative to the moment the work is produced: always-on rules fire before, on-demand standards fire only on a trigger match, review checklists fire after the artifact exists, and mechanical hooks fire at write time. Guidance that only fires after the code is written cannot change the code. Compare the dimension the user is unhappy about against a dimension they are happy about, and the difference in enforcement timing is usually the whole finding. Record the comparison in `plan.md` so the approach section follows from evidence rather than from the topic list.
+
 1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints?. Skip if discovery phase already covered this.
 
 2. **Search for existing work**. The tool ordering is mandatory; stop at first match:
