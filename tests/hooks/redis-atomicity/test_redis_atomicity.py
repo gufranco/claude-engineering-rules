@@ -336,6 +336,44 @@ def test_atomic_markers_in_window_break_pairing(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+def test_blocks_lock_acquisition_without_a_ttl(tool_use, assert_blocks):
+    content = "const acquired = await client.set('lock:order', token, 'NX');\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
+    )
+
+    assert_blocks(HOOK, payload, "lock without a TTL")
+
+
+def test_blocks_setnx_lock_without_a_ttl(tool_use, assert_blocks):
+    content = "const ok = await client.setnx('lock:order', token);\nreturn ok;\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
+    )
+
+    assert_blocks(HOOK, payload, "lock without a TTL")
+
+
+def test_allows_lock_acquisition_with_nx_and_ttl(tool_use, assert_allows):
+    content = (
+        "const acquired = await client.set('lock:order', token, 'NX', 'EX', 30);\n"
+    )
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_allows_lock_acquisition_with_options_object(tool_use, assert_allows):
+    content = "const acquired = await client.set('lock:order', token, { NX: true, EX: 30 });\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
+    )
+
+    assert_allows(HOOK, payload)
+
+
 def test_invalid_json_stdin_does_not_crash():
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "redis-atomicity.py"
     env = dict(os.environ)
@@ -355,3 +393,69 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     assert proc.returncode == 0
+
+
+def test_profile_disable_short_circuits(tool_use, assert_allows):
+    content = "await client.incr('k');\nawait client.expire('k', 60);\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
+    )
+
+    _code, stderr = assert_allows(
+        HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": "redis-atomicity"}
+    )
+
+    assert stderr.strip() == ""
+
+
+def test_live_bypass_entry_short_circuits(tmp_path, tool_use, assert_allows):
+    import json as _json
+    from datetime import datetime, timedelta, timezone
+
+    state = tmp_path / "bypass.json"
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
+    state.write_text(
+        _json.dumps(
+            {
+                "bypasses": [
+                    {"hook": "redis-atomicity", "expires_at": expires, "reason": "t"}
+                ]
+            }
+        )
+    )
+    content = "await client.incr('k');\nawait client.expire('k', 60);\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
+    )
+
+    _code, stderr = assert_allows(
+        HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state)}
+    )
+
+    assert stderr.strip() == ""
+
+
+def test_suppression_on_the_first_command_skips_the_pair(tool_use, assert_allows):
+    content = (
+        "// eslint-disable-next-line no-restricted-syntax\n"
+        "await client.incr('k');\n"
+        "await client.expire('k', 60);\n"
+    )
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_suppression_on_the_second_command_skips_the_pair(tool_use, assert_allows):
+    content = (
+        "await client.incr('k');\n"
+        "// eslint-disable-next-line no-restricted-syntax\n"
+        "await client.expire('k', 60);\n"
+    )
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
+    )
+
+    assert_allows(HOOK, payload)
