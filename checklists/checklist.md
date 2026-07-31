@@ -71,11 +71,17 @@ Do not check these items abstractly. For each write path, identify every actor t
 - [ ] **Every read-then-write in the same lock/transaction scope.** If a function reads a value, makes a decision, and writes based on that decision, the read and write must be inside the same transaction or protected by a row-level lock. An application-level check, `if exists, skip` without a database constraint or `FOR UPDATE` is a TOCTOU race
 - [ ] **Multi-step mutations protected against interleaving.** If a function does void-then-create, delete-then-insert, or any sequence of writes that must happen together, verify a single actor cannot interleave between the steps. A per-entity mutex, Redis lock keyed on user ID or an interactive database transaction spanning all steps prevents interleaving
 - [ ] **`Promise.all` with shared mutable state flagged.** Arrays, objects, or counters mutated from concurrent promises via `.push()`, `count++`, or property assignment are not safe. Use `Promise.allSettled` and classify results afterwards, or process sequentially when the item count is small
+- [ ] **The guard is named, and it is a rung of the ladder.** For every write path, state which mechanism protects it: unique constraint, conditional write, row lock, version column, advisory lock, distributed lock with a fencing token, entity-keyed queue, or in-process mutex. "It is in a transaction" names a scope, not a guard. See [`standards/concurrency.md`](../standards/concurrency.md) Correctness Ladder
+- [ ] **In-process coordination is not used in a scaled service.** A mutex, semaphore, or in-memory flag protects one process. With two replicas it protects half the traffic
+- [ ] **Fan-out is bounded.** `Promise.all` over caller-supplied or query-supplied input has an explicit concurrency limit
+- [ ] **Lock TTL exceeds the operation p99, and the caller timeout exceeds the lock TTL.** Inverted, the loser retries into a lock its own first attempt still holds. An expired lock without a fencing token checked at the write does not stop the stale writer
+- [ ] **Raised isolation levels carry a retry loop.** Snapshot and serializable isolation raise serialization failures, `40001` in PostgreSQL, instead of blocking. Without the retry the error reaches the user
 
 ### 5. Data Integrity
 
 - [ ] **Idempotent:** every write operation safe to execute twice with the same input. If not naturally idempotent, a guard prevents duplicate effects
 - [ ] **Deduplicated:** natural dedup key identified with durable check-before-process. In-memory-only dedup is not acceptable
+- [ ] **The dedup record and the business write share one transaction.** Committed separately, a crash between them either loses the work or repeats it. See [`standards/idempotency.md`](../standards/idempotency.md)
 - [ ] **Atomic:** related writes wrapped in a transaction or conditional expression. No partial writes left to corrupt state
 - [ ] Validation present at every system boundary: not just syntactic but semantic such as positive amounts, valid date ranges, or enum membership
 - [ ] Database constraints match application-level validation: unique constraints, foreign keys, check constraints
@@ -206,6 +212,10 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 #### Test quality
 
 - [ ] Test bodies carry zero comments. Structure comes from the test name, blank lines between setup, call, and assertions, and named helpers. See [`rules/testing.md`](../rules/testing.md) for the full policy
+- [ ] Every test body is Arrange, Act, Assert in that order, as three statement blocks separated by one blank line each. Dropping the `// Arrange` labels does not license dropping the shape
+- [ ] Exactly one call to the unit under test per test, with its result bound to a name. Two calls means two behaviors and two tests
+- [ ] No assertion inside the arrange block, no setup between the act and the assertions
+- [ ] Two-block bodies only for expected-throw tests, where the rejection matcher takes the call as its argument. Shared arrangement hoisted to `beforeEach` or a fixture still counts as present
 - [ ] Test names describe behavior, not implementation. Prefer `"should reject expired token"` over `"test validateToken"`
 - [ ] Assertions specific enough to catch regressions. Not just `toBeTruthy()` when a specific value matters
 - [ ] No test-only backdoors in production code
@@ -216,6 +226,8 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 - [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values. See [`rules/testing.md`](../rules/testing.md) for the library table and seeding guidelines
 - [ ] Contract tests at service boundaries: consumer expectations verified against provider responses
 - [ ] Property-based tests for complex logic: invariants hold across randomized inputs, not just hand-picked examples
+- [ ] Every new or modified write path has a concurrent-duplicate test: N parallel identical calls, N at 10 or more, asserting one effect and a defined outcome for the losers
+- [ ] Every new or modified write path has a sequential-duplicate test: call twice, assert one effect and a replayed response. Restart the process between the calls when a dedup store is involved. See [`rules/testing.md`](../rules/testing.md) Write-Path Tests
 
 #### Determinism
 
@@ -427,7 +439,12 @@ Do not check these items by reading the code in isolation. Trace the key from so
 - [ ] **Multi-step mutation atomicity verified.** If the idempotent operation has multiple steps, void old data, create new data, are all steps in a single transaction? If step 2 fails after step 1 succeeded, is the state recoverable? A consumed idempotency key + partially completed mutation = permanently corrupted state if retries are blocked
 - [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys, different timestamps, different request IDs, do they both pass the dedup check? If yes, is there a secondary guard, per-entity mutex, database constraint that prevents double-processing?
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) covering Data Safety, [`standards/resilience.md`](../standards/resilience.md) covering Idempotency, Deduplication
+- [ ] **Concurrent same-key requests do not both execute.** The loser receives a 409 or waits for the winner's stored response. The claim is an insert against a primary key, never a read followed by an insert
+- [ ] **A reused key with a different body is rejected.** The stored request fingerprint is compared, and a mismatch returns 422 rather than replaying a response for work that never ran
+- [ ] **The stored record can reproduce the original response.** Status code and body, not only the resource ID
+- [ ] **The TTL exceeds the caller's full retry window.** Payment webhooks commonly re-send for three days; a 24-hour window permits a duplicate on day two
+
+Reference: [`rules/code-style.md`](../rules/code-style.md) covering Data Safety, [`standards/idempotency.md`](../standards/idempotency.md) covering key sourcing, fingerprints, storage, and replay, [`standards/resilience.md`](../standards/resilience.md) covering the overview
 
 ### 19. Atomicity and Transactions
 

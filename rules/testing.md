@@ -23,13 +23,27 @@ A test that mocks infrastructure it depends on may pass while the actual integra
 
 ## Test Structure
 
-A test body carries zero comments. No section markers, no inline notes, no explanatory labels. The comment ban in [`code-style.md`](code-style.md) "Comments Policy" applies to test files exactly as it applies to production code, with the same single exemption for tool directives.
+Every test follows Arrange, Act, Assert, in that order. The three phases are mandatory and their order is fixed. What is banned is labeling them, never the shape itself.
 
-Structure a test with three things instead:
+A test body carries zero comments. No section markers, no inline notes, no explanatory labels. `// Arrange`, `// Act`, `// Assert`, and every variant of them are comments, so the comment ban in [`code-style.md`](code-style.md) "Comments Policy" removes them along with everything else. The ban applies to test files exactly as it applies to production code, with the same single exemption for tool directives.
 
-- **The test name.** It states the behavior under test, so no header is needed to announce what follows.
-- **Blank lines.** One blank line separates setup from the call under test, and the call from the assertions. The shape is visible without labeling it.
-- **Named helpers.** When setup needs explaining, extract it into a function whose name does the explaining.
+Removing the labels must not remove the structure. The phases stay; they are expressed in the code instead of announced above it.
+
+### The three blocks
+
+A test body is three blocks of statements separated by exactly one blank line each. The blank lines are the phase boundaries. Nothing else marks them.
+
+| Phase | Contains | Must not contain |
+|-------|----------|------------------|
+| Arrange | Fake data, seeded records, fixtures, stubs for the allowed mock surface, the input value | Any call to the unit under test, any assertion |
+| Act | Exactly one call to the unit under test, with its result bound to a name | Setup, branching, loops, a second call to the unit under test |
+| Assert | Assertions on the bound result and on observable side effects | New setup, a second call to the unit under test |
+
+Three supporting rules make the blocks readable without labels:
+
+- **The test name carries the intent.** It states the behavior under test, so no header is needed to announce what follows.
+- **Named helpers carry the setup.** When the arrange block needs explaining, extract it into a function whose name does the explaining: `seedAccountAtDailyLimit()` beats six lines of literals.
+- **One act per test.** Two calls to the unit under test are two behaviors, so they are two tests. This is what keeps the middle block one line long and unmistakable.
 
 If a step inside a test would need a comment to make sense, the test is too complex. Extract a helper or split the test.
 
@@ -43,6 +57,76 @@ it('rejects a transfer that exceeds the daily limit', async () => {
   expect(result.reason).toBe(RejectionReason.DailyLimitExceeded);
 });
 ```
+
+The blank lines above are load-bearing. A reader sees the arrangement, the single call, and the claims about it without reading a word of prose.
+
+### The same shape in other languages
+
+```python
+def test_rejects_a_transfer_that_exceeds_the_daily_limit(db):
+    account = seed_account(db, daily_limit=500, transferred_today=450)
+
+    result = transfer(account.id, 100)
+
+    assert result.status is TransferStatus.REJECTED
+    assert result.reason is RejectionReason.DAILY_LIMIT_EXCEEDED
+```
+
+```go
+func TestRejectsTransferExceedingDailyLimit(t *testing.T) {
+	account := seedAccount(t, accountOpts{DailyLimit: 500, TransferredToday: 450})
+
+	result, err := Transfer(account.ID, 100)
+
+	require.NoError(t, err)
+	require.Equal(t, StatusRejected, result.Status)
+	require.Equal(t, ReasonDailyLimitExceeded, result.Reason)
+}
+```
+
+### Violations
+
+| Violation | Why it fails | Fix |
+|-----------|--------------|-----|
+| One unbroken block of statements | The phases are unreadable; the reader has to parse every line to find the call under test | Insert the two blank lines |
+| Blank lines scattered every two or three lines | Four or five blocks mean no block is a phase | One blank line, twice, and nowhere else |
+| Assertion inside the arrange block | Asserts the fixture, not the behavior; a fixture failure reads as a behavior failure | Move the guarantee into the helper, or into its own test of the helper |
+| Setup between the act and the assertions | The reader can no longer tell which state the assertions describe | Move it above the act |
+| Two calls to the unit under test | Two behaviors in one test; the failure message names neither | Split into two tests |
+| Act and assert on one line, `expect(transfer(id, 100)).toBe(...)` | The act disappears into the assertion | Bind the result, then assert on the name |
+| A comment restoring the labels | Banned by the comment policy and by the hook | Delete the comment; the blank lines already say it |
+
+### The two permitted deviations
+
+**Expected-throw tests fuse act and assert.** Every runner's rejection matcher takes the call as its argument, so the act cannot be bound to a name first. This produces two blocks, not three. It is the only two-block form allowed.
+
+```typescript
+it('throws when the account does not exist', async () => {
+  const missingId = faker.string.uuid();
+
+  await expect(transfer(missingId, 100)).rejects.toThrow(AccountNotFoundError);
+});
+```
+
+**Shared arrangement moves to `beforeEach` or a fixture.** The arrange phase still exists, at the file or describe level instead of inside the body. A test whose arrangement is fully shared opens with the act, and that is correct: the phase did not disappear, it was hoisted. Keep the per-test remainder of the arrangement inside the body, above the act.
+
+```typescript
+describe('transfer', () => {
+  let account: Account;
+
+  beforeEach(async () => {
+    account = await seedAccount({ dailyLimit: 500 });
+  });
+
+  it('settles a transfer within the daily limit', async () => {
+    const result = await transfer(account.id, 100);
+
+    expect(result.status).toBe(TransferStatus.Settled);
+  });
+});
+```
+
+Both deviations are about where a phase lives, never about dropping one. A test with no assertions is not a test, and a test with no act asserts nothing about the system.
 
 ## Assertion Specificity
 
@@ -103,6 +187,55 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17. A cle
 - Existing code: do not reduce coverage
 - **Coverage is a delivery gate.** No task is declared complete until every changed or related file meets 95%+ across statements, branches, functions, and lines. "Related" means files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files with fresh output. "It should pass" is not evidence.
 - **Agent-delegated work included.** When agents implement code, their deliverables must meet the same 95%+ threshold. The orchestrator must verify coverage after agent work completes, not assume it.
+
+## Write-Path Tests (MANDATORY)
+
+Any new or modified write path ships two tests beyond its behavior tests. A write path is any code that persists, mutates shared state, charges, sends, or enqueues: an endpoint, a queue consumer, a webhook receiver, a scheduled job, a service method that writes.
+
+Coverage percentage does not substitute for these. A handler at 100% line coverage can still create two rows when two requests arrive together, because the line that races was executed exactly once by the test.
+
+### Test 1: concurrent duplicates
+
+Fire N identical calls in parallel, N at 10 or more, and assert the invariant rather than the timing.
+
+```typescript
+it('creates exactly one order when the same request arrives ten times at once', async () => {
+  const payload = buildOrderPayload();
+
+  const results = await Promise.allSettled(
+    Array.from({ length: 10 }, () => createOrder(payload)),
+  );
+
+  expect(await db.order.count({ where: { idempotencyKey: payload.idempotencyKey } })).toBe(1);
+  expect(results.every((result) => result.status === 'fulfilled')).toBe(true);
+});
+```
+
+### Test 2: sequential duplicates
+
+Call twice in sequence. Assert one effect and a replayed response, not merely the absence of a crash.
+
+```typescript
+it('replays the first response when the same key is used twice', async () => {
+  const payload = buildOrderPayload();
+
+  const first = await createOrder(payload);
+  const second = await createOrder(payload);
+
+  expect(second.body.id).toBe(first.body.id);
+  expect(await db.order.count({ where: { idempotencyKey: payload.idempotencyKey } })).toBe(1);
+});
+```
+
+### Rules for both
+
+- Run against the real database. Isolation-level behavior is part of what is under test, and no mock reproduces it.
+- Assert the loser's outcome, not only the winner's. A test that ignores what the second caller received tolerates a 500.
+- Restart the process between the two calls when the path uses a deduplication store. An in-memory store passes every other test and fails this one, which is the point.
+- Seed the fake data generator so every parallel call carries an identical payload.
+- When the path is genuinely single-writer, say so in one line where the tests would be, and name what enforces it.
+
+Shapes for narrower windows, including the barrier pattern, are in [`../standards/concurrency.md`](../standards/concurrency.md). Idempotency-specific cases, including fingerprint mismatch and TTL expiry, are in [`../standards/idempotency.md`](../standards/idempotency.md).
 
 ## Test Scenario Planning
 
