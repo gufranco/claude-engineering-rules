@@ -67,6 +67,13 @@ def _coverage_active() -> bool:
 def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    # Neutralize the machine's bypass registry. A live TTL entry in
+    # `~/.claude/.bypass-state.json`, set during ordinary work, makes every
+    # hook short-circuit, which turns real assertions into silent passes and
+    # blocking tests into failures that look like defects. `os.devnull` is not
+    # valid JSON, so `_lib.bypass` reads it as an empty registry. A test that
+    # exercises the registry itself overrides this through `extra`.
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
     if _coverage_active():
         env["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
         existing_pp = env.get("PYTHONPATH", "")

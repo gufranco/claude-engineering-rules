@@ -199,6 +199,7 @@ The hook recognizes these scopes without a suppression marker:
 
 - Framework navigation receivers: `router.push`, `history.push`, `navigation.push`, `redirect.push`
 - Stream and queue receivers: `stream.push`, `ws.push`, `res.push`, `subject.next`
+- Third-party command queues: `dataLayer.push`, `dgEvent.push`, `_paq.push`, `_hsq.push`, `_gaq.push`, `_mtm.push`, `uetq.push`. The vendor replaces the array with a live object once its script loads, so `.push` is the documented call convention rather than an array mutation
 - Draft and reducer libraries: Immer `produce(state, draft => ...)`, Mutative `create(state, draft => ...)`, Redux Toolkit `createSlice` and `extraReducers`
 - Store libraries: Pinia `defineStore`, Vuex `mutations`, MobX `action` / `runInAction` / `makeAutoObservable`, Zustand `set(produce(...))`, Valtio `proxy(...)` tracked variables, Jotai `useAtom` setter, Recoil `useRecoilState` setter, deprecation hint emitted, Nanostores `atom`/`map` `.set()` and `.setKey()`, LegendApp State `observable(...)` `.set()`, Tanstack Store `Store` `.setState()`, Solid stores `setStore(...)`
 - State machines: XState v5 `assign(...)` callbacks and `actions` configuration objects
@@ -235,6 +236,8 @@ Per the bypass philosophy shared with `BANNED_PROSE_CHARS_DISABLE` and `CONFIG_L
 Idempotent writes, atomic transactions, and immutable in-process state are three legs of the same stool. The first two are enforced at the boundary of the system, database, queue, network. The third is enforced inside the process by the mutation hook. Drop any leg and the others stop carrying weight: a transactional write of state that was mutated mid-flight commits the wrong values; an idempotent handler that mutates a shared cache between retries produces divergent results across attempts.
 
 See [`checklists/checklist.md`](../../checklists/checklist.md) category 5, Data Integrity, for the matching boundary checks: write idempotency keys, transaction scope, and constraint alignment between validators and the database.
+
+The boundary legs have their own standards. [`../../standards/idempotency.md`](../../standards/idempotency.md) carries key sourcing, fingerprints, and replay. [`../../standards/concurrency.md`](../../standards/concurrency.md) carries the race taxonomy and the correctness ladder, including the races immutability does not remove. [`../../standards/immutability.md`](../../standards/immutability.md) extends this file's discipline to Python, Go, Rust, JVM, and C#, and to stored data.
 
 ## Date and Time Handling
 
