@@ -22,20 +22,32 @@ BLOCKER_PATH = os.path.join(CLAUDE_DIR, "hooks", "dangerous-command-blocker.py")
 KNOWN_LISTS = {"CATASTROPHIC", "CRITICAL_PATHS", "SUSPICIOUS", "SAFE_CLEANUP"}
 
 
+def assignment_targets(node):
+    """Yield (target, value) for plain and annotated assignments alike.
+
+    `NAME = [...]` and `NAME: list[tuple[str, str]] = [...]` describe the same
+    table. Reading only `ast.Assign` silently skipped the annotated form, which
+    reported the list as missing rather than as changed.
+    """
+    if isinstance(node, ast.Assign):
+        for target in node.targets:
+            yield target, node.value
+    elif isinstance(node, ast.AnnAssign) and node.value is not None:
+        yield node.target, node.value
+
+
 def discover_pattern_lists(tree: ast.AST) -> set[str]:
     discovered: set[str] = set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        for target in node.targets:
+        for target, value in assignment_targets(node):
             if not isinstance(target, ast.Name):
                 continue
             name = target.id
             if not name.isupper():
                 continue
-            if not isinstance(node.value, ast.List):
+            if not isinstance(value, ast.List):
                 continue
-            for elt in node.value.elts:
+            for elt in value.elts:
                 if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                     discovered.add(name)
                     break
@@ -54,9 +66,7 @@ def extract_patterns(source):
     patterns: dict[str, list[str]] = {}
 
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Assign):
-            continue
-        for target in node.targets:
+        for target, value in assignment_targets(node):
             if not isinstance(target, ast.Name):
                 continue
             if target.id not in pattern_lists:
@@ -64,10 +74,10 @@ def extract_patterns(source):
 
             list_name = target.id
             patterns[list_name] = []
-            if not isinstance(node.value, ast.List):
+            if not isinstance(value, ast.List):
                 continue
 
-            for elt in node.value.elts:
+            for elt in value.elts:
                 if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                     patterns[list_name].append(elt.value)
                 elif isinstance(elt, ast.Tuple) and elt.elts:
