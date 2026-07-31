@@ -66,7 +66,7 @@ HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 
 @dataclass
 class Finding:
-    severity: str  # "error" | "warning"
+    severity: str
     code: str
     message: str
     fix_hint: str = ""

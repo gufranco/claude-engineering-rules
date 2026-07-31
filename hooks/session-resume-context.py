@@ -38,7 +38,7 @@ except Exception:  # pragma: no cover
         return None
 
 
-WINDOW_SECONDS = 7 * 24 * 60 * 60  # 7 days
+WINDOW_SECONDS = 7 * 24 * 60 * 60
 
 CHECKPOINT_GLOBS = (
     "checkpoints/*.md",

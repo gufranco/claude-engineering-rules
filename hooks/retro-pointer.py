@@ -19,9 +19,7 @@ import time
 
 LOG_PATH = os.path.expanduser("~/.claude/logs/hooks.log")
 TAIL_BYTES = 64 * 1024
-MAX_AGE_SECONDS = (
-    6 * 60 * 60
-)  # only consider entries from last 6 hours when no session id
+MAX_AGE_SECONDS = 6 * 60 * 60
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
@@ -62,7 +60,7 @@ def _read_tail() -> list[str]:
         with open(LOG_PATH, "rb") as fh:
             if size > TAIL_BYTES:
                 fh.seek(-TAIL_BYTES, os.SEEK_END)
-                fh.readline()  # discard partial first line
+                fh.readline()
             return fh.read().decode("utf-8", errors="replace").splitlines()
     except OSError:
         return []
@@ -129,7 +127,6 @@ def _transcript_patterns(transcript_path: str) -> list[str]:
 
     for line in tail[-200:]:
         line_lower = line.lower()
-        # User correction signals: short, terse, common patterns the user uses.
         if any(
             phrase in line_lower
             for phrase in (
@@ -142,7 +139,6 @@ def _transcript_patterns(transcript_path: str) -> list[str]:
             )
         ):
             user_corrections += 1
-        # Error patterns repeated within the session.
         for err_marker in ("ERROR:", "Error:", "Traceback", "FAILED"):
             if err_marker in line:
                 fragment = line.split(err_marker, 1)[-1][:80].strip()

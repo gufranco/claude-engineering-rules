@@ -23,9 +23,6 @@ NON_MARKDOWN_PATH = "/Users/anyone/.claude/rules/something.txt"
 CLAUDE_MD_PATH = "/Users/anyone/.claude/CLAUDE.md"
 
 
-# ---------- detection: bullet items starting with Should/should ----------
-
-
 @pytest.mark.parametrize(
     "content",
     [
@@ -45,9 +42,6 @@ def test_blocks_should_bullet(tool_use, assert_blocks, content):
 
     code, stderr = assert_blocks(HOOK, payload, "Should ")
     assert "normative-keywords.md" in stderr
-
-
-# ---------- compliant content: silent allow ----------
 
 
 @pytest.mark.parametrize(
@@ -70,9 +64,6 @@ def test_silent_on_compliant_content(tool_use, assert_allows, content):
 
     code, stderr = assert_allows(HOOK, payload)
     assert stderr.strip() == ""
-
-
-# ---------- scope filtering ----------
 
 
 def test_out_of_scope_path_is_silent(tool_use, assert_allows):
@@ -124,9 +115,6 @@ def test_claude_md_is_in_scope(tool_use, assert_blocks):
     code, stderr = assert_blocks(HOOK, payload, "Should")
 
 
-# ---------- tool support ----------
-
-
 def test_write_tool_handled(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
@@ -161,9 +149,6 @@ def test_bash_tool_is_ignored(tool_use, assert_allows):
     assert stderr.strip() == ""
 
 
-# ---------- bypass ----------
-
-
 def test_bypass_env_var_silences_hook(tool_use, assert_allows):
     payload = tool_use(
         "Edit",
@@ -176,9 +161,6 @@ def test_bypass_env_var_silences_hook(tool_use, assert_allows):
         env={"NORMATIVE_KEYWORD_DISABLE": "1"},
     )
     assert stderr.strip() == ""
-
-
-# ---------- robustness ----------
 
 
 def test_malformed_json_does_not_crash(hooks_dir):

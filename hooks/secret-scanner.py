@@ -23,10 +23,8 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Only activate for git commit commands
 COMMIT_PATTERN = re.compile(r"\bgit\s+commit\b")
 
-# Files to skip
 SKIP_EXTENSIONS = {
     ".lock",
     ".lockb",
@@ -68,7 +66,6 @@ SKIP_FILES = {
 }
 SKIP_PATHS = {"node_modules/", "vendor/", ".git/", "dist/", "build/"}
 
-# Secret patterns: (name, regex)
 SECRET_PATTERNS = [
     ("AWS Access Key", r"AKIA[0-9A-Z]{16}"),
     ("AWS Secret Key", r"(?i)aws_secret_access_key\s*[=:]\s*[A-Za-z0-9/+=]{40}"),
@@ -173,7 +170,6 @@ def scan_staged_files():
         except (subprocess.TimeoutExpired, FileNotFoundError):
             continue
 
-        # Only scan added lines
         for line_num, line in enumerate(result.stdout.splitlines(), 1):
             if not line.startswith("+") or line.startswith("+++"):
                 continue
@@ -182,7 +178,7 @@ def scan_staged_files():
             for name, pattern in SECRET_PATTERNS:
                 if re.search(pattern, added_content):
                     findings.append((filepath, name, added_content.strip()[:80]))
-                    break  # One finding per line is enough
+                    break
 
     return findings
 

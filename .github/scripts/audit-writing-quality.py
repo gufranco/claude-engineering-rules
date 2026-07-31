@@ -51,9 +51,6 @@ SKIP_DIR_NAMES = {
 }
 
 
-# Detection codepoints constructed via chr() so this source file itself
-# does not contain the banned characters. The runtime patterns are
-# equivalent to the literal forms used in hooks/banned-prose-chars.py.
 EM_DASH = chr(0x2014)
 BOX_DRAWING_RE = re.compile("[" + chr(0x2500) + "-" + chr(0x257F) + "]")
 EMOJI_RE = re.compile(
@@ -84,9 +81,6 @@ VAGUE_QUANTIFIERS = [
     "a few",
     "several",
 ]
-# Only flag vague quantifiers in a normative claim position: a bullet whose
-# subject is the bullet itself (the word starts the claim sentence). Plain
-# prose use of "often" or "usually" as connectors is allowed.
 VAGUE_RE = re.compile(
     r"^\s*(?:[-*]|\d+\.)\s+(?:"
     + "|".join(re.escape(p) for p in VAGUE_QUANTIFIERS)
@@ -178,8 +172,6 @@ PHRASE_CATEGORIES: list[tuple[str, re.Pattern[str]]] = [
 
 
 MD_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)\s]+)\)")
-# Image badges like [![alt](src)](href). The audit otherwise sees the inner
-# (src) as a paren and the outer (href) as another paren.
 MD_IMAGE_BADGE_RE = re.compile(r"\[!\[[^\]]*\]\([^)]+\)\]\([^)]+\)")
 PAREN_RE = re.compile(r"\(([^()\n]{1,200})\)")
 INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
@@ -199,40 +191,28 @@ def _fence_match(stripped: str) -> tuple[str, bool]:
     return marker, info == ""
 
 
-# Carve-outs allowed by rules/writing-precision.md "No parentheses in prose".
-# When the inner text of a paren matches any of these patterns the audit
-# does not flag the paren as a violation.
 PAREN_CARVEOUT_RES: list[re.Pattern[str]] = [
-    # (default: X) or (default X) or just (default)
     re.compile(r"^\s*default\b", re.IGNORECASE),
-    # Uppercase emphasis labels: (REQUIRED), (OPTIONAL), (RECOMMENDED)
-    # plus the same labels followed by a comma and a short conditional clause.
     re.compile(
         r"^\s*(REQUIRED|OPTIONAL|RECOMMENDED|REQUIRED DEFAULT|RECOMMENDED DEFAULT)\b"
     ),
-    # Clarifiers: (e.g., X) and (i.e., X)
     re.compile(r"^\s*e\.g\.", re.IGNORECASE),
     re.compile(r"^\s*i\.e\.", re.IGNORECASE),
-    # Cross-references: (see X) and (per X)
     re.compile(r"^\s*(see|per)\s+", re.IGNORECASE),
-    # Big-O and complexity notation: (n), (1), (n^2), (n log n), (log n),
-    # (k * n), (k log n), (log_b(a)), (n^(log_b(a))), (log k), (a), etc.
     re.compile(
         r"^\s*"
         r"(?:"
-        r"[a-z]|"  # single math variable like (a)
-        r"\d+|"  # plain number like (1) or (16)
-        r"n\^\d+|n\^\([^)]+\)|n\^d|"  # n^N variants
-        r"\w+\s*\*\s*\w+|"  # variable times variable like k * n
-        r"[nk]\s+log\s+[nk]|"  # n log n, k log k
-        r"log\s+[nk]|"  # log n, log k
-        r"log_\w+\s*\([^)]+\)|"  # log_b(a)
-        r"n\^?\(log_\w+\(\w+\)\)"  # n^(log_b(a))
+        r"[a-z]|"
+        r"\d+|"
+        r"n\^\d+|n\^\([^)]+\)|n\^d|"
+        r"\w+\s*\*\s*\w+|"
+        r"[nk]\s+log\s+[nk]|"
+        r"log\s+[nk]|"
+        r"log_\w+\s*\([^)]+\)|"
+        r"n\^?\(log_\w+\(\w+\)\)"
         r")"
         r"\s*$"
     ),
-    # CSS media-query feature patterns inside docs: (min-width: ...),
-    # (prefers-color-scheme: ...), (orientation: ...), etc.
     re.compile(
         r"^\s*(min-width|max-width|prefers-color-scheme|orientation|hover|pointer):\s+"
     ),
@@ -263,11 +243,9 @@ def scan_text(rel_path: str, text: str) -> list[Finding]:
     findings: list[Finding] = []
     lines = text.splitlines()
     in_code_fence = False
-    fence_marker = ""  # Track the opening fence so nested fences work.
+    fence_marker = ""
     in_frontmatter = False
 
-    # YAML frontmatter is the block between two `---` markers at the very
-    # top of the file. Skip it.
     if lines and lines[0].strip() == "---":
         in_frontmatter = True
 
@@ -280,12 +258,9 @@ def scan_text(rel_path: str, text: str) -> list[Finding]:
         marker, can_close = _fence_match(stripped)
         if marker:
             if not in_code_fence:
-                # New opener
                 in_code_fence = True
                 fence_marker = marker
                 continue
-            # Already in a fence: only close if marker is bare and matches
-            # the opener (same char type, length >= opener).
             if (
                 can_close
                 and marker[0] == fence_marker[0]
@@ -293,15 +268,10 @@ def scan_text(rel_path: str, text: str) -> list[Finding]:
             ):
                 in_code_fence = False
                 fence_marker = ""
-            # If we get here while in_code_fence and can't close, the line is
-            # just content inside the fenced block (e.g. ```mermaid as content)
             continue
         if in_code_fence:
             continue
 
-        # Strip image badges, then regular links, then inline code spans, in
-        # that order. Image badges (`[![alt](src)](href)`) have nested
-        # brackets and parens that confuse the simpler link regex.
         line_no_badges = MD_IMAGE_BADGE_RE.sub("", line)
         line_no_links_only = MD_LINK_RE.sub("", line_no_badges)
         line_no_code = INLINE_CODE_RE.sub("", line_no_links_only)
@@ -353,9 +323,6 @@ def scan_text(rel_path: str, text: str) -> list[Finding]:
                 )
                 break
 
-        # Skip banned-phrase detection on lines that are documenting the
-        # banned phrases themselves. These appear in CLAUDE.md and similar
-        # rule files that quote the patterns by name.
         is_phrase_doc = bool(
             re.match(
                 r"^\s*-\s*\*\*(Openers|Closers|Hedges|Transitions|Fluff(?:\s+adjectives)?|Tactical(?:\s+hyperbole)?|Echoing|Banned)",
@@ -410,7 +377,6 @@ def scan_links(
     repo_root: Path | None = None,
 ) -> list[Finding]:
     findings: list[Finding] = []
-    # Mask code fences and inline code so links inside them are ignored.
     masked = _mask_code_regions(text)
     for m in MD_LINK_RE.finditer(masked):
         target = m.group(1)
@@ -424,8 +390,6 @@ def scan_links(
         resolved = (path.parent / clean_target).resolve()
         if resolved.exists():
             continue
-        # Fallback: try repo-root resolution for links that use
-        # repo-root-relative paths instead of file-relative.
         if repo_root is not None:
             root_resolved = (repo_root / clean_target).resolve()
             if root_resolved.exists():
@@ -481,7 +445,6 @@ def _mask_code_regions(text: str) -> str:
         if in_fence:
             result.append(" " * len(line))
             continue
-        # Mask inline code spans on this line.
         result.append(INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line))
     return "".join(result)
 

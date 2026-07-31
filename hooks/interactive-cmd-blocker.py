@@ -33,10 +33,8 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Match the bare command name at command boundaries: start, ;, &&, ||, |, &
 COMMAND_BOUNDARY = r"(?:^|[;&|]\s*|&&\s*|\|\|\s*)"
 
-# Commands that prompt interactively when -i is the default alias
 INTERACTIVE_PRONE = ("rm", "cp", "mv")
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -44,7 +42,6 @@ from _lib.bypass import is_bypassed  # noqa: E402
 
 def split_commands(command: str) -> list[str]:
     """Split a bash command line by shell separators ; && || | &."""
-    # Keep the boundary cheap; not aiming for full bash parsing
     parts = re.split(r"\s*(?:;|&&|\|\||\||&)\s*", command)
     return [p.strip() for p in parts if p.strip()]
 
@@ -56,10 +53,8 @@ def has_force_flag(tokens: list[str]) -> bool:
             continue
         if tok == "--force":
             return True
-        # Skip long flags that are not --force
         if tok.startswith("--"):
             continue
-        # Short flags: -f, -rf, -fr, -frv, ...
         if "f" in tok[1:]:
             return True
     return False
@@ -71,11 +66,9 @@ def is_blocked(command: str) -> tuple[bool, str]:
         try:
             tokens = shlex.split(sub)
         except ValueError:
-            # Unparseable shell - let other hooks handle
             continue
         if not tokens:
             continue
-        # Resolve the actual command name, ignoring leading env vars or `command`
         i = 0
         while i < len(tokens) and "=" in tokens[i] and not tokens[i].startswith("-"):
             i += 1
@@ -85,11 +78,9 @@ def is_blocked(command: str) -> tuple[bool, str]:
         if head == "command" and i + 1 < len(tokens):
             head = tokens[i + 1]
             i += 1
-        # Strip path prefix (e.g., /bin/rm)
         base = os.path.basename(head)
         if base not in INTERACTIVE_PRONE:
             continue
-        # Construct the effective arg list starting from the command itself
         effective = tokens[i:]
         if not has_force_flag(effective):
             return True, base
@@ -148,7 +139,7 @@ def main() -> int:
         f"Bypass (one-off): set INTERACTIVE_CMD_DISABLE=1 in parent shell."
     )
     emit_block(reason, command)
-    return 2  # unreachable
+    return 2
 
 
 if __name__ == "__main__":

@@ -14,6 +14,10 @@ Detected sequences (within 5 lines of each other on the same client):
   - SETNX / SET ... NX            followed by  EXPIRE / PEXPIRE
   - HSET / SADD / RPUSH / LPUSH   followed by  EXPIRE   (when first command creates the key)
   - GET                            followed by  SET (on the same key)  -> check-then-set TOCTOU
+  - SET ... NX / SETNX with no EX or PX -> a lock that outlives the process
+    holding it, so the resource stays locked until a human intervenes. See
+    standards/redis.md TTL Management and standards/concurrency.md
+    "Timeouts, Retries, and Locks".
 
 Skipped:
   - Test files
@@ -84,9 +88,6 @@ ATOMIC_MARKERS = re.compile(
     re.IGNORECASE,
 )
 
-# A lock taken with NX and no expiry survives the crash of the process holding
-# it, so the resource stays locked until a human intervenes. `standards/redis.md`
-# TTL Management and `standards/concurrency.md` Timeouts, Retries, and Locks.
 LOCK_ACQUIRE = re.compile(r"\.(?:set|setnx|setNX)\s*\(", re.IGNORECASE)
 LOCK_NX_MARKER = re.compile(r"\bNX\b|\.setnx\s*\(|\.setNX\s*\(", re.IGNORECASE)
 LOCK_TTL_MARKER = re.compile(r"\b(?:EX|PX|EXAT|PXAT|expiration|ttl)\b", re.IGNORECASE)

@@ -8,9 +8,6 @@ from __future__ import annotations
 HOOK = "dockerfile-compose-quality"
 
 
-# --- Dockerfile BLOCKs -----------------------------------------------------
-
-
 def test_blocks_copy_env_file(tool_use, assert_blocks):
     content = "FROM node:22-alpine@sha256:abc\nCOPY .env /app/.env\nUSER 1001\n"
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
@@ -69,9 +66,6 @@ def test_allows_env_with_var_reference(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-# --- Dockerfile WARNs ------------------------------------------------------
-
-
 def test_warns_floating_latest_tag(tool_use, assert_allows):
     content = 'FROM node:latest\nUSER 1001\nCMD ["node"]\n'
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
@@ -127,9 +121,6 @@ def test_no_warn_when_non_root_user(tool_use, assert_allows):
     assert "no USER directive" not in stderr
 
 
-# --- Compose BLOCKs --------------------------------------------------------
-
-
 def test_blocks_compose_privileged(tool_use, assert_blocks):
     content = "services:\n  app:\n    image: foo\n    privileged: true\n"
     payload = tool_use("Write", {"file_path": "/repo/compose.yml", "content": content})
@@ -165,9 +156,6 @@ def test_blocks_compose_userns_mode_host(tool_use, assert_blocks):
     payload = tool_use("Write", {"file_path": "/repo/compose.yml", "content": content})
 
     assert_blocks(HOOK, payload, "host namespace toggle")
-
-
-# --- Compose WARNs ---------------------------------------------------------
 
 
 def test_warns_top_level_version(tool_use, assert_allows):
@@ -209,9 +197,6 @@ def test_no_warn_when_environment_uses_var(tool_use, assert_allows):
     assert "DB_PASSWORD" not in stderr
 
 
-# --- Path filtering --------------------------------------------------------
-
-
 def test_ignores_non_docker_file(tool_use, assert_allows):
     content = "COPY .env /app/\nprivileged: true\n"
     payload = tool_use("Write", {"file_path": "/repo/notes.txt", "content": content})
@@ -251,9 +236,6 @@ def test_recognises_compose_yaml_extension(tool_use, assert_blocks):
     payload = tool_use("Write", {"file_path": "/repo/compose.yaml", "content": content})
 
     assert_blocks(HOOK, payload, "privileged: true")
-
-
-# --- Edit / MultiEdit ------------------------------------------------------
 
 
 def test_edit_blocks_added_copy_env(tool_use, assert_blocks):
@@ -303,17 +285,11 @@ def test_edit_skips_missing_user_check(tool_use, assert_allows):
     assert "no USER directive in the final stage" not in stderr
 
 
-# --- Bypass ----------------------------------------------------------------
-
-
 def test_bypass_env_var(tool_use, assert_allows):
     content = "FROM node:latest\nCOPY .env /app/.env\n"
     payload = tool_use("Write", {"file_path": "/repo/Dockerfile", "content": content})
 
     assert_allows(HOOK, payload, env={"DOCKERFILE_QUALITY_DISABLE": "1"})
-
-
-# --- Edge cases ------------------------------------------------------------
 
 
 def test_ignores_unsupported_tool(tool_use, assert_allows):
@@ -361,8 +337,6 @@ def test_disabled_profile(tool_use, assert_allows):
 
 def test_invalid_json_silently_allows(tool_use, assert_allows):
     """Garbage on stdin should not crash the hook; it should exit 0."""
-    # The harness only accepts dicts; emulate the contract by sending an empty
-    # payload that yields no tool_input.
     payload = {"tool_name": "Write"}
 
     assert_allows(HOOK, payload)

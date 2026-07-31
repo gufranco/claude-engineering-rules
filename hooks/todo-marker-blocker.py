@@ -56,7 +56,6 @@ from _lib.suppression import (
     is_suppressed,
 )
 
-# Source file extensions where markers are blocked.
 SOURCE_EXTS: tuple[str, ...] = (
     ".ts",
     ".tsx",
@@ -89,7 +88,6 @@ SOURCE_EXTS: tuple[str, ...] = (
     ".zsh",
 )
 
-# Path segments that disable the hook.
 SKIP_SEGMENTS: tuple[str, ...] = (
     "/specs/",
     "/docs/adr/",
@@ -112,7 +110,6 @@ SKIP_SEGMENTS: tuple[str, ...] = (
     "/build/",
 )
 
-# File suffixes that disable the hook.
 SKIP_SUFFIXES: tuple[str, ...] = (
     ".test.ts",
     ".test.tsx",
@@ -130,13 +127,8 @@ SKIP_SUFFIXES: tuple[str, ...] = (
     ".tpl",
 )
 
-# Markers to block. Word-boundary, case-insensitive.
-# The "leave for later" phrase is treated specially because it spans multiple words.
 WORD_MARKERS: tuple[str, ...] = ("TODO", "FIXME", "HACK", "XXX", "WIP")
 
-# Matches a marker possibly followed by a colon, dash, or whitespace,
-# but excludes the issue-linked form TODO(...) / FIXME(...).
-# Captures the marker name for the error message.
 _MARKER_ALTERNATION = "|".join(WORD_MARKERS)
 MARKER_PATTERN = re.compile(
     rf"\b({_MARKER_ALTERNATION})\b(?!\s*\()",
@@ -148,7 +140,6 @@ PHRASE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Allowlist: TODO(#123), FIXME(#JIRA-456), TODO(issue-789), FIXME(GH-42)
 ISSUE_LINKED_PATTERN = re.compile(
     rf"\b({_MARKER_ALTERNATION})\s*\(\s*#?[A-Za-z0-9_\-]+\s*\)",
     re.IGNORECASE,

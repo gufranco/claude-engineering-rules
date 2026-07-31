@@ -10,11 +10,6 @@ import pytest
 HOOK = "repo-fetch-blocker"
 
 
-# ---------------------------------------------------------------------------
-# Block: per-file fetch patterns
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -44,11 +39,6 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
     assert_blocks(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: carve-outs
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -58,14 +48,14 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
         "gh pr view 42",
         "gh search code 'foo bar' --language=python",
         "gh api rate_limit",
-        "gh api repos/o/r/readme",  # single README probe
-        "gh repo view anthropic/claude-code",  # metadata only, no path
+        "gh api repos/o/r/readme",
+        "gh repo view anthropic/claude-code",
         "gh repo view anthropic/claude-code --json description",
         "gh run list",
         "glab issue list",
         "glab mr list",
         "git clone --depth=1 https://github.com/o/r.git /tmp/x",
-        "curl https://example.com/data.json",  # not a repo raw URL
+        "curl https://example.com/data.json",
     ],
 )
 def test_allows_carve_outs(tool_use, assert_allows, cmd):
@@ -74,18 +64,13 @@ def test_allows_carve_outs(tool_use, assert_allows, cmd):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: unrelated commands and tools
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
         "git status",
         "ls -la",
         "grep contents readme.md",
-        "echo raw.githubusercontent.com",  # mention in echo, no fetch verb
+        "echo raw.githubusercontent.com",
     ],
 )
 def test_allows_unrelated(tool_use, assert_allows, cmd):
@@ -99,11 +84,6 @@ def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Bypass + robustness
-# ---------------------------------------------------------------------------
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows):

@@ -32,12 +32,10 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `terraform workspace select <name>` — switches active workspace.
 TF_WORKSPACE_SELECT = re.compile(
     r"\bterraform\s+workspace\s+select\s+(?!--help\b|-h\b)\S+"
 )
 
-# `terraform workspace new <name>` — creates and switches to new workspace.
 TF_WORKSPACE_NEW = re.compile(r"\bterraform\s+workspace\s+new\s+(?!--help\b|-h\b)\S+")
 
 

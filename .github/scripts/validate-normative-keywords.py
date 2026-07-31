@@ -127,8 +127,6 @@ def scan(path: Path, rel: str) -> list[tuple[int, str, str]]:
         return findings
 
     if is_self_reference(rel):
-        # Skip phrase detection in files that define or quote the patterns.
-        # Should-bullet detection still applies.
         skip_phrases = True
     else:
         skip_phrases = False

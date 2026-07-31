@@ -41,8 +41,6 @@ except Exception:  # pragma: no cover
 
 
 RESOLVE_MUTATION = re.compile(r"resolveReviewThread\b")
-# Non-greedy so multiple gh api ... resolveReviewThread calls on the
-# same line each count as one match.
 GH_API_RESOLVE = re.compile(
     r"(?:gh|glab)\s+api[^\n]*?resolveReviewThread",
     re.IGNORECASE,
@@ -93,9 +91,6 @@ def main() -> None:
     gitlab_calls = len(GLAB_RESOLVE.findall(command))
     occurrences = github_calls + gitlab_calls
 
-    # Skip if there is no actual resolve API call. A bare mention of
-    # resolveReviewThread elsewhere in the command (echo, comment, test
-    # fixture) is not a bulk operation.
     if occurrences == 0:
         sys.exit(0)
 

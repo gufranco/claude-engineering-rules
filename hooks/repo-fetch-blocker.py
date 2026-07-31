@@ -35,15 +35,10 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `gh api .../contents/<path>` and `gh api repos/<o>/<r>/contents/<path>`.
-# The bare `.../readme` endpoint is a separate path and is not matched here.
 GH_API_CONTENTS = re.compile(r"\bgh\s+api\s+[^\n;&|]*?/contents/[^\s'\"]+")
 
-# `glab api projects/<id>/repository/files/<path>`.
 GLAB_API_FILES = re.compile(r"\bglab\s+api\s+[^\n;&|]*?/repository/files/[^\s'\"]+")
 
-# `curl` / `wget` / `aria2c` / `fetch` against raw.githubusercontent.com,
-# gitlab `-/raw/` blob URLs, or bitbucket `/raw/` blob URLs.
 RAW_FETCH = re.compile(
     r"\b(?:curl|wget|aria2c|fetch)\b[^\n;&|]*?"
     r"(?:raw\.githubusercontent\.com|"
@@ -51,9 +46,6 @@ RAW_FETCH = re.compile(
     r"bitbucket\.org/[^\s'\"]+/raw/)"
 )
 
-# `gh repo view <owner>/<repo> <path>` reads file content. The bare form
-# `gh repo view <owner>/<repo>` (no positional path) and flag-only forms
-# (`--json`, `--web`, `--branch`) are metadata probes and stay allowed.
 GH_REPO_VIEW_FILE = re.compile(r"\bgh\s+repo\s+view\s+\S+/\S+\s+(?!-)\S+")
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -147,7 +139,7 @@ def main() -> int:
 
     label, why = offender
     emit_block(label, why, command)
-    return 2  # unreachable
+    return 2
 
 
 if __name__ == "__main__":

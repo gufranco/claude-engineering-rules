@@ -29,11 +29,6 @@ def make_skill(root: Path, name: str, frontmatter: str, body: str) -> Path:
     return sk
 
 
-# ---------------------------------------------------------------------------
-# Pass cases
-# ---------------------------------------------------------------------------
-
-
 def test_full_template_passes_in_strict_mode(tmp_path):
     fm = (
         "name: example\n"
@@ -77,11 +72,6 @@ def test_accepts_section_aliases(tmp_path):
     proc = run_linter([str(sk), "--strict"])
 
     assert proc.returncode == 0, proc.stdout
-
-
-# ---------------------------------------------------------------------------
-# Error cases
-# ---------------------------------------------------------------------------
 
 
 def test_errors_on_missing_frontmatter(tmp_path):
@@ -145,18 +135,13 @@ def test_errors_on_no_sections(tmp_path):
     assert "no-sections" in proc.stdout
 
 
-# ---------------------------------------------------------------------------
-# Warning cases
-# ---------------------------------------------------------------------------
-
-
 def test_warns_on_short_description(tmp_path):
     fm = "name: example\ndescription: too short"
     sk = make_skill(tmp_path, "example", fm, "## Overview\nx\n")
 
     proc = run_linter([str(sk)])
 
-    assert proc.returncode == 0  # warnings don't fail default mode
+    assert proc.returncode == 0
     assert "short-description" in proc.stdout
 
 
@@ -229,13 +214,7 @@ def test_strict_mode_fails_on_warnings(tmp_path):
     assert proc.returncode == 1
 
 
-# ---------------------------------------------------------------------------
-# Discovery, JSON, fix hints
-# ---------------------------------------------------------------------------
-
-
 def test_discovers_skills_in_default_root(tmp_path, monkeypatch):
-    # We pass an explicit dir target instead so the test is isolated.
     fm = (
         "name: x\n"
         'description: "Adequate description with enough characters to pass the length check."'

@@ -73,8 +73,6 @@ SKIPPED_DOC_SEGMENTS = (
     "/.claude/skills/",
 )
 
-# Test fixtures legitimately contain attribution strings to exercise the hook.
-# Skip pytest fixture paths so the hook does not block its own coverage tests.
 SKIPPED_TEST_SEGMENTS = (
     "/tests/",
     "/test/",

@@ -22,14 +22,8 @@ def make_plan(tmp_path, paths: list[str]) -> str:
         body.append(f"{i}. Update `{p}` with new behavior.")
     plan = spec_dir / "plan.md"
     plan.write_text("\n".join(body))
-    # ensure mtime is now (within window)
     os.utime(plan, (time.time(), time.time()))
     return str(plan)
-
-
-# ---------------------------------------------------------------------------
-# No active plan -> allow
-# ---------------------------------------------------------------------------
 
 
 def test_allows_when_no_specs_dir(tool_use, assert_allows, tmp_path):
@@ -44,7 +38,6 @@ def test_allows_when_no_specs_dir(tool_use, assert_allows, tmp_path):
 
 def test_allows_when_plan_is_stale(tool_use, assert_allows, tmp_path):
     plan_str = make_plan(tmp_path, ["hooks/foo.py"])
-    # Force mtime to >60min ago
     old = time.time() - 7200
     os.utime(plan_str, (old, old))
     payload = tool_use(
@@ -69,11 +62,6 @@ def test_allows_when_plan_has_no_paths(tool_use, assert_allows, tmp_path):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# In-scope edits -> allow
-# ---------------------------------------------------------------------------
-
-
 def test_allows_when_target_in_plan(tool_use, assert_allows, tmp_path):
     make_plan(tmp_path, ["hooks/foo.py", "tests/hooks/foo/test_foo.py"])
     payload = tool_use(
@@ -93,7 +81,7 @@ def test_allows_edits_to_spec_folder_itself(tool_use, assert_allows, tmp_path):
         {"file_path": str(plan_path), "old_string": "x", "new_string": "y"},
         cwd=str(tmp_path),
     )
-    assert plan_str  # silence unused
+    assert plan_str
 
     assert_allows(HOOK, payload)
 
@@ -109,11 +97,6 @@ def test_allows_when_target_matches_directory_declaration(
     )
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Out-of-scope -> advisory (exit 2 / ask)
-# ---------------------------------------------------------------------------
 
 
 def test_blocks_when_target_outside_scope(tool_use, assert_blocks, tmp_path):
@@ -142,22 +125,12 @@ def test_blocks_when_editing_unrelated_test(tool_use, assert_blocks, tmp_path):
     assert_blocks(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: irrelevant tools
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("tool_name", ["Bash", "Read", "Grep", "Glob"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name, tmp_path):
     make_plan(tmp_path, ["hooks/foo.py"])
     payload = tool_use(tool_name, {"command": "ls"}, cwd=str(tmp_path))
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Bypass + robustness
-# ---------------------------------------------------------------------------
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows, tmp_path):

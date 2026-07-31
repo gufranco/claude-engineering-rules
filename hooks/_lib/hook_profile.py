@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import os
 
-# Always-on safety floor.
 MINIMAL_HOOKS = frozenset(
     {
         "dangerous-command-blocker",
@@ -48,7 +47,6 @@ MINIMAL_HOOKS = frozenset(
     }
 )
 
-# Standard = minimal + quality and discipline hooks.
 STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
     {
         "banned-phrases-blocker",
@@ -96,7 +94,6 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
     }
 )
 
-# Strict = standard + experimental hooks.
 STRICT_HOOKS = STANDARD_HOOKS | frozenset(
     {
         "gateguard-fact-force",
@@ -121,9 +118,6 @@ def should_run(hook_id: str) -> bool:
     """Return True when this hook should execute under the current profile."""
     profile = os.environ.get("CLAUDE_HOOK_PROFILE", "standard").lower()
     if profile not in PROFILES:
-        # Unknown profile: fail open to avoid bricking the user's harness.
-        # The settings-hygiene hook will catch an invalid profile setting on
-        # the next settings.json edit.
         return True
 
     enabled = _csv_set("CLAUDE_ENABLED_HOOKS")

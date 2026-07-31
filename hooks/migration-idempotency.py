@@ -52,10 +52,6 @@ DROP_BAD = re.compile(
     r"(?!\s+IF\s+EXISTS\b)",
     re.IGNORECASE,
 )
-# CREATE INDEX without CONCURRENTLY locks the table in PostgreSQL. On large
-# production tables this stalls writes long enough to cause an outage. Require
-# CONCURRENTLY so the migration is non-blocking. The model can opt out of this
-# check by setting MIGRATION_ALLOW_BLOCKING_INDEX=1 for a baseline migration.
 CREATE_INDEX_BLOCKING = re.compile(
     r"\bCREATE\s+(?:UNIQUE\s+)?INDEX\b(?!\s+CONCURRENTLY\b)",
     re.IGNORECASE,

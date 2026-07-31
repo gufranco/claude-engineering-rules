@@ -38,7 +38,6 @@ def count_index_entries(section):
     try:
         with open(os.path.join(CLAUDE_DIR, "rules/index.yml")) as f:
             content = f.read()
-        # Count lines that match "  <name>:" pattern (2-space indent, not 4)
         in_section = False
         count = 0
         for line in content.splitlines():
@@ -73,7 +72,6 @@ def count_run_tests():
     try:
         with open(os.path.join(CLAUDE_DIR, "tests/test-hooks.sh")) as f:
             content = f.read()
-        # Count invocations, not the function definition
         return len(re.findall(r"^run_test ", content, re.MULTILINE))
     except FileNotFoundError:
         return 0
@@ -107,7 +105,6 @@ def scan_file(filepath, counts):
 
     rel_path = os.path.relpath(filepath, CLAUDE_DIR)
 
-    # Patterns to check: (regex, count_key, description)
     checks = [
         (r"\*\*(\d+)\*\*\s*rules\b", "rules", "rules count in bold"),
         (r"\*\*(\d+)\*\*\s*standards\b", "standards", "standards count in bold"),
@@ -157,7 +154,6 @@ def scan_file(filepath, counts):
         for pattern, count_key, desc in checks:
             for match in re.finditer(pattern, line):
                 if count_key is None:
-                    # Special case: "N categories, M items"
                     found_cats = int(match.group(1))
                     found_items = int(match.group(2))
                     if found_cats != counts["checklist_categories"]:
@@ -190,7 +186,6 @@ def main():
         print(f"  {key}: {value}")
     print()
 
-    # Scan all markdown files and key config files
     files_to_scan = []
     for pattern in [
         "*.md",

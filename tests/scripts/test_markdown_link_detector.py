@@ -171,7 +171,6 @@ def test_detect_findings_skips_exempt_file():
 
 
 def test_finding_render():
-    # Build positionally to keep keyword-argument forms out of the file.
     f = Finding("docs/foo.md", 10, 5, "README.md", "README.md")
     rendered = f.render()
     assert "docs/foo.md" in rendered
@@ -201,7 +200,6 @@ def test_file_relative_path_uses_posix_separators():
     doc_dir = REPO_ROOT / "skills" / "review"
     target = REPO_ROOT / "rules" / "code-style.md"
     rel = file_relative_path(target, doc_dir)
-    # Even on Windows, the rendered path uses forward slashes.
     assert "\\" not in rel
     assert rel == "../../rules/code-style.md"
 
@@ -324,7 +322,6 @@ def test_find_code_block_ranges_nested_fences():
     """A 4-backtick fence can contain 3-backtick fences without closing early."""
     text = "before\n````markdown\n```bash\nx\n```\n````\nafter"
     ranges = find_code_block_ranges(text)
-    # The outer 4-backtick block spans lines 2-6.
     assert (2, 6) in ranges
 
 
@@ -336,10 +333,8 @@ def test_find_code_block_ranges_tilde_fences():
 
 def test_tracked_paths_lists_files_and_directories():
     paths = tracked_paths(REPO_ROOT)
-    # tracked_paths should include some known files
     assert "README.md" in paths
     assert "hooks/_lib/markdown_link_detector.py" in paths
-    # And derived directory entries
     assert "hooks" in paths
     assert "hooks/_lib" in paths
 
@@ -353,7 +348,6 @@ def test_detect_broken_link_targets_flags_gitignored_target(tmp_path):
     (tmp_path / "untracked.md").write_text("# Not tracked\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("See [untracked](untracked.md).\n")
-    # tracked set deliberately empty: simulates gitignored target
     findings = detect_broken_link_targets(
         target_file.read_text(),
         str(target_file),
@@ -374,7 +368,6 @@ def test_detect_findings_skips_bare_ref_to_untracked_file(tmp_path):
         tmp_path,
         tracked=set(),
     )
-    # No findings: detector ignores bare refs whose target is not tracked
     assert findings == []
 
 

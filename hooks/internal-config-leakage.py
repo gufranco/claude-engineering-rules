@@ -63,8 +63,6 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Bash commands that publish text externally. The hook scans the command text
-# AND any payload file referenced with --input, --body-file, -F file=@, or @file.
 GIT_MESSAGE_BASH_PATTERNS = [
     re.compile(r"\bgit\s+commit\b"),
     re.compile(r"\bgit\s+tag\b"),
@@ -89,7 +87,6 @@ GIT_MESSAGE_SHORT_FLAG_PATTERN = re.compile(r"^-[A-Za-z]*m$")
 
 GIT_MESSAGE_LONG_FLAGS = ("--message", "-m")
 
-# Path / file reference leaks.
 PATH_LEAK_PATTERNS = [
     (re.compile(r"~/\.claude\b"), "~/.claude path reference"),
     (
@@ -102,7 +99,6 @@ PATH_LEAK_PATTERNS = [
     ),
     (re.compile(r"\bchecklist\.md\b"), "checklist.md reference"),
     (re.compile(r"\brules/index\.yml\b"), "rules/index.yml reference"),
-    # Bare CLAUDE.md cited as authority.
     (re.compile(r"\bCLAUDE\.md\b"), "CLAUDE.md reference"),
 ]
 
@@ -121,7 +117,6 @@ CATEGORY_LEAK_PATTERNS = [
     ),
 ]
 
-# Conventional Comments label prefix at line start.
 LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT = r"issue\s*\((?:blocking|non-blocking)\)|nitpick|suggestion|question|thought|praise|todo"
 
 CONVENTIONAL_LABEL_PATTERN = re.compile(
@@ -134,17 +129,10 @@ CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE = re.compile(
     re.IGNORECASE,
 )
 
-# Skill invocation flags at first-person voice.
 SKILL_FLAG_HEAD_PATTERN = re.compile(
     r"\(?`?--(?:backend|frontend|local|post|focus|severity|fix|pict|coverage)`?\)?",
 )
 
-# Internal severity tier as standalone heading or label scaffolding.
-# Triggers when P0/P1/P2/P3 appears at line start in any of these shapes:
-#   - markdown heading: "## P0", "### P1 ..."
-#   - bare punctuation: "P0:", "P1.", "P2-"
-#   - keyword form: "P0 Blocking", "P1 Should Fix", "P2 Nits"
-#   - taxonomy header: "P1 items:", "P2 concerns:", "P0 finding:"
 SEVERITY_TIER_PATTERN = re.compile(
     r"(?m)^\s*(?:#+\s+P[0-3]\b|P[0-3]\b(?:\s*[:.\-]"
     r"|\s+(?:blocking|should|nits?|critical|important|optional|minor|major)"
@@ -152,7 +140,6 @@ SEVERITY_TIER_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Internal section headings that should never appear in published text.
 INTERNAL_SECTION_HEADINGS = [
     "Behavioral Flow Analysis",
     "Blast Radius Summary",
@@ -182,9 +169,6 @@ SKIPPED_DOCS = (
     "/.claude/settings.local.json",
 )
 
-# Bash subcommands that never publish and should be skipped wholesale, even if
-# their command text accidentally contains a publishing-pattern substring (such
-# as documentation strings that mention "gh pr" or "git commit").
 NON_PUBLISHING_PREFIXES = (
     "cat ",
     "head ",
@@ -322,10 +306,8 @@ def looks_like_publishing_json(content: str) -> bool:
         return False
     if not isinstance(obj, dict):
         return False
-    # Review payload
     if "comments" in obj and ("commit_id" in obj or "event" in obj):
         return True
-    # PR / issue / release creation or update with a body
     if isinstance(obj.get("body"), str) and obj["body"].strip():
         return True
     if isinstance(obj.get("title"), str) and (
@@ -393,14 +375,11 @@ def extract_referenced_files(cmd: str) -> list[str]:
     i = 0
     while i < len(tokens):
         tok = tokens[i]
-        # --input=PATH form
         for flag in ("--input", "--body-file", "--file"):
             if tok.startswith(flag + "="):
                 paths.append(tok[len(flag) + 1 :])
-        # --input PATH form
         if tok in PAYLOAD_FILE_FLAGS and i + 1 < len(tokens):
             nxt = tokens[i + 1]
-            # @file shorthand for curl: -d @file or -F field=@file
             if nxt.startswith("@"):
                 paths.append(nxt[1:])
             elif "=" in nxt and nxt.split("=", 1)[1].startswith("@"):
@@ -411,7 +390,6 @@ def extract_referenced_files(cmd: str) -> list[str]:
             continue
         i += 1
 
-    # Resolve relative paths and dedupe.
     resolved: list[str] = []
     seen = set()
     for p in paths:
@@ -430,7 +408,7 @@ def read_payload_file(path: str) -> str | None:
     try:
         if not os.path.isfile(path):
             return None
-        if os.path.getsize(path) > 5 * 1024 * 1024:  # 5 MB cap
+        if os.path.getsize(path) > 5 * 1024 * 1024:
             return None
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             return f.read()
@@ -454,21 +432,15 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
         payload_kind = "git-message-payload" if authors_git_message else "payload"
 
         if git_message_texts is not None:
-            # Only the message reaches a reader, so command arguments such as the
-            # paths handed to `git add` are not published text.
             for idx, text in enumerate(git_message_texts):
                 out.append(("bash", f"git message[{idx}]", "git-message", text))
         else:
             kind = "git-message" if authors_git_message else "command"
             out.append(("bash", "command", kind, cmd))
-        # Follow --input/--body-file/--file references and scan the file contents
-        # too, so a clean command that references a leaky payload still gets blocked.
         for ref in extract_referenced_files(cmd):
             payload = read_payload_file(ref)
             if payload is None:
                 continue
-            # If it parses as a publishing JSON, expand each body/title/comment
-            # field so line-anchored patterns hit on the prose, not the JSON.
             blocks = extract_publishing_text_blocks(payload)
             if blocks:
                 for label, text in blocks:
@@ -494,7 +466,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
                 if kind == "json-maybe":
                     if not looks_like_publishing_json(content):
                         return out
-                    # Expand prose fields for line-anchored scanning.
                     blocks = extract_publishing_text_blocks(content)
                     if blocks:
                         for label, text in blocks:

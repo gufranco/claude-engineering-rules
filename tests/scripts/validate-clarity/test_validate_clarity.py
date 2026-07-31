@@ -22,9 +22,6 @@ def clarity_mod():
     return mod
 
 
-# ---------- pronoun-leading detection ----------
-
-
 def test_pronoun_it_flagged_with_multi_noun_prev(clarity_mod, tmp_path):
     f = tmp_path / "rule.md"
     f.write_text(
@@ -59,9 +56,6 @@ def test_pronoun_unflagged_when_prev_is_short(clarity_mod, tmp_path):
     assert all(c != "pronoun-leading" for _, c, _ in findings)
 
 
-# ---------- passive-bullet detection ----------
-
-
 def test_passive_bullet_flagged(clarity_mod, tmp_path):
     f = tmp_path / "rule.md"
     f.write_text("- The input is validated before processing.\n")
@@ -90,9 +84,6 @@ def test_irregular_participle_detected(clarity_mod, tmp_path):
     assert any(c == "passive-bullet" for _, c, _ in findings)
 
 
-# ---------- code-fence handling ----------
-
-
 def test_skips_code_fences(clarity_mod, tmp_path):
     f = tmp_path / "rule.md"
     f.write_text(
@@ -104,9 +95,6 @@ def test_skips_code_fences(clarity_mod, tmp_path):
     )
     findings = clarity_mod.scan(f)
     assert findings == []
-
-
-# ---------- file walking ----------
 
 
 def test_walk_includes_in_scope_dirs(clarity_mod, tmp_path):
@@ -138,9 +126,6 @@ def test_walk_handles_missing_dirs(clarity_mod, tmp_path):
     assert files == []
 
 
-# ---------- robustness ----------
-
-
 def test_scan_handles_unreadable(clarity_mod, tmp_path):
     f = tmp_path / "bad.md"
     f.write_bytes(b"\xff\xfe\xfd")
@@ -160,9 +145,6 @@ def test_has_multiple_nouns_short_words_ignored(clarity_mod):
 def test_has_multiple_nouns_counts_distinct(clarity_mod):
     assert clarity_mod._has_multiple_nouns("validator validator") is False
     assert clarity_mod._has_multiple_nouns("validator handler") is True
-
-
-# ---------- main ----------
 
 
 def test_main_clean_exits_zero(clarity_mod, tmp_path, monkeypatch, capsys):
