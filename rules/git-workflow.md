@@ -137,6 +137,14 @@ After ANY push:
 
 **Rate limit awareness.** `gh run watch` polls every 3 seconds, around 1200 requests per hour. Never run multiple watchers concurrently. Before starting a watcher, check quota with `gh api rate_limit`. If remaining quota is below 500, use one-shot `gh run view <id>` checks instead of continuous polling.
 
+**Queued is not running.** A run reports `queued` while no runner has picked it up. That wait is bounded by runner availability rather than by the length of the build, so it can outlast any polling loop the tool layer permits. Read the per-job status before choosing an interval:
+
+```bash
+gh run view <id> --json status,jobs --jq '.status, (.jobs[] | "\(.status) \(.name)")'
+```
+
+Jobs finishing one at a time while the rest sit `queued` means the workflow is draining against scarce runners, not stalling on a defect. Poll a queued run at multi-minute intervals, or schedule a wake-up and report the wait, rather than re-entering a tight loop that expires. Reserve short intervals for a run already `in_progress`. Confirm an outage before assuming one: `curl -s https://www.githubstatus.com/api/v2/summary.json` names any degraded component.
+
 ## CI File Validation
 
 Before committing changes to CI workflow files, run the relevant linters locally to avoid fix-push-fail cycles:
