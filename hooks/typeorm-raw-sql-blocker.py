@@ -51,6 +51,11 @@ def is_skipped_path(path: str) -> bool:
     if not path:
         return False
     p = path.lower()
+    # Documentation names the anti-pattern in order to forbid it. A standard,
+    # rule, or README that shows a raw-SQL call in a fenced block is teaching,
+    # not shipping, so prose files are out of scope. Application code is not.
+    if p.endswith((".md", ".mdx", ".markdown", ".rst", ".txt")):
+        return True
     if "/migrations/" in p or p.endswith(".sql"):
         return True
     if any(

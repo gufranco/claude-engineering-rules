@@ -146,6 +146,18 @@ PUSH_FRAMEWORK_RECEIVERS: frozenset[str] = frozenset(
         "logs",
         "results",
         "chunks",
+        # Third-party command queues. `.push` is the vendor's documented call
+        # convention, not an array mutation: the tag manager or consent
+        # processor replaces the array with a live object once its script
+        # loads, and every integration guide tells you to push. Flagging these
+        # produced a recurring bypass rather than a rewrite.
+        "dataLayer",
+        "dgEvent",
+        "_paq",
+        "_hsq",
+        "_gaq",
+        "_mtm",
+        "uetq",
     }
 )
 
