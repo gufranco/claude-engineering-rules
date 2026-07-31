@@ -144,6 +144,7 @@ Before referencing ANY of these, verify in the current session:
 | Versions and config | Look up or omit. Never invent |
 | Error messages | Read actual output. No paraphrasing |
 | Dependencies | Check manifest file |
+| Package availability and source | Query the registry or index. A local install records the tap, channel, or repo it came from *when it was installed*, which can be years stale. `brew info`, `pip show`, and `apt policy` describe your machine's past, not the ecosystem's present |
 | Environment variables | Check `.env.example` or consuming code |
 
 **Self-check before presenting code:** walk through every import, function call, and path. If any came from memory, stop and verify.
@@ -170,6 +171,7 @@ Before using any external tool or CLI command:
 6. **Respect rate limits.** Before polling any API or service in a loop, check the rate limit first. For GitHub: `gh api rate_limit`. For other services: check headers or docs. Never use tight polling loops (e.g. every 3 seconds) without confirming sufficient quota. When rate limited, wait for the reset window instead of retrying immediately.
 7. **Local binaries first.** Never run a CLI tool through Docker when a local binary exists or can be installed. Check `which <tool>` first. If not installed, ask to install it locally (e.g., `brew install postgresql` for `psql`). Only fall back to Docker when local installation is not viable or the user explicitly prefers it. Docker wrappers add complexity, consume extra tokens, and obscure errors. When the user accepts a brew install, check `~/.dotfiles/Brewfile` and ask whether the package should be added there.
 8. **Clone over fetch.** When analyzing source from a repo not already on disk, clone it to a `mktemp -d` directory and work locally. Never fetch source files one at a time via `gh api .../contents`, `gh repo view`, or `raw.githubusercontent.com`. The break-even is two files; at three, clone. Full rule, carve-outs, and subagent briefing: [`rules/repo-analysis.md`](rules/repo-analysis.md).
+9. **Name the account on every multi-account CLI call.** `gh`, `glab`, `docker`, `kubectl`, `aws`, `gcloud`, and `terraform` each resolve a globally active account that another terminal can change mid-task, so the ambient one is never trustworthy. Read the account from `git remote get-url origin`, then pass it per command: `GH_TOKEN=$(gh auth token --user <account>) gh ...`. This applies to the first call of a session, including a throwaway status check. Per-tool detail: [`standards/multi-account-cli.md`](standards/multi-account-cli.md).
 
 ### Shell Alias Safety
 
