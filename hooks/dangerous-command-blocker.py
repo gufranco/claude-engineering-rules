@@ -41,49 +41,64 @@ except Exception:  # pragma: no cover
         return None
 
 
-SAFE_CLEANUP = [
-    r"\brm\s+(-[a-zA-Z]*\s+)*node_modules(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*dist(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*\.next(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*\.nuxt(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*build(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*coverage(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*\.turbo(/|$|\s*$)",
-    r"\brm\s+(-[a-zA-Z]*\s+)*out(/|$|\s*$)",
+SAFE_CLEANUP: list[tuple[str, str]] = [
+    (r"\brm\s+(-[a-zA-Z]*\s+)*node_modules(/|$|\s*$)", "remove node_modules"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*dist(/|$|\s*$)", "remove dist"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*\.next(/|$|\s*$)", "remove .next"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*\.nuxt(/|$|\s*$)", "remove .nuxt"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*build(/|$|\s*$)", "remove build"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*coverage(/|$|\s*$)", "remove coverage"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*\.turbo(/|$|\s*$)", "remove .turbo"),
+    (r"\brm\s+(-[a-zA-Z]*\s+)*out(/|$|\s*$)", "remove out"),
 ]
 
-CATASTROPHIC = [
-    r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s*$",
-    r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s+",
-    r"\bsudo\s+rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/",
-    r"\bdd\s+.*\bof=/dev/[sh]d",
-    r"\bdd\s+.*\bof=/dev/nvme",
-    r"\bsudo\s+dd\s+.*\bof=/dev/",
-    r"\bmkfs\b",
-    r"\bsudo\s+mkfs\b",
-    r":\(\)\s*\{\s*:\|:\s*&\s*\}\s*;",
-    r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/\s*$",
-    r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/[a-z]",
-    r">\s*/dev/[sh]d",
-    r"\bshred\s+.*(/dev/|/boot/|/etc/)",
-    r"\bwipefs\b.*(/dev/[sh]d|/dev/nvme)",
-    r"\bdd\s+.*\bof=/dev/(disk|rdisk|loop|md|mapper)",
-    r"\bfind(\s+(\.{1,2}\S*|[/~]\S*))?\s+[^|;&]*-delete\b",
-    r"\bfind\s+[/~]\S*\s+.*-exec\s+rm\b",
-    r"\bxargs\s+(-[a-zA-Z0]*\s+)*rm\s+(-[a-zA-Z]*[rRf])",
-    r"\btar\s+.*--absolute-(names|paths)\b.*\bx",
-    r"\bwget\b.*\|\s*(ba)?sh",
-    r"\bcurl\b.*\|\s*(ba)?sh",
-    r"\bbash\s+-i\s+>&\s*/dev/tcp/",
-    r"\bnc\s+.*-e\s+/bin/(ba)?sh",
-    r"\bncat\s+.*-e\s+/bin/(ba)?sh",
-    r"\bsocat\s+.*EXEC.*sh",
-    r"\bpython3?\s+-c\s+.*socket.*connect",
-    r"\bperl\s+-e\s+.*socket.*connect",
-    r"\bruby\s+-rsocket\s+-e",
-    r".*>>\s*/etc/sudoers",
-    r"\bsudo\s+chmod\s+[ugo]\+s\b",
-    r"\bsudo\s+visudo\b",
+CATASTROPHIC: list[tuple[str, str]] = [
+    (r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s*$", "recursive delete of the root path"),
+    (
+        r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s+",
+        "recursive delete of the root path with arguments",
+    ),
+    (
+        r"\bsudo\s+rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/",
+        "privileged recursive delete of the root path",
+    ),
+    (r"\bdd\s+.*\bof=/dev/[sh]d", "dd to a disk device"),
+    (r"\bdd\s+.*\bof=/dev/nvme", "dd to an NVMe device"),
+    (r"\bsudo\s+dd\s+.*\bof=/dev/", "privileged dd to any device"),
+    (r"\bmkfs\b", "format filesystem"),
+    (r"\bsudo\s+mkfs\b", "privileged format filesystem"),
+    (r":\(\)\s*\{\s*:\|:\s*&\s*\}\s*;", "fork bomb"),
+    (r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/\s*$", "world-writable root path"),
+    (r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/[a-z]", "world-writable system path"),
+    (r">\s*/dev/[sh]d", "write to a raw disk"),
+    (r"\bshred\s+.*(/dev/|/boot/|/etc/)", "shred a system path"),
+    (r"\bwipefs\b.*(/dev/[sh]d|/dev/nvme)", "wipe filesystem signatures"),
+    (
+        r"\bdd\s+.*\bof=/dev/(disk|rdisk|loop|md|mapper)",
+        "dd to an additional device class",
+    ),
+    (
+        r"\bfind(\s+(\.{1,2}\S*|[/~]\S*))?\s+[^|;&]*-delete\b",
+        "find with -delete on a root, home, or relative path",
+    ),
+    (r"\bfind\s+[/~]\S*\s+.*-exec\s+rm\b", "find -exec delete on a system root"),
+    (
+        r"\bxargs\s+(-[a-zA-Z0]*\s+)*rm\s+(-[a-zA-Z]*[rRf])",
+        "xargs recursive delete pipeline",
+    ),
+    (r"\btar\s+.*--absolute-(names|paths)\b.*\bx", "tar extract with absolute paths"),
+    (r"\bwget\b.*\|\s*(ba)?sh", "pipe a remote script from wget into a shell"),
+    (r"\bcurl\b.*\|\s*(ba)?sh", "pipe a remote script from curl into a shell"),
+    (r"\bbash\s+-i\s+>&\s*/dev/tcp/", "bash reverse shell"),
+    (r"\bnc\s+.*-e\s+/bin/(ba)?sh", "netcat reverse shell"),
+    (r"\bncat\s+.*-e\s+/bin/(ba)?sh", "ncat reverse shell"),
+    (r"\bsocat\s+.*EXEC.*sh", "socat reverse shell"),
+    (r"\bpython3?\s+-c\s+.*socket.*connect", "python reverse shell"),
+    (r"\bperl\s+-e\s+.*socket.*connect", "perl reverse shell"),
+    (r"\bruby\s+-rsocket\s+-e", "ruby reverse shell"),
+    (r".*>>\s*/etc/sudoers", "append to sudoers"),
+    (r"\bsudo\s+chmod\s+[ugo]\+s\b", "privileged setuid or setgid"),
+    (r"\bsudo\s+visudo\b", "edit sudoers"),
 ]
 
 CRITICAL_PATHS = [
@@ -479,22 +494,22 @@ def main():
     if not command:
         sys.exit(0)
 
-    for pattern in SAFE_CLEANUP:
+    for pattern, _label in SAFE_CLEANUP:
         if re.search(pattern, command):
             sys.exit(0)
 
-    for pattern in CATASTROPHIC:
+    for pattern, label in CATASTROPHIC:
         if re.search(pattern, command):
             _audit(
                 hook="dangerous-command-blocker",
                 decision="block",
                 level="catastrophic",
-                reason=f"catastrophic: {pattern}",
+                reason=f"catastrophic: {label}",
                 pattern=pattern,
                 command=command[:300],
             )
             print(
-                f"BLOCKED: Catastrophic command detected.\nCommand: {command}",
+                f"BLOCKED: Catastrophic command detected: {label}.\nCommand: {command}",
                 file=sys.stderr,
             )
             sys.exit(2)
