@@ -41,7 +41,7 @@ except Exception:  # pragma: no cover
 
 
 try:
-    from suppression import line_or_prev_has_suppression  # type: ignore
+    from _lib.suppression import line_or_prev_has_suppression  # type: ignore
 except Exception:  # pragma: no cover
 
     def line_or_prev_has_suppression(lines, line_no):  # type: ignore
@@ -83,6 +83,13 @@ ATOMIC_MARKERS = re.compile(
     r"\b(?:multi\s*\(|pipeline\s*\(|exec\s*\(|eval\s*\(|evalsha\s*\(|MULTI|EXEC|defineCommand)\b",
     re.IGNORECASE,
 )
+
+# A lock taken with NX and no expiry survives the crash of the process holding
+# it, so the resource stays locked until a human intervenes. `standards/redis.md`
+# TTL Management and `standards/concurrency.md` Timeouts, Retries, and Locks.
+LOCK_ACQUIRE = re.compile(r"\.(?:set|setnx|setNX)\s*\(", re.IGNORECASE)
+LOCK_NX_MARKER = re.compile(r"\bNX\b|\.setnx\s*\(|\.setNX\s*\(", re.IGNORECASE)
+LOCK_TTL_MARKER = re.compile(r"\b(?:EX|PX|EXAT|PXAT|expiration|ttl)\b", re.IGNORECASE)
 
 WINDOW_LINES = 5
 
@@ -130,6 +137,14 @@ def find(text: str) -> list[str]:
     lines = text.splitlines()
     hits: list[str] = []
     for i, line in enumerate(lines):
+        if LOCK_ACQUIRE.search(line) and LOCK_NX_MARKER.search(line):
+            if not LOCK_TTL_MARKER.search(line) and not line_or_prev_has_suppression(
+                lines, i
+            ):
+                hits.append(
+                    f"L{i + 1}: lock without a TTL (survives a crash of the holder): "
+                    f"{line.strip()[:80]}"
+                )
         if not (INCR_LIKE.search(line) or GET_LIKE.search(line)):
             continue
         if line_or_prev_has_suppression(lines, i):
@@ -215,6 +230,8 @@ def main() -> int:
         "for counters that reset on TTL.\n"
         "  - Replace `SETNX` + `EXPIRE` with `SET key val NX EX seconds`.\n"
         "  - Replace `GET` then `SET` with a Lua script or a `WATCH/MULTI/EXEC` transaction.\n"
+        "  - Give every lock a TTL: `SET lock token NX EX <seconds>`, with the TTL above\n"
+        "    the p99 of the protected operation, and check a fencing token at the write.\n"
         "Bypass (when sequencing is intentional and safe): set REDIS_ATOMICITY_DISABLE=1.",
         file=sys.stderr,
     )
