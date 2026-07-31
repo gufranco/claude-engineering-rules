@@ -133,3 +133,8 @@ Log every fallback activation at `warn` level with the operation name and error.
 - Test TTL behavior with short TTLs, 1-2 seconds and `await` the expiration
 - Test atomic operations under concurrency: spawn multiple promises that race on the same key, verify the final state is consistent
 - Pure functions that compute values from Redis data, thresholds, steps, pricing can be unit tested without Redis
+
+## Related Standards
+
+- [`concurrency.md`](concurrency.md): where a Redis lock sits on the correctness ladder, and why an expired lock needs a fencing token
+- [`idempotency.md`](idempotency.md): Redis as a dedup store, including the persistence and TTL requirements

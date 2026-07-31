@@ -233,3 +233,8 @@ Every deployment to production should be invisible to users. No maintenance wind
 - **Health checks**: the orchestrator must know when an instance is ready to receive traffic. No traffic until readiness probe passes
 - **Graceful shutdown**: on termination, stop accepting new requests, finish in-flight requests within a timeout, then exit
 - **Database migrations**: run before the deployment, not during. The old code must work with the new schema. See [`standards/database.md`](database.md) for safe migration patterns
+
+## Related Standards
+
+- [`concurrency.md`](concurrency.md): the single-process and single-database races this file's distributed patterns sit on top of
+- [`idempotency.md`](idempotency.md): the consumer-side contract that makes at-least-once delivery safe

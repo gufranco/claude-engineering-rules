@@ -104,13 +104,16 @@ When adding a new delivery path for existing data:
 
 ## Data Safety
 
-Before writing code that mutates state, answer three questions:
+Before writing code that mutates state, answer four questions:
 
 1. **Idempotent?** Can this run twice with the same input without damage? If not, add a guard
 2. **Atomic?** Do multiple writes need to succeed or fail together? Use a transaction
 3. **Duplicates?** Networks retry. Queues redeliver. Users double-click. Extract a dedup key and use a durable store
+4. **Concurrent?** Can another actor interleave between any two statements here? If a read decides a write, the two must sit inside one transaction, collapse into an upsert or conditional write, or stand behind a unique constraint
 
-See [`standards/resilience.md`](../standards/resilience.md) for patterns and [`standards/database.md`](../standards/database.md) for transaction strategies.
+The fourth question is the one most often skipped, because single-threaded runtimes read as safe. They are not. Every `await` is a yield point where another request runs, and a second replica of the same service is a second actor regardless of the runtime.
+
+See [`standards/concurrency.md`](../standards/concurrency.md) for the race taxonomy and the correctness ladder, [`standards/idempotency.md`](../standards/idempotency.md) for key handling and replay, [`standards/resilience.md`](../standards/resilience.md) for retry and dedup patterns, and [`standards/database.md`](../standards/database.md) for transaction strategies.
 
 ## Error Classification
 

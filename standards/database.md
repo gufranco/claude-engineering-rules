@@ -203,3 +203,9 @@ Never combine expand and contract in a single deployment. The old application ve
 - FK: `<table>_id`
 - Indexes: `idx_<table>_<columns>`
 - Unique constraints: `uq_<table>_<columns>`
+
+## Related Standards
+
+- [`concurrency.md`](concurrency.md): race taxonomy, isolation anomalies by level, the correctness ladder, lock ordering and deadlocks
+- [`idempotency.md`](idempotency.md): the idempotency record table, its primary key as the race mechanism, and TTL sweeping
+- [`immutability.md`](immutability.md): append-only ledgers, history tables, and why a migration must not rewrite historical rows
