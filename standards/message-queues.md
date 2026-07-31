@@ -658,3 +658,5 @@ it("must process events for the same order in sequence order", async () => {
 - `standards/event-driven-architecture.md`: Event-Driven Architecture
 - [`standards/resilience.md`](resilience.md): Resilience
 - [`standards/distributed-systems.md`](distributed-systems.md): Distributed Systems
+- [`standards/idempotency.md`](idempotency.md): idempotent consumers, dedup keys, and the storage contract
+- [`standards/concurrency.md`](concurrency.md): interleaving between a consumer and the online path
