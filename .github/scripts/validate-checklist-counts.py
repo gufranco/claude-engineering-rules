@@ -27,7 +27,6 @@ def check_declared_counts(path: str, categories: int, items: int, label: str) ->
     with open(path) as f:
         content = f.read()
 
-    # Look for "N categories" or "N items" or "N-category"
     cat_matches = re.findall(r"(\d+)\s+categor", content)
     item_matches = re.findall(r"(\d+)\s+items?", content)
 
@@ -40,7 +39,7 @@ def check_declared_counts(path: str, categories: int, items: int, label: str) ->
 
     for m in item_matches:
         declared = int(m)
-        if abs(declared - items) > 10:  # allow small drift
+        if abs(declared - items) > 10:
             ERRORS.append(
                 f"{label}: declares {declared} items, checklist has {items} (diff > 10)"
             )

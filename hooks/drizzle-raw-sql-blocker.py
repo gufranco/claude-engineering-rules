@@ -15,6 +15,8 @@ Blocks:
   - sql`...` as a top-level expression assigned to a non-fragment use
 
 Allowed paths (skipped):
+  - Documentation: *.md, *.mdx, *.markdown, *.rst, *.txt. A standard or README
+    that shows the anti-pattern in order to forbid it is teaching, not shipping.
   - Anything under */migrations/* or drizzle/
   - *.sql files
   - Schema files (Drizzle schemas declare `default(sql`now()`)` etc.)
@@ -56,14 +58,20 @@ SQL_RAW_RE = re.compile(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
+DOCUMENTATION_EXTENSIONS: tuple[str, ...] = (
+    ".md",
+    ".mdx",
+    ".markdown",
+    ".rst",
+    ".txt",
+)
+
+
 def is_skipped_path(path: str) -> bool:
     if not path:
         return False
     p = path.lower()
-    # Documentation names the anti-pattern in order to forbid it. A standard,
-    # rule, or README that shows a raw-SQL call in a fenced block is teaching,
-    # not shipping, so prose files are out of scope. Application code is not.
-    if p.endswith((".md", ".mdx", ".markdown", ".rst", ".txt")):
+    if p.endswith(DOCUMENTATION_EXTENSIONS):
         return True
     if "/migrations/" in p or p.endswith(".sql"):
         return True

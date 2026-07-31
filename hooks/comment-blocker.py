@@ -36,8 +36,13 @@ name, blank lines, and named helpers instead.
 Out of scope (not project source we author):
   - Planning artifacts: **/specs/**, **/docs/adr/**, **/docs/plan*/**
   - Templates: **/templates/**
-  - The ~/.claude/ tree itself, node_modules, vendor, dist, build, .git.
+  - node_modules, vendor, dist, build, .git.
   - Any extension without a known comment syntax (markdown, json, `.ts.tmpl`).
+
+The ~/.claude/ tree is in scope. It is source we author and publish, so the
+rule that governs every other repository governs this one. Python docstrings
+are string expressions rather than comments and stay allowed; rationale that
+would have been a comment belongs in the module or function docstring.
 
 Bypass (operator kill switch, not a per-comment escape hatch):
   COMMENT_BLOCKER_DISABLE=1
@@ -120,7 +125,6 @@ SKIP_SEGMENTS: tuple[str, ...] = (
     "/docs/planning/",
     "/templates/",
     "/template/",
-    "/.claude/",
     "/node_modules/",
     "/vendor/",
     "/.git/",

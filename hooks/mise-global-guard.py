@@ -40,10 +40,8 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `mise use --global ...` or `mise use -g ...` — writes to ~/.config/mise/config.toml
 MISE_USE_GLOBAL = re.compile(r"\bmise\s+use\b[^|;&]*\s(?:--global\b|-g\b)")
 
-# `mise unuse --global ...` or `mise unuse -g ...` — removes from global config
 MISE_UNUSE_GLOBAL = re.compile(r"\bmise\s+unuse\b[^|;&]*\s(?:--global\b|-g\b)")
 
 

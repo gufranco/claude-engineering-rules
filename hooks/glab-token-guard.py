@@ -24,16 +24,12 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Patterns that indicate a glab CLI invocation
 GLAB_COMMAND = re.compile(r"(?:^|&&|\|\||;|\|)\s*glab\s+")
 
-# glab auth commands are exempt (needed to check status, get tokens)
 GLAB_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\|)\s*glab\s+auth\s+")
 
-# GITLAB_TOKEN is set inline before the glab command
 GITLAB_TOKEN_SET = re.compile(r"GITLAB_TOKEN=|export\s+GITLAB_TOKEN=")
 
-# glab auth login is always blocked (mutates global config)
 GLAB_AUTH_LOGIN = re.compile(r"\bglab\s+auth\s+login\b")
 
 
@@ -68,7 +64,6 @@ def main():
     if not command:
         sys.exit(0)
 
-    # Always block glab auth login
     if GLAB_AUTH_LOGIN.search(command):
         print(
             "BLOCKED: glab auth login changes the global config "
@@ -87,18 +82,14 @@ def main():
         )
         sys.exit(2)
 
-    # Skip if no glab command present
     if not GLAB_COMMAND.search(command):
         sys.exit(0)
 
-    # Allow glab auth commands (e.g., glab auth status)
-    # but only if ALL glab commands in the string are glab auth
     glab_calls = GLAB_COMMAND.findall(command)
     glab_auth_calls = GLAB_AUTH_EXEMPT.findall(command)
     if len(glab_calls) == len(glab_auth_calls):
         sys.exit(0)
 
-    # Check if GITLAB_TOKEN is set somewhere in the command
     if GITLAB_TOKEN_SET.search(command):
         sys.exit(0)
 

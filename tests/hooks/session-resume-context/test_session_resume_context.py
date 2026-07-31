@@ -29,11 +29,6 @@ def parse_context(stdout: str) -> str | None:
     return parsed.get("hookSpecificOutput", {}).get("additionalContext")
 
 
-# ---------------------------------------------------------------------------
-# Surfacing recent artifacts
-# ---------------------------------------------------------------------------
-
-
 def test_surfaces_recent_checkpoint(run_hook, tool_use, tmp_path):
     cp_dir = tmp_path / "checkpoints"
     cp_dir.mkdir()
@@ -134,11 +129,6 @@ def test_includes_preview_excerpt(run_hook, tool_use, tmp_path):
     assert "more lines" in ctx
 
 
-# ---------------------------------------------------------------------------
-# No artifacts
-# ---------------------------------------------------------------------------
-
-
 def test_emits_nothing_when_no_artifacts(run_hook, tool_use, tmp_path):
     code, stdout, _ = run_hook(HOOK, session_payload(tool_use, tmp_path))
 
@@ -158,11 +148,6 @@ def test_ignores_stale_artifacts(run_hook, tool_use, tmp_path):
 
     assert code == 0
     assert not stdout.strip()
-
-
-# ---------------------------------------------------------------------------
-# Wrong event / malformed
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("event", ["PreToolUse", "PostToolUse", "Stop"])

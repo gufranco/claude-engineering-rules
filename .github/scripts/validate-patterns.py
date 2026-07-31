@@ -19,9 +19,6 @@ CLAUDE_DIR = os.path.dirname(
 )
 BLOCKER_PATH = os.path.join(CLAUDE_DIR, "hooks", "dangerous-command-blocker.py")
 
-# Lists treated as known and required. Other ALL_CAPS list assignments are
-# discovered automatically so the validator follows the hook source instead of
-# a hand-maintained allowlist.
 KNOWN_LISTS = {"CATASTROPHIC", "CRITICAL_PATHS", "SUSPICIOUS", "SAFE_CLEANUP"}
 
 
@@ -114,7 +111,6 @@ def main():
 
             all_patterns.append((list_name, pat))
 
-    # Check for duplicates across all lists
     seen = {}
     for list_name, pat in all_patterns:
         if pat in seen:

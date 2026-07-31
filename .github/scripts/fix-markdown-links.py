@@ -63,8 +63,6 @@ def apply_fixes(file_path: Path, findings: list[Finding]) -> int:
 
     total = 0
     for line_no, line_findings in by_line.items():
-        # Process columns in reverse so earlier substitutions do not shift
-        # later positions.
         line_findings.sort(key=lambda f: f.column, reverse=True)
         line_idx = line_no - 1
         line = lines[line_idx]
@@ -76,8 +74,6 @@ def apply_fixes(file_path: Path, findings: list[Finding]) -> int:
             span_end = backtick_end + 1
             actual_content = line[span_start + 1 : backtick_end]
             if actual_content != f.token:
-                # Defensive: the detector and the rewriter must agree on the
-                # span. If they do not, skip rather than corrupt the file.
                 continue
             replacement = f"[`{f.token}`]({f.resolved_path})"
             line = line[:span_start] + replacement + line[span_end:]
@@ -109,23 +105,17 @@ def apply_broken_target_fixes(
 
     total = 0
     for line_no, line_findings in by_line.items():
-        # Process columns in reverse so earlier substitutions do not shift
-        # later positions on the same line.
         line_findings.sort(key=lambda f: f.column, reverse=True)
         line_idx = line_no - 1
         line = lines[line_idx]
         for f in line_findings:
             url_start = f.column - 1
-            # The URL portion ends at the next ')' on the line. Anchors are
-            # preserved by splitting on '#'.
             url_end = line.find(")", url_start)
             if url_end == -1:
                 continue
             actual_url = line[url_start:url_end]
             if actual_url != f.link_target:
-                # Defensive: detector and rewriter must agree on the span.
                 continue
-            # Preserve any fragment (#anchor) on the original target.
             fragment = ""
             if "#" in actual_url:
                 fragment = "#" + actual_url.split("#", 1)[1]
@@ -178,9 +168,6 @@ def main() -> int:
         except (OSError, UnicodeDecodeError):
             continue
 
-        # Fix broken existing link targets first. The bare-reference detector
-        # below would otherwise be confused by links whose URL still points to
-        # a non-resolving path.
         broken = detect_broken_link_targets(text, rel, REPO_ROOT, tracked=tracked)
         fixable_broken = [f for f in broken if f.correct_path is not None]
         unfixable_broken.extend(f for f in broken if f.correct_path is None)
@@ -198,10 +185,8 @@ def main() -> int:
                     print(f"rewrote {applied} broken target(s) in {rel}")
                     grand_total += applied
                     touched_files.add(rel)
-                # Re-read after rewrite for the bare-reference pass.
                 text = path.read_text(encoding="utf-8")
 
-        # Wrap bare references.
         findings = detect_findings(text, rel, REPO_ROOT, tracked=tracked)
         if not findings:
             continue

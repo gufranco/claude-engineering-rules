@@ -17,7 +17,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR_PATH = REPO_ROOT / ".github" / "scripts" / "validate-markdown-links.py"
 
-# Load the module with a Python-safe name since the file has a hyphen.
 spec = importlib.util.spec_from_file_location(
     "validate_markdown_links",
     VALIDATOR_PATH,
@@ -74,7 +73,6 @@ def test_main_with_include_advisory_flag(monkeypatch, capsys):
 
     code = validate_module.main()
 
-    # Repo is clean, advisory or otherwise.
     assert code == 0
     captured = capsys.readouterr()
     assert "PASSED" in captured.out

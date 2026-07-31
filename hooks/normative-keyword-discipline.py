@@ -51,19 +51,12 @@ IN_SCOPE_PATH_SEGMENTS = (
     "/.claude/CLAUDE.md",
 )
 
-# Files inside the rule that DEFINES this convention will naturally contain
-# "Should " inside example blocks. Skip them entirely.
 SELF_REFERENCE_FILES = (
     "/.claude/rules/normative-keywords.md",
     "/.claude/rules/writing-precision.md",
 )
 
 
-# Detects bullet items starting with "Should " or "should ".
-# Matches lines like:
-#   - Should validate input.
-#   * should always run tests.
-#   1. Should pick a clear approach.
 BULLET_SHOULD_RE = re.compile(
     r"^\s*(?:[-*]|\d+\.)\s+[Ss]hould\s+\S",
     re.MULTILINE,

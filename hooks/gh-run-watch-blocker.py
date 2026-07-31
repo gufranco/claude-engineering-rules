@@ -36,16 +36,12 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `gh run watch ...`
 GH_RUN_WATCH = re.compile(r"\bgh\s+run\s+watch\b")
 
-# `gh pr checks ... --watch` or `gh pr checks -w` (where -w is the alias).
 GH_PR_CHECKS_WATCH = re.compile(r"\bgh\s+pr\s+checks\b[^\n;&|]*?(?:--watch|\s-w\b)")
 
-# `gh workflow run ... --watch`
 GH_WORKFLOW_WATCH = re.compile(r"\bgh\s+workflow\s+run\b[^\n;&|]*?--watch")
 
-# `glab ci view --live`
 GLAB_CI_LIVE = re.compile(r"\bglab\s+ci\s+view\b[^\n;&|]*?(?:--live|\s-l\b)")
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -120,7 +116,7 @@ def main() -> int:
         f"Bypass (one-off): set GH_RUN_WATCH_DISABLE=1 in parent shell."
     )
     emit_block(reason, command)
-    return 2  # unreachable
+    return 2
 
 
 if __name__ == "__main__":

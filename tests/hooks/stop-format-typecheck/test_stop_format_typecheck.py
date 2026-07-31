@@ -305,8 +305,6 @@ def test_shell_files_invoke_shfmt(tmp_path: Path) -> None:
 def test_workspace_skipped_when_dir_removed_between_discovery_and_run(
     tmp_path: Path,
 ) -> None:
-    # Cleanest emulation: point the ts file at a workspace that lacks both
-    # package.json and tsconfig.json so _find_ts_workspace returns None.
     target = tmp_path / "main.ts"
     target.write_text("x\n", encoding="utf-8")
     batch = tmp_path / "batch.txt"
@@ -355,7 +353,6 @@ def test_format_with_skips_missing_tool(monkeypatch: pytest.MonkeyPatch) -> None
 def test_main_skips_workspace_that_no_longer_exists(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    # workspace between batch processing and tsc invocation.
     ws = tmp_path / "ws"
     ws.mkdir()
     (ws / "package.json").write_text("{}", encoding="utf-8")
@@ -371,8 +368,6 @@ def test_main_skips_workspace_that_no_longer_exists(
     module = _util.module_from_spec(spec)
     spec.loader.exec_module(module)
     monkeypatch.setenv("CLAUDE_FORMATTER_BATCH", str(batch))
-    # Remove workspace AFTER batch lookups but BEFORE tsc runs by patching
-    # `_find_ts_workspace` to return a path that does not exist.
     monkeypatch.setattr(module, "_find_ts_workspace", lambda _p: tmp_path / "gone")
     monkeypatch.setattr(module, "_format_with", lambda *_a, **_k: None)
     called = {"npx": 0}

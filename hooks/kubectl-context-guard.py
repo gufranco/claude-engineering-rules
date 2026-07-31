@@ -28,14 +28,10 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `kubectl config use-context <name>` — global mutation. Block.
 KUBECTL_USE_CONTEXT = re.compile(
     r"\bkubectl\s+config\s+use-context\s+(?!--help\b|-h\b)[\w\.\-]+"
 )
 
-# `kubectx <name>` — wrapper around use-context. Block when an arg is given.
-# `kubectx` alone (no arg) lists contexts and is allowed.
-# `kubectx -` switches to previous context (also a global mutation).
 KUBECTX_SWITCH = re.compile(
     r"(?:^|&&|\|\||;|\|)\s*kubectx\s+(?!--help\b|-h\b|--?$)[\w\.\-]+"
 )

@@ -298,7 +298,7 @@ def main() -> int:
         f"Bypass (one-off): set TDD_GATE_DISABLE=1 in parent shell."
     )
     emit_block(reason, str(target))
-    return 2  # unreachable
+    return 2
 
 
 if __name__ == "__main__":

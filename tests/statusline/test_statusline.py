@@ -50,11 +50,6 @@ def assert_contains(out: str, needles: list[str]):
         assert n in out, f"expected {n!r} in statusline output, got: {out!r}"
 
 
-# ---------------------------------------------------------------------------
-# Basic happy path
-# ---------------------------------------------------------------------------
-
-
 def test_outputs_single_line(tmp_path):
     transcript = make_transcript(
         tmp_path,
@@ -128,11 +123,6 @@ def test_includes_cwd_basename(tmp_path):
     assert "my-project" in stdout
 
 
-# ---------------------------------------------------------------------------
-# Cache hit ratio
-# ---------------------------------------------------------------------------
-
-
 def test_cache_hit_ratio_high(tmp_path):
     transcript = make_transcript(
         tmp_path,
@@ -177,11 +167,6 @@ def test_cache_hit_ratio_zero(tmp_path):
     _, stdout, _ = run(payload)
 
     assert "0%" in stdout
-
-
-# ---------------------------------------------------------------------------
-# Cost estimation
-# ---------------------------------------------------------------------------
 
 
 def test_cost_estimation_opus(tmp_path):
@@ -249,11 +234,6 @@ def test_cost_aggregates_across_multiple_turns(tmp_path):
     assert "$" in stdout
 
 
-# ---------------------------------------------------------------------------
-# Context-window percentage
-# ---------------------------------------------------------------------------
-
-
 def test_context_percentage_reported(tmp_path):
     transcript = make_transcript(
         tmp_path,
@@ -277,11 +257,6 @@ def test_context_percentage_reported(tmp_path):
     import re
 
     assert re.search(r"\d+%", stdout), f"expected percentage in output, got: {stdout}"
-
-
-# ---------------------------------------------------------------------------
-# Robustness
-# ---------------------------------------------------------------------------
 
 
 def test_handles_missing_transcript():
@@ -333,11 +308,6 @@ def test_handles_missing_fields():
 
     assert code == 0
     assert stdout.strip()
-
-
-# ---------------------------------------------------------------------------
-# Performance budget
-# ---------------------------------------------------------------------------
 
 
 def test_completes_under_one_second(tmp_path):

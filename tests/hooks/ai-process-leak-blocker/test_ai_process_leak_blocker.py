@@ -338,7 +338,6 @@ def test_allows_empty_bash(tool_use, assert_allows):
 
 
 def test_allows_state_of_the_art_in_docs(tool_use, assert_allows):
-    # Write to .claude tree, which is skipped
     payload = tool_use(
         "Write",
         {
@@ -351,7 +350,6 @@ def test_allows_state_of_the_art_in_docs(tool_use, assert_allows):
 
 
 def test_write_with_empty_path_still_checked(tool_use, assert_blocks):
-    # which means the content is still checked for leaks.
     payload = tool_use(
         "Write",
         {
@@ -628,9 +626,6 @@ def test_blocks_glab_mr_note_with_leak(tool_use, assert_blocks):
 
 
 def test_allows_human_phrasing_about_tests(tool_use, assert_allows):
-    # A normal "ran ... locally" mention without the verification-loop
-    # framing should not trip the hook. The blocked phrase is specifically
-    # "I ran the suite/tests/jest" as a methodical narration.
     payload = tool_use(
         "Bash",
         {

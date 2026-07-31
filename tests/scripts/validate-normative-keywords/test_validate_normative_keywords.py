@@ -25,9 +25,6 @@ def validator_mod():
     return mod
 
 
-# ---------- scan ----------
-
-
 def test_scan_detects_should_bullet(validator_mod, tmp_path):
     f = tmp_path / "rule.md"
     f.write_text("- Should validate input.\n")
@@ -81,7 +78,6 @@ def test_scan_skips_self_reference_phrases(validator_mod, tmp_path):
     f = tmp_path / "writing-precision.md"
     f.write_text("Banned: Great question! Hope this helps.\n")
     findings = validator_mod.scan(f, "rules/writing-precision.md")
-    # Banned phrases skipped, but should-bullet still applies.
     assert all(c == "should-bullet" for _, c, _ in findings)
 
 
@@ -97,9 +93,6 @@ def test_scan_handles_unreadable(validator_mod, tmp_path):
     f.write_bytes(b"\xff\xfe\xfd")
     findings = validator_mod.scan(f, "rules/bad.md")
     assert findings == []
-
-
-# ---------- walk_in_scope ----------
 
 
 def test_walk_in_scope_includes_in_scope_dirs(validator_mod, tmp_path):
@@ -134,17 +127,11 @@ def test_walk_in_scope_skips_dotfiles(validator_mod, tmp_path):
     assert names == {"ok.md"}
 
 
-# ---------- is_self_reference ----------
-
-
 def test_is_self_reference_recognizes_known_paths(validator_mod):
     assert validator_mod.is_self_reference("rules/normative-keywords.md")
     assert validator_mod.is_self_reference("rules/writing-precision.md")
     assert validator_mod.is_self_reference("CLAUDE.md")
     assert not validator_mod.is_self_reference("rules/random.md")
-
-
-# ---------- main ----------
 
 
 def test_main_clean_exits_zero(validator_mod, tmp_path, monkeypatch, capsys):

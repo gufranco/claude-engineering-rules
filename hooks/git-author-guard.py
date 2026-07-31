@@ -53,55 +53,39 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Bounded log walk on push.
 PUSH_LOG_LIMIT = 200
 
-# Placeholder author emails. Real identities never match these.
 PLACEHOLDER_EMAIL = re.compile(
     r"@example\.(?:com|org|net)$|^noreply\.example\.|^placeholder@",
     re.IGNORECASE,
 )
 
-# Commit-creation triggers. `merge` is included because a non-fast-forward
-# merge produces a commit with the local user as author. The pattern
-# tolerates `git -c k=v ...` and `git -C <dir> ...` flags between `git`
-# and the subcommand.
 COMMIT_TRIGGERS = re.compile(
     r"\bgit\b(?:\s+-(?:c\s+\S+|C\s+\S+|[a-zA-Z]+(?:=\S+)?))*\s+"
     r"(?:commit|cherry-pick|rebase|revert|merge)\b"
 )
 
-# Push triggers. `--force-with-lease` and `--force` are inside `push`.
 PUSH_TRIGGER = re.compile(
     r"\bgit\b(?:\s+-(?:c\s+\S+|C\s+\S+|[a-zA-Z]+(?:=\S+)?))*\s+push\b"
 )
 
-# `git config` writes to user.*: capture for analysis.
 CONFIG_USER_WRITE = re.compile(r"\bgit\s+config\b(?P<rest>[^|;&]*)")
 
-# Read-only `git config` flags.
 CONFIG_READ_FLAGS = re.compile(
     r"--(?:get|get-all|get-regexp|list|show-origin|show-scope)\b"
 )
 
-# Identity-overriding env injections on the same command line.
 ENV_AUTHOR_OVERRIDE = re.compile(
     r"\b(?:GIT_AUTHOR_EMAIL|GIT_COMMITTER_EMAIL|GIT_AUTHOR_NAME|GIT_COMMITTER_NAME)=\S+"
 )
 
-# Inline `git -c user.email=...` / `git -c user.name=...` overrides on the
-# command line. Identity must come from ~/.gitconfig resolution, never from
-# an inline override. Same rationale for `commit.gpgsign=false`: disables
-# signing required by the global config.
 INLINE_C_OVERRIDE = re.compile(
     r"-c\s+(?:user\.(?:email|name)|commit\.gpgsign|tag\.gpgsign|gpg\.\w+)\s*=\s*\S+",
     re.IGNORECASE,
 )
 
-# `cd <dir> && ...` prefix capture.
 CD_PREFIX = re.compile(r"^\s*cd\s+(?P<dir>\S+)\s*&&\s*")
 
-# `git -C <dir>` flag capture.
 GIT_C_FLAG = re.compile(r"\bgit\s+-C\s+(?P<dir>\S+)")
 
 
@@ -243,7 +227,6 @@ def check_push(command: str, cwd: Path) -> None:
         "@{push}..HEAD",
     )
     if code != 0:
-        # No upstream set, or detached HEAD. Fall back to validating HEAD.
         code, head_email = run_git(cwd, "log", "-1", "--format=%ae", "HEAD")
         if code != 0:
             return
@@ -277,7 +260,6 @@ def check_config_mutation(command: str) -> None:
     rest = match.group("rest")
     if CONFIG_READ_FLAGS.search(rest):
         return
-    # Only care about user.* writes.
     if not re.search(r"\buser\.(?:email|name)\b", rest):
         return
     has_global = re.search(r"--global\b", rest) is not None

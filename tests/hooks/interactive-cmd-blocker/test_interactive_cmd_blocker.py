@@ -7,11 +7,6 @@ import pytest
 HOOK = "interactive-cmd-blocker"
 
 
-# ---------------------------------------------------------------------------
-# Block: cp/mv/rm without -f
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -49,11 +44,6 @@ def test_blocks_via_command_builtin(tool_use, assert_blocks):
     assert_blocks(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: cp/mv/rm with -f or --force
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -81,21 +71,16 @@ def test_allows_safe_compound(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: unrelated commands
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
         "ls -la",
         "git status",
-        "echo rm",  # rm as argument, not invocation
+        "echo rm",
         "python3 script.py",
         "grep -r 'rm' .",
-        "remote=$(git remote)",  # rm appears inside word but not as command
-        "trim_whitespace",  # word containing 'rm' but not the command
+        "remote=$(git remote)",
+        "trim_whitespace",
     ],
 )
 def test_allows_unrelated_commands(tool_use, assert_allows, cmd):
@@ -104,21 +89,11 @@ def test_allows_unrelated_commands(tool_use, assert_allows, cmd):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: unrelated tools
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Bypass + robustness
-# ---------------------------------------------------------------------------
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows):

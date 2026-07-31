@@ -21,11 +21,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 from _lib import mutation_project_config as mpc  # noqa: E402
 
 
-# --------------------------------------------------------------------------- #
-# discover_config_path (line 92)
-# --------------------------------------------------------------------------- #
-
-
 def test_discover_config_path_returns_none_when_claude_dir_missing(
     tmp_path: Path,
 ) -> None:
@@ -34,11 +29,6 @@ def test_discover_config_path_returns_none_when_claude_dir_missing(
     result = mpc.discover_config_path(str(tmp_path))
 
     assert result is None
-
-
-# --------------------------------------------------------------------------- #
-# _parse_yaml_minimal (lines 118, 121, 130, 144)
-# --------------------------------------------------------------------------- #
 
 
 def test_parse_yaml_minimal_skips_blank_and_comment_lines() -> None:
@@ -71,11 +61,6 @@ def test_parse_yaml_minimal_strips_quotes_from_scalar_string() -> None:
     assert data == {"name": "value"}
 
 
-# --------------------------------------------------------------------------- #
-# _load_text OSError + non-dict (lines 152-154, 168-169)
-# --------------------------------------------------------------------------- #
-
-
 def test_load_text_returns_none_on_os_error(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -98,11 +83,6 @@ def test_load_text_returns_none_for_non_dict_top_level(
 
     assert result is None
     assert "is not a mapping" in captured.err
-
-
-# --------------------------------------------------------------------------- #
-# _validate_with_jsonschema fallbacks (lines 178-191)
-# --------------------------------------------------------------------------- #
 
 
 def _install_fake_jsonschema(monkeypatch) -> type:
@@ -159,7 +139,6 @@ def test_validate_with_jsonschema_falls_back_on_schema_decode_error(
 def test_validate_with_jsonschema_returns_false_on_validation_error(
     monkeypatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    # sentinel field the fake module checks.
     _install_fake_jsonschema(monkeypatch)
     schema_path = tmp_path / "schema.json"
     schema_path.write_text("{}", encoding="utf-8")
@@ -195,11 +174,6 @@ def test_validate_with_jsonschema_falls_back_when_jsonschema_missing(
     assert result is True
 
 
-# --------------------------------------------------------------------------- #
-# _validate_inline non-string / empty item (lines 217-218)
-# --------------------------------------------------------------------------- #
-
-
 def test_validate_inline_rejects_empty_string_item(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -222,11 +196,6 @@ def test_validate_inline_rejects_non_string_item(
 
     assert result is False
     assert "non-string or empty item" in captured.err
-
-
-# --------------------------------------------------------------------------- #
-# load_project_config empty start_path (line 241)
-# --------------------------------------------------------------------------- #
 
 
 def test_load_project_config_returns_empty_for_empty_start_path() -> None:

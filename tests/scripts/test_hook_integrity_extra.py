@@ -135,6 +135,4 @@ def test_main_module_entry_runs_as_subprocess(tmp_path: Path) -> None:
         check=False,
     )
 
-    # whether a manifest exists. We just verify the script runs without
-    # raising a Python error.
     assert proc.returncode in (0, 1, 2)

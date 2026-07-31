@@ -76,7 +76,6 @@ URGENCY_ACTION = re.compile(
     r"(delete|remove|send|transfer|email|post|publish|execute|run)\b"
 )
 
-# Long base64 runs (potential encoded instructions hidden in noise)
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/]{200,}={0,2}")
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -88,7 +87,7 @@ def has_unicode_confusables(text: str) -> bool:
     Looks for Cyrillic/Greek letters used as Latin lookalikes, and
     zero-width characters embedded in the text.
     """
-    suspicious_categories = {"Cf"}  # format chars (zero-width, etc.)
+    suspicious_categories = {"Cf"}
     suspicious_count = 0
     confusable_scripts = ("CYRILLIC", "GREEK")
     confusable_count = 0
@@ -108,7 +107,6 @@ def scan(text: str) -> list[str]:
     """Return a list of finding labels."""
     if not text:
         return []
-    # Truncate very large payloads to keep regex bounded
     sample = text[:200_000]
     findings: list[str] = []
     if INSTRUCTION_OVERRIDE.search(sample):
@@ -130,14 +128,12 @@ def extract_payload(tool_name: str, tool_response: dict) -> str:
     """Pull the human-readable text from a PostToolUse tool_response."""
     if not isinstance(tool_response, dict):
         return ""
-    # Common shapes across tools
     for key in ("text", "content", "result", "body", "output", "stdout"):
         val = tool_response.get(key)
         if isinstance(val, str):
             return val
         if isinstance(val, list):
             return "\n".join(str(x) for x in val if isinstance(x, (str, int)))
-    # Fallback: stringify the whole response
     try:
         return json.dumps(tool_response)[:200_000]
     except (TypeError, ValueError):

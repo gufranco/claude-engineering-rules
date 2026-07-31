@@ -245,7 +245,6 @@ def test_tc39_stage_filter_3_includes_stage3() -> None:
     assert helper_collect is not None
     assert range_repl is None
 
-    # Cleanup
     os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
     importlib.reload(mfl)
 
@@ -261,7 +260,6 @@ def test_tc39_stage_filter_2_prepends_volatility_marker() -> None:
     assert range_repl is not None
     assert "Stage 2 proposal" in range_repl
 
-    # Cleanup
     os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
     importlib.reload(mfl)
 
@@ -276,7 +274,6 @@ def test_tc39_stage_filter_invalid_value_falls_back_to_default() -> None:
 
     assert helper_collect is None
 
-    # Cleanup
     os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
     importlib.reload(mfl)
 
@@ -291,7 +288,6 @@ def test_tc39_stage_filter_clamps_above_4() -> None:
 
     assert stage == 4
 
-    # Cleanup
     os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
     importlib.reload(mfl)
 

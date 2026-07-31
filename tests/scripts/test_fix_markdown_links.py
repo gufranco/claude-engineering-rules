@@ -114,7 +114,6 @@ def test_fix_with_include_advisory_modifies_specs():
 def test_fix_rewrites_broken_target_to_file_relative():
     target = REPO_ROOT / "tmp-fix-broken-target.md"
     target.write_text("See [the spec](README.md).\n")
-    # Place the doc inside a subdirectory so a repo-root path needs rewriting.
     subdir = REPO_ROOT / "tmp-fix-broken-subdir"
     subdir.mkdir(exist_ok=True)
     subdir_target = subdir / "doc.md"

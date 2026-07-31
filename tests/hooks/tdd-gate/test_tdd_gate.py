@@ -12,11 +12,6 @@ import pytest
 HOOK = "tdd-gate"
 
 
-# ---------------------------------------------------------------------------
-# Block: production source created without companion test
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "rel_path",
     [
@@ -44,11 +39,6 @@ def test_blocks_typescript_service(tool_use, assert_blocks, tmp_path):
     assert_blocks(HOOK, payload, "BLOCKED")
 
 
-# ---------------------------------------------------------------------------
-# Allow: test files themselves
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "rel_path",
     [
@@ -68,11 +58,6 @@ def test_allows_test_file_creation(tool_use, assert_allows, tmp_path, rel_path):
     )
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Allow: non-source file types
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -95,11 +80,6 @@ def test_allows_non_source_files(tool_use, assert_allows, tmp_path, rel_path):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: excluded directories
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "rel_path",
     [
@@ -119,11 +99,6 @@ def test_allows_excluded_directories(tool_use, assert_allows, tmp_path, rel_path
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: excluded name markers (generated, type defs, minified)
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "rel_path",
     [
@@ -140,11 +115,6 @@ def test_allows_generated_and_minified_files(
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Allow: companion test exists
-# ---------------------------------------------------------------------------
 
 
 def test_allows_when_sibling_test_exists(tool_use, assert_allows, tmp_path):
@@ -201,11 +171,6 @@ def test_allows_when_nested_tests_subfolder_exists(tool_use, assert_allows, tmp_
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: editing an existing file (not creating new)
-# ---------------------------------------------------------------------------
-
-
 def test_allows_edit_of_existing_file(tool_use, assert_allows, tmp_path):
     target = tmp_path / "src" / "user.py"
     target.parent.mkdir(parents=True)
@@ -231,11 +196,6 @@ def test_allows_write_overwriting_existing_file(tool_use, assert_allows, tmp_pat
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: irrelevant tools
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("tool_name", ["Bash", "Read", "Grep", "Glob", "WebFetch"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
     payload = tool_use(tool_name, {"command": "echo hi"})
@@ -243,21 +203,11 @@ def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Bypass env var
-# ---------------------------------------------------------------------------
-
-
 def test_bypass_env_var_disables_check(tool_use, assert_allows, tmp_path):
     target = tmp_path / "src/user.py"
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1"})
 
     assert_allows(HOOK, payload, env={"TDD_GATE_DISABLE": "1"})
-
-
-# ---------------------------------------------------------------------------
-# Robustness: malformed payload
-# ---------------------------------------------------------------------------
 
 
 def test_handles_missing_tool_input(tool_use, assert_allows):

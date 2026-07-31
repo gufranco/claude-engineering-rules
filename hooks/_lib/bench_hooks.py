@@ -40,8 +40,6 @@ DEFAULT_HOOKS_DIR = os.path.expanduser("~/.claude/hooks")
 DEFAULT_ITERATIONS = 20
 DEFAULT_TIMEOUT_S = 10.0
 SUBPROCESS_KILL_GRACE_S = 1.0
-# Canonical payloads. Kept tiny so the bench stays under a minute even on
-# slow laptops and so a single payload size dominates noise.
 PAYLOADS: dict[str, dict[str, Any]] = {
     "bash": {
         "tool_name": "Bash",
@@ -101,9 +99,6 @@ class HookStats:
     payloads: list[str] = field(default_factory=list)
 
 
-# --------------------------------------------------------------------------- #
-# core helpers
-# --------------------------------------------------------------------------- #
 def _percentile(sorted_values: list[float], p: float) -> float:
     if not sorted_values:
         return 0.0
@@ -232,9 +227,6 @@ def aggregate(samples: Iterable[Sample]) -> list[HookStats]:
     return out
 
 
-# --------------------------------------------------------------------------- #
-# rendering
-# --------------------------------------------------------------------------- #
 def _format_table(stats: list[HookStats]) -> str:
     if not stats:
         return "No hooks benchmarked.\n"
@@ -293,9 +285,6 @@ def _format_markdown(
     return "\n".join(lines) + "\n"
 
 
-# --------------------------------------------------------------------------- #
-# CLI
-# --------------------------------------------------------------------------- #
 def _filter_hooks(paths: list[str], include: Iterable[str] | None) -> list[str]:
     if not include:
         return paths

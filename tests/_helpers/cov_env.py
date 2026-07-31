@@ -57,8 +57,5 @@ def apply_coverage_env(env: dict, *, force_active: bool | None = None) -> dict:
         else str(SUBPROCESS_COV_DIR)
     )
     out["COVERAGE_FILE"] = str(REPO_ROOT / ".coverage")
-    # Python 3.12+ defaults to the `sysmon` core which silently records zero
-    # line hits for some subprocess Python scripts. Force the C tracer so
-    # subprocess coverage is deterministic.
     out.setdefault("COVERAGE_CORE", "ctrace")
     return out

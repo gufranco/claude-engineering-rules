@@ -76,8 +76,6 @@ DEFECT_PATTERN_TAGS: frozenset[str] = frozenset(
     }
 )
 
-# High-precision token patterns. Subset of secret-scanner.py focused on
-# values that commonly appear in command lines or tool payloads.
 _REDACT_PATTERNS = [
     re.compile(r"AKIA[0-9A-Z]{16}"),
     re.compile(r"sk-ant-(?:admin-)?[a-zA-Z0-9_-]{20,}"),
@@ -173,10 +171,8 @@ def record(**fields: Any) -> None:
         os.makedirs(LOG_DIR, exist_ok=True)
         _rotate_if_needed()
         fields = _normalize_schema(fields)
-        # Truncate command excerpts to keep lines bounded.
         if "command_excerpt" in fields and isinstance(fields["command_excerpt"], str):
             fields["command_excerpt"] = redact(fields["command_excerpt"])[:MAX_EXCERPT]
-        # Auto-fill cwd and session id from environment when caller did not pass them.
         fields.setdefault("cwd", os.getcwd())
         sid = (
             os.environ.get("CLAUDE_CODE_SESSION_ID")

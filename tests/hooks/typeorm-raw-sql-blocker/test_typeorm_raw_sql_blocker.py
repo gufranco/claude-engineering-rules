@@ -206,7 +206,6 @@ def test_invalid_json_stdin_does_not_crash():
 
 
 def test_invalid_json_via_run_hook(run_hook):
-    # Empty bytes payload triggers the json.load except branch.
     code, _stdout, _stderr = run_hook("typeorm-raw-sql-blocker", {"_invalid": True})
 
     assert code == 0

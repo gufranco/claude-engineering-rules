@@ -171,10 +171,34 @@ def test_allows_no_comment(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_skips_claude_tree(tool_use, assert_allows):
+def test_scans_the_claude_tree_like_any_other_source(tool_use, assert_blocks):
     payload = tool_use(
         "Write",
         {"file_path": "/home/u/.claude/hooks/x.py", "content": "# doc\nx = 1\n"},
+    )
+
+    assert_blocks(HOOK, payload, "comment")
+
+
+def test_allows_a_docstring_in_the_claude_tree(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/home/u/.claude/hooks/x.py",
+            "content": '"""What this module does."""\n\nx = 1\n',
+        },
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_allows_a_tool_directive_in_the_claude_tree(tool_use, assert_allows):
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/home/u/.claude/hooks/x.py",
+            "content": "from _lib.output import block  # noqa: E402\n",
+        },
     )
 
     assert_allows(HOOK, payload)

@@ -24,8 +24,6 @@ import sys
 from pathlib import Path
 
 
-# Pricing per 1M tokens (USD). Approximate published rates as of mid-2026.
-# Adjust here if upstream pricing changes; statusline cost is an estimate.
 PRICING = {
     "opus": {
         "input": 15.0,
@@ -47,8 +45,6 @@ PRICING = {
     },
 }
 
-# Approximate context windows by model family. Used for the latest-turn
-# context-fill percentage.
 CONTEXT_WINDOW = {
     "opus": 1_000_000,
     "sonnet": 200_000,

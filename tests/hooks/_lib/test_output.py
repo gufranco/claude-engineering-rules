@@ -120,7 +120,6 @@ class TestBlock:
             decision="FIX-AND-RETRY",
             env_var="X_DISABLE",
         )
-        # No line in the detected section should exceed 200 chars.
         for line in msg.splitlines():
             assert len(line) <= 240
 

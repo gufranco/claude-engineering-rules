@@ -27,6 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / "hooks"
 SUBPROCESS_TIMEOUT_S = 6.0
 SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
+EMPTY_BYPASS_REGISTRY = os.devnull
 COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
 
 
@@ -65,15 +66,18 @@ def _coverage_active() -> bool:
 
 
 def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Build a subprocess environment isolated from machine state.
+
+    A live TTL entry in the operator's bypass registry, set during ordinary
+    work, makes every hook short-circuit. That turns blocking assertions into
+    failures and permissive ones into passes for the wrong reason, with
+    nothing in the output naming the cause. Pointing the registry at a path
+    that holds no JSON makes `_lib.bypass` read an empty registry. A test that
+    exercises the registry itself overrides the variable through `extra`.
+    """
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    # Neutralize the machine's bypass registry. A live TTL entry in
-    # `~/.claude/.bypass-state.json`, set during ordinary work, makes every
-    # hook short-circuit, which turns real assertions into silent passes and
-    # blocking tests into failures that look like defects. `os.devnull` is not
-    # valid JSON, so `_lib.bypass` reads it as an empty registry. A test that
-    # exercises the registry itself overrides this through `extra`.
-    env["CLAUDE_BYPASS_STATE"] = os.devnull
+    env["CLAUDE_BYPASS_STATE"] = EMPTY_BYPASS_REGISTRY
     if _coverage_active():
         env["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
         existing_pp = env.get("PYTHONPATH", "")
@@ -82,14 +86,7 @@ def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
             if existing_pp
             else str(SUBPROCESS_COV_DIR)
         )
-        # Anchor the subprocess coverage data file to the repo root so tests
-        # that change cwd (e.g., into a git tmp_path) do not lose their
-        # `.coverage.<host>.<pid>` data when the temp dir is cleaned up.
         env.setdefault("COVERAGE_FILE", str(REPO_ROOT / ".coverage"))
-        # Python 3.12+ defaults to the `sysmon` tracer core, which silently
-        # records zero line hits for some subprocess Python scripts (observed
-        # on Python 3.14 with coverage 7.14.x). Force the C tracer instead so
-        # every subprocess hook is measured deterministically.
         env.setdefault("COVERAGE_CORE", "ctrace")
     if extra:
         env.update(extra)

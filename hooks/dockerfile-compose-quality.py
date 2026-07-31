@@ -55,16 +55,13 @@ except ImportError:  # pragma: no cover
 
 BYPASS_ENV = "DOCKERFILE_QUALITY_DISABLE"
 
-# File kind detection.
 DOCKERFILE_BASENAMES = {"dockerfile"}
 DOCKERFILE_SUFFIXES = {".dockerfile"}
 COMPOSE_PATTERN = re.compile(
     r"^(?:docker-compose|compose)(?:\.[\w.-]+)?\.ya?ml$", re.IGNORECASE
 )
 
-# BLOCK patterns shared between Dockerfile and Compose are evaluated by kind.
 
-# BLOCK 1: COPY of sensitive files. Captures the offending path.
 SENSITIVE_COPY = re.compile(
     r"""
     ^\s*COPY\s+                       # COPY keyword
@@ -80,8 +77,6 @@ SENSITIVE_COPY = re.compile(
     re.IGNORECASE | re.VERBOSE,
 )
 
-# BLOCK 2: ENV or ARG that names a secret AND has a literal value.
-# Allow `$VAR` references (`ENV TOKEN=$BUILD_TOKEN`) and empty defaults.
 SECRET_ENV_ARG = re.compile(
     r"""
     ^\s*(?P<kw>ENV|ARG)\s+
@@ -97,25 +92,20 @@ SECRET_ENV_ARG = re.compile(
     re.VERBOSE,
 )
 
-# BLOCK 3-4: Compose dangerous toggles.
 COMPOSE_PRIVILEGED = re.compile(r"^\s*privileged:\s*true\b", re.IGNORECASE)
 COMPOSE_HOST_NS = re.compile(
     r"^\s*(pid|ipc|network_mode|userns_mode):\s*['\"]?host\b", re.IGNORECASE
 )
 
-# WARN 1: FROM image:latest/lts or no tag.
 FROM_BAD_TAG = re.compile(
     r"^\s*FROM\s+(?:--platform=\S+\s+)?(?P<image>\S+?)(?::(?P<tag>latest|lts))?(?:\s+AS\s+\S+)?\s*$",
     re.IGNORECASE,
 )
 
-# WARN 2: USER root in final stage.
 USER_ROOT = re.compile(r"^\s*USER\s+(?:root|0)\s*$", re.IGNORECASE)
 
-# WARN 3: Compose top-level `version:` key.
 COMPOSE_VERSION = re.compile(r"^version:\s*['\"]?[\d.]+['\"]?\s*$")
 
-# WARN 4: Compose `environment:` literal secret. Best-effort detection.
 COMPOSE_ENV_LITERAL_SECRET = re.compile(
     r"""
     ^\s*
@@ -144,7 +134,6 @@ def detect_kind(path: str) -> str:
     for suffix in DOCKERFILE_SUFFIXES:
         if lower.endswith(suffix):
             return "dockerfile"
-    # Heuristic: anything starting with "Dockerfile" is a Dockerfile fragment.
     if lower.startswith("dockerfile."):
         return "dockerfile"
     if COMPOSE_PATTERN.match(name):
@@ -183,7 +172,7 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
     from_directives: list[int] = []
 
     for i, raw in enumerate(lines, 1):
-        line = raw.split("#", 1)[0].rstrip()  # drop inline comments
+        line = raw.split("#", 1)[0].rstrip()
         if not line:
             continue
 
@@ -235,8 +224,6 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
         if user_match:
             user_directives.append((i, user_match.group(1)))
 
-    # Full-file final-stage USER check on Write only. Edit fragments cannot
-    # determine final-stage ownership without parsing the whole file.
     if full_file and from_directives:
         last_from_line = from_directives[-1]
         final_user = None
@@ -249,7 +236,6 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
                 "Add a non-root USER (numeric UID preferred)."
             )
         elif final_user in {"root", "0"}:
-            # already reported per-line, no duplicate
             pass
 
     return blocks, warns
@@ -264,7 +250,6 @@ def scan_compose(text: str, full_file: bool) -> tuple[list[str], list[str]]:
     environment_indent = -1
 
     for i, raw in enumerate(lines, 1):
-        # Drop YAML comments
         no_comment = re.sub(r"#.*$", "", raw)
         stripped = no_comment.strip()
         if not stripped:
@@ -293,8 +278,6 @@ def scan_compose(text: str, full_file: bool) -> tuple[list[str], list[str]]:
             )
             continue
 
-        # Track entry/exit of an environment: block by indentation.
-        # Only line-level heuristic; full YAML parsing is out of scope here.
         env_block_match = re.match(r"^(\s*)environment:\s*$", no_comment)
         if env_block_match:
             in_environment = True
@@ -316,7 +299,6 @@ def scan_compose(text: str, full_file: bool) -> tuple[list[str], list[str]]:
                         f"Source: {raw.strip()}"
                     )
 
-    # Discard 'full_file' here; the warnings above do not need full-file context.
     _ = full_file
     return blocks, warns
 

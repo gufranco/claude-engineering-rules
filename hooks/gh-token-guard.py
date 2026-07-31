@@ -24,21 +24,16 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Patterns that indicate a gh CLI invocation
 GH_COMMAND = re.compile(r"(?:^|&&|\|\||;|\|)\s*gh\s+")
 
-# gh auth commands are exempt (needed to list accounts, get tokens)
 GH_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\|)\s*gh\s+auth\s+")
 
-# Invocations that reach no GitHub API and therefore need no account scoping
 GH_NO_API_EXEMPT = re.compile(
     r"(?:^|&&|\|\||;|\|)\s*gh\s+(?:--version|--help|-h|version|help|completion\b|config\b|alias\b|extension\s+list\b)"
 )
 
-# GH_TOKEN is set inline before the gh command
 GH_TOKEN_SET = re.compile(r"GH_TOKEN=|export\s+GH_TOKEN=")
 
-# gh auth switch is always blocked
 GH_AUTH_SWITCH = re.compile(r"\bgh\s+auth\s+switch\b")
 
 
@@ -73,7 +68,6 @@ def main():
     if not command:
         sys.exit(0)
 
-    # Always block gh auth switch
     if GH_AUTH_SWITCH.search(command):
         print(
             "BLOCKED: gh auth switch changes the global active account "
@@ -92,18 +86,14 @@ def main():
         )
         sys.exit(2)
 
-    # Skip if no gh command present
     if not GH_COMMAND.search(command):
         sys.exit(0)
 
-    # Allow gh auth commands (e.g., gh auth token, gh auth status)
-    # but only if ALL gh commands in the string are gh auth
     gh_calls = GH_COMMAND.findall(command)
     exempt_calls = GH_AUTH_EXEMPT.findall(command) + GH_NO_API_EXEMPT.findall(command)
     if len(gh_calls) == len(exempt_calls):
         sys.exit(0)
 
-    # Check if GH_TOKEN is set somewhere in the command
     if GH_TOKEN_SET.search(command):
         sys.exit(0)
 
