@@ -40,11 +40,6 @@ def _load_hook():
 hook = _load_hook()
 
 
-# --------------------------------------------------------------------------- #
-# env-flag readers (lines 291, 649)
-# --------------------------------------------------------------------------- #
-
-
 def test_debug_mode_returns_true_when_env_set(monkeypatch) -> None:
     monkeypatch.setenv("MUTATION_METHOD_DEBUG", "1")
     assert hook._debug_mode() is True
@@ -80,11 +75,6 @@ def test_experimental_enabled_returns_false_when_unset(monkeypatch) -> None:
     assert hook._experimental_enabled("FOO") is False
 
 
-# --------------------------------------------------------------------------- #
-# _read_batch_items argv + OSError + stdin failure (lines 735, 739-740, 750-751)
-# --------------------------------------------------------------------------- #
-
-
 def test_read_batch_items_uses_argv_when_provided(tmp_path: Path, monkeypatch) -> None:
     f = tmp_path / "src.ts"
     f.write_text("const x = 1\n", encoding="utf-8")
@@ -106,7 +96,6 @@ def test_read_batch_items_skips_unreadable_path(tmp_path: Path, monkeypatch) -> 
 
 
 def test_read_batch_items_handles_stdin_failure(monkeypatch) -> None:
-    # to raise.
     monkeypatch.setattr(sys, "argv", ["hook"])
 
     class FailingStdin:
@@ -127,11 +116,6 @@ def test_read_batch_items_skips_blank_and_comment_lines(monkeypatch) -> None:
     items = hook._read_batch_items()
 
     assert items == []
-
-
-# --------------------------------------------------------------------------- #
-# _entrypoint cProfile branch + OSError swallow (lines 902-918)
-# --------------------------------------------------------------------------- #
 
 
 def test_entrypoint_no_profile_calls_main_directly(monkeypatch) -> None:
@@ -159,7 +143,6 @@ def test_entrypoint_profile_writes_report(monkeypatch, tmp_path: Path) -> None:
 def test_entrypoint_profile_swallows_os_error(monkeypatch) -> None:
     monkeypatch.setenv("MUTATION_METHOD_PROFILE", "1")
     monkeypatch.setattr(hook, "main", lambda: 7)
-    # Force os.makedirs to raise OSError so the swallow branch fires.
     monkeypatch.setattr(
         hook.os, "makedirs", lambda *a, **k: (_ for _ in ()).throw(OSError("denied"))
     )
@@ -186,11 +169,6 @@ def test_main_handles_invalid_json_payload(monkeypatch) -> None:
     rc = hook.main()
 
     assert rc == 0
-
-
-# --------------------------------------------------------------------------- #
-# CLI flags: --version, --print-detectors, --list-allowlists
-# --------------------------------------------------------------------------- #
 
 
 def test_handle_cli_flags_version(monkeypatch, capsys) -> None:
@@ -253,11 +231,6 @@ def test_handle_cli_flags_print_detectors_oserror(monkeypatch, capsys) -> None:
 
     assert rc == 1
     assert "failed to read detector catalog" in capsys.readouterr().err
-
-
-# --------------------------------------------------------------------------- #
-# Integration branches: ts_project_service + source-map remapping
-# --------------------------------------------------------------------------- #
 
 
 def test_apply_ts_project_service_disabled_returns_unchanged() -> None:

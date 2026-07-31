@@ -19,20 +19,14 @@ import subprocess
 import sys
 import time
 
-# Context window estimates by model family (in tokens)
 CONTEXT_LIMITS = {
     "opus": 200000,
     "sonnet": 200000,
     "haiku": 200000,
 }
 
-# Rough bytes-per-token ratio for transcript files.
-# Transcripts are JSON with metadata, tool results, and system prompts,
-# which inflate byte count relative to content tokens. 3 bytes per token
-# is a better estimate for structured content than the 4:1 prose ratio.
 BYTES_PER_TOKEN = 3
 
-# ANSI-free statusline symbols
 BAR_FULL = "#"
 BAR_EMPTY = "-"
 BAR_WIDTH = 10
@@ -144,7 +138,6 @@ def main():
 
     parts = []
 
-    # Context usage
     pct = get_context_percentage(transcript_path, model)
     bar = build_bar(pct)
     level = get_level(pct)
@@ -153,17 +146,14 @@ def main():
         ctx_str += f" {level}"
     parts.append(ctx_str)
 
-    # Git branch
     git_info = get_git_info(workspace)
     if git_info:
         parts.append(git_info)
 
-    # Duration
     dur_str = format_duration(transcript_path)
     if dur_str:
         parts.append(dur_str)
 
-    # Cost
     cost_str = format_cost(cost)
     if cost_str:
         parts.append(cost_str)

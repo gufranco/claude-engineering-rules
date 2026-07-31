@@ -32,8 +32,6 @@ import re
 import subprocess
 import sys
 
-# Best-effort import of the shared audit log helper. Silent fallback keeps the
-# hook functional even if the script directory is not on sys.path.
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -43,65 +41,52 @@ except Exception:  # pragma: no cover
         return None
 
 
-# ---------------------------------------------------------------------------
-# Safe cleanup commands. Bypass all checks — these are harmless.
-# ---------------------------------------------------------------------------
 SAFE_CLEANUP = [
-    r"\brm\s+(-[a-zA-Z]*\s+)*node_modules(/|$|\s*$)",  # rm -rf node_modules
-    r"\brm\s+(-[a-zA-Z]*\s+)*dist(/|$|\s*$)",  # rm -rf dist
-    r"\brm\s+(-[a-zA-Z]*\s+)*\.next(/|$|\s*$)",  # rm -rf .next
-    r"\brm\s+(-[a-zA-Z]*\s+)*\.nuxt(/|$|\s*$)",  # rm -rf .nuxt
-    r"\brm\s+(-[a-zA-Z]*\s+)*build(/|$|\s*$)",  # rm -rf build
-    r"\brm\s+(-[a-zA-Z]*\s+)*coverage(/|$|\s*$)",  # rm -rf coverage
-    r"\brm\s+(-[a-zA-Z]*\s+)*\.turbo(/|$|\s*$)",  # rm -rf .turbo
-    r"\brm\s+(-[a-zA-Z]*\s+)*out(/|$|\s*$)",  # rm -rf out
+    r"\brm\s+(-[a-zA-Z]*\s+)*node_modules(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*dist(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*\.next(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*\.nuxt(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*build(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*coverage(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*\.turbo(/|$|\s*$)",
+    r"\brm\s+(-[a-zA-Z]*\s+)*out(/|$|\s*$)",
 ]
 
-# ---------------------------------------------------------------------------
-# Level 1: Catastrophic commands. Always block. No legitimate use case.
-# ---------------------------------------------------------------------------
 CATASTROPHIC = [
-    # Filesystem destruction
-    r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s*$",  # rm -rf /
-    r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s+",  # rm -rf / <anything>
-    r"\bsudo\s+rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/",  # sudo rm -rf /
-    r"\bdd\s+.*\bof=/dev/[sh]d",  # dd to disk device
-    r"\bdd\s+.*\bof=/dev/nvme",  # dd to NVMe device
-    r"\bsudo\s+dd\s+.*\bof=/dev/",  # sudo dd to any device
-    r"\bmkfs\b",  # format filesystem
-    r"\bsudo\s+mkfs\b",  # sudo format filesystem
-    r":\(\)\s*\{\s*:\|:\s*&\s*\}\s*;",  # fork bomb
-    r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/\s*$",  # chmod 777 /
-    r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/[a-z]",  # chmod 777 /etc, /usr...
-    r">\s*/dev/[sh]d",  # write to raw disk
-    r"\bshred\s+.*(/dev/|/boot/|/etc/)",  # shred system paths
-    r"\bwipefs\b.*(/dev/[sh]d|/dev/nvme)",  # wipe filesystem signatures
-    r"\bdd\s+.*\bof=/dev/(disk|rdisk|loop|md|mapper)",  # dd to additional device classes
-    r"\bfind(\s+(\.{1,2}\S*|[/~]\S*))?\s+[^|;&]*-delete\b",  # find with -delete on /, ~, ., .., or no path
-    r"\bfind\s+[/~]\S*\s+.*-exec\s+rm\b",  # find -exec rm on system roots
-    r"\bxargs\s+(-[a-zA-Z0]*\s+)*rm\s+(-[a-zA-Z]*[rRf])",  # xargs rm -rf pipelines
-    r"\btar\s+.*--absolute-(names|paths)\b.*\bx",  # tar extract with absolute paths
-    # Remote code execution and reverse shells
-    r"\bwget\b.*\|\s*(ba)?sh",  # pipe remote script to shell
-    r"\bcurl\b.*\|\s*(ba)?sh",  # pipe remote script to shell
-    r"\bbash\s+-i\s+>&\s*/dev/tcp/",  # bash reverse shell
-    r"\bnc\s+.*-e\s+/bin/(ba)?sh",  # netcat reverse shell
-    r"\bncat\s+.*-e\s+/bin/(ba)?sh",  # ncat reverse shell
-    r"\bsocat\s+.*EXEC.*sh",  # socat reverse shell
-    r"\bpython3?\s+-c\s+.*socket.*connect",  # python reverse shell
-    r"\bperl\s+-e\s+.*socket.*connect",  # perl reverse shell
-    r"\bruby\s+-rsocket\s+-e",  # ruby reverse shell
-    # Privilege escalation
-    r".*>>\s*/etc/sudoers",  # append to sudoers
-    r"\bsudo\s+chmod\s+[ugo]\+s\b",  # sudo setuid/setgid
-    r"\bsudo\s+visudo\b",  # editing sudoers
+    r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s*$",
+    r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s+",
+    r"\bsudo\s+rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/",
+    r"\bdd\s+.*\bof=/dev/[sh]d",
+    r"\bdd\s+.*\bof=/dev/nvme",
+    r"\bsudo\s+dd\s+.*\bof=/dev/",
+    r"\bmkfs\b",
+    r"\bsudo\s+mkfs\b",
+    r":\(\)\s*\{\s*:\|:\s*&\s*\}\s*;",
+    r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/\s*$",
+    r"\bchmod\s+(-[a-zA-Z]*\s+)?777\s+/[a-z]",
+    r">\s*/dev/[sh]d",
+    r"\bshred\s+.*(/dev/|/boot/|/etc/)",
+    r"\bwipefs\b.*(/dev/[sh]d|/dev/nvme)",
+    r"\bdd\s+.*\bof=/dev/(disk|rdisk|loop|md|mapper)",
+    r"\bfind(\s+(\.{1,2}\S*|[/~]\S*))?\s+[^|;&]*-delete\b",
+    r"\bfind\s+[/~]\S*\s+.*-exec\s+rm\b",
+    r"\bxargs\s+(-[a-zA-Z0]*\s+)*rm\s+(-[a-zA-Z]*[rRf])",
+    r"\btar\s+.*--absolute-(names|paths)\b.*\bx",
+    r"\bwget\b.*\|\s*(ba)?sh",
+    r"\bcurl\b.*\|\s*(ba)?sh",
+    r"\bbash\s+-i\s+>&\s*/dev/tcp/",
+    r"\bnc\s+.*-e\s+/bin/(ba)?sh",
+    r"\bncat\s+.*-e\s+/bin/(ba)?sh",
+    r"\bsocat\s+.*EXEC.*sh",
+    r"\bpython3?\s+-c\s+.*socket.*connect",
+    r"\bperl\s+-e\s+.*socket.*connect",
+    r"\bruby\s+-rsocket\s+-e",
+    r".*>>\s*/etc/sudoers",
+    r"\bsudo\s+chmod\s+[ugo]\+s\b",
+    r"\bsudo\s+visudo\b",
 ]
 
-# ---------------------------------------------------------------------------
-# Level 2: Destructive operations. Block with explanation.
-# ---------------------------------------------------------------------------
 CRITICAL_PATHS = [
-    # --- Filesystem critical paths ---
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.git\b", "Deleting .git/ destroys repository history"),
     (
         r"\brm\s+(-[a-zA-Z]*\s+)?.*\.env\b",
@@ -128,7 +113,6 @@ CRITICAL_PATHS = [
         r"\bsudo\s+rm\s+(-[a-zA-Z]*\s+)?.*\.(git|env|ssh|aws|gnupg|kube)\b",
         "sudo rm on critical dotfiles",
     ),
-    # --- Git destructive ---
     (r"\bgit\s+push\s+.*--force(\s|$)", "Use --force-with-lease instead of --force"),
     (r"\bgit\s+push\s+.*\s-f(\s|$)", "Use --force-with-lease instead of -f"),
     (r"\bgit\s+filter-branch\b", "git filter-branch rewrites history destructively"),
@@ -141,7 +125,6 @@ CRITICAL_PATHS = [
         r"\bgit\s+gc\s+.*--prune=now",
         "git gc --prune=now immediately removes unreachable objects",
     ),
-    # --- AWS destructive ---
     (r"\baws\s+s3\s+rb\b", "AWS S3 bucket deletion"),
     (r"\baws\s+s3\s+rm\s+.*--recursive\b", "AWS S3 recursive object deletion"),
     (r"\baws\s+ec2\s+terminate-instances\b", "AWS EC2 instance termination"),
@@ -166,7 +149,6 @@ CRITICAL_PATHS = [
     (r"\baws\s+kms\s+schedule-key-deletion\b", "AWS KMS key scheduled for deletion"),
     (r"\baws\s+cognito-idp\s+delete-user-pool\b", "AWS Cognito user pool deletion"),
     (r"\baws\s+logs\s+delete-log-group\b", "AWS CloudWatch log group deletion"),
-    # --- GCP destructive ---
     (r"\bgcloud\s+projects\s+delete\b", "GCP project deletion"),
     (r"\bgcloud\s+compute\s+instances\s+delete\b", "GCP VM instance deletion"),
     (r"\bgcloud\s+sql\s+instances\s+delete\b", "GCP Cloud SQL deletion"),
@@ -176,7 +158,6 @@ CRITICAL_PATHS = [
     (r"\bgcloud\s+pubsub\s+(topics|subscriptions)\s+delete\b", "GCP Pub/Sub deletion"),
     (r"\bgcloud\s+firestore\s+databases\s+delete\b", "GCP Firestore database deletion"),
     (r"\bgcloud\s+storage\s+(rm|buckets\s+delete)\b", "GCP Cloud Storage deletion"),
-    # --- Azure destructive ---
     (r"\baz\s+group\s+delete\b", "Azure resource group deletion"),
     (r"\baz\s+vm\s+delete\b", "Azure VM deletion"),
     (r"\baz\s+sql\s+server\s+delete\b", "Azure SQL Server deletion"),
@@ -186,7 +167,6 @@ CRITICAL_PATHS = [
     (r"\baz\s+storage\s+account\s+delete\b", "Azure Storage account deletion"),
     (r"\baz\s+keyvault\s+delete\b", "Azure Key Vault deletion"),
     (r"\baz\s+cosmosdb\s+delete\b", "Azure Cosmos DB deletion"),
-    # --- Platform CLI destructive ---
     (r"\bvercel\s+(rm|remove)\b", "Vercel project deletion"),
     (r"\bnetlify\s+sites:delete\b", "Netlify site deletion"),
     (r"\bfirebase\s+projects:delete\b", "Firebase project deletion"),
@@ -196,7 +176,6 @@ CRITICAL_PATHS = [
     (r"\bheroku\s+apps:destroy\b", "Heroku app destruction"),
     (r"\brailway\s+delete\b", "Railway project deletion"),
     (r"\bsupabase\s+projects\s+delete\b", "Supabase project deletion"),
-    # --- Docker destructive ---
     (r"\bdocker\s+run\s+.*--privileged", "Docker privileged mode is a security risk"),
     (
         r"\bdocker\s+system\s+prune\s+.*-a",
@@ -218,7 +197,6 @@ CRITICAL_PATHS = [
         r"\bpodman\s+system\s+prune\s+.*-a",
         "Podman system prune -a removes all unused data",
     ),
-    # --- Kubernetes destructive ---
     (
         r"\bkubectl\s+delete\s+(namespace|node|pv|pvc|clusterrole)\b",
         "Kubernetes critical resource deletion",
@@ -231,13 +209,11 @@ CRITICAL_PATHS = [
         r"\bkubectl\s+edit\s+(clusterrole|secret)\b",
         "Kubernetes cluster-wide resource edit",
     ),
-    # --- Helm destructive ---
     (r"\bhelm\s+uninstall\b", "Helm release uninstallation"),
     (
         r"\bhelm\s+(install|upgrade)\b.*--insecure-skip-tls-verify",
         "Helm install/upgrade with TLS verification disabled",
     ),
-    # --- Privilege escalation via Kubernetes RBAC ---
     (
         r"\bkubectl\s+create\s+clusterrolebinding\b",
         "Creating a clusterrolebinding grants cluster-wide privileges",
@@ -246,14 +222,12 @@ CRITICAL_PATHS = [
         r"\bkubectl\s+patch\s+clusterrolebinding\b",
         "Patching a clusterrolebinding alters cluster-wide privileges",
     ),
-    # --- Package publishing ---
     (r"\btwine\s+upload\b", "twine upload publishes a package to PyPI"),
     (
         r"\bpython3?\s+-m\s+twine\s+upload\b",
         "python -m twine upload publishes a package to PyPI",
     ),
     (r"\bpoetry\s+publish\b", "poetry publish releases the package to a registry"),
-    # --- Registry pivot ---
     (
         r"\bnpm\s+config\s+set\s+registry\b",
         "npm registry change redirects all package fetches",
@@ -270,7 +244,6 @@ CRITICAL_PATHS = [
         r"\bpip\s+config\s+set\s+global\.index-url\b",
         "pip index URL change redirects all package fetches",
     ),
-    # --- Redis destructive ---
     (
         r"\bredis-cli\s+.*\bFLUSHALL\b",
         "Redis FLUSHALL destroys all data in all databases",
@@ -281,7 +254,6 @@ CRITICAL_PATHS = [
         "Redis DEBUG command is dangerous",
     ),
     (r"\bredis-cli\s+.*\bCONFIG\s+SET\b", "Redis runtime config change"),
-    # --- MongoDB destructive ---
     (
         r"\bmongo(sh)?\b.*\b(dropDatabase|dropCollection)\b",
         "MongoDB database/collection drop",
@@ -290,21 +262,17 @@ CRITICAL_PATHS = [
         r"\bmongo(sh)?\b.*\bdeleteMany\s*\(\s*\{\s*\}\s*\)",
         "MongoDB deleteMany({}) deletes all documents",
     ),
-    # --- PostgreSQL destructive ---
     (r"\bdropdb\b", "PostgreSQL database drop via CLI"),
     (
         r"\bpsql\b.*\bDROP\s+(DATABASE|SCHEMA|TABLE|INDEX)\b",
         "PostgreSQL destructive DDL",
     ),
     (r"\bpg_dump\b.*\|.*\bpsql\b", "Piping pg_dump output, verify the target database"),
-    # --- MySQL destructive ---
     (r"\bmysqladmin\b.*\bdrop\b", "MySQL database drop via CLI"),
     (r"\bmysql\b.*-e\s*.*\bDROP\s+(DATABASE|TABLE)\b", "MySQL destructive DDL via CLI"),
     (r"\bmysql\b.*-e\s*.*\bTRUNCATE\b", "MySQL TRUNCATE via CLI"),
-    # --- SQLite destructive ---
     (r"\bsqlite3?\b.*\.quit.*DROP\b", "SQLite destructive operation"),
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.sqlite3?\b", "Deleting SQLite database file"),
-    # --- Terraform destructive ---
     (
         r"\bterraform\s+destroy\b",
         "Terraform destroy removes all managed infrastructure",
@@ -318,10 +286,8 @@ CRITICAL_PATHS = [
     ),
     (r"\btofu\s+destroy\b", "OpenTofu destroy removes all managed infrastructure"),
     (r"\btofu\s+apply\s+.*-auto-approve", "OpenTofu apply without manual review"),
-    # --- Pulumi destructive ---
     (r"\bpulumi\s+destroy\b", "Pulumi destroy removes all managed infrastructure"),
     (r"\bpulumi\s+stack\s+rm\b", "Pulumi stack removal"),
-    # --- Ansible destructive ---
     (
         r"\bansible-playbook\b.*(-i|--inventory)\s+.*prod",
         "Ansible playbook targeting production inventory",
@@ -330,12 +296,10 @@ CRITICAL_PATHS = [
         r"\bansible\s+.*-m\s+(shell|command|raw)\b.*prod",
         "Ansible ad-hoc command on production",
     ),
-    # --- CDK / Serverless destructive ---
     (r"\bcdk\s+destroy\b", "AWS CDK destroy removes all stack resources"),
     (r"\bserverless\s+remove\b", "Serverless Framework removes the deployed service"),
     (r"\bsam\s+delete\b", "AWS SAM delete removes the deployed stack"),
     (r"\bcopilot\s+app\s+delete\b", "AWS Copilot app deletion"),
-    # --- SQL in command strings (case-insensitive) ---
     (r"(?i)\bDELETE\s+FROM\s+\w+\s*;", "DELETE without WHERE clause deletes all rows"),
     (r"(?i)\bTRUNCATE\s+(TABLE\s+)?\w+", "TRUNCATE removes all rows without logging"),
     (
@@ -352,13 +316,11 @@ CRITICAL_PATHS = [
     ),
     (r"(?i)\bGRANT\s+ALL\s+.*TO\b", "GRANT ALL gives full permissions"),
     (r"(?i)\bREVOKE\s+ALL\s+.*FROM\b", "REVOKE ALL removes all permissions"),
-    # --- Cron and systemd ---
     (r"\bcrontab\s+-r\b", "crontab -r deletes all cron jobs for the user"),
     (
         r"\bsudo\s+systemctl\s+(stop|disable|mask)\s+",
         "Stopping/disabling a systemd service",
     ),
-    # --- Secret exfiltration via commands ---
     (
         r"\bcurl\b.*(-d|--data)\s+.*@\.(env|ssh|aws|gnupg|kube)",
         "curl sending credential file contents to a remote server",
@@ -373,11 +335,6 @@ CRITICAL_PATHS = [
     ),
 ]
 
-# ---------------------------------------------------------------------------
-# Level 2.5: Recoverable operations. Ask (warn via stderr) but allow.
-# These commands are destructive but have recovery paths (reflog, restart,
-# rollback). Claude should confirm with the user before proceeding.
-# ---------------------------------------------------------------------------
 RECOVERABLE = [
     (
         r"\bgit\s+reset\s+--hard\b",
@@ -417,9 +374,6 @@ RECOVERABLE = [
     ),
 ]
 
-# ---------------------------------------------------------------------------
-# Level 3: Suspicious patterns. Warn but allow.
-# ---------------------------------------------------------------------------
 SUSPICIOUS = [
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\*", "rm with wildcard, double-check the path"),
     (r"\bxargs\s+rm\b", "xargs rm can delete unexpected files"),
@@ -525,12 +479,10 @@ def main():
     if not command:
         sys.exit(0)
 
-    # Safe cleanup allowlist: bypass all checks
     for pattern in SAFE_CLEANUP:
         if re.search(pattern, command):
             sys.exit(0)
 
-    # Level 1: Catastrophic
     for pattern in CATASTROPHIC:
         if re.search(pattern, command):
             _audit(
@@ -547,7 +499,6 @@ def main():
             )
             sys.exit(2)
 
-    # Level 2: Critical paths and destructive operations
     for pattern, reason in CRITICAL_PATHS:
         if re.search(pattern, command):
             _audit(
@@ -561,7 +512,6 @@ def main():
             print(f"BLOCKED: {reason}\nCommand: {command}", file=sys.stderr)
             sys.exit(2)
 
-    # Level 2.5: Recoverable operations — ask the user, do not block
     for pattern, guidance in RECOVERABLE:
         if re.search(pattern, command):
             print(
@@ -571,7 +521,6 @@ def main():
             )
             break
 
-    # Level 2.5: Protected branch push detection
     if re.search(r"\bgit\s+push\b", command) and not re.search(r"--force", command):
         try:
             branch = subprocess.check_output(
@@ -633,7 +582,6 @@ def main():
                 )
                 sys.exit(2)
 
-    # Level 3: Suspicious (warn via stderr, allow)
     for pattern, reason in SUSPICIOUS:
         if re.search(pattern, command):
             print(f"WARNING: {reason}\nCommand: {command}", file=sys.stderr)

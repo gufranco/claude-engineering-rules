@@ -24,9 +24,6 @@ def audit_mod():
     return mod
 
 
-# ---------- scan_text: detection paths ----------
-
-
 def test_em_dash_detected(audit_mod):
     text = "Plain prose with " + chr(0x2014) + " in it."
     findings = audit_mod.scan_text("doc.md", text)
@@ -87,9 +84,6 @@ def test_parens_in_prose_detected(audit_mod):
     assert any(f.category == "parens-in-prose" for f in findings)
 
 
-# ---------- scan_text: suppression paths ----------
-
-
 def test_code_fence_suppresses_detection(audit_mod):
     text = "\n".join(
         [
@@ -102,7 +96,6 @@ def test_code_fence_suppresses_detection(audit_mod):
         ]
     )
     findings = audit_mod.scan_text("doc.md", text)
-    # Nothing from inside the fence
     assert all(f.line not in (3, 4) for f in findings)
 
 
@@ -134,9 +127,6 @@ def test_empty_parens_skipped(audit_mod):
     text = "Function call myFunction() in prose."
     findings = audit_mod.scan_text("doc.md", text)
     assert all(f.category != "parens-in-prose" for f in findings)
-
-
-# ---------- paren carve-outs ----------
 
 
 @pytest.mark.parametrize(
@@ -205,13 +195,9 @@ def test_aside_still_flagged(audit_mod, text):
 
 
 def test_lowercase_required_still_flagged(audit_mod):
-    # Lowercase emphasis labels are NOT carved out per Decision 2.
     text = "The full URL (required) must include the scheme."
     findings = audit_mod.scan_text("doc.md", text)
     assert any(f.category == "parens-in-prose" for f in findings)
-
-
-# ---------- scan_links ----------
 
 
 def test_scan_links_flags_missing_target(audit_mod, tmp_path):
@@ -298,9 +284,6 @@ def test_scan_links_repo_root_fallback_still_flags_missing(audit_mod, tmp_path):
     assert any(f.category == "stale-link" for f in findings)
 
 
-# ---------- walk_markdown and main ----------
-
-
 def test_walk_markdown_skips_excluded_dirs(audit_mod, tmp_path):
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / "a.md").write_text("a")
@@ -375,7 +358,7 @@ def test_main_writes_outputs(audit_mod, tmp_path, monkeypatch, capsys):
 def test_main_handles_unreadable_file(audit_mod, tmp_path, monkeypatch):
     (tmp_path / "rules").mkdir()
     bad = tmp_path / "rules" / "bad.md"
-    bad.write_bytes(b"\xff\xfe\xfd")  # invalid utf-8
+    bad.write_bytes(b"\xff\xfe\xfd")
     out_dir = tmp_path / "out"
     monkeypatch.setattr(
         "sys.argv",

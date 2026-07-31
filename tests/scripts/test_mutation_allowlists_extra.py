@@ -18,11 +18,6 @@ if str(SCRIPTS_DIR) not in sys.path:
 from _lib import mutation_allowlists as ma  # noqa: E402
 
 
-# --------------------------------------------------------------------------- #
-# is_dom_receiver / is_dom_assignment edge cases
-# --------------------------------------------------------------------------- #
-
-
 def test_is_dom_receiver_returns_false_for_none() -> None:
     assert ma.is_dom_receiver(None) is False
 
@@ -39,11 +34,6 @@ def test_is_dom_assignment_returns_false_when_no_signals() -> None:
     result = ma.is_dom_assignment("notADomReceiver", "someRandomProp")
 
     assert result is False
-
-
-# --------------------------------------------------------------------------- #
-# Temporal helpers
-# --------------------------------------------------------------------------- #
 
 
 def test_collect_temporal_receivers_returns_empty_for_empty_text() -> None:
@@ -74,11 +64,6 @@ def test_is_temporal_chain_call_owner_in_receivers_short_circuits() -> None:
     assert ma.is_temporal_chain_call("anything", "t", frozenset({"t"})) is True
 
 
-# --------------------------------------------------------------------------- #
-# Web API helpers
-# --------------------------------------------------------------------------- #
-
-
 def test_is_web_api_receiver_returns_false_when_owner_none() -> None:
     assert ma.is_web_api_receiver(None, frozenset({"params"})) is False
 
@@ -89,11 +74,6 @@ def test_is_web_api_receiver_matches_when_owner_in_set() -> None:
 
 def test_collect_web_api_receivers_returns_empty_for_empty_text() -> None:
     assert ma.collect_web_api_receivers("") == frozenset()
-
-
-# --------------------------------------------------------------------------- #
-# is_es2024_static_factory
-# --------------------------------------------------------------------------- #
 
 
 def test_is_es2024_static_factory_returns_false_for_empty() -> None:
@@ -113,11 +93,6 @@ def test_is_es2024_static_factory_recognizes_array_from_async() -> None:
 def test_is_es2024_static_factory_returns_false_for_unknown() -> None:
     line = "const x = somethingElse();"
     assert ma.is_es2024_static_factory(line) is False
-
-
-# --------------------------------------------------------------------------- #
-# skip_extension / skip_path / is_hot_path
-# --------------------------------------------------------------------------- #
 
 
 def test_skip_extension_returns_true_for_empty_path() -> None:
@@ -148,11 +123,6 @@ def test_is_hot_path_returns_false_for_regular_path() -> None:
     assert ma.is_hot_path("src/components/Button.tsx") is False
 
 
-# --------------------------------------------------------------------------- #
-# hit_uses_receiver edge cases
-# --------------------------------------------------------------------------- #
-
-
 def test_hit_uses_receiver_returns_false_for_empty_line() -> None:
     assert ma.hit_uses_receiver("", frozenset({"x"})) is False
 
@@ -178,11 +148,6 @@ def test_hit_uses_receiver_matches_dot_access() -> None:
 def test_hit_uses_receiver_matches_word_boundary() -> None:
     line = "total += 1;"
     assert ma.hit_uses_receiver(line, frozenset({"total"})) is True
-
-
-# --------------------------------------------------------------------------- #
-# is_in_state_mgmt_scope per-library branches
-# --------------------------------------------------------------------------- #
 
 
 def test_state_scope_jotai_atom() -> None:

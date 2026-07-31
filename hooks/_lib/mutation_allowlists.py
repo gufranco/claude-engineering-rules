@@ -114,6 +114,25 @@ TYPED_ARRAY_SUBTYPES: tuple[str, ...] = (
     "BigUint64Array",
 )
 
+THIRD_PARTY_COMMAND_QUEUES: frozenset[str] = frozenset(
+    {
+        "dataLayer",
+        "dgEvent",
+        "_paq",
+        "_hsq",
+        "_gaq",
+        "_mtm",
+        "uetq",
+    }
+)
+"""Vendor queues whose documented call convention is `.push`.
+
+The tag manager or consent processor replaces the array with a live object
+once its script loads, so pushing is the integration API rather than an array
+mutation. Flagging them produced repeated bypasses rather than rewrites.
+"""
+
+
 PUSH_FRAMEWORK_RECEIVERS: frozenset[str] = frozenset(
     {
         "router",
@@ -146,19 +165,8 @@ PUSH_FRAMEWORK_RECEIVERS: frozenset[str] = frozenset(
         "logs",
         "results",
         "chunks",
-        # Third-party command queues. `.push` is the vendor's documented call
-        # convention, not an array mutation: the tag manager or consent
-        # processor replaces the array with a live object once its script
-        # loads, and every integration guide tells you to push. Flagging these
-        # produced a recurring bypass rather than a rewrite.
-        "dataLayer",
-        "dgEvent",
-        "_paq",
-        "_hsq",
-        "_gaq",
-        "_mtm",
-        "uetq",
     }
+    | THIRD_PARTY_COMMAND_QUEUES
 )
 
 PUSH_FRAMEWORK_PATTERN = re.compile(

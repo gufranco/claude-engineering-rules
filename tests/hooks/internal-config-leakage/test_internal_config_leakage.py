@@ -334,7 +334,6 @@ def test_allows_skipped_hooks_path(tool_use, assert_allows):
 
 
 def test_allows_settings_json_edit(tool_use, assert_allows):
-    # settings.json is the config itself and must reference ~/.claude paths
     payload = tool_use(
         "Edit",
         {
@@ -381,7 +380,6 @@ def test_allows_tests_path(tool_use, assert_allows):
 
 
 def test_allows_projects_memory_path(tool_use, assert_allows):
-    # Memory files legitimately reference repo paths to teach the model
     payload = tool_use(
         "Write",
         {

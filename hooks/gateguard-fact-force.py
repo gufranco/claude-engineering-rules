@@ -43,7 +43,7 @@ from typing import Any
 
 CACHE_DIR = os.path.expanduser("~/.claude/cache")
 STATE_FILE = os.path.join(CACHE_DIR, "gateguard-state.json")
-STATE_TTL_SECONDS = 24 * 60 * 60  # purge sessions older than 24 hours
+STATE_TTL_SECONDS = 24 * 60 * 60
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -99,11 +99,6 @@ def _transcript_evidence(transcript_path: str, file_path: str) -> bool:
                 if not line:
                     continue
                 if file_path in line or abs_path in line or base in line:
-                    # Found a mention. Tighten by checking the surrounding JSON
-                    # if the line is JSONL. Cheap path: substring match is
-                    # enough because the path appearing anywhere in the
-                    # transcript (Read result, Grep result, user message) is
-                    # evidence of investigation.
                     return True
     except OSError:
         return False
@@ -152,11 +147,9 @@ def main() -> None:
     if not isinstance(session_data.get("files"), dict):
         session_data["files"] = {}
 
-    # Second-and-later edits to the same file pass without check.
     if session_data["files"].get(file_path):
         sys.exit(0)
 
-    # First touch in this session. Check for evidence.
     if _transcript_evidence(transcript_path, file_path):
         session_data["files"][file_path] = True
         session_data["ts"] = time.time()
@@ -164,8 +157,6 @@ def main() -> None:
         _save_state(state)
         sys.exit(0)
 
-    # New-file Write is allowed when explicitly opted in, since a new file
-    # cannot have been read.
     if (
         tool_name == "Write"
         and not os.path.exists(file_path)

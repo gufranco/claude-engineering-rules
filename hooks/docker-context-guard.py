@@ -29,8 +29,6 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `docker context use <name>` — global mutation. Block.
-# Excludes `docker context use --help` and `docker context use -h`.
 DOCKER_CONTEXT_USE = re.compile(
     r"\bdocker\s+context\s+use\s+(?!--help\b|-h\b)[\w\.\-]+"
 )

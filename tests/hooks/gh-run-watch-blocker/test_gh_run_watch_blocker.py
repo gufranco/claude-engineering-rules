@@ -10,11 +10,6 @@ import pytest
 HOOK = "gh-run-watch-blocker"
 
 
-# ---------------------------------------------------------------------------
-# Block: polling commands
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -42,11 +37,6 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
     assert_blocks(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: one-shot gh commands
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
@@ -67,17 +57,12 @@ def test_allows_one_shot_commands(tool_use, assert_allows, cmd):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: unrelated commands
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "cmd",
     [
         "git status",
         "ls -la",
-        "watch ls",  # `watch` builtin, not gh
+        "watch ls",
         "grep watch readme.md",
     ],
 )
@@ -87,21 +72,11 @@ def test_allows_unrelated(tool_use, assert_allows, cmd):
     assert_allows(HOOK, payload)
 
 
-# ---------------------------------------------------------------------------
-# Allow: unrelated tools
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
 def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
     assert_allows(HOOK, payload)
-
-
-# ---------------------------------------------------------------------------
-# Bypass + robustness
-# ---------------------------------------------------------------------------
 
 
 def test_bypass_env_var_disables_check(tool_use, assert_allows):

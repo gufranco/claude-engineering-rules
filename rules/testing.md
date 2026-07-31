@@ -74,13 +74,13 @@ def test_rejects_a_transfer_that_exceeds_the_daily_limit(db):
 
 ```go
 func TestRejectsTransferExceedingDailyLimit(t *testing.T) {
-	account := seedAccount(t, accountOpts{DailyLimit: 500, TransferredToday: 450})
+    account := seedAccount(t, accountOpts{DailyLimit: 500, TransferredToday: 450})
 
-	result, err := Transfer(account.ID, 100)
+    result, err := Transfer(account.ID, 100)
 
-	require.NoError(t, err)
-	require.Equal(t, StatusRejected, result.Status)
-	require.Equal(t, ReasonDailyLimitExceeded, result.Reason)
+    require.NoError(t, err)
+    require.Equal(t, StatusRejected, result.Status)
+    require.Equal(t, ReasonDailyLimitExceeded, result.Reason)
 }
 ```
 

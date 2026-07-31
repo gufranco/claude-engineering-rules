@@ -38,9 +38,7 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Exact basenames the hook protects.
 PROTECTED_BASENAMES = {
-    # TypeScript / JavaScript
     "tsconfig.json",
     "jsconfig.json",
     ".eslintrc",
@@ -64,33 +62,26 @@ PROTECTED_BASENAMES = {
     "prettier.config.cjs",
     "biome.json",
     "biome.jsonc",
-    # Python
     "ruff.toml",
     ".ruff.toml",
     "mypy.ini",
     ".mypy.ini",
     "pyrightconfig.json",
     "pyrightconfig.toml",
-    # Rust
     "clippy.toml",
     ".clippy.toml",
     "rust-toolchain.toml",
     "rust-toolchain",
-    # Go
     ".golangci.yml",
     ".golangci.yaml",
     ".golangci.toml",
-    # Ruby
     ".rubocop.yml",
-    # Java / Kotlin
     "detekt.yml",
     "detekt-config.yml",
 }
 
-# Glob-style prefixes for files where any matching basename is protected.
 PROTECTED_PREFIXES = ("tsconfig.",)
 
-# Substring markers in tsconfig.* names that should always be protected.
 PROTECTED_TSCONFIG_SUFFIXES = (".json",)
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -103,7 +94,6 @@ def _is_protected(path: str) -> bool:
     if base.startswith(PROTECTED_PREFIXES) and base.endswith(
         PROTECTED_TSCONFIG_SUFFIXES
     ):
-        # tsconfig.app.json, tsconfig.node.json, tsconfig.build.json, etc.
         return True
     return False
 

@@ -137,8 +137,6 @@ def main() -> None:
     if is_advisory_file(rel):
         sys.exit(0)
 
-    # Read pre-edit text from disk for Edit/MultiEdit. For Write, the pre
-    # state is the empty file when the path does not yet exist.
     disk_path = Path(file_path)
     pre_text = ""
     if disk_path.exists():

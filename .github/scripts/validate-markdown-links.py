@@ -87,8 +87,6 @@ def main() -> int:
             try:
                 files.append(str(resolved.relative_to(REPO_ROOT)))
             except ValueError:
-                # Path is outside the repo. Use the absolute path so callers
-                # can validate ad-hoc files such as temporary test fixtures.
                 files.append(str(resolved))
     else:
         files = tracked_markdown_files(REPO_ROOT)

@@ -53,8 +53,8 @@ except ImportError:
 
 CACHE_DIR = os.path.expanduser("~/.claude/cache")
 STATE_FILE = os.path.join(CACHE_DIR, "mcp-health.json")
-UNHEALTHY_THRESHOLD = 3  # consecutive failures before short-circuit
-TTL_SECONDS = 5 * 60  # forget failures older than 5 minutes
+UNHEALTHY_THRESHOLD = 3
+TTL_SECONDS = 5 * 60
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
@@ -79,7 +79,6 @@ def _save_state(state: dict[str, dict]) -> None:
 
 
 def _server_name(tool_name: str) -> str:
-    # mcp__github__create_issue -> github
     parts = tool_name.split("__")
     if len(parts) >= 2 and parts[0] == "mcp":
         return parts[1]
@@ -110,7 +109,6 @@ def _handle_pre(data: dict, state: dict[str, dict]) -> int:
     if failures < UNHEALTHY_THRESHOLD:
         return 0
     if time.time() - last_failure > TTL_SECONDS:
-        # Stale failure count. Reset and allow.
         state[server] = {"failures": 0, "last_failure": 0}
         _save_state(state)
         return 0
@@ -142,7 +140,6 @@ def _handle_post(data: dict, state: dict[str, dict]) -> int:
         info["failures"] = info.get("failures", 0) + 1
         info["last_failure"] = time.time()
     else:
-        # Success resets the counter.
         info["failures"] = 0
     state[server] = info
     _save_state(state)

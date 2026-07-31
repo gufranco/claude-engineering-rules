@@ -136,9 +136,6 @@ def test_blocks_malformed_decision_trailer() -> None:
     body = "feat: ok subject\n\nRejected"
     command = f"git commit -m $(cat <<'PAYLOAD'\n{body}\nPAYLOAD\n)"
     result = _run(command)
-    # Assert (the bare word does not match the trailer pattern but also does not
-    # start with the trailer label followed by colon, so the hook must allow it
-    # rather than treat it as malformed)
     assert result.returncode == 0
 
 

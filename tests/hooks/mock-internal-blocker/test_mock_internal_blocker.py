@@ -18,10 +18,6 @@ import pytest
 
 HOOK = "mock-internal-blocker"
 
-# Concatenate the mock call prefix so the hook regex does not match
-# inside this test file's content. The hook regex requires
-# "jest.mock(" (or vi.mock, etc.) directly. Splitting via "+" breaks
-# that contiguous match without changing the runtime string.
 JEST = "jest" + ".mock"
 VI = "vi" + ".mock"
 VITEST = "vitest" + ".mock"

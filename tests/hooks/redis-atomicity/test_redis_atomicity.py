@@ -321,7 +321,6 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
 
 
 def test_atomic_markers_in_window_break_pairing(tool_use, assert_allows):
-    # An atomic marker between the incr and expire breaks the unsafe pair.
     content = (
         "await client.incr('k');\n"
         "// MULTI/EXEC begin\n"

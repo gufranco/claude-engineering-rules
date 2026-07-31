@@ -52,8 +52,6 @@ CANONICAL_DETECTORS: frozenset[str] = frozenset(
     }
 )
 
-# Receiver suffixes that strongly suggest a typed array or DOM-adjacent value
-# even without explicit type annotation in the surrounding code.
 TYPED_SUFFIX_HINTS: tuple[str, ...] = (
     "Array",
     "List",
@@ -93,7 +91,6 @@ def score_finding(
     """
     canonical = _is_canonical(detector)
     if not canonical:
-        # Heuristic detectors top out at REGEX_CANONICAL; AST nudges them up.
         if ast_confirmed and receiver_known:
             return CONFIDENCE_AST_PLAUSIBLE
         if ast_confirmed:

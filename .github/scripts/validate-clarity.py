@@ -43,12 +43,6 @@ PRONOUN_LEADING_RE = re.compile(
 )
 
 
-# Catch typical English passive constructions on bullet lines.
-# Matches forms like: "is processed", "are validated", "was set",
-# "were stored", "be created", "been deleted".
-# A simple heuristic: a form of "to be" followed by a past participle
-# ending in -ed (regular verbs) or matching a small list of common
-# irregular forms.
 COMMON_IRREGULAR_PARTICIPLES = (
     "set",
     "made",
@@ -77,8 +71,6 @@ PASSIVE_RE = re.compile(
     + r")\b",
 )
 
-# Active-voice indicators on the same line allow a passive-leaning phrase to
-# pass: an actor is named. Common patterns: "by X", "calls", "runs", "writes".
 ACTOR_HINT_RES = (re.compile(r"\bby\s+(?:the\s+)?[A-Za-z]"),)
 
 
@@ -137,12 +129,10 @@ def scan(path: Path) -> list[tuple[int, str, str]]:
             prev_line = line
             continue
 
-        # Pronoun-leading bullets when the prior line has multiple nouns.
         m = PRONOUN_LEADING_RE.match(line)
         if m and _has_multiple_nouns(prev_line):
             findings.append((i, "pronoun-leading", line.strip()[:120]))
 
-        # Passive voice in bullet lines without an explicit actor hint.
         if re.match(r"^\s*(?:[-*]|\d+\.)\s+", line):
             if PASSIVE_RE.search(line) and not _phrase_has_actor(line):
                 findings.append((i, "passive-bullet", line.strip()[:120]))

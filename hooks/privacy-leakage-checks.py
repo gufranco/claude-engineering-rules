@@ -121,7 +121,6 @@ def find_cookies_without_consent(content: str) -> list[tuple[int, str]]:
     findings: list[tuple[int, str]] = []
     for m in COOKIE_PAT.finditer(content):
         line_num = content[: m.start()].count("\n") + 1
-        # Check whether consent context appears within 30 lines before
         start_lookback = max(0, m.start() - 3000)
         preceding = content[start_lookback : m.start()]
         if not CONSENT_CONTEXT_PAT.search(preceding):

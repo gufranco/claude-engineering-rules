@@ -18,13 +18,7 @@ if str(SCRIPTS_DIR) not in sys.path:
 from _lib import mutation_detectors_methods as mdm  # noqa: E402
 
 
-# --------------------------------------------------------------------------- #
-# detect_array_pop_shift_unshift_splice_reverse_fill_copywithin (line 245)
-# --------------------------------------------------------------------------- #
-
-
 def test_array_pop_skips_web_api_owner() -> None:
-    # on URLSearchParams, but the dedup short-circuits before emit.
     text = "const params: URLSearchParams = new URLSearchParams();\nparams.pop();\n"
 
     hits = mdm.detect_array_pop_shift_unshift_splice_reverse_fill_copywithin(
@@ -32,11 +26,6 @@ def test_array_pop_skips_web_api_owner() -> None:
     )
 
     assert hits == []
-
-
-# --------------------------------------------------------------------------- #
-# detect_array_push (line 279)
-# --------------------------------------------------------------------------- #
 
 
 def test_array_push_skips_web_api_owner() -> None:
@@ -50,13 +39,7 @@ def test_array_push_skips_web_api_owner() -> None:
     assert hits == []
 
 
-# --------------------------------------------------------------------------- #
-# Map collection: temporal + web-api dedup (lines 428, 430, 444, 446, 461)
-# --------------------------------------------------------------------------- #
-
-
 def test_map_set_skips_temporal_chain() -> None:
-    # short-circuits before emitting a Map.set hit.
     text = "const t = Temporal.Now.instant();\nconst tomorrow = t.set({ hours: 24 });\n"
 
     hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
@@ -65,9 +48,6 @@ def test_map_set_skips_temporal_chain() -> None:
 
 
 def test_map_set_skips_web_api_owner() -> None:
-    # detector engages, but the receiver is also a typed Headers instance.
-    # Headers.set is a real Web API mutation, but the Map detector should
-    # skip it via the web-api dedup.
     text = (
         "const m = new Map();\n"
         "const headers: Headers = new Headers();\n"
@@ -106,8 +86,6 @@ def test_map_delete_skips_temporal_chain() -> None:
 
 
 def test_map_clear_skips_web_api_owner() -> None:
-    # Headers receiver whose `.clear()` (does not exist on Headers but is
-    # syntactically valid) must be deduped.
     text = (
         "const m: Map<string, number> = new Map();\n"
         "const headers: Headers = new Headers();\n"
@@ -118,11 +96,6 @@ def test_map_clear_skips_web_api_owner() -> None:
 
     detectors = [h.detector for h in hits]
     assert "collection.map.clear" not in detectors
-
-
-# --------------------------------------------------------------------------- #
-# Set collection: temporal + web-api dedup (lines 504, 518)
-# --------------------------------------------------------------------------- #
 
 
 def test_set_add_skips_web_api_owner() -> None:
@@ -151,13 +124,7 @@ def test_set_delete_skips_temporal_chain() -> None:
     assert "collection.set.delete" not in detectors
 
 
-# --------------------------------------------------------------------------- #
-# _detect_web_api_collection: anchored vs strong signal (lines 709, 711)
-# --------------------------------------------------------------------------- #
-
-
 def test_url_search_params_skips_unanchored_owner() -> None:
-    # engages, but the method call is on a different receiver name.
     text = "const params = new URLSearchParams();\nother.append('x', 'y');\n"
 
     hits = mdm.detect_url_search_params_mutations(text, "ts", "src/foo.ts")
@@ -167,7 +134,6 @@ def test_url_search_params_skips_unanchored_owner() -> None:
 
 
 def test_headers_skips_when_no_strong_signal() -> None:
-    # `new Headers()` declaration and no typed annotation.
     text = "// Headers helpers\nheadersBag.append('x', 'y');\n"
 
     hits = mdm.detect_headers_mutations(text, "ts", "src/foo.ts")

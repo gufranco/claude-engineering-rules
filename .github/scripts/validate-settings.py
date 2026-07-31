@@ -24,7 +24,7 @@ SETTINGS_PATH = os.path.join(CLAUDE_DIR, "settings.json")
 DENY_PATTERN = re.compile(r"^(Read|Write|Edit)\(.+\)$")
 
 KNOWN_MATCHERS = {
-    "",  # empty matcher matches all tools
+    "",
     "Bash",
     "Read",
     "Write",
@@ -38,7 +38,7 @@ KNOWN_MATCHERS = {
     "Task",
     "NotebookEdit",
     "Skill",
-    "mcp__.*",  # regex matcher for all MCP tool calls
+    "mcp__.*",
 }
 
 
@@ -108,9 +108,6 @@ def validate_hooks(data):
                 if not command:
                     continue
 
-                # Extract script path from command
-                # Commands look like: "python3 ~/.claude/hooks/foo.py" or "bash ~/.claude/hooks/bar.sh"
-                # In CI, ~/.claude/ is the repo root, not the user's home
                 parts = command.split()
                 for part in parts:
                     if "~/.claude/" in part:

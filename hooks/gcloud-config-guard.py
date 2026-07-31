@@ -38,16 +38,12 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `gcloud config set <key> <value>` — writes to active configuration.
 GCLOUD_CONFIG_SET = re.compile(r"\bgcloud\s+config\s+set\b")
 
-# `gcloud config configurations activate <name>` — switches active config.
 GCLOUD_CONFIG_ACTIVATE = re.compile(
     r"\bgcloud\s+config\s+configurations\s+activate\s+(?!--help\b|-h\b)\S+"
 )
 
-# `--configuration=<name>` flag scopes the write to a named configuration
-# instead of the active one. Allowed even on `gcloud config set`.
 GCLOUD_CONFIGURATION_FLAG = re.compile(r"--configuration[\s=]\S+")
 
 

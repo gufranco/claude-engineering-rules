@@ -50,11 +50,11 @@ BOX_DRAWING_RE = re.compile(r"[\u2500-\u257F]")
 
 EMOJI_RE = re.compile(
     "["
-    "\U0001f300-\U0001faff"  # symbols, pictographs, supplemental
-    "\U00002600-\U000027bf"  # misc symbols + dingbats
-    "\U0001f1e6-\U0001f1ff"  # regional indicator (flags)
-    "\U0000fe0f"  # variation selector-16 (emoji presentation)
-    "\U0000200d"  # zero-width joiner (used in compound emoji)
+    "\U0001f300-\U0001faff"
+    "\U00002600-\U000027bf"
+    "\U0001f1e6-\U0001f1ff"
+    "\U0000fe0f"
+    "\U0000200d"
     "]"
 )
 
@@ -64,7 +64,7 @@ from _lib.bypass import is_bypassed  # noqa: E402
 def _snippet(text: str, idx: int) -> str:
     start = max(0, idx - 40)
     end = min(len(text), idx + 41)
-    return text[start:end].replace("\n", "\u23ce")  # show newlines as a marker
+    return text[start:end].replace("\n", "\u23ce")
 
 
 def find_violations(text: str) -> list[tuple[str, str]]:
@@ -87,8 +87,6 @@ def find_violations(text: str) -> list[tuple[str, str]]:
     return findings
 
 
-# Test fixtures legitimately contain banned characters to exercise the hook.
-# Skip pytest fixture paths so the hook does not block its own coverage tests.
 SKIPPED_TEST_SEGMENTS = (
     "/tests/",
     "/test/",

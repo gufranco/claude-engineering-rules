@@ -39,8 +39,6 @@ def test_allows_empty_command(tool_use, assert_allows):
 
 
 def test_allows_git_commit_outside_repo(tool_use, assert_allows):
-    # When git commit runs but `git diff --cached --name-only` fails or returns
-    # nothing, the scanner finds no staged files and exits 0.
     payload = tool_use("Bash", {"command": "git commit -m 'fix'"})
 
     assert_allows(HOOK, payload)

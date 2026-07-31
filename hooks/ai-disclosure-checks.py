@@ -86,7 +86,6 @@ def find_undisclosed_ai_output(content: str) -> list[tuple[int, str]]:
     findings: list[tuple[int, str]] = []
     for m in AI_VARIABLE_PAT.finditer(content):
         line_num = content[: m.start()].count("\n") + 1
-        # Look in surrounding 500 chars for a disclosure tag
         start_lookback = max(0, m.start() - 500)
         end_lookahead = min(len(content), m.end() + 500)
         surrounding = content[start_lookback:end_lookahead]

@@ -36,7 +36,7 @@ except Exception:  # pragma: no cover
         return None
 
 
-PLAN_WINDOW_SECONDS = 60 * 60  # active within last 60 min
+PLAN_WINDOW_SECONDS = 60 * 60
 
 SPEC_GLOBS = (
     "specs/*/plan.md",
@@ -53,7 +53,7 @@ def find_active_plan(cwd: Path) -> Path | None:
     candidates: list[tuple[float, Path]] = []
     now = time.time()
     cursor = cwd
-    for _ in range(5):  # walk up bounded
+    for _ in range(5):
         for pattern in SPEC_GLOBS:
             for p in cursor.glob(pattern):
                 try:
@@ -76,7 +76,6 @@ def extract_declared_paths(plan_text: str) -> set[str]:
     paths: set[str] = set()
     for match in BACKTICK_PATH.finditer(plan_text):
         token = match.group(1)
-        # Filter out non-path tokens (env vars, flags, function names)
         if token.startswith("-") or "=" in token:
             continue
         if "/" not in token and "." not in token:
@@ -94,7 +93,6 @@ def is_in_scope(target: Path, declared: set[str]) -> bool:
             return True
         if decl == target_name:
             return True
-        # Treat directories as prefixes
         if decl.endswith("/") and decl.rstrip("/") in target_str:
             return True
     return False
@@ -161,7 +159,6 @@ def main() -> int:
     if is_in_scope(target, declared):
         return 0
 
-    # Always allow edits to the plan/spec folder itself
     if str(plan_path.parent) in str(target):
         return 0
 
@@ -173,7 +170,7 @@ def main() -> int:
         f"this gate: set SCOPE_GUARD_DISABLE=1."
     )
     emit_advisory(reason, str(target))
-    return 2  # unreachable
+    return 2
 
 
 if __name__ == "__main__":

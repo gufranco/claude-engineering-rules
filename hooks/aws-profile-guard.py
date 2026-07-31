@@ -30,10 +30,8 @@ except Exception:  # pragma: no cover
         return None
 
 
-# `aws configure set ...` — writes to AWS config. Block when no --profile.
 AWS_CONFIGURE_SET = re.compile(r"\baws\s+configure\s+set\b")
 
-# Profile flag/env present in the same command segment.
 AWS_PROFILE_PRESENT = re.compile(r"--profile[\s=]\S+|AWS_PROFILE=\S+")
 
 

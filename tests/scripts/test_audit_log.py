@@ -50,9 +50,6 @@ def _read_records(log_path: Path) -> list[dict]:
     ]
 
 
-# --------------------------------------------------------------------------- #
-# Schema normalization (1.3.1)
-# --------------------------------------------------------------------------- #
 def test_decision_class_passthrough_when_valid():
     out = audit_log._normalize_schema({"decision_class": "block"})
     assert out["decision_class"] == "block"
@@ -147,9 +144,6 @@ def test_defect_pattern_tags_constant_includes_canonical_set():
     assert "invented-api" in audit_log.DEFECT_PATTERN_TAGS
 
 
-# --------------------------------------------------------------------------- #
-# Redaction
-# --------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
     "raw,expected_in_output",
     [
@@ -216,9 +210,6 @@ def test_record_truncates_command_excerpt(isolated_log):
     assert len(records[0]["command_excerpt"]) <= audit_log.MAX_EXCERPT
 
 
-# --------------------------------------------------------------------------- #
-# Rotation
-# --------------------------------------------------------------------------- #
 def test_rotation_triggers_when_log_exceeds_max_bytes(monkeypatch, isolated_log):
     monkeypatch.setattr(audit_log, "MAX_BYTES", 50)
     audit_log.record(hook="first", decision="allow")
@@ -271,9 +262,6 @@ def test_rotation_swallows_oserror_on_rename(monkeypatch, isolated_log):
     audit_log._rotate_if_needed()
 
 
-# --------------------------------------------------------------------------- #
-# Lock contention
-# --------------------------------------------------------------------------- #
 def test_concurrent_writers_produce_intact_lines(isolated_log):
     writers = 16
     per_writer = 25
@@ -294,9 +282,6 @@ def test_concurrent_writers_produce_intact_lines(isolated_log):
         assert "hook" in r and "decision" in r
 
 
-# --------------------------------------------------------------------------- #
-# Malformed input
-# --------------------------------------------------------------------------- #
 def test_record_with_no_fields_writes_timestamp_only(isolated_log):
     audit_log.record()
     records = _read_records(isolated_log)
@@ -394,9 +379,6 @@ def test_record_explicit_session_id_overrides_env(monkeypatch, isolated_log):
     assert records[0]["session_id"] == "from-caller"
 
 
-# --------------------------------------------------------------------------- #
-# CLI
-# --------------------------------------------------------------------------- #
 def test_cli_writes_record_with_legacy_flags(isolated_log):
     argv = [
         "--hook",

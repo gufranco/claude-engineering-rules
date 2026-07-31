@@ -29,21 +29,17 @@ def check_memory_file(path: Path) -> None:
     with open(path) as f:
         content = f.read()
 
-    # Check for file path references that no longer exist
-    # Pattern: backtick-quoted paths or absolute paths
     file_refs = re.findall(r"`(/[^`]+\.(ts|js|py|go|rs|md|json|yaml|yml))`", content)
     for ref, _ in file_refs:
         if not os.path.exists(ref):
             WARNINGS.append(f"{path}: references non-existent file: {ref}")
 
-    # Check for very old memory files (over 180 days)
     age_days = (__import__("time").time() - os.path.getmtime(path)) / 86400
     if age_days > 180:
         WARNINGS.append(
             f"{path}: last modified {int(age_days)} days ago — consider reviewing for staleness"
         )
 
-    # Check for empty body
     lines = [
         line.strip()
         for line in content.split("\n")

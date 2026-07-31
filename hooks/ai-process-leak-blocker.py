@@ -41,60 +41,45 @@ except Exception:  # pragma: no cover
         return None
 
 
-# Patterns that almost always indicate AI-process leakage. Each one
-# names a phrase a human engineer would not write in a commit message
-# or PR description, because it refers to the artifact the AI produced
-# rather than the code under review.
 PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    # "Phase 1", "phase 12", "Phase 0 of the regnant plan"
     (
         re.compile(r"\bPhase\s+\d+\b", re.IGNORECASE),
         "Phase-N language belongs in a planning document, not a commit",
     ),
-    # "of the plan", "per the plan", "the regnant plan"
     (
         re.compile(r"\b(?:of|per|in|the)\s+the\s+(?:regnant\s+)?plan\b", re.IGNORECASE),
         "References to 'the plan' expose the AI workflow",
     ),
-    # "Refs: specs/..." trailer (path inside the repo's planning folder)
     (
         re.compile(r"\bRefs?:\s*specs?/", re.IGNORECASE),
         "Refs: specs/ trailer references planning artifacts",
     ),
-    # ".../plan.md" anywhere in a message
     (
         re.compile(r"/plan\.md\b", re.IGNORECASE),
         "plan.md is a planning artifact; do not reference it in commits",
     ),
-    # "spec folder", "spec folders"
     (
         re.compile(r"\bspec\s+folders?\b", re.IGNORECASE),
         "Spec folder is an AI workflow artifact, not human commit content",
     ),
-    # "Maps to canvas region X" or "canvas region"
     (
         re.compile(r"\b(?:maps?\s+to\s+)?canvas\s+region\b", re.IGNORECASE),
         "Canvas-region language exposes the design-artifact mapping",
     ),
-    # "state-of-the-art" / "state of the art" hyperbole
     (
         re.compile(r"\bstate[-\s]of[-\s]the[-\s]art\b", re.IGNORECASE),
         "State-of-the-art is an LLM hyperbole tell",
     ),
-    # "100% faithful", "fully faithful", "absolutely faithful"
     (
         re.compile(
             r"\b(?:100%|fully|absolutely|perfectly)\s+faithful\b", re.IGNORECASE
         ),
         "Faithfulness language is AI-process hyperbole",
     ),
-    # "ADR-NNNN" referenced casually in a commit subject or body
-    # (ADRs themselves are fine; mentioning by number in commit text is suspicious)
     (
         re.compile(r"\bADR-\d{3,4}\b"),
         "ADR-NNNN references in commits read as AI cross-linking",
     ),
-    # "comes online in", "lands in phase N"
     (
         re.compile(
             r"\b(?:lands?|comes?|arrives?)\s+(?:in|online)\s+(?:phase\s+\d+|a\s+later\s+phase)\b",
@@ -102,14 +87,12 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Phase-relative scheduling exposes the AI plan",
     ),
-    # "per the plan", "as the plan describes", "following the plan"
     (
         re.compile(
             r"\b(?:following|as|per)\s+(?:the\s+plan|the\s+spec)\b", re.IGNORECASE
         ),
         "Referencing 'the plan/spec' as authority is AI workflow language",
     ),
-    # "I ran the suite", "I ran the tests", "I ran jest", "I ran the full suite"
     (
         re.compile(
             r"\bI\s+ran\s+(?:the\s+)?(?:suite|tests?|jest|full\s+suite|spec|specs|coverage)\b",
@@ -117,7 +100,6 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Narrating the verification loop. State the result, not the steps",
     ),
-    # "observed the actual status", "observed the behavior", "observed the response"
     (
         re.compile(
             r"\bobserved\s+(?:the\s+)?(?:actual\s+)?(?:status|behaviou?r|return|response|result|output)\b",
@@ -125,7 +107,6 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Empirical-observation narration. Just state the result",
     ),
-    # "for each X case I ran", "for each X I tried", "for each X I observed"
     (
         re.compile(
             r"\bfor\s+each\s+\S+(?:[ -]\S+)?\s+(?:case|test|assertion),?\s+I\s+(?:ran|tried|observed|asserted|checked)\b",
@@ -133,7 +114,6 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Meta-iteration over test cases reads as AI workflow self-talk",
     ),
-    # "with the asserts pinned to match", "pinned to match the actual"
     (
         re.compile(
             r"\b(?:with\s+the\s+asserts?\s+pinned\s+to\s+match|pinned\s+to\s+match\s+the\s+actual)\b",
@@ -141,7 +121,6 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Frames verification as the deliverable. The deliverable is the code",
     ),
-    # "All 21 tests still pass", "All 102 integration tests pass", "All N tests pass"
     (
         re.compile(
             r"\bAll\s+\d+\s+(?:\w+\s+){0,3}tests?\s+(?:still\s+)?pass(?:es|ed)?\b",
@@ -169,8 +148,6 @@ def find_violations(text: str) -> list[tuple[str, str, str]]:
     return out
 
 
-# Skip the user's own planning and rule files: those legitimately
-# contain phase-N language and spec-folder paths.
 SKIPPED_PATH_SEGMENTS = (
     "/.claude/",
     "/specs/",
@@ -186,22 +163,12 @@ def is_skipped_path(path: str) -> bool:
     return any(seg in path for seg in SKIPPED_PATH_SEGMENTS)
 
 
-# Inside Bash payloads, the leak only matters when the command is one
-# that publishes text to other humans: git commit, gh pr create/edit,
-# glab mr create, hub pr/issue, and PR-review-comment endpoints reached
-# through `gh api`. Other commands (cat, grep, tofu apply with a
-# -message flag) are not in scope.
 GIT_AND_PR_PATTERNS = (
     re.compile(r"\bgit\s+commit\b"),
     re.compile(r"\bgit\s+tag\b.*-m\b"),
     re.compile(r"\bgh\s+pr\s+(create|edit|comment)\b"),
     re.compile(r"\bgh\s+release\s+(create|edit)\b"),
     re.compile(r"\bgh\s+issue\s+(create|edit|comment)\b"),
-    # PR review comment replies and edits via `gh api`. Covers paths
-    # like `repos/<owner>/<repo>/pulls/<n>/comments/<id>/replies` (POST)
-    # and `repos/<owner>/<repo>/pulls/comments/<id>` (PATCH). The check
-    # is loose on purpose: any `gh api` call that names a comments
-    # endpoint is treated as in-scope and its `--input` payload is read.
     re.compile(r"\bgh\s+api\b.*\b(pulls|issues)\b.*\bcomments\b"),
     re.compile(r"\bglab\s+mr\s+(create|update|note)\b"),
     re.compile(r"\bglab\s+release\s+create\b"),
@@ -212,11 +179,6 @@ def bash_command_in_scope(command: str) -> bool:
     return any(pat.search(command) for pat in GIT_AND_PR_PATTERNS)
 
 
-# Flags that point at a file whose contents are published by the command.
-# Example: `gh pr create --body-file /tmp/pr.md` writes the file's contents
-# into the PR description. The command string itself does not contain the
-# leak; the file does. Read those files at hook time so leaks in their
-# bodies are caught the same way an inline -m argument would be.
 BODY_FILE_FLAGS = (
     "--body-file",
     "--description-file",
@@ -226,11 +188,6 @@ BODY_FILE_FLAGS = (
     "-F",
 )
 
-# Parse `--body-file PATH` (space-separated) and `--body-file=PATH` forms.
-# Tokenize on whitespace, then look for each flag and the next token. The
-# regex also handles single-quoted and double-quoted paths. `--input` is
-# the `gh api` payload flag; when present, the file is JSON whose `body`
-# field carries the comment text the rule must scan.
 _FLAG_VALUE_TOKEN = re.compile(
     r"""(?P<flag>--body-file|--description-file|--notes-file|--notes-from-tag|--input|-F)
         (?:\s*=\s*|\s+)
@@ -292,10 +249,6 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
         c = tool_input.get("command", "")
         if isinstance(c, str) and bash_command_in_scope(c):
             out.append(("command", c))
-            # Also scan the contents of any --body-file / --description-file
-            # / --notes-file the command points at. Without this the hook
-            # only inspects the command line and misses leaks that the body
-            # file carries into a PR/MR/release description.
             for path in extract_body_file_paths(c):
                 body = read_body_file(path)
                 if body is not None:

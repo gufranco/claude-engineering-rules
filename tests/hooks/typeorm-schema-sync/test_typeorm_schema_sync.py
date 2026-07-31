@@ -240,7 +240,6 @@ def test_invalid_json_stdin_does_not_crash():
 
 
 def test_invalid_json_stdin_with_run_hook(run_hook):
-    # run_hook is the conftest fixture that propagates COVERAGE_PROCESS_START.
 
     code, _stdout, _stderr = run_hook(
         "typeorm-schema-sync", {"_not": "a-valid-tool-payload"}
@@ -250,7 +249,6 @@ def test_invalid_json_stdin_with_run_hook(run_hook):
 
 
 def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
-    # Empty file_path is acceptable when the content has no offending pattern.
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const x = 1;\n"},
@@ -360,7 +358,6 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
 
 
 def test_disable_audit_env_bypasses_branch(tool_use, assert_allows):
-    # Confirms the bypass-env audit call line runs.
     payload = tool_use(
         "Write", {"file_path": "/repo/src/x.ts", "content": "synchronize: true"}
     )

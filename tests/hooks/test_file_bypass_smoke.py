@@ -25,9 +25,6 @@ if str(_TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(_TESTS_DIR))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
-# Hooks that read no stdin or never short-circuit on bypass alone (e.g. they
-# need the profile gate first). Skip-list keeps the smoke tests focused on the
-# common case where bypass alone is sufficient.
 SKIP = {"mutation-method-blocker.py"}
 
 

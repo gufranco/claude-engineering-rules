@@ -29,11 +29,6 @@ def assert_finding(stdout: str, label: str):
     assert label in ctx, f"expected finding {label!r} in additionalContext, got: {ctx}"
 
 
-# ---------------------------------------------------------------------------
-# Instruction override
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "text",
     [
@@ -55,11 +50,6 @@ def test_detects_instruction_override(run_hook, tool_use, text):
     assert_finding(stdout, "instruction-override")
 
 
-# ---------------------------------------------------------------------------
-# Tool redirection
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "text",
     [
@@ -77,11 +67,6 @@ def test_detects_tool_redirection(run_hook, tool_use, text):
 
     assert code == 0
     assert_finding(stdout, "tool-redirection")
-
-
-# ---------------------------------------------------------------------------
-# Authority claim
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -143,11 +128,6 @@ def test_detects_cyrillic_homoglyphs(run_hook, tool_use):
     assert_finding(stdout, "unicode-confusable")
 
 
-# ---------------------------------------------------------------------------
-# Clean content
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize(
     "text",
     [
@@ -164,11 +144,6 @@ def test_no_warning_on_clean_content(run_hook, tool_use, text):
 
     assert code == 0
     assert not stdout.strip()
-
-
-# ---------------------------------------------------------------------------
-# WebFetch / WebSearch
-# ---------------------------------------------------------------------------
 
 
 def test_scans_webfetch_payload(run_hook, tool_use):
@@ -195,11 +170,6 @@ def test_scans_websearch_payload(run_hook, tool_use):
     assert_finding(stdout, "tool-redirection")
 
 
-# ---------------------------------------------------------------------------
-# Irrelevant tools
-# ---------------------------------------------------------------------------
-
-
 @pytest.mark.parametrize("tool_name", ["Bash", "Write", "Edit", "Grep"])
 def test_ignores_unrelated_tools(run_hook, tool_use, tool_name):
     payload = post_payload(
@@ -210,11 +180,6 @@ def test_ignores_unrelated_tools(run_hook, tool_use, tool_name):
 
     assert code == 0
     assert not stdout.strip()
-
-
-# ---------------------------------------------------------------------------
-# Response shapes
-# ---------------------------------------------------------------------------
 
 
 def test_handles_content_field(run_hook, tool_use):
@@ -243,11 +208,6 @@ def test_handles_list_content(run_hook, tool_use):
 
     assert code == 0
     assert_finding(stdout, "instruction-override")
-
-
-# ---------------------------------------------------------------------------
-# Bypass + robustness
-# ---------------------------------------------------------------------------
 
 
 def test_bypass_env_var_disables_scan(run_hook, tool_use):
