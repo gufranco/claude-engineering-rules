@@ -48,8 +48,8 @@ always_loaded:
     triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation", recommendation, "recommend an option", "which do you recommend", "option trade-off", "pick an option", choice, options]
 
   testing:
-    description: Integration-first philosophy, strict mock policy, comment-free test structure, fake data generators, deterministic tests, snapshot guidelines
-    triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e]
+    description: Integration-first philosophy, strict mock policy, unlabeled Arrange-Act-Assert test structure with one act per test, fake data generators, deterministic tests, snapshot guidelines
+    triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   verification:
     description: Evidence-based completion gates, fresh output required for every claim, no rounding up partial completion
@@ -356,6 +356,21 @@ on_demand:
     path: standards/resilience.md
     description: Error classification, retries with backoff, idempotency, deduplication, DLQs, circuit breakers, back pressure, bulkheads
     triggers: [retry, idempotent, idempotency, idempotency key, circuit breaker, dlq, backpressure, timeout, rate limit, resilience, fault tolerance, deduplication, dedup, dedup key, double-click, double click, webhook, webhook receiver, message handler, queue consumer, scheduled job, cron job, write endpoint, post endpoint, put endpoint, patch endpoint, delete endpoint, mutation, mutating operation, side effect]
+
+  concurrency:
+    path: standards/concurrency.md
+    description: Race taxonomy (TOCTOU, lost update, write skew, phantom, double submit, duplicate delivery, interleaved multi-step mutation, cache stampede, stale writer, async reentrancy, filesystem races), isolation-level anomaly matrix, the correctness ladder from database constraint to in-process mutex, single-flight, bounded fan-out, per-language concurrency models, deterministic race tests, and the metrics that expose a race in production
+    triggers: [race, race condition, concurrent, concurrency, interleaving, toctou, check-then-act, lost update, write skew, phantom read, deadlock, lock, locking, row lock, "select for update", advisory lock, optimistic locking, pessimistic locking, version column, isolation level, serializable, repeatable read, read committed, serialization failure, atomic, atomicity, mutex, semaphore, single-flight, stampede, thundering herd, parallel, promise.all, fan-out, fanout, worker, goroutine, thread, thread-safe, data race, double submit, double-click, redeem, claim, reserve, book, transfer, balance, counter, increment, seat, inventory, stock, quota]
+
+  idempotency:
+    path: standards/idempotency.md
+    description: Natural idempotency first, key sourcing and stability, request fingerprinting, storage schema with the primary key as the mechanism, in-flight state machine, concurrent same-key semantics, response replay, failure modes including key-consumed-before-completion, per-layer recipes for HTTP, queue consumers, webhooks, scheduled jobs and outbox, TTL selection, and the expired IETF draft status of the Idempotency-Key header
+    triggers: [idempotent, idempotency, idempotency key, "idempotency-key", dedup, dedupe, deduplication, dedup key, duplicate, duplicates, replay, retry safe, exactly once, at-least-once, webhook, webhook receiver, webhook retry, queue consumer, message handler, redelivery, scheduled job, cron job, write endpoint, post endpoint, put endpoint, patch endpoint, payment, charge, refund, order creation, double charge, double send]
+
+  immutability:
+    path: standards/immutability.md
+    description: Cross-language immutability expression for TypeScript, Python, Go, Rust, Java, Kotlin and C#, boundary defensive copies, structural sharing libraries, persistence-level immutability covering append-only ledgers, event sourcing and audit trails, which race classes immutability removes, and the performance carve-outs
+    triggers: [immutable, immutability, mutation, mutate, readonly, read-only, frozen, freeze, defensive copy, persistent data structure, structural sharing, append-only, event sourcing, audit trail, ledger, value object, copy-on-write, frozen dataclass, final field, record type]
 
   identifiers:
     path: standards/identifiers.md

@@ -1,5 +1,7 @@
 # Resilience
 
+This file is the overview for failure handling. Two neighbours carry the depth: [`idempotency.md`](idempotency.md) for key sourcing, request fingerprints, storage schema, replay semantics, and per-layer recipes, and [`concurrency.md`](concurrency.md) for the race taxonomy, the correctness ladder, and isolation anomalies.
+
 ## Error Classification
 
 Every error must be classified as **transient** or **permanent** before deciding how to handle it.
@@ -60,6 +62,8 @@ Every write operation must be safe to execute more than once with the same resul
 | File/object storage | Write with precondition (ETag, version ID) |
 
 ### Implementation Checklist
+
+Full implementation, including key sourcing, the storage table, concurrent-same-key handling, and response replay: [`idempotency.md`](idempotency.md).
 
 - [ ] Can this handler receive the same input twice? such as network retry, queue redelivery, or Lambda retry
 - [ ] If yes, what prevents duplicate side effects?
@@ -201,6 +205,8 @@ Isolate failure domains so one misbehaving dependency does not take down the ent
 **Default rule**: at minimum, use separate connection pools for each external dependency. A single shared pool is a shared-fate failure waiting to happen.
 
 ## Concurrency Control
+
+This section is about throughput protection. For correctness under concurrent execution, meaning races, locks, isolation levels, and interleaving, see [`concurrency.md`](concurrency.md).
 
 Limit how many operations run in parallel to protect downstream systems and your own resources.
 

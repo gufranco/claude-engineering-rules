@@ -130,6 +130,8 @@ When `--backend` or `--frontend` is passed, classify each file:
 
    **9b. Model concurrent actors.** For every write path, identify every actor that can trigger it concurrently: retries from the same external system, parallel requests from different systems, user actions that touch the same data, cron jobs that overlap. Draw a timeline with at least two concurrent actors and verify no interleaving produces incorrect state.
 
+   Run the `concurrency-auditor` agent unconditionally when the diff touches a write path, meaning any service, handler, route, consumer, job, or repository that persists, mutates shared state, charges, sends, or enqueues. It returns one actor timeline per write path plus file:line findings, and its output feeds the Behavioral Flow Analysis summary in step 14. Reference standards: [`../../standards/concurrency.md`](../../standards/concurrency.md) for the race taxonomy and the correctness ladder, [`../../standards/idempotency.md`](../../standards/idempotency.md) for key stability and replay.
+
    | Concurrency scenario | What to check |
    |---------------------|--------------|
    | Two webhook deliveries for the same logical event | Do they produce the same idempotency key? If not, do they race through shared mutations? |
