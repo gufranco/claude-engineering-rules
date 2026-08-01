@@ -41,6 +41,9 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17 during
 - Conflating "no errors" with "works correctly". Silent failures
 - "CI passed" but ignoring deprecation warnings or non-fatal annotations in the run output
 - Dismissing a flagged issue as "pre-existing" or "not introduced by this change". A problem surfaced by a verification surface is in scope regardless of when it was introduced. See [`found-fix.md`](found-fix.md)
+- Trusting an existence oracle that was never calibrated. Many web indexes answer HTTP 200 with a "not found" page, and many commands exit 0 on a miss, so a naive check reports every candidate as present. Before running the check across a list, run it against a name that cannot exist and confirm it reports absent
+- Assuming a blocked tool call partially applied. A PreToolUse block runs nothing, so every change that call carried is still unmade, including the parts that precede the offending one. Re-read the file instead of re-running only the piece that tripped the hook
+- Writing a parser against a tool's output without confirming the stream and the field positions. Diagnostics commonly go to stderr, so a `2>/dev/null` pipeline silently reads an empty stream and the loop over it does nothing while appearing to succeed. Run the command once, see which stream carries the payload, and count the columns before depending on them
 - Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. `tail -20` on a run with 50+ failures shows only the summary line, hiding every failure. Always use `grep -E "passed|failed"` to capture the full result counts, or read the exit code. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
 
 ## Verification by Task Type
@@ -82,6 +85,21 @@ This check applies to analytical output: reviews, assessments, incident analyses
 ## Cross-Platform Verification
 
 When code has platform-specific branches, architecture checks, OS detection, conditional package lists, never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
+
+## Pinned Toolchain Verification
+
+Run every verification command at the version the project pins. A local default that differs from the pinned or CI version reports on a toolchain nobody ships, and acting on that report is worse than not running the check at all. The failure is quiet: the command succeeds, the output looks authoritative, and the finding is wrong.
+
+| Surface | Where the pin lives | How to honor it |
+|---------|--------------------|-----------------|
+| Terraform provider | `required_providers` plus `.terraform.lock.hcl` | Validate from the stack that carries the pin. A bare `terraform init` in a module directory resolves the newest provider and reports deprecations that do not apply |
+| Terraform CLI | The `setup-terraform` version in the workflow | Match it, or cross-check the result against a second implementation before trusting it |
+| Formatters and linters | `package.json` plus the lockfile | Run through the project's own dependency tree. When it is not installed, pin the exact version explicitly and confirm the project config adds no style options the bare run would miss |
+| Language runtime | `.nvmrc`, `.python-version`, `engines` | Match before concluding anything about behavior |
+
+A concrete case: a module validated against AWS provider v6 reported `data.aws_region.current.name` as deprecated. The stack pins `~> 5.0`, where that attribute is correct and the suggested replacement does not exist. Applying the fix would have broken every environment the module builds.
+
+When the pinned version is genuinely unavailable, name the version that produced the result and cross-check with the closest alternative implementation. Never present an unpinned run as though it were the project's own gate.
 
 ## Post-Deploy Verification
 
