@@ -8,9 +8,7 @@
 .credentials.json
 
 # Background daemon and job runner
-daemon/
-daemon-auth-cooldown
-daemon-auth-status.json
+daemon*
 jobs/
 
 # Session and conversation data
