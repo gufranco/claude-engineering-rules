@@ -74,6 +74,10 @@ checklist.
 | "out of scope of this task" | Verification gates are always in scope |
 | "leave for a future task" | A future task without a tracking link is a permanent task |
 | "leave for later" | Same |
+| "follow-up" used as a deferral | Naming the problem in a summary is not fixing it. A follow-up the current change could have absorbed is a deferral with better manners |
+| "worth flagging separately" | Same |
+| "optional next step" | Same |
+| "mention it as a follow-up" | Same |
 | "not blocking the run" | Annotations are blocking by rule, regardless of CI exit code |
 | "upstream issue" used as a deferral | If we run the version, we own the upgrade |
 
