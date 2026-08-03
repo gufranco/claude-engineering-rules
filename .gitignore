@@ -22,10 +22,13 @@ tasks/
 file-history/
 shell-snapshots/
 backups/
+checkpoints/
 paste-cache/
 session-env/
 history.jsonl
 .compact-context
+.compact-context.d/
+.freeze-scope
 .settings-hygiene-blocklist
 .last-cleanup
 .bypass-state.json
