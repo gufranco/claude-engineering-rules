@@ -194,7 +194,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
 | [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks any prose comment added to source code, test files included. Only tool directives (`eslint-disable`, `@ts-expect-error`, `go:build`, `noqa`, `type: ignore`, `shellcheck disable`) are exempt. No suppression marker; operator bypass `COMMENT_BLOCKER_DISABLE=1` |
-| [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction |
+| [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction, scoped per project |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
