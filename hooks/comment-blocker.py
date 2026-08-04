@@ -21,12 +21,26 @@ What is blocked (per language family, string-literal aware):
   - C family (`//` line, `/* ... */` block): ts, tsx, js, jsx, mjs, cjs,
     java, c, cpp, cc, cxx, h, hpp, hh, cs, go, rs, swift, scala, kt, kts,
     m, mm, php, dart. JSX `{/* ... */}` is caught by the block delimiters.
-  - Hash family (`#` line): py, rb, sh, bash, zsh. A first-line `#!` shebang
-    is never flagged.
+  - Python family (line token `#`): py, pyi, pyw. Triple quotes span lines;
+    a single-quoted string ends at the newline, which is what the language
+    allows and what keeps one stray quote from masking the rest of a file.
+  - Shell and Ruby family (line token `#`): rb, sh, bash, zsh. Every quote
+    spans lines there, so no newline recovery applies.
+  A first-line shebang is never flagged in either hash family.
 
 The scanner masks string and template literals before looking for comment
-tokens, so `https://` inside a string, a JS private field `this.#x`, and a
-`#` inside a Python docstring do not trigger a false positive.
+tokens, so a URL inside a string, a JS private field, and a hash inside a
+Python docstring do not trigger a false positive.
+
+An Edit or MultiEdit payload carries a fragment, and a fragment can open or
+close a string it does not contain both ends of. Scanning it alone reads the
+tail of a docstring as the start of one, so every comment below is swallowed
+as string content, and the prose above it is read as comments. The hook
+therefore applies the edit to the file on disk and scans the resulting
+document, where every delimiter is paired, then reports only the comments
+that document holds and the original did not. When the file cannot be read
+or old_string does not match, the payload is scanned on its own, and an edit
+whose old_string does not match was going to fail anyway.
 
 Test files (`*.test.*`, `*.spec.*`, `test_*.py`, `*_test.go`,
 `**/__tests__/**`, `**/tests/**`, `**/e2e/**`) are scanned like any other
@@ -57,6 +71,7 @@ import json
 import os
 import re
 import sys
+from collections import Counter
 from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -97,8 +112,13 @@ C_FAMILY_EXTS: tuple[str, ...] = (
     ".dart",
 )
 
-HASH_FAMILY_EXTS: tuple[str, ...] = (
+PYTHON_FAMILY_EXTS: tuple[str, ...] = (
     ".py",
+    ".pyi",
+    ".pyw",
+)
+
+HASH_FAMILY_EXTS: tuple[str, ...] = (
     ".rb",
     ".sh",
     ".bash",
@@ -109,13 +129,24 @@ C_FAMILY: dict[str, Any] = {
     "block": ("/*", "*/"),
     "line": ("//",),
     "strings": ('"', "'", "`"),
+    "line_terminated": (),
+}
+
+PYTHON_FAMILY: dict[str, Any] = {
+    "block": None,
+    "line": ("#",),
+    "strings": ('"""', "'''", '"', "'"),
+    "line_terminated": ('"', "'"),
 }
 
 HASH_FAMILY: dict[str, Any] = {
     "block": None,
     "line": ("#",),
     "strings": ('"""', "'''", '"', "'"),
+    "line_terminated": (),
 }
+
+MAX_RESOLVE_BYTES = 512 * 1024
 
 SKIP_SEGMENTS: tuple[str, ...] = (
     "/specs/",
@@ -208,6 +239,8 @@ def resolve_family(path: str) -> "dict[str, Any] | None":
         return None
     if p.endswith(C_FAMILY_EXTS):
         return C_FAMILY
+    if p.endswith(PYTHON_FAMILY_EXTS):
+        return PYTHON_FAMILY
     if p.endswith(HASH_FAMILY_EXTS):
         return HASH_FAMILY
     return None
@@ -240,11 +273,13 @@ def scan_comments(text: str, family: dict[str, Any]) -> dict[int, "str | None"]:
     A line that only continues a block comment maps to None, so it can never
     qualify as a tool directive. A string-literal aware char scanner: comment
     tokens inside strings or template literals are ignored, and a first-line
-    `#!` shebang is ignored.
+    shebang is ignored. A delimiter listed in `line_terminated` closes at the
+    newline, matching a language that forbids a raw newline inside it.
     """
     block = family["block"]
     line_tokens = family["line"]
     strings = family["strings"]
+    line_terminated = family.get("line_terminated", ())
 
     hits: dict[int, str | None] = {}
 
@@ -272,6 +307,8 @@ def scan_comments(text: str, family: dict[str, Any]) -> dict[int, "str | None"]:
         if ch == "\n":
             line_idx += 1
             if state == "line_comment":
+                state = "normal"
+            elif state == "string" and string_delim in line_terminated:
                 state = "normal"
             i += 1
             continue
@@ -301,6 +338,8 @@ def scan_comments(text: str, family: dict[str, Any]) -> dict[int, "str | None"]:
 
         if state == "string":
             if ch == "\\":
+                if text[i + 1 : i + 2] == "\n":
+                    line_idx += 1
                 i += 2
                 continue
             if text.startswith(string_delim, i):
@@ -324,24 +363,153 @@ def scan_comments(text: str, family: dict[str, Any]) -> dict[int, "str | None"]:
     return hits
 
 
-def find(text: str, family: dict[str, Any]) -> list[str]:
-    """Return prose-comment snippets per line. Tool directives are exempt."""
+def find_pairs(text: str, family: dict[str, Any]) -> list[tuple[int, str]]:
+    """Return (0-based line index, whole stripped line) per prose comment.
+
+    Tool directives are exempt. The whole line is carried rather than the
+    comment body so a trailing comment keeps the code that precedes it, which
+    is what makes two occurrences of the same comment text distinguishable.
+    """
     comments = scan_comments(text, family)
     if not comments:
         return []
 
     lines = text.splitlines()
-    hits: list[str] = []
+    pairs: list[tuple[int, str]] = []
     for idx in sorted(comments):
         if idx >= len(lines):
             continue
         body = comments[idx]
         if body and TOOL_DIRECTIVE.match(body):
             continue
-        stripped = lines[idx].strip()
-        snippet = stripped if len(stripped) <= 60 else stripped[:57] + "..."
-        hits.append(f"L{idx + 1}: {snippet}")
-    return hits
+        pairs.append((idx, lines[idx].strip()))
+    return pairs
+
+
+def format_hits(pairs: list[tuple[int, str]]) -> list[str]:
+    """Render (line index, line) pairs as the `L<n>: <snippet>` report lines."""
+    return [
+        f"L{idx + 1}: {line if len(line) <= 60 else line[:57] + '...'}"
+        for idx, line in pairs
+    ]
+
+
+def find(text: str, family: dict[str, Any]) -> list[str]:
+    """Return prose-comment snippets per line. Tool directives are exempt."""
+    return format_hits(find_pairs(text, family))
+
+
+def added_pairs(
+    before: str, after: str, family: dict[str, Any]
+) -> list[tuple[int, str]]:
+    """Return the comments `after` holds that `before` did not.
+
+    Matching is by line text against a count of the same text in `before`, so
+    a comment that only moved is not reported and a genuine second copy of an
+    existing comment line still is.
+    """
+    remaining = Counter(line for _, line in find_pairs(before, family))
+    added: list[tuple[int, str]] = []
+    for idx, line in find_pairs(after, family):
+        if remaining.get(line):
+            remaining[line] -= 1
+            continue
+        added.append((idx, line))
+    return added
+
+
+def read_source(path: str) -> "str | None":
+    """Return the file's current text, or None when it cannot be read.
+
+    A file past MAX_RESOLVE_BYTES also reads as None: resolving the edit costs
+    two scans of the whole document, and past that ceiling the latency is worth
+    more than what the resolution buys on a file that large.
+    """
+    try:
+        if os.path.getsize(path) > MAX_RESOLVE_BYTES:
+            return None
+        with open(path, encoding="utf-8") as handle:
+            return handle.read()
+    except OSError:
+        return None
+    except UnicodeDecodeError:
+        return None
+
+
+def apply_edit(text: str, edit: dict[str, Any]) -> "str | None":
+    """Return `text` with one edit applied, or None when it does not apply."""
+    old = edit.get("old_string")
+    new = edit.get("new_string")
+    if not isinstance(old, str) or not isinstance(new, str):
+        return None
+    if not old or old not in text:
+        return None
+    return (
+        text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
+    )
+
+
+def apply_edits(text: str, tool: str, tool_input: dict[str, Any]) -> "str | None":
+    """Return the file text an Edit or MultiEdit payload would produce.
+
+    None means the payload cannot be resolved against the file on disk, which
+    also means the tool call itself is about to fail on the same mismatch.
+    """
+    if tool == "Edit":
+        return apply_edit(text, tool_input)
+    if tool == "MultiEdit":
+        edits = tool_input.get("edits") or []
+        if not edits:
+            return None
+        for edit in edits:
+            if not isinstance(edit, dict):
+                return None
+            updated = apply_edit(text, edit)
+            if updated is None:
+                return None
+            text = updated
+        return text
+    return None
+
+
+def resolved_findings(tool: str, tool_input: dict[str, Any]) -> "list[str] | None":
+    """Return report lines from the document the edit produces, or None.
+
+    None means the edit could not be resolved against the file on disk and the
+    caller falls back to scanning the payload fragment on its own.
+    """
+    if tool not in ("Edit", "MultiEdit"):
+        return None
+    path = tool_input.get("file_path", "") or ""
+    family = resolve_family(path)
+    if family is None:
+        return None
+    before = read_source(path)
+    if before is None:
+        return None
+    after = apply_edits(before, tool, tool_input)
+    if after is None:
+        return None
+    hits = format_hits(added_pairs(before, after, family))
+    if not hits:
+        return []
+    return [
+        f"  - {path} (line numbers in the file this edit produces):\n      "
+        + "\n      ".join(hits)
+    ]
+
+
+def fragment_findings(tool: str, tool_input: dict[str, Any]) -> list[str]:
+    """Return report lines from the payload text alone."""
+    findings: list[str] = []
+    for path, field, text in collect(tool, tool_input):
+        family = resolve_family(path)
+        if family is None:
+            continue
+        hits = find(text, family)
+        if hits:
+            findings.append(f"  - {field} ({path}):\n      " + "\n      ".join(hits))
+    return findings
 
 
 import sys as _sys  # noqa: E402
@@ -377,19 +545,9 @@ def main() -> int:
     tool = payload.get("tool_name", "") or ""
     tool_input = payload.get("tool_input", {}) or {}
 
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
-    findings: list[str] = []
-    for path, field, text in items:
-        family = resolve_family(path)
-        if family is None:
-            continue
-        hits = find(text, family)
-        if hits:
-            findings.append(f"  - {field} ({path}):\n      " + "\n      ".join(hits))
-
+    findings = resolved_findings(tool, tool_input)
+    if findings is None:
+        findings = fragment_findings(tool, tool_input)
     if not findings:
         return 0
 
