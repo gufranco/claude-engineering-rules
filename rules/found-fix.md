@@ -105,6 +105,14 @@ in scope as a single unit, by definition. The carve-out is explicit in
     - A library upgrade that requires schema migration
     - A security fix that needs a coordinated release across services
     - A behavior change that needs a feature flag and a rollout plan
+    - A defect inside a file that already carries another change in
+      flight, uncommitted work from a different session. Editing it
+      merges two unrelated changes into one diff nobody can review, and
+      the person holding that work may already be fixing it. This entry
+      buys a smaller obligation, never silence: report the file, the
+      line, the mechanism, and the fix you would apply, then offer to
+      apply it. Naming the file without the diagnosis is a deferral
+      wearing this entry as a costume.
 
    "It will take me 5 minutes to fix" does not qualify.
 
