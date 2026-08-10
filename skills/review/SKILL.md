@@ -47,6 +47,12 @@ When `--backend` or `--frontend` is passed, classify each file:
 
 **Shared:** `packages/`, `libs/`, `shared/`, root config, `prisma/`, `migrations/`. Included in both scopes.
 
+The filter bounds which files get a line-by-line pass. It never bounds which files a finding may name. Whenever a changed file declares a type, a constant, a validation rule, a format, or a helper that its counterpart on the other side of the wire also declares, read that counterpart and report the divergence, even when the filter excluded it.
+
+The duplication itself is the finding, and it is invisible from one side. A response type written out in both the service and the API client, a fingerprint helper copied across the boundary with a comment asking the two to stay identical, a date parsed in one language on the server and another on the client: none of these live in a shared folder, because the absence of a shared folder is the defect. A scoped review that reports only its own half hands back a diagnosis that reads as complete and is not.
+
+Say in the review summary which side got the line-by-line pass and which side was only traced for contracts.
+
 ### Steps
 
 1. **Gather context**, parallel: remote URL, branch, CLI tool, account resolution. Parse flags.
@@ -54,7 +60,9 @@ When `--backend` or `--frontend` is passed, classify each file:
 3. **Get diff and context**: PR mode gets metadata and diff via `gh pr diff`/`glab mr diff`. Local mode detects base, fetches, diffs. Warn about uncommitted changes in local mode.
 4. **Apply scope filter** if `--backend` or `--frontend` passed.
 5. **Read context**: PR description, commit messages, every changed file in full, imported modules, verify PR description matches diff. For existing feedback, sweep every channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md): inline threads, review bodies, PR-level conversation, and commit comments. Reading only inline threads means re-raising a point another reviewer already made in the conversation box, or contradicting a decision the author already explained there.
-6. **Discover applicable standards and rules.** Read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers, `package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`, import statements in changed files, directory names, and config files. Match signals against trigger keywords in the `on_demand` section. Load **every** matched standard file plus all `always_loaded` rules.
+6. **Read the checklist, then discover applicable standards and rules.** Open [`../../checklists/checklist.md`](../../checklists/checklist.md) and read it in this session. Not "recall the 71 category names", not "apply the summary in the system prompt": read the file. The category headings are an index; the findings live in the individual bullets under them, and a bullet you have not read is a bullet you will not check. A review that never opened the file is a review that silently downgraded itself to whatever the model happened to remember.
+
+   Then read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers, `package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`, import statements in changed files, directory names, and config files. Match signals against trigger keywords in the `on_demand` section. Load **every** matched standard file plus all `always_loaded` rules.
 
    This makes the review aware of domain-specific best practices. A PR that adds a database migration is reviewed against [`standards/database.md`](../../standards/database.md). A PR that adds a GraphQL resolver is reviewed against [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A PR that adds a queue consumer is reviewed against [`standards/message-queues.md`](../../standards/message-queues.md).
 
@@ -185,6 +193,18 @@ When `--backend` or `--frontend` is passed, classify each file:
 
      **Security pattern analysis, when SCOPE_AUTH, SCOPE_API, SCOPE_WEBHOOK, or SCOPE_BACKEND is detected.** Read `~/.claude/skills/security-patterns.md` and apply it as an additional security lens. For each changed file that handles user input, perform source-to-sink tracing: map entry points to dangerous sinks, SQL, command, template, file, SSRF, redirect, XSS, deserialization, and verify sanitization at each transition. Check for vulnerability patterns matching the diff: race conditions on financial operations, IDOR, mass assignment, JWT weakness, CORS misconfiguration, missing idempotency. When a security finding is identified, run `git blame -L <start>,<end> <file>` on the vulnerable lines to determine when it was introduced and how long it has been exposed.
    - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 8 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
+
+     **Placement.** Correct code in the wrong module is still a defect, and it is the one the other passes structurally cannot see, because every file reads fine on its own. For each new symbol ask: which layer owns this fact, and does the project already have a home for it?
+
+     | Signal | What it usually means |
+     |--------|----------------------|
+     | A provider's wire format assembled outside the only module that talks to that provider | The adapter is making its caller speak the provider's dialect. Push the serialisation inward |
+     | A hand-rolled guard where the project already has a middleware, base class, or helper for that job | Nobody looked. The inconsistent error shape it produces is a second, downstream finding |
+     | The same type, constant, or helper declared on both sides of a boundary | It belongs in the shared package the project already has |
+     | A workaround for an upstream quirk applied in every client | Normalize once at the layer that owns the response |
+     | A docstring that tells the caller what it must do first | Read it as a confession. "The controller handles that conversion" names the leak out loud |
+
+     Grep before asserting a home is missing. The strongest version of this finding names a facility the project already has and the diff did not use: an existing validation middleware the new route bypassed, an existing shared package that already holds the sibling type. That is checkable and cheap to act on. A placement finding that instead proposes a new abstraction is speculation, and it should be dropped.
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
 11. **Run local verification**: test, with coverage, lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
 12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
@@ -257,6 +277,10 @@ This creates and submits the review in one step. No separate "create PENDING the
 - For multi-line comments, add `start_line` alongside `line`
 - Always clean up the temp file after posting: `rm /tmp/review-payload.json`
 
+**Establish which lines are anchorable before writing any comment.** Fetch the per-file patch once with `gh api repos/:owner/:repo/pulls/<n>/files` and read the hunk headers from that. `gh pr diff --patch`, and a `--paginate` call piped through a `jq select`, both concatenate patches across commits or pages, so the same file comes back with several hunk sets whose line numbers do not describe head. A comment anchored from those lands on the wrong line or is rejected outright.
+
+Files with status `added` are the safe case: every line is in the diff, so any line number is valid. For a `modified` file, only lines inside a hunk range are valid. A finding that falls outside every hunk goes in the summary body, never inline.
+
 **Event type mapping:**
 
 | Verdict | Event |
@@ -328,6 +352,8 @@ Before posting the review, fetch existing review threads and the state of other 
 2. Post the new perspective with explicit acknowledgment: `Different read from <other reviewer>: my concern is <X> while theirs is <Y>. Author should weigh both.`
 
 Never silently post a contradicting comment. The author should never discover the conflict during their `/respond` run.
+
+Automated reviewers count here too, and they carry a failure mode humans do not: their comments are pinned to the commit they ran against, so a finding one of them marked critical may already be fixed by a later commit on the branch. Read the current code at head before deciding what to do with a bot finding. Re-raising something already fixed costs the author's trust in the whole review. When a bot finding is still live and you agree with it, say so in one line rather than restating it as new.
 
 ### Regression-Test Pinning Recommendation
 
@@ -506,6 +532,18 @@ Every review finding must include a confidence score from 1 to 10:
 - **Below 5**: suppress from the review output. Investigate further before reporting
 
 When a suppressed finding turns out to be real in a later review iteration, that is a calibration signal. Adjust scoring for that pattern.
+
+### Run the finding before writing it
+
+When a finding is computable from the diff alone, do not score it. Execute it. Pure functions, date and calendar arithmetic, string matching, numeric conversion, regex, sort comparators, and boundary conditions all qualify: paste the function into `node -e` or `python3 -c`, feed it the real inputs from the codebase, and read what comes back. It takes one tool call and it replaces a 6 with a 10 or deletes the finding outright.
+
+Feed it real values pulled from the codebase, never invented ones. A substring matcher's collisions are undeniable when the inputs are the project's own constants and prove nothing when they are six plausible strings you made up.
+
+Run the proposed fix through the same harness before suggesting it. A fix that repairs the reported case and quietly breaks a case the code was written for is worse than the bug, and one more call is the whole cost of knowing. Tightening a matcher from `.some` to `.every` is only worth suggesting once the cases the original was built to handle are confirmed still passing.
+
+Paste the actual output into the comment. Three lines of observed results end the discussion in a way that "this appears to mishandle DST" never does, and it spares the author reproducing your reasoning to decide whether to believe you.
+
+The reverse holds with equal force. When the reproduction comes back clean, the finding was wrong: drop it silently and move on. That is the check working, not a result to report.
 
 ## Fix-First Heuristic
 
