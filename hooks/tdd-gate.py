@@ -10,6 +10,10 @@ Definition of "production code":
   - NOT under tests/, __tests__/, spec/, e2e/
   - NOT itself a test file (.test. .spec. _test.go etc.)
   - NOT a config, doc, fixture, migration, or generated file
+  - NOT under a `scratchpad/` directory or the shared `/tmp` root. The
+    harness directs throwaway analysis scripts to the session scratchpad,
+    so gating them contradicts the instruction that put them there. The
+    per-user TMPDIR stays gated; pytest's `tmp_path` lives there.
 
 Test discovery strategy (first match wins):
   1. sibling `<name>.test.<ext>` / `<name>.spec.<ext>` / `<name>_test.<ext>`
@@ -102,6 +106,7 @@ EXCLUDED_DIR_PARTS = {
     ".venv",
     "venv",
     "env",
+    "scratchpad",
 }
 
 EXCLUDED_NAME_MARKERS = (
@@ -163,8 +168,38 @@ def is_barrel(content: str) -> bool:
     return True
 
 
+def _shared_temp_roots() -> tuple[Path, ...]:
+    """Shared temp roots whose contents are throwaway by construction.
+
+    Deliberately excludes the per-user TMPDIR, `/var/folders/...` on
+    macOS: pytest's `tmp_path` lives there, and exempting it would switch
+    off this hook's own test suite along with every other hook's.
+    """
+    resolved = []
+    for candidate in ("/tmp", "/private/tmp"):
+        try:
+            resolved.append(Path(candidate).resolve())
+        except OSError:
+            continue
+    return tuple(dict.fromkeys(resolved))
+
+
+SHARED_TEMP_ROOTS = _shared_temp_roots()
+
+
+def is_ephemeral_path(path: Path) -> bool:
+    """True for scratch files under a shared temp root, never production."""
+    try:
+        resolved = path.resolve()
+    except OSError:
+        return False
+    return any(resolved.is_relative_to(root) for root in SHARED_TEMP_ROOTS)
+
+
 def is_production_source(path: Path) -> bool:
     if path.suffix not in SOURCE_EXTS:
+        return False
+    if is_ephemeral_path(path):
         return False
     if path.name in EXCLUDED_EXACT_NAMES:
         return False
