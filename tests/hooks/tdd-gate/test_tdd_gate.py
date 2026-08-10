@@ -296,3 +296,29 @@ def test_handles_malformed_json(run_hook, tmp_path):
     )
 
     assert proc.returncode == 0
+
+
+def test_allows_source_in_session_scratchpad(tool_use, assert_allows, tmp_path):
+    target = tmp_path / "session-abc" / "scratchpad" / "build_review.py"
+
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    assert_allows(HOOK, payload)
+
+
+def test_allows_source_written_directly_to_shared_tmp(tool_use, assert_allows):
+    target = Path("/tmp") / "retro-probe-measure-drift.py"
+
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    assert_allows(HOOK, payload)
+
+
+def test_still_blocks_source_under_the_per_user_tmpdir(
+    tool_use, assert_blocks, tmp_path
+):
+    target = tmp_path / "src" / "services" / "user.py"
+
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    assert_blocks(HOOK, payload, "without a companion test")
