@@ -50,6 +50,8 @@ Read the project thoroughly. Run these **in parallel**:
 6. **Git context**: run `git remote -v` and `git log --oneline -10` to get the repo URL, recent activity, and contributor count.
 7. **Visual assets**: check for logo files like `logo.png`, `logo.svg`, `banner.png`, `.github/assets/`, or `docs/images/`, and existing screenshots or demos.
 8. **License and metadata**: read `LICENSE`, `.github/FUNDING.yml`, badges in existing README.
+9. **Community health files**: check for `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `CITATION.cff`, `CODEOWNERS`, and `.github/ISSUE_TEMPLATE/`. GitHub scores the same list in its community profile. A public repo missing all of them reads as unmaintained to anyone evaluating it for adoption.
+10. **Release and versioning signals**: run `git tag --list --sort=-v:refname | head -5` and `gh release list --limit 5`. Read the version field from the manifest. Decide whether the tag history follows semantic versioning, calendar versioning, or no scheme at all.
 
 ### Phase 2: Architecture and Identity Analysis
 
@@ -314,7 +316,7 @@ curl http://localhost:3000/health
 
 This subsection lowers the cost of contribution and pre-empts PR review back-and-forth. Include it when the project expects external contributors or when the project has more than one regular contributor.
 
-The generated section has four parts.
+The generated section has five parts.
 
 **Reproducing a bug.** Concrete steps from clone to running a minimal reproducer. Reuse the same commands as the Quick Start verification step, plus any seed scripts or fixture files needed. A reviewer who cannot reproduce a reported bug pushes back harder.
 
@@ -332,6 +334,21 @@ npm run dev
 
 To reproduce reported bugs, follow the steps above and then read the bug report's "Steps to reproduce" section.
 ```
+
+**Running the tests.** The command that runs the suite, plus one line per suite naming what it covers. A contributor who cannot tell the unit suite from the end-to-end suite runs the slowest one every time, or runs none of them.
+
+```markdown
+### Running the tests
+
+| Suite | Command | Covers |
+|:------|:--------|:-------|
+| Unit | `npm run test:unit` | Pure functions and domain logic |
+| Integration | `npm run test:integration` | Real database and queue, no mocks |
+| End to end | `npm run test:e2e` | Full user flows through the HTTP layer |
+| Lint and format | `npm run lint` | Style and static analysis gates |
+```
+
+Take the suite names and commands from the manifest scripts, the Makefile targets, or the CI job matrix found in Phase 1. Never invent a suite the project does not have. When the project ships a single undifferentiated `test` script, show one row and skip the table header ceremony.
 
 **Project conventions.** A table listing concrete conventions detected from the codebase. Surfacing these in the README pre-empts review comments that would otherwise litigate style.
 
@@ -373,7 +390,7 @@ Phase 1 Deep Scan gains these scans:
 2. **Detect lint and style configs.** Look for `.eslintrc.*`, `prettier.config.*`, `.editorconfig`, `pyproject.toml [tool.ruff]`, `clippy.toml`, `golangci.yml`. Cite the discovered files in the table.
 3. **Detect AI review bots.** Look for `.coderabbit.yml`, `.coderabbit.yaml`, `.greptile.yml`, `.cursorrules`, `.cursor/`, `.sourcery.yaml`, `korbit.yml`. List the discovered bots in the conventions table.
 4. **Detect issue tracker.** Read repo metadata via `gh repo view --json hasIssuesEnabled,url`. If issues are disabled, look for `ISSUE_TEMPLATE/` or `BUG_REPORT.md` template files. If neither, omit the section and leave a comment recommending the user add one.
-5. **Detect testing instructions.** Look for `make test`, `npm run test`, `pytest`, `go test ./...`, or equivalent. The reproducing-a-bug instructions reuse the same command.
+5. **Detect testing instructions.** Look for `make test`, `npm run test`, `pytest`, `go test ./...`, or equivalent. Enumerate every test-related script or target, not only the aggregate one, so the Running the tests table can name each suite and what it covers. The reproducing-a-bug instructions reuse the same command.
 
 #### Skip conditions
 
@@ -555,6 +572,8 @@ Tables grouped by category. Only include if the project has a Makefile, scripts,
 | `make tf-plan` | Preview infrastructure changes |
 ```
 
+When the project deploys to a live environment, the Infrastructure group must name the deploy command, the target environment, and the rollback command. A documented deploy path with no documented rollback is a gap; report it as a follow-up rather than leaving the reader to guess.
+
 ### 10. Configuration / Environment Variables
 
 Tables with variable name, description, required/optional, and default value.
@@ -600,6 +619,47 @@ Honest, technical answer explaining the trade-off.
 
 </details>
 ```
+
+### 12b. Versioning and Releases
+
+One short block that answers "can I depend on this?". Libraries, CLIs, SDKs, and anything published to a registry must carry it. Applications and internal services may skip it.
+
+```markdown
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). Every release is tagged. See [releases](https://github.com/user/repo/releases) for the changelog and upgrade notes.
+```
+
+Rules:
+
+- Name the scheme and link its spec. Semantic versioning, calendar versioning, and an explicit "no stability guarantee before 1.0" statement are all acceptable answers. Silence is not.
+- Link the releases page or the tag list. Never inline a changelog; the "What NOT to Include" rule against changelogs in the README still holds.
+- When the manifest version is `0.x`, say what that means for breaking changes. A `0.x` library that breaks on minor releases must say so where a reader will see it before installing.
+- Name the supported range when the project maintains more than one line, for example security fixes on the previous major.
+- Skip the section when Phase 1 found no tags and no releases. A versioning promise with nothing published behind it is a claim the repo cannot back.
+
+### 12c. Maintainers, Support, and Community Health
+
+Three questions this block answers: who owns this, where do I ask, and how do I contribute. Include it for any public repo. Skip it for personal dotfiles and internal-only repos.
+
+```markdown
+## Support
+
+| Need | Where |
+|:-----|:------|
+| Bug report | [GitHub Issues](https://github.com/user/repo/issues) |
+| Question | [GitHub Discussions](https://github.com/user/repo/discussions) |
+| Security report | [Security policy](SECURITY.md) |
+| Contributing | [Contribution guide](CONTRIBUTING.md) |
+```
+
+Rules:
+
+- Link only the community health files Phase 1 actually found. A link to a file that does not exist is a broken link, which anti-pattern 4 already bans.
+- Never inline the content of those files. A contribution guide pasted into the README is the boilerplate wall this skill rejects; the link is the whole deliverable.
+- Name a maintainer or an owning team when a reader can reach one. Pull the name from `CODEOWNERS` when present. Skip it when the sole maintainer is the repo owner, since the GitHub header already shows that.
+- When the repo is public, takes external contributions, and Phase 1 found none of these files, omit the section and report the gap as a follow-up rather than generating dead links.
+- A security reporting path is the one entry that must not be silently dropped for a public repo handling credentials, network input, or user data. When `SECURITY.md` is absent there, say so in the follow-up list.
 
 ### 13. License
 
@@ -700,7 +760,7 @@ Make the project's scope tangible with specific numbers. These are the most pers
 
 ### What NOT to Include
 
-- **No "Contributing" section** unless the user asks for it.
+- **No inlined contribution guide.** A "Contributing" section that restates setup, branch naming, and review process is a boilerplate wall. Link the file instead, per the "Maintainers, Support, and Community Health" section, and omit the block entirely when no such file exists and the repo takes no external contributions. Anti-pattern 7 counts a missing contribution-guide link as a defect, so the link and the wall are different things.
 - **No "Acknowledgments" section** unless the user asks for it.
 - **No version history or changelog** in the README. Link to releases instead.
 - **No "Built with" section** that just lists logos. The badges and stack description cover this.
