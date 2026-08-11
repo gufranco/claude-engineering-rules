@@ -159,6 +159,18 @@ When caught hallucinating: stop, correct, re-verify from source.
 - **Default to "all".** When presenting a list of improvements, fixes, or assessment findings, implement all of them without asking which to do. The user's default answer is always "all"
 - **Never strip content when optimizing.** When asked to compress, optimize, or improve existing files: tighten language, remove filler words, fix duplication. NEVER remove rules, examples, explanations, or tables. If a section seems removable, ask first.
 
+## Hook Bypass Discipline
+
+A blocking hook fires because a rule was violated. The default response is to change the code, never to silence the hook.
+
+- **Engage a bypass at most once per session, per hook.** Reaching for the same bypass a second time means the rule is being fought rather than a false positive being cleared. Stop and ask the user instead.
+- **A bypass covers one specific false positive, never a category.** Approval to bypass for one case does not carry to the next file, the next batch, or a related case. Re-derive the justification each time or do not bypass.
+- **Narrow approval stays narrow.** When the user approves an exception, apply it to exactly what they approved. "Write JSDoc on public functions" is not permission to add inline body comments, schema comments, or commentary anywhere else.
+- **Name the false positive out loud before bypassing.** State which specific pattern the hook misread and why the code is correct as written. If that sentence cannot be written honestly, the hook is right.
+- **Clear bypasses when the task that justified them ends.** A TTL bypass left running silences the rule for unrelated work later in the session.
+
+The failure mode this prevents: a bypass engaged once for a real reason, then re-engaged reflexively at the start of every subsequent batch until the rule is effectively off.
+
 ## External Tools
 
 Before using any external tool or CLI command:
