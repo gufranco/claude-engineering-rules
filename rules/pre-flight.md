@@ -172,6 +172,18 @@ Verify every external interface the implementation will touch.
 | Libraries to use | Fetch docs (llms.txt or official docs) |
 | Database tables | Read the schema or migration files |
 | Config and env vars | Read `.env.example` or consuming code |
+| Thresholds and constants copied from existing code | Read what the original value actually measures, and where it applies |
+
+Copying a number from elsewhere in the codebase looks like reuse and is often invention. Before describing new code as following an existing threshold, confirm all four:
+
+| Question | Why it matters |
+|----------|----------------|
+| Does it measure the same quantity? | A count that includes the subject differs from one that excludes them; a stored high-water mark differs from a live count |
+| Does it trigger the same action? | Blocking a purchase and blocking account verification are different consequences from the same number |
+| Does it apply under the same conditions? | An existing check may be environment-gated or honor an override flag that the new one does not |
+| Does the source population match? | A threshold tuned over all rows means something else when applied to a filtered subset |
+
+When any answer is no, the value was borrowed but its justification was not. Either carry the semantics across or derive the threshold independently, and never tell a reviewer the new rule "reuses the existing threshold" when only the digit is shared.
 
 No guessing. If the interface is ambiguous, clarify before coding.
 

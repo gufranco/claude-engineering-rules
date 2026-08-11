@@ -128,6 +128,26 @@ Pushed `597d6d1cc`.
 
 The good version cuts three things: the "I ran the suite, observed, asserted" workflow narration, the "Resulting pins:" framing label, and the "All N tests still pass" trailer. The reader gets the result and the reasoning. The reader does not get a tour of how the assertions were derived. CI status conveys whether tests pass.
 
+## No Self-Criticism In Messages To Other People
+
+Confessional writing is its own process leak. A colleague reading a Slack reply or a PR comment needs the current state and the reasoning behind it. They do not need the author's account of having been wrong, of what an earlier draft claimed, or of how many attempts it took.
+
+This governs outward-facing artifacts only: Slack messages, PR descriptions and replies, commit messages, docs. Inside the assistant's own reply to the user, an error is still stated plainly and corrected, per the correction guidance in the harness.
+
+| Instead of | Write |
+|-----------|-------|
+| "I got this wrong. I said the threshold reused the existing one, but that was too generous to myself." | "Checked the code. There is no device check at verification today, so this would be new behavior." |
+| "My validation was flawed because it only measured the cases that agreed with me." | "The validation covered the groups that were actioned, not the ones deliberately kept." |
+| "I should have caught this earlier." | Nothing. Say what changed. |
+| "My first pass had a modelling error that I then fixed." | State the finding the corrected model produced. |
+
+Two things stay in, because the reader needs them to decide:
+
+- **Facts that changed a conclusion.** "Measured against accounts actually suspended, all-caps is 21% versus 1%" belongs in the message. The correction is load-bearing; the confession is not.
+- **Limits on the evidence.** "This figure is partly circular, because those accounts were suspended using these same criteria" is a property of the data, not an admission. Never drop a caveat to sound more certain.
+
+Acknowledging that someone else is right is not self-criticism and is welcome: "You are right to flag it" reads as collaboration. The banned move is narrating one's own fallibility.
+
 ## How To Write A Code Comment Instead
 
 Code comments describe the code. They never describe how the code was produced.

@@ -151,6 +151,33 @@ Functions under 30 lines. Variable names: 1-2 words for small scopes,
 descriptive for public APIs.
 ```
 
+### 7b. Every decision carries its evidence
+
+When a document states a decision, the measurement that drove it sits in the same sentence or the adjacent cell. A reader must be able to check the reasoning without asking for the number, and must be able to disagree with the conclusion by disputing the data rather than the author.
+
+This applies wherever a choice is presented as settled: PR descriptions, ADRs, design docs, review replies, status messages. It applies with most force to decisions that contradict what was originally asked for, because those are the ones a reader will challenge.
+
+```
+# Bad: the conclusion without its basis
+We decided not to block all-caps names on their own, and to require a
+second condition.
+
+# Good: the number that forced the conclusion
+All-caps names appear on 2.77% of verified customers but only 0.90% of
+confirmed duplicates, so alone they are less likely to be fraud than
+average. Blocking them outright would add friction for 18,556 customers
+to stop roughly 14. Paired with a single small purchase they separate
+1,655 fraud accounts from 62 clean ones, which is why every rule
+requires two conditions.
+```
+
+For a table of decisions, add an evidence column rather than a prose paragraph after it. One row, one decision, one number.
+
+Two obligations come with this:
+
+- **State the limits of the evidence in the same place.** A figure derived circularly, from a sample, or from one environment is reported with that caveat attached. Removing the caveat to sound more certain is the failure this rule exists to prevent.
+- **A decision with no measurement behind it says so.** "Chosen by convention, no data" is a legitimate entry. An unsupported claim dressed as a finding is not.
+
 ### 8. Eliminate weasel words
 
 "Should", "consider", "might want to", "ideally", "where possible" all leave an escape hatch. If the instruction is mandatory, say "must". If genuinely optional, say "optional" explicitly.
