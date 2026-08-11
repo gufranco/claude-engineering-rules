@@ -91,17 +91,17 @@ A layered config where each layer catches what the layer above missed.
 | [`security`](rules/security.md) | Secrets, auth, encryption, data privacy, audit logging, supply chain |
 | [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs |
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
-| [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output, plus pronoun discipline, active voice, and tone calibration with Claude-conversation examples |
+| [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output, plus pronoun discipline, active voice, tone calibration, and the requirement that every stated decision carries the measurement behind it |
 | [`normative-keywords`](rules/normative-keywords.md) | BCP 14 (RFC 2119 + RFC 8174) keyword glossary. Lowercase primary, uppercase opt-in for critical correctness, security, data integrity, and irreversibility |
 | [`repo-analysis`](rules/repo-analysis.md) | Clone external repos to a temp directory instead of fetching files via `gh`/raw URLs. Mandatory shallow-clone workflow, carve-outs for issue/PR/search ops, subagent briefing |
-| [`pre-flight`](rules/pre-flight.md) | Duplicate check, market research, architecture fit, interface verification |
+| [`pre-flight`](rules/pre-flight.md) | Duplicate check, market research, architecture fit, interface verification, and semantic verification of thresholds copied from existing code |
 | [`surgical-edits`](rules/surgical-edits.md) | Every changed line traces to the request |
 | [`ai-guardrails`](rules/ai-guardrails.md) | AI output review, plan before generating, multi-agent validation |
 | [`memory-supersede`](rules/memory-supersede.md) | Supersede-not-delete for project and feedback memories |
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
 | [`smart-questions`](rules/smart-questions.md) | Question format, mandatory recommendation when presenting a choice, status reports, FIXED/RESOLVED/DONE loop closure, Tatham bug-report essentials |
 | [`found-fix`](rules/found-fix.md) | Any verification-surface finding is in scope for the current task. Bans the rationalization phrases that defer fixes to a later session |
-| [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, hyperbole tells from commit messages and PR descriptions |
+| [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, hyperbole tells, and self-criticism from commit messages, PR descriptions, and messages to colleagues |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
 | [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas, and a close-out merge that folds a completed change into the spec |
 | [`compliance-defaults`](rules/compliance-defaults.md) | Umbrella for the compliance family. Strictest applicable rule wins, and a published standard counts as binding before its effective date |
