@@ -190,6 +190,8 @@ Before using any external tool or CLI command:
 
 Commands may be aliased (e.g., `du`→`dust` or `ls`→`eza`), changing flags and output. Always prefix with `command` to bypass: `command du -sh`, `command ls -la`, `command stat`. Applies to any command where you rely on standard flags or output format.
 
+**zsh parameter modifiers.** The shell is zsh, where a colon after a variable introduces a modifier rather than literal text. `:r`, `:h`, `:e`, `:t`, `:s`, `:a`, and `:l` are all consumed. `git show $BRANCH:readme.md` silently drops the leading `r` and passes a mangled ref, and the error names a path nobody wrote. Brace and quote whenever a variable is followed by a colon: `git show "${BRANCH}:readme.md"`. The safest form for a git ref is to write it literally rather than build it from a variable.
+
 ### Shell Argument Safety (MANDATORY)
 
 Bash history expansion converts `!` to `\!` in double-quoted strings. Variable expansion, backtick execution, and backslash processing also apply. Any text payload passed through a double-quoted shell argument, code snippets, Markdown, prose with punctuation, will be silently corrupted.
