@@ -31,7 +31,7 @@ Use two references:
 ### Arguments
 
 - No arguments: review the PR for the current branch. If no PR, fall back to local mode.
-- PR number(s) or URL(s): review those PRs sequentially.
+- PR number(s) or URL(s): review those PRs sequentially, then correlate them before presenting.
 - `--local`: review local branch diff against base.
 - `--post`: post review as inline comments without asking, someone else's PR only.
 - `--backend`: review only backend/infra files.
@@ -123,6 +123,12 @@ Say in the review summary which side got the line-by-line pass and which side wa
 
    **7d. Flag impact findings.** For each consumer that would break or behave differently after the change, record: the consumer file and line, what it expects, and how the change violates that expectation. These findings have the same severity as bugs found in the diff itself.
 
+   **7e. Cross-PR correlation, when more than one PR is under review.** An interface change in one PR and a consumer of it in another are invisible from either side. Each branch typechecks against the base, both report green, and the break appears only when the second one merges. Reviewing the PRs one after another and presenting two independent verdicts hands back a diagnosis that reads as complete and is not.
+
+   For every symbol one PR adds, narrows, or makes required, grep the other PRs' branches for constructors and callers that would no longer satisfy it: a new required field on a shared interface, a narrowed return type, a changed function signature, a bumped wire-format version, a renamed env var, a new enum member that widens an exhaustive switch. Check the base branch too, since a symbol absent there is what lets both PRs pass in isolation.
+
+   Report the collision on both PRs, not one. Name which PR is the natural home for the fix, and say plainly that merge order decides whether the base branch breaks. When one PR's infrastructure already provisions what the other's code expects, say so: that turns a design argument into a missing line.
+
 9. **Behavioral Flow Analysis, MANDATORY, do not skip.** Per-file analysis catches syntax-level bugs. This step catches design-level bugs: broken idempotency, race conditions, data corruption under concurrency, and attack vectors. Skipping this step is the failure mode that caused PR #1449 to require a second review pass.
 
    **9a. Trace every request lifecycle end-to-end.** For each new handler, endpoint, consumer, or webhook in the diff, trace the complete request from HTTP entry through every service call to every database write and external side effect. Do not review files in isolation. Follow the data.
@@ -208,7 +214,9 @@ Say in the review summary which side got the line-by-line pass and which side wa
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
 11. **Run local verification**: test, with coverage, lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
 12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
-13. **Check branch freshness, CI, test evidence, PR size**, parallel. Stale branch is blocking. PR > 400 lines = warning, > 1000 = blocking.
+13. **Check branch freshness, CI, test evidence, PR size**, parallel. PR > 400 lines = warning, > 1000 = blocking.
+
+    A branch behind its base is blocking only when the drift touches files the PR changes. Compute the intersection of the two changed-file lists rather than reading the commit count: `comm -12` over `git diff --name-only <head>...<base>` and `git diff --name-only <base>...<head>`, both sorted. An empty intersection is drift, and it belongs in the summary as an observation, never in the verdict. A non-empty one is a real rebase requirement, and naming the overlapping files is what makes it actionable.
 14. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9. When presenting to the user in-terminal, also include a Standards Applied line for internal transparency.
 
     **External output is a separate channel.** The in-terminal presentation includes internal scaffolding such as Standards Applied, the Behavioral Flow Analysis section heading, and severity tiers like P0, P1, and P2. What goes to GitHub does not. Before building the JSON payload, do a forward pass that strips:
@@ -568,7 +576,7 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - Always detect git platform from remote URL.
 - Always read surrounding code before reviewing.
 - Always present the full review before posting comments.
-- Never approve a PR with failing tests, stale branch, or missing test evidence.
+- Never approve a PR with failing tests, a stale branch, or missing test evidence. Stale means the base drift overlaps files the PR changes, per step 13; a commit count alone does not make a branch stale.
 - Always restore account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
 - Apply all 71 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
 - When the diff touches authentication, load [`standards/authentication.md`](standards/authentication.md) and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
