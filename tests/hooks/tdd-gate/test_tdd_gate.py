@@ -363,3 +363,29 @@ def test_a_repo_local_test_directory_still_satisfies_the_gate(
     )
 
     assert_allows("tdd-gate", payload)
+
+
+def test_a_loosely_named_test_is_not_a_companion(tool_use, assert_blocks, tmp_path):
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_user_supplied_artifact_guard.py").write_text("def test_x(): pass\n")
+    pkg = tmp_path / "src" / "services"
+    pkg.mkdir(parents=True)
+    target = pkg / "user.py"
+
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    assert_blocks("tdd-gate", payload, "without a companion test")
+
+
+def test_a_precisely_named_test_is_a_companion(tool_use, assert_allows, tmp_path):
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_user.py").write_text("def test_x(): pass\n")
+    pkg = tmp_path / "src" / "services"
+    pkg.mkdir(parents=True)
+    target = pkg / "user.py"
+
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    assert_allows("tdd-gate", payload)

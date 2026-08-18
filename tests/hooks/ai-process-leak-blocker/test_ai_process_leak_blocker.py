@@ -638,7 +638,9 @@ def test_allows_human_phrasing_about_tests(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
-def test_allows_project_vocabulary_inside_the_second_brain_vault(tool_use, assert_allows, tmp_path):
+def test_allows_project_vocabulary_inside_the_second_brain_vault(
+    tool_use, assert_allows, tmp_path
+):
     vault = tmp_path / "vault" / "wiki" / "projects"
     vault.mkdir(parents=True)
     payload = tool_use(
@@ -652,7 +654,9 @@ def test_allows_project_vocabulary_inside_the_second_brain_vault(tool_use, asser
     assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")})
 
 
-def test_still_blocks_process_language_outside_the_vault(tool_use, assert_blocks, tmp_path):
+def test_still_blocks_process_language_outside_the_vault(
+    tool_use, assert_blocks, tmp_path
+):
     vault = tmp_path / "vault"
     vault.mkdir()
     outside = tmp_path / "project" / "README.md"
