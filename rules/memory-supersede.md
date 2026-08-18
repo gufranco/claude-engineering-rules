@@ -59,3 +59,11 @@ supersedes: feedback_example.md
 Overwriting memories destroys the trail of how the user's preferences evolved. A project memory that says "we use Postgres" overwritten by "we use MySQL" leaves no record of the transition. Knowing both helps the assistant infer what tooling, code, and integrations may still reflect the older choice.
 
 Reference memories are exempt because they point to external resources that change. A stale URL is worse than no URL.
+
+## Where The Chain Actually Lives
+
+This rule described a convention and supplied no mechanism, and the result is visible: no memory file carries `superseded_by` or `supersedes`, and none carries a date. A convention with nothing enforcing it does not survive a busy session.
+
+The mechanism is the `timeline:` array specified in [`knowledge-notes.md`](knowledge-notes.md). A fact that changes gets a new entry carrying `from` and `until` for when it was true, `learned` for when it was recorded, and `source` for where it came from. The previous entry survives untouched, which is what this rule was always asking for.
+
+Memory files are compiled from vault notes, so the chain is maintained once, in the vault, and the compiled artifact inherits it. A memory file is no longer the place to hand-edit a supersession.

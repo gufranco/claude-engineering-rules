@@ -145,7 +145,9 @@ def post_text(tool: str, tool_input: dict, path: Path) -> str | None:
 
 def emit(findings: list[tuple[str, int, str]], rel: Path) -> None:
     codes = sorted({code for code, _, _ in findings})
-    reported = [f"{rel}:{line} {code}: {text}" for code, line, text in findings[:MAX_REPORTED]]
+    reported = [
+        f"{rel}:{line} {code}: {text}" for code, line, text in findings[:MAX_REPORTED]
+    ]
     if len(findings) > MAX_REPORTED:
         reported.append(f"... and {len(findings) - MAX_REPORTED} more")
     detected = "\n".join(reported)
@@ -153,7 +155,9 @@ def emit(findings: list[tuple[str, int, str]], rel: Path) -> None:
     fix = "\n".join(f"{code}: {FIXES[code]}" for code in codes)
     _audit(hook=HOOK, decision="block", codes=codes, path=str(rel))
     if _block is None:  # pragma: no cover
-        sys.stderr.write(f"BLOCKED by {HOOK} ({RULE_ANCHOR})\n\n{detected}\n\n{why}\n\n{fix}\n")
+        sys.stderr.write(
+            f"BLOCKED by {HOOK} ({RULE_ANCHOR})\n\n{detected}\n\n{why}\n\n{fix}\n"
+        )
     else:
         sys.stderr.write(
             _block(
@@ -214,7 +218,12 @@ def main() -> None:
     rel = kn.relative(path, root)
     if rel is None or kn.is_exempt(rel):
         sys.exit(0)
-    if rel.parts and rel.parts[0] == kn.RAW_DIR and tool in ("Edit", "MultiEdit") and path.exists():
+    if (
+        rel.parts
+        and rel.parts[0] == kn.RAW_DIR
+        and tool in ("Edit", "MultiEdit")
+        and path.exists()
+    ):
         emit([("KN005", 1, f"edit to immutable source {rel}")], rel)
     if path.suffix.lower() != ".md":
         sys.exit(0)

@@ -13,7 +13,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from _lib import knowledge_notes as kn
+from _lib import knowledge_notes as kn  # noqa: E402
 
 GOOD = """---
 date: 2026-08-18
@@ -33,7 +33,14 @@ Timeless prose.
 @pytest.fixture
 def vault(tmp_path: Path) -> Path:
     root = tmp_path / "vault"
-    for sub in ("wiki/concepts", "wiki/entities", "raw", "daily", "templates", "_trash"):
+    for sub in (
+        "wiki/concepts",
+        "wiki/entities",
+        "raw",
+        "daily",
+        "templates",
+        "_trash",
+    ):
         (root / sub).mkdir(parents=True, exist_ok=True)
     return root
 

@@ -29,7 +29,14 @@ Some timeless prose about the idea.
 @pytest.fixture
 def vault(tmp_path: Path) -> Path:
     root = tmp_path / "vault"
-    for sub in ("wiki/concepts", "wiki/entities", "raw/articles", "daily", "templates", "_trash"):
+    for sub in (
+        "wiki/concepts",
+        "wiki/entities",
+        "raw/articles",
+        "daily",
+        "templates",
+        "_trash",
+    ):
         (root / sub).mkdir(parents=True, exist_ok=True)
     return root
 
@@ -44,14 +51,18 @@ def note(vault: Path, rel: str) -> str:
 
 
 def test_allows_compliant_note(tool_use, assert_allows, vault, env):
-    payload = tool_use("Write", {"file_path": note(vault, "wiki/concepts/Idea.md"), "content": GOOD})
+    payload = tool_use(
+        "Write", {"file_path": note(vault, "wiki/concepts/Idea.md"), "content": GOOD}
+    )
 
     assert_allows(HOOK, payload, env=env)
 
 
 def test_allows_path_outside_the_vault(tool_use, assert_allows, tmp_path, env):
     outside = tmp_path / "elsewhere.md"
-    payload = tool_use("Write", {"file_path": str(outside), "content": "no frontmatter here"})
+    payload = tool_use(
+        "Write", {"file_path": str(outside), "content": "no frontmatter here"}
+    )
 
     assert_allows(HOOK, payload, env=env)
 
@@ -64,15 +75,23 @@ def test_allows_non_markdown_inside_the_vault(tool_use, assert_allows, vault, en
     assert_allows(HOOK, payload, env=env)
 
 
-@pytest.mark.parametrize("rel", ["templates/entity.md", "_trash/old.md", ".obsidian/app.json"])
+@pytest.mark.parametrize(
+    "rel", ["templates/entity.md", "_trash/old.md", ".obsidian/app.json"]
+)
 def test_allows_exempt_directories(tool_use, assert_allows, vault, env, rel):
-    payload = tool_use("Write", {"file_path": note(vault, rel), "content": "anything at all"})
+    payload = tool_use(
+        "Write", {"file_path": note(vault, rel), "content": "anything at all"}
+    )
 
     assert_allows(HOOK, payload, env=env)
 
 
-def test_allows_vault_root_manual_without_frontmatter(tool_use, assert_allows, vault, env):
-    payload = tool_use("Write", {"file_path": note(vault, "CLAUDE.md"), "content": "# Manual\n"})
+def test_allows_vault_root_manual_without_frontmatter(
+    tool_use, assert_allows, vault, env
+):
+    payload = tool_use(
+        "Write", {"file_path": note(vault, "CLAUDE.md"), "content": "# Manual\n"}
+    )
 
     assert_allows(HOOK, payload, env=env)
 
@@ -80,7 +99,10 @@ def test_allows_vault_root_manual_without_frontmatter(tool_use, assert_allows, v
 def test_blocks_missing_frontmatter(tool_use, assert_blocks, vault, env):
     payload = tool_use(
         "Write",
-        {"file_path": note(vault, "wiki/concepts/Bare.md"), "content": "# Bare\n\nno frontmatter\n"},
+        {
+            "file_path": note(vault, "wiki/concepts/Bare.md"),
+            "content": "# Bare\n\nno frontmatter\n",
+        },
     )
 
     assert_blocks(HOOK, payload, "KN001", env=env)
@@ -89,7 +111,8 @@ def test_blocks_missing_frontmatter(tool_use, assert_blocks, vault, env):
 def test_blocks_missing_required_key(tool_use, assert_blocks, vault, env):
     content = GOOD.replace("ai-first: true\n", "")
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Partial.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Partial.md"), "content": content},
     )
 
     assert_blocks(HOOK, payload, "ai-first", env=env)
@@ -98,7 +121,8 @@ def test_blocks_missing_required_key(tool_use, assert_blocks, vault, env):
 def test_blocks_missing_preamble(tool_use, assert_blocks, vault, env):
     content = GOOD.replace("## For future agent", "## Summary")
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/NoPreamble.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/NoPreamble.md"), "content": content},
     )
 
     assert_blocks(HOOK, payload, "KN002", env=env)
@@ -116,7 +140,8 @@ def test_blocks_undated_volatile_claim(tool_use, assert_blocks, vault, env):
 def test_allows_stamped_volatile_claim(tool_use, assert_allows, vault, env):
     content = GOOD + "\nThe pipeline has 13 open deals (as of 2026-08-18).\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Stamped.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Stamped.md"), "content": content},
     )
 
     assert_allows(HOOK, payload, env=env)
@@ -124,7 +149,9 @@ def test_allows_stamped_volatile_claim(tool_use, assert_allows, vault, env):
 
 def test_allows_volatile_claim_in_dated_container(tool_use, assert_allows, vault, env):
     content = GOOD + "\nThe pipeline has 13 open deals.\n"
-    payload = tool_use("Write", {"file_path": note(vault, "daily/2026-08-18.md"), "content": content})
+    payload = tool_use(
+        "Write", {"file_path": note(vault, "daily/2026-08-18.md"), "content": content}
+    )
 
     assert_allows(HOOK, payload, env=env)
 
@@ -132,25 +159,32 @@ def test_allows_volatile_claim_in_dated_container(tool_use, assert_allows, vault
 def test_allows_volatile_claim_under_dated_heading(tool_use, assert_allows, vault, env):
     content = GOOD + "\n## 2026-08-18\n\nThe pipeline has 13 open deals.\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Snapshot.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Snapshot.md"), "content": content},
     )
 
     assert_allows(HOOK, payload, env=env)
 
 
-def test_ignores_volatile_claim_inside_a_code_fence(tool_use, assert_allows, vault, env):
+def test_ignores_volatile_claim_inside_a_code_fence(
+    tool_use, assert_allows, vault, env
+):
     content = GOOD + "\n```\nThe pipeline has 13 open deals.\n```\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Fenced.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Fenced.md"), "content": content},
     )
 
     assert_allows(HOOK, payload, env=env)
 
 
-def test_blocks_wikilink_to_a_note_that_does_not_exist(tool_use, assert_blocks, vault, env):
+def test_blocks_wikilink_to_a_note_that_does_not_exist(
+    tool_use, assert_blocks, vault, env
+):
     content = GOOD + "\nSee [[Nonexistent Person]] for context.\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Linker.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Linker.md"), "content": content},
     )
 
     assert_blocks(HOOK, payload, "KN004", env=env)
@@ -160,7 +194,8 @@ def test_allows_wikilink_to_an_existing_note(tool_use, assert_allows, vault, env
     (vault / "wiki/entities/Real Person.md").write_text(GOOD)
     content = GOOD + "\nSee [[Real Person]] for context.\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Linker.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Linker.md"), "content": content},
     )
 
     assert_allows(HOOK, payload, env=env)
@@ -169,7 +204,8 @@ def test_allows_wikilink_to_an_existing_note(tool_use, assert_allows, vault, env
 def test_allows_wikilink_marked_tbd(tool_use, assert_allows, vault, env):
     content = GOOD + "\nSee [[Future Note]], TBD until it is written.\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Pending.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Pending.md"), "content": content},
     )
 
     assert_allows(HOOK, payload, env=env)
@@ -180,7 +216,11 @@ def test_blocks_edit_of_an_existing_raw_source(tool_use, assert_blocks, vault, e
     source.write_text(GOOD)
     payload = tool_use(
         "Edit",
-        {"file_path": str(source), "old_string": "timeless prose", "new_string": "rewritten prose"},
+        {
+            "file_path": str(source),
+            "old_string": "timeless prose",
+            "new_string": "rewritten prose",
+        },
     )
 
     assert_blocks(HOOK, payload, "KN005", env=env)
@@ -243,8 +283,14 @@ def test_multiedit_composes_every_edit(tool_use, assert_blocks, vault, env):
         {
             "file_path": str(target),
             "edits": [
-                {"old_string": "Some timeless prose about the idea.", "new_string": "Filler."},
-                {"old_string": "Filler.", "new_string": "The backlog has 42 open tasks."},
+                {
+                    "old_string": "Some timeless prose about the idea.",
+                    "new_string": "Filler.",
+                },
+                {
+                    "old_string": "Filler.",
+                    "new_string": "The backlog has 42 open tasks.",
+                },
             ],
         },
     )
@@ -254,7 +300,8 @@ def test_multiedit_composes_every_edit(tool_use, assert_blocks, vault, env):
 
 def test_bypass_env_allows_everything(tool_use, assert_allows, vault, env):
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Bare.md"), "content": "nothing here"}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Bare.md"), "content": "nothing here"},
     )
 
     assert_allows(HOOK, payload, env={**env, "KNOWLEDGE_NOTE_DISABLE": "1"})
@@ -283,7 +330,8 @@ def test_allows_payload_without_a_file_path(tool_use, assert_allows, vault, env)
 def test_allows_frontmatter_with_a_yaml_list(tool_use, assert_allows, vault, env):
     content = GOOD.replace("tags: [concept]", "tags:\n  - concept\n  - idea")
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Listed.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Listed.md"), "content": content},
     )
 
     assert_allows(HOOK, payload, env=env)
@@ -293,13 +341,16 @@ def test_blocks_wikilink_to_a_template(tool_use, assert_blocks, vault, env):
     (vault / "templates/entity.md").write_text("template body")
     content = GOOD + "\nSee [[entity]] for the shape.\n"
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Shape.md"), "content": content}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Shape.md"), "content": content},
     )
 
     assert_blocks(HOOK, payload, "KN004", env=env)
 
 
-def test_allows_edit_of_a_note_that_does_not_exist_yet(tool_use, assert_allows, vault, env):
+def test_allows_edit_of_a_note_that_does_not_exist_yet(
+    tool_use, assert_allows, vault, env
+):
     payload = tool_use(
         "Edit",
         {
@@ -315,7 +366,8 @@ def test_allows_edit_of_a_note_that_does_not_exist_yet(tool_use, assert_allows, 
 def test_caps_the_number_of_reported_findings(tool_use, assert_blocks, vault, env):
     noise = "\n".join(f"See [[Missing {index}]] here." for index in range(20))
     payload = tool_use(
-        "Write", {"file_path": note(vault, "wiki/concepts/Noisy.md"), "content": GOOD + noise}
+        "Write",
+        {"file_path": note(vault, "wiki/concepts/Noisy.md"), "content": GOOD + noise},
     )
 
     _code, stderr = assert_blocks(HOOK, payload, "KN004", env=env)
@@ -329,7 +381,9 @@ def test_allows_a_command_with_unbalanced_quotes(tool_use, assert_allows, vault,
     assert_allows(HOOK, payload, env=env)
 
 
-def test_allows_removal_of_a_relative_path_outside_the_vault(tool_use, assert_allows, vault, env):
+def test_allows_removal_of_a_relative_path_outside_the_vault(
+    tool_use, assert_allows, vault, env
+):
     payload = tool_use("Bash", {"command": "rm scratch-file.txt"})
 
     assert_allows(HOOK, payload, env=env)
