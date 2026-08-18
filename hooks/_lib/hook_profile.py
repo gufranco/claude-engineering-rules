@@ -42,8 +42,10 @@ MINIMAL_HOOKS = frozenset(
         "ai-attribution-blocker",
         "ai-process-leak-blocker",
         "large-file-blocker",
+        "user-supplied-artifact-guard",
         "english-only-reminder",
         "config-protection",
+        "pr-merge-blocker",
     }
 )
 
@@ -76,6 +78,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "migration-idempotency",
         "dockerfile-compose-quality",
         "markdown-link-discipline",
+        "doc-sync-guard",
         "conventional-commits",
         "smart-formatter",
         "edit-accumulator",
