@@ -49,6 +49,7 @@ or a prior one:
 | Dependency audit | Advisories of any severity |
 | Hooks | Any blocker, including ones that fire as informational |
 | Markdown / docs validator | Broken targets, stale references, drift |
+| Documentation-truth guard | A staged change that falsifies a documented claim. See [`doc-truth.md`](doc-truth.md) |
 
 If the validator that runs in this task surfaces it, the fix is part of
 this task. Period.
