@@ -82,7 +82,9 @@ VOLATILE_WORDS = (
     "pipeline",
 )
 VOLATILE = re.compile(r"\b(" + "|".join(VOLATILE_WORDS) + r")\b", re.IGNORECASE)
-COPULA = re.compile(r"\b(is|are|has|have|holds|sits at|stands at|currently)\b", re.IGNORECASE)
+COPULA = re.compile(
+    r"\b(is|are|has|have|holds|sits at|stands at|currently)\b", re.IGNORECASE
+)
 DIGIT = re.compile(r"(?<![\w.-])\d+(?![\w-])")
 
 

@@ -176,6 +176,10 @@ lang:
 #   debugging, agent-usage, github-accounts, gitlab-accounts
 
 on_demand:
+  knowledge-notes:
+    path: rules/knowledge-notes.md
+    description: Specification for notes written to be retrieved by an agent. Fixed "For future agent" preamble, required frontmatter, recency stamps, verbatim sources, typed edges, confidence levels, anti-fabrication. Freshness policy with the timeless/snapshot/pointer trichotomy and FRESH-1 through FRESH-4. Bi-temporal timeline entries that append instead of overwriting. Selective linking. The boundary against duplicating repository truth. Memory compile contract with budget and demotion. Transcript ingest obligations for speaker attribution, confidence, retention, and credentials.
+    triggers: [obsidian, vault, "second brain", "knowledge base", "knowledge note", wiki, wikilink, backlink, capture, ingest, "note spec", "ai-first", "for future agent", frontmatter, freshness, stale, "as of", recency, "bi-temporal", timeline, supersede, "memory compile", "memory budget", granola, meeting, transcript, diarization, "meeting note", pkm, zettelkasten, para, "llm wiki", orphan, "index.md", "second-brain"]
   project-glossary:
     path: rules/project-glossary.md
     description: Per-project domain glossary convention. GLOSSARY.md at root for single-context repos, GLOSSARY-INDEX.md plus per-context files for multi-context repos. Lazy creation, one-or-two-sentence definitions, Avoid clauses for rejected synonyms. Loaded by interview-me, tdd, module-audit, zoom-out, onboard.
