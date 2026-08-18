@@ -268,10 +268,16 @@ Create and manage Architecture Decision Records. ADRs capture context, alternati
 
 1. Show draft, incorporate feedback, write file.
 2. For supersession: update original status to `superseded by ADR-NNN`, link from new ADR.
+3. When `SECOND_BRAIN_VAULT` resolves to a directory, offer to mirror a pointer note into `wiki/decisions/`.
+
+   The ADR holds the technical content and stays in the repository, which is the only place it can stay true. The vault note holds what the repository has no place for: who pushed for the decision, what the organization was worried about, which constraint was really binding, and which alternative someone will propose again in six months. It carries a `pointer` field naming the ADR and never copies its body.
+
+   Delegate the write to `/brain capture`. A vault note that duplicates the ADR is a second source of truth and will drift; that is the failure this mirror exists to avoid, so keep it to context and a pointer.
 
 ### Rules
 
 - ADRs are append-only. Never delete superseded ones.
+- The vault mirror is a pointer plus organizational context, never a copy of the ADR body.
 - At least two alternatives documented.
 - Status values: proposed, accepted, deprecated, superseded by ADR-NNN.
 - Title describes the decision, not the problem.

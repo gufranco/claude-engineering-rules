@@ -178,6 +178,16 @@ If a check fails, fix and re-lint. Do not present until clean.
 - Do not fetch content from domains in the project's blocklist if one exists.
 - Do not run this skill against individuals when the topic is harassment-adjacent. If unsure, ask the user to confirm intent.
 
+## Filing the result
+
+A report written into a dated spec folder is read once and never again. When `SECOND_BRAIN_VAULT` resolves to a directory, offer to file the report as a research note before closing out.
+
+1. Ask once. A quick scan that answered a passing question does not earn a note; a survey that took real effort does.
+2. Delegate the write to `/brain capture`, which owns the note grammar. Never hand-write vault frontmatter here.
+3. The note carries the question asked, the answer reached, the sources with their URLs verbatim, and the date the search ran. A finding is `stated` when a source said it and `speculation` when the synthesis inferred it.
+4. Stamp every claim that can move. Version numbers, pricing, maintenance status, and download counts all move.
+5. Link `references.md` to the note rather than duplicating the content into both.
+
 ## Rules
 
 - One Markdown file. No scripts. No external binaries. No environment reads.
