@@ -43,7 +43,41 @@ SPEC_GLOBS = (
     ".claude/specs/*/plan.md",
 )
 
-BACKTICK_PATH = re.compile(r"`([^`\s]+\.[a-zA-Z0-9]+|[^`\s]+/[^`\s]*)`")
+BACKTICK_PATH = re.compile(
+    r"`([^`\s]+\.[a-zA-Z0-9]+|[^`\s]+/[^`\s]*|\.[a-zA-Z][a-zA-Z0-9_-]{2,})`"
+)
+
+BARE_EXTENSIONS = frozenset(
+    {
+        ".bak",
+        ".bin",
+        ".cfg",
+        ".csv",
+        ".css",
+        ".gz",
+        ".html",
+        ".ini",
+        ".jpg",
+        ".json",
+        ".jsx",
+        ".lock",
+        ".log",
+        ".pdf",
+        ".png",
+        ".sql",
+        ".svg",
+        ".tar",
+        ".tmp",
+        ".toml",
+        ".tsv",
+        ".tsx",
+        ".txt",
+        ".xml",
+        ".yaml",
+        ".yml",
+        ".zip",
+    }
+)
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
@@ -79,6 +113,8 @@ def extract_declared_paths(plan_text: str) -> set[str]:
         if token.startswith("-") or "=" in token:
             continue
         if "/" not in token and "." not in token:
+            continue
+        if token.lower() in BARE_EXTENSIONS:
             continue
         paths.add(token)
     return paths
