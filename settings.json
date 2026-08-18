@@ -152,6 +152,14 @@
             "command": "python3 ~/.claude/hooks/compact-context-saver.py pre"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/vault-session-capture.py"
+          }
+        ]
       }
     ],
     "PreToolUse": [
