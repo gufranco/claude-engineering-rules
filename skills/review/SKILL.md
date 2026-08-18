@@ -321,7 +321,7 @@ When you have a code change to suggest, use a GitHub `suggestion` block. The blo
 
 Example of a clean inline comment body:
 
-```
+````
 The round-robin path doesn't run this check. `createRoundRobinBetInternal`
 (around line 3501) builds its own selections map and goes straight to
 `placeRoundRobin` -> `createParlayBet`, so the rejection never fires for
@@ -332,7 +332,7 @@ placement entry point silently missing it.
 ```suggestion
     rejectOneWayUnderBetSelections(legsBySemanticId);
 ```
-```
+````
 
 No label, no taxonomy, no template scaffolding. The text alone carries the severity through tone.
 
@@ -371,7 +371,7 @@ This mirrors the policy in `/respond` and ensures both ends of the review conver
 
 ### PR-Author Anti-Pattern Detection
 
-Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](standards/code-review.md) "As Reviewee". These become findings in the PR-summary part of the verdict, not inline comments.
+Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](../../standards/code-review.md) "As Reviewee". These become findings in the PR-summary part of the verdict, not inline comments.
 
 | Anti-pattern in PR body | Finding |
 |------------------------|---------|
@@ -409,13 +409,13 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 
 1. **Identify scope**: path argument or `git diff origin/<base>...HEAD --name-only`. Filter to implementation files.
 2. **Load domain-specific test standards.** Read `~/.claude/rules/index.yml` and match the project against test-related standards:
-   - If the project has Playwright or Cypress: load [`standards/browser-testing.md`](standards/browser-testing.md) and check test patterns against it
-   - If the project has `.tftest.hcl` files or Terraform: load [`standards/terraform-testing.md`](standards/terraform-testing.md)
-   - If the project has axe-core, jest-axe, or pa11y dependencies: load [`standards/accessibility-testing.md`](standards/accessibility-testing.md)
-   - Always load [`rules/testing.md`](rules/testing.md) for the base test methodology such as comment-free test bodies, mock policy, faker, or coverage
+   - If the project has Playwright or Cypress: load [`standards/browser-testing.md`](../../standards/browser-testing.md) and check test patterns against it
+   - If the project has `.tftest.hcl` files or Terraform: load [`standards/terraform-testing.md`](../../standards/terraform-testing.md)
+   - If the project has axe-core, jest-axe, or pa11y dependencies: load [`standards/accessibility-testing.md`](../../standards/accessibility-testing.md)
+   - Always load [`rules/testing.md`](../../rules/testing.md) for the base test methodology such as comment-free test bodies, mock policy, faker, or coverage
    - Findings from these standards become QA findings with the same severity/rule citation format
 3. **Map behavior paths**: for each file, extract happy paths, input variations, validation failures, authorization paths, state transitions, error recovery, boundary values, concurrency, data integrity, side effects.
-4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, [`tests/`](tests), `e2e/`. Map each `it()`/`test()` to behavior paths.
+4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, [`tests/`](../../tests), `e2e/`. Map each `it()`/`test()` to behavior paths.
 5. **Cross-reference**: classify each path as Covered, Partial, Missing, or Untestable.
 6. **Risk assessment**: Critical, auth bypass, data loss, security, High, core feature broken, data corruption, Medium, non-core, graceful degradation, Low, cosmetic, unlikely edge case.
 7. **Run 30 QA rules**: functional correctness , 1 to 6, error handling , 7 to 12, security , 13 to 18, data integrity , 19 to 22, integration boundaries , 23 to 26, edge cases and resilience , 27 to 30.
@@ -454,7 +454,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 ```
 
 1. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths, auth, data writes, error handling is a blocking finding.
-2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](rules/testing.md): comment-free test bodies, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
+2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](../../rules/testing.md): comment-free test bodies, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
 
 ### 30 QA Rules Reference
 
@@ -492,7 +492,7 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
 ### Steps
 
 1. **Identify scope**: path argument or changed `.tsx`, `.jsx`, `.css`, `.scss` files. Read `globals.css` for color system.
-2. **Read code**: every file in scope, color system, layout components, shared UI components. If the code was AI-generated or is a new frontend build, check for distributional convergence: generic font choices, Inter, Roboto, Arial, cliched color schemes, purple gradients on white, flat solid-color backgrounds, and predictable layouts. Flag these as MEDIUM findings with a reference to [`standards/frontend.md`](standards/frontend.md) "Avoiding Distributional Convergence" section. Skip this check when working within an existing design system.
+2. **Read code**: every file in scope, color system, layout components, shared UI components. If the code was AI-generated or is a new frontend build, check for distributional convergence: generic font choices, Inter, Roboto, Arial, cliched color schemes, purple gradients on white, flat solid-color backgrounds, and predictable layouts. Flag these as MEDIUM findings with a reference to [`standards/frontend.md`](../../standards/frontend.md) "Avoiding Distributional Convergence" section. Skip this check when working within an existing design system.
 2a. **Run compliance auditors unconditionally**: invoke `accessibility-auditor` agent on every UI file in scope. Invoke `privacy-auditor` agent on any file that handles personal data, sets cookies, or loads third-party trackers. Surface findings in the output sections labeled "Accessibility (WCAG 2.2 AA)" and "Privacy (GDPR-grade)". Report against the strict-wins policy from [`../../rules/compliance-defaults.md`](../../rules/compliance-defaults.md).
 3. **Color contrast**: resolve CSS custom properties to OKLCH/hex. Calculate ratios. Flag < 4.5:1 normal text, < 3:1 large text. Check BOTH light and dark mode.
 4. **Typography**: body text >= 16px, line length constrained, headings use `text-balance`, consistent heading scale, max 2-3 font weights.
@@ -501,9 +501,9 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
 7. **Accessibility**: `aria-labelledby` on sections, `aria-label` on nav landmarks, `aria-hidden` on decorative elements, `htmlFor` on labels, focus indicators visible, 3:1 contrast, no positive `tabindex`, `prefers-reduced-motion` respected.
 8. **Animation**: CSS-based, `prefers-reduced-motion` fallback, opacity: 1, transform: none, reasonable durations.
 9. **Dark mode**: all tokens have light/dark values, dark backgrounds L < 0.25, no hardcoded colors bypassing tokens.
-10. **Performance**, if `--focus performance`, `cwv`, or `all`: apply [`checklists/checklist.md`](checklists/checklist.md) category 7 performance budgets. Check page weight, JS/CSS size, image optimization, font loading strategy, third-party script loading, code splitting. Reference: [`standards/frontend.md`](standards/frontend.md) Web Performance section.
-11. **Core Web Vitals**, if `--focus cwv` or `all`: apply [`checklists/checklist.md`](checklists/checklist.md) category 7 CWV items. Verify LCP element is preloaded and prioritized. Check for main thread blocking tasks > 50ms, INP. Check for unsized images, font FOUT, and above-viewport content injection, CLS. Reference: [`standards/frontend.md`](standards/frontend.md) CWV Debugging section.
-12. **SEO**, if `--focus seo` or `all`, only for public-facing web apps: apply [`checklists/checklist.md`](checklists/checklist.md) category 7 SEO items. Verify title tags, meta descriptions, heading hierarchy, canonical URLs, structured data, robots.txt, and sitemap. Reference: [`standards/frontend.md`](standards/frontend.md) SEO section.
+10. **Performance**, if `--focus performance`, `cwv`, or `all`: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 performance budgets. Check page weight, JS/CSS size, image optimization, font loading strategy, third-party script loading, code splitting. Reference: [`standards/frontend.md`](../../standards/frontend.md) Web Performance section.
+11. **Core Web Vitals**, if `--focus cwv` or `all`: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 CWV items. Verify LCP element is preloaded and prioritized. Check for main thread blocking tasks > 50ms, INP. Check for unsized images, font FOUT, and above-viewport content injection, CLS. Reference: [`standards/frontend.md`](../../standards/frontend.md) CWV Debugging section.
+12. **SEO**, if `--focus seo` or `all`, only for public-facing web apps: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 SEO items. Verify title tags, meta descriptions, heading hierarchy, canonical URLs, structured data, robots.txt, and sitemap. Reference: [`standards/frontend.md`](../../standards/frontend.md) SEO section.
 13. **Dimension scoring.** Rate each dimension 0-10 based on the findings:
 
     | Dimension | Score | Key factors |
@@ -527,7 +527,7 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
     - Cookie-cutter landing page layouts with no brand personality
     Rate as MEDIUM findings. The goal is not to ban these patterns but to ensure they are intentional choices, not defaults.
 
-15. **Compile and output**: group by severity, HIGH, MEDIUM, LOW. Each finding cites file:line and the rule from [`standards/frontend.md`](standards/frontend.md) or [`standards/accessibility-testing.md`](standards/accessibility-testing.md). Include the dimension scorecard. If `--fix`, apply fixes and run build.
+15. **Compile and output**: group by severity, HIGH, MEDIUM, LOW. Each finding cites file:line and the rule from [`standards/frontend.md`](../../standards/frontend.md) or [`standards/accessibility-testing.md`](../../standards/accessibility-testing.md). Include the dimension scorecard. If `--fix`, apply fixes and run build.
 
 ---
 
@@ -572,14 +572,14 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - Never modify implementation code during QA analysis. Report bugs, do not fix them.
 - Never weaken existing tests. New tests add coverage only.
 - Every QA finding must cite a specific file:line and QA rule number.
-- Every design finding must cite the rule from [`standards/frontend.md`](standards/frontend.md).
+- Every design finding must cite the rule from [`standards/frontend.md`](../../standards/frontend.md).
 - Always detect git platform from remote URL.
 - Always read surrounding code before reviewing.
 - Always present the full review before posting comments.
 - Never approve a PR with failing tests, a stale branch, or missing test evidence. Stale means the base drift overlaps files the PR changes, per step 13; a commit count alone does not make a branch stale.
-- Always restore account per [`standards/borrow-restore.md`](standards/borrow-restore.md).
+- Always restore account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 - Apply all 71 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
-- When the diff touches authentication, load [`standards/authentication.md`](standards/authentication.md) and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
+- When the diff touches authentication, load [`standards/authentication.md`](../../standards/authentication.md) and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
 - When the diff adds or modifies dependencies, apply category 56, Supply Chain: check for typosquatting, verify lockfile integrity, check for known vulnerabilities.
 - When the diff includes database migrations, apply category 55, Zero-Downtime Deployment: verify expand-contract pattern, backward compatibility with previous app version.
 - When the diff processes LLM output, apply category 53, LLM Trust Boundary: verify output validation, sanitization before storage, URL allowlisting.
