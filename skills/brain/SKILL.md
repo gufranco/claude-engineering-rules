@@ -117,10 +117,29 @@ Regenerate the session memory directory from the vault. Destructive by nature, s
 
 Measure retrieval instead of assuming it.
 
-1. Read the case file of question-to-expected-note pairs.
-2. For each case, run the `ask` retrieval path and record which notes were reached.
-3. Report recall at 3 and recall at 10 against the recorded baseline.
-4. A drop against baseline is a finding, and the schema is what gets changed, not the number.
+```bash
+python3 ~/.claude/.github/scripts/retrieval-eval.py \
+  --path "$SECOND_BRAIN_VAULT" \
+  --cases "$SECOND_BRAIN_VAULT/eval/retrieval-cases.jsonl" \
+  --baseline "$SECOND_BRAIN_VAULT/eval/baseline.json"
+```
+
+Add `--record` to write the current numbers as the new baseline, and `--strict` to exit non-zero on a regression.
+
+What the number means and does not mean. The ranking is lexical and deterministic, so it is a lower bound on what an agent reading the vault would find, never a simulation of it. A note the scorer cannot reach on the question's own words has a title or a preamble that is not carrying its weight, and that is the defect worth catching.
+
+Seed the case file from questions actually asked. A case written to pass measures nothing. When recall drops, change the notes or the schema, never the cases.
+
+## refresh, health, and eval on a schedule
+
+Weekly, in this order, because each step feeds the next:
+
+1. `health` finds what is structurally broken.
+2. `refresh` resolves what has aged.
+3. `eval` reports whether any of that changed what the vault can answer.
+4. `compile` pushes the result into session memory.
+
+Use the scheduling surface Claude Code already provides. Do not add cron files. Custom slash commands do not expand in non-interactive mode, so a scheduled run points at the underlying scripts rather than at `/brain`.
 
 ## Rules
 

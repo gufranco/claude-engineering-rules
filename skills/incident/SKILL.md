@@ -147,6 +147,12 @@ This skill accepts optional arguments after `/incident`:
    - Ask if the root cause analysis is accurate.
    - Ask if the action items are concrete enough, with real owners and due dates.
 
+6. **File what generalizes.** When `SECOND_BRAIN_VAULT` resolves to a directory, offer to file an incident note before closing out.
+
+   The postmortem belongs to the outage and stays where the team keeps postmortems. The vault note is the part that outlives it: the failure mode, the system property that allowed it, and what would catch it next time. Separate the two deliberately, because a vault note that restates the timeline is a duplicate that will drift.
+
+   Delegate the write to `/brain capture`, which owns the note grammar. The note is a dated snapshot, so the incident date is the note date and its claims stay true without stamps. Link it to systems and people already in the vault, never to notes that do not exist yet.
+
 ## Rules
 
 - All timestamps in GMT per [`standards/observability.md`](../../standards/observability.md). Never use local timezones.
