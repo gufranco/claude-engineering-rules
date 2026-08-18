@@ -159,3 +159,75 @@ def test_handles_explicit_cwd_with_no_plan(tool_use, assert_allows, tmp_path):
     )
 
     assert_allows(HOOK, payload)
+
+
+def write_plan(directory, paths: list[str]) -> None:
+    """Create a freshly-modified plan.md under `directory`."""
+    directory.mkdir(parents=True, exist_ok=True)
+    body = ["# Plan", "", "## Task breakdown", ""]
+    for index, path in enumerate(paths, start=1):
+        body.append(f"{index}. Update `{path}` with new behavior.")
+    plan = directory / "plan.md"
+    plan.write_text("\n".join(body))
+    os.utime(plan, (time.time(), time.time()))
+
+
+def test_a_plan_outside_the_repository_never_governs_it(
+    tool_use, assert_allows, tmp_path
+):
+    home = tmp_path / "home"
+    write_plan(home / ".claude" / "specs" / "2026-08-18-other", ["hooks/unrelated.py"])
+    project = home / "dungeon-master-nochip"
+    (project / ".git").mkdir(parents=True)
+    target = project / ".github" / "dependabot.yml"
+    target.parent.mkdir(parents=True)
+    target.write_text("version: 2\n")
+
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "version: 2\n"},
+        cwd=str(project),
+    )
+
+    assert_allows("scope-guard", payload)
+
+
+def test_the_nearest_plan_wins_over_a_newer_outer_one(
+    tool_use, assert_blocks, tmp_path
+):
+    home = tmp_path / "home"
+    project = home / "project"
+    (project / ".git").mkdir(parents=True)
+    write_plan(project / "specs" / "2026-08-18-local", ["src/declared.py"])
+    time.sleep(0.01)
+    write_plan(home / ".claude" / "specs" / "2026-08-18-outer", ["anything/at/all.py"])
+    target = project / "src" / "undeclared.py"
+    target.parent.mkdir(parents=True)
+
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "x = 1\n"},
+        cwd=str(project),
+    )
+
+    _code, stderr = assert_blocks("scope-guard", payload)
+
+    assert "2026-08-18-local" in stderr
+
+
+def test_a_repo_local_plan_still_governs_its_own_repository(
+    tool_use, assert_allows, tmp_path
+):
+    project = tmp_path / "project"
+    (project / ".git").mkdir(parents=True)
+    write_plan(project / "specs" / "2026-08-18-local", ["src/declared.py"])
+    target = project / "src" / "declared.py"
+    target.parent.mkdir(parents=True)
+
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "x = 1\n"},
+        cwd=str(project),
+    )
+
+    assert_allows("scope-guard", payload)

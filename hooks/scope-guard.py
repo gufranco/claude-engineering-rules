@@ -36,6 +36,11 @@ except Exception:  # pragma: no cover
         return None
 
 
+try:
+    from _lib.project_scope import walk_up
+except ImportError:  # pragma: no cover
+    sys.exit(0)
+
 PLAN_WINDOW_SECONDS = 60 * 60
 
 SPEC_GLOBS = (
@@ -83,11 +88,20 @@ from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def find_active_plan(cwd: Path) -> Path | None:
-    """Return the most recently modified plan.md within the freshness window."""
-    candidates: list[tuple[float, Path]] = []
+    """Return the nearest recent plan.md that governs `cwd`.
+
+    The walk stops at the repository root. A plan outside the repository being
+    edited never governs it, and without that boundary the search reaches the
+    home directory, where one project's plan would govern every project on the
+    machine.
+
+    Proximity decides first, recency only breaks ties within one directory. The
+    nearest plan is the one that describes the work in hand; the newest plan is
+    merely whichever session last saved.
+    """
     now = time.time()
-    cursor = cwd
-    for _ in range(5):
+    for cursor in walk_up(cwd, limit=5):
+        here: list[tuple[float, Path]] = []
         for pattern in SPEC_GLOBS:
             for p in cursor.glob(pattern):
                 try:
@@ -95,14 +109,11 @@ def find_active_plan(cwd: Path) -> Path | None:
                 except OSError:
                     continue
                 if now - mtime <= PLAN_WINDOW_SECONDS:
-                    candidates.append((mtime, p))
-        if cursor == cursor.parent:
-            break
-        cursor = cursor.parent
-    if not candidates:
-        return None
-    candidates.sort(reverse=True)
-    return candidates[0][1]
+                    here.append((mtime, p))
+        if here:
+            here.sort(reverse=True)
+            return here[0][1]
+    return None
 
 
 def extract_declared_paths(plan_text: str) -> set[str]:

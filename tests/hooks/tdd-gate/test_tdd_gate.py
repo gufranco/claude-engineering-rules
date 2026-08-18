@@ -322,3 +322,44 @@ def test_still_blocks_source_under_the_per_user_tmpdir(
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
     assert_blocks(HOOK, payload, "without a companion test")
+
+
+def test_a_test_directory_outside_the_repository_does_not_satisfy_the_gate(
+    tool_use, assert_blocks, tmp_path
+):
+    outer = tmp_path / "home"
+    stray = outer / "tests"
+    stray.mkdir(parents=True)
+    (stray / "test_widget.py").write_text("def test_widget():\n    assert True\n")
+    project = outer / "project"
+    (project / ".git").mkdir(parents=True)
+    (project / "src").mkdir()
+    target = project / "src" / "widget.py"
+
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "def widget():\n    return 1\n"},
+        cwd=str(project),
+    )
+
+    assert_blocks("tdd-gate", payload)
+
+
+def test_a_repo_local_test_directory_still_satisfies_the_gate(
+    tool_use, assert_allows, tmp_path
+):
+    project = tmp_path / "project"
+    (project / ".git").mkdir(parents=True)
+    (project / "src").mkdir()
+    tests = project / "tests"
+    tests.mkdir()
+    (tests / "test_widget.py").write_text("def test_widget():\n    assert True\n")
+    target = project / "src" / "widget.py"
+
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "def widget():\n    return 1\n"},
+        cwd=str(project),
+    )
+
+    assert_allows("tdd-gate", payload)

@@ -81,11 +81,11 @@ Propose connections, never create them silently.
 
 ## health
 
-Run both linters and report together.
+Run both linters and report together. They live in the vault, not here, because the vault owns its own quality gates and that is what lets continuous integration run them.
 
 ```bash
-python3 ~/.claude/.github/scripts/vault-health.py --path "$SECOND_BRAIN_VAULT"
-python3 ~/.claude/.github/scripts/vault-freshness.py --path "$SECOND_BRAIN_VAULT"
+python3 "$SECOND_BRAIN_VAULT/.ci/vault-health.py" --path "$SECOND_BRAIN_VAULT"
+python3 "$SECOND_BRAIN_VAULT/.ci/vault-freshness.py" --path "$SECOND_BRAIN_VAULT"
 ```
 
 Errors are VH001 through VH003 and FRESH-1 and FRESH-3. Warnings are the rest. Report both, fix nothing without asking, and never delete.
@@ -118,7 +118,7 @@ Regenerate the session memory directory from the vault. Destructive by nature, s
 Measure retrieval instead of assuming it.
 
 ```bash
-python3 ~/.claude/.github/scripts/retrieval-eval.py \
+python3 "$SECOND_BRAIN_VAULT/.ci/retrieval-eval.py" \
   --path "$SECOND_BRAIN_VAULT" \
   --cases "$SECOND_BRAIN_VAULT/eval/retrieval-cases.jsonl" \
   --baseline "$SECOND_BRAIN_VAULT/eval/baseline.json"
