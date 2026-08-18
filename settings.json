@@ -1363,6 +1363,14 @@
             "command": "python3 ~/.claude/hooks/session-resume-context.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/vault-context-loader.py"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
