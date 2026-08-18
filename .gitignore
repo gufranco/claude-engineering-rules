@@ -11,6 +11,9 @@
 daemon*
 jobs/
 
+# Generated native-messaging host wrapper (hardcodes a machine-local versioned path)
+chrome/
+
 # Session and conversation data
 debug/
 projects/
@@ -19,6 +22,8 @@ sessions/
 specs/
 todos/
 tasks/
+reports/
+state/
 file-history/
 shell-snapshots/
 backups/
@@ -32,6 +37,7 @@ history.jsonl
 .settings-hygiene-blocklist
 .last-cleanup
 .bypass-state.json
+.session-locks.json
 settings.local.json
 solo-repos.txt
 
