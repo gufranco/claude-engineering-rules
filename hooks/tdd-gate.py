@@ -225,6 +225,29 @@ def stem_variants(stem: str) -> set[str]:
     return variants
 
 
+TEST_AFFIXES = ("test_", "spec_", "_test", "_spec", ".test", ".spec")
+
+
+def names_the_source(candidate: Path, variants: set[str]) -> bool:
+    """True when a test file is named after the source, not merely containing it.
+
+    Substring matching is too loose to be trustworthy: searching for `user`
+    across a large test tree matches `test_user_supplied_artifact_guard.py`,
+    which tests something else entirely. A companion test has to be named for
+    the source file, so the affixes come off and the remainder must match.
+    """
+    stem = candidate.stem
+    for affix in TEST_AFFIXES:
+        if stem.startswith(affix):
+            stem = stem[len(affix) :]
+        elif stem.endswith(affix):
+            stem = stem[: -len(affix)]
+    for affix in (".test", ".spec"):
+        if stem.endswith(affix):
+            stem = stem[: -len(affix)]
+    return stem in variants or stem.replace("-", "_") in variants
+
+
 def find_companion_test(path: Path) -> Path | None:
     """Locate a test that names this source file. None if missing."""
     stem = path.stem
@@ -256,7 +279,11 @@ def find_companion_test(path: Path) -> Path | None:
             if td.is_dir():
                 for v in variants:
                     for cand in td.rglob(f"*{v}*"):
-                        if cand.is_file() and is_test_file(cand):
+                        if (
+                            cand.is_file()
+                            and is_test_file(cand)
+                            and names_the_source(cand, variants)
+                        ):
                             return cand
 
     return None

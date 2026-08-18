@@ -76,7 +76,9 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "State-of-the-art is an LLM hyperbole tell",
     ),
     (
-        re.compile(r"\b(?:100%|fully|absolutely|perfectly)\s+faithful\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:100%|fully|absolutely|perfectly)\s+faithful\b", re.IGNORECASE
+        ),
         "Faithfulness language is AI-process hyperbole",
     ),
     (
@@ -91,7 +93,9 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "Phase-relative scheduling exposes the AI plan",
     ),
     (
-        re.compile(r"\b(?:following|as|per)\s+(?:the\s+plan|the\s+spec)\b", re.IGNORECASE),
+        re.compile(
+            r"\b(?:following|as|per)\s+(?:the\s+plan|the\s+spec)\b", re.IGNORECASE
+        ),
         "Referencing 'the plan/spec' as authority is AI workflow language",
     ),
     (
@@ -307,7 +311,9 @@ def main() -> int:
     findings: list[str] = []
     for field, text in texts:
         for match, reason, snippet in find_violations(text):
-            findings.append(f"  - {match!r} ({reason})\n    in {field}: ...{snippet}...")
+            findings.append(
+                f"  - {match!r} ({reason})\n    in {field}: ...{snippet}..."
+            )
 
     if not findings:
         return 0
@@ -328,7 +334,9 @@ def main() -> int:
         decision="block",
         tool=tool,
         reason="AI process language detected",
-        command_excerpt=" | ".join(f[:120] for f in findings)[:240] if findings else None,
+        command_excerpt=" | ".join(f[:120] for f in findings)[:240]
+        if findings
+        else None,
     )
     return 2
 

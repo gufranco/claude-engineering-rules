@@ -515,7 +515,9 @@ def test_invalid_json_stdin_does_not_crash():
     assert proc.returncode == 0
 
 
-def test_allows_config_paths_inside_the_second_brain_vault(tool_use, assert_allows, tmp_path):
+def test_allows_config_paths_inside_the_second_brain_vault(
+    tool_use, assert_allows, tmp_path
+):
     vault = tmp_path / "vault" / "wiki" / "concepts"
     vault.mkdir(parents=True)
     target = vault / "Tooling.md"
