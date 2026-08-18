@@ -118,5 +118,5 @@ When a boundary fires:
 
 - `/retro` -- Deeper retrospective that persists learnings as config.
 - `/checkpoint` -- Save working state for cross-session resumption.
-- `/morning` -- Start-of-day dashboard with pending work.
+- [`/morning`](../morning/SKILL.md) -- Start-of-day sweep of pending work across every git account.
 - `/ship commit` -- Commit changes identified in the session log.

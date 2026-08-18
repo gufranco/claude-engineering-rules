@@ -128,5 +128,5 @@ The two-phase flow exists because cleanup is destructive: read the report, decid
 ## Related skills
 
 - `/ship` - Commit, push, and create PRs.
-- `/morning` - Daily briefing that shows open PRs and pending reviews.
+- [`/morning`](../morning/SKILL.md) - Cross-account sweep of open PRs, reviews, and issues. This skill covers one repository; that one covers every account.
 - `/weekly` - Sprint summary with delivery metrics.
