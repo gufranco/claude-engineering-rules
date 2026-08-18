@@ -1334,6 +1334,15 @@
             "command": "python3 ~/.claude/hooks/python-mutation-guard.py"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/knowledge-note-guard.py"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -1728,40 +1737,40 @@
   "autoMode": {
     "environment": [
       "### Org-wide",
-      "**Organization**: None configured — personal account `gufranco` (single-owner dotfiles project)",
+      "**Organization**: None configured \u2014 personal account `gufranco` (single-owner dotfiles project)",
       "**Cloud provider(s)**: None configured",
-      "**Repository visibility**: PUBLIC — `github.com/gufranco/dotfiles` is public per the authenticated gh check; any push or commit there is publishing",
-      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Repository visibility**: PUBLIC \u2014 `github.com/gufranco/dotfiles` is public per the authenticated gh check; any push or commit there is publishing",
+      "**Internal sharing / snippet hosting**: None configured \u2014 treat public paste/gist services as outside the trust boundary",
       "**Secrets management**: GitHub Actions secrets for CI (`GITHUB_TOKEN` referenced by workflows); local secrets kept out of git via .gitignore entries for `.env`, `.env.local`, `.env.*.local`, `secrets/`, `private/`, `ssh/authorized_keys`, `gnupg/private-keys-v1.d/`, and `mutt/accounts/*/oauth2.tokens`",
       "**Default / protected branches**: default branch `master`; no rulesets and no classic branch protection listed by the gh API",
-      "**CI/CD deploy targets**: None configured — GitHub Actions workflow `install.yml` runs install/CI checks only, no deploy target",
+      "**CI/CD deploy targets**: None configured \u2014 GitHub Actions workflow `install.yml` runs install/CI checks only, no deploy target",
       "**Network posture**: None configured",
-      "**Source control**: The trusted repo and its remote(s) only (no additional orgs configured) — `github.com:gufranco/dotfiles.git` over SSH, as scoped by the Trusted repo and Repository visibility entries above",
+      "**Source control**: The trusted repo and its remote(s) only (no additional orgs configured) \u2014 `github.com:gufranco/dotfiles.git` over SSH, as scoped by the Trusted repo and Repository visibility entries above",
       "**Trusted internal domains**: None configured",
       "**Trusted cloud buckets**: None configured",
       "**Key internal services**: None configured",
-      "**Internal package registry**: None configured — public registries only (Homebrew, pnpm/npm, pipx/uv)",
-      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar. In this checkout specifically: `ssh/`, `gnupg/` private key material, `mutt/accounts/*/oauth2.tokens`, `.env*`, `secrets/`, and `private/` — all gitignored and none of them belong in a public repo",
+      "**Internal package registry**: None configured \u2014 public registries only (Homebrew, pnpm/npm, pipx/uv)",
+      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; preserve exact handles when known and share only with audiences cleared at the [named+specifics] bar. In this checkout specifically: `ssh/`, `gnupg/` private key material, `mutt/accounts/*/oauth2.tokens`, `.env*`, `secrets/`, and `private/` \u2014 all gitignored and none of them belong in a public repo",
       "**Data retention / declassification**: None configured",
-      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited — e.g. matches `prod-db`, not `producer`)",
-      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (hyphen/underscore/dot-delimited \u2014 e.g. matches `prod-db`, not `producer`)",
+      "**Protected deployment namespaces / environments**: None configured \u2014 fall back to the Sensitive remote targets heuristic",
       "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
       "### User-specific",
-      "**Primary use of Claude Code**: maintaining a personal macOS/Linux dotfiles repo — shell, editor, terminal and tool configs, Homebrew bundles, install scripts, and Docker service definitions",
+      "**Primary use of Claude Code**: maintaining a personal macOS/Linux dotfiles repo \u2014 shell, editor, terminal and tool configs, Homebrew bundles, install scripts, and Docker service definitions",
       "**Trusted repo**: `/Users/gufranco/.dotfiles` and its remote `github.com:gufranco/dotfiles.git`. This repo is PUBLIC: only that repo's own dotfiles work is OK to commit or push there; content ported, repointed, or first read from outside this session's repo is not its own work, whoever directed the port. Visibility never clears secrets or sensitive data (SSH/GPG keys, mail tokens, `.env*`) into it",
-      "**Org-specific CLIs**: None configured — routine tooling here is general-purpose (`brew`, `gpg`, `gh`, `nvim`, `shellcheck`, `uv`/`uvx`, `pipx`, `launchctl`, `neomutt`, `abook`)"
+      "**Org-specific CLIs**: None configured \u2014 routine tooling here is general-purpose (`brew`, `gpg`, `gh`, `nvim`, `shellcheck`, `uv`/`uvx`, `pipx`, `launchctl`, `neomutt`, `abook`)"
     ],
     "allow": [
       "$defaults",
-      "Bash(brew info:*) and Bash(brew list:*) — read-only Homebrew queries while maintaining ~/.dotfiles/Brewfile",
-      "Bash(shellcheck:*) — lint shell scripts in the gufranco/dotfiles checkout",
-      "Bash(gh repo view:*) and Bash(gh api rate_limit) — read-only checks against github.com/gufranco/dotfiles"
+      "Bash(brew info:*) and Bash(brew list:*) \u2014 read-only Homebrew queries while maintaining ~/.dotfiles/Brewfile",
+      "Bash(shellcheck:*) \u2014 lint shell scripts in the gufranco/dotfiles checkout",
+      "Bash(gh repo view:*) and Bash(gh api rate_limit) \u2014 read-only checks against github.com/gufranco/dotfiles"
     ],
     "soft_deny": [
       "$defaults",
-      "Bash(brew uninstall:*) and Bash(brew cleanup:*) — removing installed packages from the workstation",
-      "Bash(launchctl unload:*) and Bash(launchctl bootout:*) — tearing down user LaunchAgents/daemons",
-      "Bash(gpg --delete-secret-key:*) and Bash(gpg --delete-key:*) — destroying local GPG key material"
+      "Bash(brew uninstall:*) and Bash(brew cleanup:*) \u2014 removing installed packages from the workstation",
+      "Bash(launchctl unload:*) and Bash(launchctl bootout:*) \u2014 tearing down user LaunchAgents/daemons",
+      "Bash(gpg --delete-secret-key:*) and Bash(gpg --delete-key:*) \u2014 destroying local GPG key material"
     ]
   }
 }
