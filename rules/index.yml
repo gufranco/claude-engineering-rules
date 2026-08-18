@@ -103,6 +103,10 @@ always_loaded:
     description: Every file mention in published markdown is a clickable link to the actual file. Two acceptable forms, exception zones, validator and hook integration, skip-list for test fixtures and command examples
     triggers: [markdown, md, documentation, readme, link, file reference, file mention, bare path, backlink, doc link]
 
+  doc-truth:
+    description: Documentation that describes code is a claim about the code, and a change that falsifies a claim must correct it in the same change. Covers README, API docs, OpenAPI, .env.example, runbooks, and pull request descriptions. Explains why a write-time layer was needed when an always-on rule and a reviewer agent already existed. Four mechanically certain checks at git commit (undocumented env var, removed export still documented, removed CLI flag still documented, removed package script still documented), historical-record exemption for changelogs, ADRs, and specs, enforced by doc-sync-guard.py with DOC_SYNC_DISABLE parent-shell bypass
+    triggers: [doc, docs, documentation, readme, stale docs, doc drift, "out of date", outdated, "env.example", "environment variable", openapi, runbook, "pr description", "pull request description", changelog, "doc truth", "documentation truth"]
+
   ai-guardrails:
     description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
     triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
@@ -176,6 +180,11 @@ on_demand:
     path: rules/project-glossary.md
     description: Per-project domain glossary convention. GLOSSARY.md at root for single-context repos, GLOSSARY-INDEX.md plus per-context files for multi-context repos. Lazy creation, one-or-two-sentence definitions, Avoid clauses for rejected synonyms. Loaded by interview-me, tdd, module-audit, zoom-out, onboard.
     triggers: [glossary, "domain glossary", "ubiquitous language", "domain vocabulary", "project glossary", "shared language", "domain terms", "context map", "bounded context"]
+
+  artifact-identity:
+    path: rules/artifact-identity.md
+    description: Identity discipline for files a person must supply because the project may not distribute them (game ROMs, console BIOS, vendor firmware, licensed model weights, proprietary SDKs). Manifest as source of truth, SHA-256 as the only authoritative digest with size/CRC32/SHA-1 for cross-checking public databases, stated canonical form, accepted-variant lists, known-bad dumps, identify-diagnose-repair-verify triage, and the never-become-a-distribution-channel boundary
+    triggers: [rom, roms, bios, firmware, romset, emulator, emulation, patch, ips, bps, xdelta, "no-intro", redump, mame, "model weights", checkpoint, safetensors, gguf, "bring your own", "user-supplied", "user supplied", byo, "own copy", "provide the file", "supply the file", crc, crc32, sha1, sha256, checksum, digest, "hash mismatch", "verify the file", dump, cartridge]
 
   everyday-engineering:
     path: rules/everyday-engineering.md
@@ -281,6 +290,11 @@ on_demand:
     path: standards/rules-vs-standards.md
     description: Two-tier configuration taxonomy explaining when to add to rules/ (always loaded) vs standards/ (on demand), trigger design, splitting/merging criteria, MCP server triage
     triggers: [rules, standards, taxonomy, tier, two-tier, on-demand, always-loaded, trigger, mcp triage, config layout, where to put, rule vs standard]
+
+  user-supplied-artifacts:
+    path: standards/user-supplied-artifacts.md
+    description: Implementation guide for artifact identity. Manifest schema with accepted variants, known-bad dumps and provenance, canonicalization per header/archive/multi-track/byte-order concern, verification that reads once and returns a typed problem, the diagnosis table mapping each near-miss to a remedy, lossless repair transforms, per-OS self-service digest commands, patch distribution with BPS/xdelta3/IPS trade-offs, and the four layers that keep the artifact out of git
+    triggers: ["artifact manifest", "artifacts.manifest.json", "expected checksum", "verify rom", "verify bios", "headerless", "copier header", "ines header", "cue sheet", "bad dump", "overdump", "romhack", "rom hack", "translation patch", "patch distribution", "soft patching", "byte order", "known bad"]
 
   licensing:
     path: standards/licensing.md
