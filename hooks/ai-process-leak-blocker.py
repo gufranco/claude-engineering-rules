@@ -59,6 +59,11 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "plan.md is a planning artifact; do not reference it in commits",
     ),
     (
+        re.compile(r"(?<![\w-])\.{0,2}/?specs?/[\w./-]*\.md\b", re.IGNORECASE),
+        "A path into a spec folder advertises the planning artefact; published "
+        "text must never link to it or name it",
+    ),
+    (
         re.compile(r"\bspec\s+folders?\b", re.IGNORECASE),
         "Spec folder is an AI workflow artifact, not human commit content",
     ),
@@ -71,9 +76,7 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "State-of-the-art is an LLM hyperbole tell",
     ),
     (
-        re.compile(
-            r"\b(?:100%|fully|absolutely|perfectly)\s+faithful\b", re.IGNORECASE
-        ),
+        re.compile(r"\b(?:100%|fully|absolutely|perfectly)\s+faithful\b", re.IGNORECASE),
         "Faithfulness language is AI-process hyperbole",
     ),
     (
@@ -88,9 +91,7 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         "Phase-relative scheduling exposes the AI plan",
     ),
     (
-        re.compile(
-            r"\b(?:following|as|per)\s+(?:the\s+plan|the\s+spec)\b", re.IGNORECASE
-        ),
+        re.compile(r"\b(?:following|as|per)\s+(?:the\s+plan|the\s+spec)\b", re.IGNORECASE),
         "Referencing 'the plan/spec' as authority is AI workflow language",
     ),
     (
@@ -296,9 +297,7 @@ def main() -> int:
     findings: list[str] = []
     for field, text in texts:
         for match, reason, snippet in find_violations(text):
-            findings.append(
-                f"  - {match!r} ({reason})\n    in {field}: ...{snippet}..."
-            )
+            findings.append(f"  - {match!r} ({reason})\n    in {field}: ...{snippet}...")
 
     if not findings:
         return 0
@@ -319,9 +318,7 @@ def main() -> int:
         decision="block",
         tool=tool,
         reason="AI process language detected",
-        command_excerpt=" | ".join(f[:120] for f in findings)[:240]
-        if findings
-        else None,
+        command_excerpt=" | ".join(f[:120] for f in findings)[:240] if findings else None,
     )
     return 2
 
