@@ -149,6 +149,14 @@ def find_violations(text: str) -> list[tuple[str, str, str]]:
     return out
 
 
+try:
+    from _lib.knowledge_notes import in_vault as _in_vault
+except Exception:  # pragma: no cover
+
+    def _in_vault(_path: str) -> bool:
+        return False
+
+
 SKIPPED_PATH_SEGMENTS = (
     "/.claude/",
     "/specs/",
@@ -161,7 +169,9 @@ SKIPPED_PATH_SEGMENTS = (
 def is_skipped_path(path: str) -> bool:
     if not path:
         return False
-    return any(seg in path for seg in SKIPPED_PATH_SEGMENTS)
+    if any(seg in path for seg in SKIPPED_PATH_SEGMENTS):
+        return True
+    return _in_vault(path)
 
 
 GIT_AND_PR_PATTERNS = (

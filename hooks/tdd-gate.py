@@ -40,6 +40,10 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
+    from _lib.project_scope import walk_up
+except ImportError:  # pragma: no cover
+    sys.exit(0)
+try:
     from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
@@ -246,10 +250,7 @@ def find_companion_test(path: Path) -> Path | None:
                 if cand.is_file() and any(v in cand.name for v in variants):
                     return cand
 
-    cursor = parent
-    for _ in range(6):
-        if cursor == cursor.parent:
-            break
+    for cursor in walk_up(parent, limit=6):
         for testdir_name in ("tests", "__tests__", "test"):
             td = cursor / testdir_name
             if td.is_dir():
@@ -257,7 +258,6 @@ def find_companion_test(path: Path) -> Path | None:
                     for cand in td.rglob(f"*{v}*"):
                         if cand.is_file() and is_test_file(cand):
                             return cand
-        cursor = cursor.parent
 
     return None
 

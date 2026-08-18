@@ -151,6 +151,14 @@ SECTION_HEADING_PATTERN = re.compile(
     + r")\b",
 )
 
+try:
+    from _lib.knowledge_notes import in_vault as _in_vault
+except Exception:  # pragma: no cover
+
+    def _in_vault(_path: str) -> bool:
+        return False
+
+
 SKIPPED_DOCS = (
     "/.claude/CLAUDE.md",
     "/.claude/README.md",
@@ -293,7 +301,9 @@ def extract_git_message_texts(cmd: str) -> list[str] | None:
 def is_skipped_md_path(path: str) -> bool:
     if not path:
         return False
-    return any(seg in path for seg in SKIPPED_DOCS)
+    if any(seg in path for seg in SKIPPED_DOCS):
+        return True
+    return _in_vault(path)
 
 
 def looks_like_publishing_json(content: str) -> bool:

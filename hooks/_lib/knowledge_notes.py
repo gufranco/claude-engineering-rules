@@ -15,7 +15,7 @@ from datetime import date
 from pathlib import Path
 from typing import Iterator
 
-DEFAULT_VAULT = "~/Dropbox/Obsidian/Second Brain"
+DEFAULT_VAULT = "~/second-brain"
 REQUIRED_KEYS = ("date", "type", "tags", "ai-first")
 PREAMBLE = "## For future agent"
 
@@ -106,9 +106,31 @@ def relative(path: Path, root: Path) -> Path | None:
         return None
 
 
+def in_vault(path: str) -> bool:
+    """Return True when `path` sits inside the second brain vault.
+
+    Hooks whose rule governs published output use this to stand down. The vault
+    is a private local store, so configuration paths and project vocabulary are
+    legitimate content there rather than a leak.
+    """
+    if not path:
+        return False
+    root = vault_root()
+    if root is None:
+        return False
+    return relative(Path(path), root) is not None
+
+
 def is_exempt(rel: Path) -> bool:
-    """Return True for paths the specification does not govern."""
+    """Return True for paths the specification does not govern.
+
+    Any hidden directory is skipped. Tooling writes markdown into caches and
+    metadata folders, and a linter that treated those as notes would report
+    defects nobody can fix.
+    """
     parts = rel.parts
+    if any(part.startswith(".") for part in parts[:-1]):
+        return True
     if parts and parts[0] in EXEMPT_DIRS:
         return True
     return len(parts) == 1 and parts[0] in EXEMPT_ROOT_FILES

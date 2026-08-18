@@ -513,3 +513,34 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     assert proc.returncode == 0
+
+
+def test_allows_config_paths_inside_the_second_brain_vault(tool_use, assert_allows, tmp_path):
+    vault = tmp_path / "vault" / "wiki" / "concepts"
+    vault.mkdir(parents=True)
+    target = vault / "Tooling.md"
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": str(target),
+            "content": "MCP servers load from ~/.claude.json, not ~/.claude/settings.json.\n",
+        },
+    )
+
+    assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")})
+
+
+def test_still_blocks_config_paths_outside_the_vault(tool_use, assert_blocks, tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    outside = tmp_path / "project" / "NOTES.md"
+    outside.parent.mkdir()
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": str(outside),
+            "content": "MCP servers load from ~/.claude.json, not ~/.claude/settings.json.\n",
+        },
+    )
+
+    assert_blocks(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})

@@ -24,6 +24,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+try:
+    from _lib.project_scope import walk_up
+except ImportError:  # pragma: no cover
+    sys.exit(0)
+
 from _lib.bypass import is_bypassed  # noqa: E402
 
 try:
@@ -86,14 +91,16 @@ def _format_with(tool: str, *args: str) -> None:
 
 
 def _find_ts_workspace(path: Path) -> Path | None:
-    current = path.parent.resolve()
-    root = Path(current.root)
-    while current != root and current != current.parent:
+    """Return the nearest TypeScript workspace, bounded by the repository.
+
+    Without the boundary the walk reaches the home directory and can adopt an
+    unrelated workspace as the one to type-check.
+    """
+    for current in walk_up(path.parent, limit=20):
         if (current / "tsconfig.json").is_file() and (
             current / "package.json"
         ).is_file():
             return current
-        current = current.parent
     return None
 
 
