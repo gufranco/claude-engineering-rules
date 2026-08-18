@@ -58,8 +58,24 @@ It does not apply inside the planning folder itself. Files under project `specs`
 | `for each X case I ran`, `for each X I observed`, `for each X I tried` | Meta-iteration over test cases. Reads as AI workflow self-talk |
 | `with the asserts pinned to match`, `pinned to match the actual` | Frames the verification as the deliverable. The deliverable is the code |
 | `All N tests still pass`, `All N integration tests pass`, `N tests all pass` | Verification-summary trailer. CI conveys this; the comment should not |
+| A link or bare path into a spec folder, in any published file | Names the planning artefact outright, and a link is worse than a mention because it invites the reader to go and look |
 
 This list is the hook's regex set. It is not exhaustive. The principle stands: if a sentence describes the process of generating the change, it does not belong outside the planning folder.
+
+### The cross-reference you add while cleaning up
+
+The last row has its own subsection because it does not feel like a leak when it is written. Every other entry reads as workflow vocabulary, so it is easy to spot. This one arrives disguised as helpfulness.
+
+The shape: content is cut from a published document and moved into the planning folder, and then a pointer is added so nothing appears lost.
+
+```markdown
+The working record behind all of this, including the approaches that were
+built and removed, is in [`specs/engineering-record.md`](specs/engineering-record.md).
+```
+
+Every instinct that produces that line is a good one. Nothing was deleted, the reader is told where the detail went, and the cross-reference is the kind of courtesy a careful author extends. It is still a leak, and a worse one than a stray "Phase 2", because it hands the reader a path and an invitation.
+
+The rule is that moving content out of a published file ends there. The published file does not acknowledge the move, does not name the destination, and does not hint that a destination exists. If the removed material mattered to a reader, the answer is to keep a shorter version of it in the published file, never to link to where it went.
 
 ## How To Write A Commit Or PR Description Instead
 

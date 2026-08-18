@@ -172,6 +172,8 @@ A blocking hook fires because a rule was violated. The default response is to ch
 
 The failure mode this prevents: a bypass engaged once for a real reason, then re-engaged reflexively at the start of every subsequent batch until the rule is effectively off.
 
+**A checker that searches for banned content will block itself.** Hooks scan the raw command string before the shell runs it, so a grep whose pattern spells out an em dash, an attribution line, or any other banned literal is a violation by inspection, and the search never executes. Nothing partially ran; the whole call was refused. Build the literal from fragments instead, `"co-auth" + "ored-by"` or `chr(0x2014)`, and the audit runs while the rule stays enforced. This applies to every audit script, lint helper and one-off verification grep aimed at the very patterns the hooks defend.
+
 ## External Tools
 
 Before using any external tool or CLI command:

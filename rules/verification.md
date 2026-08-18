@@ -132,3 +132,19 @@ If you cannot verify everything:
 - State what was verified and what was not.
 - Explain why full verification was not possible.
 - Never round up. 80% done is not done.
+
+## The Tested Set Is Not the Required Set
+
+Rounding down is the mirror of rounding up, and it is easier to miss because it looks like caution. Evidence answers "what did we confirm". It never answers "what is necessary" on its own. Presenting the first as though it were the second understates the thing being described and misleads the reader in a way that sounds careful.
+
+The failure is almost always inherited rather than invented: an earlier document listed the environments that happened to get tested, a later reader parses that list as a compatibility matrix, and it hardens into a requirement nobody ever established.
+
+| Instead of | Write |
+|-----------|-------|
+| "Runs on a Game Doctor SF7 and an FXPAK Pro" as the hardware section | "No coprocessor and no special mapping hardware, so it runs on any cartridge that can hold it. Verified on a Game Doctor SF7 and an FXPAK Pro" |
+| "Supported: Node 20 and Node 22" when only those were in CI | "Requires Node 18 or newer, per the engines field. CI covers 20 and 22" |
+| "Works on Postgres 15" after testing one version | "Uses no version-specific feature beyond Postgres 12. Tested against 15" |
+
+Two separate claims, written separately: what the thing actually requires, derived from the code, and what was measured, derived from a run. When the requirement has not been established, say that rather than substituting the test matrix for it.
+
+The check: for every environment, platform or version named in a document, ask whether it is there because the code needs it or because somebody happened to try it. If the second, the sentence is a compatibility claim resting on no analysis.
