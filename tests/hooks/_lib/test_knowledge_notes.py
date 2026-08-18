@@ -217,3 +217,35 @@ def test_vault_root_returns_none_when_missing(monkeypatch, tmp_path):
 
 def test_is_volatile_claim_ignores_a_date_prefixed_snapshot():
     assert kn.is_volatile_claim("- 2026-08-18: the backlog has 42 open tasks") is False
+
+
+def test_in_vault_accepts_a_path_inside_the_root(monkeypatch, vault):
+    monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
+
+    assert kn.in_vault(str(vault / "wiki/concepts/A.md")) is True
+
+
+def test_in_vault_rejects_a_path_outside_the_root(monkeypatch, vault, tmp_path):
+    monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
+
+    assert kn.in_vault(str(tmp_path / "elsewhere.md")) is False
+
+
+def test_in_vault_rejects_an_empty_path(monkeypatch, vault):
+    monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
+
+    assert kn.in_vault("") is False
+
+
+def test_in_vault_is_false_when_no_vault_exists(monkeypatch, tmp_path):
+    monkeypatch.setenv("SECOND_BRAIN_VAULT", str(tmp_path / "absent"))
+
+    assert kn.in_vault(str(tmp_path / "absent" / "note.md")) is False
+
+
+@pytest.mark.parametrize(
+    "rel",
+    [".pytest_cache/README.md", ".git/COMMIT_EDITMSG.md", ".github/workflows/notes.md"],
+)
+def test_is_exempt_skips_hidden_directories(rel):
+    assert kn.is_exempt(Path(rel)) is True

@@ -636,3 +636,33 @@ def test_allows_human_phrasing_about_tests(tool_use, assert_allows):
     )
 
     assert_allows(HOOK, payload)
+
+
+def test_allows_project_vocabulary_inside_the_second_brain_vault(tool_use, assert_allows, tmp_path):
+    vault = tmp_path / "vault" / "wiki" / "projects"
+    vault.mkdir(parents=True)
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": str(vault / "Rollout.md"),
+            "content": "Phase 2 of the rollout is done. I ran the suite and all 12 tests pass.\n",
+        },
+    )
+
+    assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")})
+
+
+def test_still_blocks_process_language_outside_the_vault(tool_use, assert_blocks, tmp_path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    outside = tmp_path / "project" / "README.md"
+    outside.parent.mkdir()
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": str(outside),
+            "content": "Phase 2 of the rollout is done. I ran the suite and all 12 tests pass.\n",
+        },
+    )
+
+    assert_blocks(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})

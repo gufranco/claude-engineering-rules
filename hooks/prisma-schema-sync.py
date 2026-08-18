@@ -29,6 +29,10 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
+    from _lib.project_scope import walk_up
+except ImportError:  # pragma: no cover
+    sys.exit(0)
+try:
     from _lib.audit_log import record as _audit  # type: ignore
 except Exception:  # pragma: no cover
 
@@ -51,7 +55,7 @@ def is_prisma_migration(path: str) -> bool:
 
 def find_schema(migration_path: str) -> Path | None:
     p = Path(migration_path).resolve()
-    for parent in p.parents:
+    for parent in walk_up(p.parent, limit=20):
         candidate = parent / "schema.prisma"
         if candidate.is_file():
             return candidate
