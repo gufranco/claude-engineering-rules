@@ -19,7 +19,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-69 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+70 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -101,7 +101,8 @@ A layered config where each layer catches what the layer above missed.
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
 | [`smart-questions`](rules/smart-questions.md) | Question format, mandatory recommendation when presenting a choice, status reports, FIXED/RESOLVED/DONE loop closure, Tatham bug-report essentials |
 | [`found-fix`](rules/found-fix.md) | Any verification-surface finding is in scope for the current task. Bans the rationalization phrases that defer fixes to a later session |
-| [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, hyperbole tells, and self-criticism from commit messages, PR descriptions, and messages to colleagues |
+| [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, spec-folder links, hyperbole tells, and self-criticism from commit messages, PR descriptions, published docs, and messages to colleagues |
+| [`doc-truth`](rules/doc-truth.md) | Documentation that describes code is a claim about the code. A change that falsifies a claim corrects it in the same commit. Four mechanically certain checks at `git commit`; historical records exempt |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
 | [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas, and a close-out merge that folds a completed change into the spec |
 | [`compliance-defaults`](rules/compliance-defaults.md) | Umbrella for the compliance family. Strictest applicable rule wins, and a published standard counts as binding before its effective date |
@@ -116,9 +117,11 @@ A layered config where each layer catches what the layer above missed.
 
 Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
+Three more rules live in [`rules/`](rules/) but load on demand through [`rules/index.yml`](rules/index.yml) rather than on every turn: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
+
 ### Standards, loaded on demand
 
-79 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+80 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
@@ -157,6 +160,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/pr-summary`](skills/pr-summary/SKILL.md) | PR summary with reviewer suggestions |
 | [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis |
 | [`/retro`](skills/retro/SKILL.md) | Session retrospective with pattern extraction |
+| [`/morning`](skills/morning/SKILL.md) | Cross-account work triage. Sweeps every authenticated git identity and its organizations, ranks by who is blocked, reports, then works the queue with per-item consent. Merging is blocked mechanically for the run |
 | [`/session-log`](skills/session-log/SKILL.md) | Session activity logger for handoff |
 | [`/setup`](skills/setup/SKILL.md) | Interactive project environment setup |
 | [`/tdd`](skills/tdd/SKILL.md) | Test-driven development loop. Vertical slices, no horizontal write-tests-then-all-impl |
@@ -167,7 +171,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-69 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+70 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -187,7 +191,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
-| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, and hyperbole tells |
+| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder, and hyperbole tells |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any`. No allow marker; only third-party tool directives are honored. |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
@@ -199,6 +203,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. Protected-branch pushes are allowed in repositories listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt) |
+| [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
 | [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | Blocks `.env` and key/cert copies, secret-named `ENV`/`ARG` with literal values, Compose `privileged: true`, and host-namespace toggles. Warns on floating tags, `USER root`, deprecated top-level `version:`, and literal secrets in `environment:`. Bypass `DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Drizzle raw query escape hatches |
@@ -226,6 +231,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks 90+ in-place mutation patterns in JS/TS. No allow marker; only third-party tool directives are honored. |
 | [`normative-keyword-discipline.py`](hooks/normative-keyword-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks bullet items starting with `Should ` or `should ` in rules, standards, checklists, and [`CLAUDE.md`](CLAUDE.md). Enforces the BCP 14 weasel-words rule. Bypass `NORMATIVE_KEYWORD_DISABLE=1` |
 | [`notify-webhook.py`](hooks/notify-webhook.py) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
+| [`pr-merge-blocker.py`](hooks/pr-merge-blocker.py) | PreToolUse Bash | Refuses every pull request merge form while a `/morning` sweep holds the session lock. Covers `gh pr merge`, `glab mr merge`, REST merge endpoints, and GraphQL merge mutations. Silent outside a sweep, so `/deploy land` keeps working. Leaves `git merge` and `gh pr update-branch` alone. Bypass `PR_MERGE_BLOCKER_DISABLE=1` |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Prisma raw query escape hatches |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | Enforces schema.prisma vs migration parity |
 | [`read-injection-scanner.py`](hooks/read-injection-scanner.py) | PostToolUse Read/WebFetch/WebSearch | Scans fetched content for prompt-injection patterns (instruction override, tool redirection, authority claims, base64 runs, unicode confusables) and emits a warning. Bypass `READ_INJECTION_DISABLE=1` |
@@ -252,6 +258,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`todo-marker-blocker.py`](hooks/todo-marker-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks TODO/FIXME/HACK/XXX/WIP markers in source code, allows issue-linked form `TODO(#123)`. No allow marker; only third-party tool directives are honored. |
 | [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks TypeORM raw query escape hatches |
 | [`typeorm-schema-sync.py`](hooks/typeorm-schema-sync.py) | PreToolUse Write/Edit | Enforces TypeORM entity vs migration parity |
+| [`user-supplied-artifact-guard.py`](hooks/user-supplied-artifact-guard.py) | PreToolUse Bash | Keeps files the user must supply themselves out of git history. Blocks `git commit`, and `git add` with an explicit path, when a file matches a digest declared in `artifacts.manifest.json` or carries an unambiguous ROM, disc-image, firmware, or model-weight extension. Size pre-filters the digest check. Bypass `USER_SUPPLIED_ARTIFACT_DISABLE=1` |
 
 ### Custom Agents
 
