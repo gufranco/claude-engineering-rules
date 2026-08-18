@@ -73,7 +73,13 @@ Analyze the current conversation to extract directives, corrections, preferences
 
 7. **Close out living specs.** If the session implemented a non-trivial change whose plan folder carries an unmerged `specs/current/` delta, offer to run the `/plan archive` merge now so the living spec reflects the new behavior. This calls the same shared merge routine `/plan archive` owns; do not reimplement it here. See [`rules/living-specs.md`](../../rules/living-specs.md).
 
-8. **Offer commit/push** for `~/.claude/` changes. Stage specific files, conventional commit, push.
+8. **Route memory findings through the vault.** When `SECOND_BRAIN_VAULT` resolves to a directory, a finding whose destination is a memory file is written as a vault note carrying `memory: true` and a `memory-scope`, then compiled with `/brain compile`. Do not hand-write the memory file.
+
+   Two reasons this is not ceremony. The vault records when the fact was learned and where it came from, which a memory file has never carried. And the compile owns the budget, so a growing memory directory sheds its lowest-value entries by demotion instead of growing without limit.
+
+   Existing hand-written memory files stay hand-written. The compile reports them as unmanaged and never touches them, so migrating one is a deliberate act rather than a side effect of a retro.
+
+9. **Offer commit/push** for `~/.claude/` changes. Stage specific files, conventional commit, push.
 
 ---
 
