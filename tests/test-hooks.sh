@@ -272,6 +272,17 @@ run_test "allows commit when no staged files are large" \
     "${FIXTURES}/commit-valid.json" 0
 
 echo ""
+echo "=== User-Supplied Artifact Guard ==="
+
+run_test "allows safe commands" \
+    "${HOOKS}/user-supplied-artifact-guard.py" \
+    "${FIXTURES}/bash-safe-command.json" 0
+
+run_test "allows commit when no artifact is staged" \
+    "${HOOKS}/user-supplied-artifact-guard.py" \
+    "${FIXTURES}/commit-valid.json" 0
+
+echo ""
 echo "=== Env File Guard ==="
 
 run_test "blocks writing to .env" \

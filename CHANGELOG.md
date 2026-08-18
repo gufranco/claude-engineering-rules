@@ -2,6 +2,19 @@
 
 All notable changes to this Claude Code configuration are documented here.
 
+## 2026-08-14
+
+### Added
+
+- Artifact identity discipline for files a person has to supply because the project may not distribute them: game ROMs, console BIOS dumps, vendor firmware, licensed model weights, proprietary SDKs. New on-demand rule at [`rules/artifact-identity.md`](rules/artifact-identity.md). A manifest is the source of truth and the documentation renders from it, so the table a user reads and the digests the code enforces cannot disagree. SHA-256 alone decides accept or reject; size, CRC32, and SHA-1 are published only so a user can cross-check against a public database. Adds the identify, diagnose, repair, verify sequence, because a digest that only rejects does not help anyone supply the right file.
+- [`standards/user-supplied-artifacts.md`](standards/user-supplied-artifacts.md): the implementation guide. Manifest schema with accepted variants, known-bad dumps, and provenance. Canonicalization rules for headers, archive members, multi-track disc images, and byte order, since a digest with no stated canonical form is unverifiable. A diagnosis table mapping every near-miss to a remedy. Lossless repair transforms that never supply content the user does not already hold. Per-OS self-service digest commands written for someone who has never opened a terminal. Patch distribution trade-offs across BPS, xdelta3, and IPS.
+- [`hooks/user-supplied-artifact-guard.py`](hooks/user-supplied-artifact-guard.py): PreToolUse Bash hook keeping those artifacts out of git history. Blocks `git commit`, and `git add` with an explicit path, on two signals. A SHA-256 match against `artifacts.manifest.json` has no false positives and file size pre-filters it, so hashing runs only on exact-size matches. An extension list covers files not yet in a manifest, and deliberately omits ambiguous extensions such as `.bin`, `.img`, and `.md`. Registered in `MINIMAL_HOOKS`, so it runs under every profile. Bypass `USER_SUPPLIED_ARTIFACT_DISABLE=1`.
+- Tests at [`tests/hooks/user-supplied-artifact-guard/`](tests/hooks/user-supplied-artifact-guard/) plus two smoke cases in [`tests/test-hooks.sh`](tests/test-hooks.sh).
+
+### Changed
+
+- [`README.md`](README.md): hooks table gains the new row, hook and standard counts corrected, and the three rules that live in [`rules/`](rules/) but load on demand are now named instead of silently missing from the always-loaded table.
+
 ## 2026-05-25
 
 ### Added
