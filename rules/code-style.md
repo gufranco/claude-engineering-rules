@@ -10,7 +10,7 @@ This applies to every scenario without exception:
 - Error handling: handle every error path. Never swallow, never punt
 - Validation: validate all inputs completely. Never skip "for now"
 - Edge cases: handle all of them. Never assume they will not happen
-- Documentation: update everything the change affects. Never leave stale docs
+- Documentation: update everything the change affects. Never leave stale docs. A document that describes code is a claim about the code, and the obligation to keep the claim true is sharpened in [`doc-truth.md`](doc-truth.md)
 - Accessibility: implement fully. Never "a11y pass later"
 - Migrations: write both up and down. Never skip the down migration
 - Cleanup: remove dead code, unused imports, stale references. Never leave debris
