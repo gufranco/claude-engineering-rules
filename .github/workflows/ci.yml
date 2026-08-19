@@ -33,9 +33,16 @@ jobs:
       - name: Install linters
         run: pip install -r requirements-dev.txt
 
+      # The runner image ships shellcheck. Installing it unconditionally cost a
+      # full apt index refresh on every run and was the step that hung.
       - name: ShellCheck
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          set -euo pipefail
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq shellcheck
+          fi
+          shellcheck --version
           shellcheck --severity=warning --shell=bash --enable=all tests/test-hooks.sh
 
       - name: Python lint (ruff check)
@@ -257,7 +264,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      contents: read
+      # semantic-release verifies push access with `git push --dry-run` before
+      # it analyzes anything, so a read-only token fails the run before it can
+      # reach the plugin chain that this job exists to check.
+      contents: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
         with:
@@ -279,7 +289,14 @@ jobs:
 
       # Proves the plugin chain loads and the notes render before main can
       # reach a state where the real release is the first thing to try it.
+      #
+      # Restricted to push events because a pull request from a fork always
+      # gets a read-only token regardless of the permissions block, and the
+      # push-access check above would fail for a contributor who has done
+      # nothing wrong. Releases only ever run from main, so a push-event check
+      # still gates every release.
       - name: semantic-release dry run
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release --dry-run --no-ci
