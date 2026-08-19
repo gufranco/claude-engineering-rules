@@ -1,0 +1,32 @@
+# Development toolchain for this repository. Single source of truth.
+#
+# The Makefile installs from this file and every CI job that needs Python
+# tooling installs from it too, so a version bump lands in one place and
+# cannot drift between a local run and the pipeline. Dependabot opens the
+# bump pull requests against this file.
+#
+# Versions are pinned exactly. A range would let CI resolve a different
+# toolchain than the one a contributor ran locally, which turns a clean
+# local gate into a red pipeline.
+
+# Test runner and coverage
+pytest==9.0.3
+pytest-cov==7.1.0
+pytest-xdist==3.8.0
+pytest-randomly==4.1.0
+coverage==7.14.1
+
+# Lint, format, type check
+ruff==0.15.15
+mypy==2.1.0
+yamllint==1.38.0
+
+# Static analysis of the GitHub Actions workflows themselves
+zizmor==1.29.0
+
+# Local gate runner. Mirrors the CI checks onto a git commit.
+pre-commit==4.6.2
+
+# Runtime imports used by the validators under .github/scripts/
+PyYAML==6.0.3
+types-PyYAML==6.0.12.20260815
