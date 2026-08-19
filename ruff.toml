@@ -1,0 +1,20 @@
+# Explicit lint configuration.
+#
+# Without this file ruff applies whatever its current release ships as the
+# default rule set, and that set is not stable across versions: 0.15 enabled
+# 59 rules, 0.16 enables 413. Upgrading the linter then silently redefines
+# what the gate enforces, which turned a clean tree into 808 findings that
+# had nothing to do with any code change.
+#
+# The selection below is the set the repository has always been held to.
+# Widening it is a deliberate change that arrives with the fixes it demands,
+# never as a side effect of a version bump.
+#
+# Formatter options are deliberately absent. The tree is formatted with ruff
+# defaults, and pinning a different line length here would rewrite 172 files
+# for no reason.
+
+target-version = "py312"
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
