@@ -15,6 +15,7 @@
   "scripts": {
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run --no-ci",
+    "release:verify-notes": "node scripts/verify-release-notes.mjs",
     "version:sync": "node scripts/sync-plugin-versions.mjs"
   },
   "devDependencies": {
