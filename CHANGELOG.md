@@ -2,6 +2,36 @@
 
 All notable changes to this Claude Code configuration are documented here.
 
+## 2026-08-19
+
+### Added
+
+- Automated releases. Merging to `main` runs CI, and a green CI run triggers [`.github/workflows/release.yml`](.github/workflows/release.yml), which derives the version from the Conventional Commits since the last tag, tags it, and publishes GitHub release notes. The gate is the CI result rather than the push, so a red `main` cannot be tagged, and the release job refuses to run when `main` has moved past the commit CI actually verified. [`CHANGELOG.md`](CHANGELOG.md) stays hand-written: generated notes list what changed, and this file exists to say why, which is the part a reader cannot reconstruct from commit subjects.
+- [`scripts/sync-plugin-versions.mjs`](scripts/sync-plugin-versions.mjs) propagates the released version into [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json), its nested plugin entries, and both plugin manifests. It rejects anything that is not a semantic version, preserves key order, and is idempotent, so a re-run after a partial release cannot corrupt a manifest.
+- Dependabot at [`.github/dependabot.yml`](.github/dependabot.yml) across three ecosystems. Actions, Python, and Node bumps are grouped so the pytest plugins move with pytest and the linters move together, since bumping a runner without its plugins produces an incompatibility failure that reads like a test regression. Major bumps stay ungrouped for individual review.
+- [`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml) scores supply-chain posture weekly and on branch-protection changes, publishing to the Security tab and the badge.
+- `zizmor` static analysis of the workflows, wired into the CI lint job and `make lint`. It covers what actionlint does not: template injection, over-broad token permissions, and unpinned action references.
+- Community health files. [`SECURITY.md`](SECURITY.md) carries the threat model, including the point that hooks run with the developer's own privileges and are advisory rather than a sandbox. [`CONTRIBUTING.md`](CONTRIBUTING.md) documents the local gate and the fact that a commit type decides a released version. Plus [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`.github/CODEOWNERS`](.github/CODEOWNERS), issue forms, and a pull request template.
+- [`.pre-commit-config.yaml`](.pre-commit-config.yaml) mirrors the CI gate locally, pinned to the same tool versions so a green local commit is a green pipeline.
+- [`requirements-dev.txt`](requirements-dev.txt) as the single source of truth for the Python toolchain. The Makefile and all four CI jobs that need Python now install from it, and Dependabot opens bumps against it.
+
+### Changed
+
+- Every GitHub Action is pinned to a full commit SHA with the version kept in a trailing comment, across all four workflows. A tag is mutable, so a moved tag silently changes what runs with a write token.
+- `make typecheck` was checking `scripts hooks` and failing on 219 errors while CI strict-checked six files and passed. `make test-all` therefore could not succeed for anyone who ran it. The strict-typed file list now lives once in the Makefile and CI calls `make typecheck`, so the two cannot drift again. Widening that list is now a deliberate change that arrives with the fixes.
+- `make lint` silently skipped yamllint whenever it was absent from `PATH`, which it always was, since it installs into the venv. It now resolves the venv binary and reports a real result. The yamllint configuration also differed from the one CI used and now matches.
+- Makefile tool resolution prefers the in-repo venv and falls back to `PATH`, so CI can call the same targets without bootstrapping a venv.
+
+### Fixed
+
+- [`plugins/`](plugins/) was gitignored while [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) was tracked and pointed at [`./plugins/compliance-pack`](plugins/compliance-pack). Both packs were absent from every clone, so the marketplace resolved to nothing. The ignore now excludes directory contents and negates the two authored packs, which is the only form git honors: a re-include cannot reach inside a directory git was told to skip.
+- Template injection in the mutation scan workflow. `github.base_ref` was interpolated straight into a shell block, so a branch name is enough to run arbitrary code in the runner. Both uses now pass through the environment.
+- The markdown link validator treated ubiquitous configuration filenames as repository paths. Adding `package.json` and its siblings to the root turned 45 mentions of a reader's own project files into findings, where a link would have pointed somewhere irrelevant. `GENERIC_FILENAME_TOKENS` in [`hooks/_lib/markdown_link_detector.py`](hooks/_lib/markdown_link_detector.py) exempts those tokens by name, and [`rules/markdown-links.md`](rules/markdown-links.md) documents the narrow test for adding one.
+
+### Security
+
+- The release toolchain reported seven advisories, two high, all inside the npm CLI that `@semantic-release/npm` vendors so it can publish packages. Bundled dependencies cannot be replaced by a version override and the current npm release bundles the same versions. This repository publishes to no registry and does not load that plugin, so an `overrides` entry aliases it to one already present. The dependency tree drops from 462 packages to 283 and `npm audit` is clean. CI verifies the arrangement rather than trusting it: the `release-config` job audits and runs a full dry run on every pull request, so a future version that genuinely needs the real plugin fails in review. Reasoning and the revisit condition are in [`SECURITY.md`](SECURITY.md).
+
 ## 2026-08-14
 
 ### Added

@@ -1,0 +1,55 @@
+name: Proposal
+description: Propose a new rule, standard, skill, hook, or agent.
+labels: [enhancement, triage]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - Rule (always loaded)
+        - Standard (loaded on demand)
+        - Skill or slash command
+        - Hook
+        - Agent
+        - Tooling or CI
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: >-
+        The failure this prevents. Describe a concrete situation where the
+        current configuration produced the wrong outcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What the rule would say, or what the hook would block.
+    validations:
+      required: true
+
+  - type: textarea
+    id: prior-art
+    attributes:
+      label: Prior art
+      description: >-
+        Existing rules, standards, or hooks that already cover part of this,
+        and why extending one of them is not enough.
+    validations:
+      required: true
+
+  - type: textarea
+    id: false-positives
+    attributes:
+      label: False positives
+      description: >-
+        For a hook, the legitimate code it would wrongly block, and how the
+        implementation avoids that.
+    validations:
+      required: false
