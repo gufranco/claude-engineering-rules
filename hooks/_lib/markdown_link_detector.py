@@ -41,6 +41,21 @@ EXEMPT_FILES = {
     "rules/markdown-links.md",
 }
 
+GENERIC_FILENAME_TOKENS = frozenset(
+    {
+        "package.json",
+        "package-lock.json",
+        "requirements-dev.txt",
+        ".pre-commit-config.yaml",
+        "CONTRIBUTING.md",
+        "CODE_OF_CONDUCT.md",
+        "SECURITY.md",
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/ISSUE_TEMPLATE/",
+        ".github/ISSUE_TEMPLATE",
+    }
+)
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -265,6 +280,8 @@ def detect_findings(
             if column_inside_ranges(span_start, link_url_ranges):
                 continue
             if not is_file_path_token(inner):
+                continue
+            if inner in GENERIC_FILENAME_TOKENS:
                 continue
             resolved = resolve_path(inner, doc_dir, repo_root)
             if resolved is None:

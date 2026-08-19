@@ -33,6 +33,29 @@ The rule does not apply inside:
 - **Front-matter blocks** delimited by `---`.
 - **HTML comment blocks** delimited by `<!-- -->`.
 
+## Generic Configuration Filenames
+
+A handful of filenames exist at this repository root and also appear constantly
+in instructional prose about the reader's own project. `package.json` in a
+monorepo standard means the reader's manifest, never this repository's. Linking
+it would send the reader somewhere irrelevant, so these tokens stay bare:
+
+`package.json`, `package-lock.json`, `requirements-dev.txt`,
+`.pre-commit-config.yaml`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+`SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/`.
+
+The exemption is by token, never by file, and it is deliberately narrow. The
+test is whether a reader following the link would land somewhere that answers
+their question. When a document genuinely refers to this repository's own copy,
+as [`SECURITY.md`](../SECURITY.md) does when describing the pinned toolchain,
+write the link. The rule then reads as guidance rather than as mechanical
+enforcement, which is the correct trade for a token this ambiguous.
+
+The list lives in `GENERIC_FILENAME_TOKENS` in
+[`hooks/_lib/markdown_link_detector.py`](../hooks/_lib/markdown_link_detector.py).
+Adding a name to it is a deliberate change, not a way to silence a finding on a
+path the repository actually owns.
+
 ## Path Resolution
 
 - Paths resolve relative to the document containing the reference.

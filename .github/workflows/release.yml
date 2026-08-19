@@ -1,0 +1,93 @@
+name: Release
+
+# Releases are gated on a green CI run rather than on the push itself, so a
+# red main can never be tagged. The release commit carries [skip ci], which
+# stops CI, which stops this workflow from firing on its own output.
+#
+# workflow_run is flagged by default because it usually pairs a write token
+# with a checkout of untrusted pull request code. This one never does: it is
+# scoped to main, it checks out main by name rather than any event-supplied
+# ref, and it refuses to run when main has moved past the commit CI verified.
+on:  # zizmor: ignore[dangerous-triggers]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: semantic-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    if: >-
+      github.repository == 'gufranco/claude-engineering-rules' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.workflow_run.conclusion == 'success')
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A commit can land while CI is still running for the previous one.
+      # Releasing main's tip would then ship code no CI run ever verified.
+      # Skipping is safe: the newer commit runs its own CI and its own release.
+      - name: Verify main is still the commit CI verified
+        id: verify
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" != "workflow_run" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          head_sha="$(git rev-parse HEAD)"
+          if [ "$head_sha" != "$VERIFIED_SHA" ]; then
+            echo "main advanced past the verified commit; its own release run will handle it."
+            echo "  verified: $VERIFIED_SHA"
+            echo "  current:  $head_sha"
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "main is at the verified commit $head_sha"
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        if: steps.verify.outputs.proceed == 'true'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6.5.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install release toolchain
+        if: steps.verify.outputs.proceed == 'true'
+        run: npm ci --ignore-scripts
+
+      - name: Audit release toolchain
+        if: steps.verify.outputs.proceed == 'true'
+        run: npm audit --audit-level=high
+
+      - name: semantic-release
+        if: steps.verify.outputs.proceed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: npx semantic-release

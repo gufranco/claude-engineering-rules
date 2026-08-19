@@ -1,0 +1,13 @@
+# Every change requires review from the repository owner.
+# Ordered so that later, more specific rules win.
+
+*                       @gufranco
+
+# Hooks execute on a contributor's machine with their privileges, and the
+# workflows hold the tokens that can tag and publish. Both are called out
+# explicitly so the ownership survives any future broadening of the rule above.
+/hooks/                 @gufranco
+/.github/workflows/     @gufranco
+/settings.json          @gufranco
+/.releaserc.json        @gufranco
+/scripts/               @gufranco

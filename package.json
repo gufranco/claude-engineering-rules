@@ -1,0 +1,32 @@
+{
+  "name": "claude-engineering-rules",
+  "version": "0.0.0-semantically-released",
+  "private": true,
+  "description": "An opinionated engineering config for Claude Code: rules, runtime hooks, and slash-command skills.",
+  "license": "MIT",
+  "author": "Gustavo Franco",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gufranco/claude-engineering-rules.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run --no-ci",
+    "version:sync": "node scripts/sync-plugin-versions.mjs"
+  },
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/exec": "7.1.0",
+    "@semantic-release/git": "11.0.1",
+    "@semantic-release/github": "12.0.9",
+    "@semantic-release/release-notes-generator": "14.1.1",
+    "conventional-changelog-conventionalcommits": "9.3.1",
+    "semantic-release": "25.0.9"
+  },
+  "overrides": {
+    "@semantic-release/npm": "npm:@semantic-release/exec@7.1.0"
+  }
+}
