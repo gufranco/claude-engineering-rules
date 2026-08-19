@@ -227,8 +227,21 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-dev.txt
 
+      # Installed from a pinned commit rather than apt. Refreshing the apt
+      # index pulled a multi-minute stall into the critical path and twice hung
+      # until the job timed out. This clone is deterministic and takes about a
+      # second.
       - name: Install bats-core
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats
+        env:
+          BATS_REF: eb7f42f8d608ac693d7a4b67474f6714ea68cfc5
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          git clone --quiet --no-checkout https://github.com/bats-core/bats-core.git "$workdir"
+          git -C "$workdir" fetch --quiet --depth 1 origin "$BATS_REF"
+          git -C "$workdir" checkout --quiet FETCH_HEAD
+          sudo "$workdir/install.sh" /usr/local
+          bats --version
 
       - name: Symlink checkout to ~/.claude
         run: |
