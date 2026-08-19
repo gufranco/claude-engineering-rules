@@ -53,12 +53,20 @@ That expands to:
 Run `make format` before `make lint` if the formatter complains. Individual
 targets are listed by `make help`.
 
-Two checks live only in CI because they need a network token:
+`make lint` includes zizmor. Two release checks are worth running by hand when
+you touch [`.releaserc.json`](.releaserc.json) or the release scripts:
 
 ```bash
-zizmor --persona=regular --min-severity=medium .github/workflows/
-npx semantic-release --dry-run --no-ci
+npm run release:verify-notes
+npm run release:dry
 ```
+
+The first renders release notes through the configured plugin with no token
+and no git access. It exists because a changelog preset bumped past the writer
+version semantic-release pins does not raise an error, it silently renders
+notes with every commit missing. CI runs it on every pull request, including
+Dependabot's, which the full dry run cannot cover: those get a read-only token
+and semantic-release verifies push access before it analyzes anything.
 
 ## Commit Messages
 

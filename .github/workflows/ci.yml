@@ -287,14 +287,20 @@ jobs:
       - name: Audit release toolchain
         run: npm audit --audit-level=high
 
-      # Proves the plugin chain loads and the notes render before main can
-      # reach a state where the real release is the first thing to try it.
-      #
-      # Restricted to push events because a pull request from a fork always
-      # gets a read-only token regardless of the permissions block, and the
-      # push-access check above would fail for a contributor who has done
-      # nothing wrong. Releases only ever run from main, so a push-event check
-      # still gates every release.
+      # Renders release notes directly through the configured plugin, with no
+      # token and no git access, so it also runs on Dependabot and fork pull
+      # requests where the dry run below cannot. This is the check that catches
+      # a preset bumped past the changelog writer semantic-release pins, which
+      # produces notes missing every commit rather than raising an error.
+      - name: Release notes render
+        run: node scripts/verify-release-notes.mjs
+
+      # The full dry run additionally proves the whole plugin chain resolves.
+      # Restricted to push events because a pull request from a fork, and every
+      # Dependabot pull request, gets a read-only token regardless of the
+      # permissions block, and semantic-release verifies push access before it
+      # analyzes anything. Releases only ever run from main, so a push-event
+      # check still gates every release.
       - name: semantic-release dry run
         if: github.event_name == 'push'
         env:
