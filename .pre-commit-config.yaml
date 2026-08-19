@@ -1,0 +1,112 @@
+# Local mirror of the CI gate. Every tool version here matches the pin in
+# requirements-dev.txt, because a pre-commit run that uses a different ruff
+# than CI gives a green local commit and a red pipeline.
+#
+# Install once:  pre-commit install && pre-commit install --hook-type commit-msg
+# Run manually:  pre-commit run --all-files
+
+default_install_hook_types: [pre-commit, commit-msg]
+fail_fast: false
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=5120]
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^(hooks|scripts|\.github/scripts|tests)/
+      - id: ruff-format
+        files: ^(hooks|scripts|\.github/scripts|tests)/
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args:
+          - -d
+          - "{extends: default, rules: {line-length: disable, document-start: disable, truthy: {check-keys: false}}}"
+        files: ^\.github/
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/woodruffw/zizmor-pre-commit
+    rev: v1.29.0
+    hooks:
+      - id: zizmor
+        args: [--persona=regular, --min-severity=medium]
+
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.11.0
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]
+
+  # The repository's own guardrails, run against the staged diff. These are the
+  # same scripts the Claude Code runtime hooks call, so a commit made outside
+  # the agent still gets the checks.
+  - repo: local
+    hooks:
+      - id: validate-markdown-links
+        name: markdown link discipline
+        entry: python3 .github/scripts/validate-markdown-links.py
+        language: system
+        pass_filenames: false
+        files: \.md$
+
+      - id: validate-counts
+        name: README counts match the tree
+        entry: python3 .github/scripts/validate-counts.py
+        language: system
+        pass_filenames: false
+
+      - id: validate-settings
+        name: settings.json is well formed
+        entry: python3 .github/scripts/validate-settings.py
+        language: system
+        pass_filenames: false
+        files: ^settings\.json$
+
+      - id: validate-skills
+        name: skill definitions
+        entry: python3 .github/scripts/validate-skills.py
+        language: system
+        pass_filenames: false
+        files: ^skills/
+
+      - id: validate-agents
+        name: agent definitions
+        entry: python3 .github/scripts/validate-agents.py
+        language: system
+        pass_filenames: false
+        files: ^agents/
+
+      - id: validate-cross-refs
+        name: cross-references resolve
+        entry: python3 .github/scripts/validate-cross-refs.py
+        language: system
+        pass_filenames: false
+        files: \.(md|yml)$

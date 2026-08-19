@@ -21,15 +21,17 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install linters
-        run: pip install ruff==0.15.15 pyyaml==6.0.3
+        run: pip install -r requirements-dev.txt
 
       - name: ShellCheck
         run: |
@@ -52,13 +54,13 @@ jobs:
         run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True) if 'node_modules' not in f]"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6.5.0
         with:
           node-version: "22"
 
       - name: Markdownlint
         run: |
-          npx --yes markdownlint-cli2 "rules/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md"
+          npx --yes markdownlint-cli2 "rules/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
       - name: Validate YAML
         run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))"
@@ -121,15 +123,17 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install yamllint
-        run: pip install yamllint==1.38.0
+        run: pip install -r requirements-dev.txt
 
       - name: Install actionlint
         run: |
@@ -143,6 +147,14 @@ jobs:
         run: |
           yamllint -d '{extends: default, rules: {line-length: disable, document-start: disable, truthy: {check-keys: false}}}' .github/
 
+      # Catches what actionlint does not: template injection into run blocks,
+      # over-broad token permissions, unpinned action refs, and artifact
+      # poisoning via workflow_run checkouts.
+      - name: zizmor
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: zizmor --persona=regular --min-severity=medium .github/workflows/
+
   typecheck:
     name: Typecheck (mypy --strict)
     runs-on: ubuntu-24.04
@@ -150,25 +162,22 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install mypy
-        run: pip install mypy==2.1.0 types-PyYAML
+        run: pip install -r requirements-dev.txt
 
-      - name: mypy --strict (mutation hook)
-        run: |
-          mypy --strict \
-            hooks/mutation-method-blocker.py \
-            hooks/_lib/mutation_detectors_core.py \
-            hooks/_lib/mutation_detectors_methods.py \
-            hooks/_lib/mutation_detectors_assignments.py \
-            hooks/_lib/suppression.py \
-            hooks/_lib/audit_log.py
+      # Calls the Makefile so the strict-typed file list lives in exactly one
+      # place. Repeating it here is how it silently drifted before.
+      - name: mypy --strict
+        run: make typecheck
 
   hooks:
     name: Hook tests
@@ -177,12 +186,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Make hooks executable
         run: chmod +x hooks/*.py tests/test-hooks.sh
@@ -200,12 +211,14 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install bats-core
         run: sudo apt-get update -qq && sudo apt-get install -y -qq bats
@@ -221,7 +234,7 @@ jobs:
         run: |
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install pytest==9.0.3 pytest-cov==7.1.0 pytest-xdist==3.8.0 pytest-randomly==4.1.0 coverage==7.14.1 ruff==0.15.15 mypy==2.1.0
+          .venv/bin/python -m pip install -r requirements-dev.txt
 
       - name: make test-cov
         run: make test-cov
@@ -231,13 +244,56 @@ jobs:
 
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: coverage-report
           path: |
             coverage.xml
             htmlcov/
           retention-days: 14
+
+  release-config:
+    name: Release config dry-run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6.5.0
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install release toolchain
+        run: npm ci --ignore-scripts
+
+      # The toolchain never ships to a user, but it runs with a write token on
+      # main, so a vulnerable dependency there is a release-pipeline risk.
+      - name: Audit release toolchain
+        run: npm audit --audit-level=high
+
+      # Proves the plugin chain loads and the notes render before main can
+      # reach a state where the real release is the first thing to try it.
+      - name: semantic-release dry run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release --dry-run --no-ci
+
+      - name: Plugin version sync is idempotent
+        run: |
+          set -euo pipefail
+          node scripts/sync-plugin-versions.mjs 9.9.9
+          first="$(git diff --stat)"
+          node scripts/sync-plugin-versions.mjs 9.9.9
+          second="$(git diff --stat)"
+          test "$first" = "$second"
+          git checkout -- .claude-plugin plugins
+          test -z "$(git status --porcelain)"
 
   codeql:
     name: CodeQL (Python)
@@ -248,16 +304,16 @@ jobs:
       security-events: write
       actions: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
         with:
           languages: python
           queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
         with:
           category: codeql-python
 
@@ -270,9 +326,9 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v5
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
         with:
           fail-on-severity: high
