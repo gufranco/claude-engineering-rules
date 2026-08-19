@@ -53,7 +53,12 @@ ide/
 .vscode/
 
 # Plugins and telemetry
-plugins/
+# Claude Code installs third-party plugins into plugins/, so the directory is
+# ignored by default. The two packs authored here are negated back in, because
+# .claude-plugin/marketplace.json points at them as plugin sources.
+plugins/*
+!plugins/compliance-pack/
+!plugins/ts-strictness-pack/
 telemetry/
 .caveman-active
 
