@@ -10,15 +10,15 @@
 # local gate into a red pipeline.
 
 # Test runner and coverage
-pytest==9.0.3
+pytest==9.1.1
 pytest-cov==7.1.0
 pytest-xdist==3.8.0
 pytest-randomly==4.1.0
-coverage==7.14.1
+coverage==7.15.4
 
 # Lint, format, type check
-ruff==0.15.15
-mypy==2.1.0
+ruff==0.16.3
+mypy==2.3.1
 yamllint==1.38.0
 
 # Static analysis of the GitHub Actions workflows themselves
