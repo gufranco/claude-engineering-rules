@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "compliance-pack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "GDPR-grade privacy, WCAG 2.2 AA+ accessibility, ePrivacy cookies, cybersecurity, anti-spam, AI compliance defaults. Strictest-applicable-rule-wins policy means the union of obligations across jurisdictions applies by default.",
   "status": "skeleton",
   "rules": [

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "ts-strictness-pack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Maximum TypeScript strictness: immutability by default, branded types, ORM migration parity, mutation-method-blocker hook covering 90+ patterns across 16 categories, raw-SQL bans per ORM, schema sync, type design discipline.",
   "status": "skeleton",
   "rules": [
