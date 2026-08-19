@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "ts-strictness-pack",
+  "version": "0.1.0",
+  "description": "Maximum TypeScript strictness: immutability by default, branded types, ORM migration parity, mutation-method-blocker hook covering 90+ patterns across 16 categories, raw-SQL bans per ORM, schema sync, type design discipline.",
+  "status": "skeleton",
+  "rules": [
+    "rules/lang/typescript-strict.md",
+    "rules/lang/typescript-types.md",
+    "rules/lang/typescript-immutability.md",
+    "rules/lang/orm-migrations.md"
+  ],
+  "standards": [
+    "standards/database.md",
+    "standards/postgresql.md",
+    "standards/identifiers.md"
+  ],
+  "hooks": [
+    "hooks/mutation-method-blocker.py",
+    "hooks/as-any-blocker.py",
+    "hooks/console-log-blocker.py",
+    "hooks/drizzle-raw-sql-blocker.py",
+    "hooks/drizzle-schema-sync.py",
+    "hooks/prisma-raw-sql-blocker.py",
+    "hooks/prisma-schema-sync.py",
+    "hooks/sequelize-raw-sql-blocker.py",
+    "hooks/sequelize-schema-sync.py",
+    "hooks/typeorm-raw-sql-blocker.py",
+    "hooks/typeorm-schema-sync.py",
+    "hooks/redis-atomicity.py",
+    "hooks/migration-idempotency.py"
+  ],
+  "agents": [
+    "agents/type-design-analyzer.md",
+    "agents/migration-planner.md"
+  ],
+  "skills": []
+}
