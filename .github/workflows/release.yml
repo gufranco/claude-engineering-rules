@@ -82,6 +82,12 @@ jobs:
         if: steps.verify.outputs.proceed == 'true'
         run: npm audit --audit-level=high
 
+      # Cheap and token-free, so it fails fast and with a clear message when a
+      # dependency bump broke note rendering.
+      - name: Release notes render
+        if: steps.verify.outputs.proceed == 'true'
+        run: node scripts/verify-release-notes.mjs
+
       - name: semantic-release
         if: steps.verify.outputs.proceed == 'true'
         env:
