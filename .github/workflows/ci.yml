@@ -22,6 +22,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -131,6 +133,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -155,12 +159,16 @@ jobs:
           yamllint -d '{extends: default, rules: {line-length: disable, document-start: disable, truthy: {check-keys: false}}}' .github/
 
       # Catches what actionlint does not: template injection into run blocks,
-      # over-broad token permissions, unpinned action refs, and artifact
-      # poisoning via workflow_run checkouts.
+      # over-broad token permissions, unpinned action refs, credential
+      # persistence into artifacts, and artifact poisoning via workflow_run.
+      #
+      # The gate is set at low because the workflows currently pass at low.
+      # Setting it where the tree already sits is what makes the next
+      # regression visible; a threshold above the current state gates nothing.
       - name: zizmor
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: zizmor --persona=regular --min-severity=medium .github/workflows/
+        run: zizmor --persona=regular --min-severity=low .github/workflows/
 
   typecheck:
     name: Typecheck (mypy --strict)
@@ -170,6 +178,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -194,6 +204,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -219,6 +231,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -285,6 +299,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38  # v6.5.0
@@ -341,6 +356,8 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd  # v4.37.7
@@ -363,6 +380,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
 
       - name: Dependency Review
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
