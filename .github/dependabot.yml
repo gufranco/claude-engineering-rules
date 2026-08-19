@@ -81,6 +81,14 @@ updates:
     labels:
       - dependencies
       - javascript
+    ignore:
+      # The conventionalcommits preset v10 requires conventional-changelog-writer
+      # v9, and @semantic-release/release-notes-generator still pins ^8.0.0. The
+      # mismatch does not error: it renders release notes with every commit
+      # missing. Lift this once release-notes-generator accepts writer v9.
+      - dependency-name: conventional-changelog-conventionalcommits
+        update-types:
+          - version-update:semver-major
     groups:
       release-tooling:
         patterns:
