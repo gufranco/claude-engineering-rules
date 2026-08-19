@@ -122,7 +122,7 @@ lint-yaml:
 	$(YAMLLINT) -d "$(YAMLLINT_RULES)" .github/
 
 lint-workflows:
-	$(ZIZMOR) --persona=regular --min-severity=medium .github/workflows/
+	$(ZIZMOR) --persona=regular --min-severity=low .github/workflows/
 
 lint-actions:
 ifndef ACTIONLINT
