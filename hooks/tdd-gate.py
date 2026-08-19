@@ -13,7 +13,10 @@ Definition of "production code":
   - NOT under a `scratchpad/` directory or the shared `/tmp` root. The
     harness directs throwaway analysis scripts to the session scratchpad,
     so gating them contradicts the instruction that put them there. The
-    per-user TMPDIR stays gated; pytest's `tmp_path` lives there.
+    per-user TMPDIR stays gated, which on macOS is where pytest's
+    `tmp_path` lives. On Linux `tmp_path` sits under `/tmp` instead, so
+    this suite's own tests pin their temp base outside both shared roots
+    rather than relying on the platform default.
 
 Test discovery strategy (first match wins):
   1. sibling `<name>.test.<ext>` / `<name>.spec.<ext>` / `<name>_test.<ext>`
@@ -178,6 +181,10 @@ def _shared_temp_roots() -> tuple[Path, ...]:
     Deliberately excludes the per-user TMPDIR, `/var/folders/...` on
     macOS: pytest's `tmp_path` lives there, and exempting it would switch
     off this hook's own test suite along with every other hook's.
+
+    The per-user TMPDIR is macOS-specific. On Linux pytest writes under
+    `/tmp/pytest-of-<user>`, inside a root this function returns, so the
+    tdd-gate suite pins its own temp base instead of inheriting one.
     """
     resolved = []
     for candidate in ("/tmp", "/private/tmp"):
