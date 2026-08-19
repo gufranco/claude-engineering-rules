@@ -13,6 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
 from _lib.markdown_link_detector import (  # noqa: E402
+    GENERIC_FILENAME_TOKENS,
     BrokenLinkFinding,
     Finding,
     column_inside_ranges,
@@ -156,6 +157,32 @@ def test_detect_findings_skips_fenced_block():
     text = "```\nbare `README.md` inside code block\n```\n"
     findings = detect_findings(text, "tmp.md", REPO_ROOT)
     assert findings == []
+
+
+def test_detect_findings_skips_generic_config_filename():
+    text = "Detect the package manager from `package.json`.\n"
+
+    findings = detect_findings(text, "tmp.md", REPO_ROOT)
+
+    assert findings == []
+
+
+def test_detect_findings_skips_every_generic_filename_token():
+    for token in GENERIC_FILENAME_TOKENS:
+        text = f"Read `{token}` in the target project.\n"
+
+        findings = detect_findings(text, "tmp.md", REPO_ROOT)
+
+        assert findings == [], token
+
+
+def test_detect_findings_still_flags_repo_owned_path():
+    text = "Look at `rules/markdown-links.md` directly.\n"
+
+    findings = detect_findings(text, "tmp.md", REPO_ROOT)
+
+    assert len(findings) == 1
+    assert findings[0].token == "rules/markdown-links.md"
 
 
 def test_detect_findings_skips_skip_dir():

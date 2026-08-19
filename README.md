@@ -6,6 +6,11 @@
 <br>
 
 [![CI](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![Release](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/gufranco/claude-engineering-rules/badge)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
+[![Latest release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196.svg?style=flat-square)](https://www.conventionalcommits.org)
+[![semantic-release](https://img.shields.io/badge/semantic--release-angular-e10079?style=flat-square)](https://github.com/semantic-release/semantic-release)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
 </div>
@@ -516,6 +521,49 @@ The 76 standards total roughly 16,000 lines. Loading all of them into every conv
 150+ patterns: filesystem destruction, privilege escalation, reverse shells, git destructive operations, AWS/GCP/Azure CLI deletions, Vercel/Netlify/Firebase, Docker and Kubernetes destructive commands, database CLI drops, IaC destroy, SQL statements without WHERE, credential exfiltration.
 
 </details>
+
+## Releasing and Versioning
+
+Releases are automatic. Merging to `main` runs CI; a green CI run triggers
+[`release.yml`](.github/workflows/release.yml), which derives the next version
+from the Conventional Commits since the last tag, tags it, syncs that version
+into [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) and
+both plugin manifests, and publishes GitHub release notes.
+
+| Commit type | Effect |
+|-------------|--------|
+| `feat` | minor release |
+| `fix`, `perf`, `refactor`, `revert` | patch release |
+| `docs`, `test`, `style`, `build`, `ci`, `chore` | no release |
+| `!` or a `BREAKING CHANGE:` footer | major release |
+
+[`CHANGELOG.md`](CHANGELOG.md) is written by hand and is not generated. It
+carries the reasoning behind a change, which generated notes cannot.
+
+## Contributing
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) covers the setup, the local gate, and the
+conventions. The short version:
+
+```bash
+python3 -m venv .venv && make install
+npm ci --ignore-scripts
+make test-all
+```
+
+Every pull request runs eight CI jobs: lint, workflow lint, typecheck, hook
+tests, the Python suite at 95% branch coverage, a release-config dry run,
+CodeQL, and dependency review.
+
+## Security
+
+Report vulnerabilities privately through
+[a security advisory](https://github.com/gufranco/claude-engineering-rules/security/advisories/new),
+never a public issue. [`SECURITY.md`](SECURITY.md) carries the threat model,
+the supported versions, and the supply-chain controls.
+
+Hooks are advisory. They stop an accidental destructive command; they are not
+a sandbox and do not contain untrusted code.
 
 ## License
 

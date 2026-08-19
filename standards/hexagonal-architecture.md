@@ -162,7 +162,7 @@ Avoid hard-coded plugin lists. Discover adapters at runtime through one of these
 
 | Mechanism | How | When to use |
 |-----------|-----|-------------|
-| Directory scan | Read a `plugins/` directory, import each `index.ts` | Monorepo with co-located plugins |
+| Directory scan | Read a plugin directory, import each `index.ts` | Monorepo with co-located plugins |
 | Config registration | [`settings.json`](../settings.json) lists enabled plugin IDs | User-selectable features |
 | Import map / service locator | Central registry maps IDs to factory functions | Library distributed as a package |
 
