@@ -25,7 +25,7 @@ and erosion of trust.
 The existing rules already required the fix. [`verification.md`](verification.md)
 "CI is clean" line says: "All checks pass AND zero annotations/warnings.
 Deprecation notices and non-fatal alerts count as unresolved." [`CLAUDE.md`](../CLAUDE.md)
-completion gate step 7 says: "After push, check CI annotations and
+completion gate step 8 says: "After push, check CI annotations and
 warnings. Deprecation notices, version warnings, and non-fatal alerts all
 require a fix before the task is done." The failure was not the rule. The
 failure was the rationalization that wrapped around it.
@@ -124,7 +124,7 @@ in scope as a single unit, by definition. The carve-out is explicit in
 
 ## Cross-References
 
-- [`CLAUDE.md`](../CLAUDE.md) Completion Gates step 7: CI annotations
+- [`CLAUDE.md`](../CLAUDE.md) Completion Gates step 8: CI annotations
   require a fix in the same task.
 - [`verification.md`](verification.md) "CI is clean" definition and
   "Zero Warnings as Verification Requirement" section.
