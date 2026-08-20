@@ -129,7 +129,7 @@ Three more rules live in [`rules/`](rules/) but load on demand through [`rules/i
 
 ### Standards, loaded on demand
 
-80 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+81 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
@@ -471,7 +471,7 @@ $HOME/.claude/
   rules/                 31 rules, 29 always-on plus 2 loaded on demand
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific rules: TypeScript, Python, ORM migrations
-  standards/             76 on-demand domain standards
+  standards/             81 on-demand domain standards
   agents/                17 specialized subagents
   skills/                39 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
