@@ -76,6 +76,34 @@ Mobile apps must handle network unavailability gracefully.
 - **Device matrix**: test on at least 3 screen sizes, small phone, large phone, tablet and 2 OS versions such as current, or minimum supported
 - **Performance tests**: measure startup time, scroll performance, and memory on a low-end device. CI should fail if metrics regress
 
+### The device tier is not optional for a visual change
+
+A widget or component test renders into a headless tree. It proves structure and says nothing about paint, platform accessibility semantics, or focus traversal on a device, which is the same limitation a DOM emulation has on the web. Treating it as verification for a visual change is the mobile form of the mistake [`../rules/frontend-render-gate.md`](../rules/frontend-render-gate.md) exists to prevent.
+
+| Framework | Device-level suite | Runner |
+|---|---|---|
+| Flutter | `integration_test/` with `IntegrationTestWidgetsFlutterBinding` | `flutter test integration_test --device-id <id>` |
+| React Native | Detox, or Maestro flows in `.maestro/` | `detox test`, `maestro test` |
+| Native iOS | XCUITest | `xcodebuild test -destination` |
+| Native Android | Espresso or UI Automator | `./gradlew connectedAndroidTest` |
+
+Both simulator runners are present on a configured macOS machine: `xcrun simctl list devices available` for iOS, `adb devices` for Android. Boot one and run the suite rather than reasoning about the widget tree.
+
+Flutter itself comes from `fvm`, because the mise plugin reports success while installing nothing on macOS arm64. Invoke the pinned SDK per project:
+
+```bash
+fvm use <version>          # writes .fvmrc, then `fvm flutter …` resolves
+fvm flutter test integration_test --device-id <simulator-id>
+```
+
+Without an `.fvmrc`, `fvm flutter` cannot resolve a version and fails with a bare `flutter: command not found`, which reads like a missing install rather than a missing project pin. Read the version the project actually pins, from `.fvmrc`, `mise.toml`, or `.tool-versions`, and match it. An analyzer or build run on a different minor version produces findings that do not reproduce for anyone else.
+
+When a project has no device-level suite directory at all, that absence is the finding. Report it as an unverified platform surface instead of presenting widget coverage as equivalent, and treat scaffolding the first `integration_test` as part of the work rather than a follow-up.
+
+### Accessibility on a device
+
+The platform accessibility tree is the only place semantics can be confirmed. Dump it and read the computed labels, roles, and traversal order rather than checking that a semantics widget or `accessibilityLabel` prop is present in source. A label that exists in the tree twice, or a control the traversal never reaches, is invisible in the source and obvious in the tree.
+
 ## Mobile Accessibility
 
 Native mobile apps follow the same WCAG 2.2 AA + AAA-aspirational targets as web. Per the strictest-wins policy in [`../rules/compliance-defaults.md`](../rules/compliance-defaults.md):

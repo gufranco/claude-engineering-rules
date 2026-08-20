@@ -15,7 +15,7 @@
 
 </div>
 
-**31** always-on rules · **79** on-demand standards · **39** slash-command skills · **69** runtime hooks · **18** custom agents · **42** MCP servers · **885** review items across **71** categories
+**31** always-on rules · **79** on-demand standards · **39** slash-command skills · **78** runtime hooks · **18** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -24,13 +24,13 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-70 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+78 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-31 universal rules ship with every conversation. 79 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 79.
+32 universal rules ship with every conversation. 79 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 79.
 
 </td>
 </tr>
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-29 rules in [`rules/`](rules/), loaded into every conversation.
+32 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -112,6 +112,9 @@ A layered config where each layer catches what the layer above missed.
 | [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas, and a close-out merge that folds a completed change into the spec |
 | [`compliance-defaults`](rules/compliance-defaults.md) | Umbrella for the compliance family. Strictest applicable rule wins, and a published standard counts as binding before its effective date |
 | [`accessibility-defaults`](rules/accessibility-defaults.md) | WCAG 2.2 AA floor with AAA where it does not conflict. Keyboard operability, 44x44 targets, reduced motion, no image CAPTCHA |
+| [`frontend-render-gate`](rules/frontend-render-gate.md) | A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach: cascade outcome, paint order, accessibility tree, focus order, third-party iframes. Ranks evidence tiers, extending the project's own browser or simulator harness first |
+| [`ai-review-convergence`](rules/ai-review-convergence.md) | Bounds the loop when automated reviewers comment. Zero bot comments is unreachable, so the stop condition is a round with no verified failure. Failure-scenario gate before fixing, minimal diff on response commits |
+| [`functional-index-fidelity`](rules/functional-index-fidelity.md) | A database uses an expression index only when the query expression is identical to the indexed one, so an equivalent rewrite silently becomes a sequential scan with no error and no failing test |
 | [`privacy-defaults`](rules/privacy-defaults.md) | GDPR-grade by default in every market. Lawful basis, 30-day DSAR, true erasure, 24-month retention, pseudonymous data treated as personal |
 | [`cookie-discipline`](rules/cookie-discipline.md) | Opt-in for every non-essential cookie, reject-all at click parity with accept-all, no cookie walls, no pre-ticked boxes |
 | [`cybersecurity-baseline`](rules/cybersecurity-baseline.md) | Frontend security defaults: nonce-based CSP, TLS 1.3, NIST password policy, session timeouts, breach-notification windows |
@@ -209,6 +212,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. Protected-branch pushes are allowed in repositories listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt) |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
+| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash | Blocks a `git commit` that changes rendered output (`.tsx`, `.dart`, styles, theme tokens) without touching any render-level check. Cascade outcome, paint order, the accessibility tree, focus order, and third-party iframes are invisible in source and absent from jsdom. Bypass `FRONTEND_RENDER_GATE_DISABLE=1`. |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
 | [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | Blocks `.env` and key/cert copies, secret-named `ENV`/`ARG` with literal values, Compose `privileged: true`, and host-namespace toggles. Warns on floating tags, `USER root`, deprecated top-level `version:`, and literal secrets in `environment:`. Bypass `DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Drizzle raw query escape hatches |
