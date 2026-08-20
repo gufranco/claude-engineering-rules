@@ -26,6 +26,10 @@ Before declaring any task complete:
 | "No regressions" | Full test suite output, not just the changed test |
 | "File was updated" | Read the file and confirm the changes are present |
 | "Endpoint returns X" | Actual response from the endpoint, not the code that should return X |
+| "The focus ring is visible" | Computed `outline` and `boxShadow` read off `document.activeElement` in a real engine, not the rule declared in the theme |
+| "This control is accessible" | The accessibility tree as computed, not the `aria-label` present in source |
+| "The layout holds" | A render at a stated viewport width, with the smallest supported width included when layout changed |
+| "The screen works" (mobile) | A run on a simulator or emulator. A widget test proves structure, not paint and not platform semantics |
 | "CI is clean" | All checks pass AND zero annotations/warnings. Deprecation notices and non-fatal alerts count as unresolved |
 
 ## Zero Warnings as Verification Requirement
@@ -58,6 +62,8 @@ When reporting verification output to the user, lead with the symptom, then chro
 **Configuration changes**: verify the config loads correctly. Start the relevant service or run a validation command.
 
 **Infrastructure changes**: `terraform plan` shows expected diff. After apply, verify the resource exists with a direct query.
+
+**Frontend and mobile changes**: render it. A passing unit test in a DOM emulation is not render evidence, because that layer implements no paint, no real cascade, and no full accessibility tree. Drive the project's browser or simulator suite, or `agent-browser open` plus `eval` for computed style and `snapshot -i` for the tree. Naming which checks were skipped is acceptable; implying they happened is not. See [`frontend-render-gate.md`](frontend-render-gate.md).
 
 **Documentation changes**: verify links work, code examples run, and referenced files exist.
 
