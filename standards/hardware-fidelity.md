@@ -43,9 +43,26 @@ that quotes a 250 ns instruction cycle for a family whose later member runs at
 122 ns has silently handed over the wrong part. Scanned pages are images, so read
 the pages.
 
-Read enough of it to find the contradictions. The facts worth reading out are the
-ones an implementation is most likely to have wrong because no software depends on
-them: stack depth, pointer widths, what reset does, what is not connected.
+Read all of it, page by page, rather than enough of it. The facts worth having are
+the ones an implementation is most likely to have wrong because no software depends
+on them, and they are never where a search would look: stack depth, pointer widths,
+what reset does, what is not connected, and the table of differences between one
+revision and the next. A datasheet read in full has repeatedly produced a defect
+per reading; the same datasheet searched produced none.
+
+### When the document contradicts itself
+
+It will. A vector table that prints one mode's addresses under the other mode's
+heading, a timing chart that names different addresses from the caveats table in
+the same document, a cycle count that its own enhancements table disagrees with.
+
+The passage closest to the silicon wins. Cycle tables, pin descriptions and
+tables of differences between revisions have each been right where the summary
+table and the prose were wrong. Prose is written last and reviewed least.
+
+Do not resolve the contradiction quietly. Record both readings, which one the
+model follows, and what would settle it. A reader who finds the printed table and
+the code disagreeing needs to know somebody noticed.
 
 ## Pin the document as a checkable artifact
 
@@ -111,6 +128,42 @@ The phrase means nothing until three things are stated.
 
 Expose a cycle count that a caller can read. A cycle claim nobody can observe is
 not a claim.
+
+**A cycle count is not cycle accuracy.** A model can spend the right number of
+cycles doing the wrong thing, and no count will show it. On a part that drives a
+bus every cycle, what makes the claim checkable is the sequence: the address, the
+value, read against write, in order, and on a part with output pins their state
+too. Compare that, not its length.
+
+The difference is not academic. Holding one processor family to its recorded bus
+found a documented dummy read at the wrong address on every taken branch, a
+read-modify-write that wrote once where the part writes twice, a spare cycle that
+crossed a bank boundary the program counter cannot cross, and a stack push that
+folded where the part steps through. Every one of those passed a state comparison
+and would have passed a count.
+
+Where a cycle carries no valid address, record that rather than inventing one. A
+part that lowers its address lines is telling a device nothing is being asked of
+it, and a model that drives a plausible address there has invented a bus cycle.
+
+## A gate names what it covers and refuses the rest
+
+A conformance runner asked about a part it has never been held to has three
+options, and two of them are lies. Reporting agreement is a lie about the part.
+Skipping in silence is a lie about the run, because the summary line then counts a
+comparison that never happened.
+
+The third is to refuse: name the parts the runner has been held to, refuse anything
+else, and say what is missing. Make the list a constant so adding a part is a
+deliberate edit rather than a side effect.
+
+The same applies inside a run. Cases the comparison cannot settle are counted apart
+and named in the output, never folded into the agreements and never dropped. A part
+that halts drives its bus for as long as the recording happens to run, which is a
+property of the recording; an internal cycle with no address to compute carries
+whatever the recorder put there, which is a property of the recorder. Both are
+excluded and both are reported, so a reader can see the size of what was not
+checked.
 
 ## Never start clean
 
