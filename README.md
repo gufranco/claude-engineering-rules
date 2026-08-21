@@ -15,7 +15,7 @@
 
 </div>
 
-**31** always-on rules · **79** on-demand standards · **39** slash-command skills · **78** runtime hooks · **18** custom agents · **42** MCP servers · **885** review items across **71** categories
+**31** always-on rules · **79** on-demand standards · **39** slash-command skills · **77** runtime hooks · **18** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-78 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+77 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -198,7 +198,9 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 | Hook | Trigger | What it does |
 |:-----|:--------|:-------------|
+| [`accessibility-mechanical-checks.py`](hooks/accessibility-mechanical-checks.py) | PreToolUse Write/Edit/MultiEdit | Catches the WCAG failures that are decidable from source: an image with no `alt`, an icon-only button with no accessible name, an input with no label, a click handler on a `div` with no role or key handler, `tabindex` above zero, a missing `lang`. Bypass `ACCESSIBILITY_CHECKS_DISABLE=1` |
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
+| [`ai-disclosure-checks.py`](hooks/ai-disclosure-checks.py) | PreToolUse Write/Edit/MultiEdit | Blocks rendering model output with no visible AI disclosure, and chatbot UI with no label saying what it is. EU AI Act Art. 52, California SB 942. Bypass `AI_DISCLOSURE_DISABLE=1` |
 | [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder, and hyperbole tells |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any`. No allow marker; only third-party tool directives are honored. |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
@@ -225,6 +227,8 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget. Bypass `GH_RUN_WATCH_DISABLE=1` |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch`. Exempts `gh auth` plus invocations that reach no API (`--version`, `--help`, `config`, `alias`, `completion`) |
+| [`knowledge-note-guard.py`](hooks/knowledge-note-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | Enforces the knowledge-note specification inside the second brain: missing frontmatter, missing `## For future agent` preamble, an undated volatile claim, a wikilink to a note that does not exist, a write into the immutable raw folder, a removal outside trash. Bypass `KNOWLEDGE_NOTE_DISABLE=1` |
+| [`privacy-leakage-checks.py`](hooks/privacy-leakage-checks.py) | PreToolUse Write/Edit/MultiEdit | Catches personal data in `console.log`, identifiers in `localStorage`, a cookie set with no consent check, and hardcoded analytics or marketing tracker IDs with no consent guard around them. Bypass `PRIVACY_CHECKS_DISABLE=1` |
 | [`repo-fetch-blocker.py`](hooks/repo-fetch-blocker.py) | PreToolUse Bash | Blocks per-file source fetching via `gh api .../contents`, `gh repo view <o>/<r> <path>`, `glab api .../repository/files`, and `raw.githubusercontent.com` curl/wget. Forces a shallow clone instead. Bypass `REPO_FETCH_DISABLE=1` |
 | [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login |
@@ -268,6 +272,9 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks TypeORM raw query escape hatches |
 | [`typeorm-schema-sync.py`](hooks/typeorm-schema-sync.py) | PreToolUse Write/Edit | Enforces TypeORM entity vs migration parity |
 | [`user-supplied-artifact-guard.py`](hooks/user-supplied-artifact-guard.py) | PreToolUse Bash | Keeps files the user must supply themselves out of git history. Blocks `git commit`, and `git add` with an explicit path, when a file matches a digest declared in `artifacts.manifest.json` or carries an unambiguous ROM, disc-image, firmware, or model-weight extension. Size pre-filters the digest check. Bypass `USER_SUPPLIED_ARTIFACT_DISABLE=1` |
+| [`vault-context-loader.py`](hooks/vault-context-loader.py) | SessionStart | Injects the second brain's catalog once per session, so what the vault holds is known before the first question rather than searched for after it |
+| [`vault-recall.py`](hooks/vault-recall.py) | UserPromptSubmit | Injects the second-brain notes closest to the prompt, title and preamble only. Ranks with the same function `/brain eval` scores, so a recall regression is measurable. Read-only, and silent unless the vault resolves and a note clears the score floor. Bypass `VAULT_RECALL_DISABLE=1` |
+| [`vault-session-capture.py`](hooks/vault-session-capture.py) | PreCompact | Appends what the session worked on to today's vault note before the transcript is compacted away, which is the last moment the detail still exists |
 
 ### Custom Agents
 
