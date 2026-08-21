@@ -232,6 +232,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/frontend-render-gate.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/conventional-commits.py",
             "if": "Bash(git commit *)"
           }
@@ -1388,6 +1397,14 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/english-only-reminder.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/vault-recall.py"
           }
         ]
       }
