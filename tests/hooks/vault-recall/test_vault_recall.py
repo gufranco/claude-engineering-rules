@@ -17,15 +17,59 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOK = REPO_ROOT / "hooks" / "vault-recall.py"
 
+_TESTS_DIR = REPO_ROOT / "tests"
+if str(_TESTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_TESTS_DIR))
+from _helpers.cov_env import apply_coverage_env  # noqa: E402
+
+
+RANKER_STUB = '''"""Stand-in for the ranker the vault supplies at `.ci/retrieval-eval.py`.
+
+The hook loads whatever module sits at that path and calls `build_index` then
+`search`. The real implementation lives in the vault, a separate store this
+repository neither owns nor ships, so these tests exercise the hook against a
+controlled two-function stub. That keeps the suite runnable on any machine, and
+keeps it honest about what it covers: the hook's own silent-versus-inject
+behaviour, never the vault's retrieval quality.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+MIN_TOKEN = 4
+MIN_OVERLAP = 2
+
+
+def _tokens(text):
+    folded = "".join(c.lower() if c.isalnum() else " " for c in text)
+    return {word for word in folded.split() if len(word) >= MIN_TOKEN}
+
+
+def build_index(root):
+    index = {}
+    for path in Path(root).rglob("*.md"):
+        index[path.stem] = _tokens(path.read_text(encoding="utf-8", errors="replace"))
+    return index
+
+
+def search(index, prompt, limit):
+    wanted = _tokens(prompt)
+    scored = [
+        (len(wanted & tokens), title)
+        for title, tokens in index.items()
+        if len(wanted & tokens) >= MIN_OVERLAP
+    ]
+    scored.sort(reverse=True)
+    return [title for _, title in scored[:limit]]
+'''
+
 
 def build_vault(base: Path) -> Path:
     root = base / "vault"
     (root / "wiki" / "concepts").mkdir(parents=True)
     (root / ".ci").mkdir()
-    for name in ("notespec.py", "retrieval-eval.py"):
-        (root / ".ci" / name).write_text(
-            (Path.home() / "second-brain" / ".ci" / name).read_text()
-        )
+    (root / ".ci" / "retrieval-eval.py").write_text(RANKER_STUB)
     (root / "index.md").write_text(
         "---\ndate: 2026-08-20\ntype: index\ntags: [index]\nai-first: true\n---\n\n"
         "## For future agent\n\nCatalog.\n"
@@ -49,6 +93,7 @@ def run(hook_input: dict, vault: Path | None, env_extra: dict | None = None) -> 
     else:
         env.pop("SECOND_BRAIN_VAULT", None)
     env.update(env_extra or {})
+    env = apply_coverage_env(env)
     result = subprocess.run(
         [sys.executable, str(HOOK)],
         input=json.dumps(hook_input),
