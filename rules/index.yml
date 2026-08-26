@@ -55,6 +55,26 @@ always_loaded:
     description: Evidence-based completion gates, fresh output required for every claim, no rounding up partial completion
     triggers: [verify, evidence, complete, done, claim, proof, gate]
 
+  same-turn-persistence:
+    description: A correction produces a file write before the turn that received it ends. Self-caught mistakes carry the same obligation as user-caught ones. The write targets the root behavior pattern rather than the surface event, and is routed to the right surface (memory, rule, repository instruction file, or hook). Paired with an admission bar so mandatory persistence does not inflate the config, asking whether a future session would actually get stuck without the line
+    triggers: [feedback, correction, corrected, "you are right", persist, remember, memory, lesson, mistake, "same turn", "will do better", noted, "keep in mind", "next time", preference, "admission bar"]
+
+  rule-provenance:
+    description: Every rule states when it became binding and what made it binding. Provenance stamp carrying date, recurrence count, and the concrete failure. Promotion threshold of three occurrences before a logged lesson becomes a binding rule, with a single-incident skip for irreversible, silent, or catastrophic failures. Rules carry their incident inline so they are unarguable. Pruning triggers, since provenance is what makes a rule set shrinkable
+    triggers: [rule, "new rule", provenance, promote, promotion, threshold, recurrence, prune, pruning, "rule set", speculative, origin, incident, "why this rule", stamp]
+
+  relay-not-source:
+    description: A subagent report, search snippet, summarized tool result, prior-session summary, memory note, or other model's answer is a relay and not a source. Relays garble the citation coordinate, the line number, timestamp, ticket id, file path, or version, and not only the content, so a well-formed specific claim can be wrong while reading as correct. Positive control before publishing any specific, citation of the source rather than the relay, and briefing subagents to return re-checkable coordinates
+    triggers: [subagent, agent, relay, delegate, delegation, "agent report", citation, cite, quote, coordinate, "file:line", timestamp, "ticket id", snippet, summary, compaction, "search result", secondhand, "second-hand", "verify citation"]
+
+  agent-operating-limits:
+    description: Backstops versus budgets and why confusing them converts a slow run into a total loss. Measured turn ceilings with the sampled distribution recorded beside the number. Per-run caps whose overflow is reported rather than dropped. The cost of a denied tool call, unprojected responses, and unconditional context injection. Fail-closed on any check that errored or could not run, gating on exit codes rather than grepped output. Identity as an operating parameter that changes what an action means
+    triggers: ["max turns", "turn limit", turns, backstop, budget, cap, "per-run", timeout, "denied call", "tool denied", allowlist, injection, "prompt hook", "fail closed", "fail open", "exit code", projection, jq, "context cost", identity, "which account", bot]
+
+  deviation-waivers:
+    description: Deviating from a rule is allowed, deviating silently is not. A surfaced-and-approved deviation is the system working, a silent one is a violation. Structured waiver record carrying rule, scope, approver, rationale, alternatives, risk, and revisit condition. Tripwires as thresholds that stop the work for a design conversation rather than fail it. What cannot be waived. The distinction from a mechanical bypass, which answers a different question
+    triggers: [waiver, waive, deviation, deviate, exception, exemption, override, bypass, tripwire, "does not fit", justify, approval, "approved by", "opt out", threshold]
+
   writing-precision:
     description: Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing
     triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description, code comment, error message]
@@ -231,6 +251,11 @@ on_demand:
     path: standards/documentation.md
     description: Preserve existing valid information when skills or automated processes modify documentation files. Merge, do not replace. Count items before and after migration.
     triggers: [readme, docs, documentation, changelog, guide, skill output, merge docs, update readme, modify docs]
+
+  agent-instruction-files:
+    path: standards/agent-instruction-files.md
+    description: How to author the instruction file a repository hands to a coding agent. The file corrects the agent's defaults rather than describing the project, and is injected into every session, so every line faces an admission test. Harness-agnostic layout by canonical file plus symlinks or a modular directory plus thin adapters. Progressive disclosure across overview, architecture, and patterns files. Correcting a default and stopping, "what you do not need to build" sections, the stop list naming a human. Exemplar and anti-exemplar. Escape valves on numeric thresholds. Anti-read directives with the size stated and a routing table. Preemptive error fingerprints including failures whose message names the wrong system. Inference tables, machine-owned fields, documentation maintenance routing with a materiality boundary, dated staleness stamps, session start and end rituals with status and append-only decision files, the pivot cascade, intent routing, launch.json and SessionStart configuration, contributor directory
+    triggers: ["claude.md", "agents.md", ".cursorrules", "copilot-instructions", "instruction file", "agent instructions", "project instructions", "llm guide", "guide for llms", "context file", "system prompt file", "launch.json", "sessionstart", "session start", "session end", "status.md", "decisions.md", "decision log", "pivot", "handoff", "read order", "stop list", exemplar, "anti-pattern directory", "harness agnostic", "harness-agnostic", "onboarding file", "repo conventions"]
 
   ai-vocabulary:
     path: standards/ai-vocabulary.md
