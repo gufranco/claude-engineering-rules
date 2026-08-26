@@ -125,6 +125,9 @@ jobs:
       - name: Validate cross-references
         run: python3 .github/scripts/validate-cross-refs.py
 
+      - name: Validate registry drift
+        run: python3 .github/scripts/validate-registry-drift.py
+
   workflow-lint:
     name: Workflow lint (actionlint + yamllint)
     runs-on: ubuntu-24.04
