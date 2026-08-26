@@ -55,7 +55,7 @@ PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_
 
 .PHONY: help install test test-fast test-cov test-bats test-all \
         lint lint-py lint-sh lint-yaml lint-actions lint-workflows \
-        format format-check typecheck \
+        format format-check typecheck validate \
         clean clean-pyc clean-cov
 
 help:
@@ -100,9 +100,25 @@ else
 	fi
 endif
 
-test-all: test-cov test-bats lint typecheck
+test-all: test-cov test-bats lint typecheck validate
 
 lint: lint-py lint-sh lint-yaml lint-actions lint-workflows
+
+validate:
+	@fail=0; \
+	for script in validate-counts validate-markdown-links validate-skills \
+	              validate-agents validate-settings validate-patterns \
+	              validate-cross-refs validate-registry-drift \
+	              validate-normative-keywords validate-checklist-counts; do \
+	  printf '%-34s ' "$$script"; \
+	  if python3 .github/scripts/$$script.py >/tmp/validate-$$script.log 2>&1; then \
+	    echo PASS; \
+	  else \
+	    echo FAIL; cat /tmp/validate-$$script.log; fail=1; \
+	  fi; \
+	done; \
+	exit $$fail
+
 
 lint-py:
 	$(RUFF) check $(LINT_PATHS)
