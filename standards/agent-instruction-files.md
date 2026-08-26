@@ -58,15 +58,18 @@ The instruction file names the other two and states the condition for reading ea
 
 The highest-value paragraph in any instruction file is the one that closes off a wrong assumption the agent will otherwise act on with total confidence.
 
-> Merging to `main` **is** the deploy. There is no separate apply step, and a local
-> apply races the pipeline for the state lock. Do not tell anyone to run it manually.
+```markdown
+Merging to `main` **is** the deploy. There is no separate apply step, and a
+local apply races the pipeline for the state lock. Do not tell anyone to run
+it manually.
 
-> Every request reaching this app is already authenticated by a proxy. There is no
-> logged-out state and no unauthenticated visitor. Do not build a login page, do not
-> add an auth library, delete any you find.
+Every request reaching this app is already authenticated by a proxy. There is
+no logged-out state and no unauthenticated visitor. Do not build a login page,
+do not add an auth library, delete any you find.
 
-> The environment variables in the infrastructure code are **not applied** to the
-> running services. They are documentation. Rollout is manual.
+The environment variables in the infrastructure code are **not applied** to
+the running services. They are documentation. Rollout is manual.
+```
 
 Each closes a whole category of plausible, confident, wrong work. The second is the strongest form: a section written entirely as prohibitions, because naming the invariant makes the prohibitions obvious rather than arbitrary.
 
