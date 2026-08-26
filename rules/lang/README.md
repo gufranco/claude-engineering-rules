@@ -22,4 +22,3 @@ When you add a file here, register it in [`rules/index.yml`](../index.yml) under
 ## Naming convention
 
 `<language-slug>.md` where the slug matches the language name in lowercase, kebab-case for multi-word names. Examples: `typescript.md`, `rust.md`, [`python.md`](python.md), `c-sharp.md`.
-
