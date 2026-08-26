@@ -15,7 +15,7 @@
 
 </div>
 
-**31** always-on rules · **79** on-demand standards · **39** slash-command skills · **77** runtime hooks · **18** custom agents · **42** MCP servers · **885** review items across **71** categories
+**38** always-on rules · **82** on-demand standards · **42** slash-command skills · **77** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -30,15 +30,15 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-32 universal rules ship with every conversation. 79 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 79.
+38 universal rules ship with every conversation. 82 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 82.
 
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### 39 Slash-Command Skills
-`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/onboard`, `/investigate`, `/research`, and 30 more. Each is a documented multi-step workflow with subcommands, not a one-liner. `/audit trust` and `/onboard --verify` catch malicious code in untrusted projects before any install runs.
+### 42 Slash-Command Skills
+`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/onboard`, `/investigate`, `/research`, and 33 more. Each is a documented multi-step workflow with subcommands, not a one-liner. `/audit trust` and `/onboard --verify` catch malicious code in untrusted projects before any install runs.
 
 </td>
 <td width="50%" valign="top">
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-32 rules in [`rules/`](rules/), loaded into every conversation.
+38 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -106,6 +106,11 @@ A layered config where each layer catches what the layer above missed.
 | [`language`](rules/language.md) | Response language enforcement: all output in English |
 | [`smart-questions`](rules/smart-questions.md) | Question format, mandatory recommendation when presenting a choice, status reports, FIXED/RESOLVED/DONE loop closure, Tatham bug-report essentials |
 | [`found-fix`](rules/found-fix.md) | Any verification-surface finding is in scope for the current task. Bans the rationalization phrases that defer fixes to a later session |
+| [`same-turn-persistence`](rules/same-turn-persistence.md) | A correction produces a file write before the turn that received it ends. Self-caught mistakes count the same as user-caught ones, the write targets the root behavior rather than the symptom, and an admission bar keeps mandatory persistence from inflating the config |
+| [`rule-provenance`](rules/rule-provenance.md) | Every rule states the date it became binding and the failure that produced it. A lesson is logged first and promoted on its third recurrence, unless it is irreversible, silent, or catastrophic. Provenance is what makes a rule set prunable |
+| [`relay-not-source`](rules/relay-not-source.md) | A subagent report, search snippet, or summary is a relay. Relays garble the citation coordinate and not only the content, so a specific claim reads as correct while pointing at the wrong line, timestamp, or record |
+| [`agent-operating-limits`](rules/agent-operating-limits.md) | Backstops versus budgets, turn ceilings that carry their measurement, caps whose overflow is reported rather than dropped, the cost of a denied call and of unconditional context injection, and fail-closed on any check that could not run |
+| [`deviation-waivers`](rules/deviation-waivers.md) | Deviating from a rule is allowed, deviating silently is not. A structured waiver with scope, approver, alternatives, and a revisit condition, distinct from a mechanical bypass because it answers a different question |
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, spec-folder links, hyperbole tells, and self-criticism from commit messages, PR descriptions, published docs, and messages to colleagues |
 | [`doc-truth`](rules/doc-truth.md) | Documentation that describes code is a claim about the code. A change that falsifies a claim corrects it in the same commit. Four mechanically certain checks at `git commit`; historical records exempt |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
@@ -123,15 +128,15 @@ A layered config where each layer catches what the layer above missed.
 | [`ai-compliance-defaults`](rules/ai-compliance-defaults.md) | EU AI Act risk tiers, visible disclosure on model output, human review for automated decisions, annual bias audits |
 | [`anti-spam-defaults`](rules/anti-spam-defaults.md) | Opt-in marketing consent, one-click unsubscribe, permanent suppression lists, strict transactional and marketing separation |
 
-Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
+Plus 6 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
-Three more rules live in [`rules/`](rules/) but load on demand through [`rules/index.yml`](rules/index.yml) rather than on every turn: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
+Four more rules live in [`rules/`](rules/) but load on demand through [`rules/index.yml`](rules/index.yml) rather than on every turn: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
 
 ### Standards, loaded on demand
 
-81 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+82 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
-Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
+Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
 ### Skills
 
@@ -176,6 +181,11 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/spike`](skills/spike/SKILL.md) | Throwaway artifact that answers one design question, two routes (state-branch terminal program, view-branch side-by-side variations) |
 | [`/module-audit`](skills/module-audit/SKILL.md) | Codebase audit for shallow modules with before-and-after Mermaid recommendations and deletion-test classification |
 | [`/concise-mode`](skills/concise-mode/SKILL.md) | Opt-in terse-reply mode. Drops filler and pleasantries while preserving code blocks, error strings, and destructive-action confirmations |
+| [`/cross-model`](skills/cross-model/SKILL.md) | Consult a different model for orthogonal reasoning on a consequential decision, especially when confident. Discovers whichever model CLI is installed rather than assuming a vendor, and treats the answer as a relay to re-verify |
+| [`/brain`](skills/brain/SKILL.md) | Read from and write to the second-brain vault. Capture, ingest, ask, link, health, refresh, falsify, wrong, compile, eval. `falsify` hunts facts that are wrong rather than merely old; `wrong` logs a miss with its cause so the dominant failure mode becomes visible |
+| [`/interview-me`](skills/interview-me/SKILL.md) | One-question-at-a-time intent clarification for an underspecified ask, driven to high confidence before any implementation |
+| [`/aside`](skills/aside/SKILL.md) | Freeze the active task, answer a side question with no state mutation, then resume exactly where it stopped |
+| [`/skill-new`](skills/skill-new/SKILL.md) | Scaffold a new skill with the enforced frontmatter and section template, then validate with the skill linter |
 
 ### Hooks
 
@@ -214,7 +224,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. Protected-branch pushes are allowed in repositories listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt) |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
-| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash | Blocks a `git commit` that changes rendered output (`.tsx`, `.dart`, styles, theme tokens) without touching any render-level check. Cascade outcome, paint order, the accessibility tree, focus order, and third-party iframes are invisible in source and absent from jsdom. Bypass `FRONTEND_RENDER_GATE_DISABLE=1`. |
+| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash | Blocks a `git commit` that changes rendered output (`.tsx`, `.dart`, styles, theme tokens) without touching any render-level check. Cascade outcome, paint order, the accessibility tree, focus order, and third-party iframes are invisible in source and absent from jsdom. Bypass `FRONTEND_RENDER_GATE_DISABLE=1`, or a TTL-bound entry in the shared bypass registry. |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
 | [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | Blocks `.env` and key/cert copies, secret-named `ENV`/`ARG` with literal values, Compose `privileged: true`, and host-namespace toggles. Warns on floating tags, `USER root`, deprecated top-level `version:`, and literal secrets in `environment:`. Bypass `DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Drizzle raw query escape hatches |
@@ -278,7 +288,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Custom Agents
 
-18 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
+20 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
 
 | Agent | Purpose |
 |:------|:--------|
@@ -295,6 +305,8 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`migration-planner`](agents/migration-planner.md) | Database migration safety and ordering |
 | [`opensource-sanitizer`](agents/opensource-sanitizer.md) | Pre-public-push safety net. Scans diffs for leaked secrets, PII, internal references, and other artifacts that should not appear in a public repository |
 | [`red-team`](agents/red-team.md) | Adversarial analysis: attack happy paths |
+| [`critic`](agents/critic.md) | Final hostile pass on a near-complete change, focused on what is missing rather than what is wrong |
+| [`privacy-auditor`](agents/privacy-auditor.md) | Personal data flows, missing consent gates, retention violations, automated-decision transparency |
 | [`scope-drift-detector`](agents/scope-drift-detector.md) | Compare diff against plan for scope drift |
 | [`test-scenario-generator`](agents/test-scenario-generator.md) | Test scenarios with priority and traceability |
 | [`type-design-analyzer`](agents/type-design-analyzer.md) | Review TypeScript type design for encapsulation, invariant expression, and runtime safety |
