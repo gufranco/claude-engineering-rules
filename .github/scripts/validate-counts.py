@@ -81,6 +81,7 @@ def derive_counts():
     """Derive all counts from source files."""
     return {
         "rules": count_files("rules/*.md"),
+        "always_on_rules": count_index_entries("always_loaded"),
         "standards": count_files("standards/*.md"),
         "skills": count_files("skills/*/SKILL.md"),
         "hooks": count_files("hooks/*.sh") + count_files("hooks/*.py"),
@@ -95,21 +96,36 @@ def derive_counts():
 
 
 def scan_file(filepath, counts):
-    """Scan a file for count references and check them against derived counts."""
+    """Scan a file, returning (mismatches, labels that matched at least once)."""
     mismatches = []
+    matched_labels = set()
     try:
         with open(filepath) as f:
             content = f.read()
     except (FileNotFoundError, UnicodeDecodeError):
-        return mismatches
+        return mismatches, matched_labels
 
     rel_path = os.path.relpath(filepath, CLAUDE_DIR)
 
     checks = [
+        (
+            r"\*\*(\d+)\*\*\s*(?:always-on|universal)\s+rules\b",
+            "always_on_rules",
+            "always-on rules count in bold",
+        ),
         (r"\*\*(\d+)\*\*\s*rules\b", "rules", "rules count in bold"),
-        (r"\*\*(\d+)\*\*\s*standards\b", "standards", "standards count in bold"),
-        (r"\*\*(\d+)\*\*\s*skills\b", "skills", "skills count in bold"),
-        (r"\*\*(\d+)\*\*\s*hooks\b", "hooks", "hooks count in bold"),
+        (
+            r"(?<!\d[-])(\d+)\s+(?:always-on|universal)\s+rules\b",
+            "always_on_rules",
+            "always-on rules count",
+        ),
+        (
+            r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?standards\b",
+            "standards",
+            "standards count in bold",
+        ),
+        (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?skills\b", "skills", "skills count in bold"),
+        (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count in bold"),
         (
             r"\*\*(\d+)\*\*\s*checklist items",
             "checklist_items",
@@ -153,6 +169,7 @@ def scan_file(filepath, counts):
     for line_num, line in enumerate(content.splitlines(), 1):
         for pattern, count_key, desc in checks:
             for match in re.finditer(pattern, line):
+                matched_labels.add(desc)
                 if count_key is None:
                     found_cats = int(match.group(1))
                     found_items = int(match.group(2))
@@ -175,7 +192,47 @@ def scan_file(filepath, counts):
                             f"found {found}, expected {expected}"
                         )
 
-    return mismatches
+    return mismatches, matched_labels
+
+
+REQUIRED_LABELS = (
+    "always-on rules count in bold",
+    "standards count in bold",
+    "skills count in bold",
+    "hooks count in bold",
+)
+
+
+def dead_patterns(matched_labels):
+    """Report every required check that matched nothing anywhere.
+
+    A check that never fires cannot fail, so it reports success while
+    verifying nothing. That is how a stale number survives a passing run:
+    the prose gains a word, the pattern stops matching, and the gate keeps
+    printing PASSED.
+    """
+    return [
+        f"  check '{label}' matched nothing in any scanned file. Either the "
+        f"prose that carried it changed shape, or the check is dead. A check "
+        f"that never fires reports success while verifying nothing."
+        for label in REQUIRED_LABELS
+        if label not in matched_labels
+    ]
+
+
+def files_to_scan():
+    """Every file whose prose may carry a count reference."""
+    paths = []
+    for pattern in [
+        "*.md",
+        "rules/*.md",
+        "standards/*.md",
+        "skills/*/SKILL.md",
+        "skills/review/reviewer-prompt.md",
+        "checklists/*.md",
+    ]:
+        paths.extend(glob.glob(os.path.join(CLAUDE_DIR, pattern)))
+    return sorted(set(paths))
 
 
 def main():
@@ -186,30 +243,30 @@ def main():
         print(f"  {key}: {value}")
     print()
 
-    files_to_scan = []
-    for pattern in [
-        "*.md",
-        "rules/*.md",
-        "standards/*.md",
-        "skills/*/SKILL.md",
-        "skills/review/reviewer-prompt.md",
-        "checklists/*.md",
-    ]:
-        files_to_scan.extend(glob.glob(os.path.join(CLAUDE_DIR, pattern)))
-
     all_mismatches = []
-    for filepath in sorted(set(files_to_scan)):
-        mismatches = scan_file(filepath, counts)
+    matched_labels = set()
+    for filepath in files_to_scan():
+        mismatches, labels = scan_file(filepath, counts)
         all_mismatches.extend(mismatches)
+        matched_labels |= labels
 
-    if all_mismatches:
-        print(f"FAILED: {len(all_mismatches)} stale reference(s) found:\n")
-        for m in all_mismatches:
-            print(m)
-        print("\nUpdate these references to match the derived counts above.")
+    dead = dead_patterns(matched_labels)
+
+    if all_mismatches or dead:
+        if all_mismatches:
+            print(f"FAILED: {len(all_mismatches)} stale reference(s) found:\n")
+            for m in all_mismatches:
+                print(m)
+            print("\nUpdate these references to match the derived counts above.")
+        if dead:
+            print(f"\nFAILED: {len(dead)} check(s) matched nothing:\n")
+            for d in dead:
+                print(d)
+            print("\nRestore the prose the check expects, or update the check.")
         sys.exit(1)
     else:
-        print("PASSED: All count references match source.")
+        print("PASSED: All count references match source, and every required")
+        print("check matched at least once.")
         sys.exit(0)
 
 
