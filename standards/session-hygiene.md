@@ -72,7 +72,7 @@ Before operations that consume many tool calls, like large refactors or multi-fi
 - State the expected outcome for each file
 - Note which tests must pass after the operation
 
-This snapshot survives context degradation and serves as a self-correction reference.
+This snapshot survives context degradation and is the self-correction reference.
 
 ## Session Boundaries
 
