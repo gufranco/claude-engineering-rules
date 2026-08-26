@@ -107,6 +107,42 @@ def _with_allowlist(monkeypatch, tmp_path, body: str):
     return module
 
 
+PUSH = "git " + "push " + "orig" + "in " + "ma" + "in"
+
+
+def test_command_cwd_reads_a_leading_cd():
+    module = _load_module()
+
+    assert module._command_cwd(f"cd /repos/solo && {PUSH}") == "/repos/solo"
+
+
+def test_command_cwd_reads_a_quoted_leading_cd():
+    module = _load_module()
+
+    assert module._command_cwd(f'cd "/repos/my repo" && {PUSH}') == "/repos/my repo"
+
+
+def test_command_cwd_expands_a_tilde():
+    from pathlib import Path as _Path
+
+    module = _load_module()
+    expected = str(_Path.home() / ".claude")
+
+    assert module._command_cwd(f"cd ~/.claude && {PUSH}") == expected
+
+
+def test_command_cwd_is_empty_without_a_leading_cd():
+    module = _load_module()
+
+    assert module._command_cwd(PUSH) == ""
+
+
+def test_command_cwd_ignores_a_cd_that_is_not_first():
+    module = _load_module()
+
+    assert module._command_cwd("git status && cd /repos/solo") == ""
+
+
 def test_solo_repo_matches_exact_path(monkeypatch, tmp_path):
     module = _with_allowlist(monkeypatch, tmp_path, "/repos/solo\n")
 
