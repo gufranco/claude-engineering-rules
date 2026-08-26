@@ -15,7 +15,7 @@
 
 </div>
 
-**38** always-on rules · **82** on-demand standards · **42** slash-command skills · **77** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
+**39** always-on rules · **82** on-demand standards · **42** slash-command skills · **78** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -24,13 +24,13 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-77 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+78 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-38 universal rules ship with every conversation. 82 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 82.
+39 universal rules ship with every conversation. 82 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 82.
 
 </td>
 </tr>
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-38 rules in [`rules/`](rules/), loaded into every conversation.
+39 rules in [`rules/`](rules/), loaded into every conversation.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -97,6 +97,7 @@ A layered config where each layer catches what the layer above missed.
 | [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs |
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
 | [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output, plus pronoun discipline, active voice, tone calibration, and the requirement that every stated decision carries the measurement behind it |
+| [`anti-slop`](rules/anti-slop.md) | The structural layer beneath the phrase blocklist. Three deciding tests, the catalogue of rhetorical and grammatical tells drawn from the WikiProject AI Cleanup field guide, the positive signals of human technical writing, and a guard against overcorrection |
 | [`normative-keywords`](rules/normative-keywords.md) | BCP 14 (RFC 2119 + RFC 8174) keyword glossary. Lowercase primary, uppercase opt-in for critical correctness, security, data integrity, and irreversibility |
 | [`repo-analysis`](rules/repo-analysis.md) | Clone external repos to a temp directory instead of fetching files via `gh`/raw URLs. Mandatory shallow-clone workflow, carve-outs for issue/PR/search ops, subagent briefing |
 | [`pre-flight`](rules/pre-flight.md) | Duplicate check, market research, architecture fit, interface verification, and semantic verification of thresholds copied from existing code |
@@ -212,6 +213,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
 | [`ai-disclosure-checks.py`](hooks/ai-disclosure-checks.py) | PreToolUse Write/Edit/MultiEdit | Blocks rendering model output with no visible AI disclosure, and chatbot UI with no label saying what it is. EU AI Act Art. 52, California SB 942. Bypass `AI_DISCLOSURE_DISABLE=1` |
 | [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder, and hyperbole tells |
+| [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | Blocks the structural slop tells that survive a phrase blocklist: negative parallelism, significance inflation, participial evaluation tails, unnamed authorities, hedged speculation, marketing verbs replacing `is` and `has`, throat-clearing, trailing recaps, chat residue, unfilled placeholders, curly quotes. Codes `SLOP001` to `SLOP012`. Code spans are masked before matching, and every detector was calibrated against the 209 Markdown files under the rules, standards, checklists, skills, agents and docs directories. Bypass `AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any`. No allow marker; only third-party tool directives are honored. |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
