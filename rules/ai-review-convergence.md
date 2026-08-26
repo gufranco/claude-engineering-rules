@@ -28,6 +28,17 @@ The reason is mechanical rather than stylistic: every extra changed line is fres
 
 When a review round yields no verified-failure fixes, the pull request has converged. Say so and recommend merge. Do not request another pass to confirm the absence of findings, because another pass will sample new ones and the confirmation never arrives.
 
+## Know Which Identity You Are Acting As
+
+On a review surface, the identity behind an action changes what the action means, not only who is credited.
+
+- **Recognize your own prior output.** Comments and reviews left by the identity you are currently acting as are yours. Treating them as someone else's produces duplicate findings and a reply thread arguing with yourself.
+- **An action can reclassify the thread.** Replying inside a thread started by an automated reviewer, while acting under a human-typed identity, converts that thread into a human one. Automation that keys on thread authorship then stops touching it, and a pull request held on that thread stays held indefinitely. Check what a thread is before replying in it; when the intent is only to record that a finding was addressed, the fix commit and the pull request body carry that better than an in-thread reply does.
+- **Supersede your own prior verdict rather than stacking beside it.** Two live verdicts from one identity is an ambiguous state. Dismiss or update the earlier one.
+- **Write each summary fresh.** Carrying findings forward from a previous round accumulates issues that no longer exist and makes the review look unconverged when it has converged.
+
+Account selection on the command line is governed by [`multi-account-cli.md`](../standards/multi-account-cli.md), and commit authorship by [`git-workflow.md`](git-workflow.md). This section covers the layer above both: what the identity makes the action mean. The general form is in [`agent-operating-limits.md`](agent-operating-limits.md).
+
 ## Verification Order
 
 A finding that survives the gate still needs its fix verified before the reply claims it. Reply after the check passes, never before, and name the commit in the reply so a reader can see which revision the claim refers to.

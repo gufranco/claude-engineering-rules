@@ -200,6 +200,8 @@ Before running `git rebase` on a repo that may be a shallow clone, like repos in
 
 Symptom when missed: `error: update-ref requires a fully qualified refname e.g. refs/heads/grafted`.
 
+A second symptom is worse, because the error names the wrong system. A shallow clone has no merge base with the remote branch, so `git pull --ff-only` aborts reporting divergence that does not exist. A push computed from that tip is then a genuine non-fast-forward, and a branch protected by a ruleset rejects it with **HTTP 403**. That reads as a permissions problem, and the next hour goes into tokens, scopes, and app installations while the cause is the clone depth. Before believing any divergence verdict or any 403 on push, check `git rev-parse --is-shallow-repository` and unshallow. Real divergence is only real after unshallowing.
+
 The same shallow history silently corrupts `git merge-base`. With a depth-limited clone and a depth-limited fetch of the base branch, `git merge-base origin/<base> HEAD` can return a commit that sits on the feature branch itself, and `git diff <that>..HEAD` then reports hunks that do not match what the platform shows. Nothing errors and nothing looks wrong. When a locally computed diff feeds anything consequential, such as review-comment line anchors or a changed-file list a gate depends on, either run `git fetch --unshallow` first or take the diff from the platform API instead of computing it.
 
 ## CI Not Triggering After Push

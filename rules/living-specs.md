@@ -78,6 +78,26 @@ The merge is owned by `/plan archive` and reachable from `/ship` and `/retro`. A
 
 A change that is not archived leaves the living spec stale. Archiving is the step that keeps the spec honest; the requirement-and-scenario documents are only worth maintaining because the merge closes the loop.
 
+## The Pivot Cascade
+
+The close-out merge keeps the spec honest when a change finishes as planned. A change that finishes as planned is not where specs go stale. They go stale when the plan turns mid-flight, because the decision lives in the head of whoever made it and the documents keep describing the abandoned direction.
+
+**When a decision changes mid-change, the same session updates every document the change invalidates.** Not the next session, not the close-out. The same session, while the reasoning is still present.
+
+The cascade covers:
+
+| Artifact | Update |
+|----------|--------|
+| The change's plan | The approach section, and any task the new direction removes or reshapes |
+| The change's decision record | A new dated entry: what changed, why, what was rejected, what it supersedes |
+| Any cross-change decision table or sequencing plan | The row this decision occupied, marked superseded rather than edited in place |
+| Sibling plans that assumed the old direction | The assumption, named explicitly as no longer holding |
+| The in-flight `specs/current/` delta | Requirements written against the old direction move between ADDED, MODIFIED, and REMOVED to match reality |
+
+The cost of skipping it is paid by someone else. The next session reads a plan that describes a direction nobody is building, and either rebuilds the abandoned approach or spends its first half reconstructing what happened. Neither failure announces itself, because a stale plan looks exactly like a current one.
+
+Two rules keep the cascade honest. A superseded decision is marked, never deleted, so the reasoning survives per [`memory-supersede.md`](memory-supersede.md). And a decision the user made in conversation is not recorded until it is written down; an agreement that produced no file write did not survive the session, per [`same-turn-persistence.md`](same-turn-persistence.md).
+
 ## Right-Size The Change
 
 One change has one intent stated in a sentence. "Add a dark-mode toggle." "Rate-limit the login endpoint." When the intent needs a lot of "and also," split it. A change whose delta reads like a list of unrelated requirements is really several changes; smaller changes are easier to review, build in one session, and reason about later when the archive is all that remains.
