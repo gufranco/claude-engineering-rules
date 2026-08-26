@@ -40,6 +40,36 @@ A new flag, a new script, or a new endpoint must be documented wherever its peer
 
 It describes the change to the people deciding whether to accept it. When the code moves after the description is written, the description must move with it. [`/morning`](../skills/morning/SKILL.md) detects the drift across open pull requests and [`/pr-summary`](../skills/pr-summary/SKILL.md) drafts the correction.
 
+### A volatile section carries a date
+
+The hook catches a document that became false. It cannot catch a document that merely became old, and the two fail differently. A falsified claim is wrong now; an aged claim was true once and nobody can tell when.
+
+Any section describing current state rather than durable structure carries a date in its heading.
+
+```markdown
+## Known issues (as of 2026-08-26)
+
+## Current provider limits (as of 2026-08-26)
+```
+
+The stamp costs nothing and does two things: a reader sees the age without opening the history, and an agent knows to re-verify before asserting any of it. This is the freshness trichotomy from [`knowledge-notes.md`](knowledge-notes.md) applied to repository documentation. A present-tense claim about something that moves, sitting outside a dated container with no stamp, reads as true forever.
+
+### Name the documents and the condition that triggers each
+
+"Update the docs" is unactionable, so it is ignored. A table naming each document and the change that obliges an update is not.
+
+```markdown
+When opening a pull request, check whether the change affects these and update:
+
+| Document | Update when |
+|---|---|
+| the instruction file | tech stack, schema, endpoints, commands, or key patterns changed |
+| `docs/architecture.md` | structure, schema, or the build pipeline changed |
+| the README | setup, prerequisites, env vars, or user-facing features changed |
+```
+
+Where a document changes often, state a materiality boundary in the same row, so the obligation stays credible rather than becoming a formality: new inputs, new deploy paths, or changed approval behavior count; a version pin bump or a trivial refactor does not. The full authoring guidance is in [`agent-instruction-files.md`](../standards/agent-instruction-files.md).
+
 ### Historical records are exempt
 
 A changelog entry, an architecture decision record, an incident report, and an archived plan describe what was true at a point in time. They are supposed to name things that no longer exist. The hook skips `CHANGELOG*`, `docs/adr/`, `specs/`, and any path the project marks as an archive. Editing them to match current code would destroy the record.

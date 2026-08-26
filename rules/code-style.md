@@ -23,7 +23,7 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 ## Fundamentals
 
 - DRY, SOLID, KISS, YAGNI, LoD, CQS, Pit of Success
-- Functions under 30 lines. Files under 500 lines. When a file exceeds 500 lines, extract sections into separate files. A 3,000-line page file is unreviewable and unmaintainable
+- Functions under 30 lines. Files under 500 lines. When a file exceeds 500 lines, extract sections into separate files. A 3,000-line page file is unreviewable and unmaintainable. The named exceptions are in "Size Thresholds And Their Valve" below; exceeding a threshold for a reason not on that list needs a waiver per [`deviation-waivers.md`](deviation-waivers.md), never a silent overrun
 - Meaningful names
 - No magic numbers or magic strings. Extract any literal used more than once to a named constant. API model names, rate limits, timeouts, thresholds, and configuration values all belong in a centralized config object or constants file, not scattered as inline literals
 - Single export per file
@@ -56,6 +56,37 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - **No `Record<string, unknown>` for ORM queries**: never use `Record<string, unknown>` or `Record<string, any>` for Prisma `where`, `data`, or `orderBy` clauses. Use the generated types: `Prisma.WorkOrderWhereInput`, `Prisma.InvoiceUpdateInput`, etc. `Record<string, unknown>` bypasses the type system and hides field renames, removed columns, and type mismatches. If the filter is built dynamically, use a typed builder function that returns the correct Prisma input type
 - **No raw SQL**: never use raw SQL when the project has an ORM or query builder. No exceptions. This includes `$queryRaw`, `$executeRaw`, `$queryRawUnsafe`, `$executeRawUnsafe` in Prisma, and equivalents in other ORMs. Raw SQL bypasses type safety, query logging, middleware hooks, and migration tracking. Express every database operation, including concurrency patterns, conditional writes, row locking, and atomic updates, using native ORM methods. If the ORM cannot express the operation, reconsider the approach or use a dedicated service such as a search engine or analytics database. The only place SQL is acceptable is migration files. This applies to test files too: test setup and teardown must use ORM methods, not raw SQL to create indexes or alter constraints
 - **Service layer for data access**: routers, controllers, and API handlers must never import the ORM directly. All database operations go through service classes. This keeps the routing layer as a thin delegation layer and makes business logic independently testable
+
+## Size Thresholds And Their Valve
+
+A numeric threshold with no named exception does not produce compliance. It produces a silent overrun, because the author who believes splitting would make the code worse has no legitimate move and takes the illegitimate one.
+
+**Files above 500 lines** are acceptable, without a waiver, only for:
+
+- A state machine whose transition cases must change together with the guards that validate them.
+- Generated code, which is not read and not maintained by hand.
+- A single calculation engine whose steps share intermediate state that has no meaning outside it.
+- A comprehensive service whose operations genuinely share private state, where splitting would export that state.
+
+**Functions above 30 lines** are acceptable, without a waiver, only for:
+
+- A flat sequence of steps with no branching, where extraction would produce single-caller helpers that only obscure the order.
+- An exhaustive match over a closed union, where every branch is one line and splitting hides the exhaustiveness.
+
+**The deciding question in every case: if splitting makes the code harder to understand, keep it together.** Recording why belongs in the pull request body, never in a code comment, per the comments policy below.
+
+Anything not on those lists is a waiver, with the file named and a revisit condition attached. A file collecting waivers on every change is the real finding: the threshold is not the problem, the design is.
+
+## Follow The Exemplar, Not The Description
+
+When the codebase already contains a correct instance of what is being built, name it and follow it. A worked example carries every convention at once, including the ones nobody wrote down, and it cannot drift from itself the way a description drifts from the code.
+
+Two obligations when writing anything that guides future work, whether a project instruction file, a plan, or a subagent brief:
+
+- **Name the exemplar.** The specific directory, file, or module to imitate. Not "follow the existing patterns", which names nothing.
+- **Name the anti-exemplar.** The place in the same codebase that looks like precedent and is not. This half is usually omitted and is often the more useful one, because an agent reading the repository will find that code and reasonably imitate it. Existing violations are not precedent, per the rule priority in [the global instructions](../CLAUDE.md), and saying which code is the violation is what makes that operable.
+
+An exemplar that has drifted teaches the drift with full authority. When one is named, it is also maintained.
 
 ## ORM Schema Completeness
 
