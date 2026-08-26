@@ -13,7 +13,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-HOOK = Path(__file__).with_name("frontend-render-gate.py")
+HOOK = Path(__file__).resolve().parents[3] / "hooks" / "frontend-render-gate.py"
 
 ALLOW = 0
 BLOCK = 2
