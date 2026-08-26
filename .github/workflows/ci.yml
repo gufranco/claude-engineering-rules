@@ -69,7 +69,7 @@ jobs:
 
       - name: Markdownlint
         run: |
-          npx --yes markdownlint-cli2 "rules/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
+          npx --yes markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
       - name: Validate YAML
         run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))"

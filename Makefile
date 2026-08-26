@@ -54,7 +54,7 @@ PYTEST_N   ?= auto
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
 .PHONY: help install test test-fast test-cov test-bats test-all \
-        lint lint-py lint-sh lint-yaml lint-actions lint-workflows \
+        lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
 
@@ -102,7 +102,12 @@ endif
 
 test-all: test-cov test-bats lint typecheck validate
 
-lint: lint-py lint-sh lint-yaml lint-actions lint-workflows
+lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md
+
+lint-md:
+	npx --yes markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
+	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" \
+	  "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
 validate:
 	@fail=0; \
