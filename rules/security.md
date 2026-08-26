@@ -8,6 +8,51 @@
 - Validate required env at startup. Fail fast with a clear message listing what is missing.
 - **Env vars are a shared attack surface.** Every dependency in the process can read the full environment. A single compromised transitive package can exfiltrate all secrets via the process environment. Mitigations: grant each service only the secrets it needs, restrict container outbound network access, run high-privilege operations in separate processes with minimal dependencies
 
+### Never read a secret into the conversation
+
+Committing a secret and logging a secret are two well-known paths. Reading one into a transcript is a third, and it is the one an assistant reaches for by reflex, because inspecting a credential file feels like ordinary investigation.
+
+A secret that enters the conversation is in the context window for the rest of the session, in any summary that compaction produces from it, in the stored transcript, and in anything derived from that transcript afterward. There is no way to withdraw it, and rotation is the only remedy.
+
+The rule: **the secret passes through the process, never through the transcript.**
+
+```bash
+# Wrong: the token is now in context, permanently
+cat ~/.service-credentials
+curl -H "Authorization: <pasted token>" https://api.example.com/v1/thing
+
+# Right: the shell reads the file, the value never surfaces
+curl -H "Authorization: $(cat ~/.service-credentials)" https://api.example.com/v1/thing
+```
+
+Applies to credential files, keychain reads, `.env` files, private keys, session tokens copied from a browser, and connection strings with an embedded password. When a value must be confirmed, verify a property of it rather than the value: its length, its prefix, that the file exists and is non-empty, or that a call authenticated successfully.
+
+When a secret does reach the transcript, say so immediately and treat it as disclosed. Rotate it. Do not reason about whether it was probably fine.
+
+### Narrow the tool, not the pattern
+
+When a capability genuinely has to be broad, a wildcard permission is the wrong lever, because a wildcard that permits a read also permits whatever the same command can be talked into doing. Prompt injection turns the second into the first.
+
+Wrap the capability instead, allow only the wrapper, and let the wrapper enforce the narrowing that the permission pattern cannot express.
+
+```bash
+#!/usr/bin/env bash
+# Read-only wrapper: forces GET and refuses any method or body override, so a
+# wildcarded allowlist entry cannot be escalated into a mutating call.
+set -euo pipefail
+for arg in "$@"; do
+  case "$arg" in
+    -X*|--method|--method=*|--input|--input=*|-d|--data|--data=*)
+      echo "read-only wrapper: method and body overrides are not allowed (got '$arg')" >&2
+      exit 1
+      ;;
+  esac
+done
+exec <underlying-command> --method GET "$@"
+```
+
+The general shape: a permission pattern matches on the text of a command, and text is the thing an injection controls. A wrapper matches on the semantics of the request and fails closed on anything it does not recognize. Prefer it whenever the alternative is widening a pattern to cover a legitimate case.
+
 ## Auth Checklist
 
 Apply [`checklists/checklist.md`](../checklists/checklist.md) category 33 for Security and Access Control. The full auth verification items live there.
