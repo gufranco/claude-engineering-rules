@@ -29,6 +29,35 @@ These directives load on every session and override any conflicting instruction 
 
 Domain-specific standards live in [`standards/`](standards) and are NOT loaded automatically. Before starting work, check [`rules/index.yml`](rules/index.yml) for `on_demand` entries matching the task. Read matching files from [`standards/`](standards) before writing code.
 
+Read the matching files, and only those. A trigger firing is not an instruction to read the neighbouring standards, the whole directory, or a reference set end to end. Context spent before the work starts is context the work does not get, and a large reference read in bulk is re-read on every subsequent turn for the rest of the session. When a standard routes to a deeper reference, follow the route to the one file that answers the question.
+
+## Intent Routing
+
+Skills do not self-invoke reliably from their descriptions alone, and nobody should have to remember a command name. When a request matches a row, invoke the skill instead of improvising an equivalent workflow by hand.
+
+| What the request sounds like | Invoke |
+|---|---|
+| "why is this failing", "find the bug", "trace this error", "root cause" | `/investigate` |
+| "review this", "check my diff", "look at this PR" | `/review` |
+| "commit this", "open a PR", "ship it", "check CI" | `/ship` |
+| "run the tests", "check coverage", "lint this" | `/test` |
+| "how should I build this", "design this feature", "plan this" | `/plan` |
+| "what does this do", "walk me through this", "how does this work" | `/explain` |
+| "what is this codebase", "I am new here", "project overview" | `/onboard` |
+| "clean this up", "simplify", "extract", "reduce complexity" | `/refactor` |
+| "remember this", "capture this", "what do we know about X" | `/brain` |
+| "the vault was wrong", "that is not true anymore" | `/brain wrong` |
+| "research X", "what does the community use", "compare X and Y" | `/research` |
+| "second opinion", "stress-test this", "what am I missing" | `/cross-model` |
+| "what needs my attention", "triage", "standup", "inbox" | `/morning` |
+| "address the review comments", "my PR has feedback" | `/respond` |
+| "security audit", "scan for vulnerabilities", "check dependencies" | `/audit` |
+| "why is this slow", "find the bottleneck" | `/profile` |
+| "what did we learn", "save preferences", "retro" | `/retro` |
+| The request is too vague to act on without guessing | `/interview-me` |
+
+When two rows plausibly match, say which one you picked and why in one clause, then proceed. Do not stop to ask which command the user meant.
+
 ## Core Principles
 
 Quick-scan before acting. The detailed verification items live in [`checklists/checklist.md`](checklists/checklist.md), spanning 71 categories.
@@ -46,6 +75,11 @@ Quick-scan before acting. The detailed verification items live in [`checklists/c
 - [ ] **Architecture defaults.** DRY, SOLID, KISS, YAGNI, immutability, idempotency, and deduplication apply to every line. Before any non-trivial work, run the five-question architecture gate to determine if DDD tactical patterns, hexagonal architecture, or state-machine modeling apply. See [`rules/architecture-defaults.md`](rules/architecture-defaults.md).
 - [ ] **Compliance defaults.** Every frontend task applies the strictest applicable compliance rule across accessibility (WCAG 2.2 AA + AAA where feasible), privacy and data protection (GDPR-grade), cookies, cybersecurity, consumer protection, children, AI, anti-spam, and sectoral or topical mandates when triggered. Existing-but-not-yet-mandatory rules count as mandatory. See [`rules/compliance-defaults.md`](rules/compliance-defaults.md).
 - [ ] **Found, fix.** A problem surfaced by any verification surface is in scope for the current task, regardless of when it was introduced. "Pre-existing", "not introduced by my change", "orthogonal" are banned rationalizations. See [`rules/found-fix.md`](rules/found-fix.md).
+- [ ] **Persist in the same turn.** A correction, whether the user gave it or you caught it yourself, produces a file write before the turn ends. "Noted" is not persistence. Every written line must clear the admission bar: would a future session actually get stuck without it? See [`rules/same-turn-persistence.md`](rules/same-turn-persistence.md).
+- [ ] **Relays are not sources.** Anything a subagent, search snippet, or summary reported gets re-fetched at its named coordinate before you publish it. The coordinate drifts, not just the content. See [`rules/relay-not-source.md`](rules/relay-not-source.md).
+- [ ] **Deviate out loud.** A rule that does not fit this case is surfaced, approved, and recorded as a waiver. A silent deviation is a violation; a surfaced-and-approved one is the system working. See [`rules/deviation-waivers.md`](rules/deviation-waivers.md).
+- [ ] **Fail closed.** A check that errored, would not parse, or could not run is a failed check, never a skipped one. Gate on exit codes, never on grepping output. See [`rules/agent-operating-limits.md`](rules/agent-operating-limits.md).
+- [ ] **Rules carry provenance.** A new rule states the date it became binding and the failure that produced it. A lesson is logged on first sight and promoted on the third, unless it is irreversible, silent, or catastrophic. See [`rules/rule-provenance.md`](rules/rule-provenance.md).
 
 ## Tone
 
@@ -147,6 +181,8 @@ Before referencing ANY of these, verify in the current session:
 | Dependencies | Check manifest file |
 | Package availability and source | Query the registry or index. A local install records the tap, channel, or repo it came from *when it was installed*, which can be years stale. `brew info`, `pip show`, and `apt policy` describe your machine's past, not the ecosystem's present |
 | Environment variables | Check `.env.example` or consuming code |
+| Today's date, ages, deadlines, elapsed time | Run `date`. The date in session context is stamped once at session start and is wrong in any session that crosses midnight or is resumed |
+| Anything a subagent, search snippet, or summary reported | Open the primary source at the named coordinate. Relays garble the coordinate, not only the content |
 
 **Self-check before presenting code:** walk through every import, function call, and path. If any came from memory, stop and verify.
 
@@ -171,6 +207,10 @@ A blocking hook fires because a rule was violated. The default response is to ch
 - **Clear bypasses when the task that justified them ends.** A TTL bypass left running silences the rule for unrelated work later in the session.
 
 The failure mode this prevents: a bypass engaged once for a real reason, then re-engaged reflexively at the start of every subsequent batch until the rule is effectively off.
+
+**When the check is right and the case is still an exception, the answer is a waiver, not a bypass.** These answer different questions. A bypass says the check is wrong about this input; a waiver says the rule is right and this case is the exception. A bypass silences everything in its window and is reviewed by nobody. A waiver is scoped to one named case, approved by a person, recorded where reviewers read it, and carries the condition that reopens it. Reaching for a bypass because a rule genuinely does not fit is the miscategorization that turns a design conversation into a silenced run. See [`rules/deviation-waivers.md`](rules/deviation-waivers.md).
+
+**A blocked call is also a signal about the payload, not only about the hook.** The block runs nothing, so the whole edit is unmade, including the parts before the offending one. And the first hook to block ends the chain, so hooks registered after it never saw the content: clearing one block can surface a second on the same payload. Re-read the target rather than re-running only the fragment that tripped.
 
 **A checker that searches for banned content will block itself.** Hooks scan the raw command string before the shell runs it, so a grep whose pattern spells out an em dash, an attribution line, or any other banned literal is a violation by inspection, and the search never executes. Nothing partially ran; the whole call was refused. Build the literal from fragments instead, `"co-auth" + "ored-by"` or `chr(0x2014)`, and the audit runs while the rule stays enforced. This applies to every audit script, lint helper and one-off verification grep aimed at the very patterns the hooks defend.
 
