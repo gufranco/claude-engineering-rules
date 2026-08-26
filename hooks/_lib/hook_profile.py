@@ -53,6 +53,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
     {
         "banned-phrases-blocker",
         "banned-prose-chars",
+        "ai-slop-blocker",
         "normative-keyword-discipline",
         "console-log-blocker",
         "comment-blocker",

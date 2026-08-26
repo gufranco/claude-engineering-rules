@@ -134,6 +134,7 @@ All text that other people will read, like PR descriptions, review comments, com
 - No bold prefix labels in prose unless they add clarity.
 - Each review comment must feel independent, not like items from a checklist.
 - Read what you wrote before posting. If it sounds like a report, rewrite it.
+- The Banned Phrases list above is a vocabulary filter, and slop is mostly grammar and layout, so a wordlist alone never clears it. Before publishing anything, run the three deciding tests in [`rules/anti-slop.md`](rules/anti-slop.md): could this sentence appear verbatim in a document about a different subject, does deleting it change the reader's next action, and did the content choose the structure. That rule also carries the catalogue of rhetorical shapes to avoid, the positive signals to write toward, and a guard against overcorrecting into stilted prose. Enforced by [`hooks/ai-slop-blocker.py`](hooks/ai-slop-blocker.py).
 
 ### Timestamps
 
@@ -291,6 +292,7 @@ Before declaring ANY task complete, pass every applicable gate. A gate that was 
    - **Data integrity:** writes idempotent? DB constraints match validation?
    - **Zero warnings:** tool output clean? Suppression justified?
    - **Writing style for prose, docs, and rules:** em dashes removed? No parentheses in prose? Check every documentation, rule, or comment block you write or modify.
+   - **Slop:** does any sentence survive the substitution test, meaning it would read the same in a document about a different subject? Any negative parallelism, unearned significance clause, participial evaluation tail, unnamed authority, or trailing recap? See [`rules/anti-slop.md`](rules/anti-slop.md).
 
    These are quick-scan reminders for the most critical categories. All 71 categories in [`checklists/checklist.md`](checklists/checklist.md) must be checked: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification when external sources were consulted, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, category 58 for licensing and SPDX compliance, categories 59-66 for resilience and operational concerns covering time zones, numerical precision, i18n, device diversity, backups, disaster recovery, capacity planning, and multi-region; category 67 for compliance and audit trail, category 68 for vendor and third-party risk, category 69 for schema-migration sync, category 70 for question and communication quality, and category 71 for frontend compliance defaults. Read the full checklist, not just this summary.
 

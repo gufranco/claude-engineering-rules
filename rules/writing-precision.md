@@ -302,6 +302,7 @@ After writing any text, read it back and verify:
 3. **Format test.** Is there a paragraph that should be a list or table? Convert it.
 4. **Example test.** Is there an instruction where the meaning could vary across readers? Add the example that anchors it. Examples are non-negotiable for rules, standards, and any instructional text. The same applies when explaining what a tool did: show the command or output rather than describing it.
 5. **Obligation test.** Does every "should" actually mean "must"? If yes, say "must". If optional, say "optional".
+6. **Substitution test.** Could any sentence appear verbatim in a document about a different subject? If yes it says nothing about this one. This gate scores sentences individually, so a passage can clear all five tests above and still say nothing as a whole. The remaining three tests and the catalogue of shapes that produce this failure are in [`anti-slop.md`](anti-slop.md).
 
 For question messages, status updates, error reports, subagent prompts, and loop-closure lines, apply [`rules/smart-questions.md`](smart-questions.md) in addition to this gate. When a message presents a choice, that rule also requires explaining each option in depth and naming a recommended one with its reason.
 
@@ -321,5 +322,6 @@ This rule governs all text output without exception:
 
 ## Enforcement
 
+Enforced by: [`hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py).
 Enforced by: [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 Enforced by: [`hooks/banned-prose-chars.py`](../hooks/banned-prose-chars.py).
