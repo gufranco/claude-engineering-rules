@@ -437,12 +437,33 @@ from _lib.bypass import is_bypassed  # noqa: E402
 SOLO_REPO_ALLOWLIST = _os.path.expanduser("~/.claude/solo-repos.txt")
 
 
-def _repo_root() -> str:
+def _command_cwd(command: str) -> str:
+    """Return the directory a leading `cd` moves the command into.
+
+    The hook runs in whatever directory the harness pins, which is not
+    necessarily the repository the command operates on. A command shaped
+    `cd <path> && git ...` therefore resolves the wrong repository, or none
+    at all, and an allowlist keyed on the repository root cannot match.
+    Reading the leading `cd` makes the resolution follow the command.
+
+    Only a `cd` in first position counts. A `cd` later in the chain runs
+    after the command being inspected, so it does not describe where that
+    command executes.
+    """
+    match = re.match(r"""\s*cd\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:&&|;)""", command)
+    if not match:
+        return ""
+    path = next(group for group in match.groups() if group is not None)
+    return _os.path.expanduser(path)
+
+
+def _repo_root(cwd: str = "") -> str:
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "--show-toplevel"],
             stderr=subprocess.DEVNULL,
             text=True,
+            cwd=cwd or None,
         ).strip()
     except Exception:
         return ""
@@ -537,11 +558,13 @@ def main():
             break
 
     if re.search(r"\bgit\s+push\b", command) and not re.search(r"--force", command):
+        command_cwd = _command_cwd(command)
         try:
             branch = subprocess.check_output(
                 ["git", "branch", "--show-current"],
                 stderr=subprocess.DEVNULL,
                 text=True,
+                cwd=command_cwd or None,
             ).strip()
         except Exception:
             branch = ""
@@ -555,7 +578,7 @@ def main():
             and not re.search(r"\borigin\s+\w", command)
         )
         if targets_protected:
-            repo_root = _repo_root() if _solo_repo_entries() else ""
+            repo_root = _repo_root(command_cwd) if _solo_repo_entries() else ""
             if repo_root and _is_solo_repo(repo_root):
                 _audit(
                     hook="dangerous-command-blocker",
