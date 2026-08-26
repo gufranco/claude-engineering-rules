@@ -527,7 +527,7 @@ The AI Slop list above is the diagnostic. This section is the policy. Every mean
 | Dashboard by numbers | KPI tile row across the top, line chart middle, table bottom. No question is being answered; the surface is a metric warehouse. |
 | Gradient bath | Linear gradient on every container. Color carries no meaning. |
 | Icon-circle row | Each feature gets a colored circle with a generic icon. The icons are interchangeable; the reader cannot tell features apart. |
-| Lorem ipsum content | Including "Lorem ipsum"-adjacent prose like "Lorem ipsum dolor", "Sample text here", "Your content here". Ship empty states, not fake content. |
+| Lorem ipsum content | Including placeholder prose like `Lorem ipsum dolor`, `Sample text here`, `Your content here`. Ship empty states, not fake content. |
 | Toy testimonials | Three stock photos of smiling people with first-name-only quotes praising the product in superlatives. |
 | Trust-badge wall | Logos of "trusted by" companies you do not actually serve. |
 | Animation parade | Every element fades, slides, or scales on scroll. Motion is decoration, not communication. |

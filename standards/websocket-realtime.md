@@ -419,7 +419,7 @@ When the client receives a message ahead of sequence, it must buffer and request
 
 ### Idempotency Keys
 
-Every client message must include a unique `id` field that serves as an idempotency key. The server must deduplicate by this key before processing.
+Every client message must include a unique `id` field that is its idempotency key. The server must deduplicate by this key before processing.
 
 ```typescript
 const processedIds = new Map<string, number>(); // id -> timestamp

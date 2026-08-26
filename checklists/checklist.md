@@ -83,7 +83,7 @@ Do not check these items abstractly. For each write path, identify every actor t
 - [ ] **Deduplicated:** natural dedup key identified with durable check-before-process. In-memory-only dedup is not acceptable
 - [ ] **The dedup record and the business write share one transaction.** Committed separately, a crash between them either loses the work or repeats it. See [`standards/idempotency.md`](../standards/idempotency.md)
 - [ ] **Atomic:** related writes wrapped in a transaction or conditional expression. No partial writes left to corrupt state
-- [ ] Validation present at every system boundary: not just syntactic but semantic such as positive amounts, valid date ranges, or enum membership
+- [ ] Validation present at every system boundary, syntactic and semantic: positive amounts, valid date ranges, enum membership
 - [ ] Database constraints match application-level validation: unique constraints, foreign keys, check constraints
 - [ ] Async processors have DLQ, partial batch failure reporting, dedup by message ID, and monitoring
 
@@ -814,7 +814,7 @@ Reference: [`standards/database.md`](../standards/database.md) covering Access P
 - [ ] Connection and thread pool limits sized for expected concurrency, with headroom for spikes?
 - [ ] Cost of the current design at 10x scale estimated? No surprise bills from unbounded resources.
 - [ ] Auto-scaling validated under load? Scale-up and scale-down behavior tested, not just configured.
-- [ ] Storage IOPS and throughput sized for peak? Not just capacity but performance under concurrent access.
+- [ ] Storage IOPS and throughput sized for peak? Capacity and performance under concurrent access.
 
 Reference: [`standards/database.md`](../standards/database.md) covering Connection Management, NoSQL Key Design, [`standards/resilience.md`](../standards/resilience.md) covering Back Pressure, [`standards/infrastructure.md`](../standards/infrastructure.md) covering Cloud Architecture
 
