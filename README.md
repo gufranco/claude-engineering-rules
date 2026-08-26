@@ -574,9 +574,21 @@ npm ci --ignore-scripts
 make test-all
 ```
 
+`make test-all` runs the suite, the linters, the type checker, and `make
+validate`, which is the drift gate: it walks every registry against what is
+actually on disk and fails when the two disagree. That covers a rule or
+standard missing from [`rules/index.yml`](rules/index.yml), a skill or agent
+missing from this README, a test-shaped file left in [`hooks/`](hooks/) where
+the smoke test would try to execute it, and a count check whose pattern stopped
+matching. That last one matters most: a check that matches nothing cannot fail,
+so it reports success while verifying nothing, which is how a stale number
+survives a green run.
+
 Every pull request runs eight CI jobs: lint, workflow lint, typecheck, hook
 tests, the Python suite at 95% branch coverage, a release-config dry run,
-CodeQL, and dependency review.
+CodeQL, and dependency review. Dependabot keeps GitHub Actions SHAs, pip, and
+npm current on a weekly grouped schedule, and releases are cut by
+semantic-release from Conventional Commits.
 
 ## Security
 
