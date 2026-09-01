@@ -11,7 +11,8 @@ render-level check at all, not whether that check is the right one. Judging
 adequacy is a review question; the hook only refuses the case where nothing
 render-level was touched, which is the case that produced the shipped defects.
 
-Bypass: FRONTEND_RENDER_GATE_DISABLE=1 in a parent shell.
+Bypass: FRONTEND_RENDER_GATE_DISABLE=1 in a parent shell, or a TTL-bound
+entry in the shared registry, matching doc-sync-guard and secret-scanner.
 """
 
 import json
@@ -19,6 +20,10 @@ import os
 import re
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+
+from _lib.bypass import is_bypassed  # noqa: E402
 
 UI_SUFFIXES = (
     ".tsx",
@@ -123,6 +128,8 @@ def format_file_list(paths: list[str]) -> str:
 
 def main() -> int:
     if os.environ.get("FRONTEND_RENDER_GATE_DISABLE") == "1":
+        return 0
+    if is_bypassed("frontend-render-gate"):
         return 0
 
     try:
