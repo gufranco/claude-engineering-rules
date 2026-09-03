@@ -2,6 +2,14 @@
 
 Reference library for `/respond`. Each intent-by-decision cell carries at least three good exemplars and three bad exemplars drawn from canonical sources. The templates are guidelines, not strict scripts. Always present the draft for editing before posting.
 
+## Cells 1 to 15 are the human register only
+
+Every exemplar from Cell 1 to Cell 15 is written to a person. Applying any of them to a bot thread is a defect, not a stylistic choice. Cells 16 and 17 are the bot cells, and their form is a log line rather than a message.
+
+The distinction is load-bearing because the human cells are built on moves a bot cannot receive: acknowledging that someone was right, inviting a clarification, proposing a call, softening a refusal. Directed at a bot they address nobody, and any human reading the thread later sees a colleague talking to a tool as though it were staff.
+
+Read the "Machine register" section of [`SKILL.md`](SKILL.md) before drafting a reply to any `bot:*` author, and stop at three sentences.
+
 ## Style Constraints
 
 Every reply must pass these gates before posting.
@@ -243,15 +251,32 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "Good catch. Pushed `c8e2f1a`."
-2. "Applied. The fix is in `a3f2c1d` along with a regression test."
-3. "Right call. Renamed in `9af2b1c` for clarity."
+1. "Fixed in `c8e2f1a`."
+2. "Fixed in `a3f2c1d`, with a regression test at `tests/orders.spec.ts:142`."
+3. "Renamed in `9af2b1c`."
 
 ### Bad
 
 1. Apply the suggestion without verifying it makes sense. The drive-by accept anti-pattern.
 2. "Thank you for this insight, your suggestion was extremely valuable and I have incorporated it into the latest revision after careful consideration." Fluff, reads as AI-generated.
 3. Credit the bot in a commit author trailer. Prohibited by personal rules and by the runtime hook.
+4. "Good catch." / "Right call." / "You are right." Praise directed at a pattern matcher. Reads as theatre to the human scrolling the thread.
+5. Any reply that explains why the finding was correct, or that narrates how it was verified. State the outcome; the reasoning goes in the PR description.
+
+## Cell 17b: AI bot x push-back
+
+### Good
+
+1. "False positive. The value is validated upstream at `src/middleware/validate.ts:42`."
+2. "Not applicable. Project bans `lodash`, see `CONTRIBUTING.md`."
+3. "Declined. The suggested catch would swallow the error the DLQ depends on."
+
+### Bad
+
+1. "You are right that this looks odd, but the reason is..." Concedes to nobody, then argues with nobody.
+2. A paragraph defending a personal convention. The bot cannot adopt it and no human asked.
+3. "Did I miss something?" Nothing will answer.
+4. "Two reviewers flagged this independently, which is a strong signal." Commentary on the tooling. If it matters, it belongs in the PR body.
 
 ## Cell 18: conflict between two reviewers
 

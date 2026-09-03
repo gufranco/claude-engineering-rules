@@ -145,7 +145,66 @@ Output per thread: a classification record with author type, intent, decision, e
 
 ## Phase 4: Draft Strategy
 
-For each thread, draft a reply and, when applicable, a code change. The reply follows the natural voice rules from [`../../standards/code-review.md`](../../standards/code-review.md) and [`../../rules/writing-precision.md`](../../rules/writing-precision.md), plus the four communication principles below.
+For each thread, draft a reply and, when applicable, a code change.
+
+### Step 1: Pick the register from Axis 1, before writing a word
+
+Author type decides how the reply is written, not only which threads get processed. This is the first decision in the phase and it is recorded in the plan table, because getting it wrong is not a style slip: writing to a bot as though it were a colleague is addressing a party that is not there.
+
+| Author type | Register |
+|-------------|----------|
+| `human` | Human register. The four principles below apply |
+| `bot:ai`, `bot:lint`, `bot:other` | Machine register. The four principles below do **not** apply. See "Machine register" |
+
+The split is not politeness rationing. The two audiences differ in every way that shapes a reply: a bot has no stake to manage, cannot be persuaded, will not answer a question, does not remember the thread, and did not "understand" or "miss" anything. Every technique in the human principles targets a capability it lacks.
+
+### Machine register
+
+A reply to a bot records a verdict for the humans who read the PR later. That is its entire job.
+
+Write it as a log line, never as a message:
+
+- **Verdict first, in a few words.** Fixed, not applicable, already handled, false positive, deferred.
+- **Then the fact.** What changed, where, which commit. Or why the finding does not hold, in one sentence.
+- **One to three sentences. Hard ceiling.** If the reasoning needs more, it belongs in the PR description, where humans read it.
+
+Never do these to a bot:
+
+| Never | Why |
+|-------|-----|
+| Second-person address: "you are right", "you flagged", "did I miss something?" | Addresses a party that is not present and cannot answer |
+| Praise or agreement performance: "good catch", "fair point", "right call" | Credits an agent for a pattern match. Reads as theatre to any human scrolling past |
+| Argument, persuasion, or a case for your position | A bot has no position to change. This is the failure mode this rule exists for |
+| Questions of any kind | Nothing will answer |
+| Teaching, philosophy, or a defence of a personal convention | The bot cannot learn it and the human did not ask |
+| Commentary on the bot's process: "two reviewers found this independently", "strong signal" | Meta-narration about tooling. If it matters, it belongs in the PR body |
+| Apology, hedging, or softening | There is nobody to soften it for |
+
+The length test: if the reply would embarrass you when read aloud as a message to a machine, it is in the wrong register. A reply over three sentences to a bot is almost always a human-register reply that slipped through.
+
+Correct machine-register replies:
+
+```
+Fixed in a1b2c3d. The fallback path returned connection_limit=40; both branches now go through one capping step.
+
+Not applicable. Project bans lodash, see CONTRIBUTING.md.
+
+False positive. The value is validated upstream at src/middleware/validate.ts:42.
+
+Declined. Comments are banned in this repo by personal convention; the rationale is in the PR description.
+```
+
+The same content in human register, which is what this rule forbids:
+
+```
+You are right, and the reason it matters is worse than the line suggests. buildDbUrl
+hardcodes connection_limit=40 in both of its branches, so the fallback was the one
+path in this function that ignored the cap the change exists to add...
+```
+
+### The four principles below are for human threads only
+
+Skip this whole section when the register is machine.
 
 ### Principle 1: Fix the code before explaining it
 
@@ -167,7 +226,9 @@ When a thread has cycled twice without convergence, propose a brief call. The sk
 
 ### Reply templates
 
-Full exemplars with good and bad counterparts live in [`reply-templates.md`](reply-templates.md). The summary table covers the common intent-by-decision pairs.
+Full exemplars with good and bad counterparts live in [`reply-templates.md`](reply-templates.md).
+
+**The table below is the human register only.** For a bot thread, ignore it and write the machine-register form above. The intent axis still drives the decision for a bot thread; it does not drive the wording.
 
 | Intent x Decision | Template summary |
 |-------------------|-------------------|
@@ -186,7 +247,7 @@ Full exemplars with good and bad counterparts live in [`reply-templates.md`](rep
 | `chore:out-of-scope` x `defer` | "Filed as `<ticket-link>`. Out of scope for this PR." Never defer without a ticket |
 | `todo` x `ack` | Add `TODO(debt):` code comment. Reply: "Added `TODO(debt)` at <file:line>" |
 | `praise` x `ack` | Default: no reply. React with thumbs-up emoji on GitHub, silently resolve |
-| AI bot x any | See "AI Bot Triage Tactics" below. Most bot threads end in `dismiss` |
+| AI bot x any | Not this table. Machine register, one to three sentences. See "AI Bot Triage Tactics" below for the decision. Most bot threads end in `dismiss` |
 
 Every template passes the no-internal-config-leakage check before posting.
 
@@ -198,16 +259,17 @@ For `issue:blocking-*` decisions, plan a named regression test like `it('rejects
 
 ## Phase 5: Present and Approve
 
-Print a batched table to the terminal. One row per item. The `Channel` column is mandatory: it is what makes an omitted channel visible to the user rather than invisible.
+Print a batched table to the terminal. One row per item. Two columns are mandatory. `Channel` is what makes an omitted channel visible rather than invisible. `Reg` is what makes a mis-registered reply visible before it is posted: every `bot` row must read as a log line, and any `bot` row whose preview opens with "You're right" or runs past three sentences is a drafting error to fix, not to approve.
 
 ```
-#  Channel     Author          Location               Intent                 Decision      Reply preview                 Code change
-1  inline      alice           src/auth.ts:42         issue:blocking-bug     implement     "You're right. Pushed..."     +12 -3 in src/auth.ts
-2  inline      bob             src/auth.ts:78         suggestion             push-back     "Considered that. Went..."    none
-3  inline      coderabbitai    src/orders.ts:120      nitpick                implement     "Fixed."                       +1 -1 in src/orders.ts
-4  review-body carol           review #4 CHANGES_REQ  issue:blocking-bug     implement     "Good catch. Pushed..."       +8 -1 in src/db.ts
-5  pr-level    dave            conversation           issue:blocking-bug     implement     "Confirmed the deadlock..."   +4 -2 in src/lock.ts
-6  commit      erin            a1b2c3d src/api.ts     question               ack           "That branch is dead..."      none
+#  Channel     Author          Reg    Location               Intent                 Decision      Reply preview                 Code change
+1  inline      alice           human  src/auth.ts:42         issue:blocking-bug     implement     "You're right. Pushed..."     +12 -3 in src/auth.ts
+2  inline      bob             human  src/auth.ts:78         suggestion             push-back     "Considered that. Went..."    none
+3  inline      coderabbitai    bot    src/orders.ts:120      nitpick                implement     "Fixed in a1b2c3d."           +1 -1 in src/orders.ts
+4  review-body carol           human  review #4 CHANGES_REQ  issue:blocking-bug     implement     "Good catch. Pushed..."       +8 -1 in src/db.ts
+5  pr-level    dave            human  conversation           issue:blocking-bug     implement     "Confirmed the deadlock..."   +4 -2 in src/lock.ts
+6  commit      erin            human  a1b2c3d src/api.ts     question               ack           "That branch is dead..."      none
+7  inline      copilot         bot    src/api.ts:12          suggestion             push-back     "False positive. Validated..." none
 ```
 
 Close the table with per-channel counts so a zero is never ambiguous:
