@@ -22,7 +22,7 @@ mypy==2.3.1
 yamllint==1.38.0
 
 # Static analysis of the GitHub Actions workflows themselves
-zizmor==1.29.0
+zizmor==1.30.0
 
 # Local gate runner. Mirrors the CI checks onto a git commit.
 pre-commit==4.6.2
