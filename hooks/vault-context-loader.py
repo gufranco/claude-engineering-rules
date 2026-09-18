@@ -36,6 +36,42 @@ PREAMBLE = (
 )
 
 
+
+MAINTENANCE_RECORD = ".maintenance.json"
+MAINTENANCE_WINDOW_DAYS = 8
+
+
+def maintenance_notice(root: Path) -> str:
+    """Return a line when the maintenance loop has gone quiet, else empty.
+
+    A loop that stops running is silent in exactly the way a loop with nothing
+    to do is silent, so the record is the only channel that can tell them
+    apart. An unreadable or absent record is treated as overdue rather than as
+    fine, because failing closed costs a visible false alarm and failing open
+    costs an unnoticed stall.
+    """
+    from datetime import datetime, timezone
+
+    path = root / MAINTENANCE_RECORD
+    try:
+        stamp = json.loads(path.read_text(encoding="utf-8")).get("ran_at", "")
+        ran = datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
+    except (OSError, ValueError, TypeError, AttributeError, json.JSONDecodeError):
+        return (
+            "\n\nVault maintenance has no run record, so it is overdue. "
+            "Run `python3 .ci/maintain.py` in the vault.\n"
+        )
+    days = (datetime.now(timezone.utc) - ran).days
+    if days > MAINTENANCE_WINDOW_DAYS:
+        return (
+            f"\n\nVault maintenance is overdue: last run {days} days ago on "
+            f"{ran.date()}. Run `python3 .ci/maintain.py` in the vault.\n"
+        )
+    return ""
+
+
 def main() -> int:
     if os.environ.get(ENV_VAR) == "1":
         return 0
@@ -53,7 +89,7 @@ def main() -> int:
         return 0
     if len(body) > MAX_CHARS:
         body = body[:MAX_CHARS] + "\n\n[index truncated at 8000 characters]"
-    context = PREAMBLE.format(root=root) + body
+    context = PREAMBLE.format(root=root) + body + maintenance_notice(root)
     sys.stdout.write(
         json.dumps(
             {
