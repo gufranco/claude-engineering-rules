@@ -51,7 +51,7 @@ The filter bounds which files get a line-by-line pass. It never bounds which fil
 
 The duplication itself is the finding, and it is invisible from one side. A response type written out in both the service and the API client, a fingerprint helper copied across the boundary with a comment asking the two to stay identical, a date parsed in one language on the server and another on the client: none of these live in a shared folder, because the absence of a shared folder is the defect. A scoped review that reports only its own half hands back a diagnosis that reads as complete and is not.
 
-Say in the review summary which side got the line-by-line pass and which side was only traced for contracts.
+Say in the terminal report which side got the line-by-line pass and which side was only traced for contracts.
 
 ### Steps
 
@@ -216,8 +216,8 @@ Say in the review summary which side got the line-by-line pass and which side wa
 12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
 13. **Check branch freshness, CI, test evidence, PR size**, parallel. PR > 400 lines = warning, > 1000 = blocking.
 
-    A branch behind its base is blocking only when the drift touches files the PR changes. Compute the intersection of the two changed-file lists rather than reading the commit count: `comm -12` over `git diff --name-only <head>...<base>` and `git diff --name-only <base>...<head>`, both sorted. An empty intersection is drift, and it belongs in the summary as an observation, never in the verdict. A non-empty one is a real rebase requirement, and naming the overlapping files is what makes it actionable.
-14. **Present review** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9. When presenting to the user in-terminal, also include a Standards Applied line for internal transparency.
+    A branch behind its base is blocking only when the drift touches files the PR changes. Compute the intersection of the two changed-file lists rather than reading the commit count: `comm -12` over `git diff --name-only <head>...<base>` and `git diff --name-only <base>...<head>`, both sorted. An empty intersection is drift, and it belongs in the terminal report as an observation, never in the verdict. A non-empty one is a real rebase requirement, and naming the overlapping files is what makes it actionable.
+14. **Present review in the terminal** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9, plus a Standards Applied line. All of it is for the person running the skill. None of it is published: the pull request receives inline findings and a review event, nothing else.
 
     **External output is a separate channel.** The in-terminal presentation includes internal scaffolding such as Standards Applied, the Behavioral Flow Analysis section heading, and severity tiers like P0, P1, and P2. What goes to GitHub does not. Before building the JSON payload, do a forward pass that strips:
 
@@ -230,11 +230,15 @@ Say in the review summary which side got the line-by-line pass and which side wa
     This is a forward filter, not a post-hoc rewrite. If you find yourself rewriting after generation to scrub these, the generation prompt was wrong. Cleanliness from the first draft is the bar. See [`standards/code-review.md`](../../standards/code-review.md) "No Internal Config Leakage" and the `internal-config-leakage.py` hook, which will block the post if you miss something.
 15. **Next steps**:
     - **Own PR / local**: offer to fix issues. Convergence loop, max 5 iterations: fix, re-verify, re-audit. If 5 iterations are exhausted with findings still open, stop, list the remaining issues, and inform the author. Five iterations is enough for any reasonable convergence; remaining issues likely need a design change, not another fix pass.
-    - **Someone else's PR**: offer to post inline comments. Show the exact payload first: each comment with file, line, body text, and suggestion blocks. Ask for confirmation before posting. `--post` skips the confirmation prompt but still shows the payload summary.
+    - **Someone else's PR**: offer to post inline comments. Show the exact payload first: each comment with file, line, body text, and suggestion blocks. Ask for confirmation before posting. `--post` skips the confirmation prompt but still shows the payload summary. Inline findings are the only thing that gets posted; the review carries no summary body, per [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md).
 
 ### Posting Comments via Pending Review
 
-When posting review comments on a GitHub PR, always use the pending review API to batch all comments into a single notification. Use a JSON file with `--input` to avoid shell escaping issues with markdown, tables, and code blocks in comment bodies.
+Posting applies to a pull request someone else authored. On your own pull request a finding is a commit, so nothing is posted.
+
+[`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) bounds what a review may carry: inline findings anchored to a line, and nothing else. No summary body, no verdict prose, no praise line, no count of what was checked. The verdict reaches the author through the review event, `APPROVE`, `REQUEST_CHANGES`, or `COMMENT`, which is one word and cannot be padded. Everything the summary body used to hold goes to the terminal, for the person running the skill.
+
+When posting, always use the pending review API to batch all comments into a single notification. Use a JSON file with `--input` to avoid shell escaping issues with markdown, tables, and code blocks in comment bodies.
 
 **Step 1: Get the latest commit SHA.**
 
@@ -248,7 +252,7 @@ gh pr view <PR_NUMBER> --json commits --jq '.commits[-1].oid'
 {
   "commit_id": "<COMMIT_SHA>",
   "event": "REQUEST_CHANGES",
-  "body": "Overall review summary",
+  "body": "",
   "comments": [
     {
       "path": "src/auth.ts",
@@ -279,15 +283,15 @@ This creates and submits the review in one step. No separate "create PENDING the
 
 **JSON payload rules:**
 - `line` is the line number in the file, new version. Do not use `side` or `position`, they are not valid on this endpoint
-- `event` in the top-level object sets the review type directly
-- `body` at the top level is the review summary. `body` inside each comment is the inline comment text
-- **The top-level `body` must never be empty.** GitHub's API does not allow updating a review body after submission if the original body was empty. Always include the full review summary in the initial POST. Generate the summary before building the payload, not after
+- `event` in the top-level object sets the review type directly, and it is the whole verdict
+- **The top-level `body` is always the empty string.** It is the review summary slot, and a summary is never published. `body` inside each comment is the inline comment text
+- A review with an empty body cannot have its body edited later, which the GitHub API enforces. That is the intended outcome: there is nothing to edit
 - For multi-line comments, add `start_line` alongside `line`
 - Always clean up the temp file after posting: `rm /tmp/review-payload.json`
 
 **Establish which lines are anchorable before writing any comment.** Fetch the per-file patch once with `gh api repos/:owner/:repo/pulls/<n>/files` and read the hunk headers from that. `gh pr diff --patch`, and a `--paginate` call piped through a `jq select`, both concatenate patches across commits or pages, so the same file comes back with several hunk sets whose line numbers do not describe head. A comment anchored from those lands on the wrong line or is rejected outright.
 
-Files with status `added` are the safe case: every line is in the diff, so any line number is valid. For a `modified` file, only lines inside a hunk range are valid. A finding that falls outside every hunk goes in the summary body, never inline.
+Files with status `added` are the safe case: every line is in the diff, so any line number is valid. For a `modified` file, only lines inside a hunk range are valid. A finding that falls outside every hunk cannot be anchored and therefore cannot be posted; report it in the terminal so the person running the skill can raise it directly.
 
 **Event type mapping:**
 
@@ -338,11 +342,11 @@ No label, no taxonomy, no template scaffolding. The text alone carries the sever
 
 ### Reviewer-Side Shorthand (Internal Use Only)
 
-The summary section you show the user in-terminal can use the standard reviewer shorthand, `LGTM`, `PTAL`, `RFC`, `WDYT`, because the user is the one operating this skill. Those acronyms do not belong in the body posted to GitHub unless the project itself uses them, in which case they are the project's vocabulary, not the skill's.
+The summary you show the user in-terminal can use the standard reviewer shorthand, `LGTM`, `PTAL`, `RFC`, `WDYT`, because the user is the one operating this skill. Those acronyms do not belong in an inline comment unless the project itself uses them, in which case they are the project's vocabulary rather than the skill's.
 
 ### Service Level Awareness in the Verdict
 
-Compute the PR's age and the time since the last review. In the verdict, add a Service Level line when one of these conditions holds.
+Compute the PR's age and the time since the last review. In the terminal report, add a Service Level line when one of these conditions holds. These lines are never posted.
 
 | Condition | Line added |
 |-----------|------------|
@@ -357,11 +361,11 @@ The lines are observational, not blocking. They surface the timing pressure to t
 Before posting the review, fetch existing review threads and the state of other reviews. If another human reviewer has an open thread that contradicts what `/review` is about to post, flag the conflict and present two options:
 
 1. Align with the existing reviewer. Drop the contradicting finding from the new review.
-2. Post the new perspective with explicit acknowledgment: `Different read from <other reviewer>: my concern is <X> while theirs is <Y>. Author should weigh both.`
+2. Post the new perspective as an inline comment on the same line, naming the difference: `Different read from <other reviewer>: my concern is <X> while theirs is <Y>. Worth weighing both.`
 
 Never silently post a contradicting comment. The author should never discover the conflict during their `/respond` run.
 
-Automated reviewers count here too, and they carry a failure mode humans do not: their comments are pinned to the commit they ran against, so a finding one of them marked critical may already be fixed by a later commit on the branch. Read the current code at head before deciding what to do with a bot finding. Re-raising something already fixed costs the author's trust in the whole review. When a bot finding is still live and you agree with it, say so in one line rather than restating it as new.
+Automated reviewers count here too, and they carry a failure mode humans do not: their comments are pinned to the commit they ran against, so a finding one of them marked critical may already be fixed by a later commit on the branch. Read the current code at head before deciding what to do with a bot finding. Re-raising something already fixed costs the author's trust in the whole review. When a bot finding is still live and you agree with it, leave it alone. Restating it as your own adds a second thread on one defect, and replying into the bot's thread is banned.
 
 ### Regression-Test Pinning Recommendation
 
@@ -371,7 +375,7 @@ This mirrors the policy in `/respond` and ensures both ends of the review conver
 
 ### PR-Author Anti-Pattern Detection
 
-Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](../../standards/code-review.md) "As Reviewee". These become findings in the PR-summary part of the verdict, not inline comments.
+Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](../../standards/code-review.md) "As Reviewee". These become findings in the terminal report, never inline comments and never a posted summary.
 
 | Anti-pattern in PR body | Finding |
 |------------------------|---------|
@@ -576,6 +580,8 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - Always detect git platform from remote URL.
 - Always read surrounding code before reviewing.
 - Always present the full review before posting comments.
+- The pull request receives inline findings on lines inside a diff hunk, plus a review event. Never a summary body, never a conversation comment, never a reply into a bot's thread. See [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md).
+- Nothing is posted on a pull request the running account authored. A finding in your own code is a commit.
 - Never approve a PR with failing tests, a stale branch, or missing test evidence. Stale means the base drift overlaps files the PR changes, per step 13; a commit count alone does not make a branch stale.
 - Always restore account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 - Apply all 71 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.

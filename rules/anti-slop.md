@@ -154,11 +154,29 @@ Third-party AI detectors are not evidence, and they misfire hardest on non-nativ
 
 ## Mechanical Enforcement
 
-[`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py) runs at PreToolUse on Write, Edit, MultiEdit for Markdown, and on Bash commands that publish text. Codes are `SLOP001` through `SLOP012`. Code spans and fenced blocks are excluded before matching, so quoted examples and sample output never trip it.
+[`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py) runs at PreToolUse on Write, Edit, MultiEdit for Markdown, and on Bash commands that publish text. Codes are `SLOP001` through `SLOP014`. Code spans and fenced blocks are excluded before matching, so quoted examples and sample output never trip it.
 
-The detector set is deliberately narrower than this document. Every pattern was measured against the 209 Markdown files under the rules, standards, checklists, skills, agents and docs directories before inclusion, and only patterns at or below three corpus hits were wired up. Bold-label bullets measured 311 hits and are documented above rather than enforced. Rule of three and structural symmetry are not mechanically decidable and are review-time obligations.
+The detector set is deliberately narrower than this document. Every pattern was measured against the Markdown files under the rules, standards, checklists, skills, agents and docs directories before inclusion, 210 files as of 2026-09-17, and only patterns at or below three corpus hits were wired up for Markdown. Rule of three and structural symmetry are not mechanically decidable and are review-time obligations.
+
+`SLOP013` and `SLOP014` are the exception, and they carry their own scope. A bullet opening with a bold label measures 648 hits in that corpus and a Markdown heading measures 3600, so neither can be enforced on repository Markdown or on a pull-request description, where [`git-workflow.md`](git-workflow.md) prescribes exactly that shape. Both are a template tell in one place only: the body of a comment published on a pull request. The two detectors therefore fire only on a command posting into a review thread, a review payload, or a GitLab discussion note, and the hook parses the JSON payload so it reads the body a person will see rather than one escaped line.
 
 Bypass: `AI_SLOP_DISABLE=1`, exported from a parent shell, under the once-per-session discipline in [`../CLAUDE.md`](../CLAUDE.md) "Hook Bypass Discipline". The legitimate case is quoting someone else's text, such as a review reply that cites the comment it answers.
+
+## A Published Reply
+
+A comment on a pull request is the shortest artifact this configuration produces and the one a person is most likely to read in full, so the general gate above tightens into a ceiling.
+
+Four sentences. Lead with what changed or with the answer. Courtesy in a clause. No restatement of the comment, no verdict line, no closing offer, no section headings, no bold labels standing in for sentences. The governing rule is [`pr-comment-discipline.md`](pr-comment-discipline.md), which also names the surfaces where no reply is published at all.
+
+| Instead of | Write |
+|---|---|
+| A three-paragraph explanation of a one-line fix | "Fixed in `a1b2c3d`. The fallback path skipped the cap, so both branches go through one helper now." |
+| "Thanks so much for catching this, really appreciate the careful read." | "Good catch, thanks." Then the fix. |
+| "Let me know if you want me to change anything else." | Nothing. The reply ends at the answer. |
+| A bulleted form with **Fix**, **Test**, **Risk** labels | One or two sentences naming the fix and the test. |
+| "To summarize the above:" | Delete it. The above is four sentences long. |
+
+The reason is not economy for its own sake. A reviewer opens a thread expecting one thing back, and a long reply makes them hunt for it. Length reads as effort to the author and as work to the reader.
 
 ## Interaction With Other Rules
 

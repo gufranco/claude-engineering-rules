@@ -237,7 +237,7 @@ Condition 2 spans every channel in [`../../standards/pr-comment-channels.md`](..
 
 Do not declare the loop complete while either condition is open. If a fix is pushed for one condition, both conditions must be re-verified on the new SHA before exiting.
 
-**Human-authored comments are out of scope of this loop.** They require judgment per comment and are handled by `/respond`. When a human reviewer comments during pipeline monitoring, this loop ignores it; the author runs `/respond` separately to triage and reply. The loop still reports the count of open human comments per channel on exit, so a human concern is never silently buried by a green pipeline.
+**Human-authored comments are out of scope of this loop.** They require judgment per comment and are handled by `/respond`, which owns the only reply surface. When a human reviewer comments during pipeline monitoring, this loop ignores it; the author runs `/respond` separately to triage and reply. The loop still reports the count of open human comments per channel on exit, so a human concern is never silently buried by a green pipeline.
 
 ### Step 1: Detect platform and locate checks
 
@@ -292,10 +292,10 @@ For every open item, read the full comment body for the unabridged text, then cl
 |---------------|--------|
 | Actionable + valid | Apply the fix. Each fix becomes its own commit. |
 | Already resolved by prior code | Verify the current code resolves the issue, then close the thread. |
-| False positive | Reply with a one-sentence explanation, then close the thread. |
-| Out of scope | Reply explaining why, link a follow-up ticket if relevant, then close the thread. |
+| False positive | Close the thread. |
+| Out of scope | Fix it anyway when it is small, then close the thread. When it is genuinely blocked outside this change, close the thread and name the blocker in the pull-request description. |
 
-Never close a thread without either fixing the issue or posting a reply that justifies dismissal.
+This loop handles bot findings, and a bot thread receives no reply, per [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md). Close it by resolving where the channel allows and by minimizing where it does not. Never close a thread without either fixing the issue or verifying that the finding does not hold.
 
 #### 6c: Apply fixes
 
@@ -303,7 +303,7 @@ Group related fixes per file when possible. Run formatter, linter, typechecker, 
 
 #### 6d: Close each item
 
-After the fix is verified and pushed, or after a justified dismissal reply, close the item. How to close depends on the channel, per the standard's "Handling Channels Without Native Resolve" table.
+After the fix is verified and pushed, or after the finding has been checked and does not hold, close the item. How to close depends on the channel, per the standard's "Answering Each Channel" table.
 
 Inline review threads resolve through GraphQL:
 
@@ -315,7 +315,17 @@ GH_TOKEN=$(gh auth token --user <account>) gh api graphql -f query='mutation($th
 }' -F threadId=<thread-node-id>
 ```
 
-Review bodies, PR-level comments, and commit comments have no resolve action. For those, the posted reply is the closure signal and is mandatory: with no platform state to record the decision, skipping the reply leaves no evidence the finding was considered. Minimizing a bot's PR-level comment is an acceptable additional signal once the reply is posted, never a substitute for it.
+Review bodies, PR-level comments, and commit comments have no resolve action, and a bot receives no reply, so minimizing is the close action:
+
+```bash
+GH_TOKEN=$(gh auth token --user <account>) gh api graphql -f query='mutation($id: ID!) {
+  minimizeComment(input: { subjectId: $id, classifier: RESOLVED }) {
+    minimizedComment { isMinimized minimizedReason }
+  }
+}' -F id=<comment-node-id>
+```
+
+The evidence a finding was considered is the commit that answers it, or the absence of one plus a minimized thread. Both are visible on the pull request and both outlast a comment. When the account lacks permission to minimize, leave the item open and report it rather than posting a comment to mark it handled.
 
 GitLab uses `glab api` with the discussion resolve endpoint. Bitbucket Cloud resolves via `POST .../comments/<cid>/resolve`.
 
@@ -337,14 +347,14 @@ Report per-channel counts, never a single total. A bare "0 open threads" cannot 
 ```
 PR #1234  SHA a1b2c3d
 CI: 12/12 functional checks passed
-AI comments closed:  inline 3 | review bodies 1 | PR-level 2 | commit 0
+AI comments closed:  inline 3 resolved | review bodies 1 minimized | PR-level 2 minimized | commit 0
 Human comments open: inline 0 | review bodies 0 | PR-level 1 | commit 0  -> run /respond
 ```
 
 ### Guardrails
 
 - Max 5 fix-and-retry cycles per loop run. Above the limit, stop and ask the user how to proceed.
-- Only fix what you can confidently fix. Dismiss with a reply when in doubt; never silently close.
+- Only fix what you can confidently fix. When a finding does not survive the failure-scenario gate, close it without writing anything; when you cannot tell, leave it open and report it.
 - Each fix is its own commit with a conventional-commit message.
 - Never skip hooks. `--no-verify`.
 - Never close an item without verifying the fix is on the pushed SHA.

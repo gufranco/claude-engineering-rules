@@ -6,6 +6,8 @@ Every comment on a pull request, of every type, that is not in a terminal state 
 
 A skill must never report a PR as clean while any non-terminal comment in any channel remains unhandled.
 
+Reading is the obligation this standard carries. What a skill is allowed to publish back is governed by [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md), which permits a reply only inside a thread a person opened. The two compose: sweep all four channels, answer the three unrepliable ones with a code change.
+
 ## Why This Rule Exists
 
 An earlier session missed a P0 deadlock report because it was posted as a PR-level conversation comment rather than an inline thread. The fetch query only asked for `reviewThreads`. The comment was invisible to the workflow, and the skill reported the PR as having no open feedback.
@@ -162,7 +164,7 @@ A comment with `resolution` set to a non-null value is resolved. A comment with 
 | Automated activity | `system == true` on GitLab | GitLab discussions |
 | Unpublished draft | `pending: true` on Bitbucket, `state == PENDING` on a GitHub review | Bitbucket comments, GitHub reviews |
 | Authored by the running account | Author login matches the resolved account, and no later reply from another party | All |
-| Already answered | The running account posted a reply in the same channel after the comment's `createdAt`, and that reply addresses it | Channels without native resolve |
+| Already answered | For an inline thread, the running account replied after the comment's `createdAt` and that reply addresses it. For the other three channels, the change that answers it has landed and the comment is minimized | All |
 | Auto-generated marker | Body begins with a tracker or bot marker such as an HTML comment used for linkbacks or summaries | PR-level comments |
 
 GitHub's `minimizedReason` is one of `SPAM`, `ABUSE`, `OFF_TOPIC`, `OUTDATED`, `DUPLICATE`, `RESOLVED`, `LOW_QUALITY`. Any of them marks the comment as handled by a human decision. Minimizing is the closest thing the three non-resolvable GitHub channels have to a resolve action, and it must be honored.
@@ -171,18 +173,32 @@ GitHub's `minimizedReason` is one of `SPAM`, `ABUSE`, `OFF_TOPIC`, `OUTDATED`, `
 
 `isOutdated == true` on GitHub and a changed `position` on GitLab mean the cited line moved, not that the concern was addressed. A comment can be outdated and still name a live bug. Never drop on outdated alone. The same applies to `isCollapsed`, which is a display hint rather than a decision.
 
-## Handling Channels Without Native Resolve
+## Answering Each Channel
 
-Three of the four GitHub channels cannot be resolved through the API. The workflow closes them differently.
+Reading every channel is mandatory. Replying is permitted in one of them. [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md) is the governing rule: the only comment published on a pull request is a reply inside a thread a person opened, so the other three channels are answered by changing the code.
 
-| Channel | How to reply | How to close |
-|---------|-------------|--------------|
-| Inline review thread | `POST repos/<o>/<r>/pulls/<pr>/comments/<comment-id>/replies` | `resolveReviewThread` GraphQL mutation |
-| Review summary body | `gh pr comment <pr> --body-file <file>`, quoting the point being answered | Minimize the review when the reply fully settles it, otherwise leave it to the reviewer |
-| PR conversation comment | `gh pr comment <pr> --body-file <file>` | No resolve action. The reply is the closure signal |
-| Commit comment | `POST repos/<o>/<r>/comments/<comment-id>/replies` is not available. Reply with a PR-level comment that quotes the commit and the point | No resolve action. The reply is the closure signal |
+| Channel | How to answer | How to close |
+|---------|--------------|--------------|
+| Inline review thread, human author | `POST repos/<o>/<r>/pulls/<pr>/comments/<comment-id>/replies` | `resolveReviewThread` GraphQL mutation |
+| Inline review thread, bot author | No reply. Fix a surviving finding in the open change | `resolveReviewThread` |
+| Review summary body | No reply. The code change answers it and the commit message names the point | `minimizeComment` with `RESOLVED` once the change lands |
+| PR conversation comment | No reply | `minimizeComment` with `RESOLVED` or `OUTDATED` |
+| Commit comment | No reply. There is no reply endpoint, and a fresh conversation comment is banned | `minimizeComment` |
 
-For channels with no resolve, the reply is the audit trail. A skill must post a reply rather than silently treating the comment as handled, because there is no state on the platform to record the decision.
+The commit is the audit trail for the three channels with no reply. A reader tracing why a comment closed finds the change that closed it, which outlives any comment thread. When the fix alone would leave the reviewer guessing, the sentence goes in the pull-request description.
+
+Minimizing is the close action wherever no resolve exists:
+
+```bash
+gh api graphql -f query='
+  mutation($id: ID!) {
+    minimizeComment(input: {subjectId: $id, classifier: RESOLVED}) {
+      minimizedComment { isMinimized minimizedReason }
+    }
+  }' -F id="<node-id>"
+```
+
+The classifier must describe the real reason. `RESOLVED` when a change settled the point, `OUTDATED` when the cited code is gone. Never `SPAM`, `ABUSE` or `LOW_QUALITY` on a human comment.
 
 ## Completeness Cross-Check
 
@@ -198,6 +214,7 @@ Step 5 matters: a report of "0 open threads" is ambiguous between "all four chan
 
 ## Cross-References
 
+- [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md): what may be published back, and the four-sentence ceiling on a reply
 - [`code-review.md`](code-review.md): review conduct and the Conventional Comments taxonomy
 - [`multi-account-cli.md`](multi-account-cli.md): the account-resolution pattern every `gh`, `glab`, and `curl` call follows
 - [`../skills/respond/SKILL.md`](../skills/respond/SKILL.md): the receive-side workflow that consumes this standard

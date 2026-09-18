@@ -1,9 +1,11 @@
 ---
 name: respond
-description: Respond to incoming code review comments on a PR you authored. Fetches every unresolved comment across all channels, inline threads, review bodies, PR-level conversation, and commit comments, classifies each by author and intent, verifies against the current code, drafts replies in a natural voice, applies code changes with local validation, posts replies, resolves threads, and monitors CI. Use when user says "respond to review", "address comments", "handle reviewer feedback", "reply to PR comments", "my PR has comments", or wants a structured pass over reviewer feedback. Do NOT use for performing a review (use /review), or for unattended AI bot thread handling (use /ship --pipeline).
+description: Respond to incoming code review comments on a PR you authored. Fetches every unresolved comment across all channels, inline threads, review bodies, PR-level conversation, and commit comments, classifies each by author and intent, verifies against the current code, fixes what is real, replies only inside a human's inline thread, closes bot threads and unrepliable channels without a comment, and monitors CI. Use when user says "respond to review", "address comments", "handle reviewer feedback", "reply to PR comments", "my PR has comments", or wants a structured pass over reviewer feedback. Do NOT use for performing a review (use /review), or for unattended AI bot thread handling (use /ship --pipeline).
 sensitive: true
 ---
-Receive-side counterpart to `/review`. Turns the loose, error-prone workflow of "respond to PR review comments" into a structured, validated pipeline. The seven phases take the user from "I see comments on my PR" to "every thread is replied to or resolved, code changes are validated and pushed, CI is green".
+Receive-side counterpart to `/review`. Turns the loose, error-prone workflow of "respond to PR review comments" into a structured, validated pipeline. The seven phases take the user from "I see comments on my PR" to "every thread is answered or closed, code changes are validated and pushed, CI is green".
+
+[`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) governs everything this skill publishes. One reply surface: a human's inline thread, four sentences at most. Bot threads are read, fixed when the finding is real, then resolved in silence. The three channels with no reply endpoint are answered by the code change and closed by minimizing.
 
 ## Subcommand Routing
 
@@ -24,7 +26,7 @@ If no subcommand is given, default to the full workflow.
 | No args | Use the current branch's PR |
 | `<PR number or URL>` | Target that PR |
 | `--humans-only` | Default. Skip threads whose first comment is from a bot |
-| `--include-bots` | Include AI bot threads in the workflow |
+| `--include-bots` | Include AI bot threads in the workflow, for fixing and closing. Bot threads never receive a reply |
 | `--auto` | Execute the approved batch without per-batch confirmation. Requires `RESPOND_AUTO_ACK=1` env var to take effect |
 | `--interactive` | Confirm per thread instead of per batch |
 | `--filter <pattern>` | Filter threads by file path glob or author login |
@@ -72,7 +74,7 @@ Filter rules.
 - Honor `isMinimized == true`. It is the closest thing the three non-resolvable channels have to a resolve action, on any of the seven `minimizedReason` values.
 - Apply `--humans-only` unless `--include-bots` is set. The human filter keeps items whose first comment is from `author.type == "User"` AND login is not in the AI bot allowlist.
 - Group inline threads by file path, then sort by line number within file. Group the other three buckets separately.
-- Reply to PR-level comments and review bodies via `gh pr comment`, not the inline `/replies` endpoint. Commit comments have no reply endpoint; answer with a PR-level comment that quotes the commit and the point.
+- Review bodies, PR-level comments, and commit comments get no reply. They are answered by the code change and closed by minimizing, per the standard's "Answering Each Channel" table.
 - Filter out PR-level comments whose body starts with auto-generated markers such as `<!-- LEAD_APPROVAL -->`, `<!-- linear-linkback -->`, or `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->`, since these are tracker or bot signals, not actionable.
 - Drop items authored by the running account, your own prior replies unless they were quoted as part of a multi-round conversation.
 
@@ -109,7 +111,7 @@ Use the Conventional Comments taxonomy. When the reviewer used an explicit prefi
 | `thought` | `thought` | Reflective, no requested action, "I wonder if", "musing" |
 | `nitpick` | `nitpick` | Prefixed `nit:`, `nitpick:`, `style:`, very small scope |
 | `praise` | `praise` | "nice", "good catch", "clean", no actionable content |
-| `chore:out-of-scope` | `chore` | "separate PR", "follow-up", "out of scope" |
+| `chore:out-of-scope` | `chore` | "separate PR", "follow-up", "out of scope". The intent is the reviewer's framing, never a licence to defer |
 | `todo` | `todo` | "leave a TODO", reminder for the future, not for this PR |
 | `clarification-request` | `question` | "what does this do", "can you explain", "I do not follow" |
 
@@ -122,12 +124,14 @@ Set by the verification step below.
 | `implement` | Comment is correct, apply the fix |
 | `push-back` | Comment is incorrect, explain why |
 | `clarify` | Need more info from reviewer before acting |
-| `defer` | Valid but for a follow-up PR or ticket |
+| `dismiss` | The finding does not hold. Bot threads mostly end here |
 | `ack` | Acknowledge praise or info-only comment |
 | `accept-with-modification` | Implement a variant of the suggestion |
 | `conflict` | Two reviewers contradict on the same line. See Multi-Reviewer Conflict Resolution |
 
-For `issue:blocking-*` intents, the decision space is restricted to `implement`, `push-back`, `clarify`. `defer` is forbidden.
+For `issue:blocking-*` intents, the decision space is restricted to `implement`, `push-back`, `clarify`.
+
+There is no `defer` decision. A problem that can be fixed in this change is fixed in this change, and no ticket, follow-up, or separate pull request stands in for the fix. See [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) and [`../../rules/found-fix.md`](../../rules/found-fix.md). When a fix is genuinely blocked outside the change, such as a coordinated release or a migration another team owns, the decision is `push-back` and the reply names the blocker in one sentence.
 
 ### Verification step
 
@@ -147,64 +151,37 @@ Output per thread: a classification record with author type, intent, decision, e
 
 For each thread, draft a reply and, when applicable, a code change.
 
-### Step 1: Pick the register from Axis 1, before writing a word
+### Step 1: Decide whether a reply exists at all
 
-Author type decides how the reply is written, not only which threads get processed. This is the first decision in the phase and it is recorded in the plan table, because getting it wrong is not a style slip: writing to a bot as though it were a colleague is addressing a party that is not there.
+Author type decides this before a word is drafted, and it is recorded in the plan table.
 
-| Author type | Register |
-|-------------|----------|
-| `human` | Human register. The four principles below apply |
-| `bot:ai`, `bot:lint`, `bot:other` | Machine register. The four principles below do **not** apply. See "Machine register" |
+| Author type | What gets published |
+|-------------|---------------------|
+| `human`, inline thread | A reply in the thread. The four principles below apply |
+| `human`, other channel | No reply. The code change answers it; the commit names the point |
+| `bot:ai`, `bot:lint`, `bot:other` | Nothing. Ever |
+| `self` | Nothing |
 
-The split is not politeness rationing. The two audiences differ in every way that shapes a reply: a bot has no stake to manage, cannot be persuaded, will not answer a question, does not remember the thread, and did not "understand" or "miss" anything. Every technique in the human principles targets a capability it lacks.
+A bot thread is read, verified against the code, fixed when the finding survives the failure-scenario gate in [`../../rules/ai-review-convergence.md`](../../rules/ai-review-convergence.md), and then resolved. No verdict line, no acknowledgment, no dismissal note.
 
-### Machine register
+The reasoning is the same reasoning that used to justify a short bot reply, carried to its conclusion. A bot has no stake to manage, cannot be persuaded, will not answer, does not remember the thread, and did not miss anything. An audience with none of those properties needs a shorter message only if it needs a message. It does not. What the verdict line was for, telling a later reader what happened, is carried better by the commit that closed the thread, and a commit outlives any thread.
 
-A reply to a bot records a verdict for the humans who read the PR later. That is its entire job.
-
-Write it as a log line, never as a message:
-
-- **Verdict first, in a few words.** Fixed, not applicable, already handled, false positive, deferred.
-- **Then the fact.** What changed, where, which commit. Or why the finding does not hold, in one sentence.
-- **One to three sentences. Hard ceiling.** If the reasoning needs more, it belongs in the PR description, where humans read it.
-
-Never do these to a bot:
+Never write any of these to a bot thread:
 
 | Never | Why |
 |-------|-----|
-| Second-person address: "you are right", "you flagged", "did I miss something?" | Addresses a party that is not present and cannot answer |
-| Praise or agreement performance: "good catch", "fair point", "right call" | Credits an agent for a pattern match. Reads as theatre to any human scrolling past |
-| Argument, persuasion, or a case for your position | A bot has no position to change. This is the failure mode this rule exists for |
-| Questions of any kind | Nothing will answer |
-| Teaching, philosophy, or a defence of a personal convention | The bot cannot learn it and the human did not ask |
-| Commentary on the bot's process: "two reviewers found this independently", "strong signal" | Meta-narration about tooling. If it matters, it belongs in the PR body |
-| Apology, hedging, or softening | There is nobody to soften it for |
+| A reply of any length | Nothing reads it |
+| A verdict such as fixed, declined, or false positive | The commit and the resolve state already say it |
+| Second-person address | Addresses a party that is not present |
+| Praise or agreement | Credits an agent for a pattern match |
+| Argument or persuasion | A bot has no position to change |
+| A question | Nothing will answer |
 
-The length test: if the reply would embarrass you when read aloud as a message to a machine, it is in the wrong register. A reply over three sentences to a bot is almost always a human-register reply that slipped through.
+### The four principles below are for human inline threads only
 
-Correct machine-register replies:
+Skip this whole section when the author is a bot. There is nothing to draft.
 
-```
-Fixed in a1b2c3d. The fallback path returned connection_limit=40; both branches now go through one capping step.
-
-Not applicable. Project bans lodash, see CONTRIBUTING.md.
-
-False positive. The value is validated upstream at src/middleware/validate.ts:42.
-
-Declined. Comments are banned in this repo by personal convention; the rationale is in the PR description.
-```
-
-The same content in human register, which is what this rule forbids:
-
-```
-You are right, and the reason it matters is worse than the line suggests. buildDbUrl
-hardcodes connection_limit=40 in both of its branches, so the fallback was the one
-path in this function that ignored the cap the change exists to add...
-```
-
-### The four principles below are for human threads only
-
-Skip this whole section when the register is machine.
+Every reply obeys the ceiling in [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md): four sentences, polite in a clause, no restatement of the comment, no closing offer. A reviewer is a person with other work. Anything past the ceiling belongs in the code or the pull-request description.
 
 ### Principle 1: Fix the code before explaining it
 
@@ -228,15 +205,15 @@ When a thread has cycled twice without convergence, propose a brief call. The sk
 
 Full exemplars with good and bad counterparts live in [`reply-templates.md`](reply-templates.md).
 
-**The table below is the human register only.** For a bot thread, ignore it and write the machine-register form above. The intent axis still drives the decision for a bot thread; it does not drive the wording.
+**The table below applies to human inline threads only.** A bot thread has no wording to choose. The intent axis still drives the decision for a bot thread, which is then closed silently.
 
 | Intent x Decision | Template summary |
 |-------------------|-------------------|
-| `issue:blocking-bug` x `implement` | "You're right. Pushed `<SHA>`. <one-sentence on the fix>." Add a named regression test |
+| `issue:blocking-bug` x `implement` | "You're right. Pushed `<SHA>`. <one sentence on the fix>." Add a named regression test |
 | `issue:blocking-bug` x `push-back` | Feedback Equation form. End with "Did I miss something?" |
-| `issue:blocking-security` x `implement` | "You're right. Pushed `<SHA>` with <fix>. Will also <follow-up> in a separate change." File a ticket for the follow-up |
-| `issue:blocking-correctness` x `clarify` | "Want to make sure I am understanding. <Restate reviewer's claim>. Is that right?" |
-| `issue:architectural` x `push-back` | "Want to land this PR with the current approach. The redesign is worth a separate thread. <Reason>." |
+| `issue:blocking-security` x `implement` | "You're right. Pushed `<SHA>` with <fix>." Any second defect the same comment exposed is fixed in the same push |
+| `issue:blocking-correctness` x `clarify` | "Want to make sure I am reading this right. <One-line restatement>. Is that it?" |
+| `issue:architectural` x `push-back` | "Landing this with the current approach. <Reason>. The redesign is worth its own thread." |
 | `suggestion` x `implement` | "Good call. Applied in `<SHA>`." Credit trailer for non-trivial suggestions |
 | `suggestion` x `accept-with-modification` | "Took a variant in `<SHA>`. <Difference from the original>." |
 | `suggestion` x `push-back` | "Considered that. Went with the current approach because <reason>. The alternative would <downside>." |
@@ -244,10 +221,11 @@ Full exemplars with good and bad counterparts live in [`reply-templates.md`](rep
 | `clarification-request` x `ack` | "<Plain explanation>." If non-trivial, make the code say it: rename, extract, or tighten the type |
 | `nitpick` x `implement` | "Fixed in `<SHA>`." |
 | `nitpick` x `push-back` | "Sticking with the current style for consistency with <other pattern>." |
-| `chore:out-of-scope` x `defer` | "Filed as `<ticket-link>`. Out of scope for this PR." Never defer without a ticket |
-| `todo` x `ack` | Add `TODO(debt):` code comment. Reply: "Added `TODO(debt)` at <file:line>" |
-| `praise` x `ack` | Default: no reply. React with thumbs-up emoji on GitHub, silently resolve |
-| AI bot x any | Not this table. Machine register, one to three sentences. See "AI Bot Triage Tactics" below for the decision. Most bot threads end in `dismiss` |
+| `chore:out-of-scope` x `implement` | The default. A change small enough to be called out of scope is small enough to make: "Fixed in `<SHA>`." |
+| `chore:out-of-scope` x `push-back` | Only when the fix is blocked outside this change. "<The blocker>, so it cannot land here." No ticket |
+| `todo` x `implement` | Do the work now. A marker recording it is banned by the comments policy |
+| `praise` x `ack` | No reply. React with a thumbs-up on GitHub and resolve |
+| Bot x any | Not this table. No reply exists. Fix a surviving finding, resolve the thread, move on |
 
 Every template passes the no-internal-config-leakage check before posting.
 
@@ -259,18 +237,20 @@ For `issue:blocking-*` decisions, plan a named regression test like `it('rejects
 
 ## Phase 5: Present and Approve
 
-Print a batched table to the terminal. One row per item. Two columns are mandatory. `Channel` is what makes an omitted channel visible rather than invisible. `Reg` is what makes a mis-registered reply visible before it is posted: every `bot` row must read as a log line, and any `bot` row whose preview opens with "You're right" or runs past three sentences is a drafting error to fix, not to approve.
+Print a batched table to the terminal. One row per item. Two columns are mandatory. `Channel` is what makes an omitted channel visible rather than invisible. `Reply` is what makes a banned post visible before it is sent: only an `inline` row with a `human` author may carry a preview, and every other row must read `none`. A preview on any other row is a drafting error to fix, not to approve.
 
 ```
-#  Channel     Author          Reg    Location               Intent                 Decision      Reply preview                 Code change
-1  inline      alice           human  src/auth.ts:42         issue:blocking-bug     implement     "You're right. Pushed..."     +12 -3 in src/auth.ts
-2  inline      bob             human  src/auth.ts:78         suggestion             push-back     "Considered that. Went..."    none
-3  inline      coderabbitai    bot    src/orders.ts:120      nitpick                implement     "Fixed in a1b2c3d."           +1 -1 in src/orders.ts
-4  review-body carol           human  review #4 CHANGES_REQ  issue:blocking-bug     implement     "Good catch. Pushed..."       +8 -1 in src/db.ts
-5  pr-level    dave            human  conversation           issue:blocking-bug     implement     "Confirmed the deadlock..."   +4 -2 in src/lock.ts
-6  commit      erin            human  a1b2c3d src/api.ts     question               ack           "That branch is dead..."      none
-7  inline      copilot         bot    src/api.ts:12          suggestion             push-back     "False positive. Validated..." none
+#  Channel     Author          Type   Location               Intent                 Decision      Reply                          Code change
+1  inline      alice           human  src/auth.ts:42         issue:blocking-bug     implement     "You're right. Pushed..."      +12 -3 in src/auth.ts
+2  inline      bob             human  src/auth.ts:78         suggestion             push-back     "Considered that. Went..."     none
+3  inline      coderabbitai    bot    src/orders.ts:120      nitpick                implement     none, resolve                  +1 -1 in src/orders.ts
+4  review-body carol           human  review #4 CHANGES_REQ  issue:blocking-bug     implement     none, minimize                 +8 -1 in src/db.ts
+5  pr-level    dave            human  conversation           issue:blocking-bug     implement     none, minimize                 +4 -2 in src/lock.ts
+6  commit      erin            human  a1b2c3d src/api.ts     question               implement     none, minimize                 +3 -1 in src/api.ts
+7  inline      copilot         bot    src/api.ts:12          suggestion             dismiss       none, resolve                  none
 ```
+
+Row 6 shows the shape a question in an unrepliable channel takes: the answer is a code change that makes the question stop arising, and the commit message carries the point. When a change alone would leave the reviewer guessing, add the sentence to the pull-request description rather than opening a comment.
 
 Close the table with per-channel counts so a zero is never ambiguous:
 
@@ -316,16 +296,15 @@ Confirm the latest SHA is on the PR and no new threads landed during execution.
 
 ### Step 5: Post replies via REST
 
-Route the reply by channel, per the standard's "Handling Channels Without Native Resolve" table.
+One reply surface. Every other row posts nothing.
 
 | Channel | Reply mechanism |
 |---------|-----------------|
-| Inline thread | `POST repos/<o>/<r>/pulls/<pr>/comments/<comment-id>/replies` |
-| Review body | `gh pr comment <pr>`, quoting the point being answered |
-| PR-level conversation | `gh pr comment <pr>` |
-| Commit comment | `gh pr comment <pr>`, quoting the commit SHA and the point. There is no reply endpoint for commit comments |
+| Inline thread, human author | `POST repos/<o>/<r>/pulls/<pr>/comments/<comment-id>/replies` |
+| Inline thread, bot author | None |
+| Review body, PR-level, commit comment | None. Step 6 closes them |
 
-For inline threads, write a JSON file to `/tmp/respond-reply-<thread-id>.json`. Single-quoted heredoc to prevent shell expansion.
+Write a JSON file to `/tmp/respond-reply-<thread-id>.json`. Single-quoted heredoc to prevent shell expansion.
 
 ```bash
 cat <<'PAYLOAD' > /tmp/respond-reply-<thread-id>.json
@@ -340,18 +319,9 @@ GH_TOKEN=$(gh auth token --user <account>) gh api \
   --input /tmp/respond-reply-<thread-id>.json
 ```
 
-For PR-level summary replies, post via:
+### Step 6: Close every item
 
-```bash
-GH_TOKEN=$(gh auth token --user <account>) gh pr comment <pr> \
-  --body-file /tmp/respond-summary.md
-```
-
-### Step 6: Resolve threads via GraphQL
-
-Only inline threads can be resolved. For each inline thread whose decision is `implement`, `push-back`, `defer`, `accept-with-modification`, or `ack`, post the reply first, then resolve. Threads with decision `clarify` stay open. Threads with decision `conflict` stay open until the conflicting reviewers align.
-
-Review bodies, PR-level comments, and commit comments have no resolve action. The posted reply is their closure signal, which makes the reply mandatory rather than optional: with no platform state to record the decision, an unanswered item is indistinguishable from an ignored one.
+Only inline threads can be resolved. For each inline thread whose decision is `implement`, `push-back`, `accept-with-modification`, `ack`, or `dismiss`, post the reply first when one exists, then resolve. Threads with decision `clarify` stay open. Threads with decision `conflict` stay open until the conflicting reviewers align.
 
 ```bash
 GH_TOKEN=$(gh auth token --user <account>) gh api graphql \
@@ -364,6 +334,19 @@ GH_TOKEN=$(gh auth token --user <account>) gh api graphql \
 
 One resolve per thread. The `bulk-resolve-blocker.py` hook enforces this.
 
+Review bodies, PR-level comments, commit comments, and bot comments outside a resolvable thread are closed by minimizing, since they have no resolve action and get no reply:
+
+```bash
+GH_TOKEN=$(gh auth token --user <account>) gh api graphql \
+  -f query='mutation($id: ID!) {
+    minimizeComment(input: { subjectId: $id, classifier: RESOLVED }) {
+      minimizedComment { isMinimized, minimizedReason }
+    }
+  }' -F id=<node-id>
+```
+
+Minimize only after the change that answers the comment has landed. Use `RESOLVED` when a change settled the point and `OUTDATED` when the cited code is gone. Never `SPAM`, `ABUSE`, or `LOW_QUALITY` on a human comment. When minimizing is unavailable, such as on a repository where the account lacks the permission, leave the item open and say so in the final report rather than posting a comment to mark it handled.
+
 ### Step 7: Re-request review
 
 If `--re-request` was passed.
@@ -375,12 +358,12 @@ GH_TOKEN=$(gh auth token --user <account>) gh api \
   -f reviewers='["alice","bob"]'
 ```
 
-Pair the re-request with a top-level PR comment that uses the `PTAL` shorthand and summarizes what changed since the last round.
+The re-request is the whole signal. What changed since the last round belongs in the pull-request description, which the reviewer reads anyway, never in a fresh comment.
 
 ### Step 8: Clean up
 
 ```bash
-rm /tmp/respond-reply-*.json /tmp/respond-summary.md /tmp/respond-query-*.graphql
+rm /tmp/respond-reply-*.json /tmp/respond-query-*.graphql
 ```
 
 ## Phase 7: Monitor and Close
@@ -392,133 +375,16 @@ Final output:
 ```
 RESOLVED: 7 comments addressed on PR #1234.
   Channels swept: inline 4 | review bodies 1 | PR-level 1 | commit 1
-  - 3 implemented (commits: a1b2c3d, e4f5g6h, i7j8k9l)
+  - 4 implemented (commits: a1b2c3d, e4f5g6h, i7j8k9l, m0n1o2p)
   - 2 pushed back with reasoning
-  - 1 deferred to ticket TICKET-456
-  - 1 acknowledged
-  Inline threads resolved: 4. Non-resolvable channels closed by reply: 3
+  - 1 dismissed after the finding did not hold
+  Replies posted: 2, both in human inline threads
+  Inline threads resolved: 4. Unrepliable channels minimized: 3
   CI: 12 of 12 checks passed
   Re-requested review from: alice, bob
 ```
 
 The "Channels swept" line is mandatory. It is the evidence that all four channels were queried, and it is the line a user can check when they suspect a comment was missed.
-
-## Ticket Tracker Integration
-
-For the `defer` decision, deferred items must include a ticket URL. The skill detects the project's tracker and offers to auto-file the ticket.
-
-### Detection
-
-| Tracker | Detection signal |
-|---------|------------------|
-| GitHub Issues | Default for GitHub repos. `gh repo view --json hasIssuesEnabled` returns true |
-| Linear | `LINEAR_API_KEY` env var is set, or `.linear` directory exists, or `linear-config.yml` exists in the repo |
-| Jira | `JIRA_API_TOKEN` env var is set, or `.jira.yml` exists, or the repo has a known Jira project mapping |
-| GitLab Issues | Default for GitLab repos when issues are enabled. `glab api projects/:id --jq .issues_enabled` returns true |
-| None detected | Skill prints a reminder and asks the user to file externally |
-
-### Auto-File Helper
-
-When the user approves a batch with `defer` decisions, the skill prompts:
-
-```
-3 deferred items in this batch:
-  - "Extract auth middleware" (from alice's comment at src/auth.ts:42)
-  - "Add E2E test for the migration" (from bob's comment at tests/migration.spec.ts:10)
-  - "Bench the new query" (from carol's comment at src/db/orders.ts:78)
-
-Tracker detected: GitHub Issues on <owner>/<repo>.
-File all 3 as issues now? [y/n/select]
-```
-
-The user picks one of: `y` to file all, `n` to print a reminder only, `select` for per-item confirmation.
-
-### GitHub Issues Auto-File
-
-```bash
-cat <<'PAYLOAD' > /tmp/respond-issue-<idx>.json
-{
-  "title": "<deferred item title>",
-  "body": "Deferred from PR #<pr> review by <reviewer>.\n\nOriginal comment:\n<quoted comment>\n\nLink: <comment URL>",
-  "labels": ["deferred-from-review"]
-}
-PAYLOAD
-
-GH_TOKEN=$(gh auth token --user <account>) gh api \
-  "repos/<owner>/<repo>/issues" \
-  -X POST \
-  --input /tmp/respond-issue-<idx>.json
-```
-
-### Linear Auto-File
-
-```bash
-curl -s \
-  -H "Authorization: $LINEAR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d "{\"query\": \"mutation { issueCreate(input: { teamId: \\\"<team-id>\\\", title: \\\"<title>\\\", description: \\\"<body>\\\" }) { issue { url } } }\"}" \
-  https://api.linear.app/graphql
-```
-
-The skill resolves `<team-id>` from `LINEAR_TEAM_ID` env var or by querying `teams` if only one team exists.
-
-### Jira Auto-File
-
-```bash
-cat <<'PAYLOAD' > /tmp/respond-jira-<idx>.json
-{
-  "fields": {
-    "project": { "key": "<JIRA_PROJECT_KEY>" },
-    "summary": "<title>",
-    "description": "<body>",
-    "issuetype": { "name": "Task" }
-  }
-}
-PAYLOAD
-
-curl -s \
-  -u "$JIRA_EMAIL:$JIRA_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  --data @/tmp/respond-jira-<idx>.json \
-  "https://<jira-host>/rest/api/3/issue"
-```
-
-The skill resolves `<JIRA_PROJECT_KEY>` from `JIRA_PROJECT_KEY` env var or from `.jira.yml`.
-
-### GitLab Issues Auto-File
-
-```bash
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
-  "projects/<encoded-project-path>/issues" \
-  -X POST \
-  --field "title=<title>" \
-  --field "description=<body>" \
-  --field "labels=deferred-from-review"
-```
-
-### What the Reply Looks Like
-
-After filing, the skill inserts the ticket URL into the draft reply for the deferred thread:
-
-```
-Filed as <ticket-url>. Out of scope for this PR.
-```
-
-If the user picks `n` to print a reminder only, the draft reply becomes:
-
-```
-Out of scope for this PR. I will file a follow-up ticket today.
-```
-
-The skill prints a reminder to the user's terminal listing the deferred items they need to track manually.
-
-### Privacy and Rate Limits
-
-- The skill never includes file diffs or implementation details in the filed ticket. Only the original reviewer comment text and the link back to the PR.
-- Linear and Jira have low rate limits for issue creation. The skill spaces auto-file calls by 500ms when filing more than 3 items.
-- For GitHub Issues, the skill checks `gh api rate_limit` before bulk-filing and aborts if remaining quota is below 50.
 
 ## Service Level Expectations
 
@@ -526,10 +392,10 @@ The skill embeds the cycle-time discipline from Google eng-practices and Pragmat
 
 | Action | Target |
 |--------|--------|
-| Acknowledge a new review comment | Within 4 hours of becoming aware |
+| Acknowledge a human review comment | Within 4 hours of becoming aware |
 | First substantive response to a batch | Within 1 business day |
 | Batch responses, single push | One push covers all approved replies and fixes for the round |
-| Re-request review after addressing | Explicit re-request, accompanied by a `PTAL` comment |
+| Re-request review after addressing | The explicit re-request. No accompanying comment |
 | Synchronous escalation | After two round trips with no convergence |
 | Stale PR handling | If no movement for 7 days, the author either pushes a status update or closes the PR |
 
@@ -555,15 +421,17 @@ Treat every AI-bot comment as P3 until corroborated by a human reviewer or by a 
 | Refactor suggestion that does not compile under TypeScript strict | All bots |
 | "Consider using async/await" on code that already uses it | Copilot |
 
-### Teach-once playbook
+### A wrong bot finding is closed, never answered
 
-When the bot is wrong, reply with a one-line educational dismissal that names the project rule the bot missed. Example: "Not applicable: project ban on `lodash`. See `CONTRIBUTING.md`." Resolve the thread. CodeRabbit and similar tools learn from dismissals over 2 to 4 weeks.
+Resolve the thread and move on. Nothing is written into it.
+
+Some tools claim to learn from a written dismissal over two to four weeks. The claim is unverified here, and it is the only argument that ever favored writing to a bot. Weighed against a reply on every false positive, on every pull request, for a reader who does not exist, the trade is not worth taking. When a bot repeatedly misses a project rule, the fix is the tool's own configuration file, which is durable, rather than a comment that is not.
 
 ### Commands cheat sheet
 
 | Command | Effect |
 |---------|--------|
-| `@coderabbitai pause` in PR body | Pauses re-review during heavy iteration |
+| `@coderabbitai pause` in the PR description | Pauses re-review during heavy iteration. In the description, never in a comment |
 | `@coderabbitai resume` | Resumes |
 | `@coderabbitai review` | Single re-pass |
 | `@coderabbitai ignore` | Disables on this PR |
@@ -581,7 +449,7 @@ When two reviewers contradict, the skill surfaces a `conflict` decision instead 
 | Pattern | Skill action |
 |---------|--------------|
 | Reviewer A wants X, Reviewer B wants Y, on the same line | Mark both threads `conflict`. Draft a reply that quotes both verbatim, states the author's slight preference with reasoning, and asks A and B to align before the author pushes |
-| Reviewer A approved, Reviewer B has not responded in over 24 hours | Print a notice. Default: do not auto-merge. Suggest a one-time `PTAL` ping to B |
+| Reviewer A approved, Reviewer B has not responded in over 24 hours | Print a notice. Default: do not auto-merge. Suggest a one-time re-request of review from B |
 | Reviewer A blocks, Reviewer B has not yet weighed in | Hold the merge. The skill never dismisses a CHANGES_REQUESTED review without an explicit user decision |
 | Both reviewers stale for over 2 round trips with no convergence | Tag the threads `synchronous-recommended` and suggest escalation to a tech lead or module owner |
 
@@ -627,11 +495,12 @@ The skill prompts before adding any credit trailer. The default is no trailer un
 - Only the Terminal States table drops an item. `isOutdated` and `isCollapsed` are never drop criteria.
 - Every drafted reply passes the no-internal-config-leakage check before posting. No `~/.claude/` paths, no rule citations, no checklist numbers in any external output.
 - Every code change goes through the full local quality gate before push.
-- Resolution requires either a reply or an implemented fix. Silent resolve is forbidden.
+- Closure requires either a posted reply or a landed fix. Resolving a thread that received neither is forbidden.
+- A reply is published only into a human's inline thread, at four sentences or fewer. Bot threads and the three unrepliable channels are closed without a comment, per [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md).
 - Bulk resolve is forbidden. Each thread is resolved individually after its action completes. The `bulk-resolve-blocker.py` hook backs this rule at runtime.
 - `--auto` is the only path that skips per-batch approval. It additionally requires `RESPOND_AUTO_ACK=1` to take effect. Two locks reduce accidental triggers.
-- Deferred items must include a ticket URL. If no tracker integration is available, the skill prints a reminder and requires the user to confirm they will file it externally.
-- AI bot threads are out of scope by default. `--include-bots` is opt-in for the case where the user wants one flow.
+- Nothing is deferred and no tracker item is created. The fix lands in this change or the reply names the external blocker.
+- AI bot threads are out of scope by default. `--include-bots` is opt-in, and even then they receive no reply.
 - Account safety: every `gh` call uses `GH_TOKEN=$(gh auth token --user <account>)` inline.
 - Never `git push --no-verify`. Never bypass hooks without an explicit user-confirmed env var.
 - Force-push is blocked during open CHANGES_REQUESTED reviews unless `--force-during-review` is passed.

@@ -200,3 +200,61 @@ def test_allows_bypass_env(monkeypatch, tool_use, assert_allows):
     )
 
     assert_allows(HOOK, payload)
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "Filed as ENG-1234 to track the rest",
+        "filed an issue for the remaining path",
+        "Opened an issue for the second helper",
+        "tracked in ENG-1235",
+        "Tracking in a ticket",
+    ],
+)
+def test_blocks_tracker_item_standing_in_for_a_fix(tool_use, assert_blocks, phrase):
+    payload = tool_use(
+        "Bash",
+        {"command": f'git commit -m "fix: guard the null path" -m "{phrase}"'},
+    )
+
+    assert_blocks(HOOK, payload, "tracker")
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "will follow up in a separate PR",
+        "Will fix in a follow-up PR",
+        "fixing the rest in a separate change",
+        "addressing the duplicate in a follow-up commit",
+    ],
+)
+def test_blocks_follow_up_change_standing_in_for_a_fix(tool_use, assert_blocks, phrase):
+    payload = tool_use(
+        "Bash",
+        {"command": f'git commit -m "fix: guard the null path" -m "{phrase}"'},
+    )
+
+    assert_blocks(HOOK, payload, "follow-up change")
+
+
+@pytest.mark.parametrize(
+    "phrase",
+    [
+        "Fixed the null path and the duplicate in the same pass",
+        "Closes ENG-1234",
+        "Refs ENG-1235",
+        "Follows the pattern in orderService",
+        "A bot opened a thread naming a genuine bug",
+        "The reviewer raised a real concern about the lock",
+        "Tracking the retry budget in a counter",
+    ],
+)
+def test_allows_ordinary_artifact_text(tool_use, assert_allows, phrase):
+    payload = tool_use(
+        "Bash",
+        {"command": f'git commit -m "fix: guard the null path" -m "{phrase}"'},
+    )
+
+    assert_allows(HOOK, payload)

@@ -46,6 +46,7 @@ MINIMAL_HOOKS = frozenset(
         "english-only-reminder",
         "config-protection",
         "pr-merge-blocker",
+        "pr-comment-discipline",
     }
 )
 

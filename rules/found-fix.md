@@ -76,6 +76,8 @@ checklist.
 | "leave for a future task" | A future task without a tracking link is a permanent task |
 | "leave for later" | Same |
 | "follow-up" used as a deferral | Naming the problem in a summary is not fixing it. A follow-up the current change could have absorbed is a deferral with better manners |
+| "filed as", "opened an issue", "tracked in" | A tracker item is not a fix. The problem is still there, now with a reference number |
+| "will fix in a follow-up PR", "in a separate change" | A change you have not made is not a fix. Make it in the change you have open |
 | "worth flagging separately" | Same |
 | "optional next step" | Same |
 | "mention it as a follow-up" | Same |
@@ -98,29 +100,19 @@ in scope as a single unit, by definition. The carve-out is explicit in
 
 ## What To Do When You See A Pre-Existing Issue
 
-1. **Fix it.** This is the default. Do not ask, do not defer.
-2. **Mention it in the body of the change.** One line. "Also bumps action X
-   to clear a Node 20 deprecation surfaced by the same CI run."
-3. **If the fix is large enough to be a separate task**, name what makes
-   it large. Examples that genuinely qualify:
-    - A library upgrade that requires schema migration
-    - A security fix that needs a coordinated release across services
-    - A behavior change that needs a feature flag and a rollout plan
-    - A defect inside a file that already carries another change in
-      flight, uncommitted work from a different session. Editing it
-      merges two unrelated changes into one diff nobody can review, and
-      the person holding that work may already be fixing it. This entry
-      buys a smaller obligation, never silence: report the file, the
-      line, the mechanism, and the fix you would apply, then offer to
-      apply it. Naming the file without the diagnosis is a deferral
-      wearing this entry as a costume.
+1. **Fix it.** This is the default and it is almost always the whole answer. Do not ask, do not record it, do not schedule it.
+2. **Mention it in the body of the change.** One line. "Also bumps action X to clear a Node 20 deprecation surfaced by the same CI run."
+3. **Never create a tracker item in place of a fix.** No issue, no follow-up change, no separate pull request, no code marker. Each of those leaves the problem in place and adds an artifact that says so. A problem you can fix in the change you already have open costs less now than it will cost anyone later.
+4. **Only a fix blocked outside this change is not fixed here.** The bar is an external dependency, never effort:
 
-   "It will take me 5 minutes to fix" does not qualify.
+    - A coordinated release across services, where the change cannot ship alone.
+    - A migration or a module another team owns, where changing it under them is the worse move.
+    - An upstream release that has not shipped.
+    - A defect inside a file that already carries uncommitted work from a different session. Editing it merges two unrelated changes into one diff nobody can review, and the person holding that work may already be fixing it.
 
-4. **Never close the loop without surfacing the issue.** If the fix
-   genuinely belongs in a separate task, write the issue or note before
-   declaring the current task done. Drop a `gh issue create` or a TODO
-   commit that links the upstream tracker.
+   "It will take me five minutes" does not qualify. Neither does "it is a big refactor": a large fix is still a fix, and if it genuinely cannot land in this change, it lands in the next one you start, never in a queue.
+
+5. **When it is blocked, say so where the work is happening.** One sentence naming the blocker, in the pull-request description or the reply that raised it. That sentence is more useful than a tracker item, because it reaches the person reading right now and it cannot rot in a backlog.
 
 ## Cross-References
 
@@ -132,6 +124,8 @@ in scope as a single unit, by definition. The carve-out is explicit in
   Apply" carve-out for verification gates.
 - [`code-style.md`](code-style.md) "Zero Warnings" cross-language
   baseline.
+- [`pr-comment-discipline.md`](pr-comment-discipline.md): the same
+  fix-now obligation as it applies to a comment on a pull request.
 - [`hooks/found-fix-rationalization-blocker.py`](../hooks/found-fix-rationalization-blocker.py)
   is the mechanical enforcement layer. Bypass via
   `FOUND_FIX_RATIONALIZATION_DISABLE=1` for the rare case of writing
