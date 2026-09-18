@@ -151,14 +151,25 @@ The log is also the eval seed. Every logged miss is a case the vault should answ
 
 ## compile
 
-Regenerate the session memory directory from the vault. Destructive by nature, so it is gated.
+Regenerate the session memory directory from the vault. The implementation is a
+script, so the contract is tested rather than described:
 
-1. Collect every note carrying `memory: true` and a `memory-scope`.
-2. Render one memory file per note, each carrying `generated_from`.
-3. Refuse to touch any existing memory file that lacks `generated_from`. Report it as unmanaged; it is hand-written and belongs to the user.
-4. Print the diff. Back the current directory up under the backups directory. Apply only on confirmation.
-5. Enforce the token budget. Over budget, demote the lowest-value entries rather than deleting them, since the vault keeps the full record.
-6. Re-running against an unchanged vault must report no changes and write nothing.
+```bash
+python3 "$SECOND_BRAIN_VAULT/.ci/compile.py" --dry-run
+python3 "$SECOND_BRAIN_VAULT/.ci/compile.py" --apply
+```
+
+Dry run first and read the diff; `--apply` backs the directory up before it
+writes. The script collects every note carrying `memory: true` and a valid
+`memory-scope`, renders one file per note stamped with `generated_from`, and
+refuses to modify or delete any file lacking that stamp, reporting those as
+unmanaged. It maintains its own delimited block in `MEMORY.md` and leaves the
+rest of that index alone. Over the byte budget it demotes lowest-value entries
+rather than deleting them, since the vault keeps the full record. Re-running
+against an unchanged vault writes nothing.
+
+A note it refuses, missing description or an invalid scope, exits non-zero.
+Fix the note rather than the script.
 
 ## eval
 

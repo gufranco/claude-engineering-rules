@@ -8,6 +8,7 @@ Blocks what is decidable from a single file:
     KN001  a required frontmatter key is missing
     KN002  the fixed "## For future agent" preamble is missing
     KN003  an undated present-tense claim about a volatile subject
+    FRESH-3  a pointer with no resolvable target
     KN004  a wikilink to a note that does not exist and is not marked TBD
     KN005  an edit to an existing file under the immutable raw folder
     KN006  a removal of a vault path outside the trash folder
@@ -68,6 +69,7 @@ EXPLANATIONS = {
     "KN001": "every note carries date, type, tags, and ai-first so an agent can judge it before reading it",
     "KN002": "the preamble is read first to decide relevance, and the heading string is fixed so it stays greppable",
     "KN003": "an undated present-tense claim about something that moves reads as true forever and quietly becomes a lie",
+    "FRESH-3": "a pointer whose target is prose or a command cannot be resolved later, which is the only reason the pointer form is allowed in place of a stamp",
     "KN004": "a link is a claim, and a link to a note that does not exist is a fabricated one",
     "KN005": "raw sources are immutable, because they are what a corrupted derived note gets rebuilt from",
     "KN006": "the vault has no version control, so retirement means moving to the trash folder",
@@ -77,6 +79,7 @@ FIXES = {
     "KN001": "add the missing key to the YAML frontmatter block at the top of the note",
     "KN002": 'add "## For future agent" directly after the frontmatter, then two or three sentences on what the note holds, why it was saved, and any staleness caveat',
     "KN003": "stamp the line with an as-of date, rewrite it as a pointer to where truth lives, or move the claim into a dated note where it becomes a snapshot",
+    "FRESH-3": "give the pointer a URL or a typed id such as linear:TICKET-123",
     "KN004": "create the target note first, or mark the link TBD on the same line until it exists",
     "KN005": "derive a new note instead of editing the source, or file a corrected copy outside the raw folder",
     "KN006": "move the note into the trash folder with a dated reason instead of removing it",
@@ -87,7 +90,10 @@ def scan_body(body: str, dated: bool, root: Path) -> list[tuple[str, int, str]]:
     findings: list[tuple[str, int, str]] = []
     titles: set[str] | None = None
     for number, line, under_dated_heading in kn.walk_lines(body):
-        if not dated and not under_dated_heading and kn.is_volatile_claim(line):
+        if not dated and not under_dated_heading and kn.POINTER.search(line):
+            if not kn.pointer_has_target(line):
+                findings.append(("FRESH-3", number, line))
+        elif not dated and not under_dated_heading and kn.is_volatile_claim(line):
             findings.append(("KN003", number, line))
         targets = kn.wikilink_targets(line)
         if not targets or kn.TBD.search(line):
