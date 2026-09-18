@@ -1,6 +1,8 @@
 # AI Bot Triage
 
-Reference for `/respond` when `--include-bots` is set. The skill defers AI bot threads to `/ship --pipeline` by default. This file documents the per-tool false-positive catalog, the command grammar for the major reviewers, and the teach-once playbook.
+Reference for `/respond` when `--include-bots` is set. AI bot threads are handed to `/ship --pipeline` by default. This file documents the per-tool false-positive catalog and the command grammar for the major reviewers.
+
+**A bot thread receives no reply.** Read it, apply the failure-scenario gate, fix what survives, resolve the thread. [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) is the rule, and the "How to dismiss" column below is a note to yourself about why the finding fails, never text to publish.
 
 ## Severity Baseline
 
@@ -20,83 +22,71 @@ Treat every AI-bot comment as P3 until corroborated by a human reviewer or by a 
 
 ### Style and convention violations
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| Suggests Prettier or ESLint changes that contradict the project's config | The bot does not always read the local config | "Project lint config is the source of truth. See `.eslintrc.json`. Resolving." |
-| Suggests adding JSDoc to a TypeScript file | Project convention may be types-as-docs | "Project convention is types-as-docs. Resolving." |
-| Suggests renaming for consistency with a different file | The other file may itself be the outlier | "The pattern in this file is consistent with `src/services/*Service.ts`. Resolving." |
-| Suggests removing what looks like a `console.log` but is actually a structured logger call | Pattern matching against `console.` without reading the import | "The `console.log` is actually `logger.log` aliased at the top of the file. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| Suggests Prettier or ESLint changes that contradict the project's config | The bot does not always read the local config | Project lint config is the source of truth. See `.eslintrc.json`. |
+| Suggests adding JSDoc to a TypeScript file | Project convention may be types-as-docs | Project convention is types-as-docs. |
+| Suggests renaming for consistency with a different file | The other file may itself be the outlier | The pattern in this file is consistent with `src/services/*Service.ts`. |
+| Suggests removing what looks like a `console.log` but is actually a structured logger call | Pattern matching against `console.` without reading the import | The `console.log` is actually `logger.log` aliased at the top of the file. |
 
 ### Imagined APIs
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| Suggests `lodash.debounce` in a project that bans lodash | The bot does not check `package.json` or dependency policy | "Project bans `lodash`. Internal helper at `src/utils/debounce.ts`. Resolving." |
-| Suggests a method that does not exist on the chosen library | Hallucinated API surface | "Method not in `<library>` API. See `node_modules/<library>/types/index.d.ts`. Resolving." |
-| Suggests a flag that does not exist on the CLI being invoked | Same root cause | "Flag does not exist in this version of `<tool>`. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| Suggests `lodash.debounce` in a project that bans lodash | The bot does not check `package.json` or dependency policy | Project bans `lodash`. Internal helper at `src/utils/debounce.ts`. |
+| Suggests a method that does not exist on the chosen library | Hallucinated API surface | Method not in `<library>` API. See `node_modules/<library>/types/index.d.ts`. |
+| Suggests a flag that does not exist on the CLI being invoked | Same root cause | Flag does not exist in this version of `<tool>`. |
 
 ### Defensive programming overreach
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| "Add a try/catch" on code that intentionally propagates the error | The bot does not see the call-site contract | "Error propagates intentionally to the DLQ at `src/consumers/orderConsumer.ts:42`. Resolving." |
-| "Add a null check" on a value that is typed non-null | The bot does not always trust the type system | "Type-system-enforced non-null at the boundary. See `src/types/order.ts`. Resolving." |
-| "Validate the input" on input that is already validated upstream | The bot reads the function in isolation | "Validated at the API boundary in `src/middleware/validate.ts:30`. Resolving." |
-| Suggests `array.length > 0` check before `array.forEach` | `.forEach` is a no-op on empty arrays | "`forEach` is a no-op on empty arrays. No-op guard adds noise. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| "Add a try/catch" on code that intentionally propagates the error | The bot does not see the call-site contract | Error propagates intentionally to the DLQ at `src/consumers/orderConsumer.ts:42`. |
+| "Add a null check" on a value that is typed non-null | The bot does not always trust the type system | Type-system-enforced non-null at the boundary. See `src/types/order.ts`. |
+| "Validate the input" on input that is already validated upstream | The bot reads the function in isolation | Validated at the API boundary in `src/middleware/validate.ts:30`. |
+| Suggests `array.length > 0` check before `array.forEach` | `.forEach` is a no-op on empty arrays | `forEach` is a no-op on empty arrays. No-op guard adds noise. |
 
 ### Security false positives
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| Flags `Math.random()` for cryptographic use when the use is not cryptographic | Pattern matching without context | "Used for random animation jitter, not for security. Crypto is in `src/security/`. Resolving." |
-| Flags a hardcoded string as a secret when it is a public configuration value | Bot does not classify the value | "Public config, not a secret. Documented at `docs/config.md`. Resolving." |
-| Flags a SQL string concatenation that is actually using a query builder | Pattern matching against `${`, missing the builder wrapper | "Uses the query builder, not raw SQL. See the imports. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| Flags `Math.random()` for cryptographic use when the use is not cryptographic | Pattern matching without context | Used for random animation jitter, not for security. Crypto is in `src/security/`. |
+| Flags a hardcoded string as a secret when it is a public configuration value | Bot does not classify the value | Public config, not a secret. Documented at `docs/config.md`. |
+| Flags a SQL string concatenation that is actually using a query builder | Pattern matching against `${`, missing the builder wrapper | Uses the query builder, not raw SQL. See the imports. |
 
 ### Architecture and refactoring overreach
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| Suggests extracting a 3-line block into a helper | Below the cost-benefit threshold | "Three similar lines is better than a premature abstraction. Resolving." |
-| Suggests inverting a dependency that has a single consumer | DI overhead with no benefit | "Single consumer; DI would add indirection with no test or swap benefit. Resolving." |
-| Suggests splitting a 60-line file into multiple files | File length is not the right axis | "File length is fine for the cohesion level. Resolving." |
-| Suggests switching from sync to async without measuring | The async path may be slower in practice | "Profile: sync path is 0.8ms, async would be 1.4ms minimum. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| Suggests extracting a 3-line block into a helper | Below the cost-benefit threshold | Three similar lines is better than a premature abstraction. |
+| Suggests inverting a dependency that has a single consumer | DI overhead with no benefit | Single consumer; DI would add indirection with no test or swap benefit. |
+| Suggests splitting a 60-line file into multiple files | File length is not the right axis | File length is fine for the cohesion level. |
+| Suggests switching from sync to async without measuring | The async path may be slower in practice | Profile: sync path is 0.8ms, async would be 1.4ms minimum. |
 
 ### Performance false positives
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| Flags `for...of` and suggests `.forEach` for "performance" | Both compile to similar bytecode; `.forEach` is not faster | "No measurable difference. Resolving." |
-| Suggests memoization for a function called once | Memoization has setup cost | "Called once per request. Memoization would not help. Resolving." |
-| Suggests using `Map` instead of `Object` for "performance" | Object access is fine when keys are static | "Static keys, no perf benefit from `Map`. Resolving." |
-| Suggests `Array.prototype.flat` over manual iteration | Both work; flat may be slower for shallow cases | "Manual iteration is fine; depth is always 1. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| Flags `for...of` and suggests `.forEach` for "performance" | Both compile to similar bytecode; `.forEach` is not faster | No measurable difference. |
+| Suggests memoization for a function called once | Memoization has setup cost | Called once per request. Memoization would not help. |
+| Suggests using `Map` instead of `Object` for "performance" | Object access is fine when keys are static | Static keys, no perf benefit from `Map`. |
+| Suggests `Array.prototype.flat` over manual iteration | Both work; flat may be slower for shallow cases | Manual iteration is fine; depth is always 1. |
 
 ### Test false positives
 
-| Pattern | Why the bot is wrong | How to dismiss |
-|---------|---------------------|----------------|
-| "Add a test for this private function" | Project policy may forbid direct private-function tests | "Private function tested through the public API at `tests/orders.spec.ts:42`. Resolving." |
-| "Test edge case X" when X is impossible by type | The bot does not check the type constraints | "Type makes X unreachable. Resolving." |
-| "Mock the database" on integration tests | Project policy bans mocking internal infrastructure | "Integration tests hit a real database by policy. See `tests/setup.ts`. Resolving." |
+| Pattern | Why the bot is wrong | Why the finding fails |
+|---------|---------------------|-----------------------|
+| Add a test for this private function | Project policy may forbid direct private-function tests | Private function tested through the public API at `tests/orders.spec.ts:42`. |
+| "Test edge case X" when X is impossible by type | The bot does not check the type constraints | Type makes X unreachable. |
+| "Mock the database" on integration tests | Project policy bans mocking internal infrastructure | Integration tests hit a real database by policy. See `tests/setup.ts`. |
 
-## Teach-Once Playbook
+## A Wrong Finding Is Closed, Never Answered
 
-When the bot is wrong, reply with a one-line educational dismissal that names the project rule the bot missed. The pattern:
+Resolve the thread. Write nothing into it.
 
-```
-<short reason>. <reference to the rule or file>. Resolving.
-```
+Some vendors claim their tool learns from a written dismissal over two to four weeks. The claim is unverified here, and it was the only argument that ever favored writing to a bot. Against the cost, a reply on every false positive, on every pull request, for a reader that does not exist, the trade is not worth taking.
 
-Examples:
-
-1. "Project ban on `lodash`. See `CONTRIBUTING.md`. Resolving."
-2. "Already validated upstream in `src/middleware/validate.ts:42`. Resolving."
-3. "Convention is types-as-docs. See `CONTRIBUTING.md` section 4.2. Resolving."
-
-CodeRabbit and similar tools learn from dismissals over 2 to 4 weeks. The reply must:
-
-- Be short. One sentence plus the resolving signal.
-- Name the project rule that the bot missed.
-- Be public. The reviewer scrolling the PR should see the same reason the bot does.
+When a bot misses the same project rule repeatedly, the durable fix is the tool's own configuration file: a CodeRabbit `.coderabbit.yaml` path filter, a lint config the tool respects, an instructions file the vendor reads. That survives; a comment does not.
 
 ## Command Grammar
 
@@ -118,19 +108,19 @@ CodeRabbit and similar tools learn from dismissals over 2 to 4 weeks. The reply 
 Notes:
 
 - The `resolve` command violates the "no bulk resolve" rule in `/respond`. Do not use it through `/respond`. If the user wants bulk resolution outside the skill, the `bulk-resolve-blocker.py` hook should be bypassed explicitly.
-- The Agentic Chat feature lets the author reply inline asking for explanation, test generation, or doc addition. `/respond` does not invoke Agentic Chat; it treats CodeRabbit threads as standard threads.
+- Agentic Chat would have the author reply inline asking for explanation or test generation. `/respond` never invokes it. A question asked of a bot is a comment published for no reader.
 
 ### Cursor BugBot
 
 | Command | Effect |
 |---------|--------|
-| `bugbot run` (top-level comment) | Trigger a new BugBot pass |
-| `cursor review` (top-level comment) | Same |
+| `bugbot run` | Trigger a new BugBot pass |
+| `cursor review` | Same |
 
 Notes:
 
-- BugBot does not support conversational replies as of May 2026. The reply to a BugBot comment is visible to humans but not to BugBot.
-- Triggering BugBot via the commands creates new threads. Address them in the next `/respond` invocation.
+- Both commands are published as a pull-request comment, which is banned. Trigger a fresh pass by pushing a commit, or ask the user to run the command themselves when a re-pass is genuinely needed.
+- BugBot does not support conversational replies as of May 2026, so a reply reaches humans only. Under the reply-only rule there is no reply to consider.
 
 ### GitHub Copilot Code Review
 
@@ -138,18 +128,18 @@ As of May 2026:
 
 | Action | UI |
 |--------|----|
-| "Fix with Copilot" | Per-comment button. Opens a dialog to apply directly or open a new PR |
-| "Fix batch with Copilot" | On the PR Overview comment. Hand off multiple comments to the Copilot cloud agent |
+| Fix with Copilot | Per-comment button. Opens a dialog to apply directly or open a new PR |
+| Fix batch with Copilot | On the PR Overview comment. Hand off multiple comments to the Copilot cloud agent |
 | Dismiss | Per-comment dismiss button |
 
 Notes:
 
-- Replies to Copilot review comments are visible to humans but not to Copilot. Copilot does not read its own thread history.
+- Copilot does not read its own thread history, so a reply would reach humans only. There is no reply either way.
 - Severity labels of High, Medium, and Low ship with each Copilot comment. Use the severity to prioritize triage.
 
 ### Greptile, Sourcery, Korbit, Qodo Merge
 
-Author command grammars are not publicly documented for these tools. Treat them as standard threads with reply via REST and resolve via GraphQL. Address each in `/respond` using the regular workflow.
+Author command grammars are not publicly documented for these tools. Treat them as standard bot threads: verify, fix what holds, resolve via GraphQL, publish nothing.
 
 ### Cursor BugBot on the IDE Side
 
@@ -159,11 +149,11 @@ The Cursor IDE offers a separate review workflow that runs locally. When the use
 
 | Tool | Default strategy in /respond |
 |------|------------------------------|
-| CodeRabbit | Skip by default. With `--include-bots`, triage with the teach-once playbook |
+| CodeRabbit | Skip by default. With `--include-bots`, verify each finding, fix what holds, resolve the rest |
 | Greptile | Skip by default. With `--include-bots`, expect higher false-positive rate; verify each finding before implementing |
 | Copilot | Skip by default. With `--include-bots`, trust High severity, scrutinize Medium and Low |
-| Cursor BugBot | Skip by default. With `--include-bots`, treat as standard threads; do not reply expecting BugBot to respond |
-| Sourcery | Skip by default. With `--include-bots`, focus on refactor suggestions; dismiss style if it contradicts the project lint config |
+| Cursor BugBot | Skip by default. With `--include-bots`, verify and resolve. No reply, to BugBot or to the thread |
+| Sourcery | Skip by default. With `--include-bots`, focus on refactor suggestions; resolve style findings that contradict the project lint config |
 | Qodo Merge | Skip by default. With `--include-bots`, focus on test gap findings |
 | Korbit | Skip by default. With `--include-bots`, treat as standard threads |
 | `dependabot[bot]`, `renovate[bot]`, `github-actions[bot]` | Always skip. These are not review bots; they are dependency or CI bots. Handled by `/ship --pipeline` or by manual `gh` workflow |

@@ -21,11 +21,12 @@ When others review your PR, the goal is to close every open thread with either a
 
 ### Mechanics
 
-- Acknowledge a new comment within 4 hours of becoming aware. A 5-word "starting on this" is enough.
+- Acknowledge a new comment from a person within 4 hours of becoming aware. A 5-word "starting on this" is enough, in the thread.
 - Respond substantively to a batch within 1 business day. Slower than that, the reviewer disengages.
 - Batch your response. One push covers all approved replies and fixes for the round. Multiple drips burn CI minutes and reviewer attention.
-- Re-request review explicitly after a batch of fixes. Pair it with a top-level comment summarizing the changes since the last round.
-- Use the project's standard shortcuts: `PTAL` for re-review requests; `nit:`, `suggestion:`, `issue:`, `question:` per Conventional Comments when posting your own clarifications.
+- Re-request review explicitly after a batch of fixes. The re-request is the whole signal; what changed goes in the description, never in a top-level comment.
+- Use the project's standard shortcuts inside a thread: `nit:`, `suggestion:`, `issue:`, `question:` per Conventional Comments when posting your own clarifications. `PTAL` belongs to a re-request, which now carries no comment.
+- Keep a reply to four sentences. Polite in a clause, direct in the rest. See [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md).
 
 ### Reply Form
 
@@ -35,6 +36,9 @@ When others review your PR, the goal is to close every open thread with either a
 - Ask for clarification when you do not understand. Do not guess at intent. "Curious: is the concern about correctness or performance? If correctness, I'll rework now. If performance, I'd rather measure first."
 - When you cannot reproduce, name the steps you tried. "Couldn't reproduce. Steps: A, B, C. Did I miss something?"
 - Credit reviewers in commit trailers when they materially improved the code. `Co-authored-by` for code-level contributions. `Suggested-by` for direction the author then implemented independently.
+- Four sentences, maximum. A reviewer opened one thread expecting one thing back, and a long reply makes them hunt for it. Reasoning past the ceiling belongs in the code or the description.
+- No restatement of the comment you are answering, no verdict label, no closing offer of further help, no section headings, no bold labels standing in for sentences.
+- Publish only into a thread a person opened. A review summary body, a conversation comment, a commit-comment reply, and any reply to a bot are all banned outright. See [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md).
 
 ### Thread State
 
@@ -45,8 +49,9 @@ When others review your PR, the goal is to close every open thread with either a
 
 ### Scope
 
-- Defer scope creep to follow-up issues. "Filed as #4521. Out of scope for this PR." Never let one inline comment expand into a multi-file refactor in the same PR.
-- Every deferral includes a ticket reference. "I will fix in a follow-up" without a ticket is permanent debt.
+- A fix a reviewer calls out of scope is usually two lines. Make it, and say so in one sentence. A tracker item costs more than the fix and leaves the defect in place.
+- Never let one inline comment expand into a multi-file refactor in the same pull request. The boundary is the size of the change, never the existence of a ticket: a small adjacent fix lands here, a redesign gets its own change started now rather than queued.
+- Never answer a comment with a tracker reference. See [`../rules/found-fix.md`](../rules/found-fix.md).
 
 ### Triage
 
@@ -67,7 +72,7 @@ When others review your PR, the goal is to close every open thread with either a
 | The drive-by accept, implementing the suggestion without checking what it would change | Ships nitpicks and AI noise into production |
 | The defensive wall, "works as intended" with no engagement | Disengages, escalates the thread |
 | Silent force-push during review | Drops the reviewer's comment context, marks threads outdated without resolving them |
-| The TODO smuggle: deferring a fix with no ticket | Cleanup never happens |
+| The TODO smuggle: a marker or a tracker item standing in for a fix | Cleanup never happens, and the marker is banned outright |
 | The Ransom Note, holding the patch hostage until the developer does unrelated work | Conflates review with separate scope |
 | The Double Team, two reviewers contradict and the author ping-pongs without naming the conflict | Wastes everyone's time |
 | The Guessing Game, vague criticism with no acceptance path | The author cannot tell when the comment is satisfied |

@@ -1328,6 +1328,9 @@ Apply on every message that asks a clarifying question, briefs a subagent, repor
 - [ ] Bug reports include exact error text verbatim, with codes, paths, and hashes, plus environment and reproduction steps; patching is deferred until the report is captured. Antelope rule
 - [ ] Subagent prompts include scope, file:line references from prior investigation, prior attempts with errors, expected output shape, and a response-length cap
 - [ ] Loop closure: every completed task ends with a one-line resolution tagged `FIXED:`, `RESOLVED:`, or `DONE:` that names what changed, where, file:line, and the verification evidence command
+- [ ] Every comment published on a pull request is a reply inside a thread a person opened. No review summary body, no conversation comment, no commit-comment reply, no reply of any length to a bot
+- [ ] Every reply is four sentences or fewer, leads with what changed or with the answer, restates nothing, and ends without an offer of further help
+- [ ] No finding was answered with a tracker item, a follow-up change, or a code marker. Anything fixable in the open change was fixed there, and anything blocked outside it names the blocker in one sentence
 
 ### 71. Frontend Compliance Defaults
 

@@ -19,7 +19,7 @@ The skill switches the CLI tool and the API endpoints accordingly. Account safet
 |---------|---------|
 | Find MR for current branch | `glab mr view --json url,iid,state,headRefName,baseRefName,author` |
 | List discussions and notes | `glab api projects/:id/merge_requests/:iid/discussions` |
-| Add an MR-level comment | `glab mr note <iid> --message "..."` |
+| Add an MR-level comment | Banned. See [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) |
 | Reply to a discussion | `glab api projects/:id/merge_requests/:iid/discussions/<discussion_id>/notes -X POST --field body=...` |
 | Resolve a discussion | `glab api projects/:id/merge_requests/:iid/discussions/<discussion_id> -X PUT --field resolved=true` |
 | Unresolve a discussion | `glab api projects/:id/merge_requests/:iid/discussions/<discussion_id> -X PUT --field resolved=false` |
@@ -80,12 +80,7 @@ GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
   --input /tmp/respond-reply-<discussion-id>.json
 ```
 
-For an MR-level summary reply:
-
-```bash
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab mr note <iid> \
-  --message-file /tmp/respond-summary.md
-```
+There is no MR-level reply. An individual note, a non-diff discussion opened by a bot, and a commit discussion are all answered by the code change and closed by resolving where the endpoint allows it. GitLab has no minimize action, so an individual note that cannot be resolved stays open and is reported as such.
 
 ## Phase 6 Step 6 Resolve on GitLab
 
@@ -115,7 +110,7 @@ GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
   --field reviewer_ids[]=<id1> --field reviewer_ids[]=<id2>
 ```
 
-Pair the re-request with an MR-level comment that uses `PTAL` and summarizes the changes since the last round, same convention as GitHub.
+The re-request is the whole signal, same convention as GitHub. What changed since the last round goes in the MR description.
 
 ## Differences from GitHub to Document in the Reply
 

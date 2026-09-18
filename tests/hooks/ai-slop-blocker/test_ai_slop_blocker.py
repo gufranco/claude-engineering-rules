@@ -408,3 +408,175 @@ def test_unnamed_source_is_still_evasive_attribution(tool_use, assert_blocks):
     _exit, stderr = assert_blocks(HOOK, payload)
 
     assert "SLOP004" in stderr
+
+
+REPLY_ENDPOINT = "repos/acme/widgets/pulls/12/comments/9981/replies"
+
+
+def test_bold_label_bullet_blocked_in_a_reply(tool_use, assert_blocks, tmp_path):
+    body = tmp_path / "reply.json"
+    body.write_text(
+        '{"body": "- **Fix:** the guard now runs on both paths.\\n'
+        '- **Test:** added at tests/orders.spec.ts:142.\\n"}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
+    )
+
+    _exit, stderr = assert_blocks(HOOK, payload)
+
+    assert "SLOP013" in stderr
+
+
+def test_heading_blocked_in_a_reply(tool_use, assert_blocks, tmp_path):
+    body = tmp_path / "reply.json"
+    body.write_text(
+        '{"body": "## Summary\\nThe guard now runs on both paths.\\n"}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
+    )
+
+    _exit, stderr = assert_blocks(HOOK, payload)
+
+    assert "SLOP014" in stderr
+
+
+def test_plain_reply_is_allowed(tool_use, assert_allows, tmp_path):
+    body = tmp_path / "reply.json"
+    body.write_text(
+        '{"body": "Fixed in a1b2c3d. The round-robin path skipped the guard, '
+        'so both routes go through one helper now."}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_bold_label_bullet_allowed_in_repo_markdown(tool_use, assert_allows):
+    content = (
+        "# Notes\n\n"
+        "- **Idempotency key:** required on every write.\n"
+        "- **Storage:** durable, with a TTL matching the retry window.\n"
+    )
+    payload = tool_use("Write", {"file_path": DOC, "content": content})
+
+    assert_allows(HOOK, payload)
+
+
+def test_heading_allowed_in_a_pr_description(tool_use, assert_allows, tmp_path):
+    body = tmp_path / "description.md"
+    body.write_text(
+        "## What\n\nThe guard now runs on both placement paths.\n\n"
+        "- **Testing:** the full suite, plus a new case at tests/orders.spec.ts:142.\n",
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh pr create --title fix --body-file {body}"},
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_inline_reply_body_is_scanned(tool_use, assert_blocks):
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                f"gh api {REPLY_ENDPOINT} -X POST "
+                "-f body='## Summary\nFixed on both paths.'"
+            )
+        },
+    )
+
+    _exit, stderr = assert_blocks(HOOK, payload)
+
+    assert "SLOP014" in stderr
+
+
+def test_review_payload_inline_comment_bodies_are_scanned(
+    tool_use, assert_blocks, tmp_path
+):
+    body = tmp_path / "review.json"
+    body.write_text(
+        '{"event": "COMMENT", "body": "", "comments": '
+        '[{"path": "a.ts", "line": 4, "body": "- **Issue:** off by one."}]}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {
+            "command": (
+                f"gh api repos/acme/widgets/pulls/12/reviews -X POST --input {body}"
+            )
+        },
+    )
+
+    _exit, stderr = assert_blocks(HOOK, payload)
+
+    assert "SLOP013" in stderr
+
+
+def test_unreadable_payload_path_falls_back_to_the_literal(
+    tool_use, assert_allows, tmp_path
+):
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {tmp_path}"},
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_unparseable_reply_command_still_scans(tool_use, assert_blocks, tmp_path):
+    body = tmp_path / "reply.json"
+    body.write_text('{"body": "## Summary\\nFixed."}', encoding="utf-8")
+    payload = tool_use(
+        "Bash",
+        {"command": f'gh api {REPLY_ENDPOINT} -X POST --input {body} --header "x'},
+    )
+
+    _exit, stderr = assert_blocks(HOOK, payload)
+
+    assert "SLOP014" in stderr
+
+
+def test_malformed_json_payload_falls_back_to_the_raw_text(
+    tool_use, assert_blocks, tmp_path
+):
+    body = tmp_path / "reply.json"
+    body.write_text('{"body": }\n## Summary of the fix\n', encoding="utf-8")
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
+    )
+
+    _exit, stderr = assert_blocks(HOOK, payload)
+
+    assert "SLOP014" in stderr
+
+
+def test_payload_without_a_body_key_falls_back(tool_use, assert_allows, tmp_path):
+    body = tmp_path / "reply.json"
+    body.write_text('{"in_reply_to": 9981}', encoding="utf-8")
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_non_string_command_is_ignored(tool_use, assert_allows):
+    payload = tool_use("Bash", {"command": 12})
+
+    assert_allows(HOOK, payload)

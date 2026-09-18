@@ -288,9 +288,11 @@ Create and manage Architecture Decision Records. ADRs capture context, alternati
 
 Export the active spec folder's task breakdown to GitHub issues. One issue per task.
 
+This subcommand runs only when the user asks for it. It exports planned work the user chose to track, and it is never a way to record a problem instead of fixing it. A defect found while a change is open is fixed in that change, per [`../../rules/found-fix.md`](../../rules/found-fix.md) and [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md).
+
 ### When to use
 
-- After a `/plan` run, when the work will be tracked in GitHub issues.
+- After a `/plan` run, when the user has said the work will be tracked in issues.
 - When handing off a plan to a teammate or queue.
 
 ### Arguments
@@ -317,6 +319,7 @@ Export the active spec folder's task breakdown to GitHub issues. One issue per t
 - Issue title must include the task number from `plan.md` for traceability.
 - Body must link back to the spec folder so context is one click away.
 - Never create issues from a `--light` plan with no task breakdown.
+- Never invoke this subcommand on your own initiative, and never to record a finding from a review, a CI run, or a verification gate.
 - Never push or commit. This subcommand only writes to the issue tracker.
 
 ---

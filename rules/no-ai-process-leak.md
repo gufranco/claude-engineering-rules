@@ -29,9 +29,9 @@ The rule applies to every artifact a human reader can see outside the planning f
 
 - `git commit -m` subject and body
 - `git tag -m`, `git notes` add/append
-- `gh pr create`, `gh pr edit`, `gh pr review`, `gh pr comment`, `gh issue create/edit/comment`, `gh release create/edit`
+- `gh pr create`, `gh pr edit`, `gh issue create/edit/comment`, `gh release create/edit`, and a reply posted into a review thread. The commands that publish a pull-request comment outside a thread are banned outright by [`pr-comment-discipline.md`](pr-comment-discipline.md), so this rule never reaches them
 - `gh api` targeting a comment endpoint, such as `repos/<o>/<r>/pulls/<n>/comments/<id>/replies` POST or `repos/<o>/<r>/pulls/comments/<id>` PATCH, including `--input <file>` payloads
-- `glab mr create/update`, `glab mr note`, `glab release create`
+- `glab mr create/update`, `glab release create`
 - Code comments, doc-string preambles, README files outside docs/adr and project planning folders
 - Slack messages, email drafts, status updates written by the assistant
 - CHANGELOG entries
