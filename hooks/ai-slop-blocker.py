@@ -40,6 +40,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import sys
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
@@ -287,6 +288,26 @@ DETECTORS: list[tuple[str, str, re.Pattern[str], str, int]] = [
     ),
 ]
 
+DETECTORS.extend(
+    [
+        (
+            "SLOP013",
+            "bold-label bullet in a published comment",
+            re.compile(r"(?m)^\s*[-*]\s+\*\*[^*\n]{1,60}\*\*"),
+            "A reply is prose, never a form. Say it in a sentence.",
+            1,
+        ),
+        (
+            "SLOP014",
+            "heading inside a published comment",
+            re.compile(r"(?m)^\s*#{1,6}\s+\S"),
+            "A comment with sections is a summary. Answer the point and stop.",
+            1,
+        ),
+    ]
+)
+
+
 CONTEXT_EXCLUSIONS: dict[str, re.Pattern[str]] = {
     "SLOP004": re.compile(
         r"[A-Z][A-Za-z.&-]{2,}\s+(?:studies|research|reports|analysts|researchers"
@@ -295,6 +316,18 @@ CONTEXT_EXCLUSIONS: dict[str, re.Pattern[str]] = {
 }
 
 AGENT_TOOL_NAMES = ("Agent", "Task")
+
+COMMENT_BASH_PATTERNS = (
+    re.compile(r"pulls/\d+/comments/\d+/replies"),
+    re.compile(r"pulls/\d+/reviews"),
+    re.compile(r"discussions/[^/\s'\"]+/notes"),
+)
+
+COMMENT_PAYLOAD_FLAGS = ("--input", "--body-file", "--data", "--data-raw", "-d")
+
+COMMENT_FIELD_FLAGS = ("-f", "--field", "--raw-field")
+
+COMMENT_ONLY_CODES = frozenset({"SLOP013", "SLOP014"})
 
 
 MARKDOWN_MASKS = (
@@ -335,39 +368,120 @@ def is_skipped_path(path: str) -> bool:
     return any(seg in path for seg in SKIPPED_PATHS)
 
 
-def collect(tool: str, tool_input: dict) -> list[tuple[str, str, bool]]:
-    """Return (label, text, is_markdown) triples worth scanning."""
-    out: list[tuple[str, str, bool]] = []
+def is_comment_bash(cmd: str) -> bool:
+    """True when the command publishes a comment rather than a description.
+
+    Bold-label bullets and headings are correct in a pull-request
+    description and in repository Markdown, where they measured 331 and
+    3600 hits across this repository's own files. They are a template
+    tell only inside a reply, so the two detectors that catch them are
+    scoped here.
+    """
+    return any(p.search(cmd) for p in COMMENT_BASH_PATTERNS)
+
+
+def comment_bodies(cmd: str, tokens: list[str]) -> list[str]:
+    """Return every comment body the command would send, decoded.
+
+    A reply body normally travels in a JSON file, where newlines are
+    escaped and a raw scan would see one long line. Parsing recovers the
+    text a reader will actually see.
+    """
+    texts: list[str] = []
+    for index, token in enumerate(tokens):
+        lowered = token.lower()
+        if index + 1 >= len(tokens):
+            continue
+        if lowered in COMMENT_FIELD_FLAGS:
+            field = tokens[index + 1]
+            if field.startswith("body="):
+                texts.append(field[len("body=") :])
+            continue
+        if lowered not in COMMENT_PAYLOAD_FLAGS:
+            continue
+        value = tokens[index + 1]
+        path = value[1:] if value.startswith("@") else value
+        raw = value
+        try:
+            expanded = os.path.expanduser(path)
+            if os.path.isfile(expanded):
+                with open(expanded, encoding="utf-8", errors="replace") as handle:
+                    raw = handle.read()
+        except OSError:
+            pass
+        texts.extend(extract_bodies(raw))
+    texts.extend(extract_bodies(cmd))
+    return [t for t in texts if t.strip()]
+
+
+def extract_bodies(raw: str) -> list[str]:
+    """Pull body strings out of a JSON payload, or fall back to the text."""
+    stripped = raw.strip()
+    if stripped.startswith("{"):
+        try:
+            parsed = json.loads(stripped)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, dict):
+            found: list[str] = []
+            body = parsed.get("body")
+            if isinstance(body, str):
+                found.append(body)
+            for comment in parsed.get("comments", []) or []:
+                if isinstance(comment, dict) and isinstance(comment.get("body"), str):
+                    found.append(comment["body"])
+            if found:
+                return found
+    return [raw]
+
+
+def collect(tool: str, tool_input: dict) -> list[tuple[str, str, bool, bool]]:
+    """Return (label, text, is_markdown, is_comment) tuples worth scanning."""
+    out: list[tuple[str, str, bool, bool]] = []
     fp = tool_input.get("file_path", "") or ""
     if tool == "Bash":
         cmd = tool_input.get("command", "")
-        if isinstance(cmd, str) and is_publishing_bash(cmd):
-            out.append(("bash command", cmd, False))
+        if not isinstance(cmd, str):
+            return out
+        if is_comment_bash(cmd):
+            try:
+                tokens = shlex.split(cmd, posix=True)
+            except ValueError:
+                tokens = cmd.split()
+            for body in comment_bodies(cmd, tokens):
+                out.append(("comment body", body, False, True))
+            return out
+        if is_publishing_bash(cmd):
+            out.append(("bash command", cmd, False, False))
         return out
     if is_skipped_path(fp) or not fp.lower().endswith((".md", ".markdown")):
         return out
     if tool == "Write":
         content = tool_input.get("content", "")
         if isinstance(content, str):
-            out.append((fp, content, True))
+            out.append((fp, content, True, False))
     elif tool == "Edit":
         content = tool_input.get("new_string", "")
         if isinstance(content, str):
-            out.append((fp, content, True))
+            out.append((fp, content, True, False))
     elif tool == "MultiEdit":
         for i, edit in enumerate(tool_input.get("edits", []) or []):
             if isinstance(edit, dict):
                 content = edit.get("new_string", "")
                 if isinstance(content, str):
-                    out.append((f"{fp} [{i}]", content, True))
+                    out.append((f"{fp} [{i}]", content, True, False))
     return out
 
 
-def find(text: str, is_markdown: bool) -> list[tuple[str, str, str, str]]:
+def find(
+    text: str, is_markdown: bool, is_comment: bool = False
+) -> list[tuple[str, str, str, str]]:
     """Return (code, label, located snippet, fix) for each detector that fires."""
     scanned = mask_code(text, MARKDOWN_MASKS if is_markdown else COMMAND_MASKS)
     findings: list[tuple[str, str, str, str]] = []
     for code, label, pattern, fix, min_hits in DETECTORS:
+        if code in COMMENT_ONLY_CODES and not is_comment:
+            continue
         exclusion = CONTEXT_EXCLUSIONS.get(code)
         matches = [
             m
@@ -468,8 +582,8 @@ def main() -> int:
         return 0
 
     all_findings: list[tuple[str, list[tuple[str, str, str, str]]]] = []
-    for label, text, is_markdown in items:
-        findings = find(text, is_markdown)
+    for label, text, is_markdown, is_comment in items:
+        findings = find(text, is_markdown, is_comment)
         if findings:
             all_findings.append((label, findings[:6]))
 

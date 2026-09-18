@@ -119,6 +119,38 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         ),
         "Deferring a deprecation/annotation/warning is banned; fix in the same task",
     ),
+    (
+        re.compile(
+            r"\b(?:filed?|filing|opened?|opening|logged?|raised?|created?)\s+"
+            r"(?:a|an|the|another)?\s*(?:new\s+|separate\s+|follow[-\s]?up\s+)?"
+            r"(?:issue|ticket|task|card)\b"
+            r"|\bfiled\s+as\b"
+            r"|\btrack(?:ed|ing)?\s+(?:it\s+)?in\s+(?:a|an|the)?\s*"
+            r"(?:issue|ticket|task|card|[A-Z]{2,}-\d+)\b",
+            re.IGNORECASE,
+        ),
+        "a tracker item does not fix the problem; fix it in this change",
+    ),
+    (
+        re.compile(
+            r"\b(?:will|to)\s+(?:follow[-\s]?up|fix|address|handle|do|land)\b"
+            r"[^.\n]{0,40}?\b(?:in\s+)?(?:a\s+|the\s+|another\s+)?"
+            r"(?:follow[-\s]?up|separate|later|next|subsequent|future)\b"
+            r"[^.\n]{0,20}?\b(?:pr|mr|change|commit|patch|branch|pass|task)\b",
+            re.IGNORECASE,
+        ),
+        "a follow-up change does not fix the problem; fix it in this change",
+    ),
+    (
+        re.compile(
+            r"\b(?:fixing|fix|addressing|handling|doing|landing)\b"
+            r"[^.\n]{0,30}?\bin\s+(?:a\s+|the\s+|another\s+)?"
+            r"(?:follow[-\s]?up|separate|later|next|subsequent|future)\s+"
+            r"(?:pr|mr|change|commit|patch|branch|pass|task)\b",
+            re.IGNORECASE,
+        ),
+        "a follow-up change does not fix the problem; fix it in this change",
+    ),
 ]
 
 

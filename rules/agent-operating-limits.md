@@ -32,6 +32,7 @@ Three obligations:
 - **Sample before setting.** A ceiling with no observed distribution behind it is arbitrary in both directions.
 - **Subtract known waste.** A ceiling measured against runs that burned turns on denied calls is measuring the waste, not the work. Fix the waste, then re-measure.
 - **Record the measurement beside the number.** The next person to tighten it needs the distribution, not the conclusion.
+- **Budget for the wait, not only the work.** A ceiling sized against observed run time is consumed by anything that stalls before the work starts, such as a provider outage or a queue with no free runner. Either poll for the work to begin and start the count there, or size the ceiling to cover both.
 
 ## Setting a Cap
 

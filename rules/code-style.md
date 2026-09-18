@@ -66,7 +66,7 @@ A numeric threshold with no named exception does not produce compliance. It prod
 - A state machine whose transition cases must change together with the guards that validate them.
 - Generated code, which is not read and not maintained by hand.
 - A single calculation engine whose steps share intermediate state that has no meaning outside it.
-- A comprehensive service whose operations genuinely share private state, where splitting would export that state.
+- A service whose operations genuinely share private state, where splitting would export that state.
 
 **Functions above 30 lines** are acceptable, without a waiver, only for:
 
@@ -392,6 +392,7 @@ Structure commits for easy `git bisect`:
 - Separate test infrastructure from test implementations
 - Each commit must independently compile and pass tests
 - Never mix formatting changes with logic changes
+- Group by concern, never by file. One file routinely carries two unrelated changes, and staging the file stages both. When a single file's diff answers two separate questions, such as a stale number and a format rewrite, it is two commits
 
 ## Code Examples
 

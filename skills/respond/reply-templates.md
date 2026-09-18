@@ -2,17 +2,22 @@
 
 Reference library for `/respond`. Each intent-by-decision cell carries at least three good exemplars and three bad exemplars drawn from canonical sources. The templates are guidelines, not strict scripts. Always present the draft for editing before posting.
 
-## Cells 1 to 15 are the human register only
+## Every exemplar here is written to a person, in an inline thread
 
-Every exemplar from Cell 1 to Cell 15 is written to a person. Applying any of them to a bot thread is a defect, not a stylistic choice. Cells 16 and 17 are the bot cells, and their form is a log line rather than a message.
+There is no bot exemplar in this file, because a bot thread receives no reply. It is read, fixed when the finding holds, and resolved. There is also no exemplar for a review body, a conversation comment, or a commit comment, because those channels are answered by the code change and closed by minimizing. [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) is the rule.
 
-The distinction is load-bearing because the human cells are built on moves a bot cannot receive: acknowledging that someone was right, inviting a clarification, proposing a call, softening a refusal. Directed at a bot they address nobody, and any human reading the thread later sees a colleague talking to a tool as though it were staff.
-
-Read the "Machine register" section of [`SKILL.md`](SKILL.md) before drafting a reply to any `bot:*` author, and stop at three sentences.
+The templates are built on moves only a person can receive: agreeing that someone was right, inviting a clarification, proposing a call, softening a refusal. Aimed anywhere else they address nobody, and a human scrolling the thread later sees a colleague talking to a tool as though it were staff.
 
 ## Style Constraints
 
 Every reply must pass these gates before posting.
+
+- Four sentences at most. Reasoning past the ceiling belongs in the code or the pull-request description.
+- Lead with what changed or with the answer. The commit SHA in the first sentence when there is one.
+- Courtesy in a clause, never a paragraph. No apology, no repeated thanks.
+- No restatement of the comment you are answering. The reviewer wrote it and can see it.
+- No closing offer of further help. It adds a sentence and no information.
+- Vary the opening across replies in the same round.
 
 - No `~/.claude/`, no [`rules/`](../../rules), no [`checklists/`](../../checklists), no [`standards/`](../../standards), no [`skills/`](..) paths.
 - No checklist category numbers like "category 17" or "cat 17".
@@ -55,14 +60,14 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "You're right. Pushed `b412a09` with input validation at the API boundary. The same check is missing on the WebSocket handler; filed `ENG-1234` to close that path too."
+1. "You're right. Pushed `b412a09` with input validation at the API boundary. The WebSocket handler was missing the same check, so that path is in there too."
 2. "Confirmed. The query was vulnerable to ordering attacks. Fix in `4ce0c3d` switches to parameterized binding via the ORM. Added a fuzz test that runs 1000 generated inputs through the endpoint."
 3. "Good catch. The token leaked in the error response on the failure path. Fix in `7d8e2c1` scrubs the token before returning the error envelope. Added a redaction test that asserts the response body cannot contain a substring matching the token pattern."
 
 ### Bad
 
 1. "Fixed." Security issue gets the same treatment as a typo.
-2. "Patched." No link, no follow-up, no test mention.
+2. "Patched." No commit, no test mention.
 3. "We can fix this in a follow-up." Security fix punted is a hole left open.
 
 ## Cell 4: issue:blocking-correctness x clarify
@@ -89,7 +94,7 @@ Every reply must pass these gates before posting.
 
 ### Bad
 
-1. "Out of scope." Without a follow-up plan, this defers the conversation rather than addressing it.
+1. "Out of scope." Names no blocker, so it reads as a refusal.
 2. "Too risky to change now." No specifics.
 3. "Maybe later." No commitment, no timeline.
 
@@ -191,33 +196,53 @@ Every reply must pass these gates before posting.
 2. "Nit, but no." Passive-aggressive.
 3. "Why does this matter?" Rhetorical, dismissive.
 
-## Cell 13: chore:out-of-scope x defer
+## Cell 13: chore:out-of-scope x implement
+
+The default for this cell. A change a reviewer calls out of scope is usually small enough to make, and making it is cheaper than the round trip about whether to make it.
 
 ### Good
 
-1. "Filed as `ENG-1234`. Out of scope for this PR. The change touches the auth middleware which is owned by another team."
-2. "Good observation. Filed `ENG-1235` and linked to this PR. Want to keep this PR focused on the migration."
-3. "Tracked in `ENG-1236`. Will pick it up in the follow-up that touches the same module."
+1. "Fixed in `c8e2f1a`. It was two lines next to the change anyway."
+2. "Good catch, done in `a3f2c1d`. The same shape was wrong at `src/orders.ts:78`, so that one is in there too."
+3. "Applied in `9af2b1c`."
 
 ### Bad
 
-1. "Will do later." No ticket, becomes permanent debt.
-2. "Out of scope." Without a tracker link, the reader cannot follow up.
-3. "Not now." No plan.
+1. "Filed as `ENG-1234`. Out of scope for this PR." A ticket instead of a fix that was available.
+2. "Will pick it up in the follow-up." The follow-up is this pull request.
+3. "Out of scope." The reviewer now has to decide whether to argue.
 
-## Cell 14: todo x ack
+## Cell 13b: chore:out-of-scope x push-back
+
+Only when the fix is blocked outside this change. Name the blocker and create nothing.
 
 ### Good
 
-1. "Added `TODO(debt): retry the upload twice before falling back to S3 direct upload` at `src/upload.ts:42`. Filed `ENG-1237` to track the proper fix."
-2. "Added a `TODO(debt)` comment at the call site with a link to `ENG-1238`."
-3. "Will leave a TODO and file the ticket. The TODO is in `9af2b1c`."
+1. "Cannot land here. The column is written by the billing service, so the change has to ship with their release."
+2. "This one needs the auth middleware, which another team owns. Raising it with them rather than changing it under them."
+3. "Blocked on the `v3` client release. Everything else in the thread is in `c8e2f1a`."
 
 ### Bad
 
-1. "Sure." No concrete TODO added.
-2. "Added a TODO." No ticket reference.
-3. "Will remember to do this." Memory is not a ticket tracker.
+1. "Filed `ENG-1235` to track it." A tracker item the reviewer cannot act on.
+2. "Not now." No blocker named, so it reads as a refusal.
+3. "Out of scope, will follow up." Two deferrals in one sentence.
+
+## Cell 14: todo x implement
+
+A reviewer asking for a marker is asking for the work. Do the work. Markers recording debt are banned by the comments policy in [`../../rules/code-style.md`](../../rules/code-style.md).
+
+### Good
+
+1. "Done in `c8e2f1a` rather than left as a note. The retry path was shorter than the comment would have been."
+2. "Implemented in `a3f2c1d`. The fallback now retries twice before the direct upload."
+3. "Fixed in `9af2b1c`."
+
+### Bad
+
+1. "Added a marker at `src/upload.ts:42` and filed `ENG-1237`." Two artifacts, no fix.
+2. "Will remember to do this." Memory is not a plan.
+3. "Left a note for later." Later does not arrive.
 
 ## Cell 15: praise x ack
 
@@ -233,50 +258,9 @@ Every reply must pass these gates before posting.
 2. "Thank you for the kind words, this was indeed a tricky refactor I spent considerable effort on." Overlong, reads as fishing for more praise.
 3. "Glad you like it." Technically fine but adds noise when a silent resolve would do.
 
-## Cell 16: AI bot x dismiss
+## Cells 16 and 17 are gone
 
-### Good
-
-1. "Not applicable: project ban on `lodash`. See `CONTRIBUTING.md`. Resolving."
-2. "Disagree: the try/catch would swallow the error we propagate to the DLQ. Resolving."
-3. "Already validated upstream in `src/middleware/validate.ts:42`. Resolving."
-
-### Bad
-
-1. Resolve without a reply. Leaves the bot with no signal to learn from.
-2. "Wrong." Too curt; the bot learns better from reasoning.
-3. A long argument with the bot about why it is wrong. The bot is not the audience; the human reviewer scanning the PR is.
-
-## Cell 17: AI bot x implement
-
-### Good
-
-1. "Fixed in `c8e2f1a`."
-2. "Fixed in `a3f2c1d`, with a regression test at `tests/orders.spec.ts:142`."
-3. "Renamed in `9af2b1c`."
-
-### Bad
-
-1. Apply the suggestion without verifying it makes sense. The drive-by accept anti-pattern.
-2. "Thank you for this insight, your suggestion was extremely valuable and I have incorporated it into the latest revision after careful consideration." Fluff, reads as AI-generated.
-3. Credit the bot in a commit author trailer. Prohibited by personal rules and by the runtime hook.
-4. "Good catch." / "Right call." / "You are right." Praise directed at a pattern matcher. Reads as theatre to the human scrolling the thread.
-5. Any reply that explains why the finding was correct, or that narrates how it was verified. State the outcome; the reasoning goes in the PR description.
-
-## Cell 17b: AI bot x push-back
-
-### Good
-
-1. "False positive. The value is validated upstream at `src/middleware/validate.ts:42`."
-2. "Not applicable. Project bans `lodash`, see `CONTRIBUTING.md`."
-3. "Declined. The suggested catch would swallow the error the DLQ depends on."
-
-### Bad
-
-1. "You are right that this looks odd, but the reason is..." Concedes to nobody, then argues with nobody.
-2. A paragraph defending a personal convention. The bot cannot adopt it and no human asked.
-3. "Did I miss something?" Nothing will answer.
-4. "Two reviewers flagged this independently, which is a strong signal." Commentary on the tooling. If it matters, it belongs in the PR body.
+There is no exemplar for a reply to a bot, because no reply is published to a bot. Read the thread, apply the failure-scenario gate, fix what survives, resolve the thread, move on. The commit is the record.
 
 ## Cell 18: conflict between two reviewers
 
@@ -310,19 +294,19 @@ When a thread has cycled twice without convergence, propose a call.
 
 ## Status Update on Stale PR
 
-When a PR has been idle for more than 7 days, push a status update or close.
+A pull request with no thread to reply in has no comment surface. After seven idle days the status goes in the description, or the pull request closes.
 
 ### Good
 
-1. "Status: blocked on the schema review. Will push the rebase once that lands. Estimated unblock: Friday."
-2. "Closing this. The approach didn't survive the queue-design discussion. Will open a fresh PR with the new shape next week."
-3. "Bumping. The CI failure from last week was a flaky integration test, not a real issue. Retried, all green. PTAL @alice."
+1. Edit the description: "Blocked on the schema review. Rebase lands once that does." Then re-request review.
+2. Close it: "The approach did not survive the queue-design discussion." A fresh pull request carries the new shape.
+3. Re-request review after confirming the old CI failure was a flake and the rerun is green.
 
 ### Bad
 
-1. "Bump." No information, reads as nagging.
-2. Silently force-push and re-request review. Drops the prior context.
-3. Let the PR rot. Wastes everyone's queue space.
+1. A conversation comment saying "Bump." No thread, no information, and a banned surface.
+2. A conversation comment summarizing what changed. The description is where a reviewer looks.
+3. Letting it rot. It sits in someone's queue.
 
 ## Re-Request Review
 
@@ -330,12 +314,12 @@ After a batch of fixes lands.
 
 ### Good
 
-1. "PTAL @alice. Since your last pass: extracted the validator, added the missing test, renamed per the nit thread."
-2. "PTAL. Addressed all 7 comments. SHAs in each thread."
-3. "Ready for another look. The architectural concern is deferred to ENG-1234. Everything else is in the diff."
+1. The re-request on its own. What changed since the last pass is already in the description and in each thread's reply.
+2. The re-request plus one description line naming the two commits that answer the blocking threads.
+3. The re-request after every thread is either replied to or resolved, so the reviewer opens a clean page.
 
 ### Bad
 
-1. "Done." No list of what changed.
-2. "All fixed." No detail.
-3. Re-request without comment. Forces the reviewer to re-read the entire diff.
+1. A conversation comment listing what changed. Banned surface, and the description already holds it.
+2. A re-request while three threads are still unanswered. The reviewer re-reads the whole diff.
+3. A re-request naming a ticket as the answer to an architectural thread. The thread wanted a decision, not a link.

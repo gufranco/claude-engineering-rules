@@ -36,7 +36,7 @@ The skill never invents credentials. If neither auth pair is present, it stops P
 | List all comments, inline and PR-level | `GET /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments` |
 | Get one comment | `GET /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments/{cid}` |
 | Reply to an inline comment | `POST /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments` with `parent.id` set |
-| PR-level comment | Same endpoint without `parent.id` |
+| PR-level comment | Banned. A POST without `parent.id` is never sent. See [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) |
 | Resolve a comment | `POST /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments/{cid}/resolve` |
 | Unresolve a comment | `DELETE /2.0/repositories/{workspace}/{repo}/pullrequests/{id}/comments/{cid}/resolve` |
 | List commit comments | `GET /2.0/repositories/{workspace}/{repo}/commit/{sha}/comments` |
@@ -52,7 +52,7 @@ curl -s -u "$BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD" \
 
 The response paginates via `next` URL. The skill follows pagination and concatenates pages until exhausted.
 
-The `/comments` endpoint returns both inline and PR-level comments. A comment with an `inline` object is inline; a comment without one is PR-level. Both are in scope.
+The `/comments` endpoint returns both inline and PR-level comments. A comment with an `inline` object is inline; a comment without one is PR-level. Both are in scope for reading. Only an inline comment from a person is replied to; a PR-level comment is answered by the code change and closed with the resolve endpoint, which Bitbucket offers for both kinds.
 
 Filter rules:
 
@@ -81,7 +81,7 @@ curl -s -X DELETE -H "Authorization: Bearer $BITBUCKET_TOKEN" \
   "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
 ```
 
-Resolution applies to both inline and PR-level comments, since both live on the same `/comments` endpoint. The workflow is therefore the same as GitHub: post the reply, then resolve.
+Resolution applies to both inline and PR-level comments, since both live on the same `/comments` endpoint. Bitbucket is the easiest of the three platforms here: every comment can be closed without publishing anything. Reply in a person's inline thread, resolve everything else.
 
 Never delete the original comment. Deletion is not resolution and it destroys the review record.
 
