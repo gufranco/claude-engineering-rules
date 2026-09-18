@@ -74,7 +74,7 @@ timeline:
 
 This is the mechanical form of the supersede chain in [`memory-supersede.md`](memory-supersede.md). That rule describes the intent and has never been applied, because a convention with no mechanism does not survive contact with a busy session. Four things become possible once history is appended rather than overwritten: historical queries, an audit trail from fact to source, reconciliation that can tell a superseded fact from a contradiction, and reflective reasoning about how an understanding shifted.
 
-The vault has no version control, by decision. `learned` and `source` are therefore the only provenance that exists, which makes them required rather than decorative.
+Git records when a file changed; it cannot record when a fact became true, who said it, or when it was learned. `learned` and `source` carry what the commit history structurally cannot, which makes them required rather than decorative.
 
 ## Selective Linking
 
@@ -106,7 +106,7 @@ The vault is the source of truth. The Claude Code memory directory is a generate
 - A note opts in with `memory: true` and a `memory-scope` of `user`, `feedback`, `project`, or `reference`, matching the four types the harness already recognizes.
 - Every generated file carries `generated_from` naming its vault note. The compile must refuse to write any memory file that lacks that key, and must report it as unmanaged rather than adopting it.
 - The compile is idempotent. A second run against an unchanged vault reports no changes and writes nothing.
-- The compile previews its diff and backs up the current memory directory before applying, because there is no version control to revert to.
+- The compile previews its diff and backs up the current memory directory before applying. The target is the session memory directory, which is not the vault and is not versioned, so the backup is the only way back.
 - Memory carries a token budget. When the budget is exceeded, the lowest-value entries are demoted, never deleted, since the full record stays in the vault. Eviction order is oldest `last_useful` first, within scope priority `user`, `feedback`, `project`, `reference`.
 
 Demotion is what "forget" means here. A memory system needs five operations: store, retrieve, update, compress, forget. The freshness policy supplies update, the budget supplies compress, and demotion supplies forget.
@@ -133,7 +133,7 @@ Meeting transcripts are the highest-volume ingest path and carry the highest fab
 | A present-tense volatile claim with no stamp, outside a dated container | FRESH-1. The failure this specification exists to prevent |
 | A wikilink to a note that does not exist and is not marked `TBD` | A fabricated edge is a fabricated claim |
 | Overwriting a role, status, or company | Destroys history and turns supersession into apparent contradiction |
-| Hard deletion of any note | The vault has no version control. Retirement means moving to the trash folder |
+| Hard deletion of any note | A deleted note is unreachable to every reader who is not running git archaeology. Retirement means moving to the trash folder |
 | Writing into the immutable raw folder | Raw sources are what a corrupted derived note is rebuilt from |
 | Copying a repository ADR into the vault | Creates a second source of truth that will drift |
 | More than three links on a note without a reason | Link inflation buries the links that matter |

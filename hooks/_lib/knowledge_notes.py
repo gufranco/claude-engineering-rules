@@ -19,7 +19,15 @@ DEFAULT_VAULT = "~/second-brain"
 REQUIRED_KEYS = ("date", "type", "tags", "ai-first")
 PREAMBLE = "## For future agent"
 
-EXEMPT_DIRS = (".obsidian", "templates", "_trash", ".trash")
+EXEMPT_DIRS = (
+    ".obsidian",
+    "templates",
+    "_trash",
+    ".trash",
+    "specs",
+    "eval",
+    "tests",
+)
 EXEMPT_ROOT_FILES = ("CLAUDE.md", "README.md", "AGENTS.md")
 DATED_DIRS = ("daily", "reviews")
 RAW_DIR = "raw"
@@ -33,6 +41,7 @@ FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 TBD = re.compile(r"\bTBD\b")
 URL = re.compile(r"https?://\S+")
 TYPED_ID = re.compile(r"\b[a-z][a-z0-9_-]*:[A-Za-z0-9][\w./-]*")
+POINTER = re.compile(r"where truth lives", re.IGNORECASE)
 
 VOLATILE_WORDS = (
     "deal",
@@ -233,3 +242,15 @@ def walk_lines(body: str) -> Iterator[tuple[int, str, bool]]:
             under_dated_heading = bool(DATE_ANYWHERE.search(line))
             continue
         yield number, line, under_dated_heading
+
+
+def pointer_has_target(line: str) -> bool:
+    """Return True when a pointer line names somewhere the truth actually lives.
+
+    A pointer whose target is prose or a shell command is not resolvable later,
+    which is the whole reason the pointer form is allowed in place of a stamp.
+    """
+    if URL.search(line):
+        return True
+    tail = line.split(":", 1)[1] if ":" in line else line
+    return bool(TYPED_ID.search(tail))
