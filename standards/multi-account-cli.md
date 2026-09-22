@@ -44,6 +44,25 @@ GH_TOKEN=$(gh auth token --user <login>) gh repo create <login>/<repo> --private
 
 `gh auth token --user <login>` reads the stored credential without changing the active account. Loop scripts: export `GH_TOKEN` once at the top.
 
+### git over https
+
+`GH_TOKEN` does not reach git. Git resolves credentials through its own helper chain, which on a machine with `gh` installed routes github.com to `gh auth git-credential`, and that helper serves the **active** account. Writing to a repository the active account cannot write fails with a 403 naming that account, which reads as a permissions problem rather than as the wrong identity:
+
+```
+remote: Permission to <owner>/<repo>.git denied to <active-account>.
+fatal: unable to access '...': The requested URL returned error: 403
+```
+
+Override the helper for the one command, and override the **host-specific** key. `credential.https://github.com.helper` beats the generic `credential.helper`, so setting only the generic one changes nothing. The empty assignment first is what clears the inherited list:
+
+```bash
+git -c credential."https://github.com".helper= \
+    -c credential."https://github.com".helper='!f(){ echo username=x-access-token; echo "password=$(gh auth token --user <login>)"; }; f' \
+    <the git subcommand>
+```
+
+Never solve this by putting the token in the remote URL. That discloses it into `.git/config` and into the terminal at once; see [`../rules/security.md`](../rules/security.md).
+
 ### `glab`
 
 ```

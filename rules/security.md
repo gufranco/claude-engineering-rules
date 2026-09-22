@@ -29,6 +29,26 @@ Applies to credential files, keychain reads, `.env` files, private keys, session
 
 When a secret does reach the transcript, say so immediately and treat it as disclosed. Rotate it. Do not reason about whether it was probably fine.
 
+### Never put a credential in a remote URL
+
+A token inside a git remote is disclosed twice, and neither copy is the command you were watching. Git stores the URL it pushed to as the branch upstream, so the token lands in `.git/config`, and git echoes that URL back, so it lands in the transcript as well.
+
+```
+branch 'main' set up to track 'https://x-access-token:gho_...@github.com/owner/repo.git/main'
+```
+
+Rewriting the remote afterwards does not undo either copy. The value has already been printed, so it is disclosed and needs rotating.
+
+Pass the credential through a helper that reads it at call time instead, so it goes through the process and never through the URL, the config or the output:
+
+```bash
+git -c credential."https://github.com".helper= \
+    -c credential."https://github.com".helper='!f(){ echo username=x-access-token; echo "password=$(gh auth token --user <account>)"; }; f' \
+    push origin main
+```
+
+The same applies to `git clone`, to `git remote add`, and to any URL carrying a password or a signed query parameter.
+
 ### Narrow the tool, not the pattern
 
 When a capability genuinely has to be broad, a wildcard permission is the wrong lever, because a wildcard that permits a read also permits whatever the same command can be talked into doing. Prompt injection turns the second into the first.
