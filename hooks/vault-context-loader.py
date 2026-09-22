@@ -36,9 +36,10 @@ PREAMBLE = (
 )
 
 
-
 MAINTENANCE_RECORD = ".maintenance.json"
 MAINTENANCE_WINDOW_DAYS = 8
+CAPTURE_RUN_DIR = ".claude-runs"
+CAPTURE_QUEUE = "capture-queue.jsonl"
 
 
 def maintenance_notice(root: Path) -> str:
@@ -72,6 +73,49 @@ def maintenance_notice(root: Path) -> str:
     return ""
 
 
+def pending_captures(root: Path) -> str:
+    """Return a line naming the captures a previous session queued, else empty.
+
+    The Stop hook records that a turn produced something worth keeping and
+    stops there, because a process cannot judge what is durable. This is the
+    other half: it hands the queue to a session that can, which is the first
+    moment a model with real context is available to make that call.
+    """
+    path = root / CAPTURE_RUN_DIR / CAPTURE_QUEUE
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+    count = 0
+    places: list[str] = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(entry, dict) or entry.get("status") != "pending":
+            continue
+        count += 1
+        where = entry.get("cwd") or "an unrecorded directory"
+        if where not in places:
+            places.append(where)
+
+    if not count:
+        return ""
+    noun = "capture" if count == 1 else "captures"
+    verb = "is" if count == 1 else "are"
+    listed = ", ".join(places[:4])
+    return (
+        f"\n\nThere {verb} {count} pending {noun} queued by an earlier "
+        f"session, from {listed}. The queue is at {path}. Read each entry, "
+        f"apply the admission bar, file what clears it, and mark every entry "
+        f"filed.\n"
+    )
+
+
 def main() -> int:
     if os.environ.get(ENV_VAR) == "1":
         return 0
@@ -89,7 +133,12 @@ def main() -> int:
         return 0
     if len(body) > MAX_CHARS:
         body = body[:MAX_CHARS] + "\n\n[index truncated at 8000 characters]"
-    context = PREAMBLE.format(root=root) + body + maintenance_notice(root)
+    context = (
+        PREAMBLE.format(root=root)
+        + body
+        + pending_captures(root)
+        + maintenance_notice(root)
+    )
     sys.stdout.write(
         json.dumps(
             {

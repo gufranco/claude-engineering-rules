@@ -134,3 +134,95 @@ def test_an_unreadable_index_is_tolerated(monkeypatch, tmp_path):
 
     assert code == 0
     assert out == ""
+
+
+def queue(vault: Path, entries: list[dict]) -> None:
+    runs = vault / ".claude-runs"
+    runs.mkdir(exist_ok=True)
+    body = "\n".join(json.dumps(entry) for entry in entries)
+    (runs / "capture-queue.jsonl").write_text(body + "\n", encoding="utf-8")
+
+
+def pending_entry(session: str = "s1", cwd: str = "/tmp/project") -> dict:
+    return {
+        "ts": 1758500000,
+        "status": "pending",
+        "session": session,
+        "cwd": cwd,
+        "transcript": "/tmp/t.jsonl",
+        "signals": ["correction:1"],
+    }
+
+
+def test_surfaces_a_pending_capture_so_the_session_files_it(monkeypatch, vault):
+    queue(vault, [pending_entry()])
+
+    _code, out = run(monkeypatch, vault)
+
+    context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert "1 pending capture" in context
+    assert "/tmp/project" in context
+
+
+def test_counts_several_pending_captures(monkeypatch, vault):
+    queue(vault, [pending_entry("s1"), pending_entry("s2"), pending_entry("s3")])
+
+    _code, out = run(monkeypatch, vault)
+
+    context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert "3 pending captures" in context
+
+
+def test_says_nothing_when_the_queue_is_empty(monkeypatch, vault):
+    queue(vault, [])
+
+    _code, out = run(monkeypatch, vault)
+
+    context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert "pending capture" not in context
+
+
+def test_says_nothing_when_there_is_no_queue(monkeypatch, vault):
+    _code, out = run(monkeypatch, vault)
+
+    context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert "pending capture" not in context
+
+
+def test_ignores_entries_already_filed(monkeypatch, vault):
+    done = pending_entry("s1")
+    done["status"] = "filed"
+    queue(vault, [done, pending_entry("s2")])
+
+    _code, out = run(monkeypatch, vault)
+
+    context = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    assert "1 pending capture" in context
+
+
+def test_a_corrupt_queue_line_does_not_break_the_session(monkeypatch, vault):
+    runs = vault / ".claude-runs"
+    runs.mkdir(exist_ok=True)
+    (runs / "capture-queue.jsonl").write_text(
+        "not json\n" + json.dumps(pending_entry()) + "\n", encoding="utf-8"
+    )
+
+    code, out = run(monkeypatch, vault)
+
+    assert code == 0
+    assert (
+        "1 pending capture"
+        in json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    )
+
+
+def test_an_unreadable_queue_does_not_break_the_session(monkeypatch, vault):
+    (vault / ".claude-runs").write_text("not a directory", encoding="utf-8")
+
+    code, out = run(monkeypatch, vault)
+
+    assert code == 0
+    assert (
+        "pending capture"
+        not in json.loads(out)["hookSpecificOutput"]["additionalContext"]
+    )

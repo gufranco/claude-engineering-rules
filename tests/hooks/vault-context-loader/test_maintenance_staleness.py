@@ -15,7 +15,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
 
 HOOK = Path.home() / ".claude" / "hooks" / "vault-context-loader.py"
 RECORD = ".maintenance.json"
