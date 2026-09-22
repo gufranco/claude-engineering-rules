@@ -86,6 +86,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "edit-accumulator",
         "stop-format-typecheck",
         "compact-context-saver",
+        "vault-capture-queue",
         "notify-webhook",
         "bulk-resolve-blocker",
         "force-push-during-review",

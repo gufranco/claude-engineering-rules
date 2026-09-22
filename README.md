@@ -15,7 +15,7 @@
 
 </div>
 
-**39** always-on rules · **82** on-demand standards · **42** slash-command skills · **78** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
+**39** always-on rules · **82** on-demand standards · **42** slash-command skills · **81** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-78 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+81 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -136,9 +136,9 @@ Four more rules live in [`rules/`](rules/) but load on demand through [`rules/in
 
 ### Standards, loaded on demand
 
-82 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+83 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
-Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
+Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, print design, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
 ### Skills
 
@@ -240,7 +240,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget. Bypass `GH_RUN_WATCH_DISABLE=1` |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch`. Exempts `gh auth` plus invocations that reach no API (`--version`, `--help`, `config`, `alias`, `completion`) |
-| [`knowledge-note-guard.py`](hooks/knowledge-note-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | Enforces the knowledge-note specification inside the second brain: missing frontmatter, missing `## For future agent` preamble, an undated volatile claim, a wikilink to a note that does not exist, a pointer with no resolvable target (FRESH-3), a write into the immutable raw folder, a removal outside trash. Skips `specs/`, `eval/` and `tests/`, which hold plan artifacts rather than notes. Bypass `KNOWLEDGE_NOTE_DISABLE=1` |
+| [`knowledge-note-guard.py`](hooks/knowledge-note-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | Enforces the knowledge-note specification inside the second brain: missing frontmatter, missing `## For future agent` preamble, an undated volatile claim, a wikilink to a note that does not exist, a pointer with no resolvable target (FRESH-3), a write into the immutable raw folder, a removal outside trash. Skips `specs/`, `eval/` and [`tests/`](tests/), which hold plan artifacts rather than notes. Bypass `KNOWLEDGE_NOTE_DISABLE=1` |
 | [`memory-write-guard.py`](hooks/memory-write-guard.py) | PreToolUse Write/Edit/MultiEdit | Keeps the session memory directory a generated artifact while a second brain vault is configured: a hand-written memory file is blocked, one carrying `generated_from` from `/brain compile` passes, and `MEMORY.md` is exempt. Completely inert when `SECOND_BRAIN_VAULT` is unset or does not resolve, so a clone without a vault keeps the harness default. Bypass `MEMORY_WRITE_GUARD_DISABLE=1` |
 | [`privacy-leakage-checks.py`](hooks/privacy-leakage-checks.py) | PreToolUse Write/Edit/MultiEdit | Catches personal data in `console.log`, identifiers in `localStorage`, a cookie set with no consent check, and hardcoded analytics or marketing tracker IDs with no consent guard around them. Bypass `PRIVACY_CHECKS_DISABLE=1` |
 | [`repo-fetch-blocker.py`](hooks/repo-fetch-blocker.py) | PreToolUse Bash | Blocks per-file source fetching via `gh api .../contents`, `gh repo view <o>/<r> <path>`, `glab api .../repository/files`, and `raw.githubusercontent.com` curl/wget. Forces a shallow clone instead. Bypass `REPO_FETCH_DISABLE=1` |
@@ -287,9 +287,10 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks TypeORM raw query escape hatches |
 | [`typeorm-schema-sync.py`](hooks/typeorm-schema-sync.py) | PreToolUse Write/Edit | Enforces TypeORM entity vs migration parity |
 | [`user-supplied-artifact-guard.py`](hooks/user-supplied-artifact-guard.py) | PreToolUse Bash | Keeps files the user must supply themselves out of git history. Blocks `git commit`, and `git add` with an explicit path, when a file matches a digest declared in `artifacts.manifest.json` or carries an unambiguous ROM, disc-image, firmware, or model-weight extension. Size pre-filters the digest check. Bypass `USER_SUPPLIED_ARTIFACT_DISABLE=1` |
-| [`vault-context-loader.py`](hooks/vault-context-loader.py) | SessionStart | Injects the second brain's catalog once per session, so what the vault holds is known before the first question rather than searched for after it. Also reports when vault maintenance is overdue, since a loop that stops running is otherwise as silent as one with nothing to do |
+| [`vault-context-loader.py`](hooks/vault-context-loader.py) | SessionStart | Injects the second brain's catalog once per session, so what the vault holds is known before the first question rather than searched for after it. Also reports when vault maintenance is overdue, since a loop that stops running is otherwise as silent as one with nothing to do, and surfaces any captures a previous session queued |
 | [`vault-recall.py`](hooks/vault-recall.py) | UserPromptSubmit | Injects the second-brain notes closest to the prompt, title and preamble only. Ranks with the same function `/brain eval` scores, so a recall regression is measurable. Read-only, and silent unless the vault resolves and a note clears the score floor. Bypass `VAULT_RECALL_DISABLE=1` |
 | [`vault-session-capture.py`](hooks/vault-session-capture.py) | PreCompact | Appends what the session worked on to today's vault note before the transcript is compacted away, which is the last moment the detail still exists |
+| [`vault-capture-queue.py`](hooks/vault-capture-queue.py) | Stop | Decides whether a turn corrected a belief or uncovered a cause and, when it did, queues it for the next session to file. Writes one append-only line and starts nothing, because a process cannot tell a durable lesson from an aside and an unattended writer holding that judgement files inference as fact. Bypass `VAULT_CAPTURE_QUEUE_DISABLE=1` |
 
 ### Custom Agents
 
@@ -425,7 +426,7 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 |:----------|:-------|:--------|
 | `/review` vs `/assessment` | `/review` for diff-level findings; `/assessment` for whole-system audit | `/review` catches bugs in what was written; `/assessment` finds patterns that should be present but are not |
 | `/review` vs `/audit` | `/audit` for security focus; `/review` for general quality | `/audit` runs STRIDE, dependency scans, and secret detection; `/review` runs the 71-category checklist |
-| `/respond` vs `/ship --pipeline` | `/respond` for human reviewer threads; `/ship --pipeline` for unattended AI-bot threads | Set `RESPOND_DRIVES_PIPELINE=1` to delegate the bot loop to `/respond` and unify the vocabulary across both flows |
+| `/respond` vs `/ship --pipeline` | `/respond` for an attended pass over human and AI-bot threads, bots included by default, `--humans-only` to skip them; `/ship --pipeline` for unattended AI-bot threads | Set `RESPOND_DRIVES_PIPELINE=1` to delegate the bot loop to `/respond` and unify the vocabulary across both flows |
 | `/investigate` vs `/profile` | `/investigate` for correctness; `/profile` for performance | `/investigate` debugs why something fails; `/profile` finds bottlenecks in working code |
 | `/refactor` vs `/migrate` | `/refactor` for internal restructure; `/migrate` for framework or version change | `/refactor` preserves behavior in your own code; `/migrate` follows the upstream's official upgrade docs |
 | `/explain` vs `/onboard` | `/explain` for a single file or function; `/onboard` for a whole project | `/explain` traces data flow with Mermaid; `/onboard` produces a "start here" guide with architecture map |
@@ -495,11 +496,11 @@ $HOME/.claude/
   rules/                 31 rules, 29 always-on plus 2 loaded on demand
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific rules: TypeScript, Python, ORM migrations
-  standards/             81 on-demand domain standards
+  standards/             83 on-demand domain standards
   agents/                17 specialized subagents
   skills/                39 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 63 runtime hooks
+  hooks/                 81 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
   tests/                 Hook smoke tests and fixture trees

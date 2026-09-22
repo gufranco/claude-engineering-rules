@@ -111,6 +111,42 @@ The vault is the source of truth. The Claude Code memory directory is a generate
 
 Demotion is what "forget" means here. A memory system needs five operations: store, retrieve, update, compress, forget. The freshness policy supplies update, the budget supplies compress, and demotion supplies forget.
 
+## Project Scope
+
+A fact learned in one project must never reach another project's session. A note about one repository's test environment is noise in every other repository, and a withdrawn claim about one emulator is actively misleading when it surfaces while reviewing a payments change.
+
+Scope is declared on the note, with `scope-paths`:
+
+```yaml
+scope-paths: ["/Users/you/Workspace/Line Leap/**"]
+```
+
+| Rule | Detail |
+|---|---|
+| Default | A note with no `scope-paths` is global and reaches every session. User preferences and cross-project lessons stay that way |
+| Project note | A note whose subject is one project names that project's directories, and reaches nothing else |
+| Matching | A pattern matches the session's working directory or any directory under it, so worktrees and subdirectories are covered by the project root |
+| Enforcement | The compile skips out-of-scope notes and removes their generated files from that memory directory; the recall hook skips them before injecting |
+| Per project memory | Run the compile once per project, with `--cwd` and `--memory-dir` pointing at that project's memory directory, so each project keeps its own facts |
+
+A hand-written memory file predating the vault carries no scope and loads everywhere. Filing it as a note with `scope-paths` is what confines it; the compile will never do that on its own, because it never touches what it did not generate.
+
+## The Capture Queue
+
+Capture does not depend on anyone remembering to ask for it. At the end of a turn, [`../hooks/vault-capture-queue.py`](../hooks/vault-capture-queue.py) decides whether the turn corrected a belief or uncovered a cause, and when it did it appends one line to `<vault>/.claude-runs/capture-queue.jsonl`. At the start of the next session, [`../hooks/vault-context-loader.py`](../hooks/vault-context-loader.py) names what is pending and where the queue is.
+
+The split is the design, not an implementation detail. A hook is a process: it can see that a correction-shaped sentence appeared and it cannot tell a durable lesson from an aside. Writing a note on that basis would file inference as fact, which is the failure rule 8 exists to prevent. So the process records only that something happened, and the judgement stays with a model that has a session in front of it.
+
+| Obligation | Rule |
+|---|---|
+| The queue never holds knowledge | An entry names a session, a directory, a transcript and the signals. The fact itself is derived later, from the source |
+| A pending entry is worked, not accumulated | A session that is told about pending entries files what clears the admission bar and marks every entry `filed`, including the ones it declined |
+| Declining is a normal outcome | Most turns produce nothing durable. An entry marked filed with nothing written is the bar working, not a miss |
+| The queue is machine-local | It is runtime state, gitignored, and never a second source of truth beside the notes |
+| A false positive is cheap by construction | It costs one queue line, because nothing on this path can write a note |
+
+The admission bar is the one in [`same-turn-persistence.md`](same-turn-persistence.md): would a future session get stuck without this. That rule still binds a correction given in an active session, where the write happens in the same turn. The queue covers the other case, where the turn ends before anyone files anything.
+
 ## Ingest From Recordings
 
 Meeting transcripts are the highest-volume ingest path and carry the highest fabrication and privacy risk.
