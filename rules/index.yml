@@ -225,6 +225,11 @@ on_demand:
     description: Per-project domain glossary convention. GLOSSARY.md at root for single-context repos, GLOSSARY-INDEX.md plus per-context files for multi-context repos. Lazy creation, one-or-two-sentence definitions, Avoid clauses for rejected synonyms. Loaded by interview-me, tdd, module-audit, zoom-out, onboard.
     triggers: [glossary, "domain glossary", "ubiquitous language", "domain vocabulary", "project glossary", "shared language", "domain terms", "context map", "bounded context"]
 
+  print-design:
+    path: standards/print-design.md
+    description: Everything a project must get right when its output is printed. Never carrying meaning in colour alone, measured palettes held to WCAG contrast plus CIE difference under protanopia, deuteranopia and tritanopia, greyscale survival, bleed and safe area and gutter and corner crop marks, the gang-up sheet against the one-piece-per-page shop file, defending against print dialogs that scale, type floors and wrapping on paper, resolution and CMYK and rich black, barcodes drawn as vectors at an explicit module width and verified by decoding the rendered page.
+    triggers: [print, printing, printable, printer, "print shop", "printing house", pdf, "pdf export", bleed, "crop marks", "trim marks", "cut marks", "safe area", gutter, imposition, guillotine, cmyk, "rich black", dpi, "300 dpi", a4, letter, card, cards, "trading card", "business card", label, sticker, ticket, certificate, poster, flyer, brochure, leaflet, booklet, barcode, ean, "qr code", "data matrix", "quiet zone", "module width", greyscale, grayscale, "black and white", "colour blind", "color blind", deuteranopia, protanopia, tritanopia, "colour palette", "color palette", reportlab, weasyprint, "paged media", "@page", "print stylesheet"]
+
   artifact-identity:
     path: rules/artifact-identity.md
     description: Identity discipline for files a person must supply because the project may not distribute them (game ROMs, console BIOS, vendor firmware, licensed model weights, proprietary SDKs). Manifest as source of truth, SHA-256 as the only authoritative digest with size/CRC32/SHA-1 for cross-checking public databases, stated canonical form, accepted-variant lists, known-bad dumps, identify-diagnose-repair-verify triage, and the never-become-a-distribution-channel boundary
