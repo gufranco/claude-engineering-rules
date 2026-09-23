@@ -16,7 +16,9 @@
 
 - Imperative mood: "add" not "added" or "adds"
 - No caps at start, no period at end
-- Max 50 characters
+- Max 50 characters, counting the type and scope prefix
+- The scope is optional and is usually what overruns the limit. `fix(barcode):` spends 13 of the 50 before the sentence starts, so drop the scope whenever the subject already names the area. Write the subject first, then add a scope only if it still fits
+- Budget roughly 35 characters for the phrase itself. A subject that needs more than that is carrying detail the body should hold
 
 **Body:** Wrap at 72 characters. Explain WHAT and WHY, not HOW.
 
