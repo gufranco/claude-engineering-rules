@@ -15,7 +15,7 @@
 
 </div>
 
-**39** always-on rules · **82** on-demand standards · **42** slash-command skills · **81** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
+**39** always-on rules · **82** on-demand standards · **42** slash-command skills · **82** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-81 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+82 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -287,6 +287,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks TypeORM raw query escape hatches |
 | [`typeorm-schema-sync.py`](hooks/typeorm-schema-sync.py) | PreToolUse Write/Edit | Enforces TypeORM entity vs migration parity |
 | [`user-supplied-artifact-guard.py`](hooks/user-supplied-artifact-guard.py) | PreToolUse Bash | Keeps files the user must supply themselves out of git history. Blocks `git commit`, and `git add` with an explicit path, when a file matches a digest declared in `artifacts.manifest.json` or carries an unambiguous ROM, disc-image, firmware, or model-weight extension. Size pre-filters the digest check. Bypass `USER_SUPPLIED_ARTIFACT_DISABLE=1` |
+| [`vault-compile.py`](hooks/vault-compile.py) | SessionStart | Recompiles this project's memory directory from the vault before the catalog is injected, so memory is never one forgotten command behind. Silent unless the compile changed something, and every failure path exits zero, because a memory directory one compile behind beats a session that cannot start. Bypass `VAULT_COMPILE_DISABLE=1` |
 | [`vault-context-loader.py`](hooks/vault-context-loader.py) | SessionStart | Injects the second brain's catalog once per session, so what the vault holds is known before the first question rather than searched for after it. Also reports when vault maintenance is overdue, since a loop that stops running is otherwise as silent as one with nothing to do, and surfaces any captures a previous session queued |
 | [`vault-recall.py`](hooks/vault-recall.py) | UserPromptSubmit | Injects the second-brain notes closest to the prompt, title and preamble only. Ranks with the same function `/brain eval` scores, so a recall regression is measurable. Read-only, and silent unless the vault resolves and a note clears the score floor. Bypass `VAULT_RECALL_DISABLE=1` |
 | [`vault-session-capture.py`](hooks/vault-session-capture.py) | PreCompact | Appends what the session worked on to today's vault note before the transcript is compacted away, which is the last moment the detail still exists |
