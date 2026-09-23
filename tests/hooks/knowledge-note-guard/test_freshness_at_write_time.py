@@ -17,8 +17,7 @@ import pytest
 
 HOOK = "knowledge-note-guard"
 
-VAULT = "/Users/gufranco/second-brain"
-NOTE = f"{VAULT}/wiki/concepts/Probe.md"
+NOTE_REL = "wiki/concepts/Probe.md"
 
 HEAD = (
     "---\n"
@@ -38,15 +37,36 @@ def body(text: str) -> str:
 
 
 @pytest.fixture
-def vault_env():
-    return {"SECOND_BRAIN_VAULT": VAULT}
+def vault(tmp_path):
+    """A real vault on disk.
+
+    The hook resolves its root with `is_dir` and stays silent when the vault is
+    absent, so a hardcoded home-directory path makes every block assertion pass
+    on the author's machine and every allow assertion vacuous on a runner that
+    has no such directory. Creating the vault is what makes the two agree.
+    """
+    root = tmp_path / "second-brain"
+    (root / "wiki" / "concepts").mkdir(parents=True)
+    return root
 
 
-def test_blocks_pointer_with_no_resolvable_target(tool_use, assert_blocks, vault_env):
+@pytest.fixture
+def note(vault):
+    return str(vault / NOTE_REL)
+
+
+@pytest.fixture
+def vault_env(vault):
+    return {"SECOND_BRAIN_VAULT": str(vault)}
+
+
+def test_blocks_pointer_with_no_resolvable_target(
+    tool_use, assert_blocks, vault_env, note
+):
     payload = tool_use(
         "Write",
         {
-            "file_path": NOTE,
+            "file_path": note,
             "content": body(
                 "Where truth lives: `mise ls flutter` says whether the pinned "
                 "version is installed or `missing`."
@@ -57,11 +77,11 @@ def test_blocks_pointer_with_no_resolvable_target(tool_use, assert_blocks, vault
     assert_blocks(HOOK, payload, "FRESH-3", env=vault_env)
 
 
-def test_allows_pointer_with_a_url(tool_use, assert_allows, vault_env):
+def test_allows_pointer_with_a_url(tool_use, assert_allows, vault_env, note):
     payload = tool_use(
         "Write",
         {
-            "file_path": NOTE,
+            "file_path": note,
             "content": body(
                 "Where truth lives: https://linear.app/lineleap/issue/WEB-3789"
             ),
@@ -71,29 +91,33 @@ def test_allows_pointer_with_a_url(tool_use, assert_allows, vault_env):
     assert_allows(HOOK, payload, env=vault_env)
 
 
-def test_allows_pointer_with_a_typed_id(tool_use, assert_allows, vault_env):
+def test_allows_pointer_with_a_typed_id(tool_use, assert_allows, vault_env, note):
     payload = tool_use(
         "Write",
-        {"file_path": NOTE, "content": body("Where truth lives: linear:WEB-3789")},
+        {"file_path": note, "content": body("Where truth lives: linear:WEB-3789")},
     )
 
     assert_allows(HOOK, payload, env=vault_env)
 
 
-def test_still_blocks_the_undated_volatile_claim(tool_use, assert_blocks, vault_env):
+def test_still_blocks_the_undated_volatile_claim(
+    tool_use, assert_blocks, vault_env, note
+):
     payload = tool_use(
         "Write",
-        {"file_path": NOTE, "content": body("The pipeline has 13 open deals.")},
+        {"file_path": note, "content": body("The pipeline has 13 open deals.")},
     )
 
     assert_blocks(HOOK, payload, "KN003", env=vault_env)
 
 
-def test_stale_stamp_is_not_a_write_time_block(tool_use, assert_allows, vault_env):
+def test_stale_stamp_is_not_a_write_time_block(
+    tool_use, assert_allows, vault_env, note
+):
     payload = tool_use(
         "Write",
         {
-            "file_path": NOTE,
+            "file_path": note,
             "content": body("The pipeline had 13 open deals (as of 2020-01-01)."),
         },
     )
