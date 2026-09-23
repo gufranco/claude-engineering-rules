@@ -122,3 +122,42 @@ def test_the_bypass_switches_it_off(tmp_path: Path, value: str) -> None:
 
     assert result.returncode == 0
     assert result.stdout == ""
+
+
+def test_a_worktree_with_no_memory_directory_yet_gets_one(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    (vault / ".ci").mkdir(parents=True)
+    (vault / ".ci" / "compile.py").write_text("print('applied: 2')", encoding="utf-8")
+    project = tmp_path / "work-eng-1933"
+    project.mkdir()
+    module = load()
+    memory = Path(str(module.memory_dir_for(project)).replace(str(Path.home()), str(tmp_path)))
+    memory.parent.mkdir(parents=True)
+
+    result = run(
+        {"cwd": str(project)},
+        {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "SECOND_BRAIN_VAULT": str(vault)},
+    )
+
+    assert result.returncode == 0
+    assert memory.is_dir()
+    assert "applied: 2" in result.stdout
+
+
+def test_a_directory_claude_code_never_opened_is_left_alone(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    (vault / ".ci").mkdir(parents=True)
+    (vault / ".ci" / "compile.py").write_text("print('applied: 2')", encoding="utf-8")
+    project = tmp_path / "work"
+    project.mkdir()
+    module = load()
+    memory = Path(str(module.memory_dir_for(project)).replace(str(Path.home()), str(tmp_path)))
+
+    result = run(
+        {"cwd": str(project)},
+        {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "SECOND_BRAIN_VAULT": str(vault)},
+    )
+
+    assert result.returncode == 0
+    assert not memory.exists()
+    assert result.stdout == ""
