@@ -47,6 +47,13 @@ image-cache/
 stats-cache.json
 mcp-needs-auth-cache.json
 policy-limits.json
+policy-limits.json.stamp.json
+
+# Runtime state Claude Code writes into this directory. Skills synced from the
+# account land under skills/synced/ and are vendor content, not work authored
+# here, so they stay out of history and out of the session capture's file list.
+remote-settings.json
+skills/synced/
 
 # IDE and editor integration
 ide/
