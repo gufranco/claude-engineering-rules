@@ -15,7 +15,7 @@
 
 </div>
 
-**39** always-on rules · **82** on-demand standards · **42** slash-command skills · **82** runtime hooks · **20** custom agents · **42** MCP servers · **885** review items across **71** categories
+**40** always-on rules · **83** on-demand standards · **42** slash-command skills · **82** runtime hooks · **20** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -30,7 +30,7 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-39 universal rules ship with every conversation. 82 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 82.
+40 universal rules ship with every conversation. 83 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 83.
 
 </td>
 </tr>
@@ -79,7 +79,7 @@ A layered config where each layer catches what the layer above missed.
 | [`hooks/`](hooks) | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
 | [`skills/`](skills) | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
 | [`agents/`](agents) | Specialized subagents for focused review tasks | When delegated explicitly |
-| [`checklists/`](checklists) | 885-item review checklist for code, infra, and process | On demand during review |
+| [`checklists/`](checklists) | 888-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
@@ -493,7 +493,7 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 885-item review checklist across 71 categories
+  checklists/            Unified 888-item review checklist across 71 categories
   rules/                 31 rules, 29 always-on plus 2 loaded on demand
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific rules: TypeScript, Python, ORM migrations
