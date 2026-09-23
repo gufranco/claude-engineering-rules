@@ -45,11 +45,24 @@ Lint codes, enforced by the vault linter:
 | Code | Severity | Rule |
 |---|---|---|
 | FRESH-1 | error | A quantitative present-tense claim about a volatile subject, outside a dated container, must carry a stamp or become a pointer |
-| FRESH-2 | warning | A stamp older than the freshness window, default 7 days, flags the line |
+| FRESH-2 | warning | A present-tense quantity whose stamp is past the freshness window, default 7 days, flags the line. A past-tense observation is a snapshot and never goes stale, however old its stamp |
 | FRESH-3 | error | A pointer must have a resolvable target: a URL or a typed id the vault maps to one |
 | FRESH-4 | exempt | Dated containers are immutable history and are never touched |
+| FRESH-5 | exempt | A note carrying `freshness: timeless` is exempt from FRESH-1 and FRESH-2, never from FRESH-3 |
 
 A FRESH-2 warning has exactly three legal answers: re-observe and restamp, convert to a pointer and drop the number, or retire the claim into a dated note where it becomes a snapshot and stops asking to be refreshed. Nothing is deleted. This loop is the maintenance; detection alone is half a system.
+
+## Notes Whose Numbers Are Structure
+
+The policy assumes a fact about a live system, where a count is a reading that goes out of date. Some notes describe a fixed artifact instead: a shipped ROM, a wire protocol, a schema, a device's configuration mechanism. Their numbers are structure rather than measurement, and they will be as true in ten years as they are today.
+
+No wording heuristic separates the two, because `22 rows of 256 two-byte cells` in a memory map and `13 open deals` in a sales pipeline are the same sentence to a word list. So the note declares it, once, in frontmatter:
+
+```yaml
+freshness: timeless
+```
+
+Three limits keep the declaration from becoming a blanket exemption. It is set per note rather than per line, so it is a claim about the whole subject. It covers the undated-claim and stale-stamp checks only, never a broken pointer, which is broken whatever the subject is. And it is a claim about the subject rather than about the inconvenience of restamping: a vendor rate limit, a headcount and a pipeline count are not timeless because keeping them current is tedious. For those the three legal answers stand.
 
 ## Facts That Change
 
@@ -125,7 +138,9 @@ scope-paths: ["/Users/you/Workspace/Line Leap/**"]
 |---|---|
 | Default | A note with no `scope-paths` is global and reaches every session. User preferences and cross-project lessons stay that way |
 | Project note | A note whose subject is one project names that project's directories, and reaches nothing else |
-| Matching | A pattern matches the session's working directory or any directory under it, so worktrees and subdirectories are covered by the project root |
+| Matching | A pattern matches the session's working directory or any directory under it, so subdirectories are covered by the project root |
+| Worktrees | A linked worktree is a peer directory rather than a child, so path containment does not reach it. Matching asks git which repository the directory belongs to, and a pattern naming the main working tree reaches every worktree of it, wherever it sits. A directory that merely resembles a worktree by name is refused, because the answer comes from git rather than from the name |
+| Worktree memory | Each worktree is a separate project to Claude Code and carries its own memory directory, compiled on first use. Facts are shared through the vault, never through that directory |
 | Enforcement | The compile skips out-of-scope notes and removes their generated files from that memory directory; the recall hook skips them before injecting |
 | Per project memory | Run the compile once per project, with `--cwd` and `--memory-dir` pointing at that project's memory directory, so each project keeps its own facts |
 

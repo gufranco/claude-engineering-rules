@@ -10,6 +10,11 @@ Quiet by design. It prints only when the compile changed something, because a
 line at every session start is noise that trains the reader to skip the whole
 block, including the times it matters.
 
+A worktree is its own project to Claude Code, with its own directory under
+``projects`` and no memory inside it until something creates one. The gate is
+therefore whether Claude Code opened the directory, never whether a memory
+directory already exists, and the compile creates the memory on first use.
+
 Never fails a session. Every failure path exits zero, because a session that
 cannot start is a far worse outcome than a memory directory one compile behind.
 
@@ -55,7 +60,11 @@ def main() -> int:
 
     cwd = Path(payload.get("cwd") or Path.cwd())
     memory = memory_dir_for(cwd)
-    if not memory.is_dir():
+    if not memory.parent.is_dir():
+        return 0
+    try:
+        memory.mkdir(exist_ok=True)
+    except OSError:
         return 0
 
     try:
