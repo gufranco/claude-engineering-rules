@@ -53,6 +53,8 @@ MAX_FILES = 25
 MAX_COMMITS = 10
 GIT_TIMEOUT = 5
 
+PORCELAIN_PATH_COLUMN = 3
+
 CAVEAT = (
     "Automatic capture written at compaction. Machine-written and unreviewed: it "
     "records what was worked on, never what was concluded. Promote anything durable "
@@ -60,7 +62,14 @@ CAVEAT = (
 )
 
 
-def git(args: list[str], cwd: Path) -> str:
+def git(args: list[str], cwd: Path, *, strip: bool = True) -> str:
+    """Run git and return stdout, empty on any failure.
+
+    `strip` is opt-out because porcelain status encodes state in the first two
+    columns and a path begins at the third. An unstaged edit leaves column one
+    blank, so stripping the output removes that blank from the first line only
+    and every later slice takes one character too many from that one path.
+    """
     try:
         result = subprocess.run(
             ["git", *args],
@@ -72,14 +81,20 @@ def git(args: list[str], cwd: Path) -> str:
         )
     except (OSError, subprocess.SubprocessError):  # pragma: no cover
         return ""
-    return result.stdout.strip() if result.returncode == 0 else ""
+    if result.returncode != 0:
+        return ""
+    return result.stdout.strip() if strip else result.stdout
 
 
 def changed_files(cwd: Path) -> list[str]:
-    raw = git(["status", "--porcelain"], cwd)
+    raw = git(["status", "--porcelain"], cwd, strip=False)
     names: list[str] = []
     for line in raw.splitlines():
-        name = line[3:].strip() if len(line) > 3 else ""
+        name = (
+            line[PORCELAIN_PATH_COLUMN:].strip()
+            if len(line) > PORCELAIN_PATH_COLUMN
+            else ""
+        )
         if name:
             names.append(name.split(" -> ")[-1])
     return names

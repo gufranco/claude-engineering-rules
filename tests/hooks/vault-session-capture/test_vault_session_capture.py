@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -283,3 +284,60 @@ def test_a_rename_records_only_the_destination(monkeypatch, vault, project):
 
     text = daily_note(vault).read_text()
     assert "renamed.txt" in text
+
+
+def git_in(cwd: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        env={
+            **os.environ,
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+        },
+    )
+
+
+@pytest.fixture
+def repo_with_an_unstaged_edit(tmp_path: Path) -> Path:
+    root = tmp_path / "work"
+    root.mkdir()
+    git_in(root, "init", "-q", "-b", "main")
+    git_in(root, "config", "user.email", "t@example.com")
+    git_in(root, "config", "user.name", "Test")
+    (root / "hooks").mkdir()
+    (root / "hooks" / "recall.py").write_text("x = 1\n", encoding="utf-8")
+    (root / "keep.md").write_text("a\n", encoding="utf-8")
+    git_in(root, "add", ".")
+    git_in(root, "commit", "-qm", "init")
+    (root / "hooks" / "recall.py").write_text("x = 2\n", encoding="utf-8")
+    return root
+
+
+def test_an_unstaged_path_keeps_its_first_character(repo_with_an_unstaged_edit):
+    module = load()
+
+    names = module.changed_files(repo_with_an_unstaged_edit)
+
+    assert names == ["hooks/recall.py"]
+
+
+def test_a_staged_path_keeps_its_first_character(repo_with_an_unstaged_edit):
+    git_in(repo_with_an_unstaged_edit, "add", "hooks/recall.py")
+    module = load()
+
+    names = module.changed_files(repo_with_an_unstaged_edit)
+
+    assert names == ["hooks/recall.py"]
+
+
+def test_an_untracked_path_keeps_its_first_character(repo_with_an_unstaged_edit):
+    (repo_with_an_unstaged_edit / "notes.md").write_text("n\n", encoding="utf-8")
+    module = load()
+
+    names = module.changed_files(repo_with_an_unstaged_edit)
+
+    assert "notes.md" in names
+    assert "hooks/recall.py" in names
