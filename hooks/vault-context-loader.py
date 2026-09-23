@@ -50,12 +50,18 @@ def maintenance_notice(root: Path) -> str:
     apart. An unreadable or absent record is treated as overdue rather than as
     fine, because failing closed costs a visible false alarm and failing open
     costs an unnoticed stall.
+
+    The same reasoning covers the exit code. A run that failed writes a fresh
+    timestamp, so reading only the timestamp treats a failure as a success and
+    stays quiet until the window elapses. A failed check is a failed check and
+    never a skipped one, so the exit code is read before the age.
     """
     from datetime import datetime, timezone
 
     path = root / MAINTENANCE_RECORD
     try:
-        stamp = json.loads(path.read_text(encoding="utf-8")).get("ran_at", "")
+        record = json.loads(path.read_text(encoding="utf-8"))
+        stamp = record.get("ran_at", "")
         ran = datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(
             tzinfo=timezone.utc
         )
@@ -63,6 +69,16 @@ def maintenance_notice(root: Path) -> str:
         return (
             "\n\nVault maintenance has no run record, so it is overdue. "
             "Run `python3 .ci/maintain.py` in the vault.\n"
+        )
+    if record.get("exit"):
+        failed = [
+            step for step, code in (record.get("steps") or {}).items() if code
+        ] or ["an unnamed step"]
+        return (
+            f"\n\nVault maintenance last ran on {ran.date()} and failed: "
+            f"{', '.join(sorted(failed))}. A failed run is not a run, so the "
+            "overdue clock is not reset by it. Fix the findings, then run "
+            "`python3 .ci/maintain.py` in the vault.\n"
         )
     days = (datetime.now(timezone.utc) - ran).days
     if days > MAINTENANCE_WINDOW_DAYS:

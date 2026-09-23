@@ -20,7 +20,7 @@ HOOK = Path.home() / ".claude" / "hooks" / "vault-context-loader.py"
 RECORD = ".maintenance.json"
 
 
-def build_vault(tmp_path: Path, *, ran_days_ago: int | None) -> Path:
+def build_vault(tmp_path: Path, *, ran_days_ago: int | None, exit_code: int = 0) -> Path:
     root = tmp_path / "vault"
     (root / "wiki").mkdir(parents=True)
     (root / "index.md").write_text("# Index\n\n- nothing yet\n", encoding="utf-8")
@@ -28,7 +28,11 @@ def build_vault(tmp_path: Path, *, ran_days_ago: int | None) -> Path:
         when = datetime.now(timezone.utc) - timedelta(days=ran_days_ago)
         (root / RECORD).write_text(
             json.dumps(
-                {"ran_at": when.strftime("%Y-%m-%dT%H:%M:%SZ"), "exit": 0, "steps": {}}
+                {
+                    "ran_at": when.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "exit": exit_code,
+                    "steps": {"vault-freshness": exit_code},
+                }
             ),
             encoding="utf-8",
         )
@@ -77,3 +81,20 @@ def test_index_is_still_injected(tmp_path):
     out = run(root)
 
     assert "nothing yet" in out
+
+
+def test_a_recent_run_that_failed_is_reported(tmp_path):
+    root = build_vault(tmp_path, ran_days_ago=1, exit_code=1)
+
+    out = run(root)
+
+    assert "maintenance" in out.lower()
+    assert "vault-freshness" in out
+
+
+def test_a_recent_run_that_passed_stays_quiet(tmp_path):
+    root = build_vault(tmp_path, ran_days_ago=1, exit_code=0)
+
+    out = run(root)
+
+    assert "maintenance" not in out.lower()
