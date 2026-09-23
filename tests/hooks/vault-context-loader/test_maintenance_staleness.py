@@ -20,7 +20,9 @@ HOOK = Path.home() / ".claude" / "hooks" / "vault-context-loader.py"
 RECORD = ".maintenance.json"
 
 
-def build_vault(tmp_path: Path, *, ran_days_ago: int | None, exit_code: int = 0) -> Path:
+def build_vault(
+    tmp_path: Path, *, ran_days_ago: int | None, exit_code: int = 0
+) -> Path:
     root = tmp_path / "vault"
     (root / "wiki").mkdir(parents=True)
     (root / "index.md").write_text("# Index\n\n- nothing yet\n", encoding="utf-8")
