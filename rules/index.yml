@@ -217,11 +217,11 @@ lang:
 
 on_demand:
   knowledge-notes:
-    path: rules/knowledge-notes.md
+    path: standards/knowledge-notes.md
     description: Specification for notes written to be retrieved by an agent. Fixed "For future agent" preamble, required frontmatter, recency stamps, verbatim sources, typed edges, confidence levels, anti-fabrication. Freshness policy with the timeless/snapshot/pointer trichotomy and FRESH-1 through FRESH-4. Bi-temporal timeline entries that append instead of overwriting. Selective linking. The boundary against duplicating repository truth. Memory compile contract with budget and demotion. Transcript ingest obligations for speaker attribution, confidence, retention, and credentials.
     triggers: [obsidian, vault, "second brain", "knowledge base", "knowledge note", wiki, wikilink, backlink, capture, ingest, "note spec", "ai-first", "for future agent", frontmatter, freshness, stale, "as of", recency, "bi-temporal", timeline, supersede, "memory compile", "memory budget", granola, meeting, transcript, diarization, "meeting note", pkm, zettelkasten, para, "llm wiki", orphan, "index.md", "second-brain"]
   project-glossary:
-    path: rules/project-glossary.md
+    path: standards/project-glossary.md
     description: Per-project domain glossary convention. GLOSSARY.md at root for single-context repos, GLOSSARY-INDEX.md plus per-context files for multi-context repos. Lazy creation, one-or-two-sentence definitions, Avoid clauses for rejected synonyms. Loaded by interview-me, tdd, module-audit, zoom-out, onboard.
     triggers: [glossary, "domain glossary", "ubiquitous language", "domain vocabulary", "project glossary", "shared language", "domain terms", "context map", "bounded context"]
 
@@ -231,12 +231,12 @@ on_demand:
     triggers: [print, printing, printable, printer, "print shop", "printing house", pdf, "pdf export", bleed, "crop marks", "trim marks", "cut marks", "safe area", gutter, imposition, guillotine, cmyk, "rich black", dpi, "300 dpi", a4, letter, card, cards, "trading card", "business card", label, sticker, ticket, certificate, poster, flyer, brochure, leaflet, booklet, barcode, ean, "qr code", "data matrix", "quiet zone", "module width", greyscale, grayscale, "black and white", "colour blind", "color blind", deuteranopia, protanopia, tritanopia, "colour palette", "color palette", reportlab, weasyprint, "paged media", "@page", "print stylesheet"]
 
   artifact-identity:
-    path: rules/artifact-identity.md
+    path: standards/artifact-identity.md
     description: Identity discipline for files a person must supply because the project may not distribute them (game ROMs, console BIOS, vendor firmware, licensed model weights, proprietary SDKs). Manifest as source of truth, SHA-256 as the only authoritative digest with size/CRC32/SHA-1 for cross-checking public databases, stated canonical form, accepted-variant lists, known-bad dumps, identify-diagnose-repair-verify triage, and the never-become-a-distribution-channel boundary
     triggers: [rom, roms, bios, firmware, romset, emulator, emulation, patch, ips, bps, xdelta, "no-intro", redump, mame, "model weights", checkpoint, safetensors, gguf, "bring your own", "user-supplied", "user supplied", byo, "own copy", "provide the file", "supply the file", crc, crc32, sha1, sha256, checksum, digest, "hash mismatch", "verify the file", dump, cartridge]
 
   everyday-engineering:
-    path: rules/everyday-engineering.md
+    path: standards/everyday-engineering.md
     description: Daily checklist of engineering principles. Thin-slice before depth, spike to answer one question, orthogonality, reversibility, Law of Demeter, configure-not-integrate, view-model split, feedback loop before hypothesis, prove assumptions, blame-free debugging, regression test on every prod bug, no broken windows, signed work, communication discipline.
     triggers: [engineering, "thin slice", "tracer", spike, orthogonality, reversibility, "law of demeter", "configure not integrate", broken window, "fix the blame", "prove assumption", "saboteur", "state coverage", "find bugs once", "manual procedure", "sign your work", pragmatic]
 
@@ -653,3 +653,260 @@ on_demand:
     path: standards/topical-compliance.md
     description: EU DSA notice-and-action + recommender transparency + Art. 25 dark patterns. NetzDG. Brazil LAI + US FOIA + EU Reg. 1049/2001. EU Open Data Directive + US OPEN Government Data Act + Brazil Plano de Dados Abertos. EU Reg. 2024/900 political advertising. Washington MHMD geolocation as sensitive. Content moderation UI, transparency report, public-sector transparency request UI
     triggers: [dsa, "digital services act", netzdg, "content moderation", "notice and action", "transparency report", foia, lai, "lei de acesso à informacao", "open data", "election advertising", "political advertising", geolocation]
+
+  # Full text of each always-loaded rule core in rules/.
+
+  accessibility-defaults:
+    path: standards/accessibility-defaults.md
+    description: "WCAG 2.2 AA mandatory + AAA aspirational. Forbidden patterns list (img without alt, input without label, role on div without keyboard, tabindex > 0, missing lang, color-only meaning, image CAPTCHA). Mechanical hook accessibility-mechanical-checks.py."
+    triggers: [accessibility, a11y, wcag, aria, axe, axe-core, jest-axe, playwright-axe, cypress-axe, lighthouse, pa11y, screen reader, voiceover, nvda, talkback, focus management, contrast, keyboard navigation, alt text, label, semantic html]
+
+  agent-operating-limits:
+    path: standards/agent-operating-limits.md
+    description: "Backstops versus budgets and why confusing them converts a slow run into a total loss. Measured turn ceilings with the sampled distribution recorded beside the number. Per-run caps whose overflow is reported rather than dropped. The cost of a denied tool call, unprojected responses, and unconditional context injection. Fail-closed on any check that errored or could not run, gating on exit codes rather than grepped output. Identity as an operating parameter that changes what an action means"
+    triggers: [max turns, turn limit, turns, backstop, budget, cap, per-run, timeout, denied call, tool denied, allowlist, injection, prompt hook, fail closed, fail open, exit code, projection, jq, context cost, identity, which account, bot]
+
+  ai-compliance-defaults:
+    path: standards/ai-compliance-defaults.md
+    description: "EU AI Act + Colorado AI Act + NYC LL 144 + California SB 942 + California AB 2013 + AIDA + Brazil PL 2338. Risk tier classification, Article 5 prohibitions (Feb 2025), GPAI obligations (Aug 2025), high-risk obligations (Aug 2026), disclosure tag on model output, chatbot self-identification, deepfake watermark, ADM right to explanation, annual bias audit, training data transparency. Mechanical hook ai-disclosure-checks.py."
+    triggers: [ai, llm, chatbot, recommender, ranking, generative, gpt, claude, anthropic, openai, deepfake, automated decision, model output, ml model, ai act, bias audit, algorithmic discrimination, high-risk ai, gpai]
+
+  ai-guardrails:
+    path: standards/ai-guardrails.md
+    description: "Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code"
+    triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
+
+  ai-review-convergence:
+    path: standards/ai-review-convergence.md
+    description: "Bounds the loop when automated reviewers comment on a pull request. Zero bot comments is unreachable because these tools sample fresh findings per push, so the stop condition is a round yielding no verified failure. Failure-scenario gate before fixing any bot comment, with a healthy 40-60 percent decline rate. A surviving finding is closed by the commit that fixes it and a dead one by resolving the thread, never by a reply. Minimal diff on review-response commits because extra lines are fresh sampling surface. Human reviewer comments exempt from the gate."
+    triggers: [bot, review bot, bugbot, coderabbit, codex, ai review, automated review, review comment, pr comment, review thread, converge, convergence, won't fix, wont fix, nitpick, false positive, greptile, sourcery, copilot]
+
+  anti-slop:
+    path: standards/anti-slop.md
+    description: "Structural layer beneath the phrase blocklist. Bans the grammatical and rhetorical shapes that survive paraphrase, catalogued from the WikiProject AI Cleanup field guide. Three deciding tests (substitution, deletion, shape), negative parallelism and corrective reframe, rule of three, throat-clearing, false concession, trailing recap, significance inflation, participial evaluation tails, evasive attribution, hedged speculation that asserts a fact is unavailable and then supplies it, marketing verbs replacing is and has, structural symmetry, curly-quote and placeholder residue, chat register leaking into artifacts, the positive signals of human technical writing, and an overcorrection guard naming what is not a tell"
+    triggers: [slop, ai slop, tell, tells, sounds like ai, reads like chatgpt, ai writing, not just but, negative parallelism, rule of three, corrective reframe, throat clearing, trailing recap, key takeaway, testament, crucial role, underscores, participial tail, vague attribution, experts say, studies show, serves as, boasts, curly quotes, placeholder, chat residue, humanize, sounds generic, feels hollow, voice, register]
+
+  anti-spam-defaults:
+    path: standards/anti-spam-defaults.md
+    description: "CAN-SPAM + CASL + ePrivacy + LGPD marketing rules. Opt-in default everywhere, one-click unsubscribe, List-Unsubscribe header, identity disclosure (legal name + physical address), accurate subject lines, transactional vs marketing distinction, suppression list, frequency cap, CASL express vs implied consent, Brazil LGPD soft opt-in conditions."
+    triggers: [spam, anti-spam, anti spam, marketing, newsletter, broadcast, push notification, email campaign, sms, unsubscribe, list-unsubscribe, can-spam, casl, transactional, opt-in, opt-out]
+
+  architecture-defaults:
+    path: standards/architecture-defaults.md
+    description: "Always-on architectural baseline. Universal principles (DRY, SOLID, KISS, YAGNI, immutability, idempotency, deduplication), five-question architecture gate triggering on-demand standards (DDD when business rules/invariants/state transitions exist, hexagonal when 2+ infra deps exist), hard rules with no exceptions, domain layer contract, idempotency specifics with key/storage/scope/retry, deduplication specifics for queue consumers and webhook receivers, post-implementation verification gate, skip list for trivial scripts"
+    triggers: [architecture, defaults, ddd, hexagonal, ports, adapters, aggregate, domain, idempotency, deduplication, dedup, immutability, dry, solid, yagni, kiss, service, controller, repository, use case, feature]
+
+  children-privacy-defaults:
+    path: standards/children-privacy-defaults.md
+    description: "COPPA + GDPR Art. 8 + UK Children's Code + California AADC + LGPD Art. 14. Default consent age 18 for profiling/ads, 16 for accounts, 13 minimum with verifiable parental consent under 13. High-privacy by default for under-18. No behavioral profiling. No nudge techniques. No streak counts. Geolocation off by default. Parental controls. Age threshold matrix per jurisdiction."
+    triggers: [child, children, kid, kids, minor, minors, under 18, under 16, under 13, coppa, aadc, age appropriate design code, children's code, parental consent, age gate, age verification, family, educational, gaming, ECA]
+
+  code-style:
+    path: standards/code-style.md
+    description: "DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; every prose comment is banned in every file, test files included, with tool directives like eslint-disable, @ts-expect-error, noqa, type ignore and shellcheck disable as the one exempt class) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass"
+    triggers: [style, completeness, fundamentals, command-query, cqs, data safety, delivery path, defensive invariants, analyzability, validation, zod, dto, removal safety, locale-aware, i18n, accent, diacritical, destructive action, llm output, trust boundary, bisect, comment, comments, no comments, comments policy]
+
+  completion-gates:
+    path: standards/completion-gates.md
+    description: "Full text of the global Completion Gates section. Self-review loop over all checklist categories, formatter, tests, lint, build, render gate, CI annotations, plus bug-fix, feature, and database additions"
+    triggers: [done, complete, completion gate, self-review, ready to ship, before declaring, checklist, database changes, bug fix]
+
+  compliance-defaults:
+    path: standards/compliance-defaults.md
+    description: "Master umbrella rule for ten frontend compliance domains. Strictest-applicable-rule-wins policy. Existing-but-not-yet-mandatory rules count as mandatory. Loads accessibility, privacy, cookies, cybersecurity, consumer protection by default. Children, AI, anti-spam, sectoral, topical load on keyword. Locked targets table (WCAG 2.2 AA + AAA, GDPR-grade privacy, opt-in cookies, NIST password, 44x44 target size, 7:1 contrast, 14-day withdrawal, AI disclosure, 72h breach notification)."
+    triggers: [compliance, frontend, ui, component, form, modal, dialog, page, button, navigation, table, autocomplete, chart, image, video, icon, link, layout, theme]
+
+  confidence-and-evidence:
+    path: standards/confidence-and-evidence.md
+    description: "Full text of the global Core Principles, Confidence, Anti-Hallucination, Scope Control, and Think Before You Code sections. Verification before claims, execute-do-not-ask, plan approval covering every phase, the verify-before-referencing table, scope limits"
+    triggers: [confidence, verify, hallucination, execute don't ask, plan approval, scope, core principles, evidence, clarify, ambiguous]
+
+  consumer-defaults:
+    path: standards/consumer-defaults.md
+    description: "EU Consumer Rights + Omnibus + Brazil CDC + FTC consumer protection. 14-day withdrawal, pre-contractual info, price transparency, auto-renewal disclosure, Click-to-Cancel, fake-review prohibition, dark pattern ban, Decreto 7.962 e-commerce specifics, refund window."
+    triggers: [consumer, e-commerce, ecommerce, checkout, purchase, subscription, withdrawal, refund, free trial, auto-renewal, dark pattern, dark-pattern, fake review, review platform, price, tax, shipping, click to cancel]
+
+  cookie-discipline:
+    path: standards/cookie-discipline.md
+    description: "ePrivacy + EDPB cookie rules. Opt-in default, reject-all parity with accept-all, granular categories, no pre-ticked boxes, no cookie walls, one-click withdrawal, banner accessibility (aria-modal, focus trap, ESC), consent record, CCPA Do Not Sell or Share link."
+    triggers: [cookie, cookies, eprivacy, banner, consent banner, gtm, google analytics, tracking pixel, localstorage, sessionstorage, indexeddb, do not sell, do not share]
+
+  cybersecurity-defaults:
+    path: standards/cybersecurity-defaults.md
+    description: "Frontend cybersecurity defaults. TLS 1.3, HSTS preload, nonce-based CSP, HttpOnly+Secure+SameSite cookies, NIST password policy, MFA mandate, session timeout matrix, rate limits, breach notification timeline matrix (GDPR 72h, SEC 4 business days, HIPAA 60d, state 30-90d, NIS2 24h+72h, ANPD 2 business days), SRI, open redirect prevention, SSRF prevention."
+    triggers: [cybersecurity, security baseline, nis2, dora, breach notification, csp, hsts, subresource integrity, sri, ssrf, open redirect, ratelimit, rate limit, session timeout]
+
+  design-philosophy:
+    path: standards/design-philosophy.md
+    description: "Ousterhout-derived heuristics for managing complexity. Three manifestations of complexity (change amplification, cognitive load, unknown unknowns), two root causes (dependencies, obscurity), strategic vs tactical programming with 10-20 percent budget, deep modules at module level (defers to existing 30-line function rule), general-purpose modules are deeper, pull complexity downwards, different layer different abstraction, design it twice, define errors out of existence with exception masking and aggregation, red flags catalog (pass-through methods, pass-through variables, configuration parameters, classitis, decorator overuse, getters/setters, adjacent layers same abstraction, temporal decomposition, repeated try/catch), design taste from shipping and feedback"
+    triggers: [design, complexity, deep module, shallow module, change amplification, cognitive load, unknown unknowns, obscurity, dependencies, strategic programming, tactical programming, design it twice, pull complexity downwards, define errors out of existence, exception masking, exception aggregation, pass-through method, pass-through variable, configuration parameter, classitis, temporal decomposition, design taste, red flag, smell, ousterhout]
+
+  deviation-waivers:
+    path: standards/deviation-waivers.md
+    description: "Deviating from a rule is allowed, deviating silently is not. A surfaced-and-approved deviation is the system working, a silent one is a violation. Structured waiver record carrying rule, scope, approver, rationale, alternatives, risk, and revisit condition. Tripwires as thresholds that stop the work for a design conversation rather than fail it. What cannot be waived. The distinction from a mechanical bypass, which answers a different question"
+    triggers: [waiver, waive, deviation, deviate, exception, exemption, override, bypass, tripwire, does not fit, justify, approval, approved by, opt out, threshold]
+
+  doc-truth:
+    path: standards/doc-truth.md
+    description: "Documentation that describes code is a claim about the code, and a change that falsifies a claim must correct it in the same change. Covers README, API docs, OpenAPI, .env.example, runbooks, and pull request descriptions. Explains why a write-time layer was needed when an always-on rule and a reviewer agent already existed. Four mechanically certain checks at git commit (undocumented env var, removed export still documented, removed CLI flag still documented, removed package script still documented), historical-record exemption for changelogs, ADRs, and specs, enforced by doc-sync-guard.py with DOC_SYNC_DISABLE parent-shell bypass"
+    triggers: [doc, docs, documentation, readme, stale docs, doc drift, out of date, outdated, env.example, environment variable, openapi, runbook, pr description, pull request description, changelog, doc truth, documentation truth]
+
+  found-fix:
+    path: standards/found-fix.md
+    description: "A problem surfaced by any verification surface (CI annotations, deprecations, linter warnings, security advisories, hook blockers, broken docs links) is in scope for the current task regardless of when it was introduced. Bans the \"pre-existing\", \"not introduced by my change\", \"orthogonal\", \"out of scope\" rationalizations in commit messages, PR descriptions, and code comments. Enforced by hooks/found-fix-rationalization-blocker.py with FOUND_FIX_RATIONALIZATION_DISABLE parent-shell bypass for writing about the rule itself"
+    triggers: [found-fix, pre-existing, not introduced, orthogonal, leave for later, out of scope, deprecation, annotation, verification gate, broken windows]
+
+  frontend-render-gate:
+    path: standards/frontend-render-gate.md
+    description: "A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach (cascade outcome, paint order, accessibility tree, focus order, third-party iframes, viewport behavior, post-hydration state), ranks evidence tiers with extending the project's own browser or simulator harness first, requires asserting computed results rather than class names, requires naming the viewport, requires a regression test that fails against the previous revision, and requires recording known findings in a per-route allowlist rather than waiving the check. Same rule for mobile with a simulator. Mechanical hook frontend-render-gate.py."
+    triggers: [frontend, ui, render, browser, playwright, cypress, puppeteer, e2e, end to end, acceptance, screenshot, visual, visual regression, viewport, responsive, css, styling, theme, design token, tsx, jsx, vue, svelte, dart, flutter, simulator, emulator, computed style, focus ring, focus visible, paint order, accessibility tree, tab order, iframe, stripe, hydration]
+
+  functional-index-fidelity:
+    path: standards/functional-index-fidelity.md
+    description: "A database uses an expression index only when the query expression is byte-identical to the indexed one, so an equivalent rewrite silently degrades to a sequential scan with no error and no failing test. Centralize the expression in one shared helper both the migration and every caller import. Verify the query plan rather than the result, on data large enough that the planner would otherwise choose a scan. Lists the rewrites that defeat an index while preserving output."
+    triggers: [index, functional index, expression index, seq scan, sequential scan, query plan, explain, analyze, predicate, raw sql, regexp_replace, coalesce, "lower(", "upper(", postgres, postgresql, planner, slow query, n+1, full scan]
+
+  git-workflow:
+    path: standards/git-workflow.md
+    description: "Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy"
+    triggers: [git, commit, branch, merge, rebase, ci, pipeline, release, tag, lint, format, build]
+
+  hook-bypass:
+    path: standards/hook-bypass.md
+    description: "Full text of the global Hook Bypass Discipline section. Once per session per hook, named false positive, narrow approval, clearing bypasses, waiver versus bypass, blocked calls run nothing, audit greps that spell banned literals"
+    triggers: [hook, bypass, blocked, hook blocked, _DISABLE, false positive, waiver, bypass discipline]
+
+  knowledge-single-source:
+    path: standards/knowledge-single-source.md
+    description: "Full text of the global Knowledge Single Source of Truth section. Vault as source of truth when SECOND_BRAIN_VAULT is set, memory directory compiled from it, memory-write guard, automatic retrieval hooks"
+    triggers: [vault, second brain, memory, memory compile, memory file, MEMORY.md, SECOND_BRAIN_VAULT]
+
+  language:
+    path: standards/language.md
+    description: "Response language enforcement, all output in English regardless of user input language"
+    triggers: [language, english, translation, locale]
+
+  living-specs:
+    path: standards/living-specs.md
+    description: "Maintain a living, testable statement of current behavior for non-trivial changes. specs/current/ organized by domain, requirements with normative keywords, Given/When/Then scenarios, delta discipline (ADDED/MODIFIED/REMOVED) against the current spec, and a close-out merge owned by /plan archive and reachable from /ship and /retro. Trivial changes skip per the surgical-edits skip list. Distinct from dated plan folders which record why; living specs record what"
+    triggers: [living spec, living specs, behavioral spec, source of truth, requirement, scenario, given/when/then, delta spec, specs/current, archive spec, close-out merge, spec-driven]
+
+  markdown-links:
+    path: standards/markdown-links.md
+    description: "Every file mention in published markdown is a clickable link to the actual file. Two acceptable forms, exception zones, validator and hook integration, skip-list for test fixtures and command examples"
+    triggers: [markdown, md, documentation, readme, link, file reference, file mention, bare path, backlink, doc link]
+
+  memory-supersede:
+    path: standards/memory-supersede.md
+    description: "Supersede-not-delete chain for project and feedback memories, frontmatter pointers, chain depth limit, reference memories may be deleted"
+    triggers: [memory, supersede, supersedes, superseded_by, auto-memory, memory chain, memory update, memory archive]
+
+  no-ai-process-leak:
+    path: standards/no-ai-process-leak.md
+    description: "Block phase-N markers, planning-doc references, project planning-folder paths, canvas-region mappings, casual ADR-NNN references, and hyperbole tells (state-of-the-art, 100% faithful) in commit messages, PR descriptions, code comments, and other human-facing artifacts. Enforced by ai-process-leak-blocker.py hook with AI_PROCESS_LEAK_DISABLE parent-shell bypass for editing planning artifacts"
+    triggers: [ai process leak, process leak, phase, plan reference, canvas region, hyperbole, state-of-the-art, faithful, planning artifact, commit message leak, pr description leak]
+
+  normative-keywords:
+    path: standards/normative-keywords.md
+    description: "BCP 14 (RFC 2119 + RFC 8174) normative keyword vocabulary for rules, standards, skills, agents, and READMEs. Glossary for must, must not, should, should not, may, never, always with equivalent forms. Lowercase is the default register. Uppercase is opt-in for genuinely critical security, correctness, data-integrity, and irreversibility statements. Single-citation model avoids per-file RFC boilerplate. Composes with writing-precision.md \"Eliminate weasel words\""
+    triggers: [must, must not, should, should not, shall, may, required, recommended, optional, never, always, normative, keyword, normative keyword, bcp, bcp 14, rfc 2119, rfc 8174, weasel, obligation, requirement]
+
+  orm-migrations:
+    path: standards/orm-migrations.md
+    description: "Consolidated ORM migrations rule covering Prisma, TypeORM, Drizzle, Sequelize, and MikroORM. Cross-cutting principles (schema-vs-migration parity, schema sync strategy hierarchy with push/sync banned outside dev, idempotent DDL with IF NOT EXISTS, explicit index names, transactional migrations, migration ordering, down-migration semantics, service-layer boundary, no raw SQL from app code, API boundary DTOs, schema completeness with createdAt/updatedAt/deletedAt/companyId/FK indexes, unmanaged objects). Per-ORM sections show exact syntax for parity, index naming, schema completeness, verification (migrate diff, probe migration, drizzle-kit generate, mikro-orm migration:create --dry-run), down migrations, transactions, and raw-query escape hatches. MikroORM-specific: Data Mapper plus Unit of Work, entity discovery via entities and entitiesTs, @mikro-orm/migrations Migrator extension, transactional and allOrNothing wrappers, schema:fresh banned outside dev, EntityManager.fork() per request, soft-delete via @Filter decorator"
+    triggers: [orm, orm migrations, migration, migrations, drift, schema drift, createdAt, updatedAt, deletedAt, companyId, schema sync, schema completeness, service layer, service-layer boundary, prisma, schema.prisma, "@@index", "@@unique", prisma migrate, migrate diff, migrate dev, migrate deploy, typeorm, type-orm, "@Entity", "@Column", "@Index", "@Unique", "@Check", "@CreateDateColumn", "@UpdateDateColumn", "@DeleteDateColumn", "@ManyToOne", "@OneToMany", data-source, DataSource, EntityManager, QueryRunner, "migration:generate", "migration:run", "migration:revert", "migration:show", synchronize, naming strategy, NamingStrategy, createQueryBuilder, Repository, InjectRepository, drizzle, drizzle-orm, drizzle-kit, drizzle-kit push, drizzle-kit generate, drizzle-kit migrate, drizzle-kit pull, drizzle-kit drop, pgTable, mysqlTable, sqliteTable, defineRelations, uniqueIndex, "$onUpdateFn", "$onUpdate", defaultNow, drizzle.config, __drizzle_migrations, _meta/_journal, sequelize, sequelize-cli, sequelize-typescript, umzug, Model.init, sequelize.define, queryInterface, addColumn, removeColumn, addIndex, removeIndex, createTable, dropTable, belongsTo, hasMany, hasOne, belongsToMany, paranoid, SequelizeStorage, "sync({ force", "sync({ alter", DataTypes, mikro-orm, "@mikro-orm/core", "@mikro-orm/migrations", "@mikro-orm/postgresql", "@mikro-orm/mysql", "@mikro-orm/sqlite", "@mikro-orm/mongodb", MikroORM.init, entities, entitiesTs, "schema:fresh", "schema:update", "schema:create", "migration:create", "migration:up", "migration:down", Migrator, Data Mapper, Unit of Work, "@Filter", "@Property", "@PrimaryKey", "@Entity", RequestContext, em.fork, em.persistAndFlush]
+
+  pr-comment-discipline:
+    path: standards/pr-comment-discipline.md
+    description: "The only comment published on a pull request is a reply inside a thread a person opened. No review summary body, no conversation comment, no commit-comment reply, no reply of any length to a bot, and a new inline thread only on someone else's pull request. Bot threads are read, fixed when the finding is real, then resolved or minimized in silence. Replies are polite and direct with a four-sentence ceiling, no restatement, no closing offer. A problem that can be fixed in the open change is fixed there, never recorded as a ticket or a follow-up"
+    triggers: [pr comment, pull request comment, review comment, review body, summary comment, top-level comment, conversation comment, commit comment, inline comment, reply, reply to pr, respond, address comments, reviewer feedback, resolve thread, minimize, bot, bot thread, follow-up, follow up, ticket, issue, defer, deferral, separate pr, gh pr comment, voice, register, ceiling]
+
+  pre-flight:
+    path: standards/pre-flight.md
+    description: "Pre-implementation verification gates for duplicates, architecture fit, interface verification, scope agreement"
+    triggers: [planning, pre-flight, scope, interface, duplicate, architecture fit]
+
+  privacy-defaults:
+    path: standards/privacy-defaults.md
+    description: "GDPR-grade privacy by default across all jurisdictions. Lawful basis, opt-in consent, 30-day DSAR, 72h breach notification, 24-month retention default, DPO designation, DPIA triggers, SCCs/BCRs for transfers, sensitive data union, ADM right to explanation. Forbidden patterns (soft delete for erasure, bundled consent, pre-ticked boxes, PII in logs/URLs)."
+    triggers: [privacy, personal data, gdpr, lgpd, ccpa, cpra, pipeda, lfpdpp, dsar, dpia, dpo, consent, retention, erasure, breach notification, pseudonymization, sensitive data, anonymization, lawful basis, data subject, data minimization, signup, sign up, sign-up, registration, register, create account, user account, profile, user data, contact form]
+
+  python:
+    path: standards/python.md
+    description: "Python 2026 tooling stack (uv, ruff, pyright or mypy strict, pytest with auto async mode), src project layout, full type hints with Protocol-based structural subtyping, no Any, frozen dataclasses with slots for immutability parity with TypeScript readonly rules, Pydantic v2 validation at boundaries, asyncio with TaskGroup, structured logging, common pitfalls"
+    triggers: [python, py, py3, python3, uv, uv.lock, uv add, uv sync, uv run, ruff, ruff check, ruff format, mypy, mypy strict, pyright, ty type checker, pyrefly, pytest, pytest-asyncio, asyncio_mode, pyproject, pyproject.toml, asyncio, asyncio.TaskGroup, anyio, pydantic, pydantic v2, fastapi, django, flask, sqlalchemy, src layout, dataclass, "frozen=True", "slots=True", Protocol, TypeGuard, TypeIs, ParamSpec, Self, LiteralString, hypothesis, faker, structlog]
+
+  relay-not-source:
+    path: standards/relay-not-source.md
+    description: "A subagent report, search snippet, summarized tool result, prior-session summary, memory note, or other model's answer is a relay and not a source. Relays garble the citation coordinate, the line number, timestamp, ticket id, file path, or version, and not only the content, so a well-formed specific claim can be wrong while reading as correct. Positive control before publishing any specific, citation of the source rather than the relay, and briefing subagents to return re-checkable coordinates"
+    triggers: [subagent, agent, relay, delegate, delegation, agent report, citation, cite, quote, coordinate, "file:line", timestamp, ticket id, snippet, summary, compaction, search result, secondhand, second-hand, verify citation]
+
+  repo-analysis:
+    path: standards/repo-analysis.md
+    description: "Clone external repos to a temp directory for analysis instead of fetching files through gh/GitLab APIs. Forbids per-file API reads when more than two source files are needed, defines a mandatory mktemp + shallow-clone workflow, lists carve-outs (issues, PRs, single README probe, cross-repo search), and briefs subagents to use Read/Grep/Glob against the clone path"
+    triggers: [repo analysis, repository analysis, clone, external repo, gh api contents, raw.githubusercontent, fetch files, read repo, analyze repository, third-party repo, reference repo]
+
+  rule-provenance:
+    path: standards/rule-provenance.md
+    description: "Every rule states when it became binding and what made it binding. Provenance stamp carrying date, recurrence count, and the concrete failure. Promotion threshold of three occurrences before a logged lesson becomes a binding rule, with a single-incident skip for irreversible, silent, or catastrophic failures. Rules carry their incident inline so they are unarguable. Pruning triggers, since provenance is what makes a rule set shrinkable"
+    triggers: [rule, new rule, provenance, promote, promotion, threshold, recurrence, prune, pruning, rule set, speculative, origin, incident, why this rule, stamp]
+
+  same-turn-persistence:
+    path: standards/same-turn-persistence.md
+    description: "A correction produces a file write before the turn that received it ends. Self-caught mistakes carry the same obligation as user-caught ones. The write targets the root behavior pattern rather than the surface event, and is routed to the right surface (memory, rule, repository instruction file, or hook). Paired with an admission bar so mandatory persistence does not inflate the config, asking whether a future session would actually get stuck without the line"
+    triggers: [feedback, correction, corrected, you are right, persist, remember, memory, lesson, mistake, same turn, will do better, noted, keep in mind, next time, preference, admission bar]
+
+  security:
+    path: standards/security.md
+    description: "Secrets management, auth checklist, encryption, data privacy, audit logging, supply chain security"
+    triggers: [security, auth, encryption, secret, password, token, csrf, xss, injection, owasp, certificate, ssl, tls, pentest, penetration, exploit, vulnerability, ssrf, idor, xxe, ssti, rce]
+
+  shell-and-tools:
+    path: standards/shell-and-tools.md
+    description: "Full text of the global External Tools section. Tool installation checks, rate limits, local binaries over Docker, clone over fetch, per-command account selection, agent-browser, alias and PATH implementation traps, zsh special parameters and modifiers and globs, single-quoted heredoc payloads, authoring command-like files with the Write tool"
+    triggers: [shell, zsh, bash, alias, heredoc, command -v, glob, no matches found, gh auth token, rate limit, docker, brew, pnpm, external tool, cli]
+
+  smart-questions:
+    path: standards/smart-questions.md
+    description: "Question and report quality across all dialogue directions, self-investigation gate, XY-aware framing, one blocking question format, mandatory recommendation when presenting a choice, ship the question, symptom-first status reports, Tatham bug-report essentials, subagent briefing requirements, FIXED/RESOLVED/DONE loop closure"
+    triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, xy problem, xy framing, ship the question, no hello, meta question, bug report, antelope, fingerprint, symptom, status update, error report, reproduction, fixed tag, resolved tag, loop closure, subagent prompt, agent brief, object deviation, recommendation, recommend an option, which do you recommend, option trade-off, pick an option, choice, options]
+
+  surgical-edits:
+    path: standards/surgical-edits.md
+    description: "Every changed line traces to the user's request, no adjacent improvements, cleanup boundaries for orphan removal, diff self-test"
+    triggers: [edit, surgical, diff, refactor, cleanup, scope creep, adjacent, orphan, dead code]
+
+  testing:
+    path: standards/testing.md
+    description: "Integration-first philosophy, strict mock policy, unlabeled Arrange-Act-Assert test structure with one act per test, fake data generators, deterministic tests, snapshot guidelines"
+    triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
+
+  tone-and-writing:
+    path: standards/tone-and-writing.md
+    description: "Full text of the global Tone section. Coworker register, no passive aggression, the banned-phrase list, writing style hard bans, natural writing, timestamps in GMT, instructions for others"
+    triggers: [tone, register, banned phrases, writing style, em dash, emoji, passive aggression, natural writing, tl;dr, timestamps, instructions for others, slack message]
+
+  typescript-immutability:
+    path: standards/typescript-immutability.md
+    description: "Immutability rule for TypeScript (no push/pop/sort/splice, readonly ladder), mutation surface covered by mutation-method-blocker hook, DOM/Web API stance, withdrawn Records and Tuples proposal, ES2024+ non-mutating replacements (toSorted, toReversed, with, Set composition, iterator helpers, Object.groupBy), auto-allowed scopes, CI SARIF snippets, Date and Time handling with Temporal"
+    triggers: [typescript, ts, tsx, immutable, immutability, mutation, mutating, mutability, readonly, freeze, splice, reverse, pop, shift, unshift, fill, copywithin, map.set, set.add, object.assign, defineproperty, setprototypeof, delete, valtio, jotai, recoil, xstate, solid, nanostores, legendapp, tanstack, effect-ts, temporal, composites, sarif, lsp, language server, vscode-extension, jetbrains-plugin, eslint-plugin, pre-commit, husky, lefthook, biome, toSorted, toReversed, toSpliced, with, groupBy, Object.groupBy, Map.groupBy, structuredClone, Records and Tuples, "@js-temporal", date, date-fns, instant, plaindate, plaindatetime, zoneddatetime, duration, url-search-params, urlsearchparams, headers, formdata, angular, angular-signals, qwik, qwik-signals, preact, preact-signals, useformstate, useactionstate, useoptimistic, usereducer, usesyncexternalstore, use server, react server actions, tc39-signals, signal-polyfill, effect-ref, fp-ts, pipe, flow, asynciterator, async iterator, iterator helpers, for-await-push, Array.fromAsync, Promise.try, Promise.withResolvers, RegExp.escape, Error.isError, Atomics.pause, Float16Array, Uint8Array.fromBase64, Uint8Array.fromHex, pipeline-operator, iterator.range, dataview, atomics, sharedarraybuffer, webassembly, wasm, WebAssembly.Memory.grow, WebAssembly.Memory.prototype.grow, private field, private-field, "#field", symbol key, symbol-key, static block, static-block, static-initializer, proxy, proxy trap, weakref, weakref-deref, finalizationregistry, codemod, ts-morph, whole-program, confidence, otel, audit-log, perf-budget, allowlist, fix-suggestion, suppression, allow-mutation]
+
+  typescript-strict:
+    path: standards/typescript-strict.md
+    description: "TypeScript compiler strictness (noUncheckedIndexedAccess, exactOptionalPropertyTypes, verbatimModuleSyntax), target/module settings to match runtime, TypeScript 5.x patterns (using/await using, NoInfer, Symbol.dispose), TypeScript 5.8 specifics (erasableSyntaxOnly, stable module node18, granular conditional-branch return checks)"
+    triggers: [typescript, ts, tsxconfig, tsconfig, strict, compiler, strictness, noUncheckedIndexedAccess, exactOptionalPropertyTypes, verbatimModuleSyntax, noPropertyAccessFromIndexSignature, noFallthroughCasesInSwitch, target, module, moduleResolution, "@tsconfig/node", using, await using, Symbol.dispose, Symbol.asyncDispose, NoInfer, ts 5, typescript 5, ts 5.8, typescript 5.8, erasableSyntaxOnly, erasable-syntax-only, module node18]
+
+  typescript-types:
+    path: standards/typescript-types.md
+    description: "TypeScript type construct selection (interface vs type vs enum), discriminated unions with exhaustive matching, branded types for nominal typing, type state pattern for state machine transitions"
+    triggers: [typescript, ts, tsx, type, interface, enum, brand, branded, discriminated, discriminated union, type state, as const, satisfies never, nominal, ts-pattern]
+
+  verification:
+    path: standards/verification.md
+    description: "Evidence-based completion gates, fresh output required for every claim, no rounding up partial completion"
+    triggers: [verify, evidence, complete, done, claim, proof, gate]
+
+  writing-precision:
+    path: standards/writing-precision.md
+    description: "Precision gate for all text output, concrete over abstract, examples over vague instructions, self-test before finalizing"
+    triggers: [write, writing, text, prose, message, comment, description, rule, standard, precision, pr description, code comment, error message]

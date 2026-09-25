@@ -157,6 +157,7 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
 SKIPPED_PATH_SEGMENTS = (
     "/.claude/rules/found-fix.md",
     "/rules/found-fix.md",
+    "/.claude/standards/found-fix.md",
     "/hooks/found-fix-rationalization-blocker.py",
     "/tests/hooks/found-fix-rationalization-blocker/",
     "/memory/feedback_found_fix",

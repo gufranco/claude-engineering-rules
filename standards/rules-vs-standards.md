@@ -6,10 +6,18 @@ How the two-tier configuration system in `~/.claude/` organizes guidance, and ho
 
 | Tier | Directory | Loading | Token cost |
 |------|-----------|---------|------------|
-| Tier 1 | [`rules/`](../rules) | Always loaded into every conversation | Fixed, every session |
+| Tier 1 | [`rules/`](../rules) | Always loaded into every conversation, as short cores | Fixed, every session |
 | Tier 2 | [`standards/`](.) | Loaded on demand when triggers match | Zero unless invoked |
 
 Tier 1 content shapes how every response is produced. Tier 2 content provides domain-specific depth that only matters when the task touches that domain.
+
+## Core and Full Text
+
+Claude Code loads every file under [`rules/`](../rules), including [`rules/lang/`](../rules/lang), plus [`CLAUDE.md`](../CLAUDE.md) and its imports, into every session, and warns once the total passes 150,000 characters. On 2026-09-25 the set measured 539,200 characters across 52 files, so the always-loaded tier was split.
+
+Each `rules/<name>.md` is now a core of roughly 500 to 7,000 characters: the obligations, bans, and thresholds that change behavior on an ordinary task, then a link to `standards/<name>.md`, which holds the original full text verbatim. After the split the always-loaded set measured about 80,000 characters. The long sections of [`CLAUDE.md`](../CLAUDE.md) moved the same way, to [`confidence-and-evidence.md`](confidence-and-evidence.md), [`tone-and-writing.md`](tone-and-writing.md), [`hook-bypass.md`](hook-bypass.md), [`shell-and-tools.md`](shell-and-tools.md), [`completion-gates.md`](completion-gates.md), and [`knowledge-single-source.md`](knowledge-single-source.md).
+
+When editing a rule, change the full text in [`standards/`](.) first, then update the core only if an always-needed obligation changed. Keep the whole always-loaded set under 150,000 characters; measure it with `cat CLAUDE.md RTK.md rules/*.md rules/lang/*.md | wc -c`.
 
 ## Decision Matrix
 
@@ -36,7 +44,7 @@ A file belongs in [`rules/`](../rules) only if it meets every criterion:
 4. **No technology coupling.** Rules apply across languages, frameworks, and runtimes. Technology-specific guidance is a standard.
 5. **Stable.** Rules change rarely. Frequent edits indicate the content is closer to a standard or a skill.
 
-Current Tier 1 files: `code-style.md`, `git-workflow.md`, `language.md`, `pre-flight.md`, `surgical-edits.md`, `security.md`, `testing.md`, `verification.md`, `writing-precision.md`, `ai-guardrails.md`.
+Current Tier 1 files: every core listed under `always_loaded` and `lang` in [`rules/index.yml`](../rules/index.yml).
 
 ## Tier 2 Membership Criteria
 
