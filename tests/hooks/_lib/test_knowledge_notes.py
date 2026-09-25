@@ -148,6 +148,19 @@ def test_is_volatile_claim_flags_an_undated_count():
     assert kn.is_volatile_claim("The backlog has 42 open tasks.") is True
 
 
+def test_is_volatile_claim_ignores_the_titles_inside_wikilinks():
+    line = (
+        "Related: [[Onyx drizzle revert 2026 09 15]], "
+        "[[Drizzle has no EXCLUDED and no multi-row UPDATE]]"
+    )
+
+    assert kn.is_volatile_claim(line) is False
+
+
+def test_is_volatile_claim_still_judges_prose_beside_a_wikilink():
+    assert kn.is_volatile_claim("The backlog has 42 open tasks, see [[Board]].") is True
+
+
 def test_is_volatile_claim_ignores_a_stamped_line():
     assert kn.is_volatile_claim("The backlog has 42 tasks (as of 2026-08-18).") is False
 
