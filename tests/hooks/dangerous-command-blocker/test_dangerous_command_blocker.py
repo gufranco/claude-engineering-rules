@@ -159,6 +159,29 @@ def test_command_cwd_expands_a_tilde():
     assert module._command_cwd(f"cd ~/.claude && {PUSH}") == expected
 
 
+def test_command_cwd_expands_home_inside_double_quotes(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    module = _load_module()
+
+    assert module._command_cwd(f'cd "$HOME/.claude" && {PUSH}') == f"{tmp_path}/.claude"
+
+
+def test_command_cwd_expands_braced_home_unquoted(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    module = _load_module()
+
+    assert (
+        module._command_cwd(f"cd ${{HOME}}/.claude && {PUSH}") == f"{tmp_path}/.claude"
+    )
+
+
+def test_command_cwd_keeps_home_literal_inside_single_quotes(monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    module = _load_module()
+
+    assert module._command_cwd(f"cd '$HOME/.claude' && {PUSH}") == "$HOME/.claude"
+
+
 def test_command_cwd_is_empty_without_a_leading_cd():
     module = _load_module()
 

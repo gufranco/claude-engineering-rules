@@ -462,8 +462,11 @@ def _command_cwd(command: str) -> str:
     match = re.match(r"""\s*cd\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:&&|;)""", command)
     if not match:
         return ""
-    path = next(group for group in match.groups() if group is not None)
-    return _os.path.expanduser(path)
+    single_quoted, double_quoted, bare = match.groups()
+    if single_quoted is not None:
+        return single_quoted
+    path = double_quoted if double_quoted is not None else bare
+    return _os.path.expandvars(_os.path.expanduser(path))
 
 
 def _repo_root(cwd: str = "") -> str:
