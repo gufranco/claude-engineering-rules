@@ -137,6 +137,39 @@ def test_allows_when_spec_sibling_exists(tool_use, assert_allows, tmp_path):
     assert_allows(HOOK, payload)
 
 
+@pytest.mark.parametrize(
+    "companion",
+    [
+        "databaseExplorerService.integration.test.ts",
+        "databaseExplorerService.e2e.spec.ts",
+    ],
+)
+def test_allows_when_a_qualified_sibling_test_exists(
+    tool_use, assert_allows, tmp_path, companion
+):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / companion).write_text("test('x', () => {})")
+    target = src_dir / "databaseExplorerService.ts"
+    payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
+
+    assert_allows(HOOK, payload)
+
+
+def test_a_qualified_test_of_another_source_is_not_a_companion(
+    tool_use, assert_blocks, tmp_path
+):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "databaseExplorerServiceV2.integration.test.ts").write_text(
+        "test('x', () => {})"
+    )
+    target = src_dir / "databaseExplorerService.ts"
+    payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
+
+    assert_blocks(HOOK, payload)
+
+
 def test_allows_when_go_test_sibling_exists(tool_use, assert_allows, tmp_path):
     pkg = tmp_path / "internal" / "api"
     pkg.mkdir(parents=True)
