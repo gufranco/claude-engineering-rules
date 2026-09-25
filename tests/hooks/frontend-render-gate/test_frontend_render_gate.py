@@ -13,13 +13,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-HOOK = Path(__file__).resolve().parents[3] / "hooks" / "frontend-render-gate.py"
+ROOT = Path(__file__).resolve().parents[3]
+HOOK = ROOT / "hooks" / "frontend-render-gate.py"
+
+if str(ROOT / "tests") not in sys.path:
+    sys.path.insert(0, str(ROOT / "tests"))
+from _helpers.cov_env import apply_coverage_env  # noqa: E402
+
+sys.path.insert(0, str(ROOT / "hooks"))
+from _lib.bypass_writer import set_bypass  # noqa: E402
 
 ALLOW = 0
 BLOCK = 2
 
 
-def run_hook(staged, command="git commit -m 'x'", env_extra=None):
+def run_hook(staged, command="git commit -m 'x'", env_extra=None, diff_exit=0):
     with tempfile.TemporaryDirectory() as tmp:
         stub = Path(tmp) / "git"
         stub.write_text(
@@ -27,7 +35,7 @@ def run_hook(staged, command="git commit -m 'x'", env_extra=None):
             'if [ "$1" = "diff" ]; then\n'
             f"  printf '%s' \"{chr(10).join(staged)}\"\n"
             '  [ -n "$STAGED_EMPTY" ] || echo\n'
-            "  exit 0\n"
+            f"  exit {diff_exit}\n"
             "fi\n"
             "exit 0\n"
         )
@@ -45,7 +53,7 @@ def run_hook(staged, command="git commit -m 'x'", env_extra=None):
             input=payload,
             capture_output=True,
             text=True,
-            env=env,
+            env=apply_coverage_env(env),
             check=False,
         )
         return result
@@ -139,8 +147,34 @@ class RenderGateTest(unittest.TestCase):
             input=payload,
             capture_output=True,
             text=True,
+            env=apply_coverage_env(dict(os.environ)),
             check=False,
         )
+
+        self.assertEqual(result.returncode, ALLOW)
+
+    def test_a_failing_git_diff_reads_as_nothing_staged(self):
+        result = run_hook(["apps/web/src/components/TopBar.tsx"], diff_exit=1)
+
+        self.assertEqual(result.returncode, ALLOW)
+
+    def test_a_long_file_list_names_how_many_more(self):
+        staged = [f"apps/web/src/components/Part{index}.tsx" for index in range(12)]
+
+        result = run_hook(staged)
+
+        self.assertEqual(result.returncode, BLOCK)
+        self.assertIn("... and 2 more", result.stderr)
+
+    def test_a_live_bypass_entry_allows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / "bypass.json"
+            set_bypass("frontend-render-gate", ttl_seconds=120, state_path=state)
+
+            result = run_hook(
+                ["apps/web/src/components/TopBar.tsx"],
+                env_extra={"CLAUDE_BYPASS_STATE": str(state)},
+            )
 
         self.assertEqual(result.returncode, ALLOW)
 
@@ -158,6 +192,7 @@ class RenderGateTest(unittest.TestCase):
             input="not json",
             capture_output=True,
             text=True,
+            env=apply_coverage_env(dict(os.environ)),
             check=False,
         )
 
