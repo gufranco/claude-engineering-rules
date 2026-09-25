@@ -195,6 +195,8 @@ Meeting transcripts are the highest-volume ingest path and carry the highest fab
 
 [`../hooks/knowledge-note-guard.py`](../hooks/knowledge-note-guard.py) runs at PreToolUse on Write, Edit, and MultiEdit, scoped to paths under `SECOND_BRAIN_VAULT`. It blocks what is decidable from a single file: KN001 missing frontmatter, KN002 missing preamble, KN003 undated volatile claim, KN004 fabricated wikilink, KN005 write into the immutable raw folder, KN006 removal outside the trash folder.
 
+An edit is judged on what it adds. A finding already present in the note before the edit does not block it, so a note written before this specification can still be extended, while a new line that breaks the grammar still fails. A note carrying `freshness: timeless` is exempt from KN003, matching FRESH-5.
+
 What needs the whole graph belongs to the linters, not the hook: orphans, broken links in both directions, duplicate titles, index drift, and stamps past their window.
 
 Bypass: `KNOWLEDGE_NOTE_DISABLE=1`, exported from a parent shell, under the once-per-session bypass discipline.

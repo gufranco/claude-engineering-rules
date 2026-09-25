@@ -166,6 +166,10 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
     return fields
 
 
+def is_timeless(fields: dict[str, str]) -> bool:
+    return fields.get("freshness", "").strip().strip("\"'").lower() == "timeless"
+
+
 def body_after_frontmatter(text: str) -> str:
     """Return the note body with any frontmatter block removed."""
     match = FRONTMATTER.match(text)

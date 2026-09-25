@@ -275,6 +275,83 @@ def test_edit_composes_the_post_edit_text(tool_use, assert_blocks, vault, env):
     assert_blocks(HOOK, payload, "KN003", env=env)
 
 
+LEGACY = GOOD.replace(
+    "Some timeless prose about the idea.",
+    "The backlog has 42 open tasks.\n\nSome timeless prose about the idea.",
+)
+
+
+def test_a_note_declared_timeless_may_state_undated_quantities(
+    tool_use, assert_allows, vault, env
+):
+    content = GOOD.replace(
+        "ai-first: true\n", "ai-first: true\nfreshness: timeless\n"
+    ).replace(
+        "Some timeless prose about the idea.", "The memory map has 22 rows of cells."
+    )
+    payload = tool_use(
+        "Write", {"file_path": note(vault, "wiki/concepts/Rom.md"), "content": content}
+    )
+
+    assert_allows(HOOK, payload, env=env)
+
+
+def test_an_edit_is_judged_on_what_it_adds_not_on_older_lines(
+    tool_use, assert_allows, vault, env
+):
+    target = vault / "wiki/concepts/Legacy.md"
+    target.write_text(LEGACY)
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": str(target),
+            "old_string": "Some timeless prose about the idea.",
+            "new_string": "Some timeless prose about the idea, expanded.",
+        },
+    )
+
+    assert_allows(HOOK, payload, env=env)
+
+
+def test_overwriting_a_legacy_note_keeps_its_old_lines_unjudged(
+    tool_use, assert_allows, vault, env
+):
+    target = vault / "wiki/concepts/Legacy.md"
+    target.write_text(LEGACY)
+    payload = tool_use(
+        "Write", {"file_path": str(target), "content": LEGACY + "\nMore prose.\n"}
+    )
+
+    assert_allows(HOOK, payload, env=env)
+
+
+def test_overwriting_an_unreadable_note_judges_every_line(
+    tool_use, assert_blocks, vault, env
+):
+    target = vault / "wiki/concepts/Garbled.md"
+    target.write_bytes(b"\xff\xfe")
+    payload = tool_use("Write", {"file_path": str(target), "content": LEGACY})
+
+    assert_blocks(HOOK, payload, "KN003", env=env)
+
+
+def test_an_edit_adding_a_new_undated_claim_beside_an_old_one_is_blocked(
+    tool_use, assert_blocks, vault, env
+):
+    target = vault / "wiki/concepts/Legacy.md"
+    target.write_text(LEGACY)
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": str(target),
+            "old_string": "Some timeless prose about the idea.",
+            "new_string": "The pipeline has 13 open deals.",
+        },
+    )
+
+    assert_blocks(HOOK, payload, "KN003", env=env)
+
+
 def test_multiedit_composes_every_edit(tool_use, assert_blocks, vault, env):
     target = vault / "wiki/concepts/Multi.md"
     target.write_text(GOOD)
