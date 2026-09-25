@@ -17,7 +17,9 @@ Claude Code loads every file under [`rules/`](../rules), including [`rules/lang/
 
 Each `rules/<name>.md` is now a core of roughly 500 to 7,000 characters: the obligations, bans, and thresholds that change behavior on an ordinary task, then a link to `standards/<name>.md`, which holds the original full text verbatim. After the split the always-loaded set measured about 80,000 characters. The long sections of [`CLAUDE.md`](../CLAUDE.md) moved the same way, to [`confidence-and-evidence.md`](confidence-and-evidence.md), [`tone-and-writing.md`](tone-and-writing.md), [`hook-bypass.md`](hook-bypass.md), [`shell-and-tools.md`](shell-and-tools.md), [`completion-gates.md`](completion-gates.md), and [`knowledge-single-source.md`](knowledge-single-source.md).
 
-When editing a rule, change the full text in [`standards/`](.) first, then update the core only if an always-needed obligation changed. Keep the whole always-loaded set under 150,000 characters; measure it with `cat CLAUDE.md RTK.md rules/*.md rules/lang/*.md | wc -c`.
+A new rule ships as two files in the same change: the full text in `standards/<name>.md`, and a core in `rules/<name>.md` holding only the obligations an ordinary task needs, ending with a link to the full text. Register both in [`rules/index.yml`](../rules/index.yml). When editing a rule, change the full text in [`standards/`](.) first, then update the core only if an always-needed obligation changed.
+
+CI enforces a 120,000-character budget on the always-loaded set, leaving headroom under the 150,000-character harness limit, through [`validate-instruction-budget.py`](../.github/scripts/validate-instruction-budget.py). It counts [`CLAUDE.md`](../CLAUDE.md), every file it imports with an `@` line, and every Markdown file under [`rules/`](../rules), and names the largest files when the budget is exceeded.
 
 ## Decision Matrix
 
