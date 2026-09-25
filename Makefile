@@ -114,7 +114,8 @@ validate:
 	for script in validate-counts validate-markdown-links validate-skills \
 	              validate-agents validate-settings validate-patterns \
 	              validate-cross-refs validate-registry-drift \
-	              validate-normative-keywords validate-checklist-counts; do \
+	              validate-normative-keywords validate-checklist-counts \
+	              validate-instruction-budget; do \
 	  printf '%-34s ' "$$script"; \
 	  if python3 .github/scripts/$$script.py >/tmp/validate-$$script.log 2>&1; then \
 	    echo PASS; \

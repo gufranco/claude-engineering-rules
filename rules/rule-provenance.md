@@ -6,6 +6,7 @@ Every rule states when it became binding and what made it binding.
 - Log a lesson on first sight; promote it to a rule on the third occurrence.
 - Skip the threshold only for irreversible, silent, security-crossing, or unbounded failures, naming the condition.
 - State the incident inline with the rule when known.
+- A new rule ships as a short core in [`rules/`](.) plus its full text in [`standards/`](../standards/); CI fails the always-loaded set above 120,000 characters.
 - Prune rules whose origin no longer applies or is now caught mechanically, merge rules sharing an origin, and record every removal.
 
 Full rule and rationale: [`standards/rule-provenance.md`](../standards/rule-provenance.md). Read it before adding, promoting, or deleting a rule.
