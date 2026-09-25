@@ -39,7 +39,7 @@ def _base_outside_shared_temp_roots() -> Path:
 
 @pytest.fixture(scope="session")
 def tdd_gate_temp_base() -> Iterator[Path]:
-    base = _base_outside_shared_temp_roots()
+    base = Path(tempfile.mkdtemp(dir=_base_outside_shared_temp_roots()))
     try:
         yield base
     finally:
