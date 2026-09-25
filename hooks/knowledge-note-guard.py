@@ -28,6 +28,7 @@ import json
 import os
 import shlex
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -86,14 +87,21 @@ FIXES = {
 }
 
 
-def scan_body(body: str, dated: bool, root: Path) -> list[tuple[str, int, str]]:
+def scan_body(
+    body: str, dated: bool, root: Path, *, timeless: bool = False
+) -> list[tuple[str, int, str]]:
     findings: list[tuple[str, int, str]] = []
     titles: set[str] | None = None
     for number, line, under_dated_heading in kn.walk_lines(body):
         if not dated and not under_dated_heading and kn.POINTER.search(line):
             if not kn.pointer_has_target(line):
                 findings.append(("FRESH-3", number, line))
-        elif not dated and not under_dated_heading and kn.is_volatile_claim(line):
+        elif (
+            not dated
+            and not timeless
+            and not under_dated_heading
+            and kn.is_volatile_claim(line)
+        ):
             findings.append(("KN003", number, line))
         targets = kn.wikilink_targets(line)
         if not targets or kn.TBD.search(line):
@@ -117,20 +125,42 @@ def check_note(rel: Path, text: str, root: Path) -> list[tuple[str, int, str]]:
     body = kn.body_after_frontmatter(text)
     if kn.PREAMBLE not in body:
         findings.append(("KN002", 1, f"missing the fixed heading {kn.PREAMBLE}"))
-    findings.extend(scan_body(body, kn.is_dated_container(rel), root))
+    findings.extend(
+        scan_body(
+            body, kn.is_dated_container(rel), root, timeless=kn.is_timeless(fields)
+        )
+    )
     return findings
+
+
+def introduced(
+    findings: list[tuple[str, int, str]], before: list[tuple[str, int, str]]
+) -> list[tuple[str, int, str]]:
+    remaining = Counter((code, text) for code, _, text in before)
+    fresh: list[tuple[str, int, str]] = []
+    for code, number, text in findings:
+        if remaining[(code, text)] > 0:
+            remaining[(code, text)] -= 1
+        else:
+            fresh.append((code, number, text))
+    return fresh
 
 
 def apply_edit(current: str, old: str, new: str, replace_all: bool) -> str:
     return current.replace(old, new) if replace_all else current.replace(old, new, 1)
 
 
-def post_text(tool: str, tool_input: dict, path: Path) -> str | None:
+def read_current(path: Path) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def post_text(tool: str, tool_input: dict, current: str | None) -> str | None:
     if tool == "Write":
         return tool_input.get("content")
-    try:
-        current = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
+    if current is None:
         return None
     if tool == "Edit":
         return apply_edit(
@@ -233,10 +263,13 @@ def main() -> None:
         emit([("KN005", 1, f"edit to immutable source {rel}")], rel)
     if path.suffix.lower() != ".md":
         sys.exit(0)
-    text = post_text(tool, tool_input, path)
+    current = read_current(path)
+    text = post_text(tool, tool_input, current)
     if text is None:
         sys.exit(0)
     findings = check_note(rel, text, root)
+    if findings and current is not None:
+        findings = introduced(findings, check_note(rel, current, root))
     if findings:
         emit(findings, rel)
     sys.exit(0)
