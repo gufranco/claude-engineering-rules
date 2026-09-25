@@ -232,6 +232,22 @@ class TestRemovedExportStillDocumented:
 
         assert_blocks(HOOK, payload, "OrderService")
 
+    def test_ignores_an_export_removed_from_a_markdown_code_sample(
+        self, repo: Path, tool_use, assert_allows
+    ) -> None:
+        (repo / "guide.md").write_text(
+            "```typescript\nexport class OrderService {}\n```\n", encoding="utf-8"
+        )
+        (repo / "docs.md").write_text(
+            "`OrderService` owns order writes.\n", encoding="utf-8"
+        )
+        _commit_all(repo)
+        (repo / "guide.md").write_text("See the service docs.\n", encoding="utf-8")
+        _stage(repo, "guide.md")
+        payload = tool_use("Bash", {"command": COMMIT}, cwd=str(repo))
+
+        assert_allows(HOOK, payload)
+
     def test_skips_changelog_files(self, repo: Path, tool_use, assert_allows) -> None:
         (repo / "lib.ts").write_text(
             "export function calculateVig() { return 1; }\n", encoding="utf-8"
