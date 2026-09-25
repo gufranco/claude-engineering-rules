@@ -37,6 +37,7 @@ DATE_PREFIX = re.compile(r"^\d{4}-\d{2}-\d{2}")
 DATE_ANYWHERE = re.compile(r"\d{4}-\d{2}(?:-\d{2})?")
 STAMP = re.compile(r"\(as of (\d{4})-(\d{2})(?:-(\d{2}))?", re.IGNORECASE)
 WIKILINK = re.compile(r"\[\[([^\]|#]+)")
+LINK_SPAN = re.compile(r"\[\[[^\]]*\]\]")
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 TBD = re.compile(r"\bTBD\b")
 URL = re.compile(r"https?://\S+")
@@ -224,7 +225,8 @@ def is_volatile_claim(line: str) -> bool:
         return False
     if DATE_PREFIX.match(line.lstrip("-* ")):
         return False
-    return bool(DIGIT.search(line) and VOLATILE.search(line) and COPULA.search(line))
+    prose = LINK_SPAN.sub("", line)
+    return bool(DIGIT.search(prose) and VOLATILE.search(prose) and COPULA.search(prose))
 
 
 def walk_lines(body: str) -> Iterator[tuple[int, str, bool]]:
