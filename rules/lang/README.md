@@ -17,7 +17,7 @@ This directory holds rules that apply to a single programming language. Cross-la
 
 ## Index integration
 
-When you add a file here, register it in [`rules/index.yml`](../index.yml) under the `on_demand` section with triggers that match the language name and its tooling. The file is not auto-loaded; the assistant pulls it when triggers match.
+Every file under [`rules/`](..) loads into every session, so a file here is a short core. Put the full text in [`standards/`](../../standards/), register both in [`rules/index.yml`](../index.yml), and end the core with a link to the full text.
 
 ## Naming convention
 

@@ -54,6 +54,8 @@ IN_SCOPE_PATH_SEGMENTS = (
 SELF_REFERENCE_FILES = (
     "/.claude/rules/normative-keywords.md",
     "/.claude/rules/writing-precision.md",
+    "/.claude/standards/normative-keywords.md",
+    "/.claude/standards/writing-precision.md",
 )
 
 

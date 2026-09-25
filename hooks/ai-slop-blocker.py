@@ -90,6 +90,7 @@ PUBLISHING_BASH_PATTERNS = [
 
 SKIPPED_PATHS = (
     "/.claude/rules/anti-slop.md",
+    "/.claude/standards/anti-slop.md",
     "/.claude/hooks/ai-slop-blocker.py",
     "/.claude/tests/hooks/ai-slop-blocker/",
     "/.claude/tests/fixtures/",

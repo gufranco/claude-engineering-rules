@@ -1,0 +1,234 @@
+# Pre-Flight
+
+## Core Rule
+
+No implementation without pre-flight verification. Wrong-direction work is the most expensive mistake.
+
+## When to Apply
+
+Before implementing any non-trivial change. Skip for single-line fixes, typos, and config tweaks where the change is obvious.
+
+## Gate
+
+Run these checks in order. If any fails, stop and resolve before writing code.
+
+### 1. Duplicate Check
+
+Search the codebase, open PRs, recent branches, and community packages for existing solutions.
+
+**Tool ordering, mandatory:** run these in order. Stop at the first match.
+
+1. **Local codebase grep / ripgrep.** Same keywords, function names, feature terms. File names too.
+2. **Open PRs.** `gh pr list --search "<keywords>"`. Cover both your repo and any monorepo siblings.
+3. **Recent branches.** `git branch -a --list "*<keyword>*"`. Local and remote.
+4. **Closed PRs.** `gh pr list --state closed --search "<keywords>"`. A closed PR may name a dead-end or a postponed approach.
+5. **GitHub code search.** `gh search code "<keywords>" --language=<lang>`. Surface patterns the rest of the world uses for the same problem.
+6. **Library / framework docs.** Read the README and API docs of the major library in the area before authoring a utility. `llms.txt` first, then official docs.
+7. **Package registry.** `npm search`, `pip search`, `cargo search`, `gem search`. A maintained package is preferred to a hand-rolled utility.
+8. **Web search.** Only after steps 1-7 turn up nothing. Web results are unranked by domain context.
+
+**Anti-duplication gate for skills and agents.** Before proposing a new `~/.claude/skills/<name>/` or `~/.claude/agents/<name>.md`, run steps 1-2 against `~/.claude/skills/` and `~/.claude/agents/` first, plus the on-demand entries in `~/.claude/rules/index.yml`. Prefer extending an existing skill or agent over creating a new one. Justify the new file in writing when no extension fits.
+
+| Where to look | How |
+|----------------|-----|
+| Current codebase | `rg -i "<keyword>"`, including file names |
+| Open PRs | `gh pr list --search "<keywords>"` |
+| Recent branches | `git branch -a --list "*<keyword>*"` |
+| Closed PRs | `gh pr list --state closed --search "<keywords>"` |
+| GitHub code search | `gh search code "<keywords>" --language=<lang>` |
+| Library docs | `llms.txt` first, then official docs |
+| Package registry | `npm search`, `pip search`, `cargo search` |
+| Web search | Last resort |
+
+If a solution exists in the codebase, reuse or extend it. If a well-adopted package exists, suggest it before implementing manually. Building from scratch what a maintained library already solves is wasted effort and ongoing maintenance burden.
+
+When suggesting a package, follow the evaluation criteria from [`rules/code-style.md`](../rules/code-style.md) Dependencies section: compare top options, check maintenance activity, community size, vulnerabilities, and bundle size.
+
+### 1b. Market and Competitor Research (Feature Planning)
+
+When planning features, improvement roadmaps, or new modules, research existing solutions exhaustively before designing anything. Every feature must be grounded in patterns validated by the market. Inventing from scratch when proven patterns exist is wasted effort and a source of wrong-direction work.
+
+**When this gate applies:** any new feature, workflow, integration, or UX pattern. Does not apply to bug fixes, config changes, or purely internal refactors.
+
+**Execution:** delegate the research run to the `/research` skill. This file documents WHAT to cover, the skill documents HOW. Run `/research <topic>` for a single-domain scan or `/research <A> vs <B>` for a head-to-head. The skill enforces entity resolution, query planning, parallel fan-out, cross-source clustering, citation discipline, and confidence scoring. Save the resulting report under the spec folder's `references.md`. The categories, extraction shape, cross-reference matrix, validation principle, and depth-by-task-size tables below remain authoritative inputs to the skill's query plan.
+
+#### Research scope
+
+Search every category. Do not stop after finding 2-3 results. The goal is to understand how the entire market solves the problem, then extract the best patterns.
+
+| Category | What to search | How | Minimum effort |
+|----------|---------------|-----|----------------|
+| US enterprise platforms | Category leaders in the domain | Web search: "{domain} software features", "{domain} platform capabilities" | Fetch 3+ product feature pages |
+| US/CA startups | Emerging competitors and niche players | GitHub search, web search: "{domain} startup features" | Fetch 3+ product pages |
+| European platforms | UK, German, French, Eastern European alternatives | Web search in English: "{domain} software UK", "{domain} platform Europe" | Fetch 2+ product pages |
+| Brazilian platforms | Local competitors and market-specific solutions | Web search in Portuguese: "software de {dominio} funcionalidades", "plataforma {dominio} Brasil" | Fetch 2+ product pages |
+| Latin American platforms | Mexican, Argentine, Colombian alternatives | Web search in Spanish: "software de {dominio} funcionalidades" | Fetch 1+ product pages |
+| Open source (same stack) | Projects using the same language/framework | GitHub search: "{domain}" filtered by language, sorted by stars | Read schema/models of top 3 |
+| Open source (any stack) | Best implementations regardless of language | GitHub search: "{domain}" sorted by stars, all languages | Read architecture of top 3 |
+| User's own repos | Prior art and reusable patterns across all accounts | Check every GitHub account the user has. Search for relevant repos. Read schemas, services, and data models | Check all accounts, read key files |
+| Review/comparison sites | Aggregated feature lists and user feedback | Web search: "best {domain} software comparison", "{domain} software reviews" | Read 1-2 comparison articles |
+| API documentation | How market leaders structure their data models | Search for "{platform} API reference", "{platform} developer docs" | Read 2+ API schemas |
+
+#### What to extract from each source
+
+For every platform or project researched, extract and document:
+
+1. **Feature inventory**: what features exist. List each one, not just categories.
+2. **Data model**: entities, relationships, and how they connect. If the source is open source, read the actual schema. If commercial, infer from the UI/API.
+3. **Integration points**: how modules reference each other. Does creating a quote auto-create a job? Does completing a job auto-generate an invoice? Map every cross-module trigger.
+4. **Lifecycle flows**: the full journey from first touch to completion. What are the steps, statuses, and transitions?
+5. **UX patterns**: how the user interacts. One-click conversions? Drag-and-drop? Inline editing? Approval workflows?
+6. **Differentiators**: what does this platform do that others do not? What is genuinely unique?
+7. **Gaps**: what is missing from this platform that others have?
+
+#### How to document findings
+
+Create a structured summary per source. In the spec folder's `references.md`:
+
+```markdown
+### Platform Name (Region, Type)
+
+**Features:** bullet list of all features found
+**Data model highlights:** key entities and relationships
+**Integration patterns:** cross-module triggers and automations
+**Unique approach:** what they do differently
+**Gaps vs our platform:** what they lack that we have
+**Ideas to adopt:** specific patterns worth implementing
+```
+
+#### Cross-reference analysis
+
+After researching all sources, build a cross-reference matrix:
+
+| Feature/Pattern | Source A | Source B | Source C | Our platform | Action |
+|----------------|---------|---------|---------|-------------|--------|
+| Quote-to-job conversion | Yes (1-click) | Yes (manual) | No | Missing | Implement |
+| Skill-based dispatch | Yes | Yes | Yes | Missing | Implement |
+| Progress invoicing | Yes | No | Yes | Missing | Implement |
+
+Features present in 3+ sources are market-validated patterns. Implement them. Features present in only 1 source are differentiators worth evaluating. Features no source has are innovation opportunities worth discussing.
+
+#### Validation principle
+
+**Copy what works. Improve what is weak. Invent only when the market has no answer.**
+
+- If every competitor implements a feature the same way, do it the same way. Users expect it.
+- If competitors implement it poorly, bad UX, missing edge cases, improve the implementation but keep the concept.
+- If no competitor has the feature and the user requests it, design it carefully with extra user validation.
+- Never assume a feature is unnecessary because competitors lack it. Ask the user.
+- Never assume a feature is necessary because competitors have it. Validate against the user's actual workflow.
+
+#### Research depth by task size
+
+| Task scope | Research depth |
+|-----------|---------------|
+| Single feature (e.g., "add quote PDF export") | Search 5+ competitors for how they handle it. Read 2+ implementations. |
+| Module improvement (e.g., "improve dispatch board") | Search 10+ platforms across all regions. Read 3+ open source implementations. Build comparison matrix. |
+| Full roadmap or architecture plan | Search 15+ platforms. Read 5+ open source projects. Analyze user's own repos across all accounts. Build a full cross-reference matrix. Document in spec folder. |
+
+#### Time investment
+
+Research is not a shortcut to skip. It is the most valuable time in the planning phase. A 30-minute research session that finds a proven pattern saves days of wrong-direction implementation.
+
+Do not present a plan until research is complete. If the user asks to start implementing before research is done, explain what remains and why it matters.
+
+### 1b-ii. Technology Selection is Deliberate
+
+Reference projects are sources of ideas and domain knowledge, not sources of technology decisions. When a reference project uses pgBoss, Kafka, or any specific tool, that is a data point, not a directive.
+
+Before adopting any technology from a reference:
+
+1. Check if the current project already solves the problem with an existing tool
+2. Evaluate the reference's choice against the current stack. Redis vs pgBoss, Prisma vs Knex, date-fns vs dayjs: compare on the merits, not on what the reference happened to use
+3. Prefer consistency with the existing stack over novelty. Adding a new tool has an ongoing maintenance cost
+
+### 1b-iii. Additive Planning
+
+Follow-up instructions from the user merge into the existing plan. They never replace it.
+
+When the user provides additional requirements after a plan is created, add them to the existing spec folder. Update `plan.md` with the new items integrated at the correct position in the task breakdown. Do not create a new spec folder or start over. The plan is a living document that grows as the user refines their requirements.
+
+### 2. Architecture Fit
+
+Read the surrounding code. Confirm the new code fits the existing patterns, except when existing patterns violate `~/.claude/` rules. Rules always take priority.
+
+- What conventions does this area of the codebase follow?
+- What abstractions already exist that the new code should use?
+- Would this change require modifying callers, consumers, or dependents?
+- Does it belong in this module, or does it belong somewhere else?
+
+If the change doesn't fit the existing architecture, raise it before implementing.
+
+When the design is not obvious, draft two radically different approaches before choosing. The first design is rarely the best, and the comparison sharpens the requirements. See [`design-philosophy.md`](../rules/design-philosophy.md) "Design It Twice".
+
+### 3. Interface Verification
+
+Verify every external interface the implementation will touch.
+
+| Interface | How to verify |
+|-----------|---------------|
+| Functions to call | Read their signatures and return types |
+| APIs to consume | Read the route, controller, or schema |
+| Libraries to use | Fetch docs (llms.txt or official docs) |
+| Database tables | Read the schema or migration files |
+| Config and env vars | Read `.env.example` or consuming code |
+| Thresholds and constants copied from existing code | Read what the original value actually measures, and where it applies |
+
+Copying a number from elsewhere in the codebase looks like reuse and is often invention. Before describing new code as following an existing threshold, confirm all four:
+
+| Question | Why it matters |
+|----------|----------------|
+| Does it measure the same quantity? | A count that includes the subject differs from one that excludes them; a stored high-water mark differs from a live count |
+| Does it trigger the same action? | Blocking a purchase and blocking account verification are different consequences from the same number |
+| Does it apply under the same conditions? | An existing check may be environment-gated or honor an override flag that the new one does not |
+| Does the source population match? | A threshold tuned over all rows means something else when applied to a filtered subset |
+
+When any answer is no, the value was borrowed but its justification was not. Either carry the semantics across or derive the threshold independently, and never tell a reviewer the new rule "reuses the existing threshold" when only the digit is shared.
+
+No guessing. If the interface is ambiguous, clarify before coding.
+
+### 4. Root Cause Confirmation (Bug Fixes Only)
+
+For bug fixes, confirm the root cause before writing the fix.
+
+- Can you reproduce the bug reliably?
+- Can you explain WHY it happens, not just WHERE?
+- Can you predict what a specific test input will do?
+
+If any answer is no, investigate further. Do not write a speculative fix.
+
+### 5. Warning Baseline
+
+Apply the "Warning baseline" section of [`checklists/checklist.md`](../checklists/checklist.md) category 17. Run linter, type checker, and test suite on the files you plan to change. Record the current warning count. After implementation, the count must be equal to or lower.
+
+### 6. Scope Agreement
+
+Confirm the scope is bounded and agreed upon.
+
+- What files will change? List them.
+- What will NOT change? State the boundary explicitly.
+- Are there follow-up tasks that should be separate?
+
+If scope is unclear, ask one question before starting. Format the question per [`rules/smart-questions.md`](../rules/smart-questions.md) "Asking the user": specific question on the first line, what was investigated, options with trade-offs.
+
+## Confidence Signal
+
+After completing the gate, briefly state:
+
+- What was checked and confirmed
+- Which interfaces were verified
+- What the implementation approach will be
+
+Then proceed. One sentence is enough for small tasks.
+
+## Common Failures
+
+- Starting implementation before reading the existing code in the area
+- Assuming a library API works a certain way without checking docs
+- Fixing a bug based on a theory that was never tested
+- Implementing a feature that already exists in a different module
+- Expanding scope mid-implementation without checking with the user
+
+## Enforcement
+
+Enforced by: [`hooks/scope-guard.py`](../hooks/scope-guard.py).

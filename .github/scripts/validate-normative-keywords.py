@@ -47,6 +47,9 @@ EXTRA_FILES = ("CLAUDE.md",)
 SELF_REFERENCE_FILES = (
     "rules/normative-keywords.md",
     "rules/writing-precision.md",
+    "standards/normative-keywords.md",
+    "standards/writing-precision.md",
+    "standards/tone-and-writing.md",
     "CLAUDE.md",
 )
 

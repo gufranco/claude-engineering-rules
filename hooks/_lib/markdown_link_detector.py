@@ -39,6 +39,7 @@ ADVISORY_DIR_PREFIXES = ("specs/",)
 
 EXEMPT_FILES = {
     "rules/markdown-links.md",
+    "standards/markdown-links.md",
 }
 
 GENERIC_FILENAME_TOKENS = frozenset(
