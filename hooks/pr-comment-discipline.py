@@ -107,6 +107,33 @@ def _tokens(command: str) -> list[str]:
         return command.split()
 
 
+SEPARATORS = frozenset({"&&", "||", ";", "|", "&", "|&"})
+
+
+def _segments(command: str) -> list[list[str]]:
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|")
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        return [command.split()]
+    segments: list[list[str]] = [[]]
+    for token in tokens:
+        if token in SEPARATORS:
+            segments.append([])
+        else:
+            segments[-1].append(token)
+    return [segment for segment in segments if segment]
+
+
+def _writes(command: str, tool: re.Pattern[str]) -> bool:
+    return any(
+        _is_write(segment, " ".join(segment))
+        for segment in _segments(command)
+        if tool.search(" ".join(segment))
+    )
+
+
 def _is_write(tokens: list[str], command: str) -> bool:
     """True when the invocation sends a write request.
 
@@ -246,7 +273,7 @@ def find_violation(command: str) -> tuple[str, str] | None:
             "discussion instead, or answer with a code change.",
         )
 
-    if GH_API.search(command) and _is_write(tokens, command):
+    if GH_API.search(command) and _writes(command, GH_API):
         if REPLIES_ENDPOINT.search(command):
             return None
         payload = _payload_chunks(tokens, command)
@@ -280,7 +307,7 @@ def find_violation(command: str) -> tuple[str, str] | None:
                 "Say it in the commit message instead.",
             )
 
-    if GLAB_API.search(command) and _is_write(tokens, command):
+    if GLAB_API.search(command) and _writes(command, GLAB_API):
         if GLAB_DISCUSSION_NOTES.search(command):
             return None
         if GLAB_DISCUSSIONS.search(command):
@@ -290,7 +317,7 @@ def find_violation(command: str) -> tuple[str, str] | None:
                 "discussion. Post into an existing one instead.",
             )
 
-    if CURL.search(command) and _is_write(tokens, command):
+    if CURL.search(command) and _writes(command, CURL):
         if BB_PR_COMMENTS.search(command):
             payload = _payload_chunks(tokens, command)
             if not _mentions_reply_parent(payload):

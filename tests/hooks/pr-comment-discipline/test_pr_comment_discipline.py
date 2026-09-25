@@ -335,6 +335,36 @@ def test_read_only_method_is_not_a_write(tool_use, assert_allows):
     assert_allows(HOOK, payload)
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        f"ls -d node_modules && gh api {REPO}/pulls/12/comments",
+        f"gh api {REPO}/pulls/12/comments | jq -f filter.jq",
+        f"cut -d, -f1 ids.csv; gh api {REPO}/issues/12/comments",
+    ],
+)
+def test_a_flag_from_another_command_is_not_a_payload(tool_use, assert_allows, command):
+    payload = tool_use("Bash", {"command": command})
+
+    assert_allows(HOOK, payload)
+
+
+@pytest.mark.parametrize(
+    ("command", "code"),
+    [
+        (f"ls -d node_modules && gh api {REPO}/pulls/12/comments -f body=hi", "PRC004"),
+        (f"cat body.json | gh api {REPO}/issues/12/comments --input -", "PRC005"),
+        (f"cd repo; gh api {REPO}/pulls/12/comments -X POST", "PRC004"),
+    ],
+)
+def test_a_write_chained_after_another_command_is_still_caught(
+    tool_use, assert_blocks, command, code
+):
+    payload = tool_use("Bash", {"command": command})
+
+    assert_blocks(HOOK, payload, code)
+
+
 def test_trailing_payload_flag_without_a_value(tool_use, assert_blocks):
     payload = tool_use(
         "Bash",
