@@ -12,6 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 HOOK = "dangerous-command-blocker"
 
 
@@ -108,6 +110,32 @@ def _with_allowlist(monkeypatch, tmp_path, body: str):
 
 
 PUSH = "git " + "push " + "orig" + "in " + "ma" + "in"
+
+
+@pytest.mark.parametrize(
+    "target",
+    ["main", "HEAD:main", "refs/heads/develop", "+master", "main --tags", "develop;"],
+)
+def test_a_protected_ref_is_named(target):
+    module = _load_module()
+
+    assert module._names_protected_ref(f" {target}")
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "gfranco/eng-2330-cut-memory-main",
+        "feature/main",
+        "develop-2",
+        "HEAD",
+        "mainline",
+    ],
+)
+def test_a_branch_that_only_ends_in_a_protected_name_is_not_protected(target):
+    module = _load_module()
+
+    assert not module._names_protected_ref(f" {target}")
 
 
 def test_command_cwd_reads_a_leading_cd():

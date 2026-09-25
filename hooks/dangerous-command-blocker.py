@@ -437,6 +437,15 @@ from _lib.bypass import is_bypassed  # noqa: E402
 SOLO_REPO_ALLOWLIST = _os.path.expanduser("~/.claude/solo-repos.txt")
 
 
+PROTECTED_REF = re.compile(
+    r"(?:^|[\s:+])(?:refs/heads/)?(?:main|master|develop)(?=$|[\s;&|])"
+)
+
+
+def _names_protected_ref(text: str) -> bool:
+    return PROTECTED_REF.search(text) is not None
+
+
 def _command_cwd(command: str) -> str:
     """Return the directory a leading `cd` moves the command into.
 
@@ -569,10 +578,9 @@ def main():
         except Exception:
             branch = ""
 
-        protected = re.compile(r"\b(main|master|develop)\b")
         targets_protected = (
             re.search(r"\borigin\s+", command)
-            and protected.search(command.split("origin", 1)[-1])
+            and _names_protected_ref(command.split("origin", 1)[-1])
         ) or (
             branch in ("main", "master", "develop")
             and not re.search(r"\borigin\s+\w", command)
