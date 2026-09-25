@@ -23,6 +23,8 @@ SKILLS_DIR = os.path.join(CLAUDE_DIR, "skills")
 
 REQUIRED_FIELDS = {"name", "description"}
 
+HARNESS_MANAGED_GITIGNORED_DIRS = frozenset({"synced"})
+
 SENSITIVE_TERMS = re.compile(
     r"\b(git push|gh pr merge|git merge|git reset --hard|git rebase|"
     r"force.?push|force.?with.?lease|deploy|rollback|destroy|drop\s+(table|database)|"
@@ -91,7 +93,7 @@ def main() -> None:
     skill_count = 0
     for entry in sorted(os.listdir(SKILLS_DIR)):
         skill_path = os.path.join(SKILLS_DIR, entry)
-        if not os.path.isdir(skill_path):
+        if not os.path.isdir(skill_path) or entry in HARNESS_MANAGED_GITIGNORED_DIRS:
             continue
         skill_count += 1
         all_errors.extend(validate_skill(skill_path))

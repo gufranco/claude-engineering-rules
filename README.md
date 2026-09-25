@@ -15,7 +15,7 @@
 
 </div>
 
-**40** always-on rules · **83** on-demand standards · **42** slash-command skills · **82** runtime hooks · **20** custom agents · **42** MCP servers · **888** review items across **71** categories
+**40** always-on rules · **138** on-demand standards · **42** slash-command skills · **82** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-39 rules in [`rules/`](rules/), loaded into every conversation.
+44 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/), loaded into every conversation as short cores. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -494,14 +494,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 888-item review checklist across 71 categories
-  rules/                 31 rules, 29 always-on plus 2 loaded on demand
+  rules/                 44 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
-    lang/                5 language-specific rules: TypeScript, Python, ORM migrations
-  standards/             83 on-demand domain standards
-  agents/                17 specialized subagents
-  skills/                39 slash-command skills
+    lang/                5 language-specific cores: TypeScript, Python, ORM migrations
+  standards/             138 on-demand standards, including the full text of every rule
+  agents/                18 specialized subagents
+  skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 81 runtime hooks
+  hooks/                 82 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
   tests/                 Hook smoke tests and fixture trees

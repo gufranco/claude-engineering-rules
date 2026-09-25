@@ -100,7 +100,7 @@ Every review comment, PR description, PR comment, Slack message, and any other e
 **Never reference, cite, or mention:**
 
 - `~/.claude/`, [`rules/`](../rules), [`checklists/`](../checklists), [`standards/`](.), [`skills/`](../skills)
-- File names like `checklist.md`, `code-style.md`, `testing.md`, [`database.md`](database.md)
+- File names like `checklist.md`, [`code-style.md`](code-style.md), [`testing.md`](testing.md), [`database.md`](database.md)
 - Phrases like "per our rules", "per our standards", "category 17", "checklist item 3"
 - Rule-sourced phrasing that implies a codified checklist: "this violates rule X", "standard Y requires"
 - Internal severity tiers in posted text: `P0`, `P1`, `P2`, or section headings like `## P0 Blocking`, `## P1 Should Fix`, `## P2 Nits`. Severity is something you compute internally to triage; it maps to GitHub's `APPROVE` / `REQUEST_CHANGES` / `COMMENT` verdict, full stop. It does not appear as a label in the body.
