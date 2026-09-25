@@ -140,6 +140,17 @@ def _staged_diff(cwd: Path) -> str:
     return _git(cwd, "diff", "--cached", "-U0") or ""
 
 
+def _code_hunks(diff: str) -> str:
+    kept: list[str] = []
+    in_doc = False
+    for line in diff.splitlines():
+        if line.startswith("diff --git "):
+            in_doc = line.rsplit(" b/", 1)[-1].lower().endswith(DOC_SUFFIXES)
+        if not in_doc:
+            kept.append(line)
+    return "\n".join(kept)
+
+
 def _added_lines(diff: str) -> list[str]:
     return [
         line[1:]
@@ -241,8 +252,9 @@ def _collect_findings(cwd: Path) -> list[str]:
     if not diff:
         return []
 
-    added = _added_lines(diff)
-    removed = _removed_lines(diff)
+    code_diff = _code_hunks(diff)
+    added = _added_lines(code_diff)
+    removed = _removed_lines(code_diff)
     docs = _tracked_docs(cwd)
     findings: list[str] = []
 
