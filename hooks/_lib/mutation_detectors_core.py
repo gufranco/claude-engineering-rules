@@ -137,6 +137,74 @@ def strip_strings_comments(line: str) -> str:
     return "".join(out)
 
 
+LINE_BREAKS = frozenset("\n\r\v\f\x1c\x1d\x1e\x85  ")
+
+
+def _blank(text: str, start: int, end: int) -> str:
+    return "".join(ch if ch in LINE_BREAKS else " " for ch in text[start:end])
+
+
+def _template_end(text: str, start: int) -> int:
+    n = len(text)
+    j = start
+    while j < n and text[j] != "`":
+        if text[j] == "\\" and j + 1 < n:
+            j += 2
+            continue
+        if text[j] == "$" and j + 1 < n and text[j + 1] == "{":
+            depth = 1
+            j += 2
+            while j < n and depth > 0:
+                depth += {"{": 1, "}": -1}.get(text[j], 0)
+                j += 1
+            continue
+        j += 1
+    return j
+
+
+def _quoted_end(text: str, start: int, quote: str) -> int:
+    n = len(text)
+    j = start
+    while j < n and text[j] != quote and text[j] not in LINE_BREAKS:
+        j += 2 if text[j] == "\\" and j + 1 < n else 1
+    return j
+
+
+def _masked_span(text: str, i: int) -> tuple[str, int] | None:
+    n = len(text)
+    pair = text[i : i + 2]
+    if pair == "//":
+        end = i
+        while end < n and text[end] not in LINE_BREAKS:
+            end += 1
+        return " " * (end - i), end
+    if pair == "/*":
+        close = text.find("*/", i + 2)
+        end = n if close < 0 else close + 2
+        return _blank(text, i, end), end
+    quote = text[i]
+    if quote not in ("'", '"', "`"):
+        return None
+    j = _template_end(text, i + 1) if quote == "`" else _quoted_end(text, i + 1, quote)
+    if j < n and text[j] == quote:
+        return quote + _blank(text, i + 1, j) + quote, j + 1
+    return quote + _blank(text, i + 1, j), j
+
+
+def mask_lines(text: str) -> list[str]:
+    out: list[str] = []
+    i = 0
+    while i < len(text):
+        span = _masked_span(text, i)
+        if span is None:
+            out.append(text[i])
+            i += 1
+            continue
+        masked, i = span
+        out.append(masked)
+    return "".join(out).splitlines()
+
+
 def window_around(
     lines: list[str], lineno: int, before: int = 2, after: int = 2
 ) -> str:

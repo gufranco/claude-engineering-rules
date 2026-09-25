@@ -24,7 +24,12 @@ from __future__ import annotations
 import re
 
 from .mutation_allowlists import is_dom_assignment, is_dom_receiver
-from .mutation_detectors_core import Match, strip_strings_comments, truncate_excerpt
+from .mutation_detectors_core import (
+    Match,
+    mask_lines,
+    strip_strings_comments,
+    truncate_excerpt,
+)
 from .mutation_fix_lookup import tc39_stage_filter
 
 
@@ -176,10 +181,12 @@ KNOWN_PROP_REASSIGN_PARAM_NAMES: frozenset[str] = frozenset(
 
 def _iter_lines(text: str) -> list[tuple[int, str, str]]:
     out: list[tuple[int, str, str]] = []
-    for idx, line in enumerate(text.splitlines(), start=1):
+    for idx, (line, masked) in enumerate(
+        zip(text.splitlines(), mask_lines(text)), start=1
+    ):
         if not line.strip():
             continue
-        out.append((idx, line, strip_strings_comments(line)))
+        out.append((idx, line, masked))
     return out
 
 
@@ -576,8 +583,7 @@ def _collect_param_names(text: str) -> set[str]:
     React-style props destructuring.
     """
     found: set[str] = set()
-    for raw in text.splitlines():
-        masked = strip_strings_comments(raw)
+    for masked in mask_lines(text):
         for m in PARAM_REASSIGN_FN_PATTERN.finditer(masked):
             params_text = m.group("params") or m.group("arrow_params") or ""
             for token in params_text.split(","):
@@ -607,9 +613,9 @@ def detect_let_could_be_const(
         '~/.claude/rules/code-style.md "let that could be const is a code review failure".'
     )
     lines = text.splitlines()
+    masks = mask_lines(text)
     declared: list[tuple[int, str, str]] = []
-    for idx, raw in enumerate(lines, start=1):
-        masked = strip_strings_comments(raw)
+    for idx, (raw, masked) in enumerate(zip(lines, masks), start=1):
         if LET_FOR_HEAD_PATTERN.search(masked):
             continue
         m = LET_DECL_PATTERN.match(masked)
@@ -623,7 +629,7 @@ def detect_let_could_be_const(
     if not declared:
         return results
 
-    body = "\n".join(strip_strings_comments(line) for line in lines)
+    body = "\n".join(masks)
     for lineno, raw, name in declared:
         reassign_pattern = re.compile(
             rf"\b{re.escape(name)}\b\s*(?:=(?!=)|\+=|-=|\*=|/=|%=|\+\+|--|\.[a-zA-Z_$][\w$]*\s*=(?!=)|\[[^\]]+\]\s*=(?!=))"
@@ -831,7 +837,6 @@ def canonical_static_block_line_ranges(text: str) -> list[tuple[int, int]]:
     The static block detector still flags branching or multiple blocks; those
     ranges are excluded from this list.
     """
-    lines = text.splitlines()
     ranges: list[tuple[int, int]] = []
     in_block = False
     depth = 0
@@ -840,8 +845,7 @@ def canonical_static_block_line_ranges(text: str) -> list[tuple[int, int]]:
     class_depth = 0
     class_block_seen = 0
     pending: list[tuple[int, int, bool, int]] = []
-    for idx, raw in enumerate(lines, start=1):
-        masked = strip_strings_comments(raw)
+    for idx, masked in enumerate(mask_lines(text), start=1):
         if re.search(r"\bclass\s+[A-Z][\w$]*", masked):
             class_depth = class_depth + 1
             class_block_seen = 0
@@ -932,8 +936,7 @@ def detect_static_block_mutation(
     block_count_by_class: list[int] = []
     class_depth = 0
     class_block_count = 0
-    for idx, raw in enumerate(lines, start=1):
-        masked = strip_strings_comments(raw)
+    for idx, masked in enumerate(mask_lines(text), start=1):
         if re.search(r"\bclass\s+[A-Z][\w$]*", masked):
             class_depth = class_depth + 1
             class_block_count = 0

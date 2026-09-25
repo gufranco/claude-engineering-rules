@@ -105,6 +105,56 @@ def test_supports_ast_tsx_true():
     assert result is True
 
 
+MULTILINE_SQL = (
+    "export const listTables = () => sql`\n"
+    "  JOIN pg_namespace n ON n.oid = c.relnamespace\n"
+    "  WHERE n.nspname = 'public'\n"
+    "`;\n"
+    "order.status = 1;\n"
+)
+
+
+def test_mask_lines_masks_a_template_literal_across_lines():
+    masked = core.mask_lines(MULTILINE_SQL)
+
+    assert len(masked) == len(MULTILINE_SQL.splitlines())
+    assert "nspname" not in masked[2]
+    assert "relnamespace" not in masked[1]
+    assert masked[4] == "order.status = 1;"
+
+
+def test_mask_lines_masks_a_block_comment_across_lines():
+    masked = core.mask_lines("a /* one\ntwo.x = 3 */ b.y = 4;")
+
+    assert "two" not in masked[1]
+    assert masked[1].endswith("b.y = 4;")
+
+
+def test_mask_lines_keeps_an_escaped_backtick_inside_the_literal():
+    masked = core.mask_lines("const s = `a\\`b.c = 1\n`;\nobj.prop = 1;")
+
+    assert "b.c" not in masked[0]
+    assert masked[2] == "obj.prop = 1;"
+
+
+def test_mask_lines_ends_a_quoted_string_at_the_line_break():
+    masked = core.mask_lines("const s = 'open\nobj.prop = 1;")
+
+    assert masked[1] == "obj.prop = 1;"
+
+
+def test_mask_lines_matches_the_single_line_masker_on_one_line():
+    line = 'const s = "a\\"b" + `x${y}z`; // tail'
+
+    assert core.mask_lines(line) == [core.strip_strings_comments(line)]
+
+
+def test_sql_in_a_multiline_template_literal_is_not_a_property_assignment():
+    found = assignments.detect_property_assignment(MULTILINE_SQL, "typescript", "x.ts")
+
+    assert [(match.line, match.text) for match in found] == [(5, "order.status = 1;")]
+
+
 def test_strip_strings_comments_empty():
     line = ""
 
