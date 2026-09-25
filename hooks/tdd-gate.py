@@ -35,6 +35,7 @@ Enforces: rules/testing.md.
 
 from __future__ import annotations
 
+import glob
 import json
 import os
 import re
@@ -272,6 +273,10 @@ def find_companion_test(path: Path) -> Path | None:
         for cand in sibling_candidates:
             if cand.exists():
                 return cand
+        for kind in ("test", "spec"):
+            for cand in parent.glob(f"{glob.escape(v)}.*.{kind}{suffix}"):
+                if cand.is_file():
+                    return cand
 
     for testdir_name in ("__tests__", "tests", "test"):
         td = parent / testdir_name
