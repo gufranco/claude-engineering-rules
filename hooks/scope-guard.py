@@ -37,7 +37,7 @@ except Exception:  # pragma: no cover
 
 
 try:
-    from _lib.project_scope import walk_up
+    from _lib.project_scope import repo_root, walk_up
 except ImportError:  # pragma: no cover
     sys.exit(0)
 
@@ -131,6 +131,22 @@ def extract_declared_paths(plan_text: str) -> set[str]:
     return paths
 
 
+def governs(plan_path: Path, target: Path) -> bool:
+    """True when target lies inside the repository the plan belongs to.
+
+    A plan scopes the work in its own repository. A file elsewhere, such as a
+    knowledge vault a session also writes to, was never in that plan's scope.
+    """
+    root = repo_root(plan_path.parent)
+    if root is None:
+        return True
+    try:
+        target.resolve().relative_to(root)
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def is_in_scope(target: Path, declared: set[str]) -> bool:
     """True if target matches any declared path or lives under a declared dir."""
     target_str = str(target)
@@ -203,6 +219,8 @@ def main() -> int:
         return 0
 
     target = Path(file_path_str)
+    if not governs(plan_path, target):
+        return 0
     if is_in_scope(target, declared):
         return 0
 

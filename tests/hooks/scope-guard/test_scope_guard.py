@@ -231,3 +231,22 @@ def test_a_repo_local_plan_still_governs_its_own_repository(
     )
 
     assert_allows("scope-guard", payload)
+
+
+def test_a_file_outside_the_governed_repository_is_left_alone(
+    tool_use, assert_allows, tmp_path
+):
+    project = tmp_path / "project"
+    (project / ".git").mkdir(parents=True)
+    write_plan(project / "specs" / "2026-09-28-local", ["src/declared.py"])
+    vault = tmp_path / "second-brain"
+    target = vault / "wiki" / "concepts" / "A note.md"
+    target.parent.mkdir(parents=True)
+
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "note\n"},
+        cwd=str(project),
+    )
+
+    assert_allows("scope-guard", payload)
