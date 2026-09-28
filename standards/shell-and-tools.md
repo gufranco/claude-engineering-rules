@@ -27,6 +27,8 @@ Commands may be aliased (e.g., `du`→`dust` or `ls`→`eza`), changing flags an
 
 **zsh unquoted globs.** zsh expands a glob wherever it appears on the command line, including inside a flag argument, and aborts the entire command when nothing matches instead of passing the pattern through. `grep -rn "x" --include=*.ts .` fails with `no matches found: --include=*.ts` and runs nothing, because no file by that name exists in the current directory. The same shape bites `find . -name *.py` and `git log -- *.md`, and it bites any tool that expects to receive the pattern itself rather than the shell's expansion of it. Quote every pattern meant for the tool: `--include="*.ts"`, `-name '*.py'`. The error text names the flag rather than the shell, so it reads as the tool rejecting an option it in fact supports, which is what sends the next attempt looking in the wrong place.
 
+**zsh does not split an unquoted variable.** Unlike bash, zsh passes `$var` as one word even when it holds spaces, so `n="2 1"; set -- $n` leaves `$1` as `2 1` and `[ "$1" -ge 2 ]` fails with `integer expression expected: 2 1`. Seen on 2026-09-28 in a CI poll loop that never met its exit condition and ran to its cap while reporting nothing wrong. Split explicitly with `${=var}`, read the fields with `read -r first second <<< "$var"`, or have the producing command print one value per variable.
+
 ## Shell Argument Safety (MANDATORY)
 
 Bash history expansion converts `!` to `\!` in double-quoted strings. Variable expansion, backtick execution, and backslash processing also apply. Any text payload passed through a double-quoted shell argument, code snippets, Markdown, prose with punctuation, will be silently corrupted.
