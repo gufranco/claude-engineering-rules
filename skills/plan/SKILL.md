@@ -133,9 +133,9 @@ The steps below are enablers, not gates. Their order shows what becomes possible
    - **Pivot trigger**: when to switch to next-best alternative.
    Present for approval. Suggest `/plan adr new` for significant decisions.
 
-6. **Create spec folder:**
+6. **Create spec folder** in the project workspace, per [`rules/project-workspace.md`](../../rules/project-workspace.md). The root is `<repo>/docs/` or `<repo>/.work/`, resolved by [`hooks/_lib/project_workspace.py`](../../hooks/_lib/project_workspace.py); the folder is never committed:
    ```
-   specs/<YYYY-MM-DD>-<slug>/
+   <root>/plans/<YYYY-MM-DD>-<slug>/
      plan.md        (goal, approach, requirements, task breakdown, risks, validation)
      decisions.md   (context, options, chosen with reasoning)
      references.md  (patterns, related work, applicable rules)
@@ -203,7 +203,7 @@ Fold a completed change's spec delta into the living spec, then stamp the plan f
 
 ### Arguments
 
-- No arguments: resolve the most recent plan folder under `specs/` that has an unmerged delta.
+- No arguments: resolve the most recent plan folder under `<root>/plans/`, or the legacy `specs/`, that has an unmerged delta.
 - `<spec-folder>`: explicit path to the plan folder to archive.
 - `--dry-run`: print the merge that would happen without writing.
 
@@ -297,7 +297,7 @@ This subcommand runs only when the user asks for it. It exports planned work the
 
 ### Arguments
 
-- No arguments: read the most recent spec folder under `specs/` or `.claude/specs/`.
+- No arguments: read the most recent plan folder under `<root>/plans/`, or the legacy `specs/` or `.claude/specs/`.
 - `<spec-folder>`: explicit path to the spec folder.
 - `--label <name>`: label to apply to every created issue. Repeatable.
 - `--milestone <name>`: milestone to assign to every issue.
@@ -305,7 +305,7 @@ This subcommand runs only when the user asks for it. It exports planned work the
 
 ### Steps
 
-1. **Resolve spec folder.** Default to the latest folder under `specs/` or `.claude/specs/`.
+1. **Resolve spec folder.** Default to the latest folder under `<root>/plans/`, then the legacy `specs/` or `.claude/specs/`.
 2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue.
 3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists.
@@ -420,7 +420,7 @@ Estimate cost before running. Abort and run a simpler `/plan` flow when the cost
 - Plan folders are permanent and dated. They record WHY decisions were made. The living spec under `specs/current/` records WHAT the system does now and is maintained by `/plan archive`. See [`rules/living-specs.md`](../../rules/living-specs.md).
 - The plan must reference verified file paths.
 - Search for existing work before designing new solutions.
-- Spec folders go in `specs/` or `.claude/specs/` within the project, never in `~/.claude/`.
+- Plan folders go in the project workspace at `<root>/plans/`, never committed, and never in `~/.claude/` unless `~/.claude` is the project. Existing folders under `specs/` or `.claude/specs/` stay readable. The living spec under `specs/current/` is project documentation and stays where the project keeps it.
 
 ## Related skills
 

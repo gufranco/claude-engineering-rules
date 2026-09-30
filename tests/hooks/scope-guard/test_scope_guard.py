@@ -341,3 +341,14 @@ def test_malformed_payload_is_ignored():
     )
 
     assert (proc.returncode, proc.stdout) == (0, "")
+
+
+@pytest.mark.parametrize("root", ["docs", ".work", ".work-local"])
+def test_a_workspace_plan_governs_the_repository(
+    tool_use, assert_blocks, tmp_path, root
+):
+    spec_dir = tmp_path / root / "plans" / "2026-09-30-feature"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "plan.md").write_text("# Plan\n\n1. Update `hooks/foo.py`.\n")
+
+    assert_blocks(HOOK, edit_payload(tool_use, tmp_path, "hooks/unrelated.py"))

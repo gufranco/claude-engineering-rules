@@ -8,10 +8,13 @@ naming them, so the model knows where the previous session left off
 without having to re-discover.
 
 Discovery (in priority order):
+  0. <workspace>/PROMPT.md, the continuation prompt in the local project
+     workspace (`docs/` or `.work/`, see _lib/project_workspace.py). No
+     freshness window: it is always the handoff. Up to 200 lines shown.
   1. checkpoints/<date>.md or .claude/checkpoints/<date>.md (most recent,
      within 7 days)
-  2. specs/<date>-<slug>/plan.md or .claude/specs/.../plan.md
-     (most recent, within 7 days; in-progress signal)
+  2. specs/<date>-<slug>/plan.md, .claude/specs/.../plan.md, or
+     <workspace>/plans/<date>-<slug>/plan.md (most recent, within 7 days)
   3. sessions/<date>.md (legacy)
 
 Output: a single context block listing the file paths and the first ~30
@@ -53,9 +56,22 @@ SESSION_GLOBS = (
     ".claude/sessions/*.md",
 )
 
-MAX_PREVIEW_LINES = 30
+WORKSPACE_PLAN_GLOBS = ("plans/*/plan.md",)
 
+MAX_PREVIEW_LINES = 30
+PROMPT_MAX_LINES = 200
+
+from _lib import project_workspace as pw  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
+
+
+def workspace_dir(cwd: Path) -> Path | None:
+    """Return the local workspace folder for the repo at `cwd`, or None."""
+    try:
+        top = pw.toplevel(cwd)
+        return None if top is None else top / pw.resolve_root(top)
+    except pw.WorkspaceError:
+        return None
 
 
 def find_recent(cwd: Path, patterns: tuple[str, ...]) -> list[Path]:
@@ -74,26 +90,59 @@ def find_recent(cwd: Path, patterns: tuple[str, ...]) -> list[Path]:
     return [p for _, p in found]
 
 
-def preview(path: Path) -> str:
+def preview(path: Path, limit: int = MAX_PREVIEW_LINES) -> str:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
         return ""
     lines = text.splitlines()
-    head = lines[:MAX_PREVIEW_LINES]
-    if len(lines) > MAX_PREVIEW_LINES:
-        head.append(f"... ({len(lines) - MAX_PREVIEW_LINES} more lines)")
+    head = lines[:limit]
+    if len(lines) > limit:
+        head.append(f"... ({len(lines) - limit} more lines)")
     return "\n".join(head)
+
+
+def prompt_file(workspace: Path | None) -> Path | None:
+    """Return the workspace continuation prompt when it exists."""
+    if workspace is None:
+        return None
+    candidate = workspace / pw.PROMPT_NAME
+    return candidate if candidate.is_file() else None
+
+
+def recent_plans(cwd: Path, workspace: Path | None) -> list[Path]:
+    """Return project spec plans and workspace plans, newest first."""
+    found = find_recent(cwd, SPEC_GLOBS)
+    if workspace is not None:
+        found = found + find_recent(workspace, WORKSPACE_PLAN_GLOBS)
+    return sorted(found, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def workspace_note(workspace: Path | None) -> list[str]:
+    """Name the workspace folder so the session writes into the right one."""
+    if workspace is None:
+        return []
+    return [
+        f"Local workspace: `{workspace}/`. It is excluded from git and never "
+        f"committed. Keep `{pw.PROMPT_NAME}` there current per "
+        "~/.claude/rules/project-workspace.md.",
+        "",
+    ]
 
 
 def build_context(cwd: Path, source: str) -> str | None:
     """Build the context block. Returns None when nothing to surface."""
+    workspace = workspace_dir(cwd)
+    prompt = prompt_file(workspace)
     checkpoints = find_recent(cwd, CHECKPOINT_GLOBS)
-    specs = find_recent(cwd, SPEC_GLOBS)
+    specs = recent_plans(cwd, workspace)
     sessions = find_recent(cwd, SESSION_GLOBS)
 
-    if not (checkpoints or specs or sessions):
-        return None
+    if not (prompt or checkpoints or specs or sessions):
+        note = workspace_note(workspace)
+        if not note:
+            return None
+        return "\n".join([f"WORKSPACE (SessionStart: {source})", *note]).rstrip()
 
     lines: list[str] = []
     lines.append(f"RESUME CONTEXT (SessionStart: {source})")
@@ -102,19 +151,28 @@ def build_context(cwd: Path, source: str) -> str | None:
     lines.append("before starting new work so you do not duplicate or override")
     lines.append("in-progress changes.")
     lines.append("")
+    lines.extend(workspace_note(workspace))
 
-    primary: Path | None = None
-    if checkpoints:
+    primary: Path
+    if prompt is not None:
+        primary = prompt
+        lines.append(f"Continuation prompt: `{primary}`")
+    elif checkpoints:
         primary = checkpoints[0]
         lines.append(f"Most recent checkpoint: `{primary}`")
     elif specs:
         primary = specs[0]
         lines.append(f"Most recent active plan: `{primary}`")
-    elif sessions:
+    else:
         primary = sessions[0]
         lines.append(f"Most recent session log: `{primary}`")
 
-    if len(checkpoints) > 1:
+    if prompt is not None and checkpoints:
+        lines.append("")
+        lines.append("Recent checkpoints:")
+        for c in checkpoints[:5]:
+            lines.append(f"  - `{c}`")
+    elif len(checkpoints) > 1:
         lines.append("")
         lines.append("Other recent checkpoints:")
         for c in checkpoints[1:5]:
@@ -126,14 +184,13 @@ def build_context(cwd: Path, source: str) -> str | None:
         for s in specs[:5]:
             lines.append(f"  - `{s}`")
 
-    if primary is not None:
-        excerpt = preview(primary)
-        if excerpt:
-            lines.append("")
-            lines.append(f"Preview of `{primary.name}`:")
-            lines.append("```")
-            lines.append(excerpt)
-            lines.append("```")
+    excerpt = preview(primary, PROMPT_MAX_LINES if prompt else MAX_PREVIEW_LINES)
+    if excerpt:
+        lines.append("")
+        lines.append(f"Preview of `{primary.name}`:")
+        lines.append("```")
+        lines.append(excerpt)
+        lines.append("```")
 
     return "\n".join(lines)
 

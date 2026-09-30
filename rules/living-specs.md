@@ -4,6 +4,7 @@ Every non-trivial change, meaning 3 or more files or changed behavior, updates t
 
 - Each requirement states one behavior with a normative keyword and at least one Given/When/Then scenario; no implementation detail.
 - Changes are deltas: ADDED, MODIFIED with full new text, REMOVED with a reason; merged on completion by `/plan archive`.
+- Deltas live in the plan folder under the local workspace per [`project-workspace.md`](project-workspace.md); `specs/current/` stays where the project keeps it.
 - When a decision pivots mid-change, update every invalidated plan, decision record, and delta in the same session.
 
 Full rule, examples, and rationale: [`standards/living-specs.md`](../standards/living-specs.md). Read it before writing a spec delta or archiving a change.

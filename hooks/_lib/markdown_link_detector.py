@@ -35,7 +35,7 @@ SKIP_DIR_PREFIXES = (
     ".github/",
     "tools/",
 )
-ADVISORY_DIR_PREFIXES = ("specs/",)
+ADVISORY_DIR_PREFIXES = ("specs/", ".work/", ".work-local/")
 
 EXEMPT_FILES = {
     "rules/markdown-links.md",

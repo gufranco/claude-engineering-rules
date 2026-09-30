@@ -53,6 +53,7 @@ import os
 import re
 import shlex
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -158,6 +159,8 @@ except Exception:  # pragma: no cover
     def _in_vault(_path: str) -> bool:
         return False
 
+
+from _lib import project_workspace as _workspace  # noqa: E402
 
 SKIPPED_DOCS = (
     "/.claude/CLAUDE.md",
@@ -303,7 +306,7 @@ def is_skipped_md_path(path: str) -> bool:
         return False
     if any(seg in path for seg in SKIPPED_DOCS):
         return True
-    return _in_vault(path)
+    return _in_vault(path) or _workspace.in_workspace(Path(path))
 
 
 def looks_like_publishing_json(content: str) -> bool:

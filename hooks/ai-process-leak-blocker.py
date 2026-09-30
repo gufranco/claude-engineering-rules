@@ -31,6 +31,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -62,6 +63,14 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
         re.compile(r"(?<![\w-])\.{0,2}/?specs?/[\w./-]*\.md\b", re.IGNORECASE),
         "A path into a spec folder advertises the planning artefact; published "
         "text must never link to it or name it",
+    ),
+    (
+        re.compile(
+            r"(?<![\w-])\.?/?(?:docs|\.work(?:-local)?)/(?:PROMPT\.md|plans/)",
+            re.IGNORECASE,
+        ),
+        "Names a file in the local workspace, which is never committed; published "
+        "text must not point at it",
     ),
     (
         re.compile(r"\bspec\s+folders?\b", re.IGNORECASE),
@@ -161,6 +170,8 @@ except Exception:  # pragma: no cover
         return False
 
 
+from _lib import project_workspace as _workspace  # noqa: E402
+
 SKIPPED_PATH_SEGMENTS = (
     "/.claude/",
     "/specs/",
@@ -175,7 +186,7 @@ def is_skipped_path(path: str) -> bool:
         return False
     if any(seg in path for seg in SKIPPED_PATH_SEGMENTS):
         return True
-    return _in_vault(path)
+    return _in_vault(path) or _workspace.in_workspace(Path(path))
 
 
 GIT_AND_PR_PATTERNS = (

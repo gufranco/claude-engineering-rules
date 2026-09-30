@@ -2,6 +2,24 @@
 
 All notable changes to this Claude Code configuration are documented here.
 
+## 2026-09-30
+
+### Added
+
+- A local project workspace in every repository, defined in [`rules/project-workspace.md`](rules/project-workspace.md) and [`standards/project-workspace.md`](standards/project-workspace.md). Working material and a continuation `PROMPT.md` live in `<repo>/docs/`, or in `<repo>/.work/` when the project owns its own documentation folder, and are ignored through `.git/info/exclude` so no project file changes. The README stays the single source of truth for the project. The convention worked in one repository and nowhere else because nothing fired when a prompt went stale, so [`hooks/project-workspace.py`](hooks/project-workspace.py) enforces it at the three moments that matter: it claims the folder at session start, blocks the end of a turn once while `PROMPT.md` is older than the newest change, and refuses a forced add over the workspace. Root resolution lives once in [`hooks/_lib/project_workspace.py`](hooks/_lib/project_workspace.py).
+
+### Changed
+
+- [`hooks/session-resume-context.py`](hooks/session-resume-context.py) names the workspace and injects its `PROMPT.md` in full ahead of checkpoints and plans, with no freshness window, since the prompt is the handoff.
+- `/checkpoint save` writes the workspace `PROMPT.md` inside a repository. `/plan` writes dated plan folders to the workspace `plans/`; `specs/current/` stays where the project keeps it. The scope guard, the scope-drift agent, and `/guard` read both locations.
+- [`hooks/ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) exempts writes into the workspace and blocks published text that names a workspace `PROMPT.md` or `plans/` path, since neither exists in a clone.
+
+### Fixed
+
+- [`hooks/scope-guard.py`](hooks/scope-guard.py) could not read an extensionless file such as `Makefile` from a plan, so those files were impossible to declare, and its advice to confirm by retrying was false because a retry asked again. It now accepts common extensionless names and tells the reader to add the path to the plan.
+- The markdown link hook blocked writes into the local workspace as if they were published repository markdown. `.work/` and `.work-local/` are now advisory beside `specs/`, since nothing in them is ever committed.
+- [`hooks/internal-config-leakage.py`](hooks/internal-config-leakage.py) blocked a workspace `PROMPT.md` for naming configuration paths, treating a local file as external output. Workspace paths are now exempt through the same containment check the process-language hook uses, and a project-owned documentation folder is still checked.
+
 ## 2026-08-19
 
 ### Added

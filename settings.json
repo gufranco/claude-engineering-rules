@@ -217,6 +217,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/project-workspace.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/secret-scanner.py"
           }
         ]
@@ -1431,6 +1440,10 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/session-resume-context.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/project-workspace.py"
           }
         ]
       },
@@ -1493,6 +1506,10 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/vault-capture-queue.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/project-workspace.py"
           }
         ]
       }

@@ -47,6 +47,9 @@ PLAN_WINDOW_SECONDS = 60 * 60
 SPEC_GLOBS = (
     "specs/*/plan.md",
     ".claude/specs/*/plan.md",
+    "docs/plans/*/plan.md",
+    ".work/plans/*/plan.md",
+    ".work-local/plans/*/plan.md",
 )
 
 EXTENSIONLESS_FILENAMES = (

@@ -37,7 +37,7 @@ Guard mode enables three protections simultaneously:
 4. **Confirm activation.** State the frozen directory path and that edits outside it will be rejected.
 
 5. **Check for plan.md.** Search for a spec folder with a `plan.md`:
-   - Check `.claude/specs/*/plan.md` in the project root.
+   - Check `<root>/plans/*/plan.md` in the project workspace, per [`rules/project-workspace.md`](../../rules/project-workspace.md), then the legacy `specs/*/plan.md` and `.claude/specs/*/plan.md`.
    - If found, read the planned file list for scope comparison.
    - If not found, skip scope protection and note it.
 
