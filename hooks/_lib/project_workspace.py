@@ -100,20 +100,33 @@ def resolve_root(top: Path) -> str:
     raise WorkspaceError(f"no free workspace folder among {WORKSPACE_CANDIDATES}")
 
 
-def ensure_excluded(top: Path, rel: str) -> bool:
-    if rel in managed_entries(top):
+def _append_managed(top: Path, key: str, line: str) -> bool:
+    if key in managed_entries(top):
         return False
     path = _exclude_file(top)
     path.parent.mkdir(parents=True, exist_ok=True)
     existing = path.read_text(encoding="utf-8") if path.is_file() else ""
     separator = "" if not existing or existing.endswith("\n") else "\n"
-    block = f"{separator}{EXCLUDE_MARKER}\n/{rel}/\n"
-    path.write_text(existing + block, encoding="utf-8")
+    path.write_text(
+        f"{existing}{separator}{EXCLUDE_MARKER}\n{line}\n", encoding="utf-8"
+    )
     return True
 
 
+def ensure_excluded(top: Path, rel: str) -> bool:
+    return _append_managed(top, rel, f"/{rel}/")
+
+
+def ensure_pattern_excluded(top: Path, pattern: str) -> bool:
+    return _append_managed(top, pattern, pattern)
+
+
 def release_tracked(top: Path) -> tuple[str, ...]:
-    released = tuple(rel for rel in managed_entries(top) if _has_tracked(top, rel))
+    released = tuple(
+        rel
+        for rel in managed_entries(top)
+        if rel in WORKSPACE_CANDIDATES and _has_tracked(top, rel)
+    )
     if not released:
         return ()
     path = _exclude_file(top)
@@ -177,6 +190,51 @@ def prompt_is_stale(top: Path, rel: str) -> bool:
         return False
     prompt = prompt_path(top, rel)
     return not prompt.is_file() or max(stamps) > prompt.stat().st_mtime
+
+
+def is_prompt_file(path: str) -> bool:
+    return Path(path).name.casefold() == PROMPT_NAME.casefold()
+
+
+def _prompts_in(output: str) -> list[str]:
+    return [p for p in output.split("\0") if p and is_prompt_file(p)]
+
+
+def _existing_prompts(base: Path, *args: str) -> list[str]:
+    return [p for p in _prompts_in(git(base, *args)) if (base / p).exists()]
+
+
+def prompts_an_add_would_stage(
+    base: Path, specs: tuple[str, ...], force: bool, tracked_only: bool
+) -> list[str]:
+    if not specs:
+        return []
+    listings: list[tuple[str, ...]] = [("ls-files", "-z", "--modified")]
+    if not tracked_only:
+        listings.append(("ls-files", "-z", "--others", "--exclude-standard"))
+    if force and not tracked_only:
+        listings.append(
+            ("ls-files", "-z", "--others", "--ignored", "--exclude-standard")
+        )
+    named = [spec for spec in specs if is_prompt_file(spec)]
+    found = [
+        p for args in listings for p in _existing_prompts(base, *args, "--", *specs)
+    ]
+    return sorted({*named, *found})
+
+
+def prompts_a_commit_would_record(
+    base: Path, worktree_specs: tuple[str, ...] | None
+) -> list[str]:
+    staged = _prompts_in(
+        git(base, "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMRT")
+    )
+    if worktree_specs is None:
+        return sorted(set(staged))
+    edited = _existing_prompts(
+        base, "ls-files", "-z", "--modified", "--", *worktree_specs
+    )
+    return sorted({*staged, *edited})
 
 
 def _nearest_existing_dir(path: Path) -> Path:

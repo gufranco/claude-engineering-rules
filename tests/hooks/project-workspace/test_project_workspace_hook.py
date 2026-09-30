@@ -102,6 +102,14 @@ def test_start_claims_docs_in_the_exclude_file(run_hook, tmp_path):
     assert "\n/docs/\n" in exclude_text(repo)
 
 
+def test_start_excludes_prompt_files_at_any_depth(run_hook, tmp_path):
+    repo = make_repo(tmp_path / "project")
+
+    start(run_hook, repo)
+
+    assert "\nPROMPT.md\n" in exclude_text(repo)
+
+
 def test_start_claims_work_when_the_project_tracks_docs(run_hook, tmp_path):
     repo = make_repo(tmp_path / "project")
     commit_file(repo, "docs/guide.md")
@@ -240,7 +248,6 @@ def test_stage_blocks_a_forced_add_of_the_workspace(
 @pytest.mark.parametrize(
     "command",
     [
-        "git add docs/PROMPT.md",
         "git add -f src/main.py",
         "git add -A",
         "git status",
@@ -341,6 +348,169 @@ def test_non_dict_tool_input_is_ignored(run_hook, tmp_path):
     }
 
     code, _, _ = run_hook(HOOK, payload, env=GIT_ENV)
+
+    assert code == 0
+
+
+def write(repo: Path, rel: str) -> None:
+    path = repo / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(words())
+
+
+def repo_with_untracked_prompt(tmp_path: Path, rel: str = "notes/PROMPT.md") -> Path:
+    repo = make_repo(tmp_path / "project")
+    commit_file(repo, "src/main.py")
+    write(repo, rel)
+    return repo
+
+
+def repo_with_tracked_prompt(tmp_path: Path) -> Path:
+    repo = make_repo(tmp_path / "project")
+    commit_file(repo, "planning/PROMPT.md")
+    write(repo, "planning/PROMPT.md")
+    return repo
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git add notes/PROMPT.md",
+        "git add -f notes/PROMPT.md",
+        "git add .",
+        "git add -A",
+        "git add --all",
+        "git -C notes add .",
+        "git stage notes",
+        "git add 'notes/*.md'",
+        "npm test && git add . && git commit -m wip",
+    ],
+)
+def test_prompt_blocks_an_add_that_would_stage_it(
+    run_hook, tool_use, tmp_path, command
+):
+    repo = repo_with_untracked_prompt(tmp_path)
+
+    code, _, stderr = bash(run_hook, tool_use, repo, command)
+
+    assert code == 2
+    assert "PROMPT.md" in stderr
+
+
+def test_prompt_match_ignores_case(run_hook, tool_use, tmp_path):
+    repo = repo_with_untracked_prompt(tmp_path, "notes/prompt.md")
+
+    code, _, _ = bash(run_hook, tool_use, repo, "git add notes/prompt.md")
+
+    assert code == 2
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git add src/main.py",
+        "git add -u",
+        "git add",
+        "git commit -m 'unrelated change'",
+    ],
+)
+def test_prompt_allows_adds_and_commits_that_leave_it_out(
+    run_hook, tool_use, tmp_path, command
+):
+    repo = repo_with_untracked_prompt(tmp_path)
+    write(repo, "src/main.py")
+
+    code, _, _ = bash(run_hook, tool_use, repo, command)
+
+    assert code == 0
+
+
+def test_prompt_blocks_a_commit_with_it_staged(run_hook, tool_use, tmp_path):
+    repo = repo_with_untracked_prompt(tmp_path)
+    run_git(repo, "add", "-f", "notes/PROMPT.md")
+
+    code, _, stderr = bash(run_hook, tool_use, repo, "git commit -m wip")
+
+    assert code == 2
+    assert "notes/PROMPT.md" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit -am wip",
+        "git commit -a -m wip",
+        "git commit --all -m wip",
+        "git commit -m wip -- planning/PROMPT.md",
+        "git commit planning -m wip",
+        "git commit --only -m wip planning",
+    ],
+)
+def test_prompt_blocks_a_commit_that_records_a_tracked_edit(
+    run_hook, tool_use, tmp_path, command
+):
+    repo = repo_with_tracked_prompt(tmp_path)
+
+    code, _, _ = bash(run_hook, tool_use, repo, command)
+
+    assert code == 2
+
+
+def test_prompt_allows_a_commit_leaving_a_tracked_edit_unstaged(
+    run_hook, tool_use, tmp_path
+):
+    repo = repo_with_tracked_prompt(tmp_path)
+
+    code, _, _ = bash(
+        run_hook, tool_use, repo, "git commit --author 'A <a@b.c>' -m wip"
+    )
+
+    assert code == 0
+
+
+def test_prompt_allows_removing_it_from_the_index(run_hook, tool_use, tmp_path):
+    repo = repo_with_tracked_prompt(tmp_path)
+    run_git(repo, "rm", "-q", "--cached", "planning/PROMPT.md")
+
+    code, _, _ = bash(run_hook, tool_use, repo, "git commit -m 'stop tracking'")
+
+    assert code == 0
+
+
+def test_prompt_allows_committing_a_deleted_tracked_prompt(
+    run_hook, tool_use, tmp_path
+):
+    repo = repo_with_tracked_prompt(tmp_path)
+    (repo / "planning" / "PROMPT.md").unlink()
+
+    code, _, _ = bash(run_hook, tool_use, repo, "git commit -am 'drop prompt'")
+
+    assert code == 0
+
+
+def test_prompt_blocks_a_commit_when_git_fails(run_hook, tool_use, tmp_path):
+    repo = make_repo(tmp_path / "project")
+
+    code, _, stderr = bash(
+        run_hook, tool_use, repo, "git commit -m wip", env={"PATH": str(tmp_path)}
+    )
+
+    assert code == 2
+    assert "could not" in stderr
+
+
+def test_prompt_blocks_an_unparseable_command_naming_it(run_hook, tool_use, tmp_path):
+    repo = repo_with_untracked_prompt(tmp_path)
+
+    code, _, _ = bash(run_hook, tool_use, repo, "git add 'notes/PROMPT.md")
+
+    assert code == 2
+
+
+def test_prompt_allows_git_commands_outside_a_repository(run_hook, tool_use, tmp_path):
+    write(tmp_path, "PROMPT.md")
+
+    code, _, _ = bash(run_hook, tool_use, tmp_path, "git add PROMPT.md")
 
     assert code == 0
 
