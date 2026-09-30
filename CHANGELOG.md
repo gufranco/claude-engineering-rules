@@ -6,6 +6,7 @@ All notable changes to this Claude Code configuration are documented here.
 
 ### Added
 
+- A file named `PROMPT.md` can no longer be versioned in any repository. [`hooks/project-workspace.py`](hooks/project-workspace.py) blocks any `git add`, forced or not, and any `git commit` that would put one in the index, at any depth and in any case, and writes a local `PROMPT.md` exclude at session start for machines without the global ignore. Untracking one with `git rm --cached` stays allowed.
 - A local project workspace in every repository, defined in [`rules/project-workspace.md`](rules/project-workspace.md) and [`standards/project-workspace.md`](standards/project-workspace.md). Working material and a continuation `PROMPT.md` live in `<repo>/docs/`, or in `<repo>/.work/` when the project owns its own documentation folder, and are ignored through `.git/info/exclude` so no project file changes. The README stays the single source of truth for the project. The convention worked in one repository and nowhere else because nothing fired when a prompt went stale, so [`hooks/project-workspace.py`](hooks/project-workspace.py) enforces it at the three moments that matter: it claims the folder at session start, blocks the end of a turn once while `PROMPT.md` is older than the newest change, and refuses a forced add over the workspace. Root resolution lives once in [`hooks/_lib/project_workspace.py`](hooks/_lib/project_workspace.py).
 
 ### Changed

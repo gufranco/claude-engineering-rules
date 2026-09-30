@@ -148,7 +148,7 @@ always_loaded:
     triggers: [doc, docs, documentation, readme, stale docs, doc drift, "out of date", outdated, "env.example", "environment variable", openapi, runbook, "pr description", "pull request description", changelog, "doc truth", "documentation truth"]
 
   project-workspace:
-    description: Per-repository local workspace for the user's working material, never committed. Root is docs/ unless the project owns it, then .work/, ignored through .git/info/exclude only. PROMPT.md there stays pasteable into a new session, enforced at session start, at the end of a turn that changed the repository, and at staging by project-workspace.py. README is the single source of truth for the project; workspace files link to it and nothing committed links into the workspace
+    description: Per-repository local workspace for the user's working material, never committed. Root is docs/ unless the project owns it, then .work/, ignored through .git/info/exclude only. PROMPT.md there stays pasteable into a new session, enforced at session start, at the end of a turn that changed the repository, and at staging by project-workspace.py, which also refuses any add or commit that would version a PROMPT.md anywhere. README is the single source of truth for the project; workspace files link to it and nothing committed links into the workspace
     triggers: [workspace, "docs/", "PROMPT.md", "continuation prompt", handoff, resume, "new session", "session handoff", ssot, "single source of truth", readme, gitignore, "info/exclude", ".work"]
 
   ai-guardrails:

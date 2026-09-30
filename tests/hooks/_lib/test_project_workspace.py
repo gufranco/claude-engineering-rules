@@ -450,3 +450,26 @@ def test_in_workspace_is_false_when_git_is_missing(tmp_path, monkeypatch):
     inside = pw.in_workspace(repo / "docs" / "PROMPT.md")
 
     assert inside is False
+
+
+def test_ensure_pattern_excluded_ignores_the_name_at_any_depth(tmp_path):
+    repo = make_repo(tmp_path / "project")
+    (repo / "a" / "b").mkdir(parents=True)
+    (repo / "a" / "b" / "PROMPT.md").write_text(words())
+
+    written = [pw.ensure_pattern_excluded(repo, "PROMPT.md") for _ in range(3)]
+
+    status = run_git(repo, "status", "--porcelain", "--untracked-files=all")
+    assert written == [True, False, False]
+    assert status == ""
+
+
+def test_release_tracked_keeps_a_pattern_entry(tmp_path):
+    repo = make_repo(tmp_path / "project")
+    pw.ensure_pattern_excluded(repo, "PROMPT.md")
+    commit_file(repo, "PROMPT.md")
+
+    released = pw.release_tracked(repo)
+
+    assert released == ()
+    assert "PROMPT.md" in pw.managed_entries(repo)
