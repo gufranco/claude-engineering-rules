@@ -6,9 +6,17 @@ Source rule: rules/surgical-edits.md.
 from __future__ import annotations
 
 import os
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 import pytest
+
+TESTS_ROOT = Path(__file__).resolve().parents[2]
+if str(TESTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TESTS_ROOT))
+from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 HOOK = "scope-guard"
 
@@ -104,6 +112,31 @@ def test_blocks_when_target_outside_scope(tool_use, assert_blocks, tmp_path):
     payload = tool_use(
         "Write",
         {"file_path": str(tmp_path / "hooks/unrelated.py"), "content": "x"},
+        cwd=str(tmp_path),
+    )
+
+    assert_blocks(HOOK, payload, "add its path to the plan")
+
+
+@pytest.mark.parametrize("name", ["Makefile", "Dockerfile", "Justfile", "LICENSE"])
+def test_allows_an_extensionless_file_declared_in_the_plan(
+    tool_use, assert_allows, tmp_path, name
+):
+    make_plan(tmp_path, ["hooks/foo.py", name])
+    payload = tool_use(
+        "Edit",
+        {"file_path": str(tmp_path / name), "old_string": "a", "new_string": "b"},
+        cwd=str(tmp_path),
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_blocks_an_undeclared_extensionless_file(tool_use, assert_blocks, tmp_path):
+    make_plan(tmp_path, ["hooks/foo.py"])
+    payload = tool_use(
+        "Edit",
+        {"file_path": str(tmp_path / "Makefile"), "old_string": "a", "new_string": "b"},
         cwd=str(tmp_path),
     )
 
@@ -250,3 +283,61 @@ def test_a_file_outside_the_governed_repository_is_left_alone(
     )
 
     assert_allows("scope-guard", payload)
+
+
+def edit_payload(tool_use, tmp_path, rel: str) -> dict:
+    return tool_use(
+        "Edit",
+        {"file_path": str(tmp_path / rel), "old_string": "a", "new_string": "b"},
+        cwd=str(tmp_path),
+    )
+
+
+def test_ignores_flag_tokens_in_the_plan(tool_use, assert_blocks, tmp_path):
+    make_plan(tmp_path, ["hooks/foo.py", "--out=dist/app.js"])
+
+    assert_blocks(HOOK, edit_payload(tool_use, tmp_path, "dist/app.js"))
+
+
+def test_ignores_bare_extensions_in_the_plan(tool_use, assert_blocks, tmp_path):
+    make_plan(tmp_path, ["hooks/foo.py", ".csv"])
+
+    assert_blocks(HOOK, edit_payload(tool_use, tmp_path, "data/rows.csv"))
+
+
+def test_a_directory_declaration_covers_the_directory_path(
+    tool_use, assert_allows, tmp_path
+):
+    make_plan(tmp_path, ["build/"])
+
+    assert_allows(HOOK, edit_payload(tool_use, tmp_path, "build"))
+
+
+def test_skips_a_plan_that_cannot_be_stat(tool_use, assert_allows, tmp_path):
+    spec_dir = tmp_path / "specs" / "2026-05-29-broken"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "plan.md").symlink_to(tmp_path / "absent.md")
+
+    assert_allows(HOOK, edit_payload(tool_use, tmp_path, "hooks/foo.py"))
+
+
+def test_skips_a_plan_that_cannot_be_read(tool_use, assert_allows, tmp_path):
+    plan = make_plan(tmp_path, ["hooks/foo.py"])
+    os.chmod(plan, 0)
+
+    assert_allows(HOOK, edit_payload(tool_use, tmp_path, "hooks/other.py"))
+
+
+def test_malformed_payload_is_ignored():
+    hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
+
+    proc = subprocess.run(
+        [sys.executable, str(hook)],
+        input="not json",
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env({**os.environ, "CLAUDE_BYPASS_STATE": os.devnull}),
+        check=False,
+    )
+
+    assert (proc.returncode, proc.stdout) == (0, "")
