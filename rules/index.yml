@@ -147,6 +147,10 @@ always_loaded:
     description: Documentation that describes code is a claim about the code, and a change that falsifies a claim must correct it in the same change. Covers README, API docs, OpenAPI, .env.example, runbooks, and pull request descriptions. Explains why a write-time layer was needed when an always-on rule and a reviewer agent already existed. Four mechanically certain checks at git commit (undocumented env var, removed export still documented, removed CLI flag still documented, removed package script still documented), historical-record exemption for changelogs, ADRs, and specs, enforced by doc-sync-guard.py with DOC_SYNC_DISABLE parent-shell bypass
     triggers: [doc, docs, documentation, readme, stale docs, doc drift, "out of date", outdated, "env.example", "environment variable", openapi, runbook, "pr description", "pull request description", changelog, "doc truth", "documentation truth"]
 
+  project-workspace:
+    description: Per-repository local workspace for the user's working material, never committed. Root is docs/ unless the project owns it, then .work/, ignored through .git/info/exclude only. PROMPT.md there stays pasteable into a new session, enforced at session start, at the end of a turn that changed the repository, and at staging by project-workspace.py. README is the single source of truth for the project; workspace files link to it and nothing committed links into the workspace
+    triggers: [workspace, "docs/", "PROMPT.md", "continuation prompt", handoff, resume, "new session", "session handoff", ssot, "single source of truth", readme, gitignore, "info/exclude", ".work"]
+
   ai-guardrails:
     description: Treat AI output as junior dev code, review every generation, track AI-specific defect patterns, never commit unexplainable code
     triggers: [ai, guardrail, generation, hallucination, ai code, review, defect, junior]
@@ -750,6 +754,11 @@ on_demand:
     path: standards/doc-truth.md
     description: "Documentation that describes code is a claim about the code, and a change that falsifies a claim must correct it in the same change. Covers README, API docs, OpenAPI, .env.example, runbooks, and pull request descriptions. Explains why a write-time layer was needed when an always-on rule and a reviewer agent already existed. Four mechanically certain checks at git commit (undocumented env var, removed export still documented, removed CLI flag still documented, removed package script still documented), historical-record exemption for changelogs, ADRs, and specs, enforced by doc-sync-guard.py with DOC_SYNC_DISABLE parent-shell bypass"
     triggers: [doc, docs, documentation, readme, stale docs, doc drift, out of date, outdated, env.example, environment variable, openapi, runbook, pr description, pull request description, changelog, doc truth, documentation truth]
+
+  project-workspace:
+    path: standards/project-workspace.md
+    description: "Per-repository local workspace for the user's working material, never committed. Root resolution table with the docs/ to .work/ fallback when the project owns docs/, sticky ownership through a marker line in .git/info/exclude, layout, PROMPT.md required sections and template, README as single source of truth, enforcement at session start, stop, and staging by project-workspace.py with PROJECT_WORKSPACE_DISABLE parent-shell bypass"
+    triggers: [workspace, docs/, PROMPT.md, continuation prompt, handoff, resume, new session, session handoff, ssot, single source of truth, readme, gitignore, info/exclude, .work]
 
   found-fix:
     path: standards/found-fix.md

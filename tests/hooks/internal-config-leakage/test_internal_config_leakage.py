@@ -546,3 +546,38 @@ def test_still_blocks_config_paths_outside_the_vault(tool_use, assert_blocks, tm
     )
 
     assert_blocks(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})
+
+
+GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+CONFIG_TEXT = "Read `CLAUDE.md` and ~/.claude/settings.json before continuing.\n"
+
+
+def make_repo(root: Path) -> Path:
+    subprocess.run(
+        ["git", "init", "-q", "-b", "main"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        env={**os.environ, **GIT_ENV},
+    )
+    return root
+
+
+def test_allows_config_paths_in_the_local_workspace(tool_use, assert_allows, tmp_path):
+    repo = make_repo(tmp_path)
+    target = repo / "docs" / "PROMPT.md"
+    payload = tool_use("Write", {"file_path": str(target), "content": CONFIG_TEXT})
+
+    assert_allows(HOOK, payload, env=GIT_ENV)
+
+
+def test_still_blocks_config_paths_in_project_owned_docs(
+    tool_use, assert_blocks, tmp_path
+):
+    repo = make_repo(tmp_path)
+    (repo / "docs").mkdir()
+    (repo / "docs" / "index.md").write_text("# Project docs\n")
+    target = repo / "docs" / "guide.md"
+    payload = tool_use("Write", {"file_path": str(target), "content": CONFIG_TEXT})
+
+    assert_blocks(HOOK, payload, env=GIT_ENV)

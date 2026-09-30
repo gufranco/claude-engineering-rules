@@ -25,11 +25,14 @@ specs/
       spec.md
     payments/
       spec.md
+<workspace>/plans/
   2026-07-10-add-dark-mode/   plan folder, unchanged, dated, one per change
     plan.md
     decisions.md
     references.md
 ```
+
+Plan folders live in the local project workspace defined in [`project-workspace.md`](project-workspace.md), never committed. Older plan folders directly under `specs/` stay where they are and remain readable.
 
 Plan folders stay exactly as they are today: dated, permanent, recording why. The living spec is the new, separate artifact recording what.
 

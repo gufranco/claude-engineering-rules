@@ -17,7 +17,7 @@ Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 
 ## Process
 
-1. **Find the active spec.** Search for the most recent `specs/*/plan.md` file. If multiple exist, use the one with the latest modification time. If none exists, report "No plan.md found. Cannot detect scope drift without a plan."
+1. **Find the active spec.** Search for the most recent `plan.md` under `docs/plans/*/`, `.work/plans/*/`, `.work-local/plans/*/`, `specs/*/`, or `.claude/specs/*/`. If multiple exist, use the one with the latest modification time. If none exists, report "No plan.md found. Cannot detect scope drift without a plan."
 2. **Read the plan.** Extract the list of planned files, features, and tasks from `plan.md`.
 3. **Read the diff.** Run `git diff --name-only HEAD` to get the list of changed files.
 4. **Compare.** For each changed file, check if it appears in the plan or is a reasonable dependency of a planned change. For each changed function or feature, check if it maps to a planned task.
@@ -59,7 +59,7 @@ Do not return raw file contents or full function bodies. File paths and line num
 Use the current git diff against HEAD.
 
 **No plan.md found:**
-State "No plan.md found in specs/. Cannot detect scope drift. Create a spec folder with /plan first."
+State "No plan.md found in the project workspace or specs/. Cannot detect scope drift. Create a plan folder with /plan first."
 
 **All changes match the plan:**
 State "No scope drift detected" and list the plan tasks that were completed.

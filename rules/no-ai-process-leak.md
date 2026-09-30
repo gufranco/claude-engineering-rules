@@ -3,7 +3,7 @@
 Any text another engineer reads must read as if a human engineer wrote it. Never expose the workflow that produced the change.
 
 - Scope: commit messages, tags, git notes, PR and issue bodies, review-thread replies, release notes, CHANGELOG entries, code comments, READMEs, Slack and email drafts.
-- Exempt: planning artifacts, meaning project `specs/` trees, `docs/adr/`, `docs/plan*`, `docs/runbook*`, and this config repository.
+- Exempt: planning artifacts, meaning project `specs/` trees, `docs/adr/`, `docs/plan*`, `docs/runbook*`, the local project workspace per [`project-workspace.md`](project-workspace.md), and this config repository. Published text never names a workspace `PROMPT.md` or `plans/` path.
 - Never number workflow stages, cite a planning document as authority, link or path into planning directories, map to design-canvas regions, or cite ADRs by number in passing.
 - Never use category superlatives or self-praise about faithfulness.
 - Never narrate the verification loop, and never end with a passing-test-count trailer. State the result; CI shows test status.

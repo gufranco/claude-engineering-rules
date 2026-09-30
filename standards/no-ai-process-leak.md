@@ -36,7 +36,7 @@ The rule applies to every artifact a human reader can see outside the planning f
 - Slack messages, email drafts, status updates written by the assistant
 - CHANGELOG entries
 
-It does not apply inside the planning folder itself. Files under project `specs` trees, `docs/adr/`, `docs/plan*`, `docs/runbook*`, and the entire `~/.claude/` tree may legitimately contain phase-N language, plan references, canvas-region mappings, and the like. The hook skip-list covers these paths.
+It does not apply inside the planning folder itself. Files under project `specs` trees, `docs/adr/`, `docs/plan*`, `docs/runbook*`, the local project workspace defined in [`project-workspace.md`](project-workspace.md), and the entire `~/.claude/` tree may legitimately contain phase-N language, plan references, canvas-region mappings, and the like. The hook skip-list covers these paths; the workspace is resolved through [`hooks/_lib/project_workspace.py`](../hooks/_lib/project_workspace.py), so a project-owned documentation folder is still checked. Published text must not name a workspace `PROMPT.md` or `plans/` path, because neither exists in a clone.
 
 ## Forbidden Patterns
 

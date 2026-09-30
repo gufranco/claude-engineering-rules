@@ -17,7 +17,13 @@ Persist working state to disk so a future session can restore full context witho
 
 ## Storage
 
-Checkpoints are stored in `~/.claude/checkpoints/`. Each file is named `<session-id>.md` where session-id is a timestamp-based identifier: `YYYYMMDD-HHmmss`.
+Inside a git repository, the checkpoint is the project workspace's `PROMPT.md`, per [`rules/project-workspace.md`](../../rules/project-workspace.md). Resolve the workspace root with [`hooks/_lib/project_workspace.py`](../../hooks/_lib/project_workspace.py), never by guessing:
+
+```bash
+python3 -c 'import sys,pathlib; sys.path.insert(0, str(pathlib.Path.home()/".claude/hooks")); from _lib import project_workspace as pw; top = pw.toplevel(pathlib.Path.cwd()); print(top / pw.resolve_root(top))'
+```
+
+The file is overwritten in place on every save. Outside a git repository, checkpoints go to `~/.claude/checkpoints/<YYYYMMDD-HHmmss>.md`. Files already in `~/.claude/checkpoints/` stay readable by `resume` and `list`.
 
 ## Process
 
@@ -37,7 +43,7 @@ Checkpoints are stored in `~/.claude/checkpoints/`. Each file is named `<session
    - Any blockers or open questions.
    - Next steps remaining.
 
-3. **Write the checkpoint file.** Create `~/.claude/checkpoints/<session-id>.md` with this structure:
+3. **Write the checkpoint file.** Inside a repository, write `<root>/PROMPT.md` with the required sections and template from [`standards/project-workspace.md`](../../standards/project-workspace.md): identity with a README pointer, read first, hard constraints, dated state, numbered next steps, decided against. Carry the decisions, modified files, blockers, and suggested skills gathered above into those sections. Outside a repository, create `~/.claude/checkpoints/<session-id>.md` with this structure:
 
    ```markdown
    # Checkpoint: <session-id>
@@ -96,7 +102,7 @@ Checkpoints are stored in `~/.claude/checkpoints/`. Each file is named `<session
 
 ### Resume
 
-1. **Find the checkpoint.** If no ID is given, use the most recent file in `~/.claude/checkpoints/` sorted by filename. If an ID is given, read that specific file.
+1. **Find the checkpoint.** If no ID is given and the workspace holds `PROMPT.md`, read it. Otherwise use the most recent file in `~/.claude/checkpoints/` sorted by filename. If an ID is given, read that specific file.
 
 2. **Read the checkpoint file.** Parse all sections.
 
@@ -116,7 +122,7 @@ Checkpoints are stored in `~/.claude/checkpoints/`. Each file is named `<session
 
 ### List
 
-1. **Read the checkpoints directory.** List all `.md` files in `~/.claude/checkpoints/`, sorted by name descending.
+1. **Read the checkpoints.** List the workspace `PROMPT.md` first when it exists, then all `.md` files in `~/.claude/checkpoints/`, sorted by name descending.
 
 2. **Display a summary table:**
 
@@ -133,6 +139,7 @@ Checkpoints are stored in `~/.claude/checkpoints/`. Each file is named `<session
 - On resume, if the branch has diverged significantly from the checkpoint, warn the user before proceeding.
 - Never delete checkpoint files automatically. Only `/checkpoint prune` or manual deletion removes them.
 - Create the `~/.claude/checkpoints/` directory if it does not exist.
+- Never stage or commit `PROMPT.md`. The workspace is excluded through `.git/info/exclude`, and [`hooks/project-workspace.py`](../../hooks/project-workspace.py) blocks a forced add.
 
 ## Related Skills
 
