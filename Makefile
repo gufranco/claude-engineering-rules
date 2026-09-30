@@ -144,7 +144,7 @@ lint-yaml:
 	$(YAMLLINT) -d "$(YAMLLINT_RULES)" .github/
 
 lint-workflows:
-	$(ZIZMOR) --persona=regular --min-severity=low .github/workflows/
+	$(ZIZMOR) $(if $(GH_TOKEN),,--offline) --persona=regular --min-severity=low .github/workflows/
 
 lint-actions:
 ifndef ACTIONLINT
