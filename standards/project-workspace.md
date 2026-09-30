@@ -101,6 +101,21 @@ Decided against, do not re-propose unless I raise it: <option, reason>.
 - Dates are absolute. Never "yesterday" or "last week".
 - Write it for a reader with no memory of this session.
 
+## PROMPT.md Is Never Versioned
+
+A file named `PROMPT.md` is never committed anywhere: not in the workspace, not at the repo root, not in a subdirectory, in any letter case. Four layers enforce it, so any one of them failing still leaves three:
+
+| Layer | Where | Covers |
+|---|---|---|
+| Global ignore | `PROMPT.md` in the file named by `core.excludesFile`, from `~/.dotfiles` | Every repository on a machine with the dotfiles |
+| Per-repository exclude | [`hooks/project-workspace.py`](../hooks/project-workspace.py) writes a managed `PROMPT.md` line into `.git/info/exclude` at session start | Machines without the dotfiles |
+| Staging guard | the same hook blocks `git add` or `git stage`, forced or not, that would stage a `PROMPT.md`, including broad adds such as `git add .` and `git add -A` | Explicit and forced adds, which ignore rules do not stop |
+| Commit guard | the same hook blocks `git commit` when a `PROMPT.md` is staged, or when `-a`, `--all`, or a pathspec would record an edit to a tracked one | A `PROMPT.md` the project already tracks, and adds that ran outside Claude Code |
+
+Removing a tracked `PROMPT.md` from the index with `git rm --cached` stays allowed, since it moves toward the rule. When git cannot answer while an add or commit is being checked, the command is blocked.
+
+A `PROMPT.md` a project already tracks, such as one committed by a teammate, stays where it is, because deleting it would change that project. The commit guard only stops recording new edits to it.
+
 ## README as Single Source of Truth
 
 - The README owns the description, install, usage, configuration, and commands.
