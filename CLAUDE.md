@@ -126,7 +126,7 @@ Full text, including the zsh traps: [`standards/shell-and-tools.md`](standards/s
 - Name the account on every multi-account CLI call: `GH_TOKEN=$(gh auth token --user <account>) gh ...`, account read from `git remote get-url origin`.
 - `agent-browser` is always available for rendered-output claims. See [`rules/frontend-render-gate.md`](rules/frontend-render-gate.md).
 - Prefix aliased commands with `command`; resolve implementations with `command -v`, since PATH order decides GNU versus BSD flag semantics.
-- zsh: never use `path`, `status`, `argv` or the other special names as locals; brace variables before a colon; quote every glob meant for a tool.
+- zsh: never use `path`, `status`, `argv` or the other special names as locals; brace variables before a colon; quote every glob meant for a tool; an unquoted `$var` is never word-split, so iterate an array or split with `${=var}`, never `set -- $var`.
 - Pass text payloads through a single-quoted heredoc, `<<'PAYLOAD'`. Author files containing command-like text with the Write tool, not a heredoc.
 - In Bash, write `$HOME/.claude`, never the tilde form.
 
@@ -164,7 +164,7 @@ After significant multi-step work or sessions with corrections, run `/retro`.
 
 ## Knowledge Single Source of Truth (HIGHEST)
 
-Applies only when `SECOND_BRAIN_VAULT` resolves to a directory; otherwise inert. When set, the vault is the source of truth and the memory directory is compiled from it: record facts with `/brain` capture then `/brain compile`, never hand-write memory files, append history to `timeline:`. Full text: [`standards/knowledge-single-source.md`](standards/knowledge-single-source.md) and [`rules/knowledge-notes.md`](rules/knowledge-notes.md).
+Applies only when `SECOND_BRAIN_VAULT` resolves to a directory; otherwise inert. When set, the vault is the source of truth and the memory directory is compiled from it: record facts with `/brain` capture then `/brain compile`, never hand-write memory files, append history to `timeline:`. Pending capture-queue entries announced at session start are worked in that session, alongside the user's task; never offer them back as a question or a command to run. Full text: [`standards/knowledge-single-source.md`](standards/knowledge-single-source.md) and [`rules/knowledge-notes.md`](rules/knowledge-notes.md).
 
 ---
 
