@@ -9,6 +9,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
@@ -209,6 +211,13 @@ def test_is_advisory_file_specs_tree():
     assert is_advisory_file("specs/2026-05-21/plan.md")
     assert not is_advisory_file("README.md")
     assert not is_advisory_file("skills/foo/SKILL.md")
+
+
+@pytest.mark.parametrize("rel", [".work/PROMPT.md", ".work-local/plans/x/plan.md"])
+def test_is_advisory_file_local_workspace(rel):
+    advisory = is_advisory_file(rel)
+
+    assert advisory is True
 
 
 def test_file_relative_path_same_directory():

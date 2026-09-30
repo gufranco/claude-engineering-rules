@@ -10,7 +10,7 @@ GitHub renders relative paths as file or folder views. A bare backtick reference
 
 The rule applies to every `.md` file in the repo root, [`skills/`](../skills/), [`rules/`](../rules/), [`standards/`](./), and [`checklists/`](../checklists/).
 
-The validator at [`.github/scripts/validate-markdown-links.py`](../.github/scripts/validate-markdown-links.py) is advisory for `specs/` files, blocking for everywhere else.
+The validator at [`.github/scripts/validate-markdown-links.py`](../.github/scripts/validate-markdown-links.py) is advisory for `specs/` files and the local workspace folders `.work/` and `.work-local/` from [`project-workspace.md`](project-workspace.md), blocking for everywhere else.
 
 Out of scope for v1: `.mdx`, `.rst`, `.adoc` formats.
 
@@ -104,6 +104,7 @@ Directories whose markdown intentionally shows bare-path examples, like test fix
 - `.github/`
 - `tools/`
 - `specs/`. Advisory only inside this tree.
+- `.work/` and `.work-local/`. Advisory only; the local workspace is never committed, so its links are never published.
 
 Files explicitly exempt by name:
 

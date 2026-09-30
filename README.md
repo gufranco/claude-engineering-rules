@@ -15,7 +15,7 @@
 
 </div>
 
-**40** always-on rules · **138** on-demand standards · **42** slash-command skills · **82** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**41** always-on rules · **139** on-demand standards · **42** slash-command skills · **83** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,13 +24,13 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-82 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+83 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-40 universal rules ship with every conversation. 83 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 83.
+41 universal rules ship with every conversation. 139 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 139.
 
 </td>
 </tr>
@@ -51,7 +51,7 @@ Verify-before-claim is a rule, not a suggestion. Read the file, run the command,
 <tr>
 <td width="50%" valign="top">
 
-### 885-Item Review Checklist
+### 888-Item Review Checklist
 One file, 71 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
 
 </td>
@@ -115,7 +115,8 @@ A layered config where each layer catches what the layer above missed.
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, spec-folder links, hyperbole tells, and self-criticism from commit messages, PR descriptions, published docs, and messages to colleagues |
 | [`doc-truth`](rules/doc-truth.md) | Documentation that describes code is a claim about the code. A change that falsifies a claim corrects it in the same commit. Four mechanically certain checks at `git commit`; historical records exempt |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
-| [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas, and a close-out merge that folds a completed change into the spec |
+| [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas kept in the plan folder inside the local workspace, and a close-out merge that folds a completed change into the spec |
+| [`project-workspace`](rules/project-workspace.md) | Every repository keeps the user's working material in a local workspace that is never committed: `<repo>/docs/` unless the project owns it, then `<repo>/.work/`, ignored through `.git/info/exclude` only. `PROMPT.md` there stays pasteable into a new session. The README is the single source of truth for the project |
 | [`compliance-defaults`](rules/compliance-defaults.md) | Umbrella for the compliance family. Strictest applicable rule wins, and a published standard counts as binding before its effective date |
 | [`accessibility-defaults`](rules/accessibility-defaults.md) | WCAG 2.2 AA floor with AAA where it does not conflict. Keyboard operability, 44x44 targets, reduced motion, no image CAPTCHA |
 | [`frontend-render-gate`](rules/frontend-render-gate.md) | A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach: cascade outcome, paint order, accessibility tree, focus order, third-party iframes. Ranks evidence tiers, extending the project's own browser or simulator harness first |
@@ -164,7 +165,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/incident`](skills/incident/SKILL.md) | Incident context gathering, blameless postmortem |
 | [`/resolve`](skills/resolve/SKILL.md) | Merge conflict resolution with verification |
 | [`/cleanup`](skills/cleanup/SKILL.md) | Stale branch, PR, and worktree cleanup |
-| [`/checkpoint`](skills/checkpoint/SKILL.md) | Save and resume state across sessions |
+| [`/checkpoint`](skills/checkpoint/SKILL.md) | Save and resume state across sessions. Inside a repository it writes the workspace `PROMPT.md` |
 | [`/explain`](skills/explain/SKILL.md) | Code explanation with Mermaid diagrams |
 | [`/fix-issue`](skills/fix-issue/SKILL.md) | Fix a GitHub issue by number with tests |
 | [`/guard`](skills/guard/SKILL.md) | Directory freeze and scope enforcement |
@@ -213,7 +214,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`accessibility-mechanical-checks.py`](hooks/accessibility-mechanical-checks.py) | PreToolUse Write/Edit/MultiEdit | Catches the WCAG failures that are decidable from source: an image with no `alt`, an icon-only button with no accessible name, an input with no label, a click handler on a `div` with no role or key handler, `tabindex` above zero, a missing `lang`. Bypass `ACCESSIBILITY_CHECKS_DISABLE=1` |
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
 | [`ai-disclosure-checks.py`](hooks/ai-disclosure-checks.py) | PreToolUse Write/Edit/MultiEdit | Blocks rendering model output with no visible AI disclosure, and chatbot UI with no label saying what it is. EU AI Act Art. 52, California SB 942. Bypass `AI_DISCLOSURE_DISABLE=1` |
-| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder, and hyperbole tells |
+| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder or the local workspace, and hyperbole tells. Writes into the workspace are exempt |
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | Blocks the structural slop tells that survive a phrase blocklist: negative parallelism, significance inflation, participial evaluation tails, unnamed authorities, hedged speculation, marketing verbs replacing `is` and `has`, throat-clearing, trailing recaps, chat residue, unfilled placeholders, curly quotes. Codes `SLOP001` to `SLOP012`. Code spans are masked before matching, and every detector was calibrated against the 209 Markdown files under the rules, standards, checklists, skills, agents and docs directories. Bypass `AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any`. No allow marker; only third-party tool directives are honored. |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
@@ -272,11 +273,12 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
-| [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Reads the most recent active `specs/*/plan.md` (modified within 60min). Asks confirmation when the edit target is not in the plan's declared file list. Files outside the repository that holds the spec, such as the vault, are never checked. Bypass `SCOPE_GUARD_DISABLE=1` |
+| [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Reads the most recent active `plan.md` under the workspace `plans/` or `specs/` (modified within 60min). Asks confirmation when the edit target is not in the plan's declared file list, which accepts paths and extensionless names such as `Makefile`. Files outside the repository that holds the spec, such as the vault, are never checked. Bypass `SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 40+ secret patterns before git commit |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
-| [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | Surfaces the most recent checkpoint or active spec plan (within 7 days) as `additionalContext` on startup, clear, or compact so the session resumes with a pointer to in-progress work |
+| [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | Names the local workspace and surfaces its `PROMPT.md` in full, then the most recent checkpoint or active plan (within 7 days), as `additionalContext` on startup, clear, or compact so the session resumes with a pointer to in-progress work |
+| [`project-workspace.py`](hooks/project-workspace.py) | SessionStart / Stop / PreToolUse Bash | Claims the local workspace in `.git/info/exclude`, blocks the end of a turn once while `PROMPT.md` is older than the newest change, and refuses a forced `git add` over the workspace. Bypass `PROJECT_WORKSPACE_DISABLE=1` |
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | Blocks credentials and absolute home paths in settings |
 | [`smart-formatter.py`](hooks/smart-formatter.py) | PostToolUse Edit/Write | Auto-formats: prettier, black, gofmt, rustfmt, shfmt. Batches files for the Stop hook |
 | [`stop-format-typecheck.py`](hooks/stop-format-typecheck.py) | Stop | Reads the batched edit list from `smart-formatter.py`, deduplicates, formats once, then runs typecheck once per touched workspace |
@@ -494,14 +496,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 888-item review checklist across 71 categories
-  rules/                 44 short rule cores, each linking to its full text
+  rules/                 45 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             138 on-demand standards, including the full text of every rule
+  standards/             139 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 82 runtime hooks
+  hooks/                 83 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
   tests/                 Hook smoke tests and fixture trees
