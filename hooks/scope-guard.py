@@ -26,6 +26,7 @@ import re
 import sys
 import time
 from pathlib import Path
+from typing import NoReturn
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -48,8 +49,25 @@ SPEC_GLOBS = (
     ".claude/specs/*/plan.md",
 )
 
+EXTENSIONLESS_FILENAMES = (
+    "Makefile",
+    "GNUmakefile",
+    "Dockerfile",
+    "Containerfile",
+    "Justfile",
+    "Procfile",
+    "Gemfile",
+    "Rakefile",
+    "Brewfile",
+    "Vagrantfile",
+    "Jenkinsfile",
+    "LICENSE",
+)
+
 BACKTICK_PATH = re.compile(
-    r"`([^`\s]+\.[a-zA-Z0-9]+|[^`\s]+/[^`\s]*|\.[a-zA-Z][a-zA-Z0-9_-]{2,})`"
+    r"`([^`\s]+\.[a-zA-Z0-9]+|[^`\s]+/[^`\s]*|\.[a-zA-Z][a-zA-Z0-9_-]{2,}|"
+    + "|".join(EXTENSIONLESS_FILENAMES)
+    + ")`"
 )
 
 BARE_EXTENSIONS = frozenset(
@@ -123,8 +141,6 @@ def extract_declared_paths(plan_text: str) -> set[str]:
         token = match.group(1)
         if token.startswith("-") or "=" in token:
             continue
-        if "/" not in token and "." not in token:
-            continue
         if token.lower() in BARE_EXTENSIONS:
             continue
         paths.add(token)
@@ -150,18 +166,15 @@ def governs(plan_path: Path, target: Path) -> bool:
 def is_in_scope(target: Path, declared: set[str]) -> bool:
     """True if target matches any declared path or lives under a declared dir."""
     target_str = str(target)
-    target_name = target.name
     for decl in declared:
         if decl in target_str:
-            return True
-        if decl == target_name:
             return True
         if decl.endswith("/") and decl.rstrip("/") in target_str:
             return True
     return False
 
 
-def emit_advisory(reason: str, file_path: str) -> None:
+def emit_advisory(reason: str, file_path: str) -> NoReturn:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -231,11 +244,11 @@ def main() -> int:
         f"ASK: editing `{target.name}` which is not listed in the active "
         f"plan `{plan_path}`.\n"
         f"Rule: ~/.claude/rules/surgical-edits.md.\n"
-        f"If this edit is necessary, confirm by retrying. To suppress "
-        f"this gate: set SCOPE_GUARD_DISABLE=1."
+        f"If this edit is necessary, add its path to the plan in backticks, "
+        f"then retry; a retry alone asks again. To suppress this gate: set "
+        f"SCOPE_GUARD_DISABLE=1."
     )
     emit_advisory(reason, str(target))
-    return 2
 
 
 if __name__ == "__main__":
