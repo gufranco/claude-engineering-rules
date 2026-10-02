@@ -352,3 +352,32 @@ def test_a_workspace_plan_governs_the_repository(
     (spec_dir / "plan.md").write_text("# Plan\n\n1. Update `hooks/foo.py`.\n")
 
     assert_blocks(HOOK, edit_payload(tool_use, tmp_path, "hooks/unrelated.py"))
+
+
+@pytest.mark.parametrize(
+    "stamp", ["Archived: 2026-10-02", "**Superseded:** 2026-10-02. Replaced."]
+)
+def test_a_closed_plan_no_longer_governs(tool_use, assert_allows, tmp_path, stamp):
+    plan = Path(make_plan(tmp_path, ["hooks/foo.py"]))
+    plan.write_text(f"# Plan\n\n{stamp}\n\n" + plan.read_text())
+    payload = tool_use(
+        "Write",
+        {"file_path": str(tmp_path / "hooks/unrelated.py"), "content": "x"},
+        cwd=str(tmp_path),
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_a_stamp_word_in_the_body_keeps_the_plan_active(
+    tool_use, assert_blocks, tmp_path
+):
+    plan = Path(make_plan(tmp_path, ["hooks/foo.py"]))
+    plan.write_text(plan.read_text() + "\n\nThe old flow was Archived: never.\n")
+    payload = tool_use(
+        "Write",
+        {"file_path": str(tmp_path / "hooks/unrelated.py"), "content": "x"},
+        cwd=str(tmp_path),
+    )
+
+    assert_blocks(HOOK, payload, "add its path to the plan")
