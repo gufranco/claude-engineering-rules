@@ -114,7 +114,7 @@ One task fully before the next. Ask before expanding scope. 3 to 5 files per tas
 
 ## Hook Bypass Discipline
 
-A blocking hook means a rule was violated: change the code, never silence the hook. At most one bypass per hook per session, for one named false positive, cleared when that task ends. A blocked call ran nothing, so re-read the target and repeat the whole command. When the check is right but the case is an exception, write a waiver instead. Audit greps build banned literals from fragments. Full text: [`standards/hook-bypass.md`](standards/hook-bypass.md).
+A blocking hook means a rule was violated: change the code, never silence the hook. At most one bypass per hook per session, for one named false positive, cleared when that task ends. A blocked call ran nothing, so re-read the target and repeat the whole command. When the check is right but the case is an exception, write a waiver instead. Never edit a guard's allowlist to unblock yourself; give the user the one-line command. Audit greps build banned literals from fragments. Full text: [`standards/hook-bypass.md`](standards/hook-bypass.md).
 
 ## External Tools
 
