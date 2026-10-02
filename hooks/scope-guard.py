@@ -43,6 +43,8 @@ except ImportError:  # pragma: no cover
     sys.exit(0)
 
 PLAN_WINDOW_SECONDS = 60 * 60
+PLAN_HEADER_BYTES = 2048
+CLOSED_PLAN_STAMP = re.compile(r"^\**(?:Archived|Superseded):", re.MULTILINE)
 
 SPEC_GLOBS = (
     "specs/*/plan.md",
@@ -108,6 +110,16 @@ BARE_EXTENSIONS = frozenset(
 from _lib.bypass import is_bypassed  # noqa: E402
 
 
+def plan_is_closed(plan: Path) -> bool:
+    """True when the plan header carries an `Archived:` or `Superseded:` stamp."""
+    try:
+        with plan.open(encoding="utf-8", errors="replace") as handle:
+            header = handle.read(PLAN_HEADER_BYTES)
+    except OSError:
+        return False
+    return CLOSED_PLAN_STAMP.search(header) is not None
+
+
 def find_active_plan(cwd: Path) -> Path | None:
     """Return the nearest recent plan.md that governs `cwd`.
 
@@ -129,7 +141,7 @@ def find_active_plan(cwd: Path) -> Path | None:
                     mtime = p.stat().st_mtime
                 except OSError:
                     continue
-                if now - mtime <= PLAN_WINDOW_SECONDS:
+                if now - mtime <= PLAN_WINDOW_SECONDS and not plan_is_closed(p):
                     here.append((mtime, p))
         if here:
             here.sort(reverse=True)
