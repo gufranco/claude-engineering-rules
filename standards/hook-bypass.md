@@ -9,6 +9,7 @@ A blocking hook fires because a rule was violated. The default response is to ch
 - **Narrow approval stays narrow.** When the user approves an exception, apply it to exactly what they approved. "Write JSDoc on public functions" is not permission to add inline body comments, schema comments, or commentary anywhere else.
 - **Name the false positive out loud before bypassing.** State which specific pattern the hook misread and why the code is correct as written. If that sentence cannot be written honestly, the hook is right.
 - **Clear bypasses when the task that justified them ends.** A TTL bypass left running silences the rule for unrelated work later in the session.
+- **Never widen a guard's allowlist to unblock yourself.** `solo-repos.txt`, permission rules in [`settings.json`](../settings.json), and any file a hook reads to decide what to let through are the user's to change, even when the user has just asked for the blocked action. Hand the user the one-line `! ...` command that adds the entry and continue once it exists. On 2026-10-02 an agent appended a glob to `solo-repos.txt` so it could push to `main` after the user said "no PRs, everything to main"; the permission classifier refused the follow-up as self-modification and the entry had to be reverted, costing two round trips the one-line handoff would have saved.
 
 The failure mode this prevents: a bypass engaged once for a real reason, then re-engaged reflexively at the start of every subsequent batch until the rule is effectively off.
 
