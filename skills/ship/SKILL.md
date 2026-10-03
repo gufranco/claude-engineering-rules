@@ -97,7 +97,7 @@ Create or update a pull request with a structured description. Supports GitHub a
 8. **Extract context**: check branch/commits for ticket patterns, check if frontend files changed, suggest screenshots.
 9. **Push**: use `-u` if no upstream, `--force-with-lease` only if rebase rewrote history.
 10. **Build title and description**: detect PR template at `.github/PULL_REQUEST_TEMPLATE.md` or the GitLab equivalent. Use What/How/Testing structure. Scale to PR size.
-11. **Create/update**: write body to temp file. `gh pr create --body-file` or `glab mr create --description-file`. Self-assign by default. Clean up temp file.
+11. **Create/update**: write body to temp file. `gh pr create --body-file` or `glab mr create --description-file`. Self-assign by default. Clean up temp file. AI reviews are requested by [`hooks/ai-review-request.py`](../../hooks/ai-review-request.py) after `gh pr create`, `gh pr ready` and `git push`; read its `ai-review:` line and report it with the PR URL.
 12. Show PR URL.
 13. **Documentation staleness check.** Read project documentation files such as README.md, CONTRIBUTING.md, and the docs/ directory, then cross-reference against the diff:
     - New features without corresponding documentation.

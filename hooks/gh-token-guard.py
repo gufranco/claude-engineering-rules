@@ -24,12 +24,12 @@ except Exception:  # pragma: no cover
         return None
 
 
-GH_COMMAND = re.compile(r"(?:^|&&|\|\||;|\|)\s*gh\s+")
+GH_COMMAND = re.compile(r"(?:^|&&|\|\||;|\||\n)\s*gh\s+")
 
-GH_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\|)\s*gh\s+auth\s+")
+GH_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\||\n)\s*gh\s+auth\s+")
 
 GH_NO_API_EXEMPT = re.compile(
-    r"(?:^|&&|\|\||;|\|)\s*gh\s+(?:--version|--help|-h|version|help|completion\b|config\b|alias\b|extension\s+list\b)"
+    r"(?:^|&&|\|\||;|\||\n)\s*gh\s+(?:--version|--help|-h|version|help|completion\b|config\b|alias\b|extension\s+list\b)"
 )
 
 GH_TOKEN_SET = re.compile(r"GH_TOKEN=|export\s+GH_TOKEN=")
@@ -50,6 +50,7 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 
 def main():
@@ -68,7 +69,9 @@ def main():
     if not command:
         sys.exit(0)
 
-    if GH_AUTH_SWITCH.search(command):
+    scan = mask_literal_text(command)
+
+    if GH_AUTH_SWITCH.search(scan):
         print(
             "BLOCKED: gh auth switch changes the global active account "
             "and affects all terminals.\n"
@@ -86,15 +89,15 @@ def main():
         )
         sys.exit(2)
 
-    if not GH_COMMAND.search(command):
+    if not GH_COMMAND.search(scan):
         sys.exit(0)
 
-    gh_calls = GH_COMMAND.findall(command)
-    exempt_calls = GH_AUTH_EXEMPT.findall(command) + GH_NO_API_EXEMPT.findall(command)
+    gh_calls = GH_COMMAND.findall(scan)
+    exempt_calls = GH_AUTH_EXEMPT.findall(scan) + GH_NO_API_EXEMPT.findall(scan)
     if len(gh_calls) == len(exempt_calls):
         sys.exit(0)
 
-    if GH_TOKEN_SET.search(command):
+    if GH_TOKEN_SET.search(scan):
         sys.exit(0)
 
     print(

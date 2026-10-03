@@ -55,6 +55,29 @@ def test_blocks_of_the_plan_references(tool_use, assert_blocks, phrase):
     assert_blocks(HOOK, payload)
 
 
+def test_allows_a_search_whose_quoted_pattern_names_a_publishing_command(
+    tool_use, assert_allows
+):
+    payload = tool_use(
+        "Bash",
+        {
+            "command": "grep -n 'gh pr create' skills/ship/SKILL.md "
+            "specs/current/pr-comments/spec.md"
+        },
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_blocks_a_quoted_body_on_a_real_publishing_command(tool_use, assert_blocks):
+    payload = tool_use(
+        "Bash",
+        {"command": "gh pr create --body 'Refs: specs/2026-01-01-foo/plan.md'"},
+    )
+
+    assert_blocks(HOOK, payload)
+
+
 def test_blocks_refs_specs_trailer(tool_use, assert_blocks):
     body = "Implements the feature.\n\nRefs: specs/2026-01-01-foo/plan.md"
     payload = tool_use(
