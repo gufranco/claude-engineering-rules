@@ -80,7 +80,9 @@ jobs:
 
       - name: Audit release toolchain
         if: steps.verify.outputs.proceed == 'true'
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --json > "$RUNNER_TEMP/audit.json" || true
+          python3 .github/scripts/audit-release-toolchain.py < "$RUNNER_TEMP/audit.json"
 
       # Cheap and token-free, so it fails fast and with a clear message when a
       # dependency bump broke note rendering.
