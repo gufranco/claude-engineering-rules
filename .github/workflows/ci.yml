@@ -319,7 +319,9 @@ jobs:
       # The toolchain never ships to a user, but it runs with a write token on
       # main, so a vulnerable dependency there is a release-pipeline risk.
       - name: Audit release toolchain
-        run: npm audit --audit-level=high
+        run: |
+          npm audit --json > "$RUNNER_TEMP/audit.json" || true
+          python3 .github/scripts/audit-release-toolchain.py < "$RUNNER_TEMP/audit.json"
 
       # Renders release notes directly through the configured plugin, with no
       # token and no git access, so it also runs on Dependabot and fork pull
