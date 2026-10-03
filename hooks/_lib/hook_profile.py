@@ -52,6 +52,7 @@ MINIMAL_HOOKS = frozenset(
 
 STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
     {
+        "ai-review-request",
         "banned-phrases-blocker",
         "banned-prose-chars",
         "ai-slop-blocker",

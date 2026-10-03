@@ -10,7 +10,8 @@ Four consequences, each absolute:
 |---|---|
 | Reply in a human's thread | The one permitted comment. Four sentences at most |
 | Review summary body | Never written. Submit reviews with an empty body |
-| Pull-request conversation comment | Never written, on any platform |
+| Pull-request conversation comment | Never written, on any platform, except the reviewer trigger below |
+| AI reviewer trigger | On a pull request the acting account authored, the exact command an AI reviewer documents, once per pull request |
 | Commit-comment reply | Never written. Fix the code and say it in the commit |
 | Any reply to a bot thread | Never written. Read it, fix a real finding, resolve, close |
 | New inline thread | Only on a pull request authored by someone else, and only to name a defect at the line it lives on |
@@ -28,6 +29,12 @@ The slop was concentrated in the artifacts with a mandatory slot and nothing to 
 - A reply into a channel with no reply endpoint, answered by opening a fresh conversation comment that nobody threads to the point it answers.
 
 Writing better prose into those three slots was the wrong fix. The slots are gone.
+
+## The Reviewer Trigger Exception
+
+Some AI reviewers wait for a command before they review. The Claude GitHub App in manual mode posts a notice on every new pull request and reviews only after `@claude review` once, or `@claude review always` for every later push. On 2026-10-03, 320 of the owner's pull requests in one organization had received the notice and almost no reviews, because nothing ever posted the command.
+
+The command is addressed to a reviewer that acts on it, so it has the reader the rest of this rule demands. [`../hooks/ai-review-request.py`](../hooks/ai-review-request.py) posts it after a pull request is opened, marked ready, or pushed. It acts only on an open pull request the acting account authored, posts only the exact documented command, and skips it when that account already posted it. Where a review workflow is gated by a label instead, the hook adds the label and posts nothing. Every other conversation comment stays forbidden, and [`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py) still blocks a hand-written one.
 
 ## Reading Is Still Mandatory
 
@@ -112,7 +119,7 @@ An explicit request to export a plan to a tracker is a different thing, and [`..
 
 | Pattern | Reason |
 |---|---|
-| A pull-request conversation comment | No thread, no reader who asked |
+| A pull-request conversation comment other than the reviewer trigger | No thread, no reader who asked |
 | A review submitted with a summary body | The slot exists for an API reason, not a communicative one |
 | A reply to a commit comment | Answer by fixing the code |
 | A reply of any length to a bot | The audience cannot read it |
@@ -139,8 +146,11 @@ Promoted 2026-09-17, `single-incident`, under the fails-without-an-error-signal 
 
 Origin: an audit of this configuration's own pull-request surfaces found three slots that required text and supplied no subject. A review summary body mandated non-empty because the GitHub API cannot edit an empty one later. A bot reply governed by a register whose stated premises argued for no reply at all. Three channels with no reply endpoint answered by opening unthreaded conversation comments. The reply-only rule, the no-bot-reply rule, the four-sentence ceiling, and the fix-now rule were set by the repository owner in the same session.
 
+Amended 2026-10-03, `single-incident`: the owner asked that every AI reviewer a repository supports be requested automatically, subscribed for every push. A read-only pass over 394 of the owner's pull requests found the Claude App in manual mode and a label-gated workflow left unlabelled on 16 pull requests. The reviewer trigger exception above is the result.
+
 ## Enforcement
 
 Enforced by: [`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py).
+Enforced by: [`../hooks/ai-review-request.py`](../hooks/ai-review-request.py).
 Enforced by: [`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py).
 Enforced by: [`../hooks/found-fix-rationalization-blocker.py`](../hooks/found-fix-rationalization-blocker.py).

@@ -102,6 +102,16 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/ai-review-request.py",
+            "timeout": 90
+          }
+        ]
+      },
+      {
         "matcher": "Edit",
         "hooks": [
           {

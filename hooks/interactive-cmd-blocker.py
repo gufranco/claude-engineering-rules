@@ -47,8 +47,6 @@ MAKE_COMMANDS = ("make", "gmake")
 MAKEFILE_NAMES = ("GNUmakefile", "makefile", "Makefile")
 COVERAGE_TARGET = "coverage"
 MAKEFILE_READ_LIMIT = 1_000_000
-OPERATOR_CHARS = ";&|"
-HEREDOC_START = re.compile(r"(?<!<)<<(?!<)-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?")
 KCOV_REASON = (
     "BLOCKED: kcov on macOS. Homebrew kcov 43 traces bash through stderr here, "
     "which has held 44 GB and run 74 minutes, and its number is wrong: "
@@ -62,6 +60,7 @@ KCOV_REASON = (
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
 
 def split_commands(command: str) -> list[str]:
@@ -82,18 +81,6 @@ def has_force_flag(tokens: list[str]) -> bool:
         if "f" in tok[1:]:
             return True
     return False
-
-
-def command_head(tokens: list[str]) -> tuple[str, list[str]]:
-    """Return the base command name and its tokens, past env and `command`."""
-    i = 0
-    while i < len(tokens) and "=" in tokens[i] and not tokens[i].startswith("-"):
-        i += 1
-    if i >= len(tokens):
-        return "", []
-    if tokens[i] == "command" and i + 1 < len(tokens):
-        i += 1
-    return os.path.basename(tokens[i]), tokens[i:]
 
 
 def tokenize(sub: str) -> list[str]:
@@ -144,44 +131,6 @@ def runs_kcov(base: str, args: list[str], cwd: str) -> bool:
         return False
     directory, names = make_dir_and_files(args[1:], cwd)
     return makefile_uses_kcov(directory, names)
-
-
-def strip_heredoc_bodies(command: str) -> str:
-    """Drop the body lines of every heredoc, which are data, never commands."""
-    kept: list[str] = []
-    delimiter = ""
-    for line in command.splitlines():
-        if delimiter:
-            if line.strip() == delimiter:
-                delimiter = ""
-            continue
-        kept = [*kept, line]
-        match = HEREDOC_START.search(line)
-        if match:
-            delimiter = match.group(1)
-    return "\n".join(kept)
-
-
-def line_segments(line: str) -> list[list[str]]:
-    """Split one line into commands at unquoted ; & | operators."""
-    lexer = shlex.shlex(line, posix=True, punctuation_chars=OPERATOR_CHARS)
-    lexer.whitespace_split = True
-    try:
-        tokens = list(lexer)
-    except ValueError:
-        return []
-    segments: list[list[str]] = [[]]
-    for token in tokens:
-        if set(token) <= set(OPERATOR_CHARS):
-            segments = [*segments, []]
-        else:
-            segments = [*segments[:-1], [*segments[-1], token]]
-    return [segment for segment in segments if segment]
-
-
-def quoted_segments(command: str) -> list[list[str]]:
-    lines = strip_heredoc_bodies(command).splitlines()
-    return [segment for line in lines for segment in line_segments(line)]
 
 
 def kcov_blocked(command: str, cwd: str, platform: str) -> bool:

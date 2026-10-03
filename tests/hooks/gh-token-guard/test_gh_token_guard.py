@@ -109,3 +109,37 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     assert proc.returncode == 0
+
+
+def test_allows_gh_text_inside_a_single_quoted_pattern(tool_use, assert_allows):
+    payload = tool_use(
+        "Bash", {"command": "rg -n -e 'token --user\\|gh pr create' skills/"}
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_allows_gh_text_inside_a_quoted_heredoc_body(tool_use, assert_allows):
+    payload = tool_use(
+        "Bash", {"command": "cat <<'EOF' > notes.md\ngh pr create --fill\nEOF"}
+    )
+
+    assert_allows(HOOK, payload)
+
+
+def test_blocks_real_gh_call_after_a_quoted_string(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "echo 'gh is quoted' && gh pr list"})
+
+    assert_blocks(HOOK, payload, "GH_TOKEN")
+
+
+def test_blocks_gh_call_after_a_quoted_heredoc(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "cat <<'EOF'\nnotes\nEOF\ngh pr list"})
+
+    assert_blocks(HOOK, payload, "GH_TOKEN")
+
+
+def test_a_quoted_token_assignment_does_not_count(tool_use, assert_blocks):
+    payload = tool_use("Bash", {"command": "echo 'GH_TOKEN=x' && gh pr list"})
+
+    assert_blocks(HOOK, payload, "GH_TOKEN")

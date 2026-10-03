@@ -171,6 +171,7 @@ except Exception:  # pragma: no cover
 
 
 from _lib import project_workspace as _workspace  # noqa: E402
+from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 SKIPPED_PATH_SEGMENTS = (
     "/.claude/",
@@ -202,7 +203,9 @@ GIT_AND_PR_PATTERNS = (
 
 
 def bash_command_in_scope(command: str) -> bool:
-    return any(pat.search(command) for pat in GIT_AND_PR_PATTERNS)
+    """True when the command publishes text, judged outside quoted literals."""
+    executed = mask_literal_text(command)
+    return any(pat.search(executed) for pat in GIT_AND_PR_PATTERNS)
 
 
 BODY_FILE_FLAGS = (

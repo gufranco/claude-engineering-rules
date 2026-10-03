@@ -51,6 +51,7 @@ If no subcommand is given, default to the full workflow.
 
 5. Validate. If PR is `CLOSED` or `MERGED`, ask before proceeding. If no PR is found and no argument is passed, stop.
 6. Warn on uncommitted changes that conflict with the working tree the skill will modify.
+7. When the PR author is the acting account, run `python3 ~/.claude/hooks/ai-review-request.py --repo <owner/name> --pr <n> --account <account>` once. It subscribes the PR to every AI reviewer the repository supports and does nothing when that is already in place. The push in Phase 6 triggers the same check through the hook.
 
 ## Phase 2: Fetch Comments
 
