@@ -15,7 +15,7 @@
 
 </div>
 
-**41** always-on rules · **139** on-demand standards · **42** slash-command skills · **83** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**41** always-on rules · **139** on-demand standards · **42** slash-command skills · **84** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-83 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+84 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -214,7 +214,8 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`accessibility-mechanical-checks.py`](hooks/accessibility-mechanical-checks.py) | PreToolUse Write/Edit/MultiEdit | Catches the WCAG failures that are decidable from source: an image with no `alt`, an icon-only button with no accessible name, an input with no label, a click handler on a `div` with no role or key handler, `tabindex` above zero, a missing `lang`. Bypass `ACCESSIBILITY_CHECKS_DISABLE=1` |
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI co-author trailers in commits and PRs |
 | [`ai-disclosure-checks.py`](hooks/ai-disclosure-checks.py) | PreToolUse Write/Edit/MultiEdit | Blocks rendering model output with no visible AI disclosure, and chatbot UI with no label saying what it is. EU AI Act Art. 52, California SB 942. Bypass `AI_DISCLOSURE_DISABLE=1` |
-| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder or the local workspace, and hyperbole tells. Writes into the workspace are exempt |
+| [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | Blocks AI-process language in commits, PRs, release notes, and code comments. Catches phase-N markers, plan-path references, links into a spec folder or the local workspace, and hyperbole tells. Writes into the workspace are exempt, and a Bash command counts as publishing only when the publishing command sits outside quotes |
+| [`ai-review-request.py`](hooks/ai-review-request.py) | PostToolUse Bash | After `gh pr create`, `gh pr ready` or `git push` on an open PR the acting account authored, requests every AI review the repository supports: `@claude review always` once where the Claude App runs in manual mode, the `claude-review` label where a workflow is gated on it. CodeRabbit and Codex already review each push and get nothing. Never blocks; reports one `ai-review:` line. Also a CLI: `--repo owner/name --pr N --account login [--dry-run]`. Bypass `AI_REVIEW_REQUEST_DISABLE=1` |
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | Blocks the structural slop tells that survive a phrase blocklist: negative parallelism, significance inflation, participial evaluation tails, unnamed authorities, hedged speculation, marketing verbs replacing `is` and `has`, throat-clearing, trailing recaps, chat residue, unfilled placeholders, curly quotes. Codes `SLOP001` to `SLOP012`. Code spans are masked before matching, and every detector was calibrated against the 209 Markdown files under the rules, standards, checklists, skills, agents and docs directories. Bypass `AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any`. No allow marker; only third-party tool directives are honored. |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
@@ -240,7 +241,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget. Bypass `GH_RUN_WATCH_DISABLE=1` |
-| [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch`. Exempts `gh auth` plus invocations that reach no API (`--version`, `--help`, `config`, `alias`, `completion`) |
+| [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch`. Exempts `gh auth` plus invocations that reach no API (`--version`, `--help`, `config`, `alias`, `completion`). Reads commands on every line, and ignores `gh` text inside single quotes or a quoted heredoc body |
 | [`knowledge-note-guard.py`](hooks/knowledge-note-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | Enforces the knowledge-note specification inside the second brain: missing frontmatter, missing `## For future agent` preamble, an undated volatile claim, a wikilink to a note that does not exist, a pointer with no resolvable target (FRESH-3), a write into the immutable raw folder, a removal outside trash. Skips `specs/`, `eval/` and [`tests/`](tests/), which hold plan artifacts rather than notes. Bypass `KNOWLEDGE_NOTE_DISABLE=1` |
 | [`memory-write-guard.py`](hooks/memory-write-guard.py) | PreToolUse Write/Edit/MultiEdit | Keeps the session memory directory a generated artifact while a second brain vault is configured: a hand-written memory file is blocked, one carrying `generated_from` from `/brain compile` passes, and `MEMORY.md` is exempt. Completely inert when `SECOND_BRAIN_VAULT` is unset or does not resolve, so a clone without a vault keeps the harness default. Bypass `MEMORY_WRITE_GUARD_DISABLE=1` |
 | [`privacy-leakage-checks.py`](hooks/privacy-leakage-checks.py) | PreToolUse Write/Edit/MultiEdit | Catches personal data in `console.log`, identifiers in `localStorage`, a cookie set with no consent check, and hardcoded analytics or marketing tracker IDs with no consent guard around them. Bypass `PRIVACY_CHECKS_DISABLE=1` |
@@ -503,7 +504,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 83 runtime hooks
+  hooks/                 84 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
   tests/                 Hook smoke tests and fixture trees

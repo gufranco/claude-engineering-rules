@@ -7,6 +7,7 @@ The only comment published on a pull request is a reply inside a thread a person
 | Reply in a human's thread | Allowed. Four sentences max, lead with what changed |
 | Review summary body | Never written; submit reviews with an empty body |
 | Conversation or commit comment | Never written; fix the code and say it in the commit |
+| AI reviewer trigger on your own PR | Only the exact command the reviewer documents, such as `@claude review always`, once per PR, posted by [`hooks/ai-review-request.py`](../hooks/ai-review-request.py) |
 | Bot thread, any channel | Never replied to; fix a real finding, then resolve or minimize |
 | New inline thread | Only on someone else's PR, to name a defect at its line |
 
