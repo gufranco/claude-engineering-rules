@@ -1,7 +1,11 @@
 ---
 name: checkpoint
-description: Save and resume working state across sessions. Subcommands: save, resume, list. Captures git state, decisions made, remaining work, and modified files so a new session can pick up where the last one left off. Use when user says "checkpoint", "save progress", "save state", "resume", "pick up where I left off", or wants to preserve session context. Do NOT use for git commits (use /ship commit), retrospectives (use /retro), or planning (use /plan).
+description: Save and resume working state across sessions, with subcommands save, resume, and list. Captures git state, decisions made, remaining work, and modified files so a new session can pick up where the last one left off. Use when user says "checkpoint", "save progress", "save state", "resume", "pick up where I left off", or wants to preserve session context. For git commits, use /ship commit; for retrospectives, use /retro; for planning, use /plan.
+argument-hint: "/checkpoint save [purpose] | /checkpoint resume [id] | /checkpoint list"
+allowed-tools: "Read, Write, Bash, Glob, Agent, AskUserQuestion"
 ---
+
+## Overview
 
 Persist working state to disk so a future session can restore full context without the user re-explaining everything.
 
@@ -10,10 +14,23 @@ Persist working state to disk so a future session can restore full context witho
 | Invocation | Action |
 |-----------|--------|
 | `/checkpoint save` | Capture current state to a checkpoint file |
+| `/checkpoint save <purpose>` | Capture state tailored to what the next session will be used for |
 | `/checkpoint resume` | Restore context from the most recent checkpoint |
 | `/checkpoint resume <id>` | Restore context from a specific checkpoint |
 | `/checkpoint list` | Show all available checkpoints |
 | `/checkpoint` | Default to `save` |
+
+## When to Use
+
+Decide at a phase boundary, the point where one chunk of work such as an interview, an implementation, or a QA pass is done. Mid-phase there is nothing to decide: continue, or hand the remaining work to subagents. Work the questions in order; the first yes wins.
+
+1. **Continue?** Yes when the next phase needs this session as a primary source, as implementation needs the interview that preceded it, or when enough context is left for the next phase to fit. Continuing loses nothing, so rule it out first.
+2. **`/clear`?** Yes when everything in the session, the exploration, the decisions, and the dead ends, is irrelevant to what comes next. Clearing a relevant session loses the reasoning behind the work, and reading the diff back does not recover it.
+3. **`/checkpoint save`?** Yes when the state has to travel: a fresh session will pick it up, the work moves to another directory, repository, or harness, a colleague takes it over, or a side task found mid-phase is forked off without derailing the current one.
+4. **Subagent?** Yes when the task is scoped tightly enough to run unattended, such as a review of a finished diff. Spawn it with the Agent tool and keep this session untouched.
+5. **`/compact`.** The default, reached last: relevant context, same place, and the user stays in the loop. Pass an instruction naming the next phase, such as `/compact we are about to QA the importer`, so the summary keeps what that phase needs.
+
+Every option except continuing turns the session into a summary of itself, which is lossy. Pay that loss only when staying costs more than it saves.
 
 ## Storage
 
@@ -35,7 +52,7 @@ The file is overwritten in place on every save. Outside a git repository, checkp
    - `git status --short` to capture uncommitted changes.
    - `git diff --stat` to capture the scope of modifications.
 
-2. **Gather session context.** From the current conversation, extract:
+2. **Gather session context.** When a purpose argument was given, it names what the next session will do; keep what that work needs and drop the rest. From the current conversation, extract:
    - The current task description.
    - Decisions made during the session, with rationale.
    - Files modified or created.
@@ -43,7 +60,7 @@ The file is overwritten in place on every save. Outside a git repository, checkp
    - Any blockers or open questions.
    - Next steps remaining.
 
-3. **Write the checkpoint file.** Inside a repository, write `<root>/PROMPT.md` with the required sections and template from [`standards/project-workspace.md`](../../standards/project-workspace.md): identity with a README pointer, read first, hard constraints, dated state, numbered next steps, decided against. Carry the decisions, modified files, blockers, and suggested skills gathered above into those sections. Outside a repository, create `~/.claude/checkpoints/<session-id>.md` with this structure:
+3. **Write the checkpoint file.** Inside a repository, write `<root>/PROMPT.md` with the required sections and template from [`standards/project-workspace.md`](../../standards/project-workspace.md): identity with a README pointer, read first, hard constraints, dated state, numbered next steps, decided against. Carry the decisions, modified files, blockers, and suggested skills gathered above into those sections. When a purpose was given, state it at the top and order the next steps around it. Outside a repository, create `~/.claude/checkpoints/<session-id>.md` with this structure:
 
    ```markdown
    # Checkpoint: <session-id>
@@ -51,6 +68,7 @@ The file is overwritten in place on every save. Outside a git repository, checkp
    **Saved:** <GMT timestamp>
    **Branch:** <branch name>
    **Project:** <repo root path>
+   **Purpose:** <what the next session will be used for, when given>
 
    ## Task
 
@@ -88,6 +106,8 @@ The file is overwritten in place on every save. Outside a git repository, checkp
    - <skill 1> -- <why the resuming agent should consider it>
    - <skill 2> -- <why>
    ```
+
+   Reference other artifacts instead of copying them: a commit by SHA, a spec, plan, or ADR by path, a pull request or issue by URL. The checkpoint carries what no artifact holds, meaning the reasoning, the open questions, and the next step.
 
 4. **Redact sensitive content.** Before writing the file, scan every section for sensitive material and replace with a `[REDACTED:<reason>]` token. Patterns to redact:
    - API keys, tokens, bearer credentials. Heuristics: high-entropy strings 32 chars or more, strings prefixed with `sk_`, `pk_`, `ghp_`, `Bearer `, `AKIA`.
@@ -135,11 +155,34 @@ The file is overwritten in place on every save. Outside a git repository, checkp
 
 - Checkpoints are informational snapshots, not git operations. They never commit, stash, or modify the working tree.
 - Timestamps use GMT, never local timezone.
-- The checkpoint file must be self-contained. A reader with no prior context must understand the full state from the file alone.
+- The checkpoint file must be self-contained for orientation. A reader with no prior context must understand the full state from the file alone, following SHAs, paths, and URLs for the detail those artifacts already hold.
 - On resume, if the branch has diverged significantly from the checkpoint, warn the user before proceeding.
-- Never delete checkpoint files automatically. Only `/checkpoint prune` or manual deletion removes them.
+- Keep every checkpoint file. Only the user deletes one, by hand.
 - Create the `~/.claude/checkpoints/` directory if it does not exist.
 - Never stage or commit `PROMPT.md`. The workspace is excluded through `.git/info/exclude`, and [`hooks/project-workspace.py`](../../hooks/project-workspace.py) blocks a forced add.
+
+## Common Rationalizations
+
+- "The diff shows what I did, so the checkpoint can be short": the diff holds no rationale, no rejected options, and no next step. Write the decisions and the numbered next steps.
+- "Pasting the spec into the checkpoint keeps it self-contained": a pasted copy drifts from the source. Reference it by path, SHA, or URL.
+- "The token is needed to resume, so leave it in": the checkpoint is plain text on disk. Write `[REDACTED:<reason>]` and name where the real value lives.
+- "Saving is always the safe choice": every save turns the session into a lossy summary. Work the When to Use questions first; continuing loses nothing.
+- "The branch on resume is close enough": a mismatch means the next steps may target code that moved. Flag the discrepancy before proceeding.
+
+## Red Flags
+
+- Stop and redact when any section matches a pattern from step 4 of Save, such as `ghp_`, `-----BEGIN`, or an email address.
+- Stop and warn the user when `git branch --show-current` on resume differs from the checkpoint's branch.
+- Stop and resolve the workspace root with the helper script when about to write `PROMPT.md` to a guessed path.
+- Stop and unstage when `git status` shows `PROMPT.md` staged.
+
+## Verification
+
+- The file exists at the confirmed path: `<root>/PROMPT.md` inside a repository, `~/.claude/checkpoints/<id>.md` outside one.
+- The file carries a GMT timestamp, the branch, numbered next steps, and 2 to 5 suggested skills.
+- A scan of the file for `sk_`, `ghp_`, `AKIA`, `Bearer `, and `-----BEGIN` finds nothing outside `[REDACTED:...]` tokens.
+- `git status --short` lists the same files before and after the save, and `PROMPT.md` is absent from it.
+- On resume, every discrepancy between the checkpoint and the current git state is stated in the output.
 
 ## Related Skills
 

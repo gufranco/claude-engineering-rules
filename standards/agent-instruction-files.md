@@ -54,6 +54,14 @@ Split the moment the file exceeds what anyone reads in one pass. A working three
 
 The instruction file names the other two and states the condition for reading each. It never inlines them.
 
+Decide what to inline with the branch test: inline what every path through the file needs, and push behind a pointer what only some paths reach. When the agent keeps missing material behind a pointer, sharpen the pointer first: name the trigger condition and the file in the sentence that applies. Inline the material only when sharper wording still fails.
+
+### Completion Criteria
+
+Every step in a skill or runbook ends on a completion criterion: the condition that tells the agent the step is done. It is checkable, so the agent can tell done from not done, and exhaustive where it matters: "every modified model has a migration" rather than "produce a migration". A vague criterion invites premature completion, where the agent declares a step done because it ran, not because it achieved its outcome. Split a long step into several only after observing the agent rush through it.
+
+Provenance: 2026-10-12, adopted at the owner's request from mattpocock/skills `writing-great-skills`, kept upstream as `writing-for-agents`.
+
 ## Correct the Default, Then Stop
 
 The highest-value paragraph in any instruction file is the one that closes off a wrong assumption the agent will otherwise act on with total confidence.
@@ -64,16 +72,27 @@ local apply races the pipeline for the state lock. Do not tell anyone to run
 it manually.
 
 Every request reaching this app is already authenticated by a proxy. There is
-no logged-out state and no unauthenticated visitor. Do not build a login page,
-do not add an auth library, delete any you find.
+no logged-out state and no unauthenticated visitor. Read the caller from the
+identity header the proxy sets. Do not build a login page or add an auth
+library, and delete any you find.
 
 The environment variables in the infrastructure code are **not applied** to
 the running services. They are documentation. Rollout is manual.
 ```
 
-Each closes a whole category of plausible, confident, wrong work. The second is the strongest form: a section written entirely as prohibitions, because naming the invariant makes the prohibitions obvious rather than arbitrary.
+Each closes a whole category of plausible, confident, wrong work. The second is the strongest form because it names the invariant, then the positive target that follows from it, and only then the prohibitions. Once the agent knows what to do instead, the prohibitions read as consequences rather than arbitrary bans.
 
-Write a **"what you do not need to build"** section wherever the platform already provides something the agent would otherwise construct.
+Pair every prohibition with the positive target it protects, and lead with the target. "Read the caller from the proxy header" gives the agent a path to walk; "do not build a login page" alone leaves it to guess the replacement.
+
+Write a **"what the platform already provides"** section wherever the platform supplies something the agent would otherwise construct, and name the thing to use in place of each one.
+
+### Negation Priming
+
+Naming a behavior primes it, even inside a prohibition. An instruction such as "never add a retry loop here" puts retry loops into the agent's working context, and under pressure the agent reaches for what it was just shown. The mattpocock/skills writing-for-agents guidance states the same finding: prompt the positive.
+
+- Phrase the instruction as the behavior wanted: "let the error propagate to the caller" rather than "do not catch the error".
+- Keep a prohibition only where no positive phrasing carries the meaning, and then put the positive target beside it.
+- Routing follows the same rule: "for X, use /y" rather than "do not use this for X".
 
 ## The Stop List
 
@@ -253,6 +272,17 @@ wrong" -> /falsify; "bring things up to date" -> /sync.
 
 The underlying reason is worth stating outright, because it explains why the table is needed at all: **skills and commands do not self-invoke reliably from their descriptions alone.** Where invocation matters, hard-code it with a precise trigger boundary naming what counts and what does not.
 
+### User-Invoked Versus Model-Invoked Skill Descriptions
+
+A skill's description serves one of two readers, and its shape follows from which one.
+
+| Invocation | Frontmatter | Description reader | Description shape |
+|---|---|---|---|
+| Model-invoked, the default | none | The agent, every session | Trigger phrases plus positive routing to neighbouring skills |
+| User-invoked | `disable-model-invocation: true` | A person scanning the `/` menu | One human-facing sentence, no trigger list |
+
+A user-invoked skill's description is never loaded into the agent's context, so a trigger list there costs maintenance and buys nothing. The agent also cannot run that skill through the Skill tool, so any rule or skill that hands off to it must instead tell the user to run it. Pick model-invocation only when the agent must reach the skill on its own; everything a person fires deliberately, such as a deploy or a hotfix, is user-invoked.
+
 ## Agent-Facing Configuration
 
 Two files remove work that would otherwise be inferred every session.
@@ -304,6 +334,8 @@ A name-to-handle table costs a few lines and removes a whole class of guesswork 
 | A numeric threshold with no named exceptions | Produces silent violation rather than compliance |
 | Omitting that a field is written by a pipeline | An agent tidying the file creates a conflict |
 | A stop list that names no human for what the agent must not attempt | Leaves the agent to improvise on the systems it cannot see |
+| A prohibition with no positive target beside it | Primes the banned behavior and leaves the replacement to a guess |
+| A trigger list on a user-invoked skill | The agent never reads it, so it is pure maintenance cost |
 
 ## Cross-References
 

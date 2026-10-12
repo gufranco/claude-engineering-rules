@@ -1,9 +1,22 @@
 ---
 name: hotfix
-description: Emergency production fix with expedited workflow. Creates a hotfix branch from the latest release tag, applies the minimal fix, runs critical tests, ships with expedited review, and backports to the main branch. Use when user says "hotfix", "production bug", "emergency fix", "prod is broken", "urgent fix", or needs to fix something in production immediately. Do NOT use for non-urgent bugs (use /investigate), feature work (use /plan), or general debugging (use /investigate).
+description: Emergency production fix that branches from the latest release tag, applies a minimal fix, ships with expedited review, and backports to main.
+disable-model-invocation: true
+argument-hint: "/hotfix | /hotfix <description>"
+allowed-tools: "Read, Grep, Glob, Edit, Write, Bash, AskUserQuestion"
 sensitive: true
 ---
+
+## Overview
+
 Expedited workflow for production emergencies. Prioritizes speed and minimal change over thoroughness. Every step is designed to get a safe fix deployed as fast as possible.
+
+## When to Use
+
+- A released version is broken in production and the fix cannot wait for the next release from main.
+- The root cause is known, or the failing code path is narrow enough to find within 30 minutes.
+- For an unclear root cause, run `/investigate` first and return here with the hypothesis it confirmed.
+- For a fix that can ride the next regular release, use the normal branch and `/ship` flow.
 
 ## Arguments
 
@@ -61,7 +74,6 @@ Implement the minimal change. Rules for hotfix code:
 Run only the test files that cover the affected code, not the full suite. Speed matters.
 
 ```
-# Run only affected test files
 <test-runner> <affected-test-files>
 ```
 
@@ -108,6 +120,31 @@ git push origin v<major>.<minor>.<patch+1>
 - Backport must happen the same day. A fix that lives only on the release branch will be lost on the next release from main.
 - Never skip the reproduction test. A hotfix without a test is a hotfix that can regress silently.
 - If the fix is not obvious within 30 minutes, escalate. Call in another engineer. A wrong hotfix is worse than a slow hotfix.
+
+## Common Rationalizations
+
+- "The fix is obvious, the reproduction test only slows us down": a hotfix without a failing test can regress silently. Write the test from Step 4 first, or document the reproduction steps when the infrastructure is not available locally.
+- "A cleaner refactor would remove the whole class of bug": the hotfix branch carries the smallest change that resolves the production issue. Pick the approach that touches fewer lines.
+- "The full suite takes too long, so skip tests": run the test files covering the affected code, and let CI run the full suite.
+- "The backport can happen with the next release": the next release is cut from main, so a fix that lives only on the release branch ships the bug again. Cherry-pick to main the same day.
+- "One more hour and I will have it": past 30 minutes without an obvious fix, bring in another engineer. A wrong hotfix costs more than a slow one.
+
+## Red Flags
+
+- Stop and bring in another engineer when 30 minutes have passed and the fix is still not obvious.
+- Stop and trim the diff when it contains a rename, a style change, or a dependency bump that is not the root cause.
+- Stop and write the reproduction test when the fix is applied and no test has failed on the unfixed branch.
+- Stop and rebranch from the tag when the hotfix branch was cut from main while a release tag exists.
+- Stop and resolve before tagging when the cherry-pick onto main conflicts or the tests on main fail.
+
+## Verification
+
+- The hotfix branch starts at the tag `git describe --tags --abbrev=0` returned, or at main when the repository has no tags.
+- A test fails on the branch without the fix and passes with it, or the reproduction steps are written down because the infrastructure was not available locally.
+- The diff holds only the fix and its test.
+- The affected test files pass locally, and the PR title starts with `[HOTFIX]` and targets the release branch, or main when no release branch exists.
+- The fix commit is cherry-picked onto main and the tests on main pass.
+- The patch tag `v<major>.<minor>.<patch+1>` exists on the remote.
 
 ## Related skills
 

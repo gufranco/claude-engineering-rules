@@ -9,11 +9,15 @@ Before running any `glab` command:
 1. Determine the target instance and account. Check git remote: `git remote get-url origin 2>/dev/null`, or use what the user specifies.
 2. Prefix every `glab` command with `GITLAB_TOKEN` and `GITLAB_HOST` inline.
 
-```bash
-# Correct: token and host scoped to this command only
-GITLAB_TOKEN=glpat-xxx GITLAB_HOST=gitlab.com glab mr list
+**Correct:** the token and host are scoped to this command only.
 
-# Wrong: relies on global config that another terminal can change
+```bash
+GITLAB_TOKEN=glpat-xxx GITLAB_HOST=gitlab.com glab mr list
+```
+
+**Wrong:** this relies on global config that another terminal can change.
+
+```bash
 glab mr list
 ```
 

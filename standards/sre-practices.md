@@ -27,8 +27,9 @@ SLOs are operational targets that define "good enough." They are not aspirationa
 | Measurement | Automated, continuous, from the SLI data source |
 | Ownership | One team owns each SLO. No shared ownership across teams |
 
+An example SLO definition:
+
 ```
-# Example SLO definition
 Service: Checkout API
 SLI: Proportion of POST /checkout requests completing in under 2 seconds with 2xx status
 Target: 99.5% over 28-day rolling window
@@ -59,10 +60,9 @@ Alert on how fast the error budget is being consumed, not on instantaneous error
 | 6x | Budget exhausted in ~4.5 days | Page, investigate within 2 hours | 0.89% |
 | 10x | Budget exhausted in ~2.8 days | Page immediately, active incident | 1.49% |
 
-Use multi-window alerts to reduce false positives. A 6x burn rate sustained for 5 minutes is noise. A 6x burn rate sustained for 30 minutes is a real problem.
+Use multi-window alerts to reduce false positives. A 6x burn rate sustained for 5 minutes is noise. A 6x burn rate sustained for 30 minutes is a real problem. A pseudo-alert definition:
 
 ```
-# Pseudo-alert definition
 alert: HighErrorBudgetBurn
 expr: |
   error_budget_burn_rate_1h > 6

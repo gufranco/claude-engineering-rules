@@ -43,7 +43,7 @@ Do not push to remote. The orchestrator pushes; agents must not. Do not spawn su
 |-------|----------|-----------------|
 | Idempotency | Critical | `CREATE TABLE` without `IF NOT EXISTS`, `CREATE INDEX` without `IF NOT EXISTS`, `CREATE EXTENSION` without `IF NOT EXISTS` |
 | Reversibility | High | Missing down/rollback migration. For Prisma, verify the migration is revertible |
-| Data loss | Critical | `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` without a backup step or confirmation comment |
+| Data loss | Critical | `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` without a backup step and a confirmation recorded in the PR description |
 | Ordering | High | Migration timestamp is not the latest in the directory |
 | Naming | Medium | File name does not follow the framework's convention |
 | Large table locks | High | `ALTER TABLE` on tables likely to be large (look for `ADD COLUMN` with `NOT NULL` and no `DEFAULT`, `ALTER COLUMN TYPE`) |
@@ -77,7 +77,7 @@ For every Prisma migration in scope, perform this check.
    - `CREATE TABLE <name>` requires the corresponding `model` block.
    - `DROP TABLE <name>` requires the `model` block absent.
 4. **Report every mismatch** as a Critical finding with the exact identifier name and the missing schema declaration.
-5. **Allowlist for unmanaged objects.** PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. If the migration creates these, expect no schema entry. Verify the migration file documents this with a leading comment naming the unmanaged class. Missing documentation is a Medium finding.
+5. **Allowlist for unmanaged objects.** PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. If the migration creates these, expect no schema entry. Verify the PR description or an ADR names the unmanaged class; a comment in the migration file does not count, because comments are banned in every language. Missing documentation is a Medium finding.
 
 ### Worked Example
 
@@ -97,7 +97,10 @@ Required in `schema.prisma`:
 
 ```prisma
 model Game {
-  // existing fields
+  homeTeam String
+  awayTeam String
+  league   String
+  sport    String
   @@index([homeTeam], map: "Game_homeTeam_sportsbook_search_idx")
   @@index([awayTeam], map: "Game_awayTeam_sportsbook_search_idx")
   @@index([league],   map: "Game_league_sportsbook_search_idx")
@@ -105,7 +108,9 @@ model Game {
 }
 
 model Line {
-  // existing fields
+  name       String
+  marketName String
+  selection  String
   @@index([name],       map: "Line_name_sportsbook_search_idx")
   @@index([marketName], map: "Line_marketName_sportsbook_search_idx")
   @@index([selection],  map: "Line_selection_sportsbook_search_idx")
@@ -177,7 +182,7 @@ Triggered when `--mode review` is passed or when the diff has no migration files
 | Wide select in repository code | A query that pulls every column when only 1-3 are used downstream | LOW |
 | Full-table scan in production code path | A scan of a table over 10k rows with no filter | HIGH |
 | Inefficient JOIN order | A JOIN that fans out before filtering | MEDIUM |
-| Missing query-plan annotation on a complex query | Critical-path query with no commented plan | LOW |
+| Missing query-plan evidence on a complex query | Critical-path query with no `EXPLAIN` output in the PR description | LOW |
 
 ### Schema design
 

@@ -19,14 +19,18 @@ Brazil Decreto 7.962 adds: CNPJ/CPF visible, max 5-day response time to complain
 
 ## Price Transparency
 
+**Bad:** hidden fees.
+
 ```tsx
-// Bad: hidden fees
 <Product>
   <Price>$ 100</Price>
   <small>+ taxes + shipping at checkout</small>
 </Product>
+```
 
-// Good: total visible upfront
+**Good:** total visible upfront.
+
+```tsx
 <Product>
   <Price>$ 124.50</Price>
   <small>Includes $ 14.50 tax and $ 10.00 shipping</small>
@@ -72,11 +76,9 @@ No required reason field. No retention nudge before submission. One-click confir
 
 ## Click-to-Cancel (FTC 2024)
 
-Cancellation must require no more clicks, screens, or steps than subscription. If the subscription flow is one form with one button, cancellation is the same. If subscription is online, cancellation cannot require a phone call.
+Cancellation must require no more clicks, screens, or steps than subscription. If the subscription flow is one form with one button, cancellation is the same. If subscription is online, cancellation cannot require a phone call. When subscribing is one click on "Subscribe" followed by a confirmation, cancelling is one click followed by a confirmation.
 
 ```tsx
-// Subscription flow: click "Subscribe" → confirmation
-// Cancellation flow: must be equivalent
 function ManageSubscription() {
   return (
     <button onClick={cancelSubscription}>

@@ -1,14 +1,25 @@
 ---
 name: review
-description: Review code, run QA analysis, or audit visual design. Subcommands: code (default), qa, design. Three-pass code review with 71-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. Do NOT use for full architecture assessment (use /assessment), security scanning (use /audit), or shipping code (use /ship).
+description: Review code, run QA analysis, or audit visual design, with subcommands code (default), qa, and design. Three-pass code review with 71-category checklist, 30-rule QA analysis with PICT and coverage delta, and frontend design/accessibility/performance/SEO audit. Use when user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", "check SEO", or wants feedback on a specific change. For full architecture assessment, use /assessment; for security scanning, use /audit; for shipping code, use /ship.
 argument-hint: "/review [code|qa|design] <target>"
-allowed-tools: "Read, Grep, Glob, Bash, WebFetch"
-user-invocable: true
+allowed-tools: "Read, Edit, Write, Grep, Glob, Bash, WebFetch, Agent, AskUserQuestion"
 sensitive: true
 ---
-Unified review skill covering code quality, QA analysis, and visual design audit. Replaces standalone `/review`, `/qa`, and `/design-review` skills.
 
-## Subcommand Routing
+## Overview
+
+Unified review skill covering code quality, QA analysis, and visual design audit.
+
+## When to Use
+
+- The user says "review this PR", "review my code", "check this diff", "QA analysis", "test coverage gaps", "design audit", "check accessibility", "check performance", or "check SEO".
+- A pull request, merge request, or local branch needs findings before merge.
+- A feature needs its behavior paths mapped against its tests.
+- A page or component needs a contrast, responsive, accessibility, or performance audit.
+
+For a full architecture assessment, use `/assessment`; for project-wide security scanning, use `/audit`; for comments on your own PR, use `/respond`; for shipping, use `/ship`.
+
+## Process
 
 | Invocation | Action |
 |-----------|--------|
@@ -57,9 +68,10 @@ Say in the terminal report which side got the line-by-line pass and which side w
 
 1. **Gather context**, parallel: remote URL, branch, CLI tool, account resolution. Parse flags.
 2. **Determine mode**: PR mode if PR exists, local mode otherwise. Check PR state, must be OPEN.
-3. **Get diff and context**: PR mode gets metadata and diff via `gh pr diff`/`glab mr diff`. Local mode detects base, fetches, diffs. Warn about uncommitted changes in local mode.
+3. **Get diff and context**: PR mode gets metadata and diff via `gh pr diff`/`glab mr diff`. Local mode detects base, fetches, diffs. Warn about uncommitted changes in local mode. Fail fast here, before any subagent is spawned: confirm the base ref resolves with `git rev-parse --verify <base>` and the diff is non-empty. A bad ref or an empty diff ends the review with one line naming the ref or the empty range.
+   - **Independent reviewer.** When this session authored the diff, meaning it made the commits under review or edited those files earlier in the conversation, run steps 5 through 10 and the [Spec Axis](#spec-axis) in a fresh subagent. Brief it with the diff command or PR number, the commit list, and the checklist path, never with this session's reasoning about the change. The authoring context holds every assumption that shaped the code, so reviewing from inside it confirms those assumptions instead of testing them.
 4. **Apply scope filter** if `--backend` or `--frontend` passed.
-5. **Read context**: PR description, commit messages, every changed file in full, imported modules, verify PR description matches diff. For existing feedback, sweep every channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md): inline threads, review bodies, PR-level conversation, and commit comments. Reading only inline threads means re-raising a point another reviewer already made in the conversation box, or contradicting a decision the author already explained there.
+5. **Read context**: PR description, commit messages, every changed file in full, imported modules, verify PR description matches diff. For existing feedback, sweep every channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md): inline threads, review bodies, PR-level conversation, and commit comments. Reading only inline threads means re-raising a point another reviewer already made in the conversation box, or contradicting a decision the author already explained there. Start the [Spec Axis](#spec-axis) subagent now, in parallel with the remaining steps.
 6. **Read the checklist, then discover applicable standards and rules.** Open [`../../checklists/checklist.md`](../../checklists/checklist.md) and read it in this session. Not "recall the 71 category names", not "apply the summary in the system prompt": read the file. The category headings are an index; the findings live in the individual bullets under them, and a bullet you have not read is a bullet you will not check. A review that never opened the file is a review that silently downgraded itself to whatever the model happened to remember.
 
    Then read `~/.claude/rules/index.yml`. Scan the project for technology signals: file extensions, framework markers, `package.json`, `go.mod`, `Cargo.toml`, `Gemfile`, `requirements.txt`, `pyproject.toml`, import statements in changed files, directory names, and config files. Match signals against trigger keywords in the `on_demand` section. Load **every** matched standard file plus all `always_loaded` rules.
@@ -72,7 +84,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
    - [`rules/security.md`](../../rules/security.md): security criteria, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
    - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for review comments themselves
    - [`rules/code-style.md`](../../rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
-   - [`rules/testing.md`](../../rules/testing.md): mock policy, comment-free test structure, faker, deterministic tests, contract testing, performance regression
+   - [`rules/testing.md`](../../rules/testing.md): mock policy, test structure with the three bare AAA markers as the only comments, faker, deterministic tests, contract testing, performance regression
    - `rules/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
    - `rules/privacy.md`: data minimization, retention, erasure when the diff touches personal data
    - [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md): when the diff processes, stores, or acts on LLM-generated output
@@ -95,7 +107,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
    | SCOPE_INFRA | Dockerfile, terraform, k8s manifests, CI config | Container security, zero-downtime (cat 55) |
    | SCOPE_LLM | LLM client calls, prompt templates, AI output processing | LLM trust boundary (cat 53), output validation |
    | SCOPE_WEBHOOK | Webhook handlers, signature verification, external system callbacks | Idempotency key stability, replay protection, concurrent delivery, input canonicalization, startup secret validation |
-   | SCOPE_TESTS | Test files | Mock policy, coverage, comment-free test bodies, faker |
+   | SCOPE_TESTS | Test files | Mock policy, coverage, three marked AAA blocks with no other comment, faker |
    | SCOPE_DOCS | README, docs/, CHANGELOG | Documentation accuracy, stale references |
    | SCOPE_CONFIG | .env, config files, settings | Secret exposure, env var completeness |
 
@@ -179,7 +191,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
       Non-zero exit code is a P0 blocking finding. The exact diff output must appear in the review.
    4. **If a fresh DB is available, run end-to-end verification.** `prisma migrate deploy` followed by `prisma migrate dev`. If the second command generates a follow-up migration, drift exists. Paste the generated migration in the review and flag as P0.
    5. **Verify every index name uses an explicit `map:`.** Auto-generated Prisma names collide with raw-SQL names and cause the exact drift PR #1325 introduced. Names must follow `<Model>_<col>(_<col>)*_<purpose>_idx`.
-   6. **Verify any DDL without a schema counterpart is documented.** Extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. The migration file must contain a leading comment naming the unmanaged object class. Missing documentation is a P1 finding.
+   6. **Verify any DDL without a schema counterpart is documented.** Extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. The PR description or an ADR must name the unmanaged object class and why no schema entry exists; a comment in the migration file does not count, because comments are banned in every language. Missing documentation is a P1 finding.
 
    None of these steps can be skipped on the grounds that "the hook would have caught it." The hook is layer 2; the review skill is layer 4. Defense-in-depth means each layer runs every check independently.
 
@@ -211,18 +223,35 @@ Say in the terminal report which side got the line-by-line pass and which side w
      | A docstring that tells the caller what it must do first | Read it as a confession. "The controller handles that conversion" names the leak out loud |
 
      Grep before asserting a home is missing. The strongest version of this finding names a facility the project already has and the diff did not use: an existing validation middleware the new route bypassed, an existing shared package that already holds the sibling type. That is checkable and cheap to act on. A placement finding that instead proposes a new abstraction is speculation, and it should be dropped.
+
+     **Smell baseline.** Match the diff against these twelve code smells from Fowler's *Refactoring*, chapter 3. Report each as a judgement call, "possible Data Clumps", at confidence 5 to 6 per Confidence Scoring, never as a blocking violation. A documented project convention that endorses the shape suppresses the smell, unless it contradicts a rule in [`../../CLAUDE.md`](../../CLAUDE.md). Skip any smell a linter in the project already enforces.
+
+     | Smell | What it is | Fix |
+     |-------|-----------|-----|
+     | Mysterious Name | A name that does not reveal what the symbol does or holds | Rename; when no honest name comes, the design is unclear |
+     | Duplicated Code | The same logic shape in more than one hunk or file | Extract the shared shape and call it from both |
+     | Feature Envy | A function that reads another object's data more than its own | Move it onto the data it envies |
+     | Data Clumps | The same few fields or parameters travel together | Bundle them into one type and pass that |
+     | Primitive Obsession | A primitive standing in for a domain concept | Give the concept its own branded or value type |
+     | Repeated Switches | The same branch on the same type recurs across the change | One shared map or polymorphism for every site |
+     | Shotgun Surgery | One logical change forces scattered edits across many files | Gather what changes together into one module |
+     | Divergent Change | One module edited for several unrelated reasons | Split so each module changes for one reason |
+     | Speculative Generality | Parameters, hooks, or abstractions no requirement asks for | Delete and inline until a real need appears |
+     | Message Chains | Navigation such as `a.b().c().d()` the caller depends on | Hide the walk behind one method on the first object |
+     | Middle Man | A unit that mostly delegates onward | Remove it and call the real target |
+     | Refused Bequest | A subclass or implementer that overrides most of what it inherits | Replace inheritance with composition |
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
 11. **Run local verification**: test, with coverage, lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
 12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
 13. **Check branch freshness, CI, test evidence, PR size**, parallel. PR > 400 lines = warning, > 1000 = blocking.
 
     A branch behind its base is blocking only when the drift touches files the PR changes. Compute the intersection of the two changed-file lists rather than reading the commit count: `comm -12` over `git diff --name-only <head>...<base>` and `git diff --name-only <base>...<head>`, both sorted. An empty intersection is drift, and it belongs in the terminal report as an observation, never in the verdict. A non-empty one is a real rebase requirement, and naming the overlapping files is what makes it actionable.
-14. **Present review in the terminal** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9, plus a Standards Applied line. All of it is for the person running the skill. None of it is published: the pull request receives inline findings and a review event, nothing else.
+14. **Present review in the terminal** with verdict: APPROVE, REQUEST_CHANGES, or COMMENT. Include operational risk assessment for non-trivial changes. Include a blast radius summary listing every file outside the diff that is affected by the change. Include a Behavioral Flow Analysis summary covering the lifecycle traces, concurrent actor timelines, and attacker models from step 9, plus a Standards Applied line. Present the Spec Axis report under its own `## Spec` heading, after the standards findings and apart from them. All of it is for the person running the skill. None of it is published: the pull request receives inline findings and a review event, nothing else.
 
     **External output is a separate channel.** The in-terminal presentation includes internal scaffolding such as Standards Applied, the Behavioral Flow Analysis section heading, and severity tiers like P0, P1, and P2. What goes to GitHub does not. Before building the JSON payload, do a forward pass that strips:
 
     - Conventional Comments label prefixes, `issue, blocking:`, `issue, non-blocking:`, `nitpick:`, `suggestion:`, `question:`, `thought:`, `praise:`, `chore:`, `todo:`. Use no label.
-    - Internal severity tiers, `P0`, `P1`, `P2`, and section headings, `Standards Applied`, `Behavioral Flow Analysis`, `Blast Radius`.
+    - Internal severity tiers, `P0`, `P1`, `P2`, and section headings, `Standards Applied`, `Behavioral Flow Analysis`, `Blast Radius`, `Spec`.
     - The skill's own invocation flags, `--backend`, `--frontend`, `--local`, `--post`.
     - Internal file references such as `~/.claude/`, `rules/<name>.md`, `standards/<name>.md`, `checklist.md`, or [`CLAUDE.md`](../../CLAUDE.md).
     - "Category N" or "checklist item N" phrasings; reach for the engineering reason directly.
@@ -231,6 +260,21 @@ Say in the terminal report which side got the line-by-line pass and which side w
 15. **Next steps**:
     - **Own PR / local**: offer to fix issues. Convergence loop, max 5 iterations: fix, re-verify, re-audit. If 5 iterations are exhausted with findings still open, stop, list the remaining issues, and inform the author. Five iterations is enough for any reasonable convergence; remaining issues likely need a design change, not another fix pass.
     - **Someone else's PR**: offer to post inline comments. Show the exact payload first: each comment with file, line, body text, and suggestion blocks. Ask for confirmation before posting. `--post` skips the confirmation prompt but still shows the payload summary. Inline findings are the only thing that gets posted; the review carries no summary body, per [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md).
+
+### Spec Axis
+
+The checklist passes ask whether the change is built right. The spec axis asks whether it is the right thing. A change can pass one and fail the other: code that meets every standard while implementing the wrong behavior, or code that does exactly what was asked while breaking conventions. Reported in one list, the passing axis hides the failing one.
+
+1. **Find the spec**, stopping at the first hit:
+   1. The `## Requirements` section of the active plan folder under `<root>/plans/`, where the workspace root is `<repo>/.work/` or `<repo>/docs/` resolved by [`hooks/_lib/project_workspace.py`](../../hooks/_lib/project_workspace.py), per [`../../rules/project-workspace.md`](../../rules/project-workspace.md). The active folder is the newest one whose slug matches the branch or the PR title.
+   2. The `ADDED`, `MODIFIED`, and `REMOVED` delta sections that plan folder carries against `specs/current/`, per [`../../rules/living-specs.md`](../../rules/living-specs.md).
+   3. A ticket referenced from the commit messages, the branch name, or the PR body, such as `Closes #45` or a Linear key, fetched with the account resolved in step 1.
+   4. Nothing found: record `Spec: no spec found` and skip the axis. A missing spec never blocks the review, and the axis never infers requirements from the code.
+2. **Run it in an isolated subagent.** The brief carries the diff command or PR number, the commit list, and the spec path or fetched text, and nothing from the standards passes. It ends with: "Perform this review directly. Do not invoke /review or spawn agents. Under 400 words." The subagent returns three lists, and every finding quotes the spec line it rests on:
+   - Requirements missing or only partially implemented.
+   - Behavior in the diff that no requirement asked for.
+   - Requirements that look implemented but are implemented wrong.
+3. **Report it apart.** The terminal report carries it under `## Spec`. Never merge, rerank, or deduplicate it with the standards findings. The closing line names the worst finding within each axis, never one winner across both. A spec finding anchored to a diff line follows the same posting rules as any other finding.
 
 ### Posting Comments via Pending Review
 
@@ -379,9 +423,9 @@ Check the PR description for known author-side anti-patterns from [`standards/co
 
 | Anti-pattern in PR body | Finding |
 |------------------------|---------|
-| `TODO`, `FIXME`, or `XXX` without a ticket reference | `Untracked deferral in PR description. File a ticket and reference it.` |
+| `TODO`, `FIXME`, or `XXX` in the description or the diff | `Deferred work in the PR. Finish it in this change, or name the blocker outside the change that stops it, per found-fix.` |
 | Mention of refactoring unrelated to the stated ticket | `Scope creep: the description mentions a refactor that is not the PR's stated purpose. Consider splitting.` |
-| Statement that the fix is incomplete without a follow-up plan | `Incomplete fix declared without follow-up. Either complete the fix or file a follow-up ticket.` |
+| Statement that the fix is incomplete | `Incomplete fix declared. Complete it in this change; only a blocker outside the change, such as another team's module or an unreleased upstream, justifies waiting, and the description names it.` |
 
 ### Review Standards
 
@@ -416,7 +460,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
    - If the project has Playwright or Cypress: load [`standards/browser-testing.md`](../../standards/browser-testing.md) and check test patterns against it
    - If the project has `.tftest.hcl` files or Terraform: load [`standards/terraform-testing.md`](../../standards/terraform-testing.md)
    - If the project has axe-core, jest-axe, or pa11y dependencies: load [`standards/accessibility-testing.md`](../../standards/accessibility-testing.md)
-   - Always load [`rules/testing.md`](../../rules/testing.md) for the base test methodology such as comment-free test bodies, mock policy, faker, or coverage
+   - Always load [`rules/testing.md`](../../rules/testing.md) for the base test methodology such as marked Arrange, Act, Assert blocks, mock policy, faker, or coverage
    - Findings from these standards become QA findings with the same severity/rule citation format
 3. **Map behavior paths**: for each file, extract happy paths, input variations, validation failures, authorization paths, state transitions, error recovery, boundary values, concurrency, data integrity, side effects.
 4. **Find existing tests**: search for `*.test.ts`, `*.spec.ts` colocated or in `__tests__/`, [`tests/`](../../tests), `e2e/`. Map each `it()`/`test()` to behavior paths.
@@ -458,7 +502,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 ```
 
 1. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths, auth, data writes, error handling is a blocking finding.
-2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](../../rules/testing.md): comment-free test bodies, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
+2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](../../rules/testing.md): three blocks opened by the bare `Arrange`, `Act`, `Assert` markers and no other comment, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
 
 ### 30 QA Rules Reference
 
@@ -589,6 +633,31 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - When the diff adds or modifies dependencies, apply category 56, Supply Chain: check for typosquatting, verify lockfile integrity, check for known vulnerabilities.
 - When the diff includes database migrations, apply category 55, Zero-Downtime Deployment: verify expand-contract pattern, backward compatibility with previous app version.
 - When the diff processes LLM output, apply category 53, LLM Trust Boundary: verify output validation, sanitization before storage, URL allowlisting.
+
+## Common Rationalizations
+
+- "The diff is small, so skip the behavioral flow analysis": step 9 is where races and broken idempotency show up, and small diffs carry them too. Run it on every `/review code`.
+- "I remember the checklist categories": the findings live in the bullets under each heading. Open [`checklist.md`](../../checklists/checklist.md) and read it in this session.
+- "I wrote this code, so I know what to check": the authoring context confirms its own assumptions. Run the review in a fresh subagent per step 3.
+- "The finding looks right, so post it at confidence 6": a finding computable from the diff gets executed first. Run it with real inputs, then post the output or drop the finding.
+- "The other half of the contract was filtered out of scope": the filter bounds the line-by-line pass, never which divergence a finding may name. Read the counterpart.
+
+## Red Flags
+
+- Stop and read the counterpart file when a changed type, constant, or helper is also declared on the other side of a boundary.
+- Stop and strip the payload when a posted body would carry a label prefix, a severity tier, an internal path, or a category number.
+- Stop and report the finding in the terminal when its line falls outside every hunk in the per-file patch.
+- Stop and present both options when another reviewer's open thread contradicts a finding about to be posted.
+- Stop and post nothing when the running account authored the pull request; the finding becomes a commit.
+
+## Verification
+
+- The terminal report names the standards loaded in step 6 and carries the Behavioral Flow Analysis, blast radius, and `## Spec` sections.
+- Every finding carries a confidence score of 5 or higher, and every computable finding shows its executed output.
+- A posted review has an empty top-level `body`, one `event`, and inline comments anchored inside hunk ranges.
+- `/review qa` reports a coverage ratio with PASS at 95% or higher, and every finding cites `file:line` and a QA rule number.
+- `/review design` reports the dimension scorecard, and every finding cites `file:line` and its rule.
+- The account active before the run is active again after it.
 
 ## Related skills
 

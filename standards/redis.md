@@ -32,12 +32,16 @@ Redis commands are individually atomic. Two commands issued sequentially are not
 
 Lua scripts execute atomically on the Redis server. No other command runs between the script's Redis calls.
 
+**Bad:** two commands, not atomic.
+
 ```typescript
-// Bad: two commands, not atomic
 const newTotal = await redis.incrby(key, amount);
 await redis.expire(key, ttlSeconds);
+```
 
-// Good: Lua script, atomic
+**Good:** a Lua script, atomic.
+
+```typescript
 const INCR_WITH_TTL =
   "local t = redis.call('INCRBY', KEYS[1], ARGV[1]) " +
   "redis.call('EXPIRE', KEYS[1], ARGV[2]) " +
@@ -97,17 +101,21 @@ When Redis is used for a non-critical feature, price enhancement, recommendation
 
 **Rule: wrap non-critical Redis reads in a try/catch that returns a safe default.**
 
-```typescript
-// Bad: Redis failure crashes the odds endpoint
-const volumeMap = await getVolumes(propLineIds);
+**Bad:** a Redis failure crashes the odds endpoint.
 
-// Good: odds still serve without volume vig
-let volumeMap: Map<string, number>;
-try {
-  volumeMap = await getVolumes(propLineIds);
-} catch {
-  volumeMap = new Map();
-}
+```typescript
+const volumeMap = await getVolumes(propLineIds);
+```
+
+**Good:** odds still serve without volume vig.
+
+```typescript
+const volumeMap = await getVolumes(propLineIds).catch(
+  (error: unknown): Map<string, number> => {
+    logger.warn({ err: error, operation: "getVolumes" }, "volume lookup unavailable, serving odds without volume vig");
+    return new Map();
+  },
+);
 ```
 
 Classify each Redis usage:

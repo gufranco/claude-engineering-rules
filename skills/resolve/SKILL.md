@@ -1,9 +1,21 @@
 ---
 name: resolve
-description: Guided merge conflict resolution with verification. Shows each conflict with context from both branches, suggests resolution based on understanding both changes, verifies tests pass after resolution, and checks that no functionality was lost. Use when user says "resolve conflicts", "merge conflict", "fix conflicts", "rebase failed", "conflict resolution", or has merge conflicts to resolve. Do NOT use for general debugging (use /investigate), code review (use /review), or git workflow questions.
+description: Guided merge conflict resolution with verification. Shows each conflict with context from both branches, suggests resolution based on understanding both changes, verifies tests pass after resolution, and checks that no functionality was lost. Use when user says "resolve conflicts", "merge conflict", "fix conflicts", "rebase failed", "conflict resolution", or has merge conflicts to resolve. Use only when a merge or rebase has stopped on conflicts; for general debugging, use /investigate; for code review, use /review.
+argument-hint: "/resolve"
+allowed-tools: "Read, Edit, Bash, Grep, Glob, AskUserQuestion"
 sensitive: true
 ---
+
+## Overview
+
 Interactive conflict resolution that understands the intent behind each side of a conflict. Resolves conflicts one at a time with test verification after all conflicts are resolved.
+
+## When to Use
+
+- A merge, rebase, or cherry-pick stopped on conflicts and `git status` lists unmerged paths.
+- The user says "resolve conflicts", "merge conflict", "fix conflicts", "rebase failed", or "conflict resolution".
+
+For test failures with no conflict in progress, use `/investigate`; for reviewing the merged result, use `/review`.
 
 ## Arguments
 
@@ -120,6 +132,28 @@ After the operation completes with no remaining conflicts:
 - Never use `git checkout --ours` or `git checkout --theirs` on an entire file without reading every conflict in that file first. Blanket ours/theirs discards changes without review.
 - When a conflict involves generated files like lockfiles, `package-lock.json`, or `pnpm-lock.yaml`, regenerate them instead of manually resolving: delete the file, run the package manager, and stage the result.
 - If a conflict is too complex to resolve confidently, present both versions to the user with your analysis and ask for a decision. Do not guess.
+
+## Common Rationalizations
+
+- "Our side is newer, so take ours for the whole file": newer is not more complete. Read every block, since a blanket `--ours` drops the other branch's feature with no trace.
+- "The file has no markers left, so it is resolved": text-level cleanliness says nothing about behavior. Step 5 runs the suite for that reason.
+- "Hand-merging the lockfile is faster than regenerating it": a hand-merged lockfile passes review and fails a frozen install. Regenerate it with the package manager.
+- "The intent is obvious from the diff": state each side's intent from `git log` before choosing a strategy. The log names what the diff hides.
+
+## Red Flags
+
+- Stop and read the commit history for both sides when you cannot state in one sentence what each side intended.
+- Stop and ask the user, with both versions and your analysis, when two conflict blocks pull the same logic in incompatible directions.
+- Stop and re-resolve the specific conflict the failure points at when the suite fails after resolution.
+- Stop and return to Step 1 when `git rebase --continue` reports new conflicts.
+
+## Verification
+
+- `git diff --name-only --diff-filter=U` prints nothing.
+- `grep -rn '^<<<<<<<\|^>>>>>>>' <resolved files>` prints nothing.
+- Every resolved block has a one-line statement of what was kept from each side.
+- The full test suite, linter, type checker, and build pass after the operation completes.
+- No `git merge` or `git rebase` is still in progress: `.git/MERGE_HEAD` and `.git/rebase-merge` are absent.
 
 ## Related skills
 

@@ -1,9 +1,8 @@
 ---
 name: interview-me
-description: One-question-at-a-time intent clarification for underspecified or ambiguous asks. Drives toward 95%+ intent confidence before any implementation. Use when user says "interview me", "grill me", "are we sure?", "stress-test my thinking", or when the request is too vague to act on without guessing. Do NOT use for tasks the user has already specified concretely.
+description: One-question-at-a-time intent clarification for underspecified or ambiguous asks. Drives toward 95%+ intent confidence before any implementation. Use when user says "interview me", "grill me", "are we sure?", "stress-test my thinking", or when the request is too vague to act on without guessing. Use only while the request is underspecified; a concretely specified task proceeds straight to the work.
 argument-hint: "/interview-me [topic]"
-allowed-tools: "Read, Grep, Glob, AskUserQuestion"
-user-invocable: true
+allowed-tools: "Read, Grep, Glob, AskUserQuestion, Skill"
 sensitive: false
 ---
 
@@ -30,7 +29,9 @@ Do NOT use when:
 
 1. **Confidence baseline.** State current confidence as a number from 1 to 10 with one sentence each on what is known and what is unknown.
 2. **Self-investigate first.** Before asking, spend up to one minute on read-only investigation: grep, glob, read named files. Resolve anything that can be resolved without the user.
-3. **Ask one question.** First line is the question. Second block names what was investigated, with paths. Third block lists 2 to 3 options with one decisive trade-off each. Use `AskUserQuestion` for the question, not free-text prose.
+3. **Ask one question.** First line is the question, worded so that "yes" accepts the recommended option. Second block names what was investigated, with paths. Third block lists 2 to 3 options with one decisive trade-off each; the recommended option comes first, its label ends with `(Recommended)`, and one sentence gives the decisive reason. Use `AskUserQuestion` for the question, not free-text prose.
+   - When the question tests a domain term or a relationship between concepts, ground it in a concrete edge-case scenario invented for the purpose, such as "an order is half shipped when the customer cancels: is that one cancellation or two?" A scenario forces the boundary between concepts into the open where a definition lets it blur.
+   - When talk cannot settle the question, as with how a screen should look or how a state model behaves across awkward cases, stop asking and call the Skill tool with `spike`, passing the question. Its verdict becomes the answer, and the interview resumes from step 4.
 4. **Update confidence.** After the answer, restate confidence. If still below 9/10, repeat from step 2.
 5. **Summarize.** When confidence reaches 9/10 or higher, write a three-sentence task statement: what will be done, what will NOT be done, how done will be verified. Wait for explicit "yes" before any implementation.
 
@@ -67,6 +68,7 @@ If any one is missing, skip the ADR. Do not bury easy-to-change calls in the ADR
 
 - About to invoke `Write` or `Edit` without a confidence score
 - About to ask two questions in one turn
+- Offering options with no recommendation, or a recommendation that is not listed first
 - Asking a question whose answer is in the first file the user named
 - Skipping the self-investigation step because "the user knows"
 - Writing implementation code while confidence is below 8/10
@@ -78,4 +80,5 @@ If any one is missing, skip the ADR. Do not bury easy-to-change calls in the ADR
 - User has answered "yes" to the statement, not "ok" or "sure"
 - Every question asked was preceded by at least one read or grep
 - No question was bundled with another
+- Every question carried a recommended option, listed first and labeled `(Recommended)`
 - Confidence score documented before and after each round

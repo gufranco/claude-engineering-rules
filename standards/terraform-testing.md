@@ -271,16 +271,11 @@ run "create_compute" {
 
 ## Running Tests
 
-```bash
-# Run all tests
-terraform test
-
-# Run specific test file
-terraform test -filter=tests/validation_unit_test.tftest.hcl
-
-# Verbose output
-terraform test -verbose
-```
+| Task | Command |
+|------|---------|
+| Run all tests | `terraform test` |
+| Run a specific test file | `terraform test -filter=tests/validation_unit_test.tftest.hcl` |
+| Verbose output | `terraform test -verbose` |
 
 ## Rules
 

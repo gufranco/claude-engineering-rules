@@ -1,7 +1,12 @@
 ---
 name: gan
-description: Generator-Evaluator iteration loop for building features against a scored rubric. Use when user says "gan", "gan loop", "generator evaluator", "iterate to threshold", "build with feedback loop", or needs an iteration pattern stronger than `/loop` for feature work that has a measurable quality signal. Do NOT use for one-shot implementations (use `/plan` + direct edits), recurring schedules (use `/loop`), or visual design exploration (use `/design variants`).
+description: Generator-evaluator loop that iterates a feature build until it clears a scored rubric threshold.
+disable-model-invocation: true
+argument-hint: "/gan \"<brief>\""
+allowed-tools: "Agent, Read, Edit, Write, MultiEdit, Bash"
 ---
+
+## Overview
 
 Run a planner → generator → evaluator loop with a score-gated stop condition. The planner expands the brief into acceptance criteria and a rubric. The generator implements against the criteria. The evaluator scores the result, returns feedback. The loop iterates until the score crosses the threshold or the iteration cap is hit.
 
@@ -82,6 +87,29 @@ The orchestrator, this skill, is the sole filesystem writer. Same single-writer 
 - Apply costs are real. Cap `GAN_MAX_ITERATIONS` at 8 by default; loops past that have diminishing returns.
 - Always check `GAN_PASS_THRESHOLD` against the rubric's weighted total, not against any single row.
 - The evaluator must run the same evidence path each iteration. Switching from screenshot to Playwright mid-loop invalidates the score history.
+
+## Common Rationalizations
+
+- "Letting the generator write directly saves a step": two writers corrupt the iteration history. Discard any response that edited files and respawn.
+- "The rubric is off, so re-plan mid-loop": a new rubric makes earlier scores incomparable. Abort and start a fresh `/gan`.
+- "Playwright is slow, switch to screenshots for this round": changing the evidence path invalidates the score history. Keep `GAN_EVAL_MODE` fixed for the run.
+- "One row scored 9, so it passes": the threshold applies to the weighted total.
+- "One more iteration will clear the plateau": two iterations without improvement is the stop condition. Close with status plateau.
+
+## Red Flags
+
+- Stop and discard the response when `gan-generator` or `gan-evaluator` called Edit, Write, or MultiEdit.
+- Stop and report when the dev server is unreachable on `GAN_DEV_SERVER_PORT` after running `GAN_DEV_SERVER_CMD`.
+- Stop and ask for a corrected rubric when the planner's 5 weights do not sum to 10.
+- Stop the loop when the weighted total has not improved across the last 2 iterations.
+
+## Verification
+
+- `gan-harness/result.md` exists with the final score, iteration count, verdict, changed files, and a next-step paragraph.
+- The stop status is one of passed, aborted by evaluator, budget exhausted, or plateau, and matches the last evaluator output.
+- The iteration count is at most `GAN_MAX_ITERATIONS`.
+- `gan-harness/iterations/` holds one record per iteration, all scored with the same `GAN_EVAL_MODE`.
+- `git status` lists only files from the planner's file list plus `gan-harness/`.
 
 ## Related skills
 

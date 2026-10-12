@@ -30,7 +30,7 @@ Do not spawn subagents. Complete this task using direct tool calls only.
 
 ## Output Contract
 
-```
+````markdown
 ## Proposal (iteration <N>)
 
 ### Files changed
@@ -46,12 +46,11 @@ For each file in the file list, return EITHER a unified diff OR full file conten
 +const x = 2;
 ```
 
-OR
+OR, only for a new file or a rewrite that touches more than 50% of the file, the full contents:
 
 #### `path/to/new-file.ts`
 ```typescript
-// Full file contents here. Use full contents only for new files
-// or for rewrites that touch more than 50% of the file.
+<full file contents>
 ```
 
 ### Feedback addressed (iteration 2+)
@@ -64,7 +63,7 @@ Skip this section on iteration 1.
 
 ### Self-assessed confidence
 0-10, with one-line rationale.
-```
+````
 
 ## Scenarios
 

@@ -39,21 +39,22 @@ For message-based APIs, Kafka topics, RabbitMQ exchanges, WebSocket channels:
 
 ## Code Documentation
 
+Doc comments and docstrings are comments, and comments are banned in every language per [`code-style.md`](../rules/code-style.md). Code reference documentation is therefore generated from names, signatures, and types alone, and the prose lives in Markdown files beside the code.
+
 ### TypeDoc (TypeScript)
 
-- Document public interfaces, exported functions, and module entry points
-- Skip internal implementation details. If a function is not exported, it does not need a doc comment
-- Use `@param`, `@returns`, `@throws`, and `@example` tags
+- Generate the reference for public interfaces, exported functions, and module entry points from their signatures and types
+- Put usage prose and examples in the module's Markdown guide, never in a doc comment
 - Generate HTML or Markdown output as a CI artifact
 
 ### Other Languages
 
 | Language | Tool | Standard |
 |----------|------|----------|
-| Python | Sphinx with autodoc, or mkdocstrings | Google or NumPy docstring style |
-| Go | godoc (built-in) | Package-level comments + exported function comments |
-| Rust | rustdoc (built-in) | `///` doc comments with examples that compile |
-| Java/Kotlin | Javadoc / Dokka | Every public class and method documented |
+| Python | mkdocs with mkdocstrings | Reference from type hints and signatures; prose in Markdown pages, no docstrings |
+| Go | pkgsite or `go doc` | Reference from exported identifiers and types; prose in a per-package Markdown guide, no doc comments |
+| Rust | rustdoc (built-in) | Reference from signatures; prose and compiled examples in the crate's Markdown guide pulled in with the `include_str!` doc attribute, no `///` blocks |
+| Java/Kotlin | Javadoc / Dokka | Reference from public signatures; prose in Markdown module docs, no Javadoc blocks |
 
 ## Documentation as Code
 
@@ -75,7 +76,7 @@ For message-based APIs, Kafka topics, RabbitMQ exchanges, WebSocket channels:
 |-------|------|-----------------|
 | OpenAPI spec validity | spectral, openapi-generator validate | Schema errors, missing required fields |
 | Markdown links | markdown-link-check, lychee | Broken internal and external links |
-| Code examples | doctest (Python), rustdoc --test (Rust) | Examples that no longer compile or produce wrong output |
+| Code examples | `pytest --doctest-glob='*.md'` (Python), `cargo test --doc` over included Markdown (Rust) | Examples that no longer compile or produce wrong output |
 | Spelling | cspell, aspell | Typos in documentation |
 | API/code sync | Compare OpenAPI spec against route definitions | Drift between docs and implementation |
 

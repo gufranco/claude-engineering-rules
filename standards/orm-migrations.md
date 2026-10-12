@@ -149,7 +149,7 @@ Some PostgreSQL and MySQL objects cannot be expressed in any ORM's schema defini
 - Row-level security policies
 - Domain types, custom collations, sequences with non-default options
 
-For these, write raw SQL in the migration file and document the bypass reason in a leading comment. The ORM treats them as opaque DDL.
+For these, write raw SQL in the migration file and record the bypass reason in the PR description or an ADR, never in a SQL comment, since comments are banned in every language per [`code-style.md`](../rules/code-style.md). The ORM treats them as opaque DDL.
 
 ## Prisma
 
@@ -218,7 +218,7 @@ Prisma exposes raw-SQL escape hatches: the query-raw and execute-raw template ta
 
 ### Unmanaged Objects in Prisma
 
-For PostgreSQL objects Prisma cannot express, set the `PRISMA_SCHEMA_SYNC_DISABLE=1` env var for that single migration write and document the bypass reason in a leading comment.
+For PostgreSQL objects Prisma cannot express, set the `PRISMA_SCHEMA_SYNC_DISABLE=1` env var for that single migration write and record the bypass reason in the PR description or an ADR.
 
 ## TypeORM
 
@@ -308,9 +308,20 @@ Every migration must implement a working `down`. `migration:revert` calls it.
 For non-transactional DDL, set `transaction = false` as a static field on the migration class:
 
 ```typescript
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+
 export class AddTrgmIndex20260514120000 implements MigrationInterface {
   public transaction = false;
-  // up and down
+
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Game_homeTeam_trgm_search_idx" ON "game" USING gin ("homeTeam" gin_trgm_ops)',
+    );
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query('DROP INDEX CONCURRENTLY IF EXISTS "Game_homeTeam_trgm_search_idx"');
+  }
 }
 ```
 
@@ -400,7 +411,7 @@ Drizzle has no built-in down migration support. `drizzle-kit drop` removes the m
 Two consequences:
 
 1. Never delete a migration file from `drizzle/` after it has been applied to any shared environment. The file is the audit trail. Removing it desynchronizes `__drizzle_migrations` from the file system.
-2. For data migrations that are irreversible, document the irreversibility in a leading SQL comment. There is no `down` method to throw from.
+2. For data migrations that are irreversible, state the irreversibility in the migration's file name slug and in the PR description. There is no `down` method to throw from, and a SQL comment is banned.
 
 ### Transactions in Drizzle
 
@@ -408,7 +419,7 @@ Drizzle wraps each migration file in a single transaction by default. For DDL th
 
 ### Raw SQL in Drizzle
 
-The `sql` template tag is an escape hatch, not a default. Every direct use of the top-level execute or run methods with the SQL template tag, or the raw helper on the SQL builder, must be justified in a code comment that names what query builder method is insufficient. The dedicated runtime hook blocks these calls in application code.
+The `sql` template tag is an escape hatch, not a default. Every direct use of the top-level execute or run methods with the SQL template tag, or the raw helper on the SQL builder, must be justified in the PR description, naming the query builder method that is insufficient; the call itself lives in a service method whose name states the query. The dedicated runtime hook blocks these calls in application code.
 
 Acceptable scopes: recursive CTEs, window functions, maintenance commands, and migration files.
 
@@ -488,20 +499,26 @@ export class Game extends Model {
 
 Sequelize does not ship a built-in `migrate diff` command. The verification flow uses a controlled environment:
 
-```bash
-# 1. Fresh database
-docker compose -f docker-compose.test.yml up -d
+1. Start a fresh database:
 
-# 2. Apply all migrations
-pnpm exec sequelize-cli db:migrate
-# or, for umzug projects:
-pnpm exec ts-node src/db/migrate.ts up
+   ```bash
+   docker compose -f docker-compose.test.yml up -d
+   ```
 
-# 3. Boot the app with sync({ alter: false }) and read the log output.
-#    Any "ALTER TABLE" or "CREATE INDEX" indicates drift.
+2. Apply all migrations with `sequelize-cli`:
 
-# 4. Run the full test suite.
-```
+   ```bash
+   pnpm exec sequelize-cli db:migrate
+   ```
+
+   In `umzug` projects, run the migrator instead:
+
+   ```bash
+   pnpm exec ts-node src/db/migrate.ts up
+   ```
+
+3. Boot the app with `sync({ alter: false })` and read the log output. Any `ALTER TABLE` or `CREATE INDEX` indicates drift.
+4. Run the full test suite.
 
 A model that requires `sync({ alter: true })` to match the migrated schema is a blocking issue.
 
@@ -590,14 +607,13 @@ Configure CI to fail when `schema:fresh` or `schema:update` appears in deploymen
 
 ### Migrator Setup
 
-Install `@mikro-orm/migrations` for SQL drivers or `@mikro-orm/migrations-mongodb` for MongoDB. Register the Migrator extension in the ORM config:
+Install `@mikro-orm/migrations` for SQL drivers or `@mikro-orm/migrations-mongodb` for MongoDB. Register the Migrator extension in the ORM config; the example shows only the migration keys, alongside the project's existing connection settings:
 
 ```typescript
 import { defineConfig } from '@mikro-orm/postgresql';
 import { Migrator } from '@mikro-orm/migrations';
 
 export default defineConfig({
-  // ...
   extensions: [Migrator],
   migrations: {
     path: 'dist/migrations',
@@ -697,10 +713,9 @@ With `transactional: true` in config, MikroORM wraps each migration in its own t
 
 ### EntityManager Boundary
 
-Routers, controllers, and API handlers must never import the `EntityManager` directly. All database operations go through service modules that fork the EntityManager per-request via `RequestContext`.
+Routers, controllers, and API handlers must never import the `EntityManager` directly. All database operations go through service modules that fork the EntityManager per-request via `RequestContext`, as in this service:
 
 ```typescript
-// Service
 export class OrderService {
   constructor(private readonly em: EntityManager) {}
 
@@ -753,3 +768,5 @@ Enforced by: [`hooks/sequelize-raw-sql-blocker.py`](../hooks/sequelize-raw-sql-b
 Enforced by: [`hooks/sequelize-schema-sync.py`](../hooks/sequelize-schema-sync.py).
 Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../hooks/typeorm-raw-sql-blocker.py).
 Enforced by: [`hooks/typeorm-schema-sync.py`](../hooks/typeorm-schema-sync.py).
+
+The Prisma schema-sync hook originated in PR #1325 of onyxodds/onyx_fullstack on 2026-04-17. Each hook blocks with a message that names this file and the fix; bypass a schema-sync hook only for the unmanaged objects listed under Unmanaged Objects, and record the reason in the pull request description or an ADR, never in a migration comment.

@@ -303,6 +303,9 @@ After writing any text, read it back and verify:
 4. **Example test.** Is there an instruction where the meaning could vary across readers? Add the example that anchors it. Examples are non-negotiable for rules, standards, and any instructional text. The same applies when explaining what a tool did: show the command or output rather than describing it.
 5. **Obligation test.** Does every "should" actually mean "must"? If yes, say "must". If optional, say "optional".
 6. **Substitution test.** Could any sentence appear verbatim in a document about a different subject? If yes it says nothing about this one. This gate scores sentences individually, so a passage can clear all five tests above and still say nothing as a whole. The remaining three tests and the catalogue of shapes that produce this failure are in [`anti-slop.md`](../rules/anti-slop.md).
+7. **Order test.** Does any section use a concept that a later section defines? Reorder so every concept is defined before its first use, treating the sections as a dependency graph.
+
+Provenance for the order test: 2026-10-12, owner request, adopted from the `edit-article` skill in Matt Pocock's skills history, a single personal skill, so the evidence is one source.
 
 For question messages, status updates, error reports, subagent prompts, and loop-closure lines, apply [`rules/smart-questions.md`](../rules/smart-questions.md) in addition to this gate. When a message presents a choice, that rule also requires explaining each option in depth and naming a recommended one with its reason.
 

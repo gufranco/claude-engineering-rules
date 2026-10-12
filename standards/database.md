@@ -135,7 +135,7 @@ Wrap every migration in a transaction. A partial migration is worse than a faile
 
 - If the ORM supports transactional migrations natively, use that mechanism.
 - If the ORM does not, wrap the migration body in an explicit `BEGIN`/`COMMIT` with `ROLLBACK` on failure.
-- Exception: operations that cannot run inside a transaction, like `CREATE INDEX CONCURRENTLY` in PostgreSQL. These must be the sole operation in the migration file and documented with a comment explaining why the transaction is absent.
+- Exception: operations that cannot run inside a transaction, like `CREATE INDEX CONCURRENTLY` in PostgreSQL. These must be the sole operation in the migration file, with a file name slug such as `create_index_concurrently` and a PR description that explain why the transaction is absent; a comment in the migration is banned.
 
 ### Data Preservation
 
@@ -143,7 +143,7 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 
 1. Read the current schema for every table the migration touches.
 2. Verify that the `down` function restores the schema to its exact prior state: columns, types, defaults, constraints, indexes, and comments.
-3. If the migration removes a column or table, the `down` must recreate it with all original properties. If recreation is not feasible, like data loss on drop, document the limitation in a comment and require explicit confirmation before running.
+3. If the migration removes a column or table, the `down` must recreate it with all original properties. If recreation is not feasible, like data loss on drop, make `down` throw with a message naming the limitation, record it in the PR description, and require explicit confirmation before running.
 
 ### Operation Patterns
 
@@ -178,6 +178,31 @@ A migration must not alter, drop, or modify anything beyond its stated intent. B
 - Never run destructive operations, DELETE, TRUNCATE, DROP, schema changes on production databases without explicit confirmation
 - Use dev or test environments for experimentation and data exploration
 - When modifying production data, always wrap in a transaction and verify before committing
+
+## Deploying Migrations
+
+Schema-sync, idempotent DDL, and ordering rules live in [`orm-migrations.md`](orm-migrations.md). This section covers how a migration reaches production.
+
+### Deploy-Time Migration Gate
+
+The deploy build reads the commit's latest migration identifier from the repository and looks it up in the target database's applied-migrations table, such as `_prisma_migrations`, `__drizzle_migrations`, or `SequelizeMeta`. When the target lacks it, the build fails on purpose and the previous deployment keeps serving. A refused build is the safe outcome; a build that boots against a missing column is an outage.
+
+### Human-Gated Production Migrations
+
+When a person, not the pipeline, applies production migrations:
+
+1. Merge. The deploy fails at the gate, which is expected and harmless while the old deployment serves.
+2. Send the person exactly one message with the migration identifier and one exact command to run from a named checkout, such as `git switch main && git pull --ff-only && pnpm db:migrate`.
+3. Wait for their confirmation. Never poll, retry, or redeploy before it arrives.
+4. Redeploy once, then confirm the deploy is green. A second gate failure means the migration did not apply: report it with the identifier, and never redeploy in a loop.
+
+The agent never runs a migration against production, by that command or any other route.
+
+### Unproven Steps
+
+A runbook step whose outcome nobody has observed is marked `Unproven.` in the runbook, with what is confirmed and what is not. Until someone confirms it once, the operator reports the raw output the step printed beside the conclusion drawn from it.
+
+Provenance: 2026-10-12, owner request. Adopted from the course-video-manager deploy-migration skill and its CLAUDE.md.
 
 ## Expand-Contract Migrations
 

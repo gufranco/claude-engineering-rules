@@ -50,8 +50,9 @@ Update instances in batches. Each batch is drained, updated, health-checked, and
 - Health checks must pass before an updated instance receives traffic.
 - If a health check fails, halt the rollout automatically.
 
+A Kubernetes rolling update strategy:
+
 ```yaml
-# Kubernetes rolling update strategy
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -65,10 +66,9 @@ Database schema changes must not break the currently running application version
 
 ### Three-phase process
 
-**Phase 1: Expand.** Add new columns, tables, or indexes alongside the existing schema. The old application version ignores them.
+**Phase 1: Expand.** Add new columns, tables, or indexes alongside the existing schema. The old application version ignores them. Here the new column is nullable with a default:
 
 ```sql
--- Phase 1: Add new column, nullable, with default
 ALTER TABLE orders ADD COLUMN status_v2 VARCHAR(50) DEFAULT 'pending';
 CREATE INDEX idx_orders_status_v2 ON orders(status_v2);
 ```
@@ -76,14 +76,12 @@ CREATE INDEX idx_orders_status_v2 ON orders(status_v2);
 **Phase 2: Migrate.** Deploy code that writes to both old and new structures. Backfill existing data.
 
 ```sql
--- Phase 2: Backfill existing records
 UPDATE orders SET status_v2 = status WHERE status_v2 IS NULL;
 ```
 
 **Phase 3: Contract.** After all application versions use the new structure, remove the old columns or tables.
 
 ```sql
--- Phase 3: Remove deprecated column (only after all app versions use status_v2)
 ALTER TABLE orders DROP COLUMN status;
 ALTER TABLE orders RENAME COLUMN status_v2 TO status;
 ```

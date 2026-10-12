@@ -1,14 +1,32 @@
 ---
 name: brain
-description: Read from and write to the second brain vault. Subcommands - capture (default), ingest, ask, link, health, refresh, falsify, wrong, compile, eval. Files durable knowledge as specced notes, answers questions from what is already stored, keeps the graph honest as facts age, hunts facts that are wrong rather than merely old, and compiles the session memory directory from the vault. Use when user says "capture this", "remember this", "file this", "what do we know about X", "ask the vault", "vault health", "check the vault", "refresh stale facts", "the vault was wrong", "that is not true anymore", "falsify", "compile memory", "second brain", or names a note, entity, meeting, or decision to store. Do NOT use for external research, use /research. Do NOT use for codebase questions, use /onboard or /explain. Do NOT use for session retrospectives, use /retro.
+description: Read from and write to the second brain vault. Subcommands - capture (default), ingest, ask, link, health, refresh, falsify, wrong, compile, eval. Files durable knowledge as specced notes, answers questions from what is already stored, keeps the graph honest as facts age, hunts facts that are wrong rather than merely old, and compiles the session memory directory from the vault. Use when user says "capture this", "remember this", "file this", "what do we know about X", "ask the vault", "vault health", "check the vault", "refresh stale facts", "the vault was wrong", "that is not true anymore", "falsify", "compile memory", "second brain", or names a note, entity, meeting, or decision to store. For external research, use /research; for codebase questions, use /onboard or /explain; for session retrospectives, use /retro.
+argument-hint: "/brain [capture|ingest|ask|link|health|refresh|falsify|wrong|compile|eval] <text, path, url, or question>"
+allowed-tools: "Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion"
 sensitive: true
 ---
+
+## Overview
 
 The vault is the durable store for knowledge no repository owns. This skill is the only interface that writes to it. The note grammar is enforced mechanically by [`knowledge-note-guard.py`](../../hooks/knowledge-note-guard.py), so a note that violates the specification never lands; the job here is to produce notes that pass on the first try.
 
 Read [`rules/knowledge-notes.md`](../../rules/knowledge-notes.md) before any write. Read the vault's own operating manual at the vault root before resolving any folder.
 
-## Subcommand Routing
+## When to Use
+
+- A fact, decision, or lesson from the session will matter in a later session and no repository owns it.
+- A source such as a document, a transcript, or a URL holds knowledge worth deriving into notes.
+- A question may already be answered by the vault, so it is asked there before anywhere else.
+- The vault needs maintenance: a weekly health, refresh, falsify, eval, and compile pass, or a wrong answer just surfaced.
+
+## Process
+
+1. Resolve the vault and the folder per Resolution Rules below.
+2. Route the invocation through the Subcommand Routing table.
+3. Run that subcommand's steps in its own section.
+4. Update the index and append to the log on every write.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -211,6 +229,29 @@ Use the scheduling surface Claude Code already provides. Do not add cron files. 
 - Never copy a repository ADR into the vault. File a pointer note with the organizational context.
 - Never put a credential in the vault. The vault directory is synced to a third party.
 - Never claim the vault holds something it does not.
+
+## Common Rationalizations
+
+- "This fact is obviously current, so it needs no stamp": every claim that can move carries `(as of YYYY-MM-DD)`, and the guard blocks one that does not.
+- "A quick hand edit to the memory file is faster": memory is compiled from the vault. File the note, then run `compile`.
+- "The note probably exists, a new one is simpler": search by title, then by content. A duplicate splits the truth into two places.
+- "The person was implied in the conversation": a note for an unnamed person is fabrication. Ask first.
+- "The correction sounds right, so overwrite the claim": swap an unverified claim only after verifying the replacement. Otherwise lower confidence and open a follow-up.
+
+## Red Flags
+
+- Stop and resolve `SECOND_BRAIN_VAULT` when about to write to a path that was not resolved from it.
+- Stop and append to `timeline:` when about to overwrite a role, a status, or a company.
+- Stop and redact when the text being filed contains a credential, since the vault syncs to a third party.
+- Stop and mark the line `TBD` when about to write a wikilink to a note that does not exist.
+- Stop and keep the old `last_verified` when a falsify verdict is inconclusive.
+
+## Verification
+
+- The knowledge-note guard accepted every write, with no block in this run.
+- The index lists every note written in this run, and the log carries one line per write.
+- `vault-health.py` and `vault-freshness.py` report no errors after a write-heavy run.
+- A `compile` dry run shows the expected diff before `--apply`, and a re-run against an unchanged vault writes nothing.
 
 ## Related skills
 

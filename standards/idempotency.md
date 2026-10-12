@@ -232,15 +232,19 @@ Every write path ships both tests. The shapes are in [`../rules/testing.md`](../
 
 ```typescript
 it('creates one order and replays the response when called twice with the same key', async () => {
+  // Arrange
   const payload = buildOrderPayload();
-
   const first = await createOrder(payload);
+
+  // Act
   const second = await createOrder(payload);
 
+  // Assert
+  const orderCount = await db.order.count({ where: { idempotencyKey: payload.idempotencyKey } });
   expect(second.status).toBe(first.status);
   expect(second.body.id).toBe(first.body.id);
   expect(second.headers['idempotent-replayed']).toBe('true');
-  expect(await db.order.count({ where: { idempotencyKey: payload.idempotencyKey } })).toBe(1);
+  expect(orderCount).toBe(1);
 });
 ```
 

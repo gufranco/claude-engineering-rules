@@ -6,12 +6,12 @@ Authoritative reference for Dockerfile, Docker Compose, BuildKit, and Kubernetes
 
 Run containers as a non-root user. Container root maps to host root in many configurations. A container escape with root privileges compromises the host.
 
+Create a dedicated user in the build stage, then switch to it before the entrypoint:
+
 ```dockerfile
-# Create a dedicated user in the build stage
 RUN addgroup --system --gid 1001 appgroup && \
     adduser --system --uid 1001 --ingroup appgroup appuser
 
-# Switch to non-root before the entrypoint
 USER appuser
 ```
 
@@ -62,7 +62,6 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 COPY --link . .
 RUN pnpm build
 
-# Runtime stage: minimal, no build tools
 FROM gcr.io/distroless/nodejs22@sha256:...
 WORKDIR /app
 COPY --link --from=builder /app/dist ./dist
@@ -71,6 +70,7 @@ USER 1001
 CMD ["dist/main.js"]
 ```
 
+- The second stage is the runtime stage: a minimal image with no build tools.
 - Name every stage. Anonymous stages cannot be referenced by `--target` for partial builds.
 - The runtime stage copies only the production artifact. Dev dependencies, build tools, source maps, and test fixtures stay in the builder stage.
 
@@ -94,25 +94,22 @@ Keep the `.dockerignore` file next to the Dockerfile. Without one, every Dockerf
 
 ## BuildKit Modern Features
 
-BuildKit is the default builder since Docker 23.0. Use its primitives instead of legacy patterns.
+BuildKit is the default builder since Docker 23.0. Use its primitives instead of legacy patterns. In the example below, the first `RUN` uses a cache mount that persists between builds and never lands in a layer. The second reads a build-time secret that is visible during the `RUN` and never persists. The third uses a heredoc, which reads cleaner than backslash continuation.
 
 ```dockerfile
 # syntax=docker/dockerfile:1
 FROM python:3.12-slim@sha256:... AS deps
 WORKDIR /app
 
-# Cache mount: persists between builds, never lands in a layer
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
     pip install --requirement /tmp/requirements.txt
 
-# Build-time secret: visible during the RUN, never persists
 RUN --mount=type=secret,id=npm_token,target=/run/secrets/npm_token \
     npm config set //registry.npmjs.org/:_authToken=$(cat /run/secrets/npm_token) && \
     npm ci && \
     npm config delete //registry.npmjs.org/:_authToken
 
-# Heredoc: cleaner than backslash continuation
 RUN <<EOF
 set -eux
 apt-get update
@@ -157,15 +154,22 @@ Docker image layers are visible to anyone with access to the image. Secrets embe
 - `ARG` and `ENV` values are visible in image history via `docker history --no-trunc <image>`. Treat both as public.
 - Runtime secrets come through environment variables, file mounts, or a secrets manager. Never the image.
 
-```dockerfile
-# Wrong: secret persists in image layer
-COPY .env /app/.env
+**Wrong:** the secret persists in an image layer.
 
-# Wrong: ARG values are visible in image history
+```dockerfile
+COPY .env /app/.env
+```
+
+**Wrong:** `ARG` values are visible in image history.
+
+```dockerfile
 ARG DATABASE_PASSWORD
 ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
+```
 
-# Correct: build-time secret, not persisted
+**Correct:** a build-time secret, not persisted.
+
+```dockerfile
 RUN --mount=type=secret,id=npm_token \
     NPM_TOKEN=$(cat /run/secrets/npm_token) pnpm install
 ```
@@ -258,14 +262,16 @@ Treat warnings as errors in CI. The cost of one Hadolint run is seconds; the cos
 
 Mount the container's root filesystem as read-only. Applications write to explicitly defined volumes only.
 
+In a Kubernetes pod spec:
+
 ```yaml
-# Kubernetes pod spec
 securityContext:
   readOnlyRootFilesystem: true
 ```
 
+In a Compose service:
+
 ```yaml
-# Compose service
 read_only: true
 tmpfs:
   - /tmp:rw,noexec,nosuid,size=64m
@@ -278,8 +284,9 @@ tmpfs:
 
 Set CPU and memory limits to prevent a single container from consuming all host resources.
 
+In a Kubernetes resource specification:
+
 ```yaml
-# Kubernetes resource specification
 resources:
   requests:
     cpu: "250m"
@@ -289,8 +296,9 @@ resources:
     memory: "512Mi"
 ```
 
+In a Compose service:
+
 ```yaml
-# Compose service
 deploy:
   resources:
     limits:
@@ -324,14 +332,18 @@ Most Docker security guidance covers Dockerfile and Kubernetes. Compose sits in 
 
 ### Drop the version key
 
-Compose v2 ignores the top-level `version:` field and prints a deprecation warning. Remove it from every file:
+Compose v2 ignores the top-level `version:` field and prints a deprecation warning. Remove it from every file.
+
+**Wrong:**
 
 ```yaml
-# Wrong
 version: "3.8"
 services: ...
+```
 
-# Correct
+**Correct:**
+
+```yaml
 name: myproject
 services: ...
 ```
@@ -359,11 +371,13 @@ services:
 
 ### Drop all capabilities, add only what is needed
 
+Add `NET_BIND_SERVICE` only when the service binds a port below 1024 without rootless mode:
+
 ```yaml
 services:
   app:
     cap_drop: ["ALL"]
-    cap_add: ["NET_BIND_SERVICE"]   # only if binding < 1024 without rootless
+    cap_add: ["NET_BIND_SERVICE"]
 ```
 
 ### security_opt no-new-privileges
@@ -379,10 +393,11 @@ services:
 
 ### Ban host-namespace and privileged
 
-Any of these is a CIS Docker 5.4 violation:
+Any of these is a CIS Docker 5.4 violation.
+
+**Forbidden:**
 
 ```yaml
-# Forbidden
 privileged: true
 pid: host
 ipc: host
@@ -394,14 +409,18 @@ A privileged container has full host capabilities. Host-pid lets a container see
 
 ### Bind dev ports to loopback
 
-`ports: "8080:8080"` listens on every interface, including Wi-Fi. Anyone on the same network reaches the dev service:
+`ports: "8080:8080"` listens on every interface, including Wi-Fi. Anyone on the same network reaches the dev service.
+
+**Wrong:**
 
 ```yaml
-# Wrong
 ports:
   - "8080:8080"
+```
 
-# Correct for local dev
+**Correct for local dev:**
+
+```yaml
 ports:
   - "127.0.0.1:8080:8080"
 ```
@@ -603,11 +622,15 @@ Scan every image for known vulnerabilities before pushing to the registry.
 | Snyk Container | Commercial, tracks fix availability |
 | Docker Scout | Policy-driven, integrates with Docker Hub and BuildKit attestations |
 
-```bash
-# Scan and fail on critical or high vulnerabilities
-trivy image --severity CRITICAL,HIGH --exit-code 1 myapp:latest
+Scan with Trivy and fail on critical or high vulnerabilities:
 
-# Docker Scout quickview with policy evaluation
+```bash
+trivy image --severity CRITICAL,HIGH --exit-code 1 myapp:latest
+```
+
+Run a Docker Scout quickview with policy evaluation:
+
+```bash
 docker scout quickview myapp:1.2.3
 docker scout cves myapp:1.2.3 --only-severity critical,high --exit-code
 ```
@@ -618,10 +641,9 @@ docker scout cves myapp:1.2.3 --only-severity critical,high --exit-code
 
 ## BuildKit Attestations
 
-BuildKit attaches signed attestations to images at build time. Two types matter: SBOM and provenance.
+BuildKit attaches signed attestations to images at build time. Two types matter: SBOM and provenance. This build produces both an SPDX-JSON SBOM through Syft and full SLSA provenance:
 
 ```bash
-# Produce both SBOM (SPDX-JSON via Syft) and full SLSA provenance
 docker buildx build \
   --sbom=true \
   --provenance=mode=max \
@@ -650,19 +672,26 @@ Docker Scout's default Supply Chain Attestations policy fails when an image is m
 
 Sign container images to verify integrity and origin. Unsigned images in production are a supply chain risk.
 
-```bash
-# Keyless sign with Sigstore Fulcio; CI uses workload identity
-cosign sign myregistry/app:1.2.3
+1. Sign keylessly with Sigstore Fulcio; CI authenticates with its workload identity:
 
-# Key-based sign
-cosign sign --key cosign.key myregistry/app:1.2.3
+   ```bash
+   cosign sign myregistry/app:1.2.3
+   ```
 
-# Verify before deploying
-cosign verify \
-  --certificate-identity-regexp '^https://github\.com/myorg/.+$' \
-  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  myregistry/app:1.2.3
-```
+2. Or sign with a key:
+
+   ```bash
+   cosign sign --key cosign.key myregistry/app:1.2.3
+   ```
+
+3. Verify before deploying:
+
+   ```bash
+   cosign verify \
+     --certificate-identity-regexp '^https://github\.com/myorg/.+$' \
+     --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+     myregistry/app:1.2.3
+   ```
 
 - Prefer keyless signing with Sigstore Fulcio and Rekor. No key material to store, rotate, or leak.
 - Store key-based signing material in a secrets manager. Never in the repository.
@@ -673,10 +702,9 @@ cosign verify \
 
 Rootless mode runs both the daemon and the containers as an unprivileged user inside a user namespace. A compromised daemon yields the unprivileged user's privileges, not host root.
 
-Setup prerequisites on Linux:
+Setup prerequisites on Debian or Ubuntu:
 
 ```bash
-# Debian/Ubuntu
 sudo apt-get install -y uidmap dbus-user-session
 dockerd-rootless-setuptool.sh install
 systemctl --user start docker

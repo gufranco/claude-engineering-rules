@@ -1,11 +1,20 @@
 ---
 name: guard
-description: Combined safety mode for risky operations. Activates directory freeze, destructive command warnings, and scope enforcement simultaneously. Use when user says "guard", "safe mode", "freeze to this directory", "be careful", "restrict edits", or wants extra protection during a risky operation. Do NOT use for debugging (use /investigate), code review (use /review), or general editing.
+description: Safety mode for risky operations that freezes edits to one directory, warns on destructive commands, and enforces scope.
+disable-model-invocation: true
+argument-hint: "/guard [directory] | /guard off | /guard status"
+allowed-tools: "Bash, Read, Write, Glob, AskUserQuestion"
 ---
+
+## Overview
 
 Activates multiple safety protections at once to reduce the risk of accidental damage during sensitive operations.
 
-## Arguments
+## When to Use
+
+Activate before a sensitive operation where an edit outside one directory or an unconfirmed destructive command would do damage, such as a migration, a production config change, or a bulk rename.
+
+### Arguments
 
 | Invocation | Action |
 |-----------|--------|
@@ -62,7 +71,7 @@ Guard mode enables three protections simultaneously:
    |-----------|--------|
    | Freeze | Active: `/path/to/directory` or Inactive |
    | Careful | Active: always on when guard is active |
-   | Scope | Active: using `plan.md` at `/path` or Inactive: no plan found |
+   | Scope | Active: using `plan.md` at `<plan path>` or Inactive: no plan found |
 
 ## Behavior While Active
 
@@ -85,6 +94,28 @@ When guard mode is active, every file edit and destructive command follows these
 - Guard mode does not persist across sessions. It must be reactivated in each new session.
 - Never auto-deactivate guard mode. Only `/guard off` or session end removes it.
 - All paths must be absolute, never relative.
+
+## Common Rationalizations
+
+- "This file sits just outside the frozen directory, and the fix needs it": refuse the edit, state why, and let the user widen the scope with a new `/guard <directory>`.
+- "`rm` on a build directory is harmless": guard mode confirms every destructive command. State the command and its impact, then ask.
+- "The plan missed this file, but it obviously belongs": an unplanned file gets a warning and a confirmation.
+- "Guard was on last session, so it still is": guard mode ends with the session. Run `/guard status` and reactivate.
+- "A relative path is fine here": the freeze file holds one absolute path. Resolve it before writing.
+
+## Red Flags
+
+- Stop and refuse when an edit target resolves outside the path in `~/.claude/.freeze-scope`.
+- Stop and ask for confirmation when a command matches `rm`, `git reset`, `DROP`, `DELETE`, or a dangerous-command-blocker pattern.
+- Stop and abort activation when the directory argument does not exist.
+- Stop and warn when scope checking is active and the edit target is absent from `plan.md`.
+
+## Verification
+
+- After activation, `~/.claude/.freeze-scope` holds exactly one line, an absolute path that exists.
+- The activation message names the frozen path, the scope checking state, and `/guard off`.
+- `/guard status` prints the three-row protection table matching the freeze file and plan lookup.
+- After `/guard off`, `~/.claude/.freeze-scope` is absent.
 
 ## Related Skills
 

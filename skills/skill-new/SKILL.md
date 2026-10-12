@@ -1,9 +1,9 @@
 ---
 name: skill-new
-description: Scaffold a new SKILL.md with the enforced frontmatter and 6-section template, then validate with the skill linter. Use when user says "new skill", "create a skill", "scaffold a skill", or asks to add a slash command. Do NOT use for editing existing skills (use Edit directly), for renaming a skill (use Bash mv + linter), or for deleting a skill (no skill required).
+description: Scaffold a new SKILL.md with the enforced frontmatter and six-section template, then validate it with the skill linter.
+disable-model-invocation: true
 argument-hint: "/skill-new <kebab-case-name>"
 allowed-tools: "Read, Write, Bash, AskUserQuestion"
-user-invocable: true
 sensitive: false
 ---
 
@@ -28,14 +28,18 @@ Do NOT use when:
 
 1. **Resolve name.** Accept a kebab-case identifier (e.g., `interview-me`). Reject names that already exist under [`skills/`](../). Reject names that conflict with an existing slash command vocabulary.
 2. **Gather inputs.** Ask one question at a time, using `AskUserQuestion`:
-   - One-line description (50+ characters, names the trigger phrases and the anti-scope)
+   - Invocation. Pick model-invocation only when the agent must reach the skill on its own.
+     - Model-invoked, the default: the description is loaded into every session and carries the trigger phrases plus positive routing such as "for X, use /y".
+     - User-invoked: add `disable-model-invocation: true`. The description is one human-facing sentence for the `/` menu, with no trigger list, and costs zero context. Claude cannot run it through the Skill tool, so no other skill or rule may hand off to it.
+   - Description matching that invocation choice, quoted when it contains `: `
    - Argument hint (example invocations)
-   - Tool scope: which tools the skill needs (`allowed-tools`) OR which to deny (`disallowed-tools`)
-   - User-invocable (`true` for slash commands the user types, `false` for skills the model auto-invokes)
+   - Tool scope: which tools the skill pre-approves (`allowed-tools`) or which to deny (`disallowed-tools`)
    - Sensitive flag (`true` for destructive or privileged skills)
-3. **Scaffold.** Create `skills/<name>/SKILL.md` with the frontmatter block and the six required headings. Each section gets a placeholder paragraph that names what belongs there.
+   - Scripts: does any step run a deterministic operation the agent would otherwise regenerate on every run, such as parsing, validating, or formatting? Ship it as a script in the skill folder and call it, rather than describing it in prose.
+3. **Scaffold.** Create `skills/<name>/SKILL.md` with the frontmatter block and the six required headings. Each section gets a placeholder paragraph that names what belongs there. Every Process step ends on a checkable completion criterion, per Completion Criteria in [`standards/agent-instruction-files.md`](../../standards/agent-instruction-files.md).
 4. **Validate.** Run `python3 tools/lint-skills.py --strict skills/<name>/SKILL.md`. Block return until the linter passes.
-5. **Register.** If a new on-demand rule trigger applies, add an entry to [`rules/index.yml`](../../rules/index.yml). If the skill should appear in the README skill table, update it.
+5. **Prove it bites.** For every linter, hook, or check the skill introduces, run it three times: on the clean tree it passes, with one planted violation it fails, and with the violation removed it passes again. Keep the output of all three runs as evidence.
+6. **Register.** If a new on-demand rule trigger applies, add an entry to [`rules/index.yml`](../../rules/index.yml). If the skill should appear in the README skill table, update it.
 
 ## Common Rationalizations
 
@@ -55,7 +59,9 @@ Do NOT use when:
 ## Verification
 
 - `python3 tools/lint-skills.py --strict skills/<name>/SKILL.md` returns 0
-- README skill table updated if user-invocable
+- Every check the skill introduces passed clean, failed on a planted violation, and passed again once the violation was removed
+- A user-invoked skill has `disable-model-invocation: true` and a one-sentence description; a model-invoked skill has trigger phrases and positive routing
+- README skill table updated
 - [`rules/index.yml`](../../rules/index.yml) updated if the skill is triggered on-demand by keywords
 - Frontmatter `name` matches the directory name exactly
 - All six required sections present with non-empty bodies

@@ -1,14 +1,26 @@
 ---
 name: test
-description: Run tests, load benchmarks, coverage analysis, linting, and security scanning. Subcommands absorb /perf for HTTP load testing with k6/wrk/hey/ab. Use when user says "run tests", "check coverage", "lint", "benchmark", "load test", "perf test", or wants to execute the project's test suite with results. Do NOT use for QA analysis of test gaps (use /review qa), security auditing (use /audit), or writing test scenarios during planning (use /plan).
+description: Run tests, load benchmarks, coverage analysis, linting, and security scanning. Includes HTTP load testing with k6/wrk/hey/ab. Use when user says "run tests", "check coverage", "lint", "benchmark", "load test", "perf test", or wants to execute the project's test suite with results. For QA analysis of test gaps, use /review qa; for security auditing, use /audit; for writing test scenarios during planning, use /plan.
 argument-hint: "/test [run|coverage|lint|perf] [target]"
-allowed-tools: "Read, Bash, Grep, Glob"
-user-invocable: true
+allowed-tools: "Read, Bash, Grep, Glob, Write"
 ---
 
-Unified testing skill covering test execution, load testing, coverage, linting, and scanning. Replaces standalone `/test` and `/perf` skills.
+## Overview
 
-## Subcommand Routing
+Unified testing skill covering test execution, load testing, coverage, linting, and scanning.
+
+## When to Use
+
+- The user says "run tests", "check coverage", "lint", "benchmark", "load test", or "perf test".
+- A change needs fresh suite, lint, or coverage output as completion evidence.
+- An endpoint needs throughput and latency numbers under load.
+- A test fails intermittently and needs a flake rate.
+
+For QA analysis of test gaps, use `/review qa`; for a full security audit, use `/audit`; for a single test-first cycle, use `/tdd`.
+
+## Process
+
+Pick the row that matches the invocation, then follow that subcommand's section below.
 
 | Invocation | Action |
 |-----------|--------|
@@ -182,7 +194,7 @@ Generate test file stubs for code that lacks tests.
 3. Check for existing test files. Skip already-tested exports.
 4. Generate a test stub per untested export following project conventions:
    - Read existing test files in the same module for patterns.
-   - Follow [`rules/testing.md`](../../rules/testing.md): comment-free test bodies, faker for data, real database.
+   - Follow [`rules/testing.md`](../../rules/testing.md): three blocks opened by the bare `Arrange`, `Act`, `Assert` markers and no other comment, faker for data, real database.
    - Include one happy-path test and one error-path test. Edge cases are listed in the approval message, never as a marker comment in the file.
 5. Present stubs for approval before writing.
 6. After writing, run the test suite to verify stubs compile, they may fail on TODO assertions, which is expected.
@@ -200,6 +212,27 @@ Generate test file stubs for code that lacks tests.
 - Default perf to safe values, 1000 requests, 10 concurrency.
 - Show exact commands so user can reproduce manually.
 - If no test config exists, say so and stop.
+
+## Common Rationalizations
+
+- "The last run passed, so report it": evidence comes from a run in this session. Rerun and read the exit code.
+- "Reading the last lines of output is enough": a summary line can hide one failure above it. Gate on the exit code, then grep for `passed|failed`.
+- "One flaky failure is noise, rerun until green": a test that fails once in five runs is flaky by the definition in `flaky`. Report it with its rate.
+- "The URL looks like staging": a hostname proves nothing. Treat a URL you cannot classify as production and ask before the perf run.
+
+## Red Flags
+
+- Stop and say no test configuration exists when detection finds no runner.
+- Stop and ask before installing a missing test dependency or tool.
+- Stop and confirm the target when a perf URL resolves to a production host.
+- Stop and present the quarantine list for approval before any `.skip` lands in a file.
+
+## Verification
+
+- The exact command that ran is shown, so the user can rerun it.
+- The reported pass, fail, and skip counts match the runner's own summary, and the exit code is stated.
+- Warnings and deprecations in the output are listed, or the report says there were none.
+- Perf runs report every metric in the table, and temp scripts and payload files are deleted.
 
 ## Related skills
 
