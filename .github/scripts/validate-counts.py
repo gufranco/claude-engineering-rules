@@ -77,10 +77,23 @@ def count_run_tests():
         return 0
 
 
+def count_agents():
+    excluded = {"TEMPLATE.md", "_shared-principles.md"}
+    paths = glob.glob(os.path.join(CLAUDE_DIR, "agents/*.md"))
+    return len([p for p in paths if os.path.basename(p) not in excluded])
+
+
+def count_lang_rules():
+    paths = glob.glob(os.path.join(CLAUDE_DIR, "rules/lang/*.md"))
+    return len([p for p in paths if os.path.basename(p) != "README.md"])
+
+
 def derive_counts():
     """Derive all counts from source files."""
     return {
         "rules": count_files("rules/*.md"),
+        "lang_rules": count_lang_rules(),
+        "agents": count_agents(),
         "always_on_rules": count_index_entries("always_loaded"),
         "standards": count_files("standards/*.md"),
         "skills": count_files("skills/*/SKILL.md"),
@@ -126,6 +139,22 @@ def scan_file(filepath, counts):
         ),
         (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?skills\b", "skills", "skills count in bold"),
         (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count in bold"),
+        (r"^(\d+) (?:[a-z-]+\s+)?skills\b", "skills", "skills count leading a line"),
+        (r"^(\d+) (?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count leading a line"),
+        (r"(?<=\s)(\d+) skills in\b", "skills", "skills count in prose"),
+        (r"(?<=\s)(\d+) hooks in\b", "hooks", "hooks count in prose"),
+        (r"^(\d+) standards in\b", "standards", "standards count leading a line"),
+        (r"^(\d+) rules in \[", "rules", "rules count leading a line"),
+        (r"plus (\d+) in \[`rules/lang/`\]", "lang_rules", "language rules count"),
+        (r"Plus (\d+) language-specific files", "lang_rules", "language files count"),
+        (r"(\d+) language-specific cores", "lang_rules", "language cores count"),
+        (r"(\d+) specialized subagents", "agents", "agents count in prose"),
+        (r"\*\*(\d+)\*\*\s*custom agents", "agents", "agents count in bold"),
+        (r"^(\d+) MCP servers\b", "mcp_servers", "MCP servers count"),
+        (r"The (\d+) standards total", "standards", "standards total in prose"),
+        (r"(\d+) short rule cores", "rules", "rule cores count"),
+        (r"(?<=  )(\d+) slash-command skills", "skills", "skills count in tree"),
+        (r"(?<=  )(\d+) runtime hooks", "hooks", "hooks count in tree"),
         (
             r"\*\*(\d+)\*\*\s*checklist items",
             "checklist_items",

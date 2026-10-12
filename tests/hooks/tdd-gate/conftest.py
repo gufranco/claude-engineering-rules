@@ -1,17 +1,3 @@
-"""Temp-path override for the tdd-gate suite.
-
-The hook exempts shared temp roots, `/tmp` and `/private/tmp`, because
-files there are throwaway by construction. It deliberately does not exempt
-the per-user TMPDIR, so that its own tests still exercise the blocking
-path.
-
-That holds on macOS, where pytest's `tmp_path` lives under `/var/folders`.
-On Linux `tmp_path` lives under `/tmp/pytest-of-<user>`, which is inside a
-shared root, so every blocking test silently turned into an allow. These
-fixtures give the suite a base outside both shared roots on either
-platform, which is what keeps the assertions meaningful everywhere.
-"""
-
 from __future__ import annotations
 
 import shutil

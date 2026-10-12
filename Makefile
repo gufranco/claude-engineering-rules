@@ -20,7 +20,7 @@ MYPY       := $(call tool,mypy)
 
 # Must match the paths the CI Lint job passes to ruff. When the two drift,
 # a lint failure only ever surfaces after a push.
-LINT_PATHS := hooks scripts .github/scripts tests
+LINT_PATHS := hooks scripts tools .github/scripts tests
 
 # The modules held to mypy --strict. The rest of the tree does not pass yet, so
 # widening this list is a deliberate change that comes with the fixes. CI calls
@@ -32,7 +32,20 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/suppression.py \
                    hooks/_lib/audit_log.py \
                    hooks/_lib/project_workspace.py \
-                   hooks/project-workspace.py
+                   hooks/_lib/git_invocation.py \
+                   hooks/project-workspace.py \
+                   hooks/_lib/aaa_structure.py \
+                   hooks/_lib/comment_families.py \
+                   hooks/_lib/comment_family_index.py \
+                   hooks/_lib/comment_regions.py \
+                   hooks/_lib/comment_resolution.py \
+                   hooks/_lib/comment_syntax.py \
+                   hooks/_lib/edit_resolution.py \
+                   hooks/_lib/staged_blobs.py \
+                   hooks/_lib/tool_directive.py \
+                   hooks/_lib/yaml_shell.py \
+                   hooks/test-aaa-markers.py \
+                   hooks/comment-blocker.py
 
 # yamllint and zizmor ship in requirements-dev.txt, so they resolve through
 # the venv like the rest of the python toolchain. bats, shellcheck, and
@@ -56,7 +69,7 @@ PYTEST_N   ?= auto
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
 .PHONY: help install test test-fast test-cov test-bats test-all \
-        lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md \
+        lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
 
@@ -68,7 +81,8 @@ help:
 	@echo "  test-cov     Run pytest with branch coverage, enforce 95%"
 	@echo "  test-bats    Run bats-core suites for shell hooks"
 	@echo "  test-all     test-cov + test-bats + lint + typecheck"
-	@echo "  lint         All linters: ruff + shellcheck + actionlint + yamllint + zizmor"
+	@echo "  lint         All linters: ruff + shellcheck + actionlint + yamllint + zizmor + lint-skills"
+	@echo "  lint-skills  tools/lint-skills.py --strict over every skill"
 	@echo "  format       ruff format (writes)"
 	@echo "  format-check ruff format --check (read-only)"
 	@echo "  typecheck    mypy --strict over TYPECHECK_PATHS"
@@ -85,7 +99,7 @@ test-fast:
 	$(PYTEST) --no-cov -x $(PYTEST_OPTS)
 
 test-cov:
-	rm -f .coverage .coverage.*
+	find . -maxdepth 1 -type f \( -name '.coverage' -o -name '.coverage.*' \) -delete
 	$(PYTEST) -n $(PYTEST_N) $(PYTEST_OPTS)
 	$(COVERAGE) combine 2>/dev/null || true
 	$(COVERAGE) report
@@ -104,7 +118,10 @@ endif
 
 test-all: test-cov test-bats lint typecheck validate
 
-lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md
+lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills
+
+lint-skills:
+	$(PYTHON) tools/lint-skills.py --strict
 
 lint-md:
 	npx --yes markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
@@ -177,4 +194,5 @@ clean-pyc:
 	$(PYTHON) -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]"
 
 clean-cov:
-	rm -f .coverage .coverage.* coverage.xml
+	find . -maxdepth 1 -type f \( -name '.coverage' -o -name '.coverage.*' \) -delete
+	rm -f coverage.xml

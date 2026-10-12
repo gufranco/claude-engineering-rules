@@ -1,11 +1,7 @@
-"""Coverage for the gh-run-watch-blocker hook.
-
-Source rule: rules/git-workflow.md CI/CD Monitoring section.
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "gh-run-watch-blocker"
 
@@ -25,16 +21,26 @@ HOOK = "gh-run-watch-blocker"
         "glab ci view 123 -l",
     ],
 )
-def test_blocks_polling_commands(tool_use, assert_blocks, cmd):
+def test_blocks_polling_commands(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_blocks(HOOK, payload, "polls every 3 seconds")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "polls every 3 seconds")
 
 
-def test_blocks_in_compound_command(tool_use, assert_blocks):
+def test_blocks_in_compound_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "git push && gh run watch"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
 @pytest.mark.parametrize(
@@ -51,10 +57,15 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
         "glab ci view 123 --output json",
     ],
 )
-def test_allows_one_shot_commands(tool_use, assert_allows, cmd):
+def test_allows_one_shot_commands(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -66,32 +77,57 @@ def test_allows_one_shot_commands(tool_use, assert_allows, cmd):
         "grep watch readme.md",
     ],
 )
-def test_allows_unrelated(tool_use, assert_allows, cmd):
+def test_allows_unrelated(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
-def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
+def test_allows_unrelated_tools(tool_use, run_hook, tool_name):
+    # Arrange
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_var_disables_check(tool_use, assert_allows):
+def test_bypass_env_var_disables_check(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh run watch"})
 
-    assert_allows(HOOK, payload, env={"GH_RUN_WATCH_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"GH_RUN_WATCH_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_empty_command(tool_use, assert_allows):
+def test_handles_empty_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_missing_tool_input(tool_use, assert_allows):
+def test_handles_missing_tool_input(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash")
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

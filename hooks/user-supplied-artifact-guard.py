@@ -46,6 +46,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.output import block as _block  # noqa: E402
 
@@ -162,7 +163,7 @@ def _explicit_add_paths(command: str) -> list[str]:
     commit gate handles them instead.
     """
     paths: list[str] = []
-    for match in ADD_PATTERN.finditer(command):
+    for match in ADD_PATTERN.finditer(strip_git_global_options(command)):
         for token in _split_args(match.group("args")):
             if not token or token.startswith("-"):
                 continue
@@ -289,7 +290,7 @@ def main() -> int:
 
     command = _read_command()
     candidates: list[str] = []
-    if COMMIT_PATTERN.search(command):
+    if COMMIT_PATTERN.search(strip_git_global_options(command)):
         candidates.extend(_staged_files())
     candidates.extend(_explicit_add_paths(command))
     if not candidates:

@@ -1,8 +1,3 @@
-"""Coverage for prisma-raw-sql-blocker hook.
-
-Source rule: `~/.claude/rules/code-style.md` No raw SQL.
-"""
-
 from __future__ import annotations
 
 import os
@@ -11,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "prisma-raw-sql-blocker"
 
@@ -19,7 +15,8 @@ HOOK = "prisma-raw-sql-blocker"
     "method",
     ["queryRaw", "executeRaw", "queryRawUnsafe", "executeRawUnsafe", "queryRawTyped"],
 )
-def test_blocks_dollar_method_on_prisma(tool_use, assert_blocks, method):
+def test_blocks_dollar_method_on_prisma(tool_use, run_hook, method):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -28,10 +25,15 @@ def test_blocks_dollar_method_on_prisma(tool_use, assert_blocks, method):
         },
     )
 
-    assert_blocks(HOOK, payload, "raw SQL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "raw SQL")
 
 
-def test_blocks_dollar_query_raw_tagged(tool_use, assert_blocks):
+def test_blocks_dollar_query_raw_tagged(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -40,10 +42,15 @@ def test_blocks_dollar_query_raw_tagged(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "raw SQL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "raw SQL")
 
 
-def test_blocks_on_alternative_client_names(tool_use, assert_blocks):
+def test_blocks_on_alternative_client_names(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -52,10 +59,15 @@ def test_blocks_on_alternative_client_names(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "raw SQL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "raw SQL")
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -65,10 +77,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "raw SQL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "raw SQL")
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -80,10 +97,15 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "raw SQL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "raw SQL")
 
 
-def test_allows_findMany(tool_use, assert_allows):
+def test_allows_findMany(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -92,10 +114,15 @@ def test_allows_findMany(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_clean_create(tool_use, assert_allows):
+def test_allows_clean_create(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -104,10 +131,15 @@ def test_allows_clean_create(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_migration_files(tool_use, assert_allows):
+def test_skips_migration_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -116,10 +148,15 @@ def test_skips_migration_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_sql_files(tool_use, assert_allows):
+def test_skips_sql_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -128,10 +165,15 @@ def test_skips_sql_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_paths(tool_use, assert_allows):
+def test_skips_test_paths(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -140,10 +182,15 @@ def test_skips_test_paths(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -152,10 +199,15 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"PRISMA_RAW_SQL_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"PRISMA_RAW_SQL_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -164,24 +216,21 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "raw SQL",
-        env={"PRISMA_RAW_SQL_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"PRISMA_RAW_SQL_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "raw SQL")
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "prisma-raw-sql-blocker.py"
     )
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
+    env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -192,25 +241,37 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/services/x.ts"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/x.ts", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -219,19 +280,29 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_empty_file_path_with_clean_content(tool_use, assert_allows):
+def test_empty_file_path_with_clean_content(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const x = await prisma.user.findMany();\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_seed_sql_path(tool_use, assert_allows):
+def test_skips_seed_sql_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -240,10 +311,15 @@ def test_skips_seed_sql_path(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_with_non_string_new_string(tool_use, assert_allows):
+def test_multiedit_with_non_string_new_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -252,21 +328,30 @@ def test_multiedit_with_non_string_new_string(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_the_anti_pattern_inside_documentation(tool_use, assert_allows):
+def test_allows_the_anti_pattern_inside_documentation(tool_use, run_hook):
+    # Arrange
     content = "# Locking\n\nNever do this in application code:\n\n```typescript\nawait db.$queryRaw`SELECT 1`;\n```\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/standards/concurrency.md", "content": content}
     )
 
-    _code, stderr = assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks):
+def test_still_blocks_the_same_call_in_application_code(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -275,4 +360,8 @@ def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks)
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)

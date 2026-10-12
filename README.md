@@ -15,7 +15,7 @@
 
 </div>
 
-**41** always-on rules · **139** on-demand standards · **42** slash-command skills · **84** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**41** always-on rules · **139** on-demand standards · **42** slash-command skills · **86** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-84 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+86 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -85,17 +85,17 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-44 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/), loaded into every conversation as short cores. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
+45 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). 41 of the rules load into every conversation as short cores, and the four listed after the table load on demand. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
 
 | Rule | What it covers |
 |:-----|:---------------|
 | [`architecture-defaults`](rules/architecture-defaults.md) | Five-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
 | [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule, platform-first API selection, no-comments policy |
 | [`design-philosophy`](rules/design-philosophy.md) | Complexity manifestations and root causes, deep modules, strategic vs tactical, design it twice, red flags, design taste |
-| [`testing`](rules/testing.md) | Integration-first, strict mock policy, unlabeled Arrange-Act-Assert test structure, fake data, deterministic tests |
+| [`testing`](rules/testing.md) | Integration-first, strict mock policy, unlabeled Arrange-Act-Assert test structure, expected values from an independent source rather than a recomputation of the code, fake data, deterministic tests |
 | [`security`](rules/security.md) | Secrets, auth, encryption, data privacy, audit logging, supply chain |
-| [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs |
-| [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check |
+| [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs whose description carries before and after Evidence and a Merge Danger call: a one-way or two-way door and the blast radius |
+| [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check, and a full read of every in-scope file on the first pass of any analysis |
 | [`writing-precision`](rules/writing-precision.md) | Precision gate for all text output, plus pronoun discipline, active voice, tone calibration, and the requirement that every stated decision carries the measurement behind it |
 | [`anti-slop`](rules/anti-slop.md) | The structural layer beneath the phrase blocklist. Three deciding tests, the catalogue of rhetorical and grammatical tells drawn from the WikiProject AI Cleanup field guide, the positive signals of human technical writing, and a guard against overcorrection |
 | [`normative-keywords`](rules/normative-keywords.md) | BCP 14 (RFC 2119 + RFC 8174) keyword glossary. Lowercase primary, uppercase opt-in for critical correctness, security, data integrity, and irreversibility |
@@ -131,19 +131,21 @@ A layered config where each layer catches what the layer above missed.
 | [`ai-compliance-defaults`](rules/ai-compliance-defaults.md) | EU AI Act risk tiers, visible disclosure on model output, human review for automated decisions, annual bias audits |
 | [`anti-spam-defaults`](rules/anti-spam-defaults.md) | Opt-in marketing consent, one-click unsubscribe, permanent suppression lists, strict transactional and marketing separation |
 
-Plus 6 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
+Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
 Four more rules live in [`rules/`](rules/) but load on demand through [`rules/index.yml`](rules/index.yml) rather than on every turn: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
 
 ### Standards, loaded on demand
 
-83 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+139 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, print design, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
 ### Skills
 
-33 skills in [`skills/`](skills/). Each is a folder with a `SKILL.md` that documents steps, output format, and rules.
+42 skills in [`skills/`](skills/). Each is a folder with a `SKILL.md` that documents steps, output format, and rules, in the six-section template that [`tools/lint-skills.py`](tools/lint-skills.py) enforces with `--strict` in CI: Overview, When to Use, Process, Common Rationalizations, Red Flags, Verification. The linter also parses frontmatter as strict YAML and rejects a description that a ` #` would silently truncate.
+
+**Two kinds of skill.** A model-invoked skill keeps its description, with trigger phrases, in every session's context, so Claude can reach it on its own. A user-invoked skill sets `disable-model-invocation: true`: its description leaves the context, it costs nothing until typed, and only the user can start it. The hand-fired ones are user-invoked: `/deploy`, `/cleanup`, `/hotfix`, `/guard`, `/setup`, `/skill-new`, `/incident`, `/readme`, `/gan`, `/migrate`, `/assessment`, `/module-audit`, `/benchmark`, and `/session-log`. A skill that another skill must call stays model-invoked, which is why `/pr-summary` and `/fix-issue` do: `/morning` hands work to them.
 
 | Skill | What it does |
 |:------|:-------------|
@@ -192,7 +194,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-70 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+86 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -206,7 +208,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 1. Write the test suite first under `tests/hooks/<hook-name>/`. [`hooks/tdd-gate.py`](hooks/tdd-gate.py) blocks the source file until a matching test exists. The fixtures `tool_use`, `assert_blocks`, `assert_allows`, and `run_hook` come from [`tests/conftest.py`](tests/conftest.py); a hand-rolled subprocess call must propagate `COVERAGE_PROCESS_START` and `PYTHONPATH` or its lines are never measured.
 2. Register the hook ID in `STANDARD_HOOKS` in [`hooks/_lib/hook_profile.py`](hooks/_lib/hook_profile.py). `should_run` returns False for any ID the active profile does not list, so an unregistered hook silently no-ops.
 3. Wire the matchers into [`settings.json`](settings.json), one entry per tool: `Write`, `Edit`, `MultiEdit`.
-4. Import shared infrastructure from `_lib`: `_lib.suppression` for third-party directives, `_lib.bypass` for the file registry, `_lib.audit_log` for the trail, `_lib.output` for `block(...)` and `warn(...)`. The module is `_lib.suppression`, never a bare `suppression`; the bare form does not resolve and the fallback silently disables directive support.
+4. Import shared infrastructure from `_lib`: `_lib.suppression` for third-party directives, `_lib.bypass` for the file registry, `_lib.audit_log` for the trail, `_lib.output` for `block(...)` and `warn(...)`, `_lib.git_invocation` to strip git global options such as `-C` and `-c` before matching a subcommand. The module is `_lib.suppression`, never a bare `suppression`; the bare form does not resolve and the fallback silently disables directive support.
 5. Ship detection-heavy hooks in warn mode first, blocking behind a `<NAME>_ENFORCE=1` env var, and promote once the false-positive rate is known against real code.
 
 | Hook | Trigger | What it does |
@@ -222,12 +224,13 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, parens in prose, emojis, ASCII art |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
-| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks any prose comment added to source code, test files included. An edit is resolved against the file on disk and the resulting document is scanned, so a fragment that opens or closes a docstring is read in context and only newly added comments are reported. Only tool directives (`eslint-disable`, `@ts-expect-error`, `go:build`, `noqa`, `type: ignore`, `shellcheck disable`) are exempt. No suppression marker; operator bypass `COMMENT_BLOCKER_DISABLE=1` |
+| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | Blocks any comment added to source code, in every language the owner's repositories use: C-family, Python, shell, YAML, Make, Docker, Terraform, SQL, Lua, Clojure, TeX, Vim script, HTML and its template dialects, CSS, assembly by dialect, Jupyter code cells, and more, resolved by extension, basename, shebang, or content. Docstrings and doc-comment blocks count as comments. An edit is resolved against the file on disk, so only newly added comments are reported. On a Bash `git commit` it scans every staged file against `HEAD`, which catches content written outside the Write and Edit tools. Exempt: tool directives such as `eslint-disable`, `@ts-expect-error`, `noqa` and action version pins, the bare `Arrange`, `Act`, `Assert` markers in test files, and `.env.example` files. Operator bypass `COMMENT_BLOCKER_DISABLE=1` |
+| [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | Requires every added or changed test in Python, JS/TS, Go, and bats to carry the bare `Arrange`, `Act`, `Assert` markers once each, in order, as three blocks separated by one blank line. Untouched legacy tests are not checked. On a Bash `git commit` it checks the staged files. Bypass `TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction, scoped per project |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
-| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. Protected-branch pushes are allowed in repositories listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt) |
+| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. Git global options such as `-C` and `-c` are stripped before matching, so `git -C <dir> push --force` blocks like the plain form, and `-f` or a cluster such as `-fu` counts as a force push. A build-directory cleanup skips the remaining checks only when every segment of the command is that cleanup. Input that is not valid JSON blocks. Protected-branch pushes are allowed when the repository the push targets, following `cd` and `-C`, is listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt); a push whose target cannot be determined never qualifies |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
 | [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash | Blocks a `git commit` that changes rendered output (`.tsx`, `.dart`, styles, theme tokens) without touching any render-level check. Cascade outcome, paint order, the accessibility tree, focus order, and third-party iframes are invisible in source and absent from jsdom. Bypass `FRONTEND_RENDER_GATE_DISABLE=1`, or a TTL-bound entry in the shared bypass registry. |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
@@ -236,7 +239,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`drizzle-schema-sync.py`](hooks/drizzle-schema-sync.py) | PreToolUse Write/Edit | Enforces Drizzle schema vs migration parity |
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
-| [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | Blocks history-rewriting pushes when a `CHANGES_REQUESTED` review is open |
+| [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | Blocks history-rewriting pushes when a `CHANGES_REQUESTED` review is open. Shares its force-flag patterns with the dangerous-command blocker, so `-fu` and global options are caught the same way |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | Blocks rationalization phrases that defer verification-surface findings to a later session. Targets commit messages, PR bodies, release notes, and code comments |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
@@ -249,6 +252,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login |
 | [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | Blocks `cp`/`mv`/`rm` without `-f`. macOS aliases these to `-i`, which hangs the agent on confirmation prompts. On macOS it also blocks `kcov` and a `make coverage` whose Makefile calls kcov, which trace through stderr there, have held 44 GB, and report a wrong number; it names the Linux-container recipe instead. Bypass `INTERACTIVE_CMD_DISABLE=1` |
+| [`zsh-special-name-guard.py`](hooks/zsh-special-name-guard.py) | PreToolUse Bash | Under zsh only, blocks the two traps a rule alone did not prevent: a zsh special name used as a variable, such as `path`, `status`, or `argv`, which replaces shell state so `path=` breaks every later command; and an unquoted word with a leading `=`, which zsh expands to a command path and aborts the rest of the command. Quoted text, heredoc bodies, and `[[ ]]` or `(( ))` comparisons are ignored. Unreadable input blocks. Bypass `ZSH_SPECIAL_NAME_GUARD_DISABLE=1` |
 | [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse Bash/Write/Edit | Prevents internal config references in external output |
 | [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
 | [`large-file-blocker.py`](hooks/large-file-blocker.py) | PreToolUse Bash | Blocks commits with files over 5MB |
@@ -298,7 +302,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Custom Agents
 
-20 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
+18 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
 
 | Agent | Purpose |
 |:------|:--------|
@@ -357,7 +361,7 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 | "Find what is missing the way an interviewer would" | `/assessment --focus <area>` |
 | "Summarize this PR for reviewers" | `/pr-summary` |
 | "Are we secure" | `/audit` |
-| "Threat model or STRIDE analysis" | `/audit cso` |
+| "Threat model or STRIDE analysis" | `/audit threat` |
 | "Dependency vulnerability scan" | `/audit deps` |
 
 #### Shipping and delivery
@@ -453,11 +457,11 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 
 ### Setup
 
+Clone the repository, then symlink its contents into the Claude config directory so the config stays in sync with git:
+
 ```bash
 git clone git@github.com:gufranco/claude-engineering-rules.git
 cd claude-engineering-rules
-
-# Symlink into the Claude config directory, stays in sync with git
 ln -sf "$(pwd)/"* "$HOME/.claude/"
 ```
 
@@ -475,11 +479,11 @@ The hooks, rules, and skills activate automatically.
 
 ### MCP Servers
 
-36 MCP servers wired in [`settings.json`](settings.json) across three transports:
+42 MCP servers wired in [`settings.json`](settings.json) across three transports:
 
-- **Stdio, no env:** Playwright, Memory, Sequential Thinking, Docker, Lighthouse, Ollama, Filesystem
-- **Stdio with env:** GitHub, GitLab, PostgreSQL, Redis, Slack, Obsidian, Kubernetes, AWS, Cloudflare, Puppeteer, Brave Search, Google Maps, Firecrawl, Resend, Todoist, Discord, Perplexity, LangSmith, Semgrep, Qdrant
-- **Remote HTTP, zero startup:** Sentry, Linear, Figma, Notion, Vercel, Supabase, Atlassian, Mermaid Chart, Asana
+- **Stdio, no env:** AWS, Docker, Filesystem, Kubernetes, Lighthouse, Memory, Ollama, Playwright, PostgreSQL, Puppeteer, Railway, Redis, Semgrep, Sequential Thinking
+- **Stdio with env:** Brave Search, Browserbase, Cloudflare, Discord, Exa Web Search, fal.ai, Firecrawl, GitHub, GitLab, Google Maps, LangSmith, Obsidian, Perplexity, Qdrant, Resend, Slack, Todoist
+- **Remote HTTP, zero startup:** Asana, Atlassian, Browser Use, ClickHouse, Figma, Linear, Mermaid Chart, Notion, Sentry, Supabase, Vercel
 
 ### Permissions
 
@@ -504,9 +508,9 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 84 runtime hooks
+  hooks/                 86 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
-  hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression)
+  hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   tests/                 Hook smoke tests and fixture trees
   .github/workflows/     Lint, validation, hook tests
 ```
@@ -527,7 +531,7 @@ Rules in [`rules/`](rules) load into context automatically. To disable one, dele
 <summary><strong>How do I add a new skill?</strong></summary>
 <br>
 
-Create a directory under [`skills/`](skills) with a `SKILL.md` file. Use frontmatter: `name`, `description` for trigger matching, then the skill body with steps and rules. See any existing skill for the shape.
+Run `/skill-new <name>`. It asks whether the skill is model-invoked or user-invoked, scaffolds the frontmatter and the six sections, and blocks until `python3 tools/lint-skills.py --strict skills/<name>` passes. Pick model-invocation only when Claude, or another skill, must reach the skill on its own; anything only ever typed by hand is user-invoked and costs no context.
 
 </details>
 
@@ -543,7 +547,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 76 standards total roughly 16,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 139 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
 
 </details>
 

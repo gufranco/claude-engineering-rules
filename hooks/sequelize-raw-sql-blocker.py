@@ -1,28 +1,4 @@
 #!/usr/bin/env python3
-"""
-sequelize-raw-sql-blocker.py
-
-PreToolUse hook that blocks Sequelize raw query methods in application code.
-Rule source: ~/.claude/rules/code-style.md "No raw SQL"
-            + ~/.claude/rules/lang/sequelize-migrations.md.
-
-Blocks `.query(` on the typical Sequelize-like identifiers:
-  - sequelize.query(...)
-  - db.query(...)
-  - connection.query(...)
-  - queryInterface.sequelize.query(...) outside migrations
-
-Allowed paths (skipped):
-  - Documentation: *.md, *.mdx, *.markdown, *.rst, *.txt. A standard or README
-    that shows the anti-pattern in order to forbid it is teaching, not shipping.
-  - Anything under */migrations/* or */seeders/*
-  - *.sql files
-  - Test files under */test/*, */__tests__/*, */spec/*, */e2e/*
-
-Bypass:
-  SEQUELIZE_RAW_SQL_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import json

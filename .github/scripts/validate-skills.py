@@ -2,7 +2,9 @@
 """Validate every SKILL.md file.
 
 Checks:
-  - SKILL.md exists in each skill directory
+  - SKILL.md exists in each skill directory, skipping dot-prefixed
+    directories such as the harness's untracked `.trash/` and the
+    harness-managed `synced/`
   - YAML frontmatter is present (delimited by ---)
   - Required fields: name, description
   - When the body mentions irreversible actions (push, deploy, merge, delete,
@@ -84,19 +86,24 @@ def validate_skill(skill_dir: str) -> list[str]:
     return errors
 
 
+def skill_dirs(skills_dir: str) -> list[str]:
+    return [
+        os.path.join(skills_dir, entry)
+        for entry in sorted(os.listdir(skills_dir))
+        if os.path.isdir(os.path.join(skills_dir, entry))
+        and not entry.startswith(".")
+        and entry not in HARNESS_MANAGED_GITIGNORED_DIRS
+    ]
+
+
 def main() -> None:
     if not os.path.isdir(SKILLS_DIR):
         print("No skills/ directory found")
         sys.exit(0)
 
-    all_errors: list[str] = []
-    skill_count = 0
-    for entry in sorted(os.listdir(SKILLS_DIR)):
-        skill_path = os.path.join(SKILLS_DIR, entry)
-        if not os.path.isdir(skill_path) or entry in HARNESS_MANAGED_GITIGNORED_DIRS:
-            continue
-        skill_count += 1
-        all_errors.extend(validate_skill(skill_path))
+    found = skill_dirs(SKILLS_DIR)
+    all_errors = [error for path in found for error in validate_skill(path)]
+    skill_count = len(found)
 
     print(f"Validated {skill_count} skills")
     if all_errors:

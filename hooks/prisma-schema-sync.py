@@ -1,24 +1,4 @@
 #!/usr/bin/env python3
-"""
-prisma-schema-sync.py
-
-PreToolUse hook that enforces parity between Prisma migration SQL and
-schema.prisma. Every CREATE INDEX, CREATE UNIQUE INDEX, ADD COLUMN,
-DROP COLUMN, DROP INDEX, CREATE TABLE, and DROP TABLE in a migration
-file must have a matching declaration in the nearest schema.prisma.
-
-Rule source: ~/.claude/rules/lang/prisma-migrations.md
-Originating incident: PR #1325 (onyxodds/onyx_fullstack), 2026-04-17.
-
-Scope:
-  Write/Edit/MultiEdit on files under */prisma/migrations/*/migration.sql.
-
-Bypass:
-  PRISMA_SCHEMA_SYNC_DISABLE=1
-  Use only for legitimately unmanaged objects: extensions, materialized
-  views, custom triggers/functions, GIN/GiST trigram indexes, RLS policies.
-"""
-
 from __future__ import annotations
 
 import json
@@ -335,15 +315,15 @@ def main() -> int:
 
     print(
         "Blocked: Prisma migration is out of sync with schema.prisma. "
-        "Rule: ~/.claude/rules/lang/prisma-migrations.md.\n"
+        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
         + "\n".join(all_findings)
         + '\n\nFix: every CREATE INDEX needs @@index(..., map: "<name>") on the model. '
         "Every ADD COLUMN needs a model field. Every DROP must remove the schema entry too. "
         "Verify with: prisma migrate diff --from-schema-datamodel <schema> "
         "--to-migrations <dir> --exit-code\n"
         "Bypass for unmanaged objects (extensions, materialized views, trgm indexes, "
-        "triggers, RLS): set PRISMA_SCHEMA_SYNC_DISABLE=1 and document the reason "
-        "in a leading comment of the migration.",
+        "triggers, RLS): set PRISMA_SCHEMA_SYNC_DISABLE=1 and record the reason "
+        "in the pull request description or an ADR, never in a migration comment.",
         file=sys.stderr,
     )
     _audit(

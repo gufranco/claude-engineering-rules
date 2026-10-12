@@ -1,5 +1,3 @@
-"""Tests for .github/scripts/audit-release-toolchain.py."""
-
 from __future__ import annotations
 
 import importlib.util
@@ -51,14 +49,24 @@ def report(*entries: tuple[str, str, str, object]) -> dict:
 
 
 def test_waived_advisory_without_a_fix_passes(audit):
-    failures = audit.failures(report(("braces", WAIVED_URL, "high", BREAKING_FIX)))
+    # Arrange
+    argument = report(("braces", WAIVED_URL, "high", BREAKING_FIX))
 
+    # Act
+    failures = audit.failures(argument)
+
+    # Assert
     assert failures == []
 
 
 def test_waived_advisory_with_a_fix_fails(audit):
-    failures = audit.failures(report(("braces", WAIVED_URL, "high", True)))
+    # Arrange
+    argument = report(("braces", WAIVED_URL, "high", True))
 
+    # Act
+    failures = audit.failures(argument)
+
+    # Assert
     assert failures == [
         "braces: GHSA-vfj7-8cjw-p6xm now has a fix; upgrade and drop the waiver"
     ]
@@ -66,21 +74,36 @@ def test_waived_advisory_with_a_fix_fails(audit):
 
 @pytest.mark.parametrize("severity", ["high", "critical"])
 def test_unwaived_high_or_critical_fails(audit, severity):
-    failures = audit.failures(report(("left-pad", OTHER_URL, severity, True)))
+    # Arrange
+    argument = report(("left-pad", OTHER_URL, severity, True))
 
+    # Act
+    failures = audit.failures(argument)
+
+    # Assert
     assert failures == [f"left-pad: {severity} GHSA-aaaa-bbbb-cccc left-pad bug"]
 
 
 @pytest.mark.parametrize("severity", ["low", "moderate"])
 def test_lower_severity_is_ignored(audit, severity):
-    failures = audit.failures(report(("left-pad", OTHER_URL, severity, True)))
+    # Arrange
+    argument = report(("left-pad", OTHER_URL, severity, True))
 
+    # Act
+    failures = audit.failures(argument)
+
+    # Assert
     assert failures == []
 
 
 def test_empty_report_passes(audit):
-    failures = audit.failures({})
+    # Arrange
+    payload = {}
 
+    # Act
+    failures = audit.failures(payload)
+
+    # Assert
     assert failures == []
 
 
@@ -97,10 +120,13 @@ def run_script(payload: str) -> subprocess.CompletedProcess:
 
 
 def test_cli_exits_zero_for_the_waived_advisory():
+    # Arrange
     payload = json.dumps(report(("braces", WAIVED_URL, "high", BREAKING_FIX)))
 
+    # Act
     proc = run_script(payload)
 
+    # Assert
     assert (proc.returncode, proc.stdout.strip()) == (
         0,
         "release toolchain audit: clean apart from 1 waived advisory",
@@ -108,10 +134,13 @@ def test_cli_exits_zero_for_the_waived_advisory():
 
 
 def test_cli_exits_one_and_names_each_failure():
+    # Arrange
     payload = json.dumps(report(("left-pad", OTHER_URL, "high", True)))
 
+    # Act
     proc = run_script(payload)
 
+    # Assert
     assert (proc.returncode, proc.stdout.strip()) == (
         1,
         "left-pad: high GHSA-aaaa-bbbb-cccc left-pad bug",
@@ -119,8 +148,13 @@ def test_cli_exits_one_and_names_each_failure():
 
 
 def test_cli_fails_closed_on_unreadable_input():
-    proc = run_script("not json")
+    # Arrange
+    payload = "not json"
 
+    # Act
+    proc = run_script(payload)
+
+    # Assert
     assert (proc.returncode, proc.stdout.strip()) == (
         1,
         "release toolchain audit: npm audit output is not JSON",
@@ -128,10 +162,13 @@ def test_cli_fails_closed_on_unreadable_input():
 
 
 def test_cli_fails_closed_when_npm_reports_an_error():
+    # Arrange
     payload = json.dumps({"error": {"code": "ENOAUDIT", "summary": "registry down"}})
 
+    # Act
     proc = run_script(payload)
 
+    # Assert
     assert (proc.returncode, proc.stdout.strip()) == (
         1,
         "release toolchain audit: npm audit failed: ENOAUDIT registry down",

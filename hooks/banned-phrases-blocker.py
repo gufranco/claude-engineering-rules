@@ -132,6 +132,7 @@ AGENT_META_QUESTIONS = [
 ]
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 
 def build_pattern(phrases: list[str], boundary: bool = True) -> re.Pattern:
@@ -169,7 +170,8 @@ SKIPPED_DOCS = (
 
 
 def is_publishing_bash(cmd: str) -> bool:
-    return any(p.search(cmd) for p in PUBLISHING_BASH_PATTERNS)
+    matched = strip_git_global_options(cmd)
+    return any(p.search(matched) for p in PUBLISHING_BASH_PATTERNS)
 
 
 def is_skipped_md_path(path: str) -> bool:

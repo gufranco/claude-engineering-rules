@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""
-sequelize-schema-sync.py
-
-PreToolUse hook that blocks the most common Sequelize schema-drift sources:
-
-  1. `sync({ force: true })` and `sync({ alter: true })` invocations outside
-     test files. Both modes rewrite the schema without writing a migration.
-     `force` additionally drops every table.
-  2. `indexes` array entries that omit the `name` field. Sequelize's default
-     naming is `<table>_<fields>`, which collides with raw-SQL index names
-     and produces ambiguous diffs when fields are renamed.
-  3. Umzug storage set to `'none'`, which disables migration tracking.
-
-Rule source: ~/.claude/rules/lang/sequelize-migrations.md
-
-Scope:
-  Write/Edit/MultiEdit on *.ts/*.js files outside test directories.
-
-Bypass:
-  SEQUELIZE_SCHEMA_SYNC_DISABLE=1
-  Use only for test fixtures and greenfield prototyping.
-"""
-
 from __future__ import annotations
 
 import json
@@ -206,7 +183,7 @@ def main() -> int:
 
     print(
         "Blocked: Sequelize schema-sync defect. "
-        "Rule: ~/.claude/rules/lang/sequelize-migrations.md.\n"
+        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
         + "\n".join(all_findings)
         + "\n\nFix: remove sync({ force/alter: true }) from application code, "
         "use migrations (sequelize-cli or umzug). Add an explicit `name` to every "

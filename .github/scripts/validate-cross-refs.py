@@ -5,7 +5,9 @@ Uses a minimal in-tree YAML parser tailored to the index.yml format so the
 validator runs on a clean machine without PyYAML.
 """
 
+import glob
 import os
+import re
 import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -140,6 +142,107 @@ def validate_standard_files() -> None:
             ERRORS.append(f"standards/{filename}: missing top-level heading")
 
 
+HOOK_CITATION = re.compile(
+    r"~/\.claude/((?:rules|standards|skills|checklists|agents)/[A-Za-z0-9_./-]+\.md)"
+)
+SKILL_REFERENCE = re.compile(r"`/([a-z][a-z0-9-]*)(?=[ `])")
+SKILL_REFERENCE_GLOBS = (
+    "skills/*/SKILL.md",
+    "agents/*.md",
+    "rules/*.md",
+    "rules/lang/*.md",
+    "CLAUDE.md",
+)
+CLAUDE_CODE_COMMANDS = frozenset(
+    {
+        "add-dir",
+        "agents",
+        "artifacts",
+        "btw",
+        "bug",
+        "clear",
+        "code-review",
+        "compact",
+        "config",
+        "context",
+        "cost",
+        "doctor",
+        "export",
+        "fast",
+        "fewer-permission-prompts",
+        "help",
+        "hooks",
+        "init",
+        "install-github-app",
+        "keybindings-help",
+        "login",
+        "logout",
+        "loop",
+        "mcp",
+        "memory",
+        "model",
+        "output-style",
+        "permissions",
+        "plugin",
+        "release-notes",
+        "resume",
+        "rewind",
+        "run",
+        "schedule",
+        "security-review",
+        "simplify",
+        "status",
+        "statusline",
+        "terminal-setup",
+        "todos",
+        "update-config",
+        "upgrade",
+        "usage",
+        "usage-credits",
+        "vim",
+        "workflows",
+    }
+)
+
+
+def find_missing_hook_citations(base_dir: str) -> list[str]:
+    errors: list[str] = []
+    for hook in sorted(glob.glob(os.path.join(base_dir, "hooks", "*.py"))):
+        with open(hook, encoding="utf-8") as handle:
+            cited = sorted(set(HOOK_CITATION.findall(handle.read())))
+        relative_hook = os.path.relpath(hook, base_dir)
+        errors.extend(
+            f"{relative_hook} cites ~/.claude/{target}, which does not exist"
+            for target in cited
+            if not os.path.exists(os.path.join(base_dir, target))
+        )
+    return errors
+
+
+def skill_names(base_dir: str) -> frozenset[str]:
+    return frozenset(
+        os.path.basename(os.path.dirname(path))
+        for path in glob.glob(os.path.join(base_dir, "skills", "*", "SKILL.md"))
+    )
+
+
+def find_unknown_skill_references(base_dir: str, commands: frozenset[str]) -> list[str]:
+    known = skill_names(base_dir) | commands
+    errors: list[str] = []
+    for pattern in SKILL_REFERENCE_GLOBS:
+        for path in sorted(glob.glob(os.path.join(base_dir, pattern))):
+            relative = os.path.relpath(path, base_dir)
+            with open(path, encoding="utf-8") as handle:
+                lines = handle.read().splitlines()
+            errors.extend(
+                f"{relative}:{number} references /{name}, which is neither a skill nor a built-in command"
+                for number, line in enumerate(lines, start=1)
+                for name in SKILL_REFERENCE.findall(line)
+                if name not in known
+            )
+    return errors
+
+
 def main() -> None:
     index_path = os.path.join(BASE_DIR, "rules", "index.yml")
     index_data = parse_index_yml(index_path)
@@ -147,6 +250,8 @@ def main() -> None:
     validate_index_paths(index_data)
     validate_agent_files()
     validate_standard_files()
+    ERRORS.extend(find_missing_hook_citations(BASE_DIR))
+    ERRORS.extend(find_unknown_skill_references(BASE_DIR, CLAUDE_CODE_COMMANDS))
 
     if ERRORS:
         print(f"Cross-reference validation failed with {len(ERRORS)} error(s):")

@@ -31,6 +31,7 @@ import os
 import re
 import subprocess
 import sys
+from typing import NoReturn
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -41,15 +42,23 @@ except Exception:  # pragma: no cover
         return None
 
 
+from _lib.git_invocation import (  # noqa: E402
+    FORCE_PUSH_LONG,
+    FORCE_PUSH_SHORT,
+    OPTIONS_WITH_SEPARATE_VALUE,
+    strip_git_global_options,
+)
+from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
+
 SAFE_CLEANUP: list[tuple[str, str]] = [
-    (r"\brm\s+(-[a-zA-Z]*\s+)*node_modules(/|$|\s*$)", "remove node_modules"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*dist(/|$|\s*$)", "remove dist"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*\.next(/|$|\s*$)", "remove .next"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*\.nuxt(/|$|\s*$)", "remove .nuxt"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*build(/|$|\s*$)", "remove build"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*coverage(/|$|\s*$)", "remove coverage"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*\.turbo(/|$|\s*$)", "remove .turbo"),
-    (r"\brm\s+(-[a-zA-Z]*\s+)*out(/|$|\s*$)", "remove out"),
+    ("node_modules", "remove node_modules"),
+    ("dist", "remove dist"),
+    (".next", "remove .next"),
+    (".nuxt", "remove .nuxt"),
+    ("build", "remove build"),
+    ("coverage", "remove coverage"),
+    (".turbo", "remove .turbo"),
+    ("out", "remove out"),
 ]
 
 CATASTROPHIC: list[tuple[str, str]] = [
@@ -57,6 +66,10 @@ CATASTROPHIC: list[tuple[str, str]] = [
     (
         r"\brm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/\s+",
         "recursive delete of the root path with arguments",
+    ),
+    (
+        r"\brm\s[^;&|\n]*\s/\*?(?=$|[\s;&|])",
+        "recursive delete of the root path as a later argument",
     ),
     (
         r"\bsudo\s+rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?/",
@@ -128,8 +141,8 @@ CRITICAL_PATHS = [
         r"\bsudo\s+rm\s+(-[a-zA-Z]*\s+)?.*\.(git|env|ssh|aws|gnupg|kube)\b",
         "sudo rm on critical dotfiles",
     ),
-    (r"\bgit\s+push\s+.*--force(\s|$)", "Use --force-with-lease instead of --force"),
-    (r"\bgit\s+push\s+.*\s-f(\s|$)", "Use --force-with-lease instead of -f"),
+    (FORCE_PUSH_LONG, "Use --force-with-lease instead of --force"),
+    (FORCE_PUSH_SHORT, "Use --force-with-lease instead of -f"),
     (r"\bgit\s+filter-branch\b", "git filter-branch rewrites history destructively"),
     (r"\bgit\s+reflog\s+expire\b", "git reflog expire removes recovery points"),
     (r"\bgit\s+push\s+.*\borigin\s+:", "git push origin :ref deletes a remote branch"),
@@ -435,10 +448,11 @@ except ImportError:
 from _lib.bypass import is_bypassed  # noqa: E402
 
 SOLO_REPO_ALLOWLIST = _os.path.expanduser("~/.claude/solo-repos.txt")
+REPOSITORY_REDIRECTS = ("--git-dir", "--work-tree")
 
 
 PROTECTED_REF = re.compile(
-    r"(?:^|[\s:+])(?:refs/heads/)?(?:main|master|develop)(?=$|[\s;&|])"
+    r"(?:^|[\s:+])(?:refs/heads/)?(?:main|master|develop)(?=$|[\s;&|'\")])"
 )
 
 
@@ -469,6 +483,32 @@ def _command_cwd(command: str) -> str:
     return _os.path.expandvars(_os.path.expanduser(path))
 
 
+def _git_push_directory(args: list[str], directory: str) -> tuple[bool, str | None]:
+    resolved: str | None = directory
+    index = 1
+    while index < len(args) and args[index].startswith("-"):
+        option = args[index]
+        if option.split("=", 1)[0] in REPOSITORY_REDIRECTS:
+            resolved = None
+        elif option == "-C" and index + 1 < len(args) and resolved is not None:
+            target = _os.path.expandvars(_os.path.expanduser(args[index + 1]))
+            resolved = _os.path.join(resolved or _os.getcwd(), target)
+        index += 2 if option in OPTIONS_WITH_SEPARATE_VALUE else 1
+    return index < len(args) and args[index] == "push", resolved
+
+
+def _push_cwd(command: str) -> str | None:
+    base = _command_cwd(command)
+    for tokens in quoted_segments(command):
+        head, args = command_head(tokens)
+        if head != "git":
+            continue
+        pushes, directory = _git_push_directory(args, base)
+        if pushes:
+            return directory
+    return None
+
+
 def _repo_root(cwd: str = "") -> str:
     try:
         return subprocess.check_output(
@@ -495,6 +535,20 @@ def _solo_repo_entries() -> list[str]:
     ]
 
 
+def _segment_is_safe_cleanup(tokens: list[str]) -> bool:
+    head, args = command_head(tokens)
+    if head != "rm":
+        return False
+    safe = {target for target, _label in SAFE_CLEANUP}
+    targets = [arg for arg in args[1:] if not arg.startswith("-")]
+    return bool(targets) and all(_os.path.normpath(t) in safe for t in targets)
+
+
+def _is_safe_cleanup(command: str) -> bool:
+    segments = quoted_segments(command)
+    return bool(segments) and all(_segment_is_safe_cleanup(s) for s in segments)
+
+
 def _is_solo_repo(root: str) -> bool:
     """True when `root` is listed in the solo-repo allowlist.
 
@@ -511,6 +565,38 @@ def _is_solo_repo(root: str) -> bool:
     return False
 
 
+def _refuse_unreadable(problem: str) -> NoReturn:
+    _audit(
+        hook="dangerous-command-blocker",
+        decision="block",
+        level="unreadable-input",
+        reason=problem,
+    )
+    print(
+        f"BLOCKED: dangerous-command-blocker could not read its input: {problem}.\n"
+        "The command was not checked, so it does not run. The harness sends a "
+        'JSON object such as {"tool_name": "Bash", "tool_input": {"command": "..."}}.',
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
+
+def _read_command() -> str:
+    try:
+        data = json.loads(sys.stdin.read())
+    except ValueError as exc:
+        _refuse_unreadable(f"stdin is not UTF-8 JSON ({type(exc).__name__})")
+    if not isinstance(data, dict):
+        _refuse_unreadable("the payload is not a JSON object")
+    tool_input = data.get("tool_input", data.get("input", {}))
+    if not isinstance(tool_input, dict):
+        _refuse_unreadable("tool_input is not an object")
+    command = tool_input.get("command", "")
+    if not isinstance(command, str):
+        _refuse_unreadable("tool_input.command is not a string")
+    return command
+
+
 def main():
     if os.environ.get("DANGEROUS_COMMAND_BLOCKER_DISABLE") == "1":
         return 0
@@ -518,21 +604,16 @@ def main():
         return 0
     if not should_run("dangerous-command-blocker"):
         sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
-
-    command = data.get("tool_input", data.get("input", {})).get("command", "")
+    command = _read_command()
     if not command:
         sys.exit(0)
+    matched = strip_git_global_options(command)
 
-    for pattern, _label in SAFE_CLEANUP:
-        if re.search(pattern, command):
-            sys.exit(0)
+    if _is_safe_cleanup(command):
+        sys.exit(0)
 
     for pattern, label in CATASTROPHIC:
-        if re.search(pattern, command):
+        if re.search(pattern, matched):
             _audit(
                 hook="dangerous-command-blocker",
                 decision="block",
@@ -548,7 +629,7 @@ def main():
             sys.exit(2)
 
     for pattern, reason in CRITICAL_PATHS:
-        if re.search(pattern, command):
+        if re.search(pattern, matched):
             _audit(
                 hook="dangerous-command-blocker",
                 decision="block",
@@ -561,7 +642,7 @@ def main():
             sys.exit(2)
 
     for pattern, guidance in RECOVERABLE:
-        if re.search(pattern, command):
+        if re.search(pattern, matched):
             print(
                 f"CONFIRM REQUIRED: {guidance}\nCommand: {command}\n"
                 "Ask the user to confirm before running this command.",
@@ -569,8 +650,9 @@ def main():
             )
             break
 
-    if re.search(r"\bgit\s+push\b", command) and not re.search(r"--force", command):
-        command_cwd = _command_cwd(command)
+    if re.search(r"\bgit\s+push\b", matched) and not re.search(r"--force", matched):
+        push_cwd = _push_cwd(command)
+        command_cwd = push_cwd or ""
         try:
             branch = subprocess.check_output(
                 ["git", "branch", "--show-current"],
@@ -582,14 +664,15 @@ def main():
             branch = ""
 
         targets_protected = (
-            re.search(r"\borigin\s+", command)
-            and _names_protected_ref(command.split("origin", 1)[-1])
+            re.search(r"\borigin\s+", matched)
+            and _names_protected_ref(matched.split("origin", 1)[-1])
         ) or (
             branch in ("main", "master", "develop")
-            and not re.search(r"\borigin\s+\w", command)
+            and not re.search(r"\borigin\s+\w", matched)
         )
         if targets_protected:
-            repo_root = _repo_root(command_cwd) if _solo_repo_entries() else ""
+            known = push_cwd is not None and _solo_repo_entries()
+            repo_root = _repo_root(command_cwd) if known else ""
             if repo_root and _is_solo_repo(repo_root):
                 _audit(
                     hook="dangerous-command-blocker",
@@ -632,7 +715,7 @@ def main():
                 sys.exit(2)
 
     for pattern, reason in SUSPICIOUS:
-        if re.search(pattern, command):
+        if re.search(pattern, matched):
             print(f"WARNING: {reason}\nCommand: {command}", file=sys.stderr)
             break
 

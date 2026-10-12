@@ -65,6 +65,7 @@ except ImportError:  # pragma: no cover
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 GIT_TIMEOUT_SECONDS = 10
 
@@ -317,7 +318,7 @@ def main() -> int:
     command = tool_input.get("command", "")
     if not command or HELP_FLAG.search(command):
         return 0
-    if not COMMIT_COMMAND.search(command):
+    if not COMMIT_COMMAND.search(strip_git_global_options(command)):
         return 0
 
     cwd = Path(data.get("cwd") or os.getcwd())

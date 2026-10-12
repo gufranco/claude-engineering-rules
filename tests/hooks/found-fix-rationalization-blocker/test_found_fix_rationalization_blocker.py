@@ -1,11 +1,7 @@
-"""Coverage for found-fix-rationalization-blocker hook.
-
-Source rule: `~/.claude/rules/found-fix.md`.
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "found-fix-rationalization-blocker"
 
@@ -21,13 +17,18 @@ HOOK = "found-fix-rationalization-blocker"
         "Not Introduced By This Patch",
     ],
 )
-def test_blocks_not_introduced_in_commit(tool_use, assert_blocks, phrase):
+def test_blocks_not_introduced_in_commit(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "not introduced")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "not introduced")
 
 
 @pytest.mark.parametrize(
@@ -39,13 +40,18 @@ def test_blocks_not_introduced_in_commit(tool_use, assert_blocks, phrase):
         "pre-existing - not from this PR",
     ],
 )
-def test_blocks_pre_existing_inaction(tool_use, assert_blocks, phrase):
+def test_blocks_pre_existing_inaction(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "pre-existing")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "pre-existing")
 
 
 @pytest.mark.parametrize(
@@ -56,13 +62,18 @@ def test_blocks_pre_existing_inaction(tool_use, assert_blocks, phrase):
         "Orthogonal To This PR",
     ],
 )
-def test_blocks_orthogonal_inaction(tool_use, assert_blocks, phrase):
+def test_blocks_orthogonal_inaction(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "orthogonal")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "orthogonal")
 
 
 @pytest.mark.parametrize(
@@ -73,13 +84,18 @@ def test_blocks_orthogonal_inaction(tool_use, assert_blocks, phrase):
         "out of scope of the change",
     ],
 )
-def test_blocks_out_of_scope_inaction(tool_use, assert_blocks, phrase):
+def test_blocks_out_of_scope_inaction(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "out of scope")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "out of scope")
 
 
 @pytest.mark.parametrize(
@@ -92,44 +108,65 @@ def test_blocks_out_of_scope_inaction(tool_use, assert_blocks, phrase):
         "leave it for follow-up",
     ],
 )
-def test_blocks_leave_for_later(tool_use, assert_blocks, phrase):
+def test_blocks_leave_for_later(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: bump - {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_not_blocking_the_run(tool_use, assert_blocks):
+def test_blocks_not_blocking_the_run(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix - Not blocking the run"'},
     )
 
-    assert_blocks(HOOK, payload, "not blocking")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "not blocking")
 
 
-def test_blocks_in_pr_create_body(tool_use, assert_blocks):
+def test_blocks_in_pr_create_body(tool_use, run_hook):
+    # Arrange
     body = "Upgrades action X. Deprecation will be addressed later."
     payload = tool_use(
         "Bash",
         {"command": f'gh pr create --title "chore" --body "{body}"'},
     )
 
-    assert_blocks(HOOK, payload, "addressed later")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "addressed later")
 
 
-def test_blocks_in_gh_release_create(tool_use, assert_blocks):
+def test_blocks_in_gh_release_create(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh release create v1.0 --notes "Not introduced by this PR"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_in_write_payload_to_code(tool_use, assert_blocks, tmp_path):
+def test_blocks_in_write_payload_to_code(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "module.py"
     payload = tool_use(
         "Write",
@@ -139,46 +176,71 @@ def test_blocks_in_write_payload_to_code(tool_use, assert_blocks, tmp_path):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_clean_commit_message(tool_use, assert_allows):
+def test_allows_clean_commit_message(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix: upgrade action X to clear deprecation"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_publishing_bash_with_phrase(tool_use, assert_allows):
+def test_allows_non_publishing_bash_with_phrase(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'grep -r "not introduced by this PR" .'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_history_use_of_pre_existing(tool_use, assert_allows):
+def test_allows_history_use_of_pre_existing(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "docs: explain pre-existing test fixture"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_history_use_of_orthogonal(tool_use, assert_allows):
+def test_allows_history_use_of_orthogonal(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "refactor: separate orthogonal concerns"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_to_rule_file(tool_use, assert_allows, tmp_path):
+def test_allows_write_to_rule_file(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "rules" / "found-fix.md"
     target.parent.mkdir(parents=True)
     payload = tool_use(
@@ -189,17 +251,26 @@ def test_allows_write_to_rule_file(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_bypass_env(monkeypatch, tool_use, assert_allows):
+def test_allows_bypass_env(monkeypatch, tool_use, run_hook):
+    # Arrange
     monkeypatch.setenv("FOUND_FIX_RATIONALIZATION_DISABLE", "1")
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix - Not introduced by this PR"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -212,13 +283,18 @@ def test_allows_bypass_env(monkeypatch, tool_use, assert_allows):
         "Tracking in a ticket",
     ],
 )
-def test_blocks_tracker_item_standing_in_for_a_fix(tool_use, assert_blocks, phrase):
+def test_blocks_tracker_item_standing_in_for_a_fix(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: guard the null path" -m "{phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "tracker")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "tracker")
 
 
 @pytest.mark.parametrize(
@@ -230,13 +306,18 @@ def test_blocks_tracker_item_standing_in_for_a_fix(tool_use, assert_blocks, phra
         "addressing the duplicate in a follow-up commit",
     ],
 )
-def test_blocks_follow_up_change_standing_in_for_a_fix(tool_use, assert_blocks, phrase):
+def test_blocks_follow_up_change_standing_in_for_a_fix(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: guard the null path" -m "{phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "follow-up change")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "follow-up change")
 
 
 @pytest.mark.parametrize(
@@ -251,10 +332,15 @@ def test_blocks_follow_up_change_standing_in_for_a_fix(tool_use, assert_blocks, 
         "Tracking the retry budget in a counter",
     ],
 )
-def test_allows_ordinary_artifact_text(tool_use, assert_allows, phrase):
+def test_allows_ordinary_artifact_text(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix: guard the null path" -m "{phrase}"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

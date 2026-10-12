@@ -1,9 +1,3 @@
-"""Coverage for drizzle-raw-sql-blocker hook.
-
-Source rule: `~/.claude/rules/code-style.md` No raw SQL +
-             `~/.claude/rules/lang/drizzle-migrations.md`.
-"""
-
 from __future__ import annotations
 
 import os
@@ -12,13 +6,15 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "drizzle-raw-sql-blocker"
 
 
 @pytest.mark.parametrize("method", ["execute", "run", "all", "get"])
 @pytest.mark.parametrize("receiver", ["db", "database", "drizzle", "conn", "client"])
-def test_blocks_db_method_with_sql_tag(tool_use, assert_blocks, receiver, method):
+def test_blocks_db_method_with_sql_tag(tool_use, run_hook, receiver, method):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -30,10 +26,15 @@ def test_blocks_db_method_with_sql_tag(tool_use, assert_blocks, receiver, method
         },
     )
 
-    assert_blocks(HOOK, payload, f"{receiver}.{method}")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, f"{receiver}.{method}")
 
 
-def test_blocks_sql_raw_call(tool_use, assert_blocks):
+def test_blocks_sql_raw_call(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -45,10 +46,15 @@ def test_blocks_sql_raw_call(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "sql.raw")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "sql.raw")
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -58,10 +64,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "db.execute")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "db.execute")
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -73,10 +84,15 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "db.run")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "db.run")
 
 
-def test_allows_db_select(tool_use, assert_allows):
+def test_allows_db_select(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -88,10 +104,15 @@ def test_allows_db_select(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_sql_fragment_in_where(tool_use, assert_allows):
+def test_allows_sql_fragment_in_where(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -104,10 +125,15 @@ def test_allows_sql_fragment_in_where(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_migration_files(tool_use, assert_allows):
+def test_skips_migration_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -116,10 +142,15 @@ def test_skips_migration_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_drizzle_meta_files(tool_use, assert_allows):
+def test_skips_drizzle_meta_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -128,10 +159,15 @@ def test_skips_drizzle_meta_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_drizzle_dir_non_sql_file(tool_use, assert_allows):
+def test_skips_drizzle_dir_non_sql_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -140,10 +176,15 @@ def test_skips_drizzle_dir_non_sql_file(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_schema_files(tool_use, assert_allows):
+def test_skips_schema_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -158,10 +199,15 @@ def test_skips_schema_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_paths(tool_use, assert_allows):
+def test_skips_test_paths(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -173,10 +219,15 @@ def test_skips_test_paths(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -185,10 +236,15 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"DRIZZLE_RAW_SQL_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"DRIZZLE_RAW_SQL_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -197,24 +253,22 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "db.execute",
-        env={"DRIZZLE_RAW_SQL_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"DRIZZLE_RAW_SQL_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "db.execute")
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "drizzle-raw-sql-blocker.py"
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -225,34 +279,51 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
 def test_invalid_json_via_run_hook(run_hook):
-    code, _stdout, _stderr = run_hook("drizzle-raw-sql-blocker", {"_invalid": True})
+    # Arrange
+    payload = {"_invalid": True}
 
+    # Act
+    code, _stdout, _stderr = run_hook(HOOK, payload)
+
+    # Assert
     assert code == 0
 
 
-def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
+def test_empty_file_path_with_clean_content_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const rows = await db.select().from(t);\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/x.ts", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_items_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -261,10 +332,15 @@ def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_multiedit_with_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -273,30 +349,44 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/services/x.service.ts"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_the_anti_pattern_inside_documentation(tool_use, assert_allows):
+def test_allows_the_anti_pattern_inside_documentation(tool_use, run_hook):
+    # Arrange
     content = "# Locking\n\nNever do this in application code:\n\n```typescript\nawait db.execute(sql`SELECT 1`);\n```\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/standards/concurrency.md", "content": content}
     )
 
-    _code, stderr = assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks):
+def test_still_blocks_the_same_call_in_application_code(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -305,4 +395,8 @@ def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks)
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)

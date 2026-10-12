@@ -1,5 +1,3 @@
-"""Coverage for the interactive-cmd-blocker hook."""
-
 from __future__ import annotations
 
 import importlib.util
@@ -7,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "interactive-cmd-blocker"
 HOOK_PATH = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
@@ -46,28 +45,48 @@ def write_makefile(directory: Path, text: str, name: str = "Makefile") -> Path:
         "mv -v old.txt new.txt",
     ],
 )
-def test_blocks_command_without_force(tool_use, assert_blocks, cmd):
+def test_blocks_command_without_force(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_blocks(HOOK, payload, "without `-f`")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "without `-f`")
 
 
-def test_blocks_in_compound_command(tool_use, assert_blocks):
+def test_blocks_in_compound_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "echo hi && rm foo.txt"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_after_or(tool_use, assert_blocks):
+def test_blocks_after_or(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "test -f x.txt || rm x.txt"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_via_command_builtin(tool_use, assert_blocks):
+def test_blocks_via_command_builtin(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "command rm file.txt"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
 @pytest.mark.parametrize(
@@ -85,16 +104,26 @@ def test_blocks_via_command_builtin(tool_use, assert_blocks):
         "/bin/rm -f file.txt",
     ],
 )
-def test_allows_command_with_force(tool_use, assert_allows, cmd):
+def test_allows_command_with_force(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_safe_compound(tool_use, assert_allows):
+def test_allows_safe_compound(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "ls && rm -f foo && echo done"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -109,41 +138,71 @@ def test_allows_safe_compound(tool_use, assert_allows):
         "trim_whitespace",
     ],
 )
-def test_allows_unrelated_commands(tool_use, assert_allows, cmd):
+def test_allows_unrelated_commands(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
-def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
+def test_allows_unrelated_tools(tool_use, run_hook, tool_name):
+    # Arrange
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_var_disables_check(tool_use, assert_allows):
+def test_bypass_env_var_disables_check(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "rm file.txt"})
 
-    assert_allows(HOOK, payload, env={"INTERACTIVE_CMD_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"INTERACTIVE_CMD_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_empty_command(tool_use, assert_allows):
+def test_handles_empty_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_malformed_shell(tool_use, assert_allows):
+def test_handles_malformed_shell(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "echo 'unterminated"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_env_var_prefix(tool_use, assert_blocks):
+def test_handles_env_var_prefix(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "FOO=bar rm file.txt"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
 @pytest.mark.parametrize(
@@ -158,14 +217,24 @@ def test_handles_env_var_prefix(tool_use, assert_blocks):
     ],
 )
 def test_kcov_is_blocked_on_darwin(hook, tmp_path, cmd):
-    blocked = hook.kcov_blocked(cmd, str(tmp_path), "darwin")
+    # Arrange
+    cwd = str(tmp_path)
 
+    # Act
+    blocked = hook.kcov_blocked(cmd, cwd, "darwin")
+
+    # Assert
     assert blocked is True
 
 
 def test_kcov_is_allowed_off_darwin(hook, tmp_path):
-    blocked = hook.kcov_blocked("kcov out bats test/", str(tmp_path), "linux")
+    # Arrange
+    command = "kcov out bats test/"
 
+    # Act
+    blocked = hook.kcov_blocked(command, str(tmp_path), "linux")
+
+    # Assert
     assert blocked is False
 
 
@@ -180,86 +249,120 @@ def test_kcov_is_allowed_off_darwin(hook, tmp_path):
     ],
 )
 def test_kcov_in_quotes_or_heredoc_is_allowed(hook, tmp_path, cmd):
+    # Arrange
     write_makefile(tmp_path, KCOV_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked(cmd, str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is False
 
 
 def test_command_after_heredoc_is_checked(hook, tmp_path):
-    blocked = hook.kcov_blocked(
-        "cat <<'EOF'\ndata\nEOF\nkcov out ./run.sh", str(tmp_path), "darwin"
-    )
+    # Arrange
+    command = "cat <<'EOF'\ndata\nEOF\nkcov out ./run.sh"
 
+    # Act
+    blocked = hook.kcov_blocked(command, str(tmp_path), "darwin")
+
+    # Assert
     assert blocked is True
 
 
 def test_here_string_does_not_hide_later_lines(hook, tmp_path):
-    blocked = hook.kcov_blocked(
-        "read -r x <<<word\nkcov out ./run.sh", str(tmp_path), "darwin"
-    )
+    # Arrange
+    command = "read -r x <<<word\nkcov out ./run.sh"
 
+    # Act
+    blocked = hook.kcov_blocked(command, str(tmp_path), "darwin")
+
+    # Assert
     assert blocked is True
 
 
 def test_make_coverage_with_kcov_makefile_is_blocked(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path, KCOV_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked("make coverage", str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is True
 
 
 def test_make_coverage_without_kcov_is_allowed(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path, PLAIN_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked("make coverage", str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is False
 
 
 def test_make_other_target_is_allowed(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path, KCOV_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked("make test lint", str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is False
 
 
 def test_make_without_makefile_is_allowed(hook, tmp_path):
-    blocked = hook.kcov_blocked("make coverage", str(tmp_path), "darwin")
+    # Arrange
+    command = "make coverage"
 
+    # Act
+    blocked = hook.kcov_blocked(command, str(tmp_path), "darwin")
+
+    # Assert
     assert blocked is False
 
 
 def test_make_dash_c_reads_that_directory(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path / "plugin", KCOV_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked("make -C plugin coverage", str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is True
 
 
 def test_make_dash_f_reads_that_file(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path, KCOV_MAKEFILE, name="cov.mk")
 
+    # Act
     blocked = hook.kcov_blocked("gmake -f cov.mk coverage", str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is True
 
 
 def test_cd_before_make_is_followed(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path / "plugin", KCOV_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked("cd plugin && make coverage", str(tmp_path), "darwin")
 
+    # Assert
     assert blocked is True
 
 
 def test_kcov_inside_container_command_is_allowed(hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path, KCOV_MAKEFILE)
 
+    # Act
     blocked = hook.kcov_blocked(
         "git archive HEAD | docker run --rm -i ubuntu:26.04 bash -c "
         "'tar -x -C /w && make -C /w coverage'",
@@ -267,32 +370,53 @@ def test_kcov_inside_container_command_is_allowed(hook, tmp_path):
         "darwin",
     )
 
+    # Assert
     assert blocked is False
 
 
 def test_lone_cd_does_not_block(hook, tmp_path):
-    blocked = hook.kcov_blocked("cd", str(tmp_path), "darwin")
+    # Arrange
+    command = "cd"
 
+    # Act
+    blocked = hook.kcov_blocked(command, str(tmp_path), "darwin")
+
+    # Assert
     assert blocked is False
 
 
 @on_darwin
-def test_hook_blocks_kcov_end_to_end(tool_use, assert_blocks, tmp_path):
+def test_hook_blocks_kcov_end_to_end(tool_use, run_hook, tmp_path):
+    # Arrange
     payload = tool_use("Bash", {"command": "kcov out bats test/"}, cwd=str(tmp_path))
 
-    assert_blocks(HOOK, payload, "kcov on macOS")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "kcov on macOS")
 
 
 @on_darwin
-def test_hook_blocks_make_coverage_end_to_end(tool_use, assert_blocks, tmp_path):
+def test_hook_blocks_make_coverage_end_to_end(tool_use, run_hook, tmp_path):
+    # Arrange
     write_makefile(tmp_path, KCOV_MAKEFILE)
     payload = tool_use("Bash", {"command": "make coverage"}, cwd=str(tmp_path))
 
-    assert_blocks(HOOK, payload, "docker run")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "docker run")
 
 
 @on_darwin
-def test_bypass_env_var_allows_kcov(tool_use, assert_allows, tmp_path):
+def test_bypass_env_var_allows_kcov(tool_use, run_hook, tmp_path):
+    # Arrange
     payload = tool_use("Bash", {"command": "kcov out bats test/"}, cwd=str(tmp_path))
 
-    assert_allows(HOOK, payload, env={"INTERACTIVE_CMD_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"INTERACTIVE_CMD_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)

@@ -1,12 +1,7 @@
-"""Coverage for config-protection hook.
-
-Source rule: `~/.claude/CLAUDE.md` "Maximum Compiler and Checker Strictness"
-and `~/.claude/rules/code-style.md` "Zero Warnings".
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "config-protection"
 
@@ -30,13 +25,19 @@ HOOK = "config-protection"
         "/repo/detekt.yml",
     ],
 )
-def test_blocks_protected_config_writes(tool_use, assert_blocks, file_path):
+def test_blocks_protected_config_writes(tool_use, run_hook, file_path):
+    # Arrange
     payload = tool_use("Write", {"file_path": file_path, "content": "{}"})
 
-    assert_blocks(HOOK, payload, "weaken type or lint strictness")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "weaken type or lint strictness")
 
 
-def test_blocks_edit_to_protected_config(tool_use, assert_blocks):
+def test_blocks_edit_to_protected_config(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -46,10 +47,15 @@ def test_blocks_edit_to_protected_config(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "weaken type or lint strictness")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "weaken type or lint strictness")
 
 
-def test_blocks_multiedit_to_protected_config(tool_use, assert_blocks):
+def test_blocks_multiedit_to_protected_config(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -58,24 +64,41 @@ def test_blocks_multiedit_to_protected_config(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "weaken type or lint strictness")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "weaken type or lint strictness")
 
 
-def test_allows_unprotected_file(tool_use, assert_allows):
+def test_allows_unprotected_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": "/repo/src/index.ts", "content": "x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_allows_with_bypass_env(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": "/repo/tsconfig.json", "content": "{}"})
 
+    # Act
     code, _out, _err = run_hook(HOOK, payload, env={"CONFIG_PROTECTION_DISABLE": "1"})
 
+    # Assert
     assert code == 0
 
 
-def test_allows_missing_file_path(tool_use, assert_allows):
+def test_allows_missing_file_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"content": "x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

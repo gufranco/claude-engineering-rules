@@ -24,6 +24,7 @@ import sys
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 UI_SUFFIXES = (
     ".tsx",
@@ -141,7 +142,7 @@ def main() -> int:
         return 0
 
     command = payload.get("tool_input", {}).get("command", "")
-    if not GIT_COMMIT_INVOCATION.search(command):
+    if not GIT_COMMIT_INVOCATION.search(strip_git_global_options(command)):
         return 0
 
     paths = staged_files()

@@ -1,10 +1,3 @@
-"""Object / Reflect / delete / global mutation coverage.
-
-Item 119 of the plan. Validates Object.assign target mutation, defineProperty
-family, setPrototypeOf, the four Reflect mutators, the delete operator, and
-global writes (globalThis, window, self, process.env).
-"""
-
 from __future__ import annotations
 
 import pytest
@@ -58,23 +51,25 @@ OBJECT_OUT_OF_SCOPE: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet"), OBJECT_OUT_OF_SCOPE)
 def test_dom_and_web_api_writes_out_of_scope(run_hook, label, snippet):
-    """`window.*`, `self.*`, and `document.*` writes are documented
-    out-of-scope per `rules/lang/typescript-immutability.md` (DOM and
-    Web API Stance). They must not block.
-    """
+    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: expected allow, got {code}\n{stderr}"
 
 
 @pytest.mark.parametrize(("label", "snippet", "detector"), OBJECT_BLOCKED)
 def test_object_utility_mutation_is_blocked(run_hook, label, snippet, detector):
+    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: expected block, got {code}\n{stderr}"
     assert detector in stderr, f"{label}: detector {detector} missing"
 
@@ -94,8 +89,11 @@ OBJECT_ALLOWED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet"), OBJECT_ALLOWED)
 def test_object_utility_allowed_passes(run_hook, label, snippet):
+    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: unexpected block\n{stderr}"

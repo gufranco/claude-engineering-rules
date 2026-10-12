@@ -745,6 +745,46 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/test-aaa-markers.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/test-aaa-markers.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/test-aaa-markers.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/comment-blocker.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/test-aaa-markers.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/mock-internal-blocker.py"
           }
         ]
@@ -1268,6 +1308,15 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/interactive-cmd-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/zsh-special-name-guard.py"
           }
         ]
       },

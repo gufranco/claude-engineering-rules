@@ -1,5 +1,3 @@
-"""Coverage for `hooks/_lib/ai_review.py`."""
-
 from __future__ import annotations
 
 import json
@@ -71,8 +69,6 @@ def pull_payload(
 
 
 class FakeGh:
-    """Stands in for the GitHub CLI, the only third-party boundary here."""
-
     def __init__(self, repo: dict, pull: dict, fail: bool = False) -> None:
         self.repo = repo
         self.pull = pull
@@ -117,8 +113,13 @@ def run(gh, account, cache, *, dry_run=False, now=NOW, number=42):
 
 
 def test_profile_detects_manual_claude_from_a_review_notice():
-    profile = ai_review.build_profile(repo_payload(reviews=[node("claude", NOTICE)]))
+    # Arrange
+    payload = repo_payload(reviews=[node("claude", NOTICE)])
 
+    # Act
+    profile = ai_review.build_profile(payload)
+
+    # Assert
     assert profile == ai_review.Profile(
         claude_manual=True,
         review_label=False,
@@ -128,14 +129,17 @@ def test_profile_detects_manual_claude_from_a_review_notice():
 
 
 def test_profile_detects_label_bugbot_and_auto_reviewers():
+    # Arrange
     payload = repo_payload(
         reviews=[node("coderabbitai", "ok"), node("chatgpt-codex-connector", "ok")],
         comments=[node("cursor", BUGBOT)],
         label=True,
     )
 
+    # Act
     profile = ai_review.build_profile(payload)
 
+    # Assert
     assert profile == ai_review.Profile(
         claude_manual=False,
         review_label=True,
@@ -145,26 +149,35 @@ def test_profile_detects_label_bugbot_and_auto_reviewers():
 
 
 def test_profile_ignores_the_trigger_text_from_a_person():
+    # Arrange
     payload = repo_payload(comments=[node(login(), NOTICE)])
 
+    # Act
     profile = ai_review.build_profile(payload)
 
+    # Assert
     assert profile.claude_manual is False
 
 
 def test_profile_tolerates_missing_authors_and_bodies():
+    # Arrange
     payload = repo_payload(reviews=[{"author": None, "body": None}])
 
+    # Act
     profile = ai_review.build_profile(payload)
 
+    # Assert
     assert profile == ai_review.Profile(False, False, False, ())
 
 
 def test_new_pr_in_manual_repo_gets_one_always_comment(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(reviews=[node("claude", NOTICE)]), pull_payload(account))
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert (gh.writes(), summary) == (
         [
             [
@@ -181,11 +194,14 @@ def test_new_pr_in_manual_repo_gets_one_always_comment(account, cache):
 
 
 def test_already_subscribed_pr_posts_nothing(account, cache):
+    # Arrange
     pull = pull_payload(account, comments=[node(account, "@claude review always")])
     gh = FakeGh(repo_payload(reviews=[node("claude", NOTICE)]), pull)
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert (gh.writes(), summary) == (
         [],
         "ai-review: acme/app#42 claude subscribed",
@@ -193,19 +209,25 @@ def test_already_subscribed_pr_posts_nothing(account, cache):
 
 
 def test_notice_on_the_pr_itself_is_enough(account, cache):
+    # Arrange
     pull = pull_payload(account, reviews=[node("claude", NOTICE)])
     gh = FakeGh(repo_payload(), pull)
 
+    # Act
     run(gh, account, cache)
 
+    # Assert
     assert [a[1] for a in gh.writes()] == ["repos/acme/app/issues/42/comments"]
 
 
 def test_label_repo_gets_the_label_once(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(label=True), pull_payload(account))
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert (gh.writes(), summary) == (
         [
             [
@@ -222,12 +244,15 @@ def test_label_repo_gets_the_label_once(account, cache):
 
 
 def test_label_already_present_is_not_added(account, cache):
+    # Arrange
     gh = FakeGh(
         repo_payload(label=True), pull_payload(account, labels=["claude-review"])
     )
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert (gh.writes(), summary) == (
         [],
         "ai-review: acme/app#42 label `claude-review` present",
@@ -235,32 +260,41 @@ def test_label_already_present_is_not_added(account, cache):
 
 
 def test_someone_elses_pr_is_never_touched(account, cache):
+    # Arrange
     gh = FakeGh(
         repo_payload(reviews=[node("claude", NOTICE)], label=True),
         pull_payload(login()),
     )
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert (gh.writes(), summary) == ([], "")
 
 
 def test_closed_pr_is_never_touched(account, cache):
+    # Arrange
     gh = FakeGh(
         repo_payload(reviews=[node("claude", NOTICE)]),
         pull_payload(account, state="MERGED"),
     )
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert (gh.writes(), summary) == ([], "")
 
 
 def test_dry_run_reports_without_writing(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(reviews=[node("claude", NOTICE)]), pull_payload(account))
 
+    # Act
     summary = run(gh, account, cache, dry_run=True)
 
+    # Assert
     assert (gh.writes(), summary) == (
         [],
         "ai-review: acme/app#42 would post `@claude review always`",
@@ -268,60 +302,80 @@ def test_dry_run_reports_without_writing(account, cache):
 
 
 def test_auto_and_unavailable_reviewers_are_reported(account, cache):
+    # Arrange
     payload = repo_payload(
         reviews=[node("coderabbitai", "ok")], comments=[node("cursor", BUGBOT)]
     )
     gh = FakeGh(payload, pull_payload(account))
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert summary == (
         "ai-review: acme/app#42 auto coderabbitai, bugbot unavailable (billing)"
     )
 
 
 def test_repo_with_no_ai_reviewer_reports_nothing(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(), pull_payload(account))
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert summary == "ai-review: acme/app#42 no AI reviewer configured"
 
 
 def test_profile_is_cached_between_runs(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(label=True), pull_payload(account, labels=["x"]))
     run(gh, account, cache)
     gh.calls = []
 
+    # Act
     run(gh, account, cache, now=NOW + 60)
 
+    # Assert
     assert [c for c, _ in gh.calls if "pullRequests(last" in " ".join(c)] == []
 
 
 def test_expired_cache_is_refreshed(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(label=True), pull_payload(account))
     run(gh, account, cache)
     gh.calls = []
 
+    # Act
     run(gh, account, cache, now=NOW + ai_review.PROFILE_TTL_SECONDS + 1)
 
+    # Assert
     assert len([c for c, _ in gh.calls if "pullRequests(last" in " ".join(c)]) == 1
 
 
 def test_corrupt_cache_is_rebuilt(account, cache):
+    # Arrange
     cache.write_text("{not json")
     gh = FakeGh(repo_payload(label=True), pull_payload(account))
 
+    # Act
     summary = run(gh, account, cache)
 
+    # Assert
     assert summary == "ai-review: acme/app#42 added label `claude-review`"
 
 
 def test_api_failure_raises_gh_error(account, cache):
+    # Arrange
     gh = FakeGh(repo_payload(), pull_payload(account), fail=True)
 
-    with pytest.raises(ai_review.GhError, match="HTTP 502"):
+    # Act
+    with pytest.raises(ai_review.GhError) as raised:
         run(gh, account, cache)
+
+    # Assert
+    assert "HTTP 502" in str(raised.value)
 
 
 ALIASES = {"github-work": "github.com", "gitlab-work": "gitlab.com"}
@@ -346,22 +400,35 @@ def resolve(host: str) -> str:
     ],
 )
 def test_parse_remote_resolves_ssh_aliases(url, expected):
-    parsed = ai_review.parse_remote(url, resolve)
+    # Arrange
+    url_input = url
 
+    # Act
+    parsed = ai_review.parse_remote(url_input, resolve)
+
+    # Assert
     assert parsed == expected
 
 
 def test_parse_remote_defaults_to_the_literal_host():
-    parsed = ai_review.parse_remote("git@github-work:acme/app.git")
+    # Arrange
+    url = "git@github-work:acme/app.git"
 
+    # Act
+    parsed = ai_review.parse_remote(url)
+
+    # Assert
     assert parsed is None
 
 
 def test_pr_urls_are_read_from_output():
+    # Arrange
     output = "Creating pull request\nhttps://github.com/acme/app/pull/4290\n"
 
+    # Act
     targets = ai_review.pr_urls(output)
 
+    # Assert
     assert targets == (ai_review.Target("acme", "app", 4290),)
 
 
@@ -374,37 +441,60 @@ def fake_gh_on_path(monkeypatch, tmp_path, script: str) -> None:
 
 
 def test_run_gh_passes_the_token_and_returns_stdout(monkeypatch, tmp_path):
+    # Arrange
     fake_gh_on_path(monkeypatch, tmp_path, 'echo "$GH_TOKEN $*"')
 
+    # Act
     out = ai_review.run_gh(["api", "user"], "tok123")
 
+    # Assert
     assert out == "tok123 api user\n"
 
 
 def test_run_gh_raises_on_a_failing_call(monkeypatch, tmp_path):
+    # Arrange
     fake_gh_on_path(monkeypatch, tmp_path, "echo 'HTTP 404' >&2; exit 1")
 
-    with pytest.raises(ai_review.GhError, match="HTTP 404"):
+    # Act
+    with pytest.raises(ai_review.GhError) as raised:
         ai_review.run_gh(["api", "user"], "tok")
+
+    # Assert
+    assert "HTTP 404" in str(raised.value)
 
 
 def test_run_gh_raises_when_failing_silently(monkeypatch, tmp_path):
+    # Arrange
     fake_gh_on_path(monkeypatch, tmp_path, "exit 3")
 
-    with pytest.raises(ai_review.GhError, match="exit 3"):
+    # Act
+    with pytest.raises(ai_review.GhError) as raised:
         ai_review.run_gh(["api", "user"], "tok")
+
+    # Assert
+    assert "exit 3" in str(raised.value)
 
 
 def test_run_gh_raises_when_gh_is_missing(monkeypatch, tmp_path):
+    # Arrange
     monkeypatch.setenv("PATH", str(tmp_path))
 
-    with pytest.raises(ai_review.GhError):
+    # Act
+    with pytest.raises(ai_review.GhError) as raised:
         ai_review.run_gh(["api", "user"], "tok")
+
+    # Assert
+    assert raised.type is ai_review.GhError
 
 
 def test_unreadable_response_raises(account, cache):
+    # Arrange
     def garbage(_args, _token):
         return "<html>"
 
-    with pytest.raises(ai_review.GhError, match="unreadable"):
+    # Act
+    with pytest.raises(ai_review.GhError) as raised:
         run(garbage, account, cache)
+
+    # Assert
+    assert "unreadable" in str(raised.value)

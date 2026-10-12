@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.output import block as _block  # noqa: E402
 
 try:
@@ -94,7 +95,7 @@ def main() -> int:
     if is_bypassed(HOOK_NAME):
         return 0
     command = _read_command()
-    if not COMMIT_PATTERN.search(command):
+    if not COMMIT_PATTERN.search(strip_git_global_options(command)):
         return 0
     offenders: list[tuple[str, int]] = []
     for name in _staged_files():

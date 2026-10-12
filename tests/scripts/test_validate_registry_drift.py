@@ -1,13 +1,3 @@
-"""Tests for .github/scripts/validate-registry-drift.py.
-
-The validator walks from files on disk back to the registries that are
-supposed to load or document them, which is the direction the existing
-one-directional validators miss. Each test builds a synthetic tree so a
-finding is proven to depend on the drift and not on the real repository.
-
-Source rules: rules/doc-truth.md, rules/testing.md.
-"""
-
 from __future__ import annotations
 
 import importlib.util
@@ -50,7 +40,6 @@ README_TEMPLATE = """\
 
 
 def load_validator(root: Path):
-    """Import the validator with its ROOT pointed at a synthetic tree."""
     spec = importlib.util.spec_from_file_location(f"vrd_{root.name}", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -70,7 +59,6 @@ def vendor_the_index_parser_the_validator_imports(root: Path) -> None:
 
 @pytest.fixture
 def tree(tmp_path: Path) -> Path:
-    """A synthetic config tree with no drift."""
     root = tmp_path / "config"
     for sub in ("rules", "standards", "hooks", "agents", "skills"):
         (root / sub).mkdir(parents=True)
@@ -105,61 +93,84 @@ def run(root: Path) -> list[str]:
 
 
 def test_clean_tree_reports_nothing(tree: Path) -> None:
-    findings = run(tree)
+    # Arrange
+    tree_input = tree
 
+    # Act
+    findings = run(tree_input)
+
+    # Assert
     assert findings == []
 
 
 def test_unregistered_rule_is_reported(tree: Path) -> None:
+    # Arrange
     (tree / "rules" / "orphan.md").write_text("# Orphan\n")
 
+    # Act
     findings = run(tree)
 
-    assert any("rules/orphan.md" in f for f in findings)
+    # Assert
+    assert [f.split()[0] for f in findings] == ["rules/orphan.md"]
 
 
 def test_unregistered_standard_is_reported(tree: Path) -> None:
+    # Arrange
     (tree / "standards" / "orphan.md").write_text("# Orphan\n")
 
+    # Act
     findings = run(tree)
 
-    assert any("standards/orphan.md" in f for f in findings)
+    # Assert
+    assert [f.split()[0] for f in findings] == ["standards/orphan.md"]
 
 
 def test_undocumented_skill_is_reported(tree: Path) -> None:
+    # Arrange
     (tree / "skills" / "two").mkdir()
     (tree / "skills" / "two" / "SKILL.md").write_text("---\nname: two\n---\n")
 
+    # Act
     findings = run(tree)
 
-    assert any("skills/two/" in f for f in findings)
+    # Assert
+    assert [f.split()[0] for f in findings] == ["skills/two/"]
 
 
 def test_documented_skill_that_does_not_exist_is_reported(tree: Path) -> None:
+    # Arrange
     readme = tree / "README.md"
     readme.write_text(
         readme.read_text() + "| [`/ghost`](skills/ghost/SKILL.md) | Missing |\n"
     )
 
+    # Act
     findings = run(tree)
 
-    assert any("ghost" in f and "does not exist" in f for f in findings)
+    # Assert
+    assert findings == ["README lists /ghost but skills/ghost/SKILL.md does not exist."]
 
 
 def test_undocumented_agent_is_reported(tree: Path) -> None:
+    # Arrange
     (tree / "agents" / "reviewer.md").write_text("---\nname: reviewer\n---\n")
 
+    # Act
     findings = run(tree)
 
-    assert any("agents/reviewer.md" in f for f in findings)
+    # Assert
+    assert [f.split()[0] for f in findings] == ["agents/reviewer.md"]
 
 
 def test_agent_template_is_not_treated_as_an_agent(tree: Path) -> None:
+    # Arrange
     (tree / "agents" / "TEMPLATE.md").write_text("# Template\n")
     (tree / "agents" / "_shared-principles.md").write_text("# Shared\n")
 
+    # Act
     findings = run(tree)
 
+    # Assert
     assert findings == []
 
 
@@ -167,36 +178,50 @@ def test_agent_template_is_not_treated_as_an_agent(tree: Path) -> None:
     "name", ["test_thing.py", "thing_test.py", "thing.test.py", "conftest.py"]
 )
 def test_test_shaped_file_in_hooks_is_reported(tree: Path, name: str) -> None:
+    # Arrange
     (tree / "hooks" / name).write_text("import unittest\n")
 
+    # Act
     findings = run(tree)
 
-    assert any(name in f for f in findings)
+    # Assert
+    assert [f.split()[0] for f in findings] == [f"hooks/{name}"]
 
 
 def test_index_entry_naming_a_missing_path_is_reported(tree: Path) -> None:
+    # Arrange
     (tree / "standards" / "gamma.md").unlink()
 
+    # Act
     findings = run(tree)
 
-    assert any("standards/gamma.md" in f for f in findings)
+    # Assert
+    assert findings == [
+        "rules/index.yml: on_demand 'gamma' names a missing standards/gamma.md"
+    ]
 
 
 def test_main_exits_zero_on_a_clean_tree(tree: Path, capsys) -> None:
+    # Arrange
     module = load_validator(tree)
 
+    # Act
     code = module.main()
 
+    # Assert
     assert code == 0
     assert "PASSED" in capsys.readouterr().out
 
 
 def test_main_exits_one_and_names_each_finding(tree: Path, capsys) -> None:
+    # Arrange
     (tree / "rules" / "orphan.md").write_text("# Orphan\n")
     module = load_validator(tree)
 
+    # Act
     code = module.main()
 
+    # Assert
     out = capsys.readouterr().out
     assert code == 1
     assert "FAILED" in out

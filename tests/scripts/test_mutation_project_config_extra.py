@@ -1,15 +1,7 @@
-"""Extra coverage for `scripts/mutation_project_config.py`.
-
-Targets the YAML parser edge cases, the OSError path in `_load_text`,
-the jsonschema fallback chain, the inline-validator failure modes, and
-the empty-start-path early return.
-"""
-
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -21,53 +13,80 @@ if str(SCRIPTS_DIR) not in sys.path:
 from _lib import mutation_project_config as mpc  # noqa: E402
 
 
+def deny(*_args: object, **_kwargs: object) -> None:
+    raise OSError("permission denied")
+
+
 def test_discover_config_path_returns_none_when_claude_dir_missing(
     tmp_path: Path,
 ) -> None:
+    # Arrange
     (tmp_path / "package.json").write_text("{}", encoding="utf-8")
 
+    # Act
     result = mpc.discover_config_path(str(tmp_path))
 
+    # Assert
     assert result is None
 
 
 def test_parse_yaml_minimal_skips_blank_and_comment_lines() -> None:
+    # Arrange
     text = "\n# top comment\nversion: 1\n\n# trailing\n"
 
+    # Act
     data = mpc._parse_yaml_minimal(text)
 
+    # Assert
     assert data == {"version": 1}
 
 
 def test_parse_yaml_minimal_raises_on_orphan_list_item() -> None:
+    # Arrange
     text = "  - bareItem"
 
-    with pytest.raises(ValueError, match="unexpected list item"):
+    # Act
+    with pytest.raises(ValueError) as raised:
         mpc._parse_yaml_minimal(text)
+
+    # Assert
+    assert "unexpected list item" in str(raised.value)
 
 
 def test_parse_yaml_minimal_raises_on_missing_colon() -> None:
+    # Arrange
     text = "noColonHere"
 
-    with pytest.raises(ValueError, match="missing colon"):
+    # Act
+    with pytest.raises(ValueError) as raised:
         mpc._parse_yaml_minimal(text)
+
+    # Assert
+    assert "missing colon" in str(raised.value)
 
 
 def test_parse_yaml_minimal_strips_quotes_from_scalar_string() -> None:
+    # Arrange
     text = 'name: "value"'
 
+    # Act
     data = mpc._parse_yaml_minimal(text)
 
+    # Assert
     assert data == {"name": "value"}
 
 
 def test_load_text_returns_none_on_os_error(
-    capsys: pytest.CaptureFixture[str],
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    with patch("builtins.open", side_effect=OSError("permission denied")):
-        result = mpc._load_text("/some/path.json")
-        captured = capsys.readouterr()
+    # Arrange
+    monkeypatch.setattr("builtins.open", deny)
 
+    # Act
+    result = mpc._load_text("/some/path.json")
+
+    # Assert
+    captured = capsys.readouterr()
     assert result is None
     assert "unable to read" in captured.err
 
@@ -75,22 +94,20 @@ def test_load_text_returns_none_on_os_error(
 def test_load_text_returns_none_for_non_dict_top_level(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    # Arrange
     path = tmp_path / "list.json"
     path.write_text("[1, 2, 3]", encoding="utf-8")
 
+    # Act
     result = mpc._load_text(str(path))
-    captured = capsys.readouterr()
 
+    # Assert
+    captured = capsys.readouterr()
     assert result is None
     assert "is not a mapping" in captured.err
 
 
 def _install_fake_jsonschema(monkeypatch) -> type:
-    """Inject a minimal fake `jsonschema` module so the branch that imports
-    it inside `_validate_with_jsonschema` succeeds. Returns the
-    `ValidationError` class so callers can raise it to trigger validation
-    failure paths.
-    """
     import types
 
     fake = types.ModuleType("jsonschema")
@@ -113,25 +130,31 @@ def _install_fake_jsonschema(monkeypatch) -> type:
 def test_validate_with_jsonschema_falls_back_when_schema_file_missing(
     monkeypatch,
 ) -> None:
+    # Arrange
     _install_fake_jsonschema(monkeypatch)
     monkeypatch.setattr(mpc, "SCHEMA_PATH", "/nonexistent/schema.json")
 
+    # Act
     result = mpc._validate_with_jsonschema({"version": 1})
 
+    # Assert
     assert result is True
 
 
 def test_validate_with_jsonschema_falls_back_on_schema_decode_error(
     monkeypatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    # Arrange
     _install_fake_jsonschema(monkeypatch)
     bad_schema = tmp_path / "schema.json"
     bad_schema.write_text("not json {", encoding="utf-8")
     monkeypatch.setattr(mpc, "SCHEMA_PATH", str(bad_schema))
 
+    # Act
     result = mpc._validate_with_jsonschema({"version": 1})
-    captured = capsys.readouterr()
 
+    # Assert
+    captured = capsys.readouterr()
     assert result is True
     assert "unable to load schema" in captured.err
 
@@ -139,14 +162,17 @@ def test_validate_with_jsonschema_falls_back_on_schema_decode_error(
 def test_validate_with_jsonschema_returns_false_on_validation_error(
     monkeypatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    # Arrange
     _install_fake_jsonschema(monkeypatch)
     schema_path = tmp_path / "schema.json"
     schema_path.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(mpc, "SCHEMA_PATH", str(schema_path))
 
+    # Act
     result = mpc._validate_with_jsonschema({"version": 1, "__force_invalid__": True})
-    captured = capsys.readouterr()
 
+    # Assert
+    captured = capsys.readouterr()
     assert result is False
     assert "validation failed" in captured.err
 
@@ -154,34 +180,43 @@ def test_validate_with_jsonschema_returns_false_on_validation_error(
 def test_validate_with_jsonschema_returns_true_on_valid_schema(
     monkeypatch, tmp_path: Path
 ) -> None:
+    # Arrange
     _install_fake_jsonschema(monkeypatch)
     schema_path = tmp_path / "schema.json"
     schema_path.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(mpc, "SCHEMA_PATH", str(schema_path))
 
+    # Act
     result = mpc._validate_with_jsonschema({"version": 1})
 
+    # Assert
     assert result is True
 
 
 def test_validate_with_jsonschema_falls_back_when_jsonschema_missing(
     monkeypatch,
 ) -> None:
+    # Arrange
     monkeypatch.setitem(sys.modules, "jsonschema", None)
 
+    # Act
     result = mpc._validate_with_jsonschema({"version": 1})
 
+    # Assert
     assert result is True
 
 
 def test_validate_inline_rejects_empty_string_item(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    # Arrange
     data = {"version": 1, "framework_receivers": [""]}
 
+    # Act
     result = mpc._validate_inline(data)
-    captured = capsys.readouterr()
 
+    # Assert
+    captured = capsys.readouterr()
     assert result is False
     assert "non-string or empty item" in captured.err
 
@@ -189,16 +224,24 @@ def test_validate_inline_rejects_empty_string_item(
 def test_validate_inline_rejects_non_string_item(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    # Arrange
     data = {"version": 1, "framework_receivers": [123]}
 
+    # Act
     result = mpc._validate_inline(data)
-    captured = capsys.readouterr()
 
+    # Assert
+    captured = capsys.readouterr()
     assert result is False
     assert "non-string or empty item" in captured.err
 
 
 def test_load_project_config_returns_empty_for_empty_start_path() -> None:
-    config = mpc.load_project_config("")
+    # Arrange
+    start_path = ""
 
+    # Act
+    config = mpc.load_project_config(start_path)
+
+    # Assert
     assert config is mpc.EMPTY_CONFIG

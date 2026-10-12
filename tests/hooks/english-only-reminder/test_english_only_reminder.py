@@ -1,11 +1,3 @@
-"""Tests for `hooks/english-only-reminder.py`.
-
-
-Observable behavior: emit a `<system-reminder>` block locking the assistant
-to English on stdout, exit 0. Bypass via env or file registry suppresses
-the reminder.
-"""
-
 from __future__ import annotations
 
 import json
@@ -43,7 +35,13 @@ def _run(env: dict | None = None) -> subprocess.CompletedProcess[str]:
 
 
 def test_emits_system_reminder_block() -> None:
-    result = _run()
+    # Arrange
+    env = None
+
+    # Act
+    result = _run(env)
+
+    # Assert
     assert result.returncode == 0
     assert "<system-reminder>" in result.stdout
     assert "</system-reminder>" in result.stdout
@@ -52,25 +50,43 @@ def test_emits_system_reminder_block() -> None:
 
 
 def test_emits_no_stderr() -> None:
-    result = _run()
+    # Arrange
+    env = None
+
+    # Act
+    result = _run(env)
+
+    # Assert
     assert result.stderr == ""
 
 
 def test_env_disable_suppresses_reminder() -> None:
-    result = _run({"ENGLISH_REMINDER_DISABLE": "1"})
+    # Arrange
+    env = {"ENGLISH_REMINDER_DISABLE": "1"}
+
+    # Act
+    result = _run(env)
+
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_file_bypass_suppresses_reminder(tmp_path: Path) -> None:
+    # Arrange
     state = tmp_path / "state.json"
     set_bypass("english-only-reminder", ttl_seconds=120, state_path=state)
+
+    # Act
     result = _run({"CLAUDE_BYPASS_STATE": str(state)})
+
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_expired_file_entry_does_not_bypass(tmp_path: Path) -> None:
+    # Arrange
     state = tmp_path / "state.json"
     past = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
     state.write_text(
@@ -82,5 +98,9 @@ def test_expired_file_entry_does_not_bypass(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+
+    # Act
     result = _run({"CLAUDE_BYPASS_STATE": str(state)})
+
+    # Assert
     assert "LANGUAGE LOCK" in result.stdout

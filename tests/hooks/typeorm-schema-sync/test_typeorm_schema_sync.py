@@ -1,19 +1,16 @@
-"""Coverage for typeorm-schema-sync hook.
-
-Source rule: `~/.claude/rules/lang/typeorm-migrations.md`.
-"""
-
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
 from pathlib import Path
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "typeorm-schema-sync"
 
 
-def test_blocks_synchronize_true_in_data_source(tool_use, assert_blocks):
+def test_blocks_synchronize_true_in_data_source(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -28,10 +25,15 @@ def test_blocks_synchronize_true_in_data_source(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "synchronize: true")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "synchronize: true")
 
 
-def test_blocks_drop_schema_true(tool_use, assert_blocks):
+def test_blocks_drop_schema_true(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -41,10 +43,15 @@ def test_blocks_drop_schema_true(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "dropSchema: true")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "dropSchema: true")
 
 
-def test_blocks_dataSource_synchronize_call(tool_use, assert_blocks):
+def test_blocks_dataSource_synchronize_call(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -56,10 +63,15 @@ def test_blocks_dataSource_synchronize_call(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "dataSource.synchronize")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "dataSource.synchronize")
 
 
-def test_blocks_dataSource_dropDatabase_call(tool_use, assert_blocks):
+def test_blocks_dataSource_dropDatabase_call(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -73,10 +85,15 @@ def test_blocks_dataSource_dropDatabase_call(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "dropDatabase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "dropDatabase")
 
 
-def test_blocks_index_decorator_without_name(tool_use, assert_blocks):
+def test_blocks_index_decorator_without_name(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -89,10 +106,15 @@ def test_blocks_index_decorator_without_name(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "@Index")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Index")
 
 
-def test_blocks_unique_decorator_without_name(tool_use, assert_blocks):
+def test_blocks_unique_decorator_without_name(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -101,10 +123,15 @@ def test_blocks_unique_decorator_without_name(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "@Unique")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Unique")
 
 
-def test_blocks_check_decorator_without_name(tool_use, assert_blocks):
+def test_blocks_check_decorator_without_name(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -115,10 +142,15 @@ def test_blocks_check_decorator_without_name(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "@Check")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Check")
 
 
-def test_allows_index_decorator_with_name(tool_use, assert_allows):
+def test_allows_index_decorator_with_name(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -131,10 +163,15 @@ def test_allows_index_decorator_with_name(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_synchronize_false(tool_use, assert_allows):
+def test_allows_synchronize_false(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -149,10 +186,15 @@ def test_allows_synchronize_false(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_files(tool_use, assert_allows):
+def test_skips_test_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -161,10 +203,15 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_spec_files(tool_use, assert_allows):
+def test_skips_spec_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -174,10 +221,15 @@ def test_skips_spec_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_non_ts_files(tool_use, assert_allows):
+def test_skips_non_ts_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -186,10 +238,15 @@ def test_skips_non_ts_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses_block(tool_use, assert_allows):
+def test_disable_env_bypasses_block(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -198,10 +255,15 @@ def test_disable_env_bypasses_block(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -210,22 +272,20 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "synchronize: true",
-        env={"TYPEORM_SCHEMA_SYNC_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "synchronize: true")
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "typeorm-schema-sync.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -236,28 +296,37 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
 def test_invalid_json_stdin_with_run_hook(run_hook):
+    # Arrange
+    payload = {"_not": "a-valid-tool-payload"}
 
-    code, _stdout, _stderr = run_hook(
-        "typeorm-schema-sync", {"_not": "a-valid-tool-payload"}
-    )
+    # Act
+    code, _stdout, _stderr = run_hook(HOOK, payload)
 
+    # Assert
     assert code == 0
 
 
-def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
+def test_empty_file_path_with_clean_content_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const x = 1;\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_index_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
+def test_index_decorator_with_empty_args_is_blocked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -266,10 +335,15 @@ def test_index_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "@Index")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Index")
 
 
-def test_check_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
+def test_check_decorator_with_empty_args_is_blocked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -278,12 +352,15 @@ def test_check_decorator_with_empty_args_is_blocked(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "@Check")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Check")
 
 
-def test_check_decorator_with_brackets_in_single_arg_is_blocked(
-    tool_use, assert_blocks
-):
+def test_check_decorator_with_brackets_in_single_arg_is_blocked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -292,10 +369,15 @@ def test_check_decorator_with_brackets_in_single_arg_is_blocked(
         },
     )
 
-    assert_blocks(HOOK, payload, "@Check")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Check")
 
 
-def test_check_decorator_with_two_args_is_allowed(tool_use, assert_allows):
+def test_check_decorator_with_two_args_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -308,19 +390,29 @@ def test_check_decorator_with_two_args_is_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_with_non_string_content_is_ignored(tool_use, assert_allows):
+def test_write_with_non_string_content_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/data-source.ts", "content": 12345},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_with_non_dict_items_is_safe(tool_use, assert_allows):
+def test_multiedit_with_non_dict_items_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -329,10 +421,15 @@ def test_multiedit_with_non_dict_items_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_edit_with_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -342,10 +439,15 @@ def test_edit_with_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_multiedit_with_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -354,27 +456,42 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_audit_env_bypasses_branch(tool_use, assert_allows):
+def test_disable_audit_env_bypasses_branch(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write", {"file_path": "/repo/src/x.ts", "content": "synchronize: true"}
     )
 
-    assert_allows(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"TYPEORM_SCHEMA_SYNC_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/data-source.ts"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_collects_findings(tool_use, assert_blocks):
+def test_multiedit_collects_findings(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -386,10 +503,15 @@ def test_multiedit_collects_findings(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "Blocked")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Blocked")
 
 
-def test_index_with_object_first_arg_is_blocked(tool_use, assert_blocks):
+def test_index_with_object_first_arg_is_blocked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -398,4 +520,8 @@ def test_index_with_object_first_arg_is_blocked(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "@Index")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "@Index")

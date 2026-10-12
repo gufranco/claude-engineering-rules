@@ -1,9 +1,3 @@
-"""Coverage for sequelize-raw-sql-blocker hook.
-
-Source rule: `~/.claude/rules/code-style.md` No raw SQL +
-             `~/.claude/rules/lang/sequelize-migrations.md`.
-"""
-
 from __future__ import annotations
 
 import os
@@ -12,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "sequelize-raw-sql-blocker"
 
@@ -20,7 +15,8 @@ HOOK = "sequelize-raw-sql-blocker"
     "receiver",
     ["sequelize", "db", "database", "connection", "conn"],
 )
-def test_blocks_query_call_on_known_receivers(tool_use, assert_blocks, receiver):
+def test_blocks_query_call_on_known_receivers(tool_use, run_hook, receiver):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -33,10 +29,15 @@ def test_blocks_query_call_on_known_receivers(tool_use, assert_blocks, receiver)
         },
     )
 
-    assert_blocks(HOOK, payload, f"{receiver}.query")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, f"{receiver}.query")
 
 
-def test_blocks_query_on_edit(tool_use, assert_blocks):
+def test_blocks_query_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -46,10 +47,15 @@ def test_blocks_query_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "sequelize.query")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "sequelize.query")
 
 
-def test_blocks_query_on_multiedit(tool_use, assert_blocks):
+def test_blocks_query_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -61,10 +67,15 @@ def test_blocks_query_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "db.query")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "db.query")
 
 
-def test_allows_model_findAll(tool_use, assert_allows):
+def test_allows_model_findAll(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -78,10 +89,15 @@ def test_allows_model_findAll(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_migration_files(tool_use, assert_allows):
+def test_skips_migration_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -94,10 +110,15 @@ def test_skips_migration_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_seeders_files(tool_use, assert_allows):
+def test_skips_seeders_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -110,10 +131,15 @@ def test_skips_seeders_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_sql_files(tool_use, assert_allows):
+def test_skips_sql_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -122,10 +148,15 @@ def test_skips_sql_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_paths(tool_use, assert_allows):
+def test_skips_test_paths(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -134,10 +165,15 @@ def test_skips_test_paths(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_spec_paths(tool_use, assert_allows):
+def test_skips_spec_paths(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -147,10 +183,15 @@ def test_skips_spec_paths(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -159,10 +200,15 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"SEQUELIZE_RAW_SQL_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"SEQUELIZE_RAW_SQL_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -171,24 +217,22 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "sequelize.query",
-        env={"SEQUELIZE_RAW_SQL_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"SEQUELIZE_RAW_SQL_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "sequelize.query")
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "sequelize-raw-sql-blocker.py"
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -199,34 +243,51 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
 def test_invalid_json_via_run_hook(run_hook):
-    code, _stdout, _stderr = run_hook("sequelize-raw-sql-blocker", {"_invalid": True})
+    # Arrange
+    payload = {"_invalid": True}
 
+    # Act
+    code, _stdout, _stderr = run_hook(HOOK, payload)
+
+    # Assert
     assert code == 0
 
 
-def test_empty_file_path_with_clean_content_is_allowed(tool_use, assert_allows):
+def test_empty_file_path_with_clean_content_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "const r = await User.findOne();\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/x.ts", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_items_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -235,10 +296,15 @@ def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_multiedit_with_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -247,19 +313,29 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/services/user.service.ts"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_query_on_unknown_receiver_is_not_flagged(tool_use, assert_allows):
+def test_query_on_unknown_receiver_is_not_flagged(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -268,21 +344,30 @@ def test_query_on_unknown_receiver_is_not_flagged(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_the_anti_pattern_inside_documentation(tool_use, assert_allows):
+def test_allows_the_anti_pattern_inside_documentation(tool_use, run_hook):
+    # Arrange
     content = "# Locking\n\nNever do this in application code:\n\n```typescript\nawait sequelize.query('SELECT 1');\n```\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/standards/concurrency.md", "content": content}
     )
 
-    _code, stderr = assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks):
+def test_still_blocks_the_same_call_in_application_code(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -291,4 +376,8 @@ def test_still_blocks_the_same_call_in_application_code(tool_use, assert_blocks)
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
