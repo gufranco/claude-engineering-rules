@@ -16,12 +16,16 @@ A secret that enters the conversation is in the context window for the rest of t
 
 The rule: **the secret passes through the process, never through the transcript.**
 
+**Wrong:** the token is now in context, permanently.
+
 ```bash
-# Wrong: the token is now in context, permanently
 cat ~/.service-credentials
 curl -H "Authorization: <pasted token>" https://api.example.com/v1/thing
+```
 
-# Right: the shell reads the file, the value never surfaces
+**Right:** the shell reads the file, and the value never surfaces.
+
+```bash
 curl -H "Authorization: $(cat ~/.service-credentials)" https://api.example.com/v1/thing
 ```
 
@@ -53,12 +57,10 @@ The same applies to `git clone`, to `git remote add`, and to any URL carrying a 
 
 When a capability genuinely has to be broad, a wildcard permission is the wrong lever, because a wildcard that permits a read also permits whatever the same command can be talked into doing. Prompt injection turns the second into the first.
 
-Wrap the capability instead, allow only the wrapper, and let the wrapper enforce the narrowing that the permission pattern cannot express.
+Wrap the capability instead, allow only the wrapper, and let the wrapper enforce the narrowing that the permission pattern cannot express. This read-only wrapper forces `GET` and refuses any method or body override, so a wildcarded allowlist entry cannot be escalated into a mutating call:
 
 ```bash
 #!/usr/bin/env bash
-# Read-only wrapper: forces GET and refuses any method or body override, so a
-# wildcarded allowlist entry cannot be escalated into a mutating call.
 set -euo pipefail
 for arg in "$@"; do
   case "$arg" in

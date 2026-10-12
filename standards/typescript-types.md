@@ -44,22 +44,21 @@ type OrderId = Brand<string, 'OrderId'>;
 Encode state machine transitions in the type system. Each state is a distinct type. Methods on a state return the next valid state. Invalid transitions do not exist in the API.
 
 ```typescript
-class DraftOrder {
-  submit(items: readonly OrderItem[]): SubmittedOrder { /* ... */ }
-  // no ship(), no cancel(); only submit is valid from draft
+interface DraftOrder {
+  submit(items: readonly OrderItem[]): SubmittedOrder;
 }
 
-class SubmittedOrder {
-  ship(tracking: TrackingId): ShippedOrder { /* ... */ }
-  cancel(reason: string): CancelledOrder { /* ... */ }
-  // no submit(); cannot submit twice
+interface SubmittedOrder {
+  ship(tracking: TrackingId): ShippedOrder;
+  cancel(reason: string): CancelledOrder;
 }
 
-class ShippedOrder {
-  deliver(signature: string): DeliveredOrder { /* ... */ }
-  // no cancel(); shipped orders follow a return flow, not cancellation
+interface ShippedOrder {
+  deliver(signature: string): DeliveredOrder;
 }
 ```
+
+A draft offers only `submit`, so it cannot ship or cancel. A submitted order has no `submit`, so it cannot be submitted twice. A shipped order has no `cancel`, because shipped orders follow a return flow instead.
 
 - Use when: order workflows, payment processing, document lifecycles, connection states, authentication flows
 - Different from discriminated unions: unions model "what states exist" as data. Type state models "what transitions are legal" through method availability. The compiler prevents invalid transitions, not runtime checks

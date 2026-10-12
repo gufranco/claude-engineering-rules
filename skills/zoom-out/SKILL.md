@@ -1,13 +1,23 @@
 ---
 name: zoom-out
-description: Step back from a narrow code section and place it in its system context. Reads the file, traces callers and callees, identifies the module boundary, names the architectural role, and surfaces hidden coupling. Use when user says "zoom out", "what is this", "where does this fit", "give me context on this code", "what calls this", or feels lost in unfamiliar code. Do NOT use for line-by-line code review (use /review), debugging (use /investigate), or onboarding to a whole repo (use /onboard).
+description: Step back from a narrow code section and place it in its system context. Reads the file, traces callers and callees, identifies the module boundary, names the architectural role, and surfaces hidden coupling. Use when user says "zoom out", "what is this", "where does this fit", "give me context on this code", "what calls this", or feels lost in unfamiliar code. For line-by-line code review, use /review; for debugging, use /investigate; for onboarding to a whole repo, use /onboard.
 allowed-tools:
   - Read
   - Glob
   - Grep
+argument-hint: "/zoom-out src/billing/invoice.ts:42 [--depth 3]"
 ---
 
+## Overview
+
 Perspective shift. The user is staring at a function, file, or module and cannot see the system around it. This skill widens the lens until the role of the code is clear, then stops.
+
+## When to Use
+
+- The user says "zoom out", "what is this", "where does this fit", "give me context on this code", or "what calls this".
+- The user names one file or one line and cannot say which module owns it or who calls it.
+
+For line-by-line review, use `/review`; for a bug hunt, use `/investigate`; for whole-repository orientation, use `/onboard`.
 
 ## Arguments
 
@@ -114,6 +124,27 @@ One paragraph. Primary purpose, surface area, dependencies.
 - Cite every claim with `file:line`. No abstract statements about "the architecture".
 - If the role does not match the table, say so explicitly. Do not invent a category.
 - Stop after the report. Do not propose refactors. Use `/refactor` for that.
+
+## Common Rationalizations
+
+- "The file name says what it does": a name is a claim. The callers in step 3 show the role the code actually plays.
+- "Depth 4 gives a fuller picture": past depth 4 the report turns into a survey, and the role of the target gets lost in it.
+- "It is close enough to Application service": a near match hides the finding. Say the role does not fit the table and describe what it does.
+- "The coupling is obvious, no need to cite it": every hidden-coupling item carries a `file:line` so the reader can check it in one step.
+
+## Red Flags
+
+- Stop and run the caller grep when the Callers list is empty and the target has exports.
+- Stop and cite the location when a claim in the report carries no `file:line`.
+- Stop at the report when the next step you are drafting is an edit or a refactor proposal.
+- Stop and narrow `--depth` when the traced file count passes what fits in one report.
+
+## Verification
+
+- The report has every heading from the step 7 template.
+- Every caller, callee, and hidden-coupling line cites `file:line`.
+- The role names one table entry with a justification, or says plainly that none fits.
+- No file was modified during the run.
 
 ## Related skills
 

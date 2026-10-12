@@ -41,8 +41,9 @@ const provider = new PactV4({
 });
 
 describe("UserService contract", () => {
-  it("should return user by ID", async () => {
-    await provider
+  it("returns the user by ID", async () => {
+    // Arrange
+    const interaction = provider
       .addInteraction()
       .given("user 42 exists")
       .uponReceiving("a request for user 42")
@@ -55,11 +56,11 @@ describe("UserService contract", () => {
         });
       });
 
-    await provider.executeTest(async (mockServer) => {
-      const client = new UserClient(mockServer.url);
-      const user = await client.getUser(42);
-      expect(user.id).toBe(42);
-    });
+    // Act
+    const user = await interaction.executeTest((mockServer) => new UserClient(mockServer.url).getUser(42));
+
+    // Assert
+    expect(user?.id).toBe(42);
   });
 });
 ```
@@ -72,7 +73,8 @@ The provider test replays all consumer contracts against the real provider imple
 import { Verifier } from "@pact-foundation/pact";
 
 describe("UserService provider verification", () => {
-  it("should satisfy all consumer contracts", async () => {
+  it("satisfies all consumer contracts", async () => {
+    // Arrange
     const verifier = new Verifier({
       providerBaseUrl: "http://localhost:3000",
       pactBrokerUrl: process.env.PACT_BROKER_URL,
@@ -86,7 +88,11 @@ describe("UserService provider verification", () => {
       },
     });
 
-    await verifier.verifyProvider();
+    // Act
+    const verification = verifier.verifyProvider();
+
+    // Assert
+    await expect(verification).resolves.toEqual(expect.any(String));
   });
 });
 ```

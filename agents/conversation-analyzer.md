@@ -1,6 +1,6 @@
 ---
 name: conversation-analyzer
-description: Read a session transcript and surface patterns worth capturing as instincts, hooks, or rule revisions. Looks for repeated user corrections, repeated agent failure modes, recurring tool-use patterns, and workflows that did not exist at session start. Returns a candidate list the orchestrator can review with the user. Designed to back the `/retro instinct` and `/hookify` flows.
+description: Read a session transcript and surface patterns worth capturing as instincts, hooks, or rule revisions. Looks for repeated user corrections, repeated agent failure modes, recurring tool-use patterns, and workflows that did not exist at session start. Returns a candidate list the orchestrator can review with the user. Designed to back the `/retro instinct` and `/retro --hooks` flows.
 tools:
   - Read
   - Grep

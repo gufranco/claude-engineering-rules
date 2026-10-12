@@ -17,12 +17,16 @@ The cookie banner is a modal dialog. It traps focus, accepts keyboard input, and
 
 ### Button Equivalence
 
+**Bad:** reject is buried behind a "Manage preferences" intermediate step.
+
 ```tsx
-// Bad: reject buried behind a "Manage preferences" intermediate step
 <button>Accept all</button>
 <a href="#preferences">Manage preferences</a>
+```
 
-// Good: reject as easy as accept
+**Good:** reject is as easy as accept.
+
+```tsx
 <button>Accept all</button>
 <button>Reject all</button>
 <button>Manage preferences</button>
@@ -53,15 +57,17 @@ Banner is a dialog: `role="dialog"`, `aria-modal="true"`, `aria-labelledby` to t
 
 ```typescript
 interface ConsentRecord {
-  readonly userId: string;            // or anonymous session token
+  readonly userIdOrSessionToken: string;
   readonly timestamp: Date;
-  readonly textVersion: string;       // version of the consent text shown
-  readonly categories: readonly string[];  // accepted category IDs
+  readonly consentTextVersion: string;
+  readonly acceptedCategoryIds: readonly string[];
   readonly source: "banner" | "settings" | "registration";
   readonly userAgent: string;
-  readonly ip: string;                // truncated to /24 or /48 per data minimization
+  readonly truncatedIp: string;
 }
 ```
+
+`userIdOrSessionToken` holds an anonymous session token when no account exists. `truncatedIp` keeps only the /24 or /48 prefix, per data minimization.
 
 Store with a TTL aligned to the longest applicable retention window. Update on every change. Never overwrite; keep history.
 

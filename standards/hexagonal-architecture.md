@@ -25,14 +25,18 @@ adapters/  →  application/  →  domain/
 
 Ports are interfaces defined in the domain layer. They describe what the domain needs from the outside world without knowing how it will be provided.
 
+In `domain/ports/order-repository.port.ts`:
+
 ```typescript
-// domain/ports/order-repository.port.ts
 interface OrderRepository {
   findById(id: OrderId): Promise<Result<Order, NotFoundError>>;
   save(order: Order): Promise<Result<void, PersistenceError>>;
 }
+```
 
-// domain/ports/payment-gateway.port.ts
+In `domain/ports/payment-gateway.port.ts`:
+
+```typescript
 interface PaymentGateway {
   charge(amount: Money, method: PaymentMethod): Promise<Result<PaymentReceipt, PaymentError>>;
 }
@@ -45,10 +49,9 @@ Rules:
 
 ## Adapters
 
-Adapters implement port interfaces using specific infrastructure. Each adapter lives in the outer layer.
+Adapters implement port interfaces using specific infrastructure. Each adapter lives in the outer layer. In `adapters/persistence/postgres-order-repository.ts`:
 
 ```typescript
-// adapters/persistence/postgres-order-repository.ts
 class PostgresOrderRepository implements OrderRepository {
   constructor(private readonly db: DatabaseConnection) {}
 
@@ -59,7 +62,11 @@ class PostgresOrderRepository implements OrderRepository {
   }
 
   private toDomain(row: OrderRow): Order {
-    // Map database representation to domain entity
+    return Order.reconstitute({
+      id: toOrderId(row.id),
+      status: toOrderStatus(row.status),
+      placedAt: row.placed_at,
+    });
   }
 }
 ```
@@ -72,10 +79,9 @@ Rules:
 
 ## Dependency Direction
 
-The domain defines what it needs, ports. The application layer wires ports to adapters. The composition root, main entry point, assembles everything.
+The domain defines what it needs, ports. The application layer wires ports to adapters. The composition root, main entry point, assembles everything. In `composition-root.ts`, or the framework's module registration:
 
 ```typescript
-// composition-root.ts (or module registration)
 const orderRepository = new PostgresOrderRepository(dbConnection);
 const paymentGateway = new StripePaymentGateway(stripeClient);
 const submitOrder = new SubmitOrderUseCase(orderRepository, paymentGateway);
@@ -103,16 +109,20 @@ The domain layer is the functional core: pure functions and types, testable with
 
 Adapters are wired at application startup, not at compile time. Use constructor injection or a DI container to map ports to adapters. Never hardcode adapter selection inside domain logic.
 
+**Correct:** the composition root selects and injects the adapter.
+
 ```typescript
-// Correct: composition root selects and injects the adapter
 const repo = process.env.NODE_ENV === 'test'
   ? new InMemoryOrderRepository()
   : new PostgresOrderRepository(db);
 const useCase = new SubmitOrderUseCase(repo);
+```
 
-// Wrong: domain logic selects its own adapter
+**Wrong:** domain logic selects its own adapter, so the domain knows about infrastructure.
+
+```typescript
 class SubmitOrderUseCase {
-  private repo = new PostgresOrderRepository(db); // domain knows about infrastructure
+  private repo = new PostgresOrderRepository(db);
 }
 ```
 
@@ -170,16 +180,23 @@ Avoid hard-coded plugin lists. Discover adapters at runtime through one of these
 
 Every port must have an in-memory adapter for use in tests and local development. This is not a mock. It is a real adapter implementation that satisfies the port interface using in-process data structures.
 
+**Port:**
+
 ```typescript
-// Port
 interface NotificationPort {
   send(userId: string, message: string): Promise<void>
 }
+```
 
-// Production adapter: wraps SendGrid
+**Production adapter**, wrapping SendGrid:
+
+```typescript
 class SendGridAdapter implements NotificationPort { ... }
+```
 
-// In-memory adapter: used in tests and local dev
+**In-memory adapter**, used in tests and local dev:
+
+```typescript
 class InMemoryNotificationAdapter implements NotificationPort {
   readonly sent: Array<{ userId: string; message: string }> = []
   async send(userId: string, message: string) {

@@ -1,13 +1,28 @@
 ---
 name: respond
-description: Respond to incoming code review comments on a PR you authored. Fetches every unresolved comment across all channels, inline threads, review bodies, PR-level conversation, and commit comments, classifies each by author and intent, verifies against the current code, fixes what is real, replies only inside a human's inline thread, closes bot threads and unrepliable channels without a comment, and monitors CI. Use when user says "respond to review", "address comments", "handle reviewer feedback", "reply to PR comments", "my PR has comments", or wants a structured pass over reviewer feedback. Do NOT use for performing a review (use /review), or for unattended AI bot thread handling (use /ship --pipeline).
+description: Respond to incoming code review comments on a PR you authored. Fetches every unresolved comment across all channels, inline threads, review bodies, PR-level conversation, and commit comments, classifies each by author and intent, verifies against the current code, fixes what is real, replies only inside a human's inline thread, closes bot threads and unrepliable channels without a comment, and monitors CI. Use when user says "respond to review", "address comments", "handle reviewer feedback", "reply to PR comments", "my PR has comments", or wants a structured pass over reviewer feedback. For performing a review, use /review; for unattended CI and bot handling with no human threads, use /ship --pipeline.
+argument-hint: "/respond [fetch | reply <thread-id> | resolve <thread-id>] [<PR number or URL>] [--humans-only] [--dry-run] [--re-request]"
+allowed-tools: "Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion"
 sensitive: true
 ---
+
+## Overview
+
 Receive-side counterpart to `/review`. Turns the loose, error-prone workflow of "respond to PR review comments" into a structured, validated pipeline. The seven phases take the user from "I see comments on my PR" to "every thread is answered or closed, code changes are validated and pushed, CI is green".
 
 [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) governs everything this skill publishes. One reply surface: a human's inline thread, four sentences at most. Bot threads are read, fixed when the finding is real, then resolved in silence. The three channels with no reply endpoint are answered by the code change and closed by minimizing.
 
-## Subcommand Routing
+## When to Use
+
+- A pull request the acting account authored has unanswered review comments in any channel.
+- A reviewer asked for changes and the fixes, replies, and resolves need to land as one batch.
+- `/morning` routed an authored pull request with open feedback here.
+
+## Process
+
+Seven phases, each detailed below: discover the pull request, fetch every channel, classify and verify each item, draft the strategy, present the batch for approval, execute it with code first and replies second, then monitor CI and close.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -514,6 +529,29 @@ The skill prompts before adding any credit trailer. The default is no trailer un
 |------|-------------|
 | [`platform-gitlab.md`](platform-gitlab.md) | When the detected platform is GitLab. Documents glab CLI and REST API patterns, discussion model, resolve semantics, and bot allowlist |
 | [`platform-bitbucket.md`](platform-bitbucket.md) | When the detected platform is Bitbucket Cloud. Documents REST API patterns, auth model, and the absence of a native resolve concept |
+
+## Common Rationalizations
+
+- "The inline threads are the review": they are one channel of four. Sweep all four and report per-channel counts.
+- "The bot is usually wrong, resolve it unread": verify every finding against the current code first; about half of bot findings are real.
+- "A short thank-you reply to the bot keeps things tidy": a bot thread gets no reply of any length. Fix or resolve it in silence.
+- "This one is out of scope, a ticket can carry it": fix it in this change, or name the external blocker in the reply.
+- "The comment is outdated, so it is handled": an outdated comment can still name a live bug. Re-read the cited code.
+
+## Red Flags
+
+- Stop and drop the preview when a reply draft sits on any row other than a human inline thread.
+- Stop and re-run the fetch when one channel reports zero items and the standard's cross-check was not run.
+- Stop and use `--force-with-lease` when a push command carries `--force`.
+- Stop and redact when a draft reply contains a `~/.claude/` path, a rule citation, or a checklist number.
+- Stop and resolve one thread per call when about to resolve several in one command.
+
+## Verification
+
+- The final report carries the "Channels swept" line with a count for each of the four channels.
+- Every implemented item has a commit, and the local quality gate output is shown before the push.
+- Every published reply sits in a human inline thread and is four sentences or fewer.
+- CI is green on the latest SHA, and a re-fetch after the push found no new threads.
 
 ## Related skills
 

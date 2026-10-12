@@ -232,8 +232,9 @@ Three rules for fan-out. Bound the concurrency whenever the input length comes f
 
 The single thread protects you from torn reads, and from nothing else. The unit of atomicity is the synchronous run between two `await` points.
 
+**Bad:** two requests both pass the check before either writes.
+
 ```typescript
-// Bad: two requests both pass the check before either writes
 const existing = await db.seat.findFirst({ where: { showId, row, number } });
 if (!existing) {
   await db.seat.create({ data: { showId, row, number, userId } });
@@ -308,33 +309,38 @@ A race that is not tested will regress. These tests are deterministic despite te
 
 ```typescript
 it('creates exactly one order when the same request arrives ten times at once', async () => {
+  // Arrange
   const payload = buildOrderPayload();
 
+  // Act
   const results = await Promise.allSettled(
     Array.from({ length: 10 }, () => createOrder(payload)),
   );
 
+  // Assert
   const orders = await db.order.findMany({ where: { idempotencyKey: payload.idempotencyKey } });
   expect(orders).toHaveLength(1);
   expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(10);
 });
 ```
 
-**Interleaving with a barrier**, when the window is narrow and N-parallel misses it. Hold one actor between its read and its write, run the other to completion, then release.
+**Interleaving with a barrier**, when the window is narrow and N-parallel misses it. Hold one actor between its read and its write, run the other to completion, then release. The held actor starts in Arrange, and Act awaits both with the release chained to the second, so the act stays one expression.
 
 ```typescript
 it('rejects the second transfer when both read the same balance', async () => {
+  // Arrange
   const account = await seedAccount({ balance: 100 });
   const barrier = createBarrier();
+  const held = transferWithHook(account.id, 100, { afterRead: () => barrier.wait() });
 
-  const first = transferWithHook(account.id, 100, { afterRead: () => barrier.wait() });
-  const second = await transfer(account.id, 100);
-  barrier.release();
-  const firstResult = await first;
+  // Act
+  const results = await Promise.all([held, transfer(account.id, 100).finally(() => barrier.release())]);
 
-  const settled = [firstResult, second].filter((result) => result.ok);
+  // Assert
+  const settled = results.filter((result) => result.ok);
+  const accountAfter = await getAccount(account.id);
   expect(settled).toHaveLength(1);
-  expect((await getAccount(account.id)).balance).toBe(0);
+  expect(accountAfter.balance).toBe(0);
 });
 ```
 

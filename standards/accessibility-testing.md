@@ -25,70 +25,89 @@ axe-core is the primary accessibility engine. Use framework-specific wrappers fo
 
 #### jest-axe (Unit/Component Tests)
 
+Install with `pnpm add -D jest-axe @types/jest-axe`.
+
 ```typescript
-// setup: pnpm add -D jest-axe @types/jest-axe
 import { render } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
 
 expect.extend(toHaveNoViolations);
 
 test("LoginForm has no accessibility violations", async () => {
+  // Arrange
   const { container } = render(<LoginForm />);
 
+  // Act
   const results = await axe(container);
 
+  // Assert
   expect(results).toHaveNoViolations();
 });
 ```
 
 #### @axe-core/playwright (E2E Tests)
 
+Install with `pnpm add -D @axe-core/playwright`.
+
 ```typescript
-// setup: pnpm add -D @axe-core/playwright
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test("dashboard page passes axe audit", async ({ page }) => {
+  // Arrange
   await page.goto("/dashboard");
 
+  // Act
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();
 
+  // Assert
   expect(results.violations).toEqual([]);
 });
 ```
 
 #### cypress-axe (E2E Tests)
 
+Install with `pnpm add -D cypress-axe axe-core`, then register the commands with `import "cypress-axe";` in `cypress/support/e2e.ts`. Each step of a flow gets its own test.
+
 ```typescript
-// setup: pnpm add -D cypress-axe axe-core
-// In cypress/support/e2e.ts:
-import "cypress-axe";
+const WCAG_AA_TAGS = {
+  runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
+};
 
 describe("checkout flow", () => {
-  it("passes axe audit at each step", () => {
-    cy.visit("/checkout/cart");
-    cy.injectAxe();
-    cy.checkA11y(undefined, {
-      runOnly: {
-        type: "tag",
-        values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
-      },
-    });
+  it("passes axe audit on the cart step", () => {
+    // Arrange
+    const cartPath = "/checkout/cart";
 
+    // Act
+    cy.visit(cartPath);
+
+    // Assert
+    cy.injectAxe();
+    cy.checkA11y(undefined, WCAG_AA_TAGS);
+  });
+
+  it("passes axe audit after proceeding from the cart", () => {
+    // Arrange
+    cy.visit("/checkout/cart");
+
+    // Act
     cy.get("[data-testid=proceed-button]").click();
-    cy.checkA11y();
+
+    // Assert
+    cy.injectAxe();
+    cy.checkA11y(undefined, WCAG_AA_TAGS);
   });
 });
 ```
 
 ### Lighthouse CI
 
-Run Lighthouse in CI to enforce a minimum accessibility score.
+Run Lighthouse in CI to enforce a minimum accessibility score. In `.lighthouserc.json`:
 
-```yaml
-# .lighthouserc.json
+```json
 {
   "ci": {
     "collect": {
@@ -109,10 +128,9 @@ The threshold is 0.9, 90%. A score below 90 fails the CI step. Teams targeting A
 
 ### Pa11y
 
-Pa11y runs HTML CodeSniffer against rendered pages. Use it as a CI gate for multi-page audits.
+Pa11y runs HTML CodeSniffer against rendered pages. Use it as a CI gate for multi-page audits. In `pa11y.config.js`:
 
 ```javascript
-// pa11y.config.js
 module.exports = {
   defaults: {
     standard: "WCAG2AA",
@@ -147,13 +165,18 @@ WCAG 2.2 adds criteria not present in 2.1. Check these in addition to the 2.1 ba
 A focused element must not be entirely hidden by sticky headers, footers, overlays, or banners. Account for fixed/sticky bars when scrolling to focus:
 
 ```css
+:root {
+  --sticky-header-height: 80px;
+  --sticky-footer-height: 60px;
+}
+
 :focus {
-  scroll-margin-top: 80px;  /* height of sticky header */
-  scroll-margin-bottom: 60px; /* height of sticky footer */
+  scroll-margin-top: var(--sticky-header-height);
+  scroll-margin-bottom: var(--sticky-footer-height);
 }
 
 :target {
-  scroll-margin-top: 80px;
+  scroll-margin-top: var(--sticky-header-height);
 }
 ```
 
@@ -329,8 +352,9 @@ Focus management rules for dialogs:
 
 ### Form Validation Announcements
 
+**Error summary** at the top of the form, linked to invalid fields:
+
 ```tsx
-// Error summary at the top of the form, linked to invalid fields
 <div role="alert" aria-live="assertive">
   <h2>2 errors found</h2>
   <ul>
@@ -338,8 +362,11 @@ Focus management rules for dialogs:
     <li><a href="#password">Password must be at least 8 characters</a></li>
   </ul>
 </div>
+```
 
-// Individual field error, associated via aria-describedby
+**Individual field error**, associated via `aria-describedby`:
+
+```tsx
 <label htmlFor="email">Email</label>
 <input
   id="email"
@@ -492,30 +519,39 @@ expect.extend(toHaveNoViolations);
 
 describe("Dropdown", () => {
   test("has no accessibility violations when closed", async () => {
+    // Arrange
     const { container } = render(<Dropdown options={options} />);
 
+    // Act
     const results = await axe(container);
 
+    // Assert
     expect(results).toHaveNoViolations();
   });
 
   test("has no accessibility violations when open", async () => {
+    // Arrange
     const user = userEvent.setup();
     const { container } = render(<Dropdown options={options} />);
-
     await user.click(screen.getByRole("combobox"));
+
+    // Act
     const results = await axe(container);
 
+    // Assert
     expect(results).toHaveNoViolations();
   });
 
-  test("supports keyboard navigation", async () => {
+  test("opens the listbox when Enter is pressed on the focused combobox", async () => {
+    // Arrange
     const user = userEvent.setup();
     render(<Dropdown options={options} />);
-
     await user.tab();
+
+    // Act
     await user.keyboard("{Enter}");
 
+    // Assert
     expect(screen.getByRole("listbox")).toBeVisible();
   });
 });
@@ -526,17 +562,19 @@ describe("Dropdown", () => {
 Page-level tests verify that components integrate correctly: heading hierarchy is valid, landmarks are unique, tab order is logical across composed sections.
 
 ```typescript
-test("dashboard page has valid heading hierarchy", async () => {
-  const { container } = render(<DashboardPage />);
+test("dashboard page skips no heading level", () => {
+  // Arrange
+  const page = <DashboardPage />;
 
-  const headings = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
-  const levels = Array.from(headings).map((h) =>
-    parseInt(h.tagName.substring(1), 10)
+  // Act
+  const { container } = render(page);
+
+  // Assert
+  const levels = Array.from(container.querySelectorAll("h1, h2, h3, h4, h5, h6"), (heading) =>
+    Number.parseInt(heading.tagName.slice(1), 10),
   );
-
-  for (let i = 1; i < levels.length; i++) {
-    expect(levels[i]).toBeLessThanOrEqual(levels[i - 1] + 1);
-  }
+  const skippedLevels = levels.slice(1).filter((level, index) => level > (levels[index] ?? level) + 1);
+  expect(skippedLevels).toEqual([]);
 });
 ```
 
@@ -567,16 +605,17 @@ Key rules:
 
 ### Automated Contrast CI Checks
 
-Integrate contrast checking into the build pipeline. Define color tokens centrally and validate all pairs at build time.
+Integrate contrast checking into the build pipeline. Define color tokens centrally and validate all pairs at build time. In `scripts/check-contrast.ts`:
 
 ```typescript
-// scripts/check-contrast.ts
 import { oklchContrast } from "./oklch-contrast";
+
+type Oklch = readonly [lightness: number, chroma: number, hue: number];
 
 interface ColorPair {
   readonly name: string;
-  readonly foreground: readonly [number, number, number]; // [L, C, H]
-  readonly background: readonly [number, number, number];
+  readonly foreground: Oklch;
+  readonly background: Oklch;
   readonly minRatio: number;
 }
 

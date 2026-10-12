@@ -15,7 +15,7 @@ Conventional commits, a full local quality gate before every commit, one push pe
 - If CI does not start, check `gh pr view --json mergeable,mergeableState`; `dirty` means conflicts.
 - Run `actionlint`, `yamllint`, and `shellcheck` before committing CI files.
 - Never hard-wrap PR, issue, or review-reply bodies. One line per paragraph; 72-column wrap applies only to commit bodies.
-- PR description: What, How, Testing, Breaking changes. Identify the base branch from git and rebase before opening.
+- PR description: What, How, Evidence as a before and after, Merge Danger naming a one-way or two-way door and the blast radius, Breaking changes. Identify the base branch from git; rebase a never-pushed branch before opening, and merge the base into a pushed one only on conflict.
 - Never use `--delete-branch` on the first merge of a dual-base PR.
 - Pushing to `main`, `master`, or `develop` is blocked. Solo repos listed in the machine-local `solo-repos.txt`, copied from [`solo-repos.example.txt`](../solo-repos.example.txt), are exempt. Never list a repo with reviewers.
 - Before rebasing, and before believing any divergence or a push 403, run `git rev-parse --is-shallow-repository`; if `true`, `git fetch --unshallow`. Never trust `git merge-base` on a shallow clone.

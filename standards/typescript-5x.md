@@ -17,12 +17,13 @@ class DatabaseConnection implements Disposable {
   }
 }
 
-// Connection is closed when scope exits, even on throw
 function getUser(id: string): User {
   using conn = new DatabaseConnection(pool.acquire());
   return conn.query("SELECT * FROM users WHERE id = $1", [id]);
 }
 ```
+
+The connection in `getUser` closes when the scope exits, even on a throw.
 
 For async resources, use `await using` with `Symbol.asyncDispose`:
 
@@ -46,20 +47,24 @@ Use `using` for any resource that must be released: connections, locks, file han
 
 TypeScript 5.4 added `NoInfer<T>` to prevent type widening from fallback parameters. Without it, a default value can widen the inferred type, hiding type errors.
 
-```typescript
-// Without NoInfer: defaultValue widens T, hiding mismatches
-function getOrDefault<T>(value: T | undefined, defaultValue: T): T {
-  return value ?? defaultValue;
-}
-// No error: T widens to string | number
-getOrDefault<string>("hello", 42);
+**Without `NoInfer`:** the fallback joins inference, so `C` widens to `"red" | "yellow" | "green" | "blue"` and the call compiles with no error.
 
-// With NoInfer: defaultValue cannot influence T inference
-function getOrDefault<T>(value: T | undefined, defaultValue: NoInfer<T>): T {
-  return value ?? defaultValue;
+```typescript
+function createStreetLight<C extends string>(colors: readonly C[], defaultColor: C): C {
+  return colors.includes(defaultColor) ? defaultColor : colors[0] ?? defaultColor;
 }
-// Error: number is not assignable to string
-getOrDefault<string>("hello", 42);
+
+createStreetLight(["red", "yellow", "green"], "blue");
+```
+
+**With `NoInfer`:** the fallback cannot influence `C`, so the same call fails because `"blue"` is not assignable to `"red" | "yellow" | "green"`.
+
+```typescript
+function createStreetLight<C extends string>(colors: readonly C[], defaultColor: NoInfer<C>): C {
+  return colors.includes(defaultColor) ? defaultColor : colors[0] ?? defaultColor;
+}
+
+createStreetLight(["red", "yellow", "green"], "blue");
 ```
 
 Use `NoInfer<T>` on parameters that should follow the type, not lead it. Common cases:
@@ -75,15 +80,22 @@ Use `NoInfer<T>` on parameters that should follow the type, not lead it. Common 
 
 Requires explicit `import type` for type-only imports. Eliminates ambiguity about which imports are erased at runtime.
 
-```typescript
-// Error with verbatimModuleSyntax: UserDTO is only used as a type
-import { UserService, UserDTO } from "./user";
+**Error with `verbatimModuleSyntax`:** `UserDTO` is only used as a type.
 
-// Correct: separate type imports
+```typescript
+import { UserService, UserDTO } from "./user";
+```
+
+**Correct, separate type imports:**
+
+```typescript
 import { UserService } from "./user";
 import type { UserDTO } from "./user";
+```
 
-// Also correct: inline type modifier
+**Also correct, inline type modifier:**
+
+```typescript
 import { UserService, type UserDTO } from "./user";
 ```
 
@@ -103,12 +115,15 @@ This replaces the older `importsNotUsedAsValues` and `preserveValueImports` flag
 
 TypeScript 5.5 validates regular expression syntax at compile time when the target is ES2018 or later. Invalid regex patterns produce type errors instead of runtime exceptions.
 
-```typescript
-// Error at compile time: invalid regex
-const pattern = /(?<=\d+)\k<name>/;
-//                       ~~~~~~~~ error: Unknown named group
+**Compile-time error:** the backreference `\k<name>` points at a group that does not exist, so the compiler reports an unknown named group.
 
-// Correct
+```typescript
+const pattern = /(?<=\d+)\k<name>/;
+```
+
+**Correct:**
+
+```typescript
 const pattern = /(?<name>\d+)-\k<name>/;
 ```
 
@@ -120,13 +135,10 @@ TypeScript 5.5 infers type predicates for simple filter callbacks, eliminating t
 
 ```typescript
 const items: Array<string | undefined> = ["a", undefined, "b"];
-
-// Before 5.5: result is Array<string | undefined>, filtering does not narrow
-const filtered = items.filter((item) => item !== undefined);
-
-// TypeScript 5.5: result is Array<string>, predicate is inferred
 const filtered = items.filter((item) => item !== undefined);
 ```
+
+Before 5.5, `filtered` is `Array<string | undefined>` because filtering does not narrow. From 5.5, `filtered` is `Array<string>` because the predicate is inferred.
 
 The compiler infers the type predicate `item is string` from the truthiness check. This works for simple guards:
 
@@ -157,13 +169,19 @@ function track(context: ClassMethodDecoratorContext): void {
 }
 
 class OrderService {
-  @track createOrder(): void { /* ... */ }
-  @track cancelOrder(): void { /* ... */ }
+  @track createOrder(): void {
+    orderEvents.emit("created");
+  }
+
+  @track cancelOrder(): void {
+    orderEvents.emit("cancelled");
+  }
 }
 
-// Runtime access: OrderService[Symbol.metadata]?.tracked
-// ["createOrder", "cancelOrder"]
+const trackedMethods = OrderService[Symbol.metadata]?.tracked;
 ```
+
+At runtime, `trackedMethods` is `["createOrder", "cancelOrder"]`.
 
 Use decorator metadata for DI registration, validation rules, ORM column definitions, and route registration.
 
@@ -173,13 +191,17 @@ TypeScript 5.5 introduced `isolatedDeclarations` mode. When enabled, each file m
 
 Every exported function, variable, and class must have explicit type annotations. The compiler cannot infer return types from implementation details.
 
+**Error:** the return type must be explicit.
+
 ```typescript
-// Error: return type must be explicit
 export function createUser(name: string) {
   return { id: generateId(), name, createdAt: new Date() };
 }
+```
 
-// Correct: explicit return type
+**Correct, explicit return type:**
+
+```typescript
 export function createUser(name: string): User {
   return { id: generateId(), name, createdAt: new Date() };
 }
@@ -223,14 +245,24 @@ Set instances expose seven new composition methods. None mutate the receiver; ea
 const evens = new Set([2, 4, 6]);
 const squares = new Set([1, 4, 9, 16]);
 
-const both = evens.intersection(squares); // {4}
-const either = evens.union(squares); // {2, 4, 6, 1, 9, 16}
-const onlyEvens = evens.difference(squares); // {2, 6}
-const symDiff = evens.symmetricDifference(squares); // {2, 6, 1, 9, 16}
-const isSubset = new Set([2, 4]).isSubsetOf(evens); // true
-const isSupset = evens.isSupersetOf(new Set([2, 4])); // true
-const disjoint = evens.isDisjointFrom(new Set([7, 9])); // true
+const both = evens.intersection(squares);
+const either = evens.union(squares);
+const onlyEvens = evens.difference(squares);
+const symDiff = evens.symmetricDifference(squares);
+const isSubset = new Set([2, 4]).isSubsetOf(evens);
+const isSupset = evens.isSupersetOf(new Set([2, 4]));
+const disjoint = evens.isDisjointFrom(new Set([7, 9]));
 ```
+
+| Binding | Value |
+|---------|-------|
+| `both` | `{4}` |
+| `either` | `{2, 4, 6, 1, 9, 16}` |
+| `onlyEvens` | `{2, 6}` |
+| `symDiff` | `{2, 6, 1, 9, 16}` |
+| `isSubset` | `true` |
+| `isSupset` | `true` |
+| `disjoint` | `true` |
 
 When the hook flags `set.add(v)` or `set.delete(v)`, prefer `set.union(new Set([v]))` and `set.difference(new Set([v]))` over `new Set([...set, v])` for clarity.
 
@@ -256,10 +288,11 @@ Static methods on `Object` and `Map` for grouping iterables by a discriminator f
 const grouped = Object.groupBy([1, 2, 3, 4, 5], (n) =>
   n % 2 === 0 ? 'even' : 'odd',
 );
-// { even: [2, 4], odd: [1, 3, 5] }
 
 const groupedMap = Map.groupBy(items, (item) => item.category);
 ```
+
+`grouped` is `{ even: [2, 4], odd: [1, 3, 5] }`.
 
 `Object.groupBy` returns a null-prototype object. Use `Map.groupBy` when keys are not strings or when prototype-pollution safety is required.
 
@@ -294,12 +327,14 @@ Replaces hand-rolled escape helpers and inline `replace(/[.*+?^${}()|[\]\\]/g, '
 ### Atomics.pause and Error.isError (ES2024)
 
 ```typescript
-await Atomics.pause(); // hint to the CPU during spin-wait
+Atomics.pause();
 
 if (Error.isError(value)) {
-  // typed-narrowed: value is Error
+  logger.error({ err: value }, 'operation failed');
 }
 ```
+
+`Atomics.pause` hints to the CPU during a spin-wait. Inside the `Error.isError` branch, `value` is narrowed to `Error`.
 
 `Error.isError` survives realm boundaries; prefer it over `instanceof Error` in worker, iframe, or vm contexts.
 

@@ -138,14 +138,16 @@ Paginate when any channel returns a full page. A PR with more than 100 review th
 | PR-level comments | Same endpoint | Yes | No `inline` object. Distinguished by its absence |
 | Commit comments | `/2.0/repositories/{workspace}/{repo}/commit/{sha}/comments` | No | Separate endpoint |
 
-Bitbucket Cloud does support comment resolution. The comment object carries a `resolution` field, and the endpoints are:
+Bitbucket Cloud does support comment resolution. The comment object carries a `resolution` field. A `POST` to the `resolve` endpoint resolves a comment:
 
 ```bash
-# Resolve
 curl -s -X POST -H "Authorization: Bearer $BITBUCKET_TOKEN" \
   "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
+```
 
-# Unresolve
+A `DELETE` to the same endpoint unresolves it:
+
+```bash
 curl -s -X DELETE -H "Authorization: Bearer $BITBUCKET_TOKEN" \
   "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
 ```

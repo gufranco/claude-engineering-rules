@@ -1,8 +1,14 @@
 ---
 name: incident
-description: Gather incident context and generate a blameless postmortem from the template in observability rules. Use when user says "postmortem", "incident report", "outage report", "what happened", "write a post-mortem", or needs to document an incident with timeline, root cause, and action items.
+description: Gather incident context and write a blameless postmortem with timeline, root cause, and action items.
+disable-model-invocation: true
+argument-hint: "/incident | /incident --gather | /incident --draft <title>"
+allowed-tools: "Read, Grep, Glob, Bash, Write, AskUserQuestion, Skill"
 sensitive: true
 ---
+
+## Overview
+
 Gather incident data from multiple sources, like recent deploys, error spikes, affected services, and recent changes, and produce a structured blameless postmortem following the template in [`standards/observability.md`](../../standards/observability.md). Can also help during active incidents by collecting diagnostic information.
 
 ## When to use
@@ -151,7 +157,7 @@ This skill accepts optional arguments after `/incident`:
 
    The postmortem belongs to the outage and stays where the team keeps postmortems. The vault note is the part that outlives it: the failure mode, the system property that allowed it, and what would catch it next time. Separate the two deliberately, because a vault note that restates the timeline is a duplicate that will drift.
 
-   Delegate the write to `/brain capture`, which owns the note grammar. The note is a dated snapshot, so the incident date is the note date and its claims stay true without stamps. Link it to systems and people already in the vault, never to notes that do not exist yet.
+   Delegate the write by calling the Skill tool with `brain` and the argument `capture`; that skill owns the note grammar. The note is a dated snapshot, so the incident date is the note date and its claims stay true without stamps. Link it to systems and people already in the vault, never to notes that do not exist yet.
 
 ## Rules
 
@@ -163,6 +169,31 @@ This skill accepts optional arguments after `/incident`:
 - Contributing factors are not excuses. They are system-level observations that inform action items.
 - If `gh` or `glab` is not installed, skip the deployment history steps that require them and note the limitation.
 - Never access production systems, databases, or monitoring dashboards directly. Suggest the user check them and provide the data.
+
+## Common Rationalizations
+
+- "The deploy inside the incident window is the root cause": that deploy is the trigger. The Root Cause section explains why the system failed under it, such as the missing index behind the timeouts.
+- "A best-guess timestamp is close enough": an invented time corrupts the timeline. Leave a placeholder and name who can supply the real value.
+- "`Improve monitoring` covers it": an action item names a concrete task, an owner, and a due date, or it is a placeholder the user still has to fill.
+- "Naming the engineer who merged the change makes the timeline clearer": the postmortem is blameless. Describe the change and the process gap that let it through.
+- "A quick query against production would confirm the theory": hand the query to the user and work from the data they return.
+
+## Red Flags
+
+- Stop and ask the user when a timestamp, severity, or impact figure has no source in user input or command output.
+- Stop and rewrite when the Root Cause section names only the triggering change.
+- Stop and convert when a timestamp is in local time or carries no zone.
+- Stop and hand the step to the user when it needs a production system, database, or monitoring dashboard.
+- Stop and reword when a sentence attributes the outage to a person.
+
+## Verification
+
+- Every timeline row carries a GMT timestamp sourced from the user or from a gathered command output.
+- The Root Cause section explains why the system behaved as it did, beyond naming the trigger.
+- Every action item has an owner and a due date, or is marked as a placeholder for the user to fill.
+- Every missing detail appears as a placeholder that names what is needed.
+- The user answered the three review questions from postmortem step 5 on the draft.
+- In gather mode, the summary carries the gathering time in GMT and names every step skipped because `gh` or `glab` was missing.
 
 ## Related skills
 

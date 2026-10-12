@@ -1,9 +1,8 @@
 ---
 name: morning
-description: Cross-account work triage. Sweeps every authenticated GitHub, GitLab, and Bitbucket identity plus the organizations they belong to, finds every pull request, issue, review request, and mention that demands a response, ranks by who is blocked, writes a dated report, then works the queue with per-item consent. Use when user says "morning", "inbox", "triage", "standup", "sweep", "rounds", "daily", "varredura", "what needs my attention", "what is waiting on me", or wants a start-of-day pass across all accounts. Do NOT use for a single pull request's review comments (use /respond), for performing one review (use /review), for one repository's branch hygiene (use /cleanup), or for merging and deploying (use /deploy).
+description: Cross-account work triage. Sweeps every authenticated GitHub, GitLab, and Bitbucket identity plus the organizations they belong to, finds every pull request, issue, review request, and mention that demands a response, ranks by who is blocked, writes a dated report, then works the queue with per-item consent. Use when user says "morning", "inbox", "triage", "standup", "sweep", "rounds", "daily", "varredura", "what needs my attention", "what is waiting on me", or wants a start-of-day pass across all accounts. For a single pull request's review comments, use /respond; for performing one review, use /review; for one repository's branch hygiene, use /cleanup; for merging and deploying, use /deploy.
 argument-hint: "/morning [--report-only] [--account <login>] [--lane <name>] [--since <date>] [--budget <n>]"
 allowed-tools: "Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion, Skill, TodoWrite"
-user-invocable: true
 sensitive: true
 ---
 
@@ -15,15 +14,15 @@ Four authenticated accounts, four organizations, and roughly 140 open items is n
 
 This skill is an orchestrator, not a new implementation. Every per-item action already lives in a dedicated skill. What it adds is the part none of them can do alone: discovery across accounts, ranking across repositories, a durable report, and a consent-gated loop that walks the queue.
 
-| Discovered state | Delegates to |
+| Discovered state | Delegate by |
 |---|---|
-| A pull request awaits my review | [`/review`](../review/SKILL.md) |
-| My pull request carries unanswered comments | [`/respond`](../respond/SKILL.md) |
-| My pull request has a red pipeline | [`/ship checks`](../ship/SKILL.md) |
-| My pull request conflicts with its base | [`/resolve`](../resolve/SKILL.md) |
-| My pull request description no longer matches its diff | [`/pr-summary`](../pr-summary/SKILL.md) |
-| An issue is assigned to me or mentions me | [`/fix-issue`](../fix-issue/SKILL.md) |
-| One repository has accumulated branch clutter | [`/cleanup`](../cleanup/SKILL.md) |
+| A pull request awaits my review | Call the Skill tool with [`review`](../review/SKILL.md) |
+| My pull request carries unanswered comments | Call the Skill tool with [`respond`](../respond/SKILL.md) |
+| My pull request has a red pipeline | Call the Skill tool with [`ship`](../ship/SKILL.md) and the argument `checks` |
+| My pull request conflicts with its base | Call the Skill tool with [`resolve`](../resolve/SKILL.md) |
+| My pull request description no longer matches its diff | Call the Skill tool with [`pr-summary`](../pr-summary/SKILL.md) |
+| An issue is assigned to me or mentions me | Call the Skill tool with [`fix-issue`](../fix-issue/SKILL.md) |
+| One repository has accumulated branch clutter | Tell the user to run [`/cleanup`](../cleanup/SKILL.md), which is user-invoked |
 | An item is stale | Report and draft a nudge. Never send |
 
 Three properties are structural, not configurable.
@@ -127,6 +126,8 @@ The bot lane is separated before ranking, never sorted down afterwards. Sixty de
 | Stale | 30 to 90 days | Flag, ask whether it is still relevant |
 | Abandoned | Over 90 days | Flag, propose closing, decision required |
 
+**Inside a lane and tier, closest to done first.** An approved pull request that only needs a green pipeline ranks above one awaiting review, which ranks above a draft. Finishing work in flight frees the people waiting on it; starting new work leaves them waiting.
+
 Drafted nudges are never sent. The user asked to chase feedback personally, so the skill produces the message and stops.
 
 ### Phase 3: Report
@@ -161,9 +162,9 @@ Then walk the selected lane one item at a time. For each item state what will ha
 
 Updating a nine-month-old pull request before deciding whether it should still exist spends runner minutes on a question nobody has asked, which is why the stale tiers are excluded rather than merely deprioritized.
 
-**Approvals** require that the pull request was read in full through [`/review`](../review/SKILL.md) during this run. The bot lane gets no exemption: a dependency bump is the path a compromised action version travels, so each one is checked for what changed, which version, and whether the action is pinned by digest.
+**Approvals** require that the pull request was read in full during this run, by calling the Skill tool with [`review`](../review/SKILL.md). The bot lane gets no exemption: a dependency bump is the path a compromised action version travels, so each one is checked for what changed, which version, and whether the action is pinned by digest.
 
-**Descriptions.** For each authored pull request, compare the description against the current diff. Drift means the description names behavior the diff no longer contains, or the diff contains substantive change the description never mentions. Draft the correction through [`/pr-summary`](../pr-summary/SKILL.md) and post only on consent, per [`doc-truth.md`](../../rules/doc-truth.md).
+**Descriptions.** For each authored pull request, compare the description against the current diff. Drift means the description names behavior the diff no longer contains, or the diff contains substantive change the description never mentions. Draft the correction by calling the Skill tool with [`pr-summary`](../pr-summary/SKILL.md), and post only on consent, per [`doc-truth.md`](../../rules/doc-truth.md).
 
 Release the lock when the loop ends:
 

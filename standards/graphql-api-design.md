@@ -22,13 +22,15 @@ Default to non-nullable. Make a field nullable only when null carries distinct m
 
 ```graphql
 type User {
-  id: ID!            # always present
-  email: String!     # required
-  name: String!      # required
-  bio: String        # nullable: user may not have set one
-  deletedAt: DateTime # nullable: null means not deleted
+  id: ID!
+  email: String!
+  name: String!
+  bio: String
+  deletedAt: DateTime
 }
 ```
+
+`id`, `email`, and `name` are always present. `bio` is nullable because a user may not have set one. `deletedAt` is nullable because null means not deleted.
 
 - Every `ID` field must be non-nullable
 - Foreign key references must be non-nullable unless the relationship is optional
@@ -71,8 +73,9 @@ type PageInfo {
 
 Every mutation must accept a single input argument typed as a dedicated input type.
 
+**Correct, a single input object:**
+
 ```graphql
-# Correct: single input object
 type Mutation {
   createUser(input: CreateUserInput!): CreateUserPayload!
 }
@@ -82,8 +85,11 @@ input CreateUserInput {
   name: String!
   role: Role!
 }
+```
 
-# Wrong: loose arguments
+**Wrong, loose arguments:**
+
+```graphql
 type Mutation {
   createUser(email: String!, name: String!, role: Role!): User!
 }
@@ -174,11 +180,12 @@ Store the query allowlist as a static map of hash-to-query. Generate it from the
 
 Every resolver that fetches data by a parent ID must use a DataLoader. Direct database calls inside field resolvers are banned.
 
+Create the DataLoader instances once per request:
+
 ```typescript
 import DataLoader from 'dataloader';
 
-// Create per-request DataLoader instances
-function createLoaders(db: Database) {
+function createRequestScopedLoaders(db: Database) {
   return {
     userById: new DataLoader<string, User>(async (ids) => {
       const users = await db.user.findMany({
@@ -201,8 +208,11 @@ function createLoaders(db: Database) {
     }),
   };
 }
+```
 
-// Resolver usage
+Resolvers read through the loaders on the request context:
+
+```typescript
 const resolvers = {
   Order: {
     user: (parent: Order, _args: unknown, ctx: Context) =>
@@ -417,15 +427,19 @@ Use schema filtering to hide fields and types the current user cannot access. An
 - Every subgraph must be independently deployable and testable
 - The supergraph schema must be composed and validated in CI before deploy
 
+**Users subgraph:**
+
 ```graphql
-# Users subgraph
 type User @key(fields: "id") {
   id: ID!
   email: String!
   name: String!
 }
+```
 
-# Orders subgraph
+**Orders subgraph:**
+
+```graphql
 type User @key(fields: "id") {
   id: ID! @external
   orders: [Order!]!
@@ -559,32 +573,37 @@ Generate the allowlist from client code at build time. Store as a hash map. Reje
 Test the schema against structural rules in CI.
 
 ```typescript
-import { buildSchema, validateSchema } from 'graphql';
+import { buildSchema, isObjectType, validateSchema } from 'graphql';
 import { describe, it, expect } from 'vitest';
+
+const RELAY_CONNECTION_FIELDS = ['edges', 'pageInfo', 'totalCount'] as const;
 
 describe('schema validation', () => {
   it('must have zero schema errors', () => {
+    // Arrange
     const schema = buildSchema(typeDefs);
 
+    // Act
     const errors = validateSchema(schema);
 
+    // Assert
     expect(errors).toHaveLength(0);
   });
 
   it('must have all connection types follow relay spec', () => {
+    // Arrange
     const schema = buildSchema(typeDefs);
-    const typeMap = schema.getTypeMap();
-    const connectionTypes = Object.keys(typeMap).filter((name) => name.endsWith('Connection'));
 
-    for (const name of connectionTypes) {
-      const type = typeMap[name];
-      if ('getFields' in type) {
-        const fields = type.getFields();
-        expect(fields).toHaveProperty('edges');
-        expect(fields).toHaveProperty('pageInfo');
-        expect(fields).toHaveProperty('totalCount');
-      }
-    }
+    // Act
+    const typeMap = schema.getTypeMap();
+
+    // Assert
+    const incompleteConnections = Object.values(typeMap)
+      .filter(isObjectType)
+      .filter((type) => type.name.endsWith('Connection'))
+      .filter((type) => !RELAY_CONNECTION_FIELDS.every((field) => field in type.getFields()))
+      .map((type) => type.name);
+    expect(incompleteConnections).toEqual([]);
   });
 });
 ```
@@ -610,6 +629,7 @@ describe('createUser mutation', () => {
   });
 
   it('must create a user with valid input', async () => {
+    // Arrange
     const mutation = `
       mutation CreateUser($input: CreateUserInput!) {
         createUser(input: $input) {
@@ -630,11 +650,13 @@ describe('createUser mutation', () => {
       },
     };
 
+    // Act
     const result = await server.executeOperation({
       query: mutation,
       variables,
     });
 
+    // Assert
     expect(result.body.kind).toBe('single');
     const data = result.body.singleResult.data?.createUser;
     expect(data.__typename).toBe('CreateUserSuccess');
@@ -642,6 +664,7 @@ describe('createUser mutation', () => {
   });
 
   it('must return ValidationError for invalid email', async () => {
+    // Arrange
     const mutation = `
       mutation CreateUser($input: CreateUserInput!) {
         createUser(input: $input) {
@@ -658,11 +681,13 @@ describe('createUser mutation', () => {
       input: { email: 'not-an-email', name: faker.person.fullName(), role: 'VIEWER' },
     };
 
+    // Act
     const result = await server.executeOperation({
       query: mutation,
       variables,
     });
 
+    // Assert
     const data = result.body.singleResult.data?.createUser;
     expect(data.__typename).toBe('ValidationError');
     expect(data.fields[0].field).toBe('email');
@@ -680,10 +705,13 @@ import { describe, it, expect } from 'vitest';
 
 describe('schema snapshots', () => {
   it('must match the approved schema', () => {
+    // Arrange
     const schema = buildSchema(typeDefs);
 
+    // Act
     const sdl = printSchema(schema);
 
+    // Assert
     expect(sdl).toMatchSnapshot();
   });
 });
@@ -733,9 +761,10 @@ These changes break clients and must follow the deprecation lifecycle:
 
 ### Deprecation Lifecycle
 
+The announce phase adds the directive:
+
 ```graphql
 type User {
-  # Phase 1: announce deprecation
   firstName: String! @deprecated(reason: "Use `name` instead. Removal: 2026-09-01")
   name: String!
 }

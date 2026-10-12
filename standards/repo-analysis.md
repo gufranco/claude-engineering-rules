@@ -12,8 +12,9 @@ API-based file fetching is slow, token-expensive, rate-limited, and produces par
 WORKDIR=$(mktemp -d -t repo-analysis-XXXXXX)
 git clone --depth=1 <repo-url> "$WORKDIR/repo"
 cd "$WORKDIR/repo"
-# now use Read, Grep, Glob freely
 ```
+
+From there, use Read, Grep, and Glob freely against the checkout.
 
 When history is needed for the analysis (blame, log, prior versions), drop `--depth=1` or run `git fetch --unshallow` afterwards.
 

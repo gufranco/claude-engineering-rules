@@ -78,14 +78,13 @@ function CardForm() {
         name="cardCvc"
         autoComplete="cc-csc"
         inputMode="numeric"
-        // Never persisted server-side
       />
     </form>
   );
 }
 ```
 
-Use a PCI-DSS-compliant tokenization service (Stripe Elements, Adyen Components, etc.). Never receive raw PAN in the application server.
+The CVC value is never persisted server-side. Use a PCI-DSS-compliant tokenization service (Stripe Elements, Adyen Components, etc.). Never receive raw PAN in the application server.
 
 ## Biometric (Illinois BIPA + Texas CUBI + Washington MHMD)
 

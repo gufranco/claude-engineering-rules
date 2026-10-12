@@ -37,7 +37,8 @@ const DEFAULT_SETTINGS_UNDER_18 = {
   searchableByOthers: false,
   directMessagesFromStrangers: false,
   contactImport: false,
-  reactiveNotifications: false,  // no streaks, no "active now"
+  streakNotifications: false,
+  activeNowIndicator: false,
   facialRecognition: false,
   emotionRecognition: false,
 } as const;

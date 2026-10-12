@@ -170,8 +170,13 @@ const artifactPath = process.env.TEST_BASE_ROM;
 
 describe.skipIf(!artifactPath)("base rom verification", () => {
   it("accepts the USA rev 1 dump", async () => {
-    const result = await loadVerifiedArtifact(artifactPath, manifest.baseRom);
+    // Arrange
+    const entry = manifest.baseRom;
 
+    // Act
+    const result = await loadVerifiedArtifact(artifactPath, entry);
+
+    // Assert
     expect(result.ok).toBe(true);
     expect(result.value.variant).toBe("USA rev 1");
   });

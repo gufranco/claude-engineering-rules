@@ -30,8 +30,9 @@ Always choose the complete implementation, and write code that is self-explanato
 
 ## Comments
 
-- Comments are not permitted in project source code in any language, test files included.
-- The only exemption is a tool directive a tool parses, at the start of the comment: eslint, biome, ruff, noqa, pylint, shellcheck, `@ts-expect-error`, prettier-ignore, istanbul/c8, `//go:build`, `//nolint`, webpack magic comments, SPDX headers, Rust `// SAFETY:`.
+- Comments are not permitted in source code in any language: application code, tests, scripts, build files, CI and infrastructure config. Docstrings and doc-comment blocks count as comments.
+- Two exemptions only: a tool directive a tool parses, at the start of the comment: eslint, biome, ruff, noqa, pylint, shellcheck, `@ts-expect-error`, prettier-ignore, istanbul/c8, `//go:build`, `//nolint`, webpack magic comments, SPDX headers, Rust `// SAFETY:`; and the bare `Arrange`, `Act`, `Assert` markers that open a test's three blocks. `.env.example` files are out of scope: their comments document each variable.
+- The code is the documentation: names, small functions, and types carry what a comment would have said.
 - A project convention requiring JSDoc is an existing violation, not permission. Put that reasoning in the PR description.
 - When code needs a comment, rename, extract a named function, or encode the contract in types instead.
 

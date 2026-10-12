@@ -257,9 +257,9 @@ The same gates as any other project, plus the ones this domain needs.
 |---|---|
 | Language | Python only, for the SNES family |
 | Package manager for tooling | pnpm, never npm |
-| Comments | None in source. Docstrings carry the reasoning, and say why rather than what |
+| Comments | None in source, docstrings included. Names and types carry the what; the reasoning goes in the commit body or the conformance data file |
 | Test layout | `<module>.test.py` beside the module it covers |
-| Test structure | Arrange, blank line, one act, blank line, assert. No section labels |
+| Test structure | Three blocks opened by the bare `# Arrange`, `# Act`, `# Assert` markers, one blank line between them, one act. The markers are the only comments |
 | Artifacts on disk | Inside the project, gitignored, with the README stating they are not shared and why |
 | Digests in the README | Published, so a user can confirm their own copy |
 | Releases | semantic-release, tags only. Consumed as a git submodule rather than from a package index |

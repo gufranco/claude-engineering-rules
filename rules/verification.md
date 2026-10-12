@@ -22,5 +22,6 @@ No completion claim without fresh evidence run in this session. Previous runs, c
 - Confidence 7-10 report normally, 5-6 with a caveat, below 5 suppress and investigate.
 - Partial completion: say what was and was not verified. Never round up. Never present the tested set as the required set.
 - Self-check analysis for fabrication, source drift, logic gaps, contradictions, and uncritical agreement.
+- Any read or analysis covers every in-scope file in full, the first time and without being asked. Never return a grep-only or excerpt-based verdict. Subagent briefs require full reads with the Read tool, and analysis never goes to `Explore`, which reads excerpts.
 
 Full rule, examples, and rationale: [`standards/verification.md`](../standards/verification.md). Read it before declaring a task done, reporting CI status, or verifying infrastructure, deploys, or scheduled jobs.

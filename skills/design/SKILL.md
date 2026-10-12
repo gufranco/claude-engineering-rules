@@ -1,11 +1,19 @@
 ---
 name: design
-description: Design consultation, variant exploration, and design system scaffolding. Subcommands: consult (default), variants, system. Researches design patterns, proposes component hierarchies, generates design decisions document, and creates multiple visual approaches for comparison. Use when user says "design this", "design consultation", "design system", "component design", "design variants", "UI approach", "visual direction", or needs structured design thinking before implementation. Do NOT use for design review or audit of existing code (use /review design), color palette generation (use /palette), or implementation planning (use /plan).
+description: Design consultation, variant exploration, and design system scaffolding, with subcommands consult (default), variants, and system. Researches design patterns, proposes component hierarchies, generates design decisions document, and creates multiple visual approaches for comparison. Use when user says "design this", "design consultation", "design system", "component design", "design variants", "UI approach", "visual direction", or needs structured design thinking before implementation. For design review or audit of existing code, use /review design; for implementation planning, use /plan.
+argument-hint: "/design [consult <description> [--research]] | /design variants [--count N] | /design system [component-type]"
+allowed-tools: "Read, Grep, Glob, Write, Edit, WebSearch, AskUserQuestion"
 ---
+
+## Overview
 
 Structured design skill that front-loads design decisions before implementation. Produces a DESIGN.md document and, optionally, multiple visual approaches for comparison.
 
-## Subcommand Routing
+## When to Use
+
+Run before implementation, while the direction is still open. `consult` settles one feature, `variants` compares directions side by side, and `system` sets the tokens and components the other two draw from.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -14,6 +22,13 @@ Structured design skill that front-loads design decisions before implementation.
 | `/design system` | Scaffold a design system or component library |
 
 If no subcommand is given, default to `consult`.
+
+## Process
+
+1. Route the invocation per Subcommand Routing.
+2. Run that subcommand's Steps in order.
+3. Write or update DESIGN.md, the per-feature file for `consult` and `variants`, the project file for `system`.
+4. Present for approval and wait for the user before any implementation.
 
 ---
 
@@ -220,9 +235,31 @@ Scaffold a design system or extend an existing component library with new tokens
 - Never generate production code during design consultation. This skill produces decisions and specifications, not implementation.
 - When the project uses a specific component library like shadcn/ui or MUI, use its component vocabulary and patterns. Do not invent parallel abstractions.
 
+## Common Rationalizations
+
+- "The happy path is the design, the other states are details": a design without empty, loading, and error states ships a broken screen. Fill the States table for every state.
+- "`#3b82f6` is close to the brand blue": a raw hex bypasses the token scale and dark mode. Name the semantic token.
+- "Option B was obviously wrong, so listing it is padding": the Options Considered table needs at least two rows with the reason the loser lost.
+- "A quick component sketch will help": consultation produces decisions, and code waits for approval. Hand off to `/plan scaffold component <name>`.
+- "The library lacks this exact component, so add a custom one": use the library's vocabulary and compose from its primitives first.
+
+## Red Flags
+
+- Stop and ask one question when the user's goal, inputs, or states are unknown after reading the code.
+- Stop and fix the draft when any self-critique lens scores below 7 of 10.
+- Stop and swap to a token when the draft names a color, spacing, or font size absent from the project's tokens.
+- Stop and regenerate when two variants differ in no major dimension from step 2 of `variants`.
+
+## Verification
+
+- DESIGN.md exists with all 8 sections in schema order, and Options Considered has at least two rows.
+- The States table covers empty, loading, error, and success, and Accessibility names ARIA roles, keyboard behavior, and screen reader announcements.
+- The self-critique scores for all five lenses appear in the presented output.
+- `git status` lists no new source files besides DESIGN.md and, for `system`, proposed config changes.
+- The user approved the design, or chose a variant, before the run ended.
+
 ## Related skills
 
 - `/review design` -- Audit an existing implementation against design quality standards.
-- `/palette` -- Generate a full OKLCH color palette with accessibility verification.
 - `/plan scaffold component` -- Generate component boilerplate from project patterns.
 - `/plan` -- Plan the implementation after design decisions are made.

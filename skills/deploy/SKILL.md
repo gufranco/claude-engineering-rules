@@ -1,14 +1,21 @@
 ---
 name: deploy
-description: Merge PRs, verify deployments, and monitor post-deploy health. Subcommands: land (default), canary. Extends the delivery pipeline past /ship by handling merge, deployment verification, and post-deploy monitoring. Use when user says "deploy", "merge and deploy", "land this PR", "canary", "post-deploy check", "verify deployment", or wants to take a shipped PR through to production. Do NOT use for creating PRs (use /ship pr), running tests (use /test), or CI diagnosis (use /ship checks).
+description: Merge a shipped PR, verify the deployment, and monitor post-deploy health, with land and canary subcommands.
+disable-model-invocation: true
 argument-hint: "/deploy [land|canary] [pr-number]"
 allowed-tools: "Read, Bash, Grep, AskUserQuestion"
-user-invocable: true
 sensitive: true
 ---
+
+## Overview
+
 Post-merge deployment and monitoring skill. Picks up where `/ship` leaves off: merging the PR, verifying the deployment succeeds, and monitoring production health afterward.
 
-## Subcommand Routing
+## When to Use
+
+Run `land` once `/ship pr` produced a green, approved PR, and `canary` right after a deploy lands, whether this session merged it or not.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -16,6 +23,13 @@ Post-merge deployment and monitoring skill. Picks up where `/ship` leaves off: m
 | `/deploy canary` | Post-deploy monitoring for errors and regressions |
 
 If no subcommand is given, default to `land`.
+
+## Process
+
+1. Route the invocation per Subcommand Routing.
+2. For `land`, run its Steps in order: identify, pre-merge checks, merge, wait for the deploy, health check, switch to local main.
+3. For `canary`, run its Steps: baseline, monitor loop, per-interval report, final report, rollback suggestion on issues.
+4. End with the Output block for `land` or the Canary Report for `canary`.
 
 ---
 
@@ -42,7 +56,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
    ```
    gh pr view --json number,state,reviewDecision,statusCheckRollup
    ```
-   If no `gh` is available, try `glab`. Prefix with the appropriate token per `../../rules/github-accounts.md` or `../../rules/gitlab-accounts.md`.
+   If no `gh` is available, try `glab`. Prefix with the appropriate token per [`standards/github-accounts.md`](../../standards/github-accounts.md) or [`standards/gitlab-accounts.md`](../../standards/gitlab-accounts.md).
 
 2. **Pre-merge checks.** Verify all conditions are met:
 
@@ -176,11 +190,34 @@ Monitor a recently deployed change for errors, performance regressions, and unex
 
 - Never merge a PR with failing CI checks. No exceptions.
 - Never merge without approval unless the user explicitly requests it.
-- Prefix every `gh` or `glab` command with the appropriate token per `../../rules/github-accounts.md` or `../../rules/gitlab-accounts.md`.
+- Prefix every `gh` or `glab` command with the appropriate token per [`standards/github-accounts.md`](../../standards/github-accounts.md) or [`standards/gitlab-accounts.md`](../../standards/gitlab-accounts.md).
 - All timestamps in GMT.
 - Canary monitoring is non-blocking: report findings, do not auto-rollback without user confirmation.
 - If rate limits are a concern for monitoring, use one-shot checks instead of continuous polling per [`../../rules/git-workflow.md`](../../rules/git-workflow.md).
 - Never access production databases or infrastructure directly. Use health endpoints and monitoring tool APIs only.
+
+## Common Rationalizations
+
+- "`statusCheckRollup` is green, so CI passed": the rollup reads success when only an unrelated check ran. Confirm the CI workflows ran on the head commit with `gh run list --commit <full-sha>`.
+- "The reviewer is away and the change is small": merging without approval needs the user's explicit request. Ask.
+- "The canary showed errors, revert now to be safe": canary is non-blocking. Report the findings and the rollback steps, then wait for confirmation.
+- "The dashboard is faster than the health endpoint": production databases and infrastructure stay off limits. Use health endpoints and monitoring APIs.
+- "Delete the branch, it merged": a dual-base PR still needs its branch for the second merge. Omit `--delete-branch`.
+
+## Red Flags
+
+- Stop and report when any pre-merge blocker row fails, and leave the PR unmerged.
+- Stop and ask how deployments work when no row of the deployment detection table matches.
+- Stop and present the rollback steps when the health endpoint returns anything other than 200 after the deploy.
+- Stop and switch to one-shot `gh run view` checks when `gh api rate_limit` shows fewer than 500 remaining.
+
+## Verification
+
+- `gh pr view <number> --json state` returns `MERGED` after `land`.
+- The deploy run for the merge commit shows `completed` with conclusion `success`, or the user confirmed a manual deploy.
+- The health endpoint returned 200, with the URL and status in the Deployment Summary.
+- `git branch --show-current` prints `main` and `git status` reports the branch up to date with `origin/main`.
+- After `canary`, the Canary Report carries a CLEAN or WARNING verdict with the interval count.
 
 ## Related skills
 

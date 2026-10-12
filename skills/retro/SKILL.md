@@ -1,11 +1,25 @@
 ---
 name: retro
-description: Session retrospective and codebase pattern discovery. Subcommands: retro (default) extracts corrections and preferences into durable config, discover extracts codebase conventions into rule files. Enhanced with self-improving agent lifecycle. Use when user says "retro", "what did we learn", "save preferences", "discover patterns", "extract conventions", or after a significant multi-step session with corrections worth persisting.
+description: Session retrospective and codebase pattern discovery, with subcommands retro (default), which extracts corrections and preferences into durable config, and discover, which extracts codebase conventions into rule files. Enhanced with self-improving agent lifecycle. Use when user says "retro", "what did we learn", "save preferences", "discover patterns", "extract conventions", or after a significant multi-step session with corrections worth persisting.
+argument-hint: "/retro [--dry-run] | /retro discover --area src/api | /retro --promote | /retro instinct"
+allowed-tools: "Read, Write, Edit, Bash, Grep, Glob, Skill, Agent, AskUserQuestion"
+sensitive: true
 ---
 
-Unified learning skill for extracting patterns from conversations and codebases. Replaces standalone `/retro` and `/discover` skills. Enhanced with the self-improving agent lifecycle from alirezarezvani/claude-skills: capture, flag for promotion, graduate to rules.
+## Overview
 
-## Subcommand Routing
+Unified learning skill for extracting patterns from conversations and codebases. Enhanced with the self-improving agent lifecycle from alirezarezvani/claude-skills: capture, flag for promotion, graduate to rules.
+
+## When to Use
+
+- The user says "retro", "what did we learn", "save preferences", "discover patterns", or "extract conventions".
+- A significant multi-step session ended, or a session collected corrections worth persisting.
+- `retro-pointer.py` reported hook blocks at session end.
+- Recurring review feedback points at a convention nobody wrote down.
+
+For saving resumable task state, use `/checkpoint save`; for a handoff summary, use `/session-log`; for filing a single fact, use `/brain`.
+
+## Process
 
 | Invocation | Action |
 |-----------|--------|
@@ -38,7 +52,7 @@ Analyze the current conversation to extract directives, corrections, preferences
 
 ### Steps
 
-1. **Scan conversation.** Extract: corrections, preferences, repeated mistakes, architectural decisions, tool/workflow preferences, project-specific knowledge.
+1. **Scan conversation.** Extract: corrections, preferences, repeated mistakes, architectural decisions, tool/workflow preferences, project-specific knowledge. Then answer one question: which item cost the most turns this session, and what would have made it ready before the work started? A recurring answer is a finding for the plan template or the readiness check, not for the item.
 
 2. **Deduplicate against existing config.** Read:
    - `~/.claude/CLAUDE.md`
@@ -57,13 +71,18 @@ Analyze the current conversation to extract directives, corrections, preferences
    | Genuinely ambiguous context | Add clarifying note |
 
 3. **Classify each finding.** Stop at first match:
-   1. `~/.claude/CLAUDE.md`: universal behavior, style, workflow.
-   2. `~/.claude/rules/*.md`: domain-specific conventions.
-   3. Skill update: change to skill operation.
-   4. Memory file: project-specific facts only.
-   5. No action: one-time context.
+   1. Deterministic check: a mechanical violation, meaning a fixed pattern, a banned API, an import shape, or a file location, gets a check before any prose rule. Pick a hook in [`hooks/`](../../hooks), a lint rule, or a CI job, whichever the repo's existing guardrail makes cheapest.
+   2. `~/.claude/CLAUDE.md`: universal behavior, style, workflow.
+   3. `~/.claude/rules/*.md`: domain-specific conventions.
+   4. Skill update: change to skill operation.
+   5. Memory file: project-specific facts only.
+   6. No action: one-time context.
 
    **Hard rule**: behavior/preference/mistake goes in `~/.claude/`. Memory does not change behavior.
+
+   **Look for an existing check first.** Before proposing a new one, read the repo's own check commands: manifest scripts, linter config, pre-commit config, and CI workflows. A check that exists but is unwired or silently broken is the finding; wire or repair it instead of writing a second one. A repo with no guardrail for a recurring mistake, meaning no pre-commit hook and no CI job running its lint, type check, or tests, is itself a finding.
+
+   The promotion threshold in [`standards/rule-provenance.md`](../../standards/rule-provenance.md) decides whether a finding becomes binding; this step decides its form. A new check carries the same provenance stamp as a rule, and a prose rule whose defect class the check now catches becomes a pointer to the check or is removed, with the removal recorded.
 
 4. **Present findings** as table with finding, source, destination, status.
 
@@ -71,9 +90,9 @@ Analyze the current conversation to extract directives, corrections, preferences
 
 6. **Verify.** Read modified files. Check for contradictions.
 
-7. **Close out living specs.** If the session implemented a non-trivial change whose plan folder carries an unmerged `specs/current/` delta, offer to run the `/plan archive` merge now so the living spec reflects the new behavior. This calls the same shared merge routine `/plan archive` owns; do not reimplement it here. See [`rules/living-specs.md`](../../rules/living-specs.md).
+7. **Close out living specs.** If the session implemented a non-trivial change whose plan folder carries an unmerged `specs/current/` delta, offer to merge it now so the living spec reflects the new behavior. On yes, call the Skill tool with `plan` and the argument `archive`, which owns the shared merge routine; do not reimplement it here. See [`rules/living-specs.md`](../../rules/living-specs.md).
 
-8. **Route memory findings through the vault.** When `SECOND_BRAIN_VAULT` resolves to a directory, a finding whose destination is a memory file is written as a vault note carrying `memory: true` and a `memory-scope`, then compiled with `/brain compile`. Do not hand-write the memory file.
+8. **Route memory findings through the vault.** When `SECOND_BRAIN_VAULT` resolves to a directory, a finding whose destination is a memory file is written as a vault note carrying `memory: true` and a `memory-scope`, then compiled by calling the Skill tool with `brain` and the argument `compile`. Do not hand-write the memory file.
 
    Two reasons this is not ceremony. The vault records when the fact was learned and where it came from, which a memory file has never carried. And the compile owns the budget, so a growing memory directory sheds its lowest-value entries by demotion instead of growing without limit.
 
@@ -159,7 +178,7 @@ Graduate memory entries that represent universal patterns to `~/.claude/rules/` 
    - Draft the rule text.
    - Identify the destination: CLAUDE.md for universal behavior, rules/*.md for domain conventions.
 3. Present promotions for approval.
-4. Write rules, remove promoted memory entries, update `~/.claude/README.md`.
+4. Write the approved rules and update `~/.claude/README.md`. Then retire each promoted memory entry as [Memory Writes](#memory-writes) describes, never by deleting the file or editing `MEMORY.md` by hand.
 
 ---
 
@@ -267,7 +286,7 @@ source-session: <session id or transcript path>
 1. Resolve `<instinct-id>` to a path under `memory/instincts/`.
 2. Read the instinct. Confirm with the user that the pattern has held up.
 3. If the instinct is project-scoped but the user wants it global: move the file to `memory/instincts/global.md`, append or rewrite. Update status to `global`.
-4. If the instinct is durable enough to leave the lane entirely: convert it to a `feedback_*.md` or `project_*.md` memory in the parent `memory/` tree, update `MEMORY.md` index, and archive the original instinct under `memory/instincts/archive/`.
+4. If the instinct is durable enough to leave the lane entirely: record it as a `feedback` or `project` memory as [Memory Writes](#memory-writes) describes, then archive the original instinct under `memory/instincts/archive/`.
 5. Always record the promotion date.
 
 ### `/retro prune` steps
@@ -289,6 +308,22 @@ source-session: <session id or transcript path>
 - Pruning requires user approval. Never auto-delete.
 - The `conversation-analyzer` agent at [`agents/conversation-analyzer.md`](../../agents/conversation-analyzer.md) in the harness root is the recommended way to surface candidate instincts.
 
+## Memory Writes
+
+`--promote` and `/retro promote` write to session memory through one path, chosen by whether a vault is configured, per the Knowledge Single Source of Truth section of [`CLAUDE.md`](../../CLAUDE.md).
+
+**`SECOND_BRAIN_VAULT` resolves to a directory.** The memory directory is compiled from the vault, so every change starts in a vault note.
+
+- Record a new memory: call the Skill tool with `brain` and the argument `capture`, giving the note `memory: true` and a `memory-scope` of `feedback` or `project`. Then call the Skill tool with `brain` and the argument `compile`.
+- Retire a memory that now lives in a rule: open the vault note named by the memory file's `generated_from`, append a `timeline:` entry naming the rule that carries it, and drop `memory: true`. Then run `brain compile`, which removes the generated file and its index line.
+- A memory file with no `generated_from` is unmanaged. Leave it in place and list it for the user, since migrating it into the vault is a deliberate act.
+
+**No vault configured.** Edit the memory directory directly, following [`rules/memory-supersede.md`](../../rules/memory-supersede.md).
+
+- Record a new memory: write a new `feedback_<slug>.md` or `project_<slug>.md` with `name`, `description`, and `type` frontmatter, and add one line for it to `MEMORY.md`.
+- Retire a memory that now lives in a rule: keep the file, add `superseded_by: <rule path>` to its frontmatter, and remove its `MEMORY.md` line, since the rule now carries the context.
+- Replace a `feedback` or `project` memory: keep the old file with `superseded_by:`, write the new one with `supersedes:`, and repoint the `MEMORY.md` line. Past a chain depth of 5, move the oldest entry to `memory/archive/`.
+
 ## Rules
 
 - Never write rules that contradict existing ones. Present conflicts and let user choose.
@@ -302,6 +337,30 @@ source-session: <session id or transcript path>
 - `--dry-run` shows but does not write.
 - `--memory-only` skips rules/CLAUDE.md.
 - Proactive retro at session end: keep brief. "No recurring patterns" is enough for quiet sessions.
+
+## Common Rationalizations
+
+- "A memory note is enough to change behavior": memory does not change behavior. A preference or a repeated mistake goes into `~/.claude/` as a check, a rule, or a skill change, per step 3.
+- "The existing rule covers it, so there is nothing to do": a rule that was broken is a finding. Name why it was not respected and strengthen it.
+- "A prose rule is quicker than a hook": a mechanical violation gets a deterministic check first. Look for an existing check that is unwired before writing a new one.
+- "Writing the memory file directly is faster than a capture": with a vault configured, the memory directory is compiled output. Route the change through [Memory Writes](#memory-writes).
+- "This one-off correction deserves a rule": a rule needs the recurrence the promotion threshold names. A single incident is logged, then promoted on its third sighting.
+
+## Red Flags
+
+- Stop and present the conflict when a proposed rule contradicts an existing one.
+- Stop and route through [Memory Writes](#memory-writes) when the next write targets a file in a memory directory or `MEMORY.md`.
+- Stop and drop the proposal when it traces to nothing the user said or no mistake that happened.
+- Stop and ask for approval before any instinct is promoted or pruned.
+- Stop and keep the cursor where it was when applying `--hooks` changes failed.
+
+## Verification
+
+- Every applied change appears in the findings table with its source and destination.
+- Modified files were re-read, and no new rule contradicts an existing one.
+- `~/.claude/README.md` reflects every changed file under `~/.claude/`.
+- With a vault configured, no memory file was written by hand, and `brain compile` ran after the last capture.
+- `--dry-run` produced proposals and wrote nothing.
 
 ## Related skills
 

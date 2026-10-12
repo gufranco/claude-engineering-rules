@@ -1,14 +1,29 @@
 ---
 name: plan
-description: Plan implementations, record architecture decisions, and scaffold boilerplate. Subcommands: plan (default), adr, scaffold. Creates spec folders, manages ADRs, and generates files from existing project patterns. Use when user says "plan this", "how should I implement", "design this feature", "create an ADR", "scaffold a service", "architecture decision", or needs to think through an approach before coding. Do NOT use for code review (use /review), shipping (use /ship), or running tests (use /test).
+description: Plan implementations, record architecture decisions, and scaffold boilerplate, with subcommands plan (default), adr, and scaffold. Creates spec folders, manages ADRs, and generates files from existing project patterns. Use when user says "plan this", "how should I implement", "design this feature", "create an ADR", "scaffold a service", "architecture decision", or needs to think through an approach before coding. For code review, use /review; for shipping, use /ship; for running tests, use /test.
 argument-hint: "/plan <feature> | /plan adr new <title> | /plan scaffold <type> <name> | /plan to-issues | /plan multi-execute <task>"
-allowed-tools: "Read, Grep, Glob, Write, Edit, Bash, AskUserQuestion, WebFetch, WebSearch"
-user-invocable: true
+allowed-tools: "Read, Grep, Glob, Write, Edit, Bash, AskUserQuestion, WebFetch, WebSearch, Agent, Skill"
 sensitive: true
 ---
-Unified planning skill for requirements gathering, architecture decisions, and code generation. Replaces standalone `/plan`, `/adr`, and `/scaffold` skills.
 
-## Subcommand Routing
+## Overview
+
+Unified planning skill for requirements gathering, architecture decisions, and code generation.
+
+## When to Use
+
+- Before implementing a change that touches 3 or more files, crosses a module boundary, or carries a real trade-off.
+- When a significant architecture decision needs a record, or an earlier ADR is being reversed.
+- When new boilerplate has to match an existing project pattern exactly.
+- After a change is merged, to fold its spec delta into `specs/current/` with `/plan archive`.
+- For reviewing finished code, use `/review`; for committing and opening the PR, use `/ship`; for running the suite, use `/test`; for a one-question throwaway prototype, use `/spike`.
+
+## Process
+
+1. Route the invocation with the table below. An unrecognized argument is a plan description.
+2. Run the matching section. Each subcommand carries its own steps and rules, and the shared Rules at the end apply to all of them.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -95,7 +110,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
    - <Time, tech, scope, or resource constraints>
 
    ## Unknowns
-   - <Questions that need answers before implementation>
+   - <Question that blocks implementation>: owner <named person or session>, needed by <task>
 
    ## Codebase Touchpoints
    - <Files or modules likely to change>
@@ -136,7 +151,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
 6. **Create spec folder** in the project workspace, per [`rules/project-workspace.md`](../../rules/project-workspace.md). The root is `<repo>/docs/` or `<repo>/.work/`, resolved by [`hooks/_lib/project_workspace.py`](../../hooks/_lib/project_workspace.py); the folder is never committed:
    ```
    <root>/plans/<YYYY-MM-DD>-<slug>/
-     plan.md        (goal, approach, requirements, task breakdown, risks, validation)
+     plan.md        (goal, approach, requirements, test seams, task breakdown, out of scope, risks, validation)
      decisions.md   (context, options, chosen with reasoning)
      references.md  (patterns, related work, applicable rules)
    ```
@@ -154,6 +169,47 @@ The steps below are enablers, not gates. Their order shows what becomes possible
    ```
 
    **Living-spec delta.** When the change touches behavior already covered by a `specs/current/` spec, `plan.md` also carries a delta section against that spec using `## ADDED Requirements`, `## MODIFIED Requirements`, and `## REMOVED Requirements`. Describe the diff, not the whole spec. If the project has no `specs/current/` yet and the change is non-trivial, seed it with only the requirements this change establishes. Full delta discipline and the triviality boundary: [`rules/living-specs.md`](../../rules/living-specs.md). This is the spec-level analogue of [`rules/surgical-edits.md`](../../rules/surgical-edits.md).
+
+   **Ready check.** Before writing tasks, every requirement answers five questions:
+
+   - Value: who benefits, in one sentence.
+   - Acceptance: the observable condition that says it is done.
+   - Failure cases: what happens on invalid input and when a dependency fails, each with its own scenario.
+   - Access: who may trigger it, with a scenario for a caller who may not.
+   - Size: it fits one change; otherwise split it.
+
+   A requirement that cannot answer a question is split, or its question goes to Unknowns with a named owner. Fixing it live inside the breakdown hides the gap. Questions that do not change what gets built go to the owner and stay out of the plan.
+
+   **Test seams.** Agree the seams before writing tasks, and present them with the plan for approval. Prefer an existing seam to a new one, and pick the highest seam that can observe the behavior; the ideal count is one. A seam nobody agreed to surfaces later as a review finding, so settle it here.
+
+   **Task breakdown.** Every task is a vertical slice: a narrow path through every layer the change touches, schema, API, UI, and tests, that is demoable or verifiable alone and fits one fresh session. A task that ships one layer is a horizontal slice and cannot be verified until its siblings land, so rework it. Order and shape:
+
+   - Prefactoring comes first, as its own tasks: make the change easy, then make the easy change.
+   - Each task names what can be demoed after it, and a **Blocked by** list of the tasks that must finish before it starts, or `None`. A task whose blockers are all done is on the frontier and can start.
+   - Each task carries a **Mode**: `HITL` when it needs a human decision or action, such as an architecture choice, a design review, or a credential, and `AFK` when an agent can finish and verify it alone. Prefer `AFK`; split a mostly autonomous task so its human step becomes its own `HITL` task. An agent queue picks only `AFK` tasks, so it never stalls waiting on a person.
+   - Every acceptance criterion names an observation that is false at the base commit. A criterion already true before the work, or one only another task can satisfy, grades nothing.
+   - A wide refactor, one mechanical change whose blast radius spans the codebase such as a column rename, is the exception. Sequence it expand, migrate, contract: add the new form beside the old, migrate call sites in batches sized by blast radius, each blocked by the expand, then delete the old form in a task blocked by every batch.
+
+   ```markdown
+   ## Test Seams
+   - <seam>: <what it observes>, existing or new
+
+   ## Task Breakdown
+
+   ### 1. <task title>
+   - **Demo after this:** <the behavior someone can see or run>
+   - **Blocked by:** None
+   - **Mode:** AFK
+   - **Acceptance:**
+     - [ ] <criterion>: observe <signal that is false at the base commit>
+
+   ## Out of Scope
+   - <what this change deliberately does not do, and why>
+   ```
+
+   The **Out of Scope** section is required and lists real exclusions, including the options the user refused. It is the cheapest place to catch a wrong boundary.
+
+   **Polishing checklist**, optional. For user-facing work, `plan.md` may carry a `## Polishing` section: checks run once every task is done, which bring the delivered parts into harmony without extending scope. Typical items are consistent wording across screens, every error state reachable and readable, empty and loading states present, and keyboard paths complete. An item that adds behavior is a requirement, not polish, and moves to Requirements.
 
 7. **Append mandatory closing gates.** Every `plan.md` task breakdown must end with these two items, in this order, as the final tasks. They are not optional. They cannot be moved earlier or removed.
 
@@ -299,25 +355,25 @@ This subcommand runs only when the user asks for it. It exports planned work the
 
 - No arguments: read the most recent plan folder under `<root>/plans/`, or the legacy `specs/` or `.claude/specs/`.
 - `<spec-folder>`: explicit path to the spec folder.
-- `--label <name>`: label to apply to every created issue. Repeatable.
+- `--label <name>`: label applied to each issue this flow opens. Repeatable.
 - `--milestone <name>`: milestone to assign to every issue.
 - `--dry-run`: print the issue payloads without creating them.
 
 ### Steps
 
 1. **Resolve spec folder.** Default to the latest folder under `<root>/plans/`, then the legacy `specs/` or `.claude/specs/`.
-2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue.
+2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue, carrying its demo line, acceptance criteria, **Mode**, and **Blocked by** list.
 3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
-4. **Idempotency check.** For each task, search existing issues by title prefix. Skip if a match exists.
-5. **Build issue body.** Include: the task description, the spec folder path, a link to `plan.md`, and any phase grouping.
-6. **Create issues.** GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label>`. GitLab: equivalent `glab issue create`.
-7. **Print summary.** Table of created issues with URLs. Skipped, duplicate issues listed separately.
+4. **Idempotency check.** For each task, search existing open and closed issues for the exact title. Skip if a match exists, and reuse its number for blocking edges.
+5. **Build issue body.** Include: the behavior the task delivers in the project's domain language, the demo line, the acceptance criteria, and the `HITL` or `AFK` mode. Describe behavior, never code locations: no file paths, line numbers, or function names, which go stale before the issue is picked up. Never name the plan, the workspace, or a planning path, since none of them exist in a clone.
+6. **Create issues in dependency order**, blockers first, so every blocking edge can name a real issue number at creation time. GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label> --blocked-by <n,n> --parent <n>`. `--blocked-by` sets native blocking links and `--parent` makes the issue a sub-issue when the plan came from an existing issue; both exist in `gh` 2.102.0, and `gh issue edit <n> --add-blocked-by <n>` repairs an edge after creation. Confirm both with `gh issue create --help`; when the installed `gh` lacks either flag, write `Blocked by #N` lines in the body instead and say so in the summary. GitLab: equivalent `glab issue create`, with `Blocked by #N` in the body.
+7. **Print summary.** Table of the new issues with URLs and their blocking edges. Skipped, duplicate issues listed separately.
 
 ### Rules
 
 - Idempotent. Re-running must not create duplicates.
-- Issue title must include the task number from `plan.md` for traceability.
-- Body must link back to the spec folder so context is one click away.
+- The title states the behavior the task delivers. It carries no task or phase number, which would number a workflow stage in published text.
+- Order and dependencies live in the native blocking links, so the issue reads correctly with no access to the plan.
 - Never create issues from a `--light` plan with no task breakdown.
 - Never invoke this subcommand on your own initiative, and never to record a finding from a review, a CI run, or a verification gate.
 - Never push or commit. This subcommand only writes to the issue tracker.
@@ -389,7 +445,7 @@ Subagents must be briefed with: "Return your proposed changes as unified diffs o
 ### Process
 
 1. **Plan with Opus.** Spawn a planner subagent, Opus tier to produce the task breakdown. Single agent, single pass.
-2. **Decompose.** Split the plan into chunks small enough for parallel generation, one chunk = one file or one cohesive change.
+2. **Decompose.** Keep the plan's vertical slices: each chunk is one slice, or the part of one slice that owns its files outright, and a chunk starts only when its **Blocked by** tasks are integrated. Never split work into one chunk per layer, since a layer chunk cannot be verified alone.
 3. **Generate in parallel.** Spawn generator subagents, Sonnet tier at most two at a time per the Parallelism Rule. Each receives one chunk plus the file content. Returns proposed text.
 4. **Review in parallel.** Spawn reviewer subagents, Sonnet tier on the proposed changes. Returns approval or rejection with rationale.
 5. **Integrate.** The orchestrator applies the approved changes with Edit / Write / MultiEdit. Conflicts between proposals get re-planned, back to step 2 for the conflicting subset.
@@ -421,6 +477,32 @@ Estimate cost before running. Abort and run a simpler `/plan` flow when the cost
 - The plan must reference verified file paths.
 - Search for existing work before designing new solutions.
 - Plan folders go in the project workspace at `<root>/plans/`, never committed, and never in `~/.claude/` unless `~/.claude` is the project. Existing folders under `specs/` or `.claude/specs/` stay readable. The living spec under `specs/current/` is project documentation and stays where the project keeps it.
+
+## Common Rationalizations
+
+- "The design is obvious, so the existing-work search is ceremony": step 2 runs in order and stops at the first match. A closed PR or a sibling skill often already holds the answer.
+- "A little code proves the approach faster than a plan": planning writes no production code. A design question that needs running code goes to `/spike`.
+- "Splitting tasks by layer is cleaner": a task that ships one layer cannot be verified until its siblings land. Rework it into a vertical slice.
+- "The coverage and clean-room gates are overkill for a small plan": both gates close every `plan.md` task breakdown, in order, as the final tasks.
+- "Only one approach is realistic": every decision documents at least two alternatives, each with a decisive test and a stop signal.
+- "Nothing is excluded, so Out of Scope stays empty": the section lists real exclusions, including every option the user refused.
+
+## Red Flags
+
+- Stop and re-read `context.md` and `plan.md` when a new phase starts or about 50 tool calls have passed since the last read.
+- Stop and write to `references.md` when two searches, reads, or browses have run since the last write.
+- Stop and escalate with the attempt table when the third strike fails.
+- Stop and reshape the task when it ships a single layer or carries an acceptance criterion already true at the base commit.
+- Stop and present the plan for approval when implementation is about to start without one.
+
+## Verification
+
+- The plan folder exists at `<root>/plans/<YYYY-MM-DD>-<slug>/` with `context.md`, `plan.md`, `decisions.md`, and `references.md`, and git does not track it.
+- A non-trivial `plan.md` carries Requirements with Given/When/Then scenarios, Test Seams, a Task Breakdown whose tasks name a demo, a Blocked by list, a `HITL` or `AFK` mode, and acceptance criteria, an Out of Scope section, and the two closing gates as the last tasks.
+- Every file path the plan names exists on disk or is marked as a new file.
+- `decisions.md` records at least two alternatives for every decision.
+- The user approved the plan before the hand-off step.
+- For `adr`, `archive`, `to-issues`, and `scaffold`, the section's own Rules hold, and a re-run of `archive` or `to-issues` changes nothing.
 
 ## Related skills
 

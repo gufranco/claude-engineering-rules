@@ -205,9 +205,11 @@ proactively. Include only the non-obvious ones.
 [Testing philosophy: e.g., "No mocks for the database layer: tests exercise
 the full request path from HTTP to database and back."]
 
+`npm test` runs all tests, and `npm run test:coverage` runs them with a coverage report:
+
 ```bash
-npm test              # run all tests
-npm run test:coverage # run with coverage report
+npm test
+npm run test:coverage
 ```
 
 | Metric | Coverage |

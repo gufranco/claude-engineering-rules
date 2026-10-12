@@ -8,8 +8,9 @@ Use pnpm with workspaces. pnpm's content-addressable storage deduplicates depend
 - Pin the pnpm version with Corepack: `"packageManager": "pnpm@9.x.x"` in the root `package.json`.
 - Commit `pnpm-lock.yaml`. Never `.npmrc` overrides that change hoisting behavior without team agreement.
 
+In `pnpm-workspace.yaml`:
+
 ```yaml
-# pnpm-workspace.yaml
 packages:
   - "apps/*"
   - "packages/*"
@@ -74,12 +75,11 @@ A package must build independently. Running `pnpm build` inside any package must
 
 Deduplicate configuration through shared packages.
 
-```
-packages/
-  config-typescript/    # Shared tsconfig bases
-  config-eslint/        # Shared ESLint configs
-  config-prettier/      # Shared Prettier config
-```
+| Package | Holds |
+|---------|-------|
+| `packages/config-typescript/` | Shared tsconfig bases |
+| `packages/config-eslint/` | Shared ESLint configs |
+| `packages/config-prettier/` | Shared Prettier config |
 
 Each consuming package extends the shared config:
 
@@ -108,11 +108,15 @@ Common cache-busting culprits: timestamps in build output, environment variables
 
 No cross-package source imports. Packages consume each other through their published entry points, never by reaching into `src/` directly.
 
-```typescript
-// Wrong: importing source files across package boundary
-import { formatDate } from "@acme/shared-utils/src/date";
+**Wrong:** importing source files across the package boundary.
 
-// Correct: importing from the package entry point
+```typescript
+import { formatDate } from "@acme/shared-utils/src/date";
+```
+
+**Correct:** importing from the package entry point.
+
+```typescript
 import { formatDate } from "@acme/shared-utils";
 ```
 

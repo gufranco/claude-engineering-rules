@@ -1,9 +1,21 @@
 ---
 name: migrate
-description: Framework and library migration assistant. Detects current usage, identifies the migration path from official docs, generates a migration plan, and applies changes incrementally with testing between steps. Each step is a separate commit for easy rollback. Handles framework migrations, library swaps, major version upgrades, and language version upgrades. Use when user says "migrate", "upgrade", "swap library", "replace express with fastify", "upgrade to v5", "move from jest to vitest", or wants to change a framework, library, or major version. Do NOT use for dependency auditing (use /audit), code review (use /review), or planning without execution (use /plan).
+description: Migrate a framework or library, or upgrade a major version, along the official migration path with one tested commit per step.
+disable-model-invocation: true
+argument-hint: "/migrate jest vitest | /migrate react 19 | /migrate node 22"
+allowed-tools: "Read, Grep, Glob, Edit, Write, Bash, WebSearch, WebFetch, AskUserQuestion"
 sensitive: true
 ---
+
+## Overview
+
 Framework and library migration assistant. Applies changes incrementally with a separate commit per step and full test runs between steps, so any step can be rolled back independently.
+
+## When to Use
+
+- Replacing one library or framework with another across the codebase, such as Express to Fastify or Jest to Vitest.
+- Upgrading a dependency or runtime across a major version with breaking changes.
+- For planning a migration without executing it, use `/plan`; for a single-call API rename inside one module, use `/refactor`.
 
 ## Invocation
 
@@ -115,6 +127,30 @@ Examples:
 - Do not add the target library without checking if it is already a dependency.
 - Follow [`../../rules/code-style.md`](../../rules/code-style.md) dependency evaluation criteria when the migration involves choosing between alternatives.
 - Prefix every `gh` or `glab` command with the appropriate token per `../../rules/github-accounts.md` or `../../rules/gitlab-accounts.md`.
+
+## Common Rationalizations
+
+- "A 1:1 API mapping is faster than a redesign": when the paradigms differ, the mapped code fights the target. Rewrite the affected code in the target's idiom.
+- "Configuration and helpers are small, one commit covers both steps": one commit per plan step keeps each step revertible alone.
+- "The affected tests pass, the full suite can run at the end": a break caught three steps late cannot be pinned to its step. Run the full suite after every step.
+- "The old test has no target equivalent, dropping it keeps the migration moving": the test count and coverage stay at or above the baseline. Port the test.
+- "The remaining failures will clear up in the next step": the intermediate state stays green. Stop and report instead of carrying a broken step forward.
+
+## Red Flags
+
+- Stop and present the plan when execution is about to start without the user's approval.
+- Stop and report when a step's test failures need a non-trivial fix.
+- Stop and redesign when a source feature has no target equivalent and a compatibility shim is the only mapping on offer.
+- Stop and read the manifest when the target is about to be added, since it can already be a dependency.
+- Stop and restore coverage when the test count or coverage after a step is lower than before it.
+
+## Verification
+
+- The source library is absent from the dependency manifest, and a search for its imports returns zero matches.
+- The full test suite and the build pass after the last step, and the linter reports zero warnings.
+- `git log` shows one commit per plan step, each with the `refactor(<scope>): migrate` subject.
+- The test count and coverage are equal to or above their values before the first migration step.
+- The Migration Complete report lists every breaking change applied and every manual follow-up.
 
 ## Related skills
 

@@ -106,13 +106,17 @@ How to identify the complexity of code during review.
 
 Chained array methods look clean but multiply. Each `.filter()`, `.map()`, `.reduce()`, `.find()`, `.some()` is O(n). Chaining k of them is O(k * n), not O(n).
 
-When chained operations are independent, filter then map, O(k * n) is still linear and acceptable. The danger is chaining inside a loop:
+When chained operations are independent, filter then map, O(k * n) is still linear and acceptable. The danger is chaining inside a loop.
+
+**O(n^2):** `.find()` is O(n), called n times.
 
 ```typescript
-// O(n^2): .find() is O(n), called n times
 users.map(user => orders.find(o => o.userId === user.id));
+```
 
-// O(n): build a Map first, then look up in O(1)
+**O(n):** build a Map first, then look up in O(1).
+
+```typescript
 const ordersByUser = new Map(orders.map(o => [o.userId, o]));
 users.map(user => ordersByUser.get(user.id));
 ```

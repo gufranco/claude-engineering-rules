@@ -10,6 +10,29 @@ Tests should verify real behavior, not mock behavior.
 2. **E2E**: full user flows
 3. **Unit**, fallback: pure functions only
 
+## What To Test
+
+If a user would notice it broken, it needs a test. Test the behavior users depend on, through the path the real application uses, and leave implementation details untested.
+
+- **Leave to the compiler what the compiler proves.** A test never restates a guarantee the type system already enforces: a return shape, a required field, an argument type. Spend tests on runtime behavior the compiler cannot verify, such as ordering, the relationships left after a write, conflict resolution, and business-rule edge cases.
+- **Extract component state logic before wiring it.** Move the reducer, its state transitions, and their helpers out of the component into a pure module beside it. Test that module directly, state and action in, state out, one red-green cycle per action or edge case. Wire it into the component only after its tests are green, so the component stays thin: it dispatches actions and renders state.
+
+```typescript
+it('marks a pending task done when it is completed', () => {
+  // Arrange
+  const taskId = faker.string.uuid();
+  const state = { tasks: [{ id: taskId, status: TaskStatus.Pending }] };
+
+  // Act
+  const next = taskReducer(state, { type: TaskAction.Complete, taskId });
+
+  // Assert
+  expect(next.tasks).toEqual([{ id: taskId, status: TaskStatus.Done }]);
+});
+```
+
+Provenance: 2026-10-12, owner request. Adopted from the ai-hero-cli what-to-test skill and the course-video-manager do-work DB-TDD and FRONTEND-TDD guides.
+
 ## Mocks Policy (STRICT)
 
 **Allowed:** External third-party APIs outside your control, systems you do not own and cannot run locally, Time/Date, Randomness
@@ -21,63 +44,85 @@ Tests should verify real behavior, not mock behavior.
 
 A test that mocks infrastructure it depends on may pass while the actual integration is broken. This is worse than having no test at all. During code review, mocking internal infrastructure is a **blocking issue**.
 
+### Per-Operation Ports For Third-Party APIs
+
+Wrap each third-party operation in its own function on a typed port, rather than one generic fetcher that branches on method and path. A test then stubs exactly the operation it exercises, the stub carries that operation's types, and an unstubbed operation fails loudly instead of falling through a shared branch.
+
+```typescript
+interface BillingPort {
+  readonly createCharge: (input: ChargeInput) => Promise<Charge>;
+  readonly refundCharge: (chargeId: ChargeId) => Promise<Refund>;
+}
+```
+
+This shape applies only to the allowed mock surface above. Internal services stay real in tests.
+
+Provenance: 2026-10-12, owner request. Adopted from the ai-engineer-workshop tdd skill's mocking guide.
+
 ## Test Structure
 
-Every test follows Arrange, Act, Assert, in that order. The three phases are mandatory and their order is fixed. What is banned is labeling them, never the shape itself.
+Every test follows Arrange, Act, Assert, in that order. The three phases are mandatory, their order is fixed, and each phase is labeled.
 
-A test body carries zero comments. No section markers, no inline notes, no explanatory labels. `// Arrange`, `// Act`, `// Assert`, and every variant of them are comments, so the comment ban in [`code-style.md`](../rules/code-style.md) "Comments Policy" removes them along with everything else. The ban applies to test files exactly as it applies to production code, with the same single exemption for tool directives.
+Each block opens with its marker comment in the language's comment syntax: `// Arrange`, `// Act`, `// Assert` in C-family languages, `# Arrange`, `# Act`, `# Assert` in Python, Ruby, and shell, and the equivalent elsewhere. A marker is the bare word. Nothing follows it on the line, so `// Assert: status code` is a violation. The three markers are the only comments a test carries; the comment ban in [`code-style.md`](../rules/code-style.md) "Comments" covers everything else in a test exactly as it covers production code, with the same exemption for tool directives.
 
-Removing the labels must not remove the structure. The phases stay; they are expressed in the code instead of announced above it.
+Provenance: 2026-10-12, an owner decision that restores the markers banned on 2026-09-18. The markers make the phase boundaries scannable at a glance, and every other comment stays banned so the code remains the documentation.
 
 ### The three blocks
 
-A test body is three blocks of statements separated by exactly one blank line each. The blank lines are the phase boundaries. Nothing else marks them.
+A test body is three marked blocks separated by exactly one blank line each.
 
 | Phase | Contains | Must not contain |
 |-------|----------|------------------|
 | Arrange | Fake data, seeded records, fixtures, stubs for the allowed mock surface, the input value | Any call to the unit under test, any assertion |
-| Act | Exactly one call to the unit under test, with its result bound to a name | Setup, branching, loops, a second call to the unit under test |
+| Act | Exactly one call to the unit under test, with its result bound to a name when it returns one; a command that returns nothing stays unbound and Assert checks its observable effect | Setup, branching, loops, a second call to the unit under test |
 | Assert | Assertions on the bound result and on observable side effects | New setup, a second call to the unit under test |
 
-Three supporting rules make the blocks readable without labels:
+Three supporting rules keep the blocks readable:
 
-- **The test name carries the intent.** It states the behavior under test, so no header is needed to announce what follows.
+- **The test name carries the intent.** It states the behavior under test, so the markers stay bare.
 - **Named helpers carry the setup.** When the arrange block needs explaining, extract it into a function whose name does the explaining: `seedAccountAtDailyLimit()` beats six lines of literals.
-- **One act per test.** Two calls to the unit under test are two behaviors, so they are two tests. This is what keeps the middle block one line long and unmistakable.
+- **One act per test.** Two calls to the unit under test are two behaviors, so they are two tests.
 
-If a step inside a test would need a comment to make sense, the test is too complex. Extract a helper or split the test.
+If a step inside a test would need a comment beyond its marker to make sense, the test is too complex. Extract a helper or split the test.
 
 ```typescript
 it('rejects a transfer that exceeds the daily limit', async () => {
+  // Arrange
   const account = await seedAccount({ dailyLimit: 500, transferredToday: 450 });
 
+  // Act
   const result = await transfer(account.id, 100);
 
+  // Assert
   expect(result.status).toBe(TransferStatus.Rejected);
   expect(result.reason).toBe(RejectionReason.DailyLimitExceeded);
 });
 ```
 
-The blank lines above are load-bearing. A reader sees the arrangement, the single call, and the claims about it without reading a word of prose.
-
 ### The same shape in other languages
 
 ```python
 def test_rejects_a_transfer_that_exceeds_the_daily_limit(db):
+    # Arrange
     account = seed_account(db, daily_limit=500, transferred_today=450)
 
+    # Act
     result = transfer(account.id, 100)
 
+    # Assert
     assert result.status is TransferStatus.REJECTED
     assert result.reason is RejectionReason.DAILY_LIMIT_EXCEEDED
 ```
 
 ```go
 func TestRejectsTransferExceedingDailyLimit(t *testing.T) {
+    // Arrange
     account := seedAccount(t, accountOpts{DailyLimit: 500, TransferredToday: 450})
 
+    // Act
     result, err := Transfer(account.ID, 100)
 
+    // Assert
     require.NoError(t, err)
     require.Equal(t, StatusRejected, result.Status)
     require.Equal(t, ReasonDailyLimitExceeded, result.Reason)
@@ -88,27 +133,50 @@ func TestRejectsTransferExceedingDailyLimit(t *testing.T) {
 
 | Violation | Why it fails | Fix |
 |-----------|--------------|-----|
-| One unbroken block of statements | The phases are unreadable; the reader has to parse every line to find the call under test | Insert the two blank lines |
-| Blank lines scattered every two or three lines | Four or five blocks mean no block is a phase | One blank line, twice, and nowhere else |
-| Assertion inside the arrange block | Asserts the fixture, not the behavior; a fixture failure reads as a behavior failure | Move the guarantee into the helper, or into its own test of the helper |
+| A block with no marker, or a marker out of order | The phase boundary is no longer explicit | Open each block with its bare marker, in order |
+| Text after a marker, `# Act: call the service` | The marker became a prose comment | Keep the bare word; move the intent into the test name |
+| Any other comment in the test | Banned by the comment policy and by the hook | Delete it; rename, extract a helper, or split the test |
+| One unbroken block of statements | The reader has to parse every line to find the call under test | Separate the three marked blocks with one blank line each |
+| Assertion inside the arrange block | Asserts the fixture, not the behavior | Move the guarantee into the helper, or into its own test of the helper |
 | Setup between the act and the assertions | The reader can no longer tell which state the assertions describe | Move it above the act |
 | Two calls to the unit under test | Two behaviors in one test; the failure message names neither | Split into two tests |
-| Act and assert on one line, `expect(transfer(id, 100)).toBe(...)` | The act disappears into the assertion | Bind the result, then assert on the name |
-| A comment restoring the labels | Banned by the comment policy and by the hook | Delete the comment; the blank lines already say it |
+| Act and assert on one line, `expect(transfer(id, 100)).toBe(...)` | The act disappears into the assertion | Bind the result in Act, then assert on the name |
 
-### The two permitted deviations
+### Expected throws keep three blocks
 
-**Expected-throw tests fuse act and assert.** Every runner's rejection matcher takes the call as its argument, so the act cannot be bound to a name first. This produces two blocks, not three. It is the only two-block form allowed.
+Bind the call in Act without awaiting or invoking it, then assert on the binding. No test fuses act and assert.
 
 ```typescript
 it('throws when the account does not exist', async () => {
+  // Arrange
   const missingId = faker.string.uuid();
 
-  await expect(transfer(missingId, 100)).rejects.toThrow(AccountNotFoundError);
+  // Act
+  const pending = transfer(missingId, 100);
+
+  // Assert
+  await expect(pending).rejects.toThrow(AccountNotFoundError);
 });
 ```
 
-**Shared arrangement moves to `beforeEach` or a fixture.** The arrange phase still exists, at the file or describe level instead of inside the body. A test whose arrangement is fully shared opens with the act, and that is correct: the phase did not disappear, it was hoisted. Keep the per-test remainder of the arrangement inside the body, above the act.
+A synchronous call binds a thunk: `const act = () => parse(input);`, then `expect(act).toThrow(ParseError);`. In Python, capture the exception in Act and assert on it:
+
+```python
+def test_rejects_an_unknown_account(db):
+    # Arrange
+    missing_id = fake.uuid4()
+
+    # Act
+    with pytest.raises(AccountNotFound) as raised:
+        transfer(missing_id, 100)
+
+    # Assert
+    assert raised.value.account_id == missing_id
+```
+
+### Shared arrangement
+
+Shared setup moves to `beforeEach` or a fixture. The Arrange block stays in the test and binds what the act uses from the shared fixture, so every test still carries three marked blocks.
 
 ```typescript
 describe('transfer', () => {
@@ -119,14 +187,19 @@ describe('transfer', () => {
   });
 
   it('settles a transfer within the daily limit', async () => {
-    const result = await transfer(account.id, 100);
+    // Arrange
+    const amount = 100;
 
+    // Act
+    const result = await transfer(account.id, amount);
+
+    // Assert
     expect(result.status).toBe(TransferStatus.Settled);
   });
 });
 ```
 
-Both deviations are about where a phase lives, never about dropping one. A test with no assertions is not a test, and a test with no act asserts nothing about the system.
+A test with no assertions is not a test, and a test with no act asserts nothing about the system.
 
 ## Assertion Specificity
 
@@ -141,6 +214,36 @@ Use the most specific assertion available. Vague assertions pass when they shoul
 
 When asserting on objects returned from services, assert specific field values, not just existence. `expect(result.data.status).toBe('COMPLETED')` is a real test. `expect(result.data).toBeTruthy()` is not.
 
+### Tautological Assertions
+
+Every expected value comes from a source of truth independent of the code under test: a known-good literal, a worked example, or the spec. A tautological assertion recomputes the expected value the way the code computes it, so it passes by construction and can never disagree with the code.
+
+| Tautology | Why it proves nothing | Use instead |
+|-----------|-----------------------|-------------|
+| `expect(add(a, b)).toBe(a + b)` | The test repeats the implementation; a shared bug passes | A worked example: `add(2, 3)` is `5` |
+| `expected = items.reduce(...)`, then `expect(total).toBe(expected)` | Same algorithm on both sides of the assertion | The total computed by hand from the spec |
+| A constant asserted equal to itself, `expect(MAX_RETRIES).toBe(MAX_RETRIES)` | Cannot fail | Assert the behavior the constant drives |
+| A snapshot or fixture generated by the same code path it checks | The reference inherits every bug in the code | A reviewed snapshot, or explicit field assertions from the spec |
+
+```typescript
+it('totals the line items of an order', async () => {
+  // Arrange
+  const order = await seedOrder({ linePrices: [1000, 550] });
+
+  // Act
+  const total = await orderTotal(order.id);
+
+  // Assert
+  expect(total).toBe(1550);
+});
+```
+
+The literal prices are the worked example, so they are the oracle, not the filler data [Test Data](#test-data) replaces with faker. Generate every field that does not feed the expected value with the seeded generator.
+
+This section does not replace the database-count assertions in [Write-Path Tests](#write-path-tests-mandatory). Counting rows asserts an observable effect against a literal, which is an independent source of truth.
+
+Provenance: 2026-10-12, threshold skipped because the user explicitly requested adoption. Adopted from the mattpocock/skills `tdd` guidance, whose CHANGELOG records tautological tests as an observed failure: an assertion recomputed the way the code computes it passes by construction and gives zero confidence.
+
 ## Test Data
 
 Use a fake data generator to produce test data. Never use hardcoded static values like `"test@example.com"`, `"John Doe"`, or `"password123"` in test setup.
@@ -148,6 +251,8 @@ Use a fake data generator to produce test data. Never use hardcoded static value
 Static values hide couplings. A test passing with `"test@example.com"` might fail with `"María.O'Connor+tag@subdomain.example.co.uk"`. Fake generators catch these edge cases.
 
 **Seeding:** seed the generator per test file or describe block. Same seed produces the same sequence on every run.
+
+**Filler, not the input under test.** Generate filler values: emails, names, ids, timestamps, anything the assertion does not depend on. A literal that is itself the behavior under test stays literal, such as the exact command string a hook must block or the worked example an expected value comes from, because it is the oracle. Owner decision, 2026-10-12.
 
 | Language | Library |
 |----------|---------|
@@ -158,11 +263,15 @@ Static values hide couplings. A test passing with `"test@example.com"` might fai
 | Rust | `fake` |
 | Java / Kotlin | `datafaker` |
 
-```typescript
-// Bad: static values hide edge cases
-const user = { name: 'John Doe', email: 'test@example.com' };
+**Bad:** static values hide edge cases.
 
-// Good: realistic, deterministic via seed
+```typescript
+const user = { name: 'John Doe', email: 'test@example.com' };
+```
+
+**Good:** realistic values, deterministic through the seed.
+
+```typescript
 import { faker } from '@faker-js/faker';
 faker.seed(12345);
 const user = { name: faker.person.fullName(), email: faker.internet.email() };
@@ -187,6 +296,9 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17. A cle
 - Existing code: do not reduce coverage
 - **Coverage is a delivery gate.** No task is declared complete until every changed or related file meets 95%+ across statements, branches, functions, and lines. "Related" means files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files with fresh output. "It should pass" is not evidence.
 - **Agent-delegated work included.** When agents implement code, their deliverables must meet the same 95%+ threshold. The orchestrator must verify coverage after agent work completes, not assume it.
+- **Coverage locates gaps; it is never the target.** Read the uncovered lines to find user-visible behavior that has no test, then test that behavior per [What To Test](#what-to-test). A test written only to move the number asserts nothing a user depends on. The 95% gate above still holds, and it is met by testing behavior.
+
+Provenance for the coverage-as-locator bullet: 2026-10-12, owner request, adopted from the ai-hero-cli what-to-test skill.
 
 ## Write-Path Tests (MANDATORY)
 
@@ -200,12 +312,15 @@ Fire N identical calls in parallel, N at 10 or more, and assert the invariant ra
 
 ```typescript
 it('creates exactly one order when the same request arrives ten times at once', async () => {
+  // Arrange
   const payload = buildOrderPayload();
 
+  // Act
   const results = await Promise.allSettled(
     Array.from({ length: 10 }, () => createOrder(payload)),
   );
 
+  // Assert
   expect(await db.order.count({ where: { idempotencyKey: payload.idempotencyKey } })).toBe(1);
   expect(results.every((result) => result.status === 'fulfilled')).toBe(true);
 });
@@ -213,15 +328,18 @@ it('creates exactly one order when the same request arrives ten times at once', 
 
 ### Test 2: sequential duplicates
 
-Call twice in sequence. Assert one effect and a replayed response, not merely the absence of a crash.
+Call twice in sequence. Assert one effect and a replayed response, not merely the absence of a crash. The pair of calls is the act under test, so both sit in the Act block.
 
 ```typescript
 it('replays the first response when the same key is used twice', async () => {
+  // Arrange
   const payload = buildOrderPayload();
 
+  // Act
   const first = await createOrder(payload);
   const second = await createOrder(payload);
 
+  // Assert
   expect(second.body.id).toBe(first.body.id);
   expect(await db.order.count({ where: { idempotencyKey: payload.idempotencyKey } })).toBe(1);
 });

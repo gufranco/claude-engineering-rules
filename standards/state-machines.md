@@ -40,7 +40,6 @@ class DraftOrder {
     if (this.items.length === 0) return err(new OrderError('Cannot submit empty order'));
     return ok(new SubmittedOrder(this.id, this.items, new Date()));
   }
-  // no ship(), no cancel(), only addItem and submit are valid from draft
 }
 
 class SubmittedOrder {
@@ -57,9 +56,10 @@ class SubmittedOrder {
   reject(reason: string): RejectedOrder {
     return new RejectedOrder(this.id, reason);
   }
-  // no addItem(), submitted orders cannot be modified
 }
 ```
+
+A draft offers only `addItem` and `submit`, so it cannot ship or cancel. A submitted order has no `addItem`, so it cannot be modified.
 
 Rules:
 - One class per state. All classes share the same aggregate identity. ID
@@ -69,10 +69,9 @@ Rules:
 
 ### Persistence with Type State
 
-Type state types need mapping for storage. The database stores a discriminated union. The repository reconstitutes the correct type.
+Type state types need mapping for storage. The database stores a discriminated union, `OrderRecord`. The repository reconstitutes the correct type state.
 
 ```typescript
-// Database representation
 interface OrderRecord {
   id: string;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
@@ -81,7 +80,6 @@ interface OrderRecord {
   approvedBy: string | null;
 }
 
-// Repository maps to the correct type state
 type AnyOrder = DraftOrder | SubmittedOrder | ApprovedOrder | RejectedOrder;
 
 class OrderRepository {
@@ -173,14 +171,22 @@ function transition(
 
 Nested states model hierarchical behavior. A sub-state inherits transitions from its parent state. Use nesting to avoid duplicating transitions across sibling states.
 
-```typescript
-// Without nesting: cancel must be repeated on every substep
-{ from: 'shipping.awaitingPickup', event: 'cancel', to: 'cancelled' },
-{ from: 'shipping.inTransit',      event: 'cancel', to: 'cancelled' },
-{ from: 'shipping.outForDelivery', event: 'cancel', to: 'cancelled' },
+**Without nesting:** `cancel` must be repeated on every substep.
 
-// With nesting: cancel is defined once on the parent state
-{ from: 'shipping', event: 'cancel', to: 'cancelled' },
+```typescript
+const flatTransitions = [
+  { from: 'shipping.awaitingPickup', event: 'cancel', to: 'cancelled' },
+  { from: 'shipping.inTransit',      event: 'cancel', to: 'cancelled' },
+  { from: 'shipping.outForDelivery', event: 'cancel', to: 'cancelled' },
+] as const;
+```
+
+**With nesting:** `cancel` is defined once on the parent state.
+
+```typescript
+const nestedTransitions = [
+  { from: 'shipping', event: 'cancel', to: 'cancelled' },
+] as const;
 ```
 
 Rules:
@@ -210,10 +216,13 @@ When hand-rolled is enough:
 ```typescript
 describe('OrderStateMachine', () => {
   it('should transition from draft to submitted on submit', () => {
+    // Arrange
     const state = OrderState.Draft;
 
+    // Act
     const result = transition(state, { kind: 'submit' }, context);
 
+    // Assert
     expect(result).toEqual(ok(OrderState.Submitted));
   });
 });
@@ -223,10 +232,13 @@ describe('OrderStateMachine', () => {
 
 ```typescript
 it('should reject ship from draft state', () => {
+  // Arrange
   const state = OrderState.Draft;
 
+  // Act
   const result = transition(state, { kind: 'ship', tracking }, context);
 
+  // Assert
   expect(result.ok).toBe(false);
 });
 ```
@@ -235,11 +247,14 @@ it('should reject ship from draft state', () => {
 
 ```typescript
 it('should reject submit when order has no items', () => {
+  // Arrange
   const state = OrderState.Draft;
   const emptyContext = { ...context, items: [] };
 
+  // Act
   const result = transition(state, { kind: 'submit' }, emptyContext);
 
+  // Assert
   expect(result).toEqual(err(expect.objectContaining({ kind: 'validation' })));
 });
 ```

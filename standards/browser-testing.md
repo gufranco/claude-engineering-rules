@@ -6,10 +6,9 @@ Standards for browser-based testing with Playwright, visual regression, and Core
 
 ### Page Object Pattern
 
-Encapsulate page interactions behind a typed interface. Tests read as user stories, not DOM queries.
+Encapsulate page interactions behind a typed interface. Tests read as user stories, not DOM queries. In `pages/login.page.ts`:
 
 ```typescript
-// pages/login.page.ts
 export class LoginPage {
   constructor(private readonly page: Page) {}
 
@@ -37,10 +36,9 @@ Rules:
 
 ### Test Fixtures
 
-Use Playwright's fixture system to share setup across tests. Never duplicate authentication, database seeding, or navigation.
+Use Playwright's fixture system to share setup across tests. Never duplicate authentication, database seeding, or navigation. In `fixtures.ts`:
 
 ```typescript
-// fixtures.ts
 import { test as base } from '@playwright/test';
 import { LoginPage } from './pages/login.page';
 
@@ -53,10 +51,9 @@ export const test = base.extend<{ loginPage: LoginPage }>({
 
 ### Authentication State
 
-Save and reuse authentication state to avoid logging in before every test.
+Save and reuse authentication state to avoid logging in before every test. In `global-setup.ts`:
 
 ```typescript
-// global-setup.ts
 async function globalSetup(config: FullConfig): Promise<void> {
   const browser = await chromium.launch();
   const page = await browser.newPage();
@@ -97,9 +94,8 @@ Use the accessibility tree snapshot to verify semantic structure. This catches i
 
 ```typescript
 const snapshot = await page.accessibility.snapshot();
-expect(snapshot).toBeTruthy();
+expect(snapshot?.role).toBe('WebArea');
 
-// Verify specific elements have correct roles
 const submitButton = await page.getByRole('button', { name: 'Submit' });
 await expect(submitButton).toBeVisible();
 await expect(submitButton).toBeEnabled();
@@ -111,10 +107,15 @@ Combine with axe-core for automated WCAG compliance. Per the strictest-wins poli
 import AxeBuilder from '@axe-core/playwright';
 
 test('page passes WCAG 2.2 AA', async ({ page }) => {
+  // Arrange
   await page.goto('/dashboard');
+
+  // Act
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
+
+  // Assert
   expect(results.violations).toEqual([]);
 });
 ```
@@ -163,8 +164,13 @@ const breakpoints = [
 
 for (const bp of breakpoints) {
   test(`renders correctly at ${bp.name}`, async ({ page }) => {
+    // Arrange
     await page.setViewportSize({ width: bp.width, height: bp.height });
+
+    // Act
     await page.goto('/');
+
+    // Assert
     await expect(page).toHaveScreenshot(`home-${bp.name}.png`);
   });
 }
@@ -221,10 +227,9 @@ Target: under 200ms. Measure with Lighthouse CI or Web Vitals library in E2E tes
 
 ### Lighthouse CI Integration
 
-For full CWV measurement in CI:
+For full CWV measurement in CI, in `lighthouserc.json`:
 
-```yaml
-# lighthouserc.json
+```json
 {
   "ci": {
     "assert": {
@@ -267,8 +272,9 @@ Never use real production cookies in tests. Generate test-specific tokens from a
 
 ## CI Configuration
 
+In `playwright.config.ts`:
+
 ```typescript
-// playwright.config.ts
 export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
@@ -283,6 +289,18 @@ export default defineConfig({
 - Retry flaky tests in CI but never locally. Flaky tests must be fixed, not retried indefinitely.
 - Capture traces on failure for debugging. Traces include DOM snapshots, network requests, and console logs.
 - Run with a single worker in CI if tests share external resources, database, API. Parallel locally.
+
+## Per-Run Verification Harness
+
+A harness that drives the app against a per-run copy of real data needs proof that the copy is isolated and a record of what each run wrote.
+
+- **Prove isolation by reading back what is served.** Fetch the configuration the run's own server actually serves, such as the module holding its socket addresses, and assert it points at the run's isolated endpoints. A configured value that was never read back is a hope, not proof.
+- **Attribute writes by connection, never by table.** Give the run's server and each sidecar its own `application_name`, through `PGAPPNAME` for libpq clients, and record the writing session's `application_name` with every row the write tracking captures. The server legitimately writes job and event tables too, so a table name cannot tell writers apart.
+- **Migrate the copy before installing write tracking.** Apply the checkout's pending migrations to the copy first, then install the triggers that record writes, so the migrations' own writes never appear in the run's record.
+- **Use a tiny fixture for expensive actions.** Seed a minimal record for actions such as export, publish, or encode, and never run them on a full-size real record, which can exhaust the machine.
+- **Name evidence files by step.** Number screenshots, snapshots, and query logs by the step that produced them, so a reader following the directory in order can retrace the run.
+
+Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm skill and its run, ledger, and launch scripts.
 
 ## Related Standards
 

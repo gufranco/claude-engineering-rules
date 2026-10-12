@@ -72,10 +72,9 @@ Start only the servers needed for the current task. Stop servers when the task i
 
 ## Tool Search for On-Demand Discovery
 
-Use the Tool Search mechanism to discover MCP tools instead of loading all servers upfront. This keeps the active tool count low and reduces namespace pollution.
+Use the Tool Search mechanism to discover MCP tools instead of loading all servers upfront. This keeps the active tool count low and reduces namespace pollution. This query discovers the available database tools without starting every MCP server:
 
 ```
-# Discover available database tools without starting all MCP servers
 ToolSearch: "database query"
 ```
 

@@ -24,8 +24,8 @@ interface MarketingConsent {
   readonly channel: "email" | "sms" | "push";
   readonly purpose: "newsletter" | "product-updates" | "promotions" | "third-party-offers";
   readonly grantedAt: Date;
-  readonly textVersion: string;       // version of consent text
-  readonly source: string;             // "registration", "settings", "checkout-checkbox"
+  readonly consentTextVersion: string;
+  readonly source: "registration" | "settings" | "checkout-checkbox";
   readonly ip: string;
   readonly userAgent: string;
 }
@@ -96,12 +96,14 @@ If a "transactional" email contains substantial marketing content (more than ~20
 
 ```typescript
 interface SuppressionEntry {
-  readonly identifier: string;          // hashed email, phone, push token
+  readonly hashedIdentifier: string;
   readonly suppressedAt: Date;
   readonly reason: "unsubscribe" | "bounce" | "complaint" | "manual";
-  readonly originalSource: string;       // which list/campaign the unsubscribe came from
+  readonly sourceListOrCampaign: string;
 }
 ```
+
+`hashedIdentifier` is the hash of an email address, phone number, or push token. `sourceListOrCampaign` names the list or campaign the unsubscribe came from.
 
 - Permanent. Never delete.
 - Apply to every list. Suppression on "newsletter" suppresses to "promotions" by default unless explicitly re-subscribed.

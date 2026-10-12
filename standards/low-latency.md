@@ -35,22 +35,25 @@ Mitigation: hugepages.
 | 2 MB | 16,384 | Default hugepage size on Linux |
 | 1 GB | 32 | Requires `default_hugepagesz=1G` boot parameter |
 
-Implementation:
+In C or C++, pass `MAP_HUGETLB` to `mmap`:
 
 ```c
-// C++: pass MAP_HUGETLB to mmap
 void *p = mmap(NULL, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_HUGE_1GB,
                -1, 0);
-if (p == MAP_FAILED) { /* handle */ }
+if (p == MAP_FAILED) {
+    perror("mmap");
+    exit(EXIT_FAILURE);
+}
 ```
 
+In Rust, use the `memmap2` or `hugepage-rs` crates. `huge(Some(30))` requests pages of 2^30 bytes, which is 1 GB:
+
 ```rust
-// Rust: memmap2 or hugepage-rs crates
 use memmap2::MmapOptions;
 let mmap = MmapOptions::new()
     .len(size)
-    .huge(Some(30)) // 2^30 = 1 GB
+    .huge(Some(30))
     .map_anon()?;
 ```
 
@@ -60,7 +63,10 @@ Lazy page mapping persists even with hugepages. The kernel maps pages on first a
 
 ```c
 #include <sys/mman.h>
-if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) { /* handle */ }
+if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+    perror("mlockall");
+    exit(EXIT_FAILURE);
+}
 ```
 
 ```rust
@@ -88,36 +94,44 @@ Multi-socket servers have per-socket memory pools. A thread running on socket 0 
 
 ### Discovery
 
-```bash
-numactl --hardware   # node count and per-node memory
-lscpu                 # CPU topology
-lstopo                # tree view with cache levels
-```
+| Command | Shows |
+|---------|-------|
+| `numactl --hardware` | Node count and per-node memory |
+| `lscpu` | CPU topology |
+| `lstopo` | Tree view with cache levels |
 
 ### Pinning
 
+Bind to a node with `numactl`, or to specific cores within a node with `taskset`:
+
 ```bash
 numactl --cpunodebind=0 --membind=0 ./trading-engine
-taskset -c 2,3 ./trading-engine   # specific cores within a node
+taskset -c 2,3 ./trading-engine
 ```
 
 ### Disable Auto-Migration
 
 Linux `autonuma` migrates pages between nodes based on observed access patterns. Useful for fairness, fatal for latency.
 
-```bash
-# sysctl
-echo 0 > /proc/sys/kernel/numa_balancing
+Disable it at runtime through sysctl:
 
-# Boot parameter (persistent)
+```bash
+echo 0 > /proc/sys/kernel/numa_balancing
+```
+
+Persist it with a boot parameter:
+
+```bash
 GRUB_CMDLINE_LINUX_DEFAULT="... numa_balancing=disable"
 ```
 
 ### Verification
 
+`numastat -p <PID>` shows the per-process memory distribution; `numastat -m` shows it system-wide.
+
 ```bash
-numastat -p <PID>     # per-process memory distribution
-numastat -m           # system-wide
+numastat -p <PID>
+numastat -m
 ```
 
 Runtime verification in code uses `libnuma`. Check `numa_node_of_cpu()` against `numa_node_of_addr()` to confirm allocation locality before entering the hot path.
@@ -126,8 +140,10 @@ Runtime verification in code uses `libnuma`. Check `numa_node_of_cpu()` against 
 
 ### Priority
 
+Set SCHED_FIFO at maximum priority:
+
 ```bash
-chrt --pid --fifo 99 <PID>   # SCHED_FIFO at maximum priority
+chrt --pid --fifo 99 <PID>
 ```
 
 SCHED_FIFO runs to completion or until a higher-priority task preempts. Use SCHED_FIFO 99 only on threads that never block on I/O. A blocked FIFO thread holding a kernel resource starves the rest of the system.
@@ -136,13 +152,17 @@ SCHED_FIFO runs to completion or until a higher-priority task preempts. Use SCHE
 
 Network cards, disks, and timers interrupt whichever core handles them. Move every non-essential IRQ off the trading core.
 
-```bash
-# Discover IRQ numbers
-cat /proc/interrupts
+1. Discover IRQ numbers:
 
-# Pin IRQ N to core 0 (binary mask: bit 0 = core 0)
-echo 1 > /proc/irq/<N>/smp_affinity
-```
+   ```bash
+   cat /proc/interrupts
+   ```
+
+2. Pin IRQ N to core 0. The value is a binary mask in which bit 0 is core 0:
+
+   ```bash
+   echo 1 > /proc/irq/<N>/smp_affinity
+   ```
 
 Reserve the trading cores via the kernel boot parameter `isolcpus=2,3,4,5` and route all IRQs to the housekeeping cores 0 and 1.
 

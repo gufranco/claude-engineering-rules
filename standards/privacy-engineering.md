@@ -15,16 +15,18 @@ Separate identifying attributes from behavioral and transactional data. The two 
 - Deleting the mapping entry pseudonymizes all linked behavioral and transactional data permanently.
 
 ```typescript
+type PseudonymousUserId = Brand<string, "PseudonymousUserId">;
+
 interface IdentityRecord {
-  readonly userId: string;          // pseudonymous token
-  readonly email: string;           // real identifier
-  readonly name: string;            // real identifier
+  readonly userId: PseudonymousUserId;
+  readonly email: string;
+  readonly name: string;
   readonly createdAt: Date;
   readonly consentVersion: string;
 }
 
 interface BehavioralRecord {
-  readonly userId: string;          // pseudonymous token only
+  readonly userId: PseudonymousUserId;
   readonly action: string;
   readonly metadata: Record<string, unknown>;
   readonly timestamp: Date;

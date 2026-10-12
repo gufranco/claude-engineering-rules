@@ -45,10 +45,9 @@ Hard limits on asset sizes. Exceeding any budget requires explicit justification
 
 ## CI Enforcement
 
-Alert when resource sizes reach 80% of the budget. Fail the build when the budget is exceeded.
+Alert when resource sizes reach 80% of the budget. Fail the build when the budget is exceeded. An example Lighthouse CI budget configuration:
 
 ```yaml
-# Example: Lighthouse CI budget configuration
 budgets:
   - resourceSizes:
       - resourceType: script
@@ -84,8 +83,9 @@ The LCP element is usually a hero image, a heading, or a large text block. Optim
 - Avoid lazy-loading the LCP element. Lazy loading delays discovery.
 - Server-render the LCP content. Client-side rendering adds a JavaScript-dependent delay.
 
+An LCP image with priority hints:
+
 ```html
-<!-- LCP image with priority hints -->
 <img
   src="/hero.webp"
   alt="Product showcase"
@@ -106,14 +106,16 @@ INP measures the latency of all interactions, not just the first. Long tasks blo
 - Avoid synchronous layout reads followed by writes. Batch DOM reads, then batch DOM writes.
 
 ```typescript
+async function yieldToBrowserIfInputPending(): Promise<void> {
+  if (navigator.scheduling?.isInputPending?.()) {
+    await scheduler.yield();
+  }
+}
+
 async function processLargeList(items: readonly Item[]): Promise<void> {
   for (const item of items) {
     processItem(item);
-
-    // Yield to the browser between items
-    if (navigator.scheduling?.isInputPending?.()) {
-      await scheduler.yield();
-    }
+    await yieldToBrowserIfInputPending();
   }
 }
 ```
@@ -128,8 +130,9 @@ Layout shifts happen when elements change size or position after the initial ren
 - Use `font-display: swap` with size-adjusted fallback fonts to minimize font swap shifts.
 - Reserve space for dynamic content like ads, embeds, and lazy-loaded sections.
 
+Explicit dimensions prevent layout shift:
+
 ```html
-<!-- Dimensions prevent layout shift -->
 <img
   src="/product.webp"
   alt="Product photo"
@@ -151,11 +154,15 @@ Split code by route and by interaction. The initial load carries only what the f
 | Vendor | Stable third-party code in a separate chunk for long-term caching |
 | Feature flag | Code behind disabled flags excluded from the bundle |
 
-```typescript
-// Route-level splitting in React
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+**Route-level splitting** in React:
 
-// Interaction-level splitting
+```typescript
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+```
+
+**Interaction-level splitting:**
+
+```typescript
 async function openExportModal(): Promise<void> {
   const { ExportModal } = await import("./components/ExportModal");
   renderModal(ExportModal);

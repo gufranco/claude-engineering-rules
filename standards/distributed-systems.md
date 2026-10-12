@@ -85,10 +85,11 @@ Solves the dual-write problem: how to update a database AND publish an event rel
 
 ### The Problem
 
-```
-// BROKEN: if the app crashes between these two lines, the event is lost
+**Broken:** if the app crashes between these two lines, the publish never executes and the event is lost.
+
+```typescript
 await db.save(order);
-await eventBus.publish("order.created", order);  // may never execute
+await eventBus.publish("order.created", order);
 ```
 
 ### The Solution

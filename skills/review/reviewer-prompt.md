@@ -96,7 +96,7 @@ Push the filter down to the database:
 const activeUsers = await userRepository.find({
   where: { status: 'active', role },
   take: pageSize,
-  skip:, page - 1, * pageSize,
+  skip: (page - 1) * pageSize,
 });
 ```
 ````
@@ -113,20 +113,26 @@ connection instead of mocks:
 
 ```typescript
 it('should return 400 when email format is invalid', async () => {
+  // Arrange
   const invalidPayload = { email: faker.string.alpha(10), name: faker.person.fullName() };
 
+  // Act
   const response = await request(app).post('/users').send(invalidPayload);
 
+  // Assert
   expect(response.status).toBe(400);
   expect(response.body.error.code).toBe('VALIDATION_ERROR');
 });
 
 it('should return 500 when the database is unavailable', async () => {
+  // Arrange
   await simulateDatabaseOutage();
   const validPayload = { email: faker.internet.email(), name: faker.person.fullName() };
 
+  // Act
   const response = await request(app).post('/users').send(validPayload);
 
+  // Assert
   expect(response.status).toBe(500);
 });
 ```
@@ -146,8 +152,8 @@ Use a database-level unique constraint and handle the conflict:
 try {
   const user = userRepository.create({ email, name });
   await userRepository.save(user);
-} catch, error, {
-  if, error.code === '23505', { // PostgreSQL unique violation
+} catch (error: unknown) {
+  if (isPostgresUniqueViolation(error)) {
     return res.status(409).json({
       error: { code: 'DUPLICATE_EMAIL', message: 'A user with this email already exists' },
     });
@@ -159,7 +165,7 @@ try {
 And make sure the migration includes the constraint:
 
 ```sql
-ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE, email;
+ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
 ```
 ````
 
@@ -218,7 +224,7 @@ pnpm exec prisma migrate diff \
 
 Non-zero exit is a P0 blocking finding. Paste the full output in the review.
 
-Unmanaged objects exempt from parity, such as PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, or RLS policies, must have a leading comment in the migration file naming the unmanaged class. Missing documentation is P1.
+Unmanaged objects exempt from parity, such as PostgreSQL extensions, materialized views, GIN/GiST trigram indexes, custom triggers, or RLS policies, must be named, with the unmanaged class, in the PR description or an ADR; a comment in the migration file does not count. Missing documentation is P1.
 
 Example finding when parity is missing:
 
@@ -229,7 +235,7 @@ Add the matching declaration:
 
 ```prisma
 model Game {
-  // existing fields
+  homeTeam String
   @@index([homeTeam], map: "Game_homeTeam_sportsbook_search_idx")
 }
 ```

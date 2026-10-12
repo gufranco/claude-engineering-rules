@@ -119,9 +119,13 @@ Build pipeline regenerates the hash on every dependency upgrade.
 ```typescript
 const ALLOWED_REDIRECTS = ["/dashboard", "/profile", "/orders"];
 
+function isAbsoluteUrl(target: string): boolean {
+  return target.startsWith("//") || target.includes("://");
+}
+
 function safeRedirect(target: string): string {
-  if (target.startsWith("//") || target.includes("://")) {
-    return "/";  // absolute URL not allowed
+  if (isAbsoluteUrl(target)) {
+    return "/";
   }
   return ALLOWED_REDIRECTS.find((p) => target.startsWith(p)) ?? "/";
 }

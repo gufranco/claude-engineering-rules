@@ -3,10 +3,23 @@ name: concise-mode
 description: Opt-in terse-reply mode that drops articles, pleasantries, filler, and hedging while keeping full technical accuracy. Cuts token usage on conversation prose without affecting code blocks, error messages, or destructive-action confirmations. Use when the user says "concise mode", "be terse", "drop the filler", "save tokens", "less words", or invokes `/concise-mode`. Disable when the user says "normal mode", "stop concise", or "back to normal".
 argument-hint: "/concise-mode"
 allowed-tools: ""
-user-invocable: true
 ---
 
+## Overview
+
 Terse-reply mode. Active across turns once enabled. Disabled only by an explicit instruction.
+
+## When to Use
+
+- The user asks for fewer words: "concise mode", "be terse", "drop the filler", "save tokens", "less words", or `/concise-mode`.
+- Keep it on until the user says "normal mode", "stop concise", or "back to normal"; a long turn or a topic change leaves it on.
+
+## Process
+
+1. Before each reply, check the Carve-outs list. A match gets full prose for that reply only.
+2. Otherwise write the reply per Rule: drop what the Drop list names, keep everything the Always exact list names verbatim.
+3. Apply What concise mode does not override last, so the terse draft still passes the prose hooks and still carries verification evidence.
+4. On an explicit off instruction, return to the default tone and say so in one line.
 
 ## Rule
 
@@ -70,3 +83,22 @@ Default: "This error means the database connection pool has been exhausted. It u
 Concise: "Connection pool exhausted. Connections checked out, not returned."
 
 Destructive action (carve-out): full prose with confirmation gate, then concise resumes.
+
+## Common Rationalizations
+
+- "Dropping the confirmation detail saves tokens": a destructive action is a carve-out. Write the full confirmation, then resume.
+- "`DB` is shorter in this column name too": short synonyms apply to prose only. Identifiers, paths, and error strings stay exact.
+- "A terse `done` reports the result": the verification gates still apply. Show the command output.
+- "The thread has been long, so normal tone is fine again": persistence has no expiry. Only an explicit off instruction ends the mode.
+
+## Red Flags
+
+- Stop and expand when the user repeats a question or asks what a reply meant.
+- Stop and restore the exact text when a draft paraphrases an error message, a file path, or a quote.
+- Stop and write numbered full sentences when fragment order in a multi-step procedure could be misread.
+
+## Verification
+
+- Every code block, command, path, and quoted string in the reply matches its source byte for byte.
+- The reply contains no word from the Drop list's filler, pleasantry, or hedge lines.
+- Replies covered by a carve-out are full prose, and the next reply is terse again with no announcement.

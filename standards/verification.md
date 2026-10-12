@@ -79,6 +79,16 @@ When reporting verification output to the user, lead with the symptom, then chro
 - If no history exists on first deploy, set a conservative interval: at minimum 2x the expected duration. Tighten after observing actual run times.
 - After the first full cycle completes, confirm via the run history that all jobs reached a succeeded status with no overlap.
 
+## Write-Path Evidence
+
+A write is verified by reading what the database committed, never by what the interface displayed.
+
+- **Sent but not committed is a finding.** When a write statement was sent and no row of its table was committed, the write rolled back, was rejected, or matched nothing. This is how a success message over a rolled-back write gets caught, so compare statements sent against rows committed.
+- **Settle before reading back, within a bound.** A read taken while the triggering write is still in flight reports a false absence. Wait for in-flight writes to commit, poll at a fixed interval up to a stated limit such as 5 seconds, and when the limit passes with writes still pending, report the result as pending rather than clean.
+- **A page load can write.** A route that reconciles or repairs state on load writes on every visit. Check the writes after every visit to such a route, never only after the click under test.
+
+Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm guard script and its publish feature notes.
+
 ## Response Self-Check
 
 Before presenting analysis, recommendations, or findings, verify your own output against these categories.
@@ -134,6 +144,17 @@ When presenting verification findings or review results, assign a confidence sco
 - Below 5: suppress from output, investigate further before reporting
 
 A low-confidence finding that turns out to be real is a calibration learning. Track these to improve scoring accuracy.
+
+## Read Everything In Scope
+
+When a task asks to read, analyze, compare, or audit something, read every file in scope in full before reporting. Do this on the first pass, without waiting to be asked. A verdict built from grep hits, excerpts, or the first 40 lines of a file is a guess. Say "absent" only after reading the whole file it should be in.
+
+- Brief every subagent to read every listed file in full with the Read tool, and to list what it read.
+- Never delegate analysis to `Explore`. It reads excerpts by design and returns grep-based absence verdicts.
+- If the scope is too large to read in one turn, split it across parallel subagents. Never trim the reading.
+- A report that still carries a "not opened" or "only grepped" caveat is unfinished. Close the gap before presenting it.
+
+Provenance: 2026-10-12, a stated user requirement that overrides the third-occurrence threshold. A `/research` run on mattpocock/skills used `Explore` agents. They grepped instead of reading, and the report shipped with caveats listing skipped files. The user had to ask again for everything to be read, and found having to ask twice unnecessary.
 
 ## Partial Completion
 

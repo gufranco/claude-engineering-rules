@@ -1,8 +1,14 @@
 ---
 name: readme
-description: Generate a README and GitHub repo description by analyzing the project's actual codebase, infrastructure, and architecture. Two variants. Marketing (default) for open source and portfolio: hero, badges, highlights grid. Assessment via `--variant assessment` for take-home submissions and architecture audits: technical tone, tables, narrative design decisions. Use when user says "write a README", "generate README", "update README", "repo description", "assessment README", or wants a polished project README. Do NOT use for general documentation updates.
+description: Generate a README and GitHub repo description from the actual codebase, in the marketing variant or the --variant assessment variant.
+disable-model-invocation: true
+argument-hint: "/readme | /readme --variant assessment | /readme --section quick-start | /readme --about-only | /readme --diff"
+allowed-tools: "Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion"
 sensitive: true
 ---
+
+## Overview
+
 Generate a README and GitHub repository description grounded in the actual codebase. Two variants are supported: marketing (default) and assessment (`--variant assessment`). The marketing variant feels like a product landing page: eye-catching hero section, visual feature grids, architecture diagrams, concrete metrics, quick start that's impossible to miss. The assessment variant feels like an engineering memo: tables for every section, design decisions written as narrative paragraphs, no marketing language. Every claim in both variants must be grounded in the actual codebase. Never invent features.
 
 ## When to use
@@ -93,6 +99,8 @@ The first thing anyone sees. It must create instant visual identity and communic
 
 **Light and dark mode logo via `<picture>`.** This is the canonical pattern as of late 2023. The older `#gh-dark-mode-only` fragment hack is deprecated. Drizzle, tRPC, Vite, Supabase, and Next.js all use this form.
 
+The `<strong>` line is the tagline: one line, confident, specific. The badge bar below it follows the cap and allowlist in the Badges section.
+
 ```html
 <div align="center">
 
@@ -105,13 +113,11 @@ The first thing anyone sees. It must create instant visual identity and communic
 <br>
 <br>
 
-<!-- Tagline: one line, confident, specific -->
 <strong>What it does, concretely, in one sentence.</strong>
 
 <br>
 <br>
 
-<!-- Badge bar: see "Badges" section below for the cap and allowlist -->
 [![CI](badge-url)](link)
 [![Version](badge-url)](link)
 [![License](badge-url)](link)
@@ -303,7 +309,12 @@ npm run dev
 
 ```bash
 curl http://localhost:3000/health
-# {"status":"ok"}
+```
+
+Expected output:
+
+```json
+{"status":"ok"}
 ```
 ````
 
@@ -539,12 +550,12 @@ Directory tree with one-line descriptions. For large projects, wrap in a collaps
 
 `` `
 src/
-  api/          # REST endpoints and middleware
-  services/     # Business logic
-  models/       # Database models and schemas
-  utils/        # Shared utilities
-tests/          # Test suites
-infra/          # Terraform modules
+  api/          REST endpoints and middleware
+  services/     Business logic
+  models/       Database models and schemas
+  utils/        Shared utilities
+tests/          Test suites
+infra/          Terraform modules
 `` `
 
 </details>
@@ -856,12 +867,20 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 | 2 | Vanity badges like "MADE WITH LOVE", "FORTHEBADGE", or "Awesome" without an actual Awesome-list link | Aesthetic noise without trust signal. Dilutes the high-signal badges |
 | 3 | "TODO: write this section" left in published README | Signals an abandoned or unfinished project |
 | 4 | Broken images and dead links | Often after a logo rename. Lint with `markdown-link-check` in CI |
-| 5 | 2000-line wall instead of linking out to a docs site | READMEs over 500 lines should split into `/docs` or a dedicated documentation site |
+| 5 | 2000-line wall instead of linking out to a docs site | READMEs over 500 lines should split into a separate docs folder or a dedicated documentation site |
 | 6 | Wrong project name in clone command after a repo rename | Breaks the 60-second quick start |
 | 7 | Missing LICENSE or contribution guide link | A repo without LICENSE is legally toxic for consumers. Awesome-list inclusion requires one |
 | 8 | Outdated screenshots showing prior major versions | Suggests the maintainer no longer touches the README. Auto-generate with Playwright in CI when possible |
 | 9 | No demo, no image, no GIF | Pure-text READMEs read as low-effort. The demo-first pattern is now baseline |
 | 10 | Overly personal tone like "just something I made real quick lol" | Undercuts the technical content. Match the project's category: technical for libraries, slightly warmer for end-user apps |
+
+## Common Rationalizations
+
+- "The feature is obviously there, the scan just missed it": a claim with no file behind it is invented. Read the file or cut the claim.
+- "A placeholder screenshot is fine until the real one exists": a broken image is worse than none. Skip the element and list it as a follow-up.
+- "Every section in the structure applies": a small CLI padded to the full template reads as filler. Match the project's scale.
+- "The Quick Start commands worked last time": scripts and targets get renamed. Check each one exists in this run.
+- "The user will review it after it is written": the write and `gh repo edit` wait for an approved draft.
 
 ## Rules
 
@@ -878,6 +897,24 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - **5-second test.** A developer scrolling fast should know what the project does, that it works, and how to try it within 5 seconds of landing. If the hero stack does not pass this test, restructure.
 - **Cap the hero at 5-8 badges.** More than 8 dilutes signal. Pull the rest into a "Status" section below the fold if they earn the slot.
 - **Demo-first.** A GIF, asciinema cast, or 5-line code snippet within the first scroll. No exceptions.
+
+## Red Flags
+
+- Stop and remove the claim when a feature, metric, or path in the draft has no match in the Phase 1 scan.
+- Stop and drop the element when the logo, screenshot, or demo file it references does not exist, and list it as a follow-up.
+- Stop and cut the sentence when it narrates how the work went, describes an abandoned approach, or points at working notes.
+- Stop and ask the user when the README write or `gh repo edit` is about to run before they approved the draft.
+- Stop and resolve the account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md) when a `gh` command is about to run against a remote whose account was not matched.
+
+## Verification
+
+- The markdown-link validator reports zero findings on the generated README.
+- Every Quick Start command maps to a script or Makefile target that exists, and the section ends with a verification command and its expected output.
+- Every path in the project structure tree and every referenced image exists on disk.
+- Every number in the metrics bar was counted from the source in this run.
+- The hero carries at most 8 badges and a demo within the first scroll.
+- The About description is at most 350 characters with no trailing period, and the topics are at most 20, lowercase, and hyphenated.
+- The user approved the draft before the write, and the original `gh` account was restored after the About was applied.
 
 ## Related skills
 

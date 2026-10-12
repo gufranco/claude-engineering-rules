@@ -229,13 +229,11 @@ Tag every cloud resource with at minimum: `team`, `service`, and `environment`. 
 
 The SDK must be initialized before any instrumented library is imported. Importing a library before the SDK initializes it means the auto-instrumentation patches run against uninstrumented code, producing incomplete or missing traces.
 
-**Correct order:**
+**Correct order:** the first import initializes the SDK, either through `./instrumentation` or by importing `NodeSDK` from `@opentelemetry/sdk-node` directly, and only then come the libraries the SDK auto-instruments.
 
 ```typescript
-// 1. Initialize the SDK first, before any other import
-import './instrumentation'   // or: import { NodeSDK } from '@opentelemetry/sdk-node'
+import './instrumentation'
 
-// 2. Then import libraries that the SDK auto-instruments
 import express from 'express'
 import { PrismaClient } from '@prisma/client'
 import Redis from 'ioredis'
@@ -255,8 +253,8 @@ const sdk = new NodeSDK({
 
 sdk.start()
 
-// Graceful shutdown
-process.on('SIGTERM', () => sdk.shutdown())
+const shutDownGracefully = (): Promise<void> => sdk.shutdown()
+process.on('SIGTERM', shutDownGracefully)
 ```
 
 **Rules:**

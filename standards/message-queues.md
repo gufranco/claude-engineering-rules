@@ -33,17 +33,29 @@ Every message must carry metadata separate from the business payload. The envelo
 
 ```typescript
 interface MessageEnvelope<T = unknown> {
-  readonly id: string;              // unique message ID, UUID v7 or ULID
-  readonly type: string;            // dot-separated event type: "order.created"
-  readonly source: string;          // producing service: "order-service"
-  readonly timestamp: string;       // ISO 8601 UTC: "2026-03-27T14:30:00.000Z"
-  readonly correlationId: string;   // trace through the system, propagated from caller
-  readonly causationId: string;     // ID of the message that caused this one
-  readonly schemaVersion: number;   // integer, monotonically increasing
-  readonly contentType: string;     // "application/json", "application/protobuf"
-  readonly payload: T;              // the business data
+  readonly id: string;
+  readonly type: string;
+  readonly source: string;
+  readonly timestamp: string;
+  readonly correlationId: string;
+  readonly causationId: string;
+  readonly schemaVersion: number;
+  readonly contentType: string;
+  readonly payload: T;
 }
 ```
+
+| Field | Holds | Example |
+|-------|-------|---------|
+| `id` | Unique message ID, UUID v7 or ULID | `01J9Z3K4M5N6P7Q8R9S0T1V2W3` |
+| `type` | Dot-separated event type | `"order.created"` |
+| `source` | Producing service | `"order-service"` |
+| `timestamp` | ISO 8601 UTC | `"2026-03-27T14:30:00.000Z"` |
+| `correlationId` | Trace through the system, propagated from the caller | Same value across the chain |
+| `causationId` | ID of the message that caused this one | The parent message's `id` |
+| `schemaVersion` | Integer, monotonically increasing | `3` |
+| `contentType` | Payload encoding | `"application/json"`, `"application/protobuf"` |
+| `payload` | The business data | Typed by `T` |
 
 Rules:
 
@@ -206,8 +218,9 @@ Rules:
 
 ### Dead Letter Queue Configuration
 
+**SQS example, a main queue with a DLQ:**
+
 ```typescript
-// SQS example: main queue with DLQ
 const dlq = new sqs.Queue(this, "OrderDLQ", {
   retentionPeriod: Duration.days(14),
 });
@@ -300,13 +313,14 @@ Consumer lag is the difference between the latest message in the queue and the l
 
 ### Auto-Scaling Consumers
 
+A scaling policy based on queue depth:
+
 ```typescript
-// Scaling policy based on queue depth
 const scalingPolicy: ScalingConfig = {
   metric: "ApproximateNumberOfMessagesVisible",
-  targetValue: 100,          // target messages per consumer
-  scaleOutCooldown: 60,      // seconds between scale-out actions
-  scaleInCooldown: 300,      // slower scale-in to avoid thrashing
+  targetMessagesPerConsumer: 100,
+  scaleOutCooldownSeconds: 60,
+  scaleInCooldownSeconds: 300,
   minInstances: 1,
   maxInstances: 20,
 };
@@ -314,7 +328,7 @@ const scalingPolicy: ScalingConfig = {
 
 Rules:
 
-- Scale out aggressively, scale in conservatively. Use asymmetric cooldown periods: 60 seconds for scale-out, 300 seconds for scale-in.
+- Scale out aggressively, scale in conservatively. Use asymmetric cooldown periods: 60 seconds for scale-out, 300 seconds for scale-in, so a brief dip does not cause thrashing.
 - Set a hard upper bound on consumer count. Unbounded scaling shifts the bottleneck to the database or downstream service.
 - For Kafka, consumer count cannot exceed partition count. Plan partitions with scaling headroom.
 
@@ -364,7 +378,6 @@ async function handlePaymentCreated(
 ): Promise<void> {
   const { id: messageId, payload } = envelope;
 
-  // Deduplication check: same transaction as the business write
   await database.transaction(async (tx) => {
     const alreadyProcessed = await tx.processedMessage.findUnique({
       where: { messageId },
@@ -404,8 +417,9 @@ Rules:
 
 When a service must write to its database and publish a message atomically, use the transactional outbox pattern. Writing to the database and publishing to the broker in sequence is not atomic: the publish can fail after the write succeeds, or vice versa.
 
+First, write the business data and the outbox entry in one transaction:
+
 ```typescript
-// Step 1: write business data + outbox entry in one transaction
 await database.transaction(async (tx) => {
   const order = await tx.order.create({
     data: {
@@ -425,8 +439,11 @@ await database.transaction(async (tx) => {
     },
   });
 });
+```
 
-// Step 2: a separate poller/CDC process reads unpublished outbox entries and publishes
+Then a separate poller or CDC process reads unpublished outbox entries and publishes them:
+
+```typescript
 async function publishOutbox(): Promise<void> {
   const pending = await database.outboxMessage.findMany({
     where: { publishedAt: null },
@@ -561,16 +578,18 @@ describe("OrderConsumer", () => {
   });
 
   it("must process order.created and persist to database", async () => {
+    // Arrange
     const envelope = createOrderCreatedEnvelope();
 
+    // Act
     await broker.publish("order.created", envelope);
-    await waitForConsumption("order.created", envelope.id);
 
+    // Assert
+    await waitForConsumption("order.created", envelope.id);
     const order = await database.order.findUnique({
       where: { id: envelope.payload.orderId },
     });
-    expect(order).not.toBeNull();
-    expect(order!.status).toBe("CREATED");
+    expect(order?.status).toBe("CREATED");
   });
 });
 ```
@@ -593,7 +612,14 @@ describe("OrderConsumer", () => {
 ### Message Ordering Verification
 
 ```typescript
+async function publishInSequence(events: readonly MessageEnvelope[], orderingKey: string): Promise<void> {
+  for (const event of events) {
+    await broker.publish("order.events", event, { orderingKey });
+  }
+}
+
 it("must process events for the same order in sequence order", async () => {
+  // Arrange
   const orderId = generateULID();
   const events = [
     createEnvelope("order.created", { orderId, sequenceNumber: 1 }),
@@ -601,20 +627,19 @@ it("must process events for the same order in sequence order", async () => {
     createEnvelope("order.shipped", { orderId, sequenceNumber: 3 }),
   ];
 
-  for (const event of events) {
-    await broker.publish("order.events", event, { orderingKey: orderId });
-  }
+  // Act
+  await publishInSequence(events, orderId);
+
+  // Assert
   await waitForAllConsumed(events);
-
   const order = await database.order.findUnique({ where: { id: orderId } });
-  expect(order!.status).toBe("SHIPPED");
-  expect(order!.lastSequenceNumber).toBe(3);
-
   const processingLog = await database.processingLog.findMany({
     where: { orderId },
     orderBy: { processedAt: "asc" },
   });
-  expect(processingLog.map((l) => l.eventType)).toEqual([
+  expect(order?.status).toBe("SHIPPED");
+  expect(order?.lastSequenceNumber).toBe(3);
+  expect(processingLog.map((entry) => entry.eventType)).toEqual([
     "order.created",
     "order.confirmed",
     "order.shipped",

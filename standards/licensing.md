@@ -26,11 +26,11 @@ The expression must be on a single line. No line breaks in the middle of the exp
 
 ### Sidecar `.license` Files
 
-For files that cannot contain comments, create a sidecar file with the same name plus `.license`:
+For files that cannot contain comments, create a sidecar file with the same name plus `.license`. The binary `logo.png` cannot hold a comment, so `logo.png.license` carries its SPDX metadata:
 
 ```
-logo.png           # binary, no comments possible
-logo.png.license   # contains SPDX metadata
+logo.png
+logo.png.license
 ```
 
 Sidecar file content:
@@ -159,8 +159,8 @@ When a file contains code under a different license from the rest of the file, u
 // SPDX-SnippetCopyrightText: 2024 Other Author
 // SPDX-License-Identifier: Apache-2.0
 
-function borrowedFunction() {
-  // code under Apache-2.0
+function borrowedFunction(input: string): string {
+  return input.trim();
 }
 
 // SPDX-SnippetEnd
@@ -292,15 +292,17 @@ jobs:
       - uses: fsfe/reuse-action@v6
 ```
 
-Additional commands:
+Generate an SPDX SBOM:
 
 ```yaml
-# Generate SPDX SBOM
 - uses: fsfe/reuse-action@v6
   with:
     args: spdx
+```
 
-# Include submodules
+Include submodules:
+
+```yaml
 - uses: fsfe/reuse-action@v6
   with:
     args: --include-submodules lint
@@ -317,8 +319,9 @@ reuse:
 
 ### Pre-commit Hook
 
+In `.pre-commit-config.yaml`:
+
 ```yaml
-# .pre-commit-config.yaml
 repos:
   - repo: https://github.com/fsfe/reuse-tool
     rev: v6.0.0
@@ -328,22 +331,13 @@ repos:
 
 ### Local Verification
 
-```bash
-# Install
-pipx install reuse
-
-# Check compliance
-reuse lint
-
-# Add headers to files
-reuse annotate --license MIT --copyright "Gustavo Franco" src/main.ts
-
-# Generate SPDX SBOM
-reuse spdx -o project.spdx
-
-# Migrate from DEP5
-reuse convert-dep5
-```
+| Task | Command |
+|------|---------|
+| Install | `pipx install reuse` |
+| Check compliance | `reuse lint` |
+| Add headers to files | `reuse annotate --license MIT --copyright "Gustavo Franco" src/main.ts` |
+| Generate an SPDX SBOM | `reuse spdx -o project.spdx` |
+| Migrate from DEP5 | `reuse convert-dep5` |
 
 Integrate `reuse lint` into CI to prevent unlicensed files from being merged.
 

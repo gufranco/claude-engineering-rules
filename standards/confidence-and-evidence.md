@@ -83,6 +83,6 @@ For non-trivial tasks:
 4. **Decompose.** Split into small, verifiable steps.
 5. **Implement.** Only then write code.
 
-For architecture decisions that will outlive the current task, record them with `/adr`.
+For architecture decisions that will outlive the current task, record them with `/plan adr`.
 
 When the user references external projects or URLs as approach guidance, study them BEFORE implementing. Do not start execution while reference material is unread.

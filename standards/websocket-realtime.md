@@ -135,7 +135,8 @@ const DEFAULT_RECONNECT: ReconnectConfig = {
 function calculateDelay(attempt: number, config: ReconnectConfig): number {
   const exponentialDelay = config.baseDelayMs * Math.pow(2, attempt);
   const cappedDelay = Math.min(exponentialDelay, config.maxDelayMs);
-  return Math.random() * cappedDelay; // Full jitter
+  const fullJitterDelay = Math.random() * cappedDelay;
+  return fullJitterDelay;
 }
 ```
 
@@ -191,20 +192,27 @@ Every WebSocket message must use a consistent envelope. No bare payloads.
 ```typescript
 interface ClientMessage {
   readonly type: string;
-  readonly id: string;        // Client-generated UUID for correlation
-  readonly timestamp: number; // Unix milliseconds
+  readonly id: string;
+  readonly timestamp: number;
   readonly payload: unknown;
 }
 
 interface ServerMessage {
   readonly type: string;
-  readonly id: string;        // Server-generated message ID
-  readonly ref?: string;      // Client message ID this is a response to
-  readonly sequence: number;  // Per-channel monotonic sequence number
+  readonly id: string;
+  readonly ref?: string;
+  readonly sequence: number;
   readonly timestamp: number;
   readonly payload: unknown;
 }
 ```
+
+Field meanings:
+
+- `ClientMessage.id` is a client-generated UUID used for correlation; `ServerMessage.id` is a server-generated message ID
+- `timestamp` is Unix milliseconds
+- `ref` is the client message ID this server message responds to
+- `sequence` is a per-channel monotonic sequence number
 
 Rules:
 
@@ -267,11 +275,12 @@ function sendAndWait(
 When the server produces messages faster than a client can consume them, the send buffer grows and eventually exhausts memory.
 
 ```typescript
-const MAX_BUFFERED_AMOUNT = 1_048_576; // 1 MB
+const MAX_BUFFERED_BYTES = 1024 * 1024;
 
 function safeSend(ws: WebSocket, data: string): boolean {
-  if (ws.bufferedAmount > MAX_BUFFERED_AMOUNT) {
-    return false; // Client is a slow consumer
+  const isSlowConsumer = ws.bufferedAmount > MAX_BUFFERED_BYTES;
+  if (isSlowConsumer) {
+    return false;
   }
   ws.send(data);
   return true;
@@ -332,19 +341,26 @@ Every WebSocket server instance subscribes to a shared message bus. When a messa
 | NATS | ~10M msg/s per node | JetStream for durability | High throughput, low latency requirements |
 | Kafka | ~1M msg/s per partition | Durable by default | High volume with ordering guarantees and audit trails |
 
+**Server A subscribes to channel updates:**
+
 ```typescript
 import { createClient } from "redis";
 
 const subscriber = createClient();
-const publisher = createClient();
 
-// Server A: subscribe to channel updates
 await subscriber.subscribe("chat:room:42", (message) => {
   const parsed: ServerMessage = JSON.parse(message);
   broadcastToLocalConnections("room:42", parsed);
 });
+```
 
-// Server B: publish to channel
+**Server B publishes to the channel:**
+
+```typescript
+import { createClient } from "redis";
+
+const publisher = createClient();
+
 async function publishToChannel(
   channel: string,
   message: ServerMessage,
@@ -366,8 +382,9 @@ async function publishToChannel(
 
 The server must assign a monotonically increasing sequence number to every message within a channel. Sequence numbers are per-channel, not global.
 
+On the server, Redis `INCR` gives an atomic increment per channel:
+
 ```typescript
-// Server-side: atomic increment per channel
 async function nextSequence(channelId: string): Promise<number> {
   return await redis.incr(`seq:${channelId}`);
 }
@@ -395,8 +412,8 @@ function onMessage(channel: string, message: ServerMessage): void {
     return;
   }
 
-  if (message.sequence < expected) {
-    // Duplicate or out-of-order, discard
+  const isDuplicateOrStale = message.sequence < expected;
+  if (isDuplicateOrStale) {
     return;
   }
 
@@ -422,13 +439,13 @@ When the client receives a message ahead of sequence, it must buffer and request
 Every client message must include a unique `id` field that is its idempotency key. The server must deduplicate by this key before processing.
 
 ```typescript
-const processedIds = new Map<string, number>(); // id -> timestamp
+const processedAtById = new Map<string, number>();
 
 function isDuplicate(messageId: string): boolean {
-  if (processedIds.has(messageId)) {
+  if (processedAtById.has(messageId)) {
     return true;
   }
-  processedIds.set(messageId, Date.now());
+  processedAtById.set(messageId, Date.now());
   return false;
 }
 ```
@@ -473,7 +490,7 @@ server.on("upgrade", (request, socket, head) => {
     return;
   }
 
-  // Proceed with auth and upgrade
+  authenticateAndUpgrade(request, socket, head);
 });
 ```
 
@@ -502,9 +519,11 @@ Apply rate limits per connection and per authenticated user.
 Configure `maxPayload` on the WebSocket server. Do not rely on application-level checks alone.
 
 ```typescript
+const MAX_PAYLOAD_BYTES = 1024 * 1024;
+
 const wss = new WebSocketServer({
   noServer: true,
-  maxPayload: 1_048_576, // 1 MB
+  maxPayload: MAX_PAYLOAD_BYTES,
 });
 ```
 
@@ -512,8 +531,9 @@ const wss = new WebSocketServer({
 
 Tokens expire. The client must refresh the auth token without dropping the connection.
 
+The client sends a `ReauthMessage` before the token expires. The server validates it, updates the connection's auth context, and answers with a `ReauthResponse` whose `expiresAt`, in Unix milliseconds, tells the client when to refresh again.
+
 ```typescript
-// Client sends a re-auth message before the token expires
 interface ReauthMessage {
   readonly type: "reauth";
   readonly id: string;
@@ -523,14 +543,13 @@ interface ReauthMessage {
   };
 }
 
-// Server validates and updates the connection's auth context
 interface ReauthResponse {
   readonly type: "reauth_response";
   readonly ref: string;
   readonly timestamp: number;
   readonly payload: {
     readonly success: boolean;
-    readonly expiresAt: number; // Unix ms, so client knows when to refresh again
+    readonly expiresAt: number;
   };
 }
 ```
@@ -564,18 +583,19 @@ SSE is wrong when:
 ```typescript
 import { IncomingMessage, ServerResponse } from "node:http";
 
+const KEEPALIVE_INTERVAL_MS = 15_000;
+
 function handleSSE(req: IncomingMessage, res: ServerResponse): void {
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
-    "X-Accel-Buffering": "no", // Disable nginx buffering
+    "X-Accel-Buffering": "no",
   });
 
-  // Send a comment every 15 seconds to keep the connection alive
   const keepalive = setInterval(() => {
     res.write(": keepalive\n\n");
-  }, 15_000);
+  }, KEEPALIVE_INTERVAL_MS);
 
   function send(event: string, data: unknown, id?: string): void {
     if (id) {
@@ -587,10 +607,12 @@ function handleSSE(req: IncomingMessage, res: ServerResponse): void {
 
   req.on("close", () => {
     clearInterval(keepalive);
-    // Clean up subscriptions
+    unsubscribeClient(res);
   });
 }
 ```
+
+`X-Accel-Buffering: no` disables nginx response buffering. The `: keepalive` line is an SSE comment frame that holds the connection open.
 
 ### Reconnection with Last-Event-ID
 
@@ -607,7 +629,7 @@ function handleSSE(req: IncomingMessage, res: ServerResponse): void {
     }
   }
 
-  // Subscribe to live updates
+  subscribeToLiveUpdates(res);
 }
 ```
 
@@ -632,26 +654,29 @@ Rules:
 | Heartbeat timeout | Server terminates connection after one missed pong, client reconnects |
 
 ```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import type { IncomingMessage } from "node:http";
+import { describe, it, expect } from "vitest";
 import { WebSocket } from "ws";
 
 describe("connection lifecycle", () => {
-  it("must reject connection with invalid token", async () => {
+  it("must reject the upgrade with 401 for an invalid token", async () => {
+    // Arrange
     const ws = new WebSocket("ws://localhost:3000", {
       headers: { Authorization: "Bearer invalid-token" },
     });
 
-    const closeEvent = await new Promise<CloseEvent>((resolve) => {
-      ws.on("error", () => {});
-      ws.on("close", (code, reason) => {
-        resolve({ code, reason: reason.toString() });
-      });
+    // Act
+    const response = await new Promise<IncomingMessage>((resolve) => {
+      ws.once("unexpected-response", (_request, incoming) => resolve(incoming));
     });
 
-    expect(closeEvent.code).toBe(1006); // Abnormal closure (upgrade rejected)
+    // Assert
+    expect(response.statusCode).toBe(401);
   });
 });
 ```
+
+Listening for `unexpected-response` captures the rejected upgrade directly, so the test asserts the 401 itself rather than the generic 1006 close code that follows it.
 
 ### Reconnection Behavior Tests
 
@@ -665,26 +690,20 @@ describe("connection lifecycle", () => {
 
 ### Message Ordering Verification
 
+`collectSequences` resolves with the sequence numbers of the next `count` messages the client receives, and `publishInOrder` publishes `count` test messages one after another.
+
 ```typescript
 it("must deliver messages in sequence order", async () => {
-  const received: number[] = [];
+  // Arrange
   const messageCount = 100;
+  const sequences = collectSequences(client, messageCount);
 
-  client.on("message", (data: string) => {
-    const msg: ServerMessage = JSON.parse(data);
-    received.push(msg.sequence);
-  });
+  // Act
+  await publishInOrder("test-channel", messageCount);
 
-  for (let i = 0; i < messageCount; i++) {
-    await publishToChannel("test-channel", {
-      type: "test",
-      payload: { index: i },
-    });
-  }
-  await waitForMessages(client, messageCount);
-
-  const expected = Array.from({ length: messageCount }, (_, i) => i + 1);
-  expect(received).toEqual(expected);
+  // Assert
+  const expected = Array.from({ length: messageCount }, (_, index) => index + 1);
+  await expect(sequences).resolves.toEqual(expected);
 });
 ```
 
@@ -702,8 +721,9 @@ Test concurrent connections to find the server's capacity ceiling before product
 
 Run load tests against a single server instance first to establish a baseline. Then test with the full horizontally-scaled setup including the pub/sub backend.
 
+**k6 WebSocket load test:**
+
 ```typescript
-// k6 WebSocket load test
 import ws from "k6/ws";
 import { check } from "k6";
 

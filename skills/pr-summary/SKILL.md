@@ -1,9 +1,20 @@
 ---
 name: pr-summary
-description: Generate PR summary with reviewer suggestions based on file ownership. Fetches PR data, summarizes changes, highlights risks, and recommends reviewers from git history. Use when user says "pr summary", "summarize this PR", "who should review this", "generate PR description", or wants a reviewer-ready summary of a pull request. Do NOT use for code review (use /review), creating PRs (use /ship pr), or checking CI status (use /ship checks).
+description: Generate a PR summary with reviewer suggestions based on file ownership. Fetches PR data, summarizes changes, highlights risks, and recommends reviewers from git history. Use when user says "pr summary", "summarize this PR", "who should review this", "generate PR description", when /morning finds a description that drifted from its diff, or wants a reviewer-ready summary of a pull request. For code review, use /review; for creating PRs, use /ship pr; for checking CI status, use /ship checks.
+argument-hint: "/pr-summary | /pr-summary <number>"
+allowed-tools: "Read, Grep, Glob, Bash, Write, AskUserQuestion"
 ---
 
+## Overview
+
 Generates a reviewer-friendly summary of a pull request and suggests reviewers based on file ownership history.
+
+## When to Use
+
+- A PR is open and needs reviewers picked from who actually knows the changed files.
+- The PR description is empty, under 50 characters, or has drifted from the diff, including when `/morning` flags the drift.
+- A reviewer wants the risk areas and the Merge Danger call before reading the diff.
+- For a line-by-line review, use `/review`; for opening the PR, use `/ship pr`; for CI status, use `/ship checks`.
 
 ## Arguments
 
@@ -84,8 +95,11 @@ If the PR description is empty or under 50 characters, generate a reviewer-frien
 
 - **What:** one paragraph explaining what changed and why.
 - **How:** key implementation decisions and trade-offs.
-- **Testing:** how changes were verified.
+- **Evidence:** a before and an after: the exact test that failed and now passes, or the output that changed. "Tests are green" alone is a claim. A visible UI change carries before and after screenshots; when none exist, say so rather than inventing one.
+- **Merge Danger:** the **Door**, one-way or two-way, and the **Blast Radius**, what breaks if the change is wrong. Always one-way: a migration that drops or rewrites data, an outbound send to users or partners, a deletion, and a public API removal.
 - **Breaking changes:** if any, with migration steps.
+
+The generated body follows [`../../rules/no-ai-process-leak.md`](../../rules/no-ai-process-leak.md), is never hard-wrapped, and carries no open questions; those go to the chat.
 
 ### 5. Output
 
@@ -95,7 +109,7 @@ Present the full summary:
 
 2. **Change summary.** Categorized file list with line counts.
 
-3. **Risk areas.** Flagged files with explanations.
+3. **Risk areas.** Flagged files with explanations, plus the Merge Danger call: Door and Blast Radius, with the one-way trigger named when one applies.
 
 4. **Test coverage.** Whether tests were added or modified for the changes.
 
@@ -114,6 +128,31 @@ Present the full summary:
 - When the PR has fewer than 3 potential reviewers from git history, show however many are available. Do not pad with guesses.
 - All timestamps in GMT.
 - Read the actual diff, not just the file list. A file list without context produces shallow summaries.
+
+## Common Rationalizations
+
+- "The file list and line counts say enough": a file list produces a shallow summary. Read the diff before writing What and How.
+- "`Tests are green` covers Evidence": Evidence is a before and an after, such as the exact test that failed and now passes.
+- "The description is plainly thin, so updating it saves a round trip": present the generated body and run `gh pr edit` only after the user says yes.
+- "Git history yields two reviewers, the team lead makes a natural third": suggestions come from history alone. Show the two.
+- "This migration is easy to reverse, call it two-way": a migration that drops or rewrites data, an outbound send, a deletion, and a public API removal are always one-way.
+
+## Red Flags
+
+- Stop and resolve the account from the remote when a `gh` command lacks the `GH_TOKEN` prefix.
+- Stop and remove the author when they appear in the reviewer suggestions.
+- Stop and ask the user when `gh pr edit` is about to run without their approval.
+- Stop and move the question to the chat when the generated body contains an open question.
+- Stop and state that no screenshots exist when a visible UI change has none to show.
+
+## Verification
+
+- Every `gh` call carried the `GH_TOKEN=$(gh auth token --user <account>)` prefix.
+- The summary cites behavior read from the diff, beyond the file list.
+- The reviewer table excludes the author, lists at most three people, and states that it comes from git history.
+- The Merge Danger call names the Door and the Blast Radius, plus the one-way trigger when one applies.
+- A generated body carries What, How, Evidence, Merge Danger, and Breaking changes, with one line per paragraph.
+- The PR description on GitHub is unchanged unless the user approved the edit.
 
 ## Related Skills
 

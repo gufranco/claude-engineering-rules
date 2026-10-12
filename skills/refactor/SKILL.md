@@ -1,11 +1,22 @@
 ---
 name: refactor
-description: Guided refactoring with behavior preservation verification. Identifies candidates (long functions, deep nesting, duplicated logic, god classes), proposes a refactoring plan, executes incrementally with tests between steps, and verifies no behavior change. Use when user says "refactor", "clean up this code", "simplify", "extract", "restructure", "reduce complexity", "split this file", or wants to improve code structure without changing behavior. Do NOT use for new features (use /plan), bug fixes (use /investigate), or code review (use /review).
+description: Guided refactoring with behavior preservation verification. Identifies candidates (long functions, deep nesting, duplicated logic, god classes), proposes a refactoring plan, executes incrementally with tests between steps, and verifies no behavior change. Use when user says "refactor", "clean up this code", "simplify", "extract", "restructure", "reduce complexity", "split this file", or wants to improve code structure without changing behavior. For new features, use /plan; for bug fixes, use /investigate; for code review, use /review.
+argument-hint: "/refactor | /refactor src/services/order.service.ts | /refactor src --plan-only"
+allowed-tools: "Read, Grep, Glob, Edit, Write, Bash"
 ---
+
+## Overview
 
 Incremental refactoring workflow that enforces behavior preservation at every step. Each refactoring is a separate commit with test verification before and after.
 
 The refactoring principles follow [`../../rules/code-style.md`](../../rules/code-style.md). This skill provides the execution workflow.
+
+## When to Use
+
+- Tests pass, and a function, file, or class crosses one of the Phase 2 thresholds.
+- A feature is next, and the code it lands in has to be made easy to change first.
+- `/module-audit` produced a consolidation the user picked.
+- For new behavior, use `/plan`; for a bug, use `/investigate`; for feedback on a diff, use `/review`.
 
 ## Arguments
 
@@ -20,6 +31,10 @@ The refactoring principles follow [`../../rules/code-style.md`](../../rules/code
 1. **Run the full test suite.** Record the result. If tests fail, stop. Do not refactor code with a failing test suite. The user must fix tests first.
 
 2. **Record coverage.** If a coverage tool is configured, record the current coverage numbers for affected files. Coverage must not decrease after refactoring.
+
+3. **Gate on coverage of the target.** Every line and branch the refactoring will move needs a test that observes its behavior; the suite passing proves nothing about code no test reaches. When coverage of the target is insufficient, or no coverage tool exists to show it, take one of two paths:
+   - Write characterization tests first: tests that pin the current observable behavior, including behavior that looks wrong, through the public interface. Commit them alone as `test(<scope>): characterize <unit>` before any structural change.
+   - Stop and report which units lack coverage. Never refactor uncovered code.
 
 ### Phase 2: Identify Candidates
 
@@ -84,6 +99,32 @@ For each approved candidate, in priority order:
 - One refactoring per commit. If a commit does two things, split it.
 - Revert immediately when tests fail. Do not debug a failed refactoring for more than 5 minutes. Try a different approach or skip the candidate.
 - Do not refactor code you do not understand. Read the function, its callers, and its tests before touching it.
+
+## Common Rationalizations
+
+- "The test only broke because it asserts an implementation detail, so updating the assertion is fine": assertions stay untouched. Revert, and report the brittle test as its own finding.
+- "The off-by-one is right here, fixing it during the extraction is quicker": a behavior change goes in its own commit, apart from the structural one.
+- "Two tiny refactorings fit in one commit": one refactoring per commit, so each step reverts alone.
+- "The suite was already red before I started": the baseline stays green. Stop until the user fixes the failing tests.
+- "The suite is green, so the refactoring is safe": green says nothing about lines no test reaches. Characterize them first, or stop.
+- "Five more minutes of debugging will save this candidate": revert, try one alternative, and skip the candidate when that also fails.
+
+## Red Flags
+
+- Stop before any change when the Phase 1 test run fails.
+- Stop and write characterization tests, or report the gap, when a candidate touches lines no test reaches.
+- Stop and revert when a test fails after a step.
+- Stop and read the function, its callers, and its tests when the next edit targets code you have not read.
+- Stop and split the commit when its diff mixes a structural change with a behavior change.
+- Stop at the Phase 3 table when `--plan-only` was passed.
+
+## Verification
+
+- The full test suite passes, and the diff touches no test assertion.
+- The linter reports zero warnings, the type checker zero errors, and the build is clean.
+- Coverage of the affected files is at or above the Phase 1 baseline.
+- `git log` shows one `refactor(<scope>)` commit per applied candidate.
+- Every skipped candidate is listed with the test failure that ruled it out.
 
 ## Related skills
 

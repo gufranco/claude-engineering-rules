@@ -172,15 +172,27 @@ When a ticket ID exists, prefix it: `<TICKET-ID>: <description>`
 
 - **What**: One paragraph explaining what changed and why. A reviewer reading only this paragraph should understand the full picture.
 - **How**: Key implementation decisions, trade-offs, and anything non-obvious. Skip trivial details the diff already shows.
-- **Testing**: How the changes were verified. Include commands, screenshots, or steps to reproduce.
+- **Evidence**: A before and an after. The exact test that failed before the change and passes now, or the command output that changed. A visible UI change carries before and after screenshots. "Tests are green" on its own is a claim, not evidence.
+- **Merge Danger**: Two lines, **Door** and **Blast Radius**. A two-way door is cheap to walk back; a one-way door is not. Blast radius names what breaks if the change is wrong: API consumers, layout on mobile, a scheduled job, a partner integration.
 - **Breaking changes**: If any, list them with migration steps.
+
+These changes are always one-way doors, whatever the diff size:
+
+- A migration that drops or rewrites data
+- An outbound send to users or partners: email, SMS, push, webhook
+- A deletion of records, files, or resources
+- Removal of a public API, route, field, or event
+
+The author grading their own change is the weakest judge of reversibility, so treat a "two-way, small blast radius" call with the most suspicion. A revert does not unsend an email, and a flagged rollout stays two-way only until the first write lands in the new format. The door call turns "is this safe to merge" into a claim a reviewer can dispute, and it tells them where to read slowly.
+
+The body describes the change, never how it was produced: no AI process language, per [`no-ai-process-leak.md`](../rules/no-ai-process-leak.md). Open questions go to the conversation with the requester, never into the PR body.
 
 **Never hard-wrap the description body.** GitHub and GitLab render a single newline inside a paragraph as a literal line break, so wrapping prose at 72 columns produces a jagged, broken-looking description. The "wrap at 72" convention applies to commit-message bodies only, never to PR/MR/issue descriptions. Write each paragraph as one long line and let the platform soft-wrap it. The only newlines in a description body are blank lines between blocks and one newline per list item. Same rule for `gh issue create` and for a reply inside a review thread, which is the only comment surface [`pr-comment-discipline.md`](../rules/pr-comment-discipline.md) permits.
 
 Before opening:
 
 1. Identify the base branch from git, never hardcode it
-2. Fetch and rebase: `git fetch origin && git rebase origin/<base>`
+2. Fetch, then rebase only a branch that has never been pushed: `git fetch origin && git rebase origin/<base>`. A branch already on the remote is never rebased; merge the base only when it conflicts, per Conflict Resolution below.
 3. Resolve conflicts if any, run tests locally
 
 Prefer CLI over web UI:
@@ -218,13 +230,25 @@ If `mergeableState` is `dirty`, the branch has merge conflicts. GitHub Actions `
 
 ## Conflict Resolution
 
-```bash
-git fetch origin && git rebase origin/<base>
-# Resolve conflicts manually
-git add <file> && git rebase --continue
-# Test locally, then:
-git push --force-with-lease
-```
+A pushed branch is never rewritten, so its conflicts are resolved with a merge. A rebase is only for a local branch that has never been pushed.
+
+1. Fetch and merge the base:
+
+   ```bash
+   git fetch origin && git merge origin/<base>
+   ```
+
+2. Resolve the conflicts manually, then stage and conclude the merge:
+
+   ```bash
+   git add <file> && git commit --no-edit
+   ```
+
+3. Test locally, then push without force:
+
+   ```bash
+   git push
+   ```
 
 ## Push Strategy
 

@@ -1,9 +1,15 @@
 ---
 name: setup
-description: Interactive project environment setup. Reads .env.example, prompts for missing values, detects required services and offers to start them via Docker, runs migrations, seeds the database, and verifies the app starts successfully. Use when user says "setup", "set up the project", "configure environment", "first time setup", "get this running", "initialize", or is setting up a project for the first time. Do NOT use for infrastructure management (use /infra), deployment (use /deploy), or README generation (use /readme).
+description: Interactive first-time project setup that fills missing env values, starts required services, runs migrations and seeds, and verifies the app starts.
+disable-model-invocation: true
+argument-hint: "/setup"
+allowed-tools: "Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion"
 sensitive: true
 ---
-First-time project setup that detects the stack, installs dependencies, configures the environment, starts required services, runs database migrations and seeds, and verifies the application starts. Interactive: prompts for missing environment values and confirms before starting services.
+
+## Overview
+
+First-time project setup that detects the stack, installs dependencies, configures the environment, starts required services, runs database migrations and seeds, and verifies the application starts. Interactive: prompts for missing non-secret environment values in chat, hands secret values to a script the user runs, and confirms before starting services.
 
 ## When to use
 
@@ -12,12 +18,12 @@ First-time project setup that detects the stack, installs dependencies, configur
 - When returning to a project after a long time and the environment may be stale.
 - When a teammate asks "how do I get this running?"
 
-## When NOT to use
+Neighbouring work has its own skill:
 
-- For managing production infrastructure. Use `/infra` instead.
-- For deploying to staging or production. Use `/deploy` instead.
-- For generating a README. Use `/readme` instead.
-- For updating dependencies. Use `/audit deps` instead.
+- For managing production infrastructure, use `/infra`.
+- For deploying to staging or production, use `/deploy`.
+- For generating a README, use `/readme`.
+- For updating dependencies, use `/audit deps`.
 
 ## Arguments
 
@@ -52,14 +58,87 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
    - Python with poetry: `poetry install`.
    - Report the result: success or failure with the error output.
 
-4. **Environment setup.** Check for `.env.example` or `.env.template` in the project root.
-   - If `.env` already exists, read it and compare against `.env.example`. List any variables present in the example but missing from `.env`.
-   - If `.env` does not exist, copy `.env.example` to `.env`.
-   - For each missing or placeholder variable, prompt the user:
-     - Show the variable name.
-     - Show the description from comments in `.env.example` if available.
-     - Show the default value if one exists.
-     - Ask for the value. Accept the default if the user presses enter.
+4. **Environment setup.** Check for `.env.example` or `.env.template` in the project root; the commands below name `.env.example`, so substitute the template file when that is the one present. Never read `.env` values into the conversation; work with key names only.
+   - If `.env` does not exist, create it from the example with owner-only permissions: `(umask 077 && cp .env.example .env)`.
+   - List the keys that are missing, empty, or still equal to the example value. This prints names, never values:
+
+     ```bash
+     awk -F= 'NR == FNR && /^[A-Za-z_][A-Za-z0-9_]*=/ { example[$1] = substr($0, length($1) + 2); next } NR == FNR { next } $1 in example { present[$1] = 1; value = substr($0, length($1) + 2); if (value == "" || value == example[$1]) { print $1 } } END { for (key in example) { if (!(key in present)) { print key } } }' .env.example .env
+     ```
+
+   - Classify each listed key. A key is secret-shaped when its name contains `KEY`, `SECRET`, `TOKEN`, `PASSWORD`, `PASS`, `PWD`, `PRIVATE`, `CREDENTIAL`, `AUTH`, `SALT`, or `DSN`, or when it holds a connection string that can carry credentials, such as `DATABASE_URL` or `REDIS_URL`. When unsure, treat the key as secret-shaped.
+   - For each non-secret key, ask in chat: show the variable name, the description from comments in `.env.example` if available, and the default value if one exists. Accept the default if the user presses enter, and write the answer to `.env`.
+   - For the secret-shaped keys, generate a wizard script so the values never pass through the conversation. Write it to the project workspace as `setup-env.sh`, resolving the root with [`hooks/_lib/project_workspace.py`](../../hooks/_lib/project_workspace.py) the same way [`/checkpoint`](../checkpoint/SKILL.md) does, or to the scratchpad directory outside a git repository. Fill `KEYS` with the secret-shaped names and leave the rest of the template unchanged:
+
+     ```bash
+     #!/usr/bin/env bash
+     set -euo pipefail
+
+     ENV_FILE="${ENV_FILE:-.env}"
+     MAX_ATTEMPTS=3
+     KEYS=(DATABASE_URL STRIPE_SECRET_KEY)
+
+     has_value() {
+       [[ -f "$ENV_FILE" ]] && grep -qE "^${1}=.+" "$ENV_FILE"
+     }
+
+     write_env() {
+       local key="$1" value="$2" tmp sq="'\\''"
+       [[ -e "$ENV_FILE" ]] || (umask 077 && : >"$ENV_FILE")
+       tmp=$(umask 077 && mktemp)
+       grep -vE "^${key}=" "$ENV_FILE" >"$tmp" || true
+       printf "%s='%s'\n" "$key" "${value//\'/$sq}" >>"$tmp"
+       cat "$tmp" >"$ENV_FILE"
+       rm -f "$tmp"
+     }
+
+     ask_secret() {
+       local key="$1" value attempt rc
+       for ((attempt = 1; attempt <= MAX_ATTEMPTS; attempt++)); do
+         value=""
+         rc=0
+         if has_value "$key"; then
+           printf '%s [Enter keeps the saved value]: ' "$key"
+         else
+           printf '%s: ' "$key"
+         fi
+         IFS= read -rs value || rc=$?
+         printf '\n'
+         if [[ -z "$value" ]] && has_value "$key"; then
+           printf 'Kept %s.\n' "$key"
+           return 0
+         fi
+         if [[ -n "$value" ]]; then
+           write_env "$key" "$value"
+           printf 'Saved %s.\n' "$key"
+           return 0
+         fi
+         if ((rc != 0)); then
+           printf 'Input closed before %s was entered.\n' "$key" >&2
+           return 1
+         fi
+         printf '%s is required.\n' "$key" >&2
+       done
+       return 1
+     }
+
+     main() {
+       local key missing=""
+       for key in "${KEYS[@]}"; do
+         ask_secret "$key" || missing="$missing $key"
+       done
+       if [[ -n "$missing" ]]; then
+         printf 'Still missing:%s\n' "$missing" >&2
+         return 1
+       fi
+       printf 'Every value is saved in %s.\n' "$ENV_FILE"
+     }
+
+     main "$@"
+     ```
+
+   - Check the script with `bash -n` and `shellcheck`, then tell the user to run it from the project root with `! bash <path>` at the prompt, or in a separate terminal. Input is hidden with `read -rs`, a new `.env` is created under `umask 077`, a re-run offers each saved value as the Enter default without showing it, a closed input stream ends the loop instead of spinning, and no value is ever echoed.
+   - After the user reports the script finished, rerun the key-name listing above to confirm every key now has a value. The script holds key names only, so it may stay in the workspace for a later re-run.
    - Never overwrite values the user has already set in `.env`.
 
 5. **Detect required services.** Scan these sources for service dependencies:
@@ -130,6 +209,7 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
 ## Rules
 
 - Never overwrite an existing `.env` file. Merge missing values only.
+- Never read, print, or ask in chat for a secret-shaped value. The wizard script collects it in the user's terminal, per [`rules/security.md`](../../rules/security.md).
 - Always check if services are already running before attempting to start them. Starting a second instance on the same port causes errors.
 - Always verify the application actually starts. "Dependencies installed" is not "setup complete."
 - Never install runtimes or system-level tools automatically. Report what is missing and let the user decide how to install.
@@ -137,9 +217,32 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
 - Prefer `pnpm` for JavaScript and TypeScript projects. Only use `npm` or `yarn` when the lockfile indicates otherwise.
 - When docker-compose starts a service, wait for its health check before running migrations. A started container is not a ready service.
 
+## Common Rationalizations
+
+- "Pasting the API key in chat is faster than running a script": a value in chat is in the transcript and counts as disclosed. The wizard script reads it with `read -rs` in the user's terminal.
+- "The key name looks harmless, so ask for it in chat": the classification in step 4 decides, and an unsure call counts as secret-shaped.
+- "Dependencies installed, so setup is done": setup is done when the app starts and answers its health check in step 8.
+- "The container is up, so run the migrations": `docker compose ps` must report the service healthy first.
+- "The runtime is missing, so install it quickly": runtimes come from `mise` or from the user. Report the gap and let the user choose.
+
+## Red Flags
+
+- Stop and switch to the wizard script when the next message would ask for, print, or echo a secret-shaped value.
+- Stop and merge only missing keys when the next write would replace a value already set in `.env`.
+- Stop and report the missing prerequisite when `mise` cannot resolve a pinned runtime.
+- Stop and report the crash output with diagnostic suggestions when the app exits during step 8.
+
+## Verification
+
+- The key-name listing from step 4 prints nothing after the wizard script finishes.
+- No secret-shaped value appears anywhere in the conversation.
+- Every detected service reports healthy or running before migrations ran.
+- The app started, answered a health check or stayed up for the 15-second window, and was stopped afterward.
+- The setup report lists every step, with the error output for any step that failed.
+
 ## Related skills
 
 - `/onboard` - Understand the codebase structure and architecture.
 - `/infra` - Manage infrastructure for local development.
-- `/health` - Check project quality after setup is complete.
+- `/test` - Run the suite, coverage, and lint once setup is complete.
 - `/test` - Run the test suite to verify everything works.
