@@ -225,6 +225,7 @@ NON_PUBLISHING_PREFIXES = (
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 
 def is_publishing_bash(cmd: str) -> bool:
@@ -235,7 +236,8 @@ def is_publishing_bash(cmd: str) -> bool:
     for pref in NON_PUBLISHING_PREFIXES:
         if stripped.startswith(pref):
             return False
-    return any(p.search(cmd) for p in PUBLISHING_BASH_PATTERNS)
+    matched = strip_git_global_options(cmd)
+    return any(p.search(matched) for p in PUBLISHING_BASH_PATTERNS)
 
 
 def is_git_message_bash(cmd: str) -> bool:
@@ -244,7 +246,8 @@ def is_git_message_bash(cmd: str) -> bool:
         return False
     if any(p.search(cmd) for p in NON_GIT_PUBLISHING_BASH_PATTERNS):
         return False
-    return any(p.search(cmd) for p in GIT_MESSAGE_BASH_PATTERNS)
+    matched = strip_git_global_options(cmd)
+    return any(p.search(matched) for p in GIT_MESSAGE_BASH_PATTERNS)
 
 
 def split_heredoc_bodies(cmd: str) -> tuple[list[str], str]:

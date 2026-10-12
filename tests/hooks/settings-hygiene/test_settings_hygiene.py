@@ -1,16 +1,16 @@
-"""Coverage for settings-hygiene hook."""
-
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
 from pathlib import Path
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "settings-hygiene"
 
 
-def test_blocks_inline_credentials(tool_use, assert_blocks):
+def test_blocks_inline_credentials(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -19,10 +19,15 @@ def test_blocks_inline_credentials(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_absolute_home_path(tool_use, assert_blocks):
+def test_blocks_absolute_home_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -31,10 +36,15 @@ def test_blocks_absolute_home_path(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_env_var_password(tool_use, assert_allows):
+def test_allows_env_var_password(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -43,10 +53,15 @@ def test_allows_env_var_password(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_tilde_path(tool_use, assert_allows):
+def test_allows_tilde_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -55,10 +70,15 @@ def test_allows_tilde_path(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_settings_file(tool_use, assert_allows):
+def test_allows_non_settings_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -67,10 +87,15 @@ def test_allows_non_settings_file(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_clean_settings(tool_use, assert_allows):
+def test_allows_clean_settings(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -79,10 +104,15 @@ def test_allows_clean_settings(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -92,10 +122,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -106,10 +141,15 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -118,17 +158,19 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"SETTINGS_HYGIENE_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"SETTINGS_HYGIENE_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "settings-hygiene.py"
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
+    env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -139,10 +181,16 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_no_file_path_is_allowed(tool_use, assert_allows):
+def test_no_file_path_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": "", "content": "{}"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

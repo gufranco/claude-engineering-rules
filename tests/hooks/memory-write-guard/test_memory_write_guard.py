@@ -1,16 +1,7 @@
-"""Coverage for memory-write-guard hook.
-
-Source rule: `~/.claude/CLAUDE.md` "Knowledge Single Source of Truth" and
-`~/.claude/rules/knowledge-notes.md` "Memory Compile Contract".
-
-The guard keeps the session memory directory a generated artifact while a
-vault is configured. The vault is optional and personal, so the guard must be
-completely inert when `SECOND_BRAIN_VAULT` is unset or does not resolve.
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "memory-write-guard"
 
@@ -26,52 +17,82 @@ COMPILED = (
 
 @pytest.fixture
 def vault(tmp_path):
-    """A configured, existing vault."""
     d = tmp_path / "second-brain"
     d.mkdir()
     return {"SECOND_BRAIN_VAULT": str(d)}
 
 
 def test_blocks_handwritten_memory_file_when_vault_configured(
-    tool_use, assert_blocks, vault
+    tool_use, run_hook, vault
 ):
+    # Arrange
     payload = tool_use("Write", {"file_path": MEMORY_FILE, "content": HANDWRITTEN})
 
-    assert_blocks(HOOK, payload, "generated from the vault", env=vault)
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_blocked(result, "generated from the vault")
 
 
-def test_allows_compiled_memory_file(tool_use, assert_allows, vault):
+def test_allows_compiled_memory_file(tool_use, run_hook, vault):
+    # Arrange
     payload = tool_use("Write", {"file_path": MEMORY_FILE, "content": COMPILED})
 
-    assert_allows(HOOK, payload, env=vault)
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_memory_index(tool_use, assert_allows, vault):
+def test_allows_memory_index(tool_use, run_hook, vault):
+    # Arrange
     payload = tool_use("Write", {"file_path": MEMORY_INDEX, "content": "- [x](x.md)"})
 
-    assert_allows(HOOK, payload, env=vault)
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_paths_outside_the_memory_directory(tool_use, assert_allows, vault):
+def test_allows_paths_outside_the_memory_directory(tool_use, run_hook, vault):
+    # Arrange
     payload = tool_use("Write", {"file_path": OUTSIDE_FILE, "content": HANDWRITTEN})
 
-    assert_allows(HOOK, payload, env=vault)
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_inert_when_vault_unset(tool_use, assert_allows):
+def test_inert_when_vault_unset(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": MEMORY_FILE, "content": HANDWRITTEN})
 
-    assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": ""})
+    # Act
+    result = run_hook(HOOK, payload, env={"SECOND_BRAIN_VAULT": ""})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_inert_when_vault_path_does_not_exist(tool_use, assert_allows, tmp_path):
+def test_inert_when_vault_path_does_not_exist(tool_use, run_hook, tmp_path):
+    # Arrange
     missing = str(tmp_path / "no-such-vault")
     payload = tool_use("Write", {"file_path": MEMORY_FILE, "content": HANDWRITTEN})
 
-    assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": missing})
+    # Act
+    result = run_hook(HOOK, payload, env={"SECOND_BRAIN_VAULT": missing})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_edit_of_handwritten_memory_file(tool_use, assert_blocks, vault):
+def test_blocks_edit_of_handwritten_memory_file(tool_use, run_hook, vault):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -81,16 +102,30 @@ def test_blocks_edit_of_handwritten_memory_file(tool_use, assert_blocks, vault):
         },
     )
 
-    assert_blocks(HOOK, payload, "generated from the vault", env=vault)
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_blocked(result, "generated from the vault")
 
 
-def test_bypass_env_disables_the_guard(tool_use, assert_allows, vault):
+def test_bypass_env_disables_the_guard(tool_use, run_hook, vault):
+    # Arrange
     payload = tool_use("Write", {"file_path": MEMORY_FILE, "content": HANDWRITTEN})
 
-    assert_allows(HOOK, payload, env={**vault, "MEMORY_WRITE_GUARD_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={**vault, "MEMORY_WRITE_GUARD_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_ignores_unrelated_tools(tool_use, assert_allows, vault):
+def test_ignores_unrelated_tools(tool_use, run_hook, vault):
+    # Arrange
     payload = tool_use("Bash", {"command": f"cat {MEMORY_FILE}"})
 
-    assert_allows(HOOK, payload, env=vault)
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_allowed(result)

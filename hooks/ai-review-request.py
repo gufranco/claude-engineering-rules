@@ -35,6 +35,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib import ai_review  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
@@ -60,6 +61,7 @@ class TriggerKind(str, Enum):
 
 GH_PR_ACTIONS = (TriggerKind.CREATE.value, TriggerKind.READY.value)
 REPO_FLAGS = ("--repo", "-R")
+REPOSITORY_REDIRECTS = ("--git-dir", "--work-tree")
 
 
 @dataclass(frozen=True)
@@ -91,9 +93,11 @@ def _gh_pr_action(tokens: list[str]) -> tuple[str, list[str]] | None:
 def _git_push_dir(args: list[str], cwd: str) -> str | None:
     directory, i = cwd, 1
     while i < len(args) and args[i].startswith("-"):
+        if args[i].split("=", 1)[0] in REPOSITORY_REDIRECTS:
+            return None
         if args[i] == "-C" and i + 1 < len(args):
             directory = os.path.join(directory, os.path.expanduser(args[i + 1]))
-        i += 2 if args[i] in ("-C", "-c") else 1
+        i += 2 if args[i] in OPTIONS_WITH_SEPARATE_VALUE else 1
     return directory if i < len(args) and args[i] == "push" else None
 
 

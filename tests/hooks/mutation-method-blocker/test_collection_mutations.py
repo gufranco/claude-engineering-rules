@@ -1,9 +1,3 @@
-"""Map / Set / WeakMap / WeakSet mutation coverage.
-
-Item 117 of the plan. Confirms each prototype mutation method blocks and
-that immutable replacements (`new Map([...])`) pass.
-"""
-
 from __future__ import annotations
 
 import pytest
@@ -36,10 +30,13 @@ WEAK_BLOCKED: list[tuple[str, str]] = [
     ("snippet", "detector"), MAP_BLOCKED + SET_BLOCKED + WEAK_BLOCKED
 )
 def test_map_or_set_mutation_is_blocked(run_hook, snippet, detector):
+    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"unexpected exit {code}\n{stderr}"
     assert detector in stderr, f"detector {detector} missing in:\n{stderr}"
 
@@ -58,8 +55,11 @@ COLLECTION_ALLOWED: list[str] = [
 
 @pytest.mark.parametrize("snippet", COLLECTION_ALLOWED)
 def test_collection_allowed_pattern_passes(run_hook, snippet):
+    # Arrange
     payload = make_edit_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block:\n{stderr}"

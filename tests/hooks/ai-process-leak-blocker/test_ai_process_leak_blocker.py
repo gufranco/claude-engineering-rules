@@ -1,8 +1,3 @@
-"""Coverage for ai-process-leak-blocker hook.
-
-Source rule: `~/.claude/rules/no-ai-process-leak.md`.
-"""
-
 from __future__ import annotations
 
 import os
@@ -11,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 TESTS_ROOT = Path(__file__).resolve().parents[2]
 if str(TESTS_ROOT) not in sys.path:
@@ -28,13 +24,18 @@ HOOK = "ai-process-leak-blocker"
         "PHASE 0",
     ],
 )
-def test_blocks_phase_n_in_commit(tool_use, assert_blocks, phrase):
+def test_blocks_phase_n_in_commit(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "{phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "Phase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
 @pytest.mark.parametrize(
@@ -46,18 +47,24 @@ def test_blocks_phase_n_in_commit(tool_use, assert_blocks, phrase):
         "next item per the regnant plan",
     ],
 )
-def test_blocks_of_the_plan_references(tool_use, assert_blocks, phrase):
+def test_blocks_of_the_plan_references(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "{phrase}"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
 def test_allows_a_search_whose_quoted_pattern_names_a_publishing_command(
-    tool_use, assert_allows
+    tool_use, run_hook
 ):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -66,155 +73,240 @@ def test_allows_a_search_whose_quoted_pattern_names_a_publishing_command(
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_a_quoted_body_on_a_real_publishing_command(tool_use, assert_blocks):
+def test_blocks_a_quoted_body_on_a_real_publishing_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr create --body 'Refs: specs/2026-01-01-foo/plan.md'"},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_refs_specs_trailer(tool_use, assert_blocks):
+def test_blocks_refs_specs_trailer(tool_use, run_hook):
+    # Arrange
     body = "Implements the feature.\n\nRefs: specs/2026-01-01-foo/plan.md"
     payload = tool_use(
         "Bash",
         {"command": f'gh pr create --title "feat" --body "{body}"'},
     )
 
-    assert_blocks(HOOK, payload, "Refs: specs/")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Refs: specs/")
 
 
-def test_blocks_plan_md_reference(tool_use, assert_blocks):
+def test_blocks_plan_md_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "see /specs/foo/plan.md for context"'},
     )
 
-    assert_blocks(HOOK, payload, "plan.md")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "plan.md")
 
 
-def test_blocks_spec_folder_mention(tool_use, assert_blocks):
+def test_blocks_spec_folder_mention(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "create spec folder for the work"'},
     )
 
-    assert_blocks(HOOK, payload, "spec folder")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "spec folder")
 
 
-def test_blocks_canvas_region(tool_use, assert_blocks):
+def test_blocks_canvas_region(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "maps to canvas region 3"'},
     )
 
-    assert_blocks(HOOK, payload, "canvas region")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "canvas region")
 
 
-def test_blocks_state_of_the_art(tool_use, assert_blocks):
+def test_blocks_state_of_the_art(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "introduces state-of-the-art parser"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_faithful_hyperbole(tool_use, assert_blocks):
+def test_blocks_faithful_hyperbole(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "100% faithful port from spec"'},
     )
 
-    assert_blocks(HOOK, payload, "faithful")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "faithful")
 
 
-def test_blocks_adr_reference(tool_use, assert_blocks):
+def test_blocks_adr_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "implements ADR-0012"'},
     )
 
-    assert_blocks(HOOK, payload, "ADR-0012")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "ADR-0012")
 
 
-def test_blocks_lands_in_phase(tool_use, assert_blocks):
+def test_blocks_lands_in_phase(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "feature lands in phase 4"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_following_the_plan(tool_use, assert_blocks):
+def test_blocks_following_the_plan(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "following the plan from yesterday"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_gh_pr_create_with_leak(tool_use, assert_blocks):
+def test_blocks_gh_pr_create_with_leak(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh pr create --title "feat" --body "Phase 2 of the plan"'},
     )
 
-    assert_blocks(HOOK, payload, "Phase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
-def test_blocks_gh_pr_edit_with_leak(tool_use, assert_blocks):
+def test_blocks_gh_pr_edit_with_leak(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh pr edit 42 --body "Phase 3"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_gh_release_create(tool_use, assert_blocks):
+def test_blocks_gh_release_create(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh release create v1.0 --notes "Phase 1 ships"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_gh_issue_create(tool_use, assert_blocks):
+def test_blocks_gh_issue_create(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh issue create --title "bug" --body "from Phase 5"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_glab_mr_create(tool_use, assert_blocks):
+def test_blocks_glab_mr_create(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'glab mr create --description "Phase 2 work"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_git_tag_with_message(tool_use, assert_blocks):
+def test_blocks_git_tag_with_message(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git tag v1.0 -m "Phase 4 milestone"'},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_write_to_source_file(tool_use, assert_blocks):
+def test_blocks_write_to_source_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -223,10 +315,15 @@ def test_blocks_write_to_source_file(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "Phase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
-def test_blocks_edit_with_leak(tool_use, assert_blocks):
+def test_blocks_edit_with_leak(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -236,10 +333,15 @@ def test_blocks_edit_with_leak(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_multiedit_with_leak(tool_use, assert_blocks):
+def test_blocks_multiedit_with_leak(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -251,28 +353,43 @@ def test_blocks_multiedit_with_leak(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_clean_commit(tool_use, assert_allows):
+def test_allows_clean_commit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "fix race condition in createUser"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_publishing_bash(tool_use, assert_allows):
+def test_allows_non_publishing_bash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "echo Phase 1 of the plan"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_to_planning_artifact(tool_use, assert_allows):
+def test_allows_write_to_planning_artifact(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -281,10 +398,15 @@ def test_allows_write_to_planning_artifact(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_to_adr(tool_use, assert_allows):
+def test_allows_write_to_adr(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -293,10 +415,15 @@ def test_allows_write_to_adr(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_to_runbook(tool_use, assert_allows):
+def test_allows_write_to_runbook(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -305,10 +432,15 @@ def test_allows_write_to_runbook(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_to_claude_config(tool_use, assert_allows):
+def test_allows_write_to_claude_config(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -317,36 +449,48 @@ def test_allows_write_to_claude_config(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_var_allows(tool_use, assert_allows):
+def test_bypass_env_var_allows(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'git commit -m "Phase 1 of the plan"'},
     )
 
-    assert_allows(HOOK, payload, env={"AI_PROCESS_LEAK_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"AI_PROCESS_LEAK_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_clean_pr_body(tool_use, assert_allows):
+def test_allows_clean_pr_body(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh pr create --title "feat" --body "Adds a new endpoint for X"'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_returns_zero():
-    import subprocess
-    import sys
-    from pathlib import Path
-
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "ai-process-leak-blocker.py"
     )
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not json",
@@ -355,22 +499,34 @@ def test_invalid_json_returns_zero():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_allows_unknown_tool(tool_use, assert_allows):
+def test_allows_unknown_tool(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/app.ts"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_empty_bash(tool_use, assert_allows):
+def test_allows_empty_bash(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_state_of_the_art_in_docs(tool_use, assert_allows):
+def test_allows_state_of_the_art_in_docs(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -379,10 +535,15 @@ def test_allows_state_of_the_art_in_docs(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_with_empty_path_still_checked(tool_use, assert_blocks):
+def test_write_with_empty_path_still_checked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -391,19 +552,29 @@ def test_write_with_empty_path_still_checked(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_write_with_no_path_still_checked(tool_use, assert_blocks):
+def test_write_with_no_path_still_checked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"content": "Phase 7 work"},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_multiedit_with_non_dict_edit(tool_use, assert_allows):
+def test_multiedit_with_non_dict_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -412,10 +583,15 @@ def test_multiedit_with_non_dict_edit(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, assert_blocks):
+def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "pr-body.md"
     body.write_text(
         "## Follow-ups\n\nThe spec folder lists more notes.\n",
@@ -426,10 +602,15 @@ def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, assert_blocks):
         {"command": (f"gh pr create --base develop --title hello --body-file {body}")},
     )
 
-    assert_blocks(HOOK, payload, "spec folder")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "spec folder")
 
 
-def test_blocks_gh_pr_body_file_with_equals_form(tmp_path, tool_use, assert_blocks):
+def test_blocks_gh_pr_body_file_with_equals_form(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "pr-body.md"
     body.write_text(
         "Implements per the plan.\n",
@@ -440,10 +621,15 @@ def test_blocks_gh_pr_body_file_with_equals_form(tmp_path, tool_use, assert_bloc
         {"command": f"gh pr edit 1234 --body-file={body}"},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_glab_description_file_with_leak(tmp_path, tool_use, assert_blocks):
+def test_blocks_glab_description_file_with_leak(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "mr-body.md"
     body.write_text(
         "Refs: specs/2026-01-01-foo/plan.md\n",
@@ -454,10 +640,15 @@ def test_blocks_glab_description_file_with_leak(tmp_path, tool_use, assert_block
         {"command": (f"glab mr create --description-file {body}")},
     )
 
-    assert_blocks(HOOK, payload, "Refs: specs/")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Refs: specs/")
 
 
-def test_blocks_gh_release_notes_file_with_leak(tmp_path, tool_use, assert_blocks):
+def test_blocks_gh_release_notes_file_with_leak(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "notes.md"
     body.write_text(
         "Phase 1 of the rollout.\n",
@@ -468,10 +659,15 @@ def test_blocks_gh_release_notes_file_with_leak(tmp_path, tool_use, assert_block
         {"command": (f"gh release create v1.0.0 --notes-file {body}")},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_gh_pr_body_file_when_clean(tmp_path, tool_use, assert_allows):
+def test_allows_gh_pr_body_file_when_clean(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "pr-body.md"
     body.write_text(
         "## What\n\nFix race condition in createUser.\n",
@@ -482,10 +678,15 @@ def test_allows_gh_pr_body_file_when_clean(tmp_path, tool_use, assert_allows):
         {"command": (f"gh pr create --base develop --title fix --body-file {body}")},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_when_body_file_missing(tool_use, assert_allows):
+def test_allows_when_body_file_missing(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -496,16 +697,25 @@ def test_allows_when_body_file_missing(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_skipped(tool_use, assert_allows):
+def test_write_non_string_content_is_skipped(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": 12345},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -517,13 +727,18 @@ def test_write_non_string_content_is_skipped(tool_use, assert_allows):
         "I ran the full suite three times",
     ],
 )
-def test_blocks_verification_loop_narration(tool_use, assert_blocks, phrase):
+def test_blocks_verification_loop_narration(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "fix bug. {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "verification loop")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "verification loop")
 
 
 @pytest.mark.parametrize(
@@ -534,16 +749,22 @@ def test_blocks_verification_loop_narration(tool_use, assert_blocks, phrase):
         "Observed the response shape",
     ],
 )
-def test_blocks_observed_narration(tool_use, assert_blocks, phrase):
+def test_blocks_observed_narration(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'git commit -m "pin assertions. {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "Empirical-observation narration")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Empirical-observation narration")
 
 
-def test_blocks_for_each_case_i_ran(tool_use, assert_blocks):
+def test_blocks_for_each_case_i_ran(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -553,10 +774,15 @@ def test_blocks_for_each_case_i_ran(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "Meta-iteration")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Meta-iteration")
 
 
-def test_blocks_pinned_to_match(tool_use, assert_blocks):
+def test_blocks_pinned_to_match(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -566,7 +792,11 @@ def test_blocks_pinned_to_match(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "verification as the deliverable")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "verification as the deliverable")
 
 
 @pytest.mark.parametrize(
@@ -577,25 +807,36 @@ def test_blocks_pinned_to_match(tool_use, assert_blocks):
         "All 4 unit tests still passed",
     ],
 )
-def test_blocks_all_n_tests_pass_trailer(tool_use, assert_blocks, phrase):
+def test_blocks_all_n_tests_pass_trailer(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f'gh pr comment 42 --body "Fixed. {phrase}"'},
     )
 
-    assert_blocks(HOOK, payload, "Verification-summary trailer")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Verification-summary trailer")
 
 
-def test_blocks_gh_pr_comment_with_leak(tool_use, assert_blocks):
+def test_blocks_gh_pr_comment_with_leak(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh pr comment 99 --body "Phase 2 work landed"'},
     )
 
-    assert_blocks(HOOK, payload, "Phase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
-def test_blocks_gh_api_review_reply_input_file(tmp_path, tool_use, assert_blocks):
+def test_blocks_gh_api_review_reply_input_file(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text(
         '{"body": "Pinned. I ran the suite and observed the actual status."}',
@@ -611,12 +852,15 @@ def test_blocks_gh_api_review_reply_input_file(tmp_path, tool_use, assert_blocks
         },
     )
 
-    assert_blocks(HOOK, payload, "verification loop")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "verification loop")
 
 
-def test_blocks_gh_api_review_edit_patch_with_trailer(
-    tmp_path, tool_use, assert_blocks
-):
+def test_blocks_gh_api_review_edit_patch_with_trailer(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "edit.json"
     body.write_text(
         '{"body": "Fixed in 597d6d1c. All 21 redemption integration tests still pass."}',
@@ -627,10 +871,15 @@ def test_blocks_gh_api_review_edit_patch_with_trailer(
         {"command": (f"gh api repos/o/r/pulls/comments/12345 -X PATCH --input {body}")},
     )
 
-    assert_blocks(HOOK, payload, "Verification-summary trailer")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Verification-summary trailer")
 
 
-def test_allows_gh_api_review_reply_when_clean(tmp_path, tool_use, assert_allows):
+def test_allows_gh_api_review_reply_when_clean(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text(
         '{"body": "Pinned to 200 with empty array. The fixture seeds an empty store."}',
@@ -646,19 +895,29 @@ def test_allows_gh_api_review_reply_when_clean(tmp_path, tool_use, assert_allows
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_glab_mr_note_with_leak(tool_use, assert_blocks):
+def test_blocks_glab_mr_note_with_leak(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": ('glab mr note 42 --message "Following the plan, pushed the fix"')},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_human_phrasing_about_tests(tool_use, assert_allows):
+def test_allows_human_phrasing_about_tests(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -668,12 +927,17 @@ def test_allows_human_phrasing_about_tests(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_allows_project_vocabulary_inside_the_second_brain_vault(
-    tool_use, assert_allows, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     vault = tmp_path / "vault" / "wiki" / "projects"
     vault.mkdir(parents=True)
     payload = tool_use(
@@ -684,12 +948,17 @@ def test_allows_project_vocabulary_inside_the_second_brain_vault(
         },
     )
 
-    assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")})
+    # Act
+    result = run_hook(
+        HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")}
+    )
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_still_blocks_process_language_outside_the_vault(
-    tool_use, assert_blocks, tmp_path
-):
+def test_still_blocks_process_language_outside_the_vault(tool_use, run_hook, tmp_path):
+    # Arrange
     vault = tmp_path / "vault"
     vault.mkdir()
     outside = tmp_path / "project" / "README.md"
@@ -702,7 +971,11 @@ def test_still_blocks_process_language_outside_the_vault(
         },
     )
 
-    assert_blocks(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})
+    # Act
+    result = run_hook(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})
+
+    # Assert
+    assert_blocked(result)
 
 
 GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
@@ -724,43 +997,68 @@ def write_payload(tool_use, path: Path) -> dict:
     return tool_use("Write", {"file_path": str(path), "content": PLANNING_TEXT})
 
 
-def test_allows_write_into_the_local_workspace(tool_use, assert_allows, tmp_path):
+def test_allows_write_into_the_local_workspace(tool_use, run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path)
     target = repo / "docs" / "plans" / "x" / "plan.md"
 
-    assert_allows(HOOK, write_payload(tool_use, target), env=GIT_ENV)
+    # Act
+    result = run_hook(HOOK, write_payload(tool_use, target), env=GIT_ENV)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_into_the_fallback_workspace(tool_use, assert_allows, tmp_path):
+def test_allows_write_into_the_fallback_workspace(tool_use, run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path)
     (repo / "docs").mkdir()
     (repo / "docs" / "index.md").write_text("# Project docs\n")
     target = repo / ".work" / "PROMPT.md"
 
-    assert_allows(HOOK, write_payload(tool_use, target), env=GIT_ENV)
+    # Act
+    result = run_hook(HOOK, write_payload(tool_use, target), env=GIT_ENV)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_write_into_a_project_owned_docs(tool_use, assert_blocks, tmp_path):
+def test_blocks_write_into_a_project_owned_docs(tool_use, run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path)
     (repo / "docs").mkdir()
     (repo / "docs" / "index.md").write_text("# Project docs\n")
     target = repo / "docs" / "guide.md"
 
-    assert_blocks(HOOK, write_payload(tool_use, target), "Phase", env=GIT_ENV)
+    # Act
+    result = run_hook(HOOK, write_payload(tool_use, target), env=GIT_ENV)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
-def test_blocks_write_outside_a_repository(tool_use, assert_blocks, tmp_path):
+def test_blocks_write_outside_a_repository(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "docs" / "notes.md"
 
-    assert_blocks(HOOK, write_payload(tool_use, target), "Phase", env=GIT_ENV)
+    # Act
+    result = run_hook(HOOK, write_payload(tool_use, target), env=GIT_ENV)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
-def test_blocks_workspace_write_when_git_is_missing(tool_use, assert_blocks, tmp_path):
+def test_blocks_workspace_write_when_git_is_missing(tool_use, run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path)
     target = repo / "docs" / "PROMPT.md"
     env = {**GIT_ENV, "PATH": str(tmp_path / "empty")}
 
-    assert_blocks(HOOK, write_payload(tool_use, target), "Phase", env=env)
+    # Act
+    result = run_hook(HOOK, write_payload(tool_use, target), env=env)
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
 @pytest.mark.parametrize(
@@ -771,57 +1069,94 @@ def test_blocks_workspace_write_when_git_is_missing(tool_use, assert_blocks, tmp
         "details in ./docs/plans/",
     ],
 )
-def test_blocks_a_commit_naming_the_workspace(tool_use, assert_blocks, message):
+def test_blocks_a_commit_naming_the_workspace(tool_use, run_hook, message):
+    # Arrange
     payload = tool_use("Bash", {"command": f'git commit -m "{message}"'})
 
-    assert_blocks(HOOK, payload, "workspace")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "workspace")
 
 
-def test_allows_a_commit_naming_project_docs(tool_use, assert_allows):
+def test_allows_a_commit_naming_project_docs(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 'git commit -m "docs: update docs/api.md"'})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_a_quoted_body_file_with_a_leak(tmp_path, tool_use, assert_blocks):
+def test_blocks_a_quoted_body_file_with_a_leak(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "body.md"
     body.write_text("Phase 3 landed.\n", encoding="utf-8")
     command = f"gh pr create --title fix --body-file '{body}'"
 
-    assert_blocks(HOOK, tool_use("Bash", {"command": command}), "Phase")
+    # Act
+    result = run_hook(HOOK, tool_use("Bash", {"command": command}))
+
+    # Assert
+    assert_blocked(result, "Phase")
 
 
-def test_allows_an_empty_body_file_value(tool_use, assert_allows):
+def test_allows_an_empty_body_file_value(tool_use, run_hook):
+    # Arrange
     command = "gh pr create --title fix --body-file ''"
 
-    assert_allows(HOOK, tool_use("Bash", {"command": command}))
+    # Act
+    result = run_hook(HOOK, tool_use("Bash", {"command": command}))
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_an_unreadable_body_file(tmp_path, tool_use, assert_allows):
+def test_allows_an_unreadable_body_file(tmp_path, tool_use, run_hook):
+    # Arrange
     body = tmp_path / "locked.md"
     body.write_text("Phase 3 landed.\n", encoding="utf-8")
     body.chmod(0)
     command = f"gh pr create --title fix --body-file {body}"
 
-    assert_allows(HOOK, tool_use("Bash", {"command": command}))
+    # Act
+    result = run_hook(HOOK, tool_use("Bash", {"command": command}))
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_non_string_new_string_is_skipped(tool_use, assert_allows):
+def test_edit_non_string_new_string_is_skipped(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Edit", {"file_path": "/repo/src/app.ts", "new_string": 7})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_string_new_string_is_skipped(tool_use, assert_allows):
+def test_multiedit_non_string_new_string_is_skipped(tool_use, run_hook):
+    # Arrange
     edits = [{"old_string": "a", "new_string": 7}, "not an edit"]
     payload = tool_use("MultiEdit", {"file_path": "/repo/src/app.ts", "edits": edits})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_malformed_payload_is_ignored():
+    # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook)],
         input="not json",
@@ -831,4 +1166,5 @@ def test_malformed_payload_is_ignored():
         check=False,
     )
 
+    # Assert
     assert (proc.returncode, proc.stdout) == (0, "")

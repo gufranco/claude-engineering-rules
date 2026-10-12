@@ -1,14 +1,11 @@
-"""Regression coverage for banned-phrases-blocker's pre-existing branches.
-
-Confirms the Agent/Task addition did not regress the original coverage of
-publishing Bash commands and Markdown writes/edits.
-
-Source rule: `~/.claude/CLAUDE.md` Banned Phrases.
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
+import os
+import subprocess
+import sys
+from pathlib import Path
 
 HOOK = "banned-phrases-blocker"
 
@@ -25,13 +22,18 @@ HOOK = "banned-phrases-blocker"
         "Wonderful!",
     ],
 )
-def test_publishing_bash_blocks_openers(tool_use, assert_blocks, phrase):
+def test_publishing_bash_blocks_openers(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh pr comment 123 --body '{phrase} This is the fix.'"},
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
 @pytest.mark.parametrize(
@@ -44,13 +46,18 @@ def test_publishing_bash_blocks_openers(tool_use, assert_blocks, phrase):
         "Happy to help",
     ],
 )
-def test_publishing_bash_blocks_closers(tool_use, assert_blocks, phrase):
+def test_publishing_bash_blocks_closers(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"git commit -m 'fix: address issue. {phrase}.'"},
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
 @pytest.mark.parametrize(
@@ -61,7 +68,8 @@ def test_publishing_bash_blocks_closers(tool_use, assert_blocks, phrase):
         "Keep in mind that",
     ],
 )
-def test_publishing_bash_blocks_hedges(tool_use, assert_blocks, phrase):
+def test_publishing_bash_blocks_hedges(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -69,7 +77,11 @@ def test_publishing_bash_blocks_hedges(tool_use, assert_blocks, phrase):
         },
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
 @pytest.mark.parametrize(
@@ -81,20 +93,26 @@ def test_publishing_bash_blocks_hedges(tool_use, assert_blocks, phrase):
         "On that note,",
     ],
 )
-def test_publishing_bash_blocks_transitions(tool_use, assert_blocks, phrase):
+def test_publishing_bash_blocks_transitions(tool_use, run_hook, phrase):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh pr create --title 'fix' --body '{phrase} we ship.'"},
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
 @pytest.mark.parametrize(
     "fluff",
     ["robust", "comprehensive", "seamless", "elegant", "powerful"],
 )
-def test_markdown_write_blocks_fluff(tool_use, assert_blocks, fluff):
+def test_markdown_write_blocks_fluff(tool_use, run_hook, fluff):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -103,10 +121,15 @@ def test_markdown_write_blocks_fluff(tool_use, assert_blocks, fluff):
         },
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
-def test_markdown_edit_blocks_opener(tool_use, assert_blocks):
+def test_markdown_edit_blocks_opener(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -116,10 +139,15 @@ def test_markdown_edit_blocks_opener(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
-def test_markdown_multiedit_blocks_closer(tool_use, assert_blocks):
+def test_markdown_multiedit_blocks_closer(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -131,19 +159,29 @@ def test_markdown_multiedit_blocks_closer(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "banned phrase")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
-def test_write_to_md_without_file_path_is_allowed(tool_use, assert_allows):
+def test_write_to_md_without_file_path_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"content": "A robust comprehensive solution."},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skipped_md_paths_are_allowed(tool_use, assert_allows):
+def test_skipped_md_paths_are_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -152,10 +190,15 @@ def test_skipped_md_paths_are_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skipped_rules_dir_is_allowed(tool_use, assert_allows):
+def test_skipped_rules_dir_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -165,10 +208,15 @@ def test_skipped_rules_dir_is_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_changelog_md_is_allowed(tool_use, assert_allows):
+def test_changelog_md_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -177,10 +225,15 @@ def test_changelog_md_is_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_md_write_is_allowed_even_with_fluff(tool_use, assert_allows):
+def test_non_md_write_is_allowed_even_with_fluff(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -189,57 +242,78 @@ def test_non_md_write_is_allowed_even_with_fluff(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_clean_bash_command_is_allowed(tool_use, assert_allows):
+def test_clean_bash_command_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix: handle null user id in service'"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_publishing_bash_is_ignored(tool_use, assert_allows):
+def test_non_publishing_bash_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "echo 'This is a robust comprehensive seamless message'"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses_all_phrases(tool_use, assert_allows):
+def test_disable_env_bypasses_all_phrases(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'Great question! Hope this helps.'"},
     )
 
-    assert_allows(HOOK, payload, env={"BANNED_PHRASES_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"BANNED_PHRASES_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_value_other_than_one_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_value_other_than_one_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'Great question!'"},
     )
 
-    assert_blocks(HOOK, payload, "banned phrase", env={"BANNED_PHRASES_DISABLE": "0"})
+    # Act
+    result = run_hook(HOOK, payload, env={"BANNED_PHRASES_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "banned phrase")
 
 
-def test_invalid_json_stdin_does_not_crash(run_hook):
-    import os
-    import subprocess
-    import sys
-    from pathlib import Path
-
+def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "banned-phrases-blocker.py"
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -250,4 +324,5 @@ def test_invalid_json_stdin_does_not_crash(run_hook):
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0

@@ -44,6 +44,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -223,16 +224,18 @@ def check_push(command: str, cwd: Path) -> None:
         cwd,
         "log",
         f"--max-count={PUSH_LOG_LIMIT}",
-        "--format=%ae",
+        "--format=<%ae>",
         "@{push}..HEAD",
     )
     if code != 0:
-        code, head_email = run_git(cwd, "log", "-1", "--format=%ae", "HEAD")
+        code, log = run_git(cwd, "log", "-1", "--format=<%ae>", "HEAD")
         if code != 0:
             return
-        emails = [head_email] if head_email else []
-    else:
-        emails = [line.strip() for line in log.splitlines() if line.strip()]
+    emails = [
+        line.strip()[1:-1]
+        for line in log.splitlines()
+        if line.strip().startswith("<") and line.strip().endswith(">")
+    ]
 
     for email in emails:
         if not email:
@@ -322,14 +325,15 @@ def main() -> None:
         sys.exit(0)
 
     cwd = repo_dir(command)
+    matched = strip_git_global_options(command)
 
-    check_config_mutation(command)
+    check_config_mutation(matched)
 
-    if PUSH_TRIGGER.search(command):
+    if PUSH_TRIGGER.search(matched):
         check_push(command, cwd)
         sys.exit(0)
 
-    if COMMIT_TRIGGERS.search(command):
+    if COMMIT_TRIGGERS.search(matched):
         check_commit(command, cwd)
         sys.exit(0)
 

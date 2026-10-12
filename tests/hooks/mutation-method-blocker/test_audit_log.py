@@ -1,14 +1,3 @@
-"""Audit log coverage.
-
-Item 127 of the plan. Validates that every block emits a JSONL record
-with the expected fields: detector, decision, tool, version, duration_ms,
-ast_used, files_scanned, command_excerpt.
-
-The audit log writes to ~/.claude/logs/hooks.log by default. Tests
-override HOME so each subprocess writes to a per-test temp directory,
-avoiding pollution of the user's real audit log.
-"""
-
 from __future__ import annotations
 
 import json
@@ -26,8 +15,6 @@ from _lib.mutation_version import VERSION as _MUTATION_VERSION  # noqa: E402
 
 @pytest.fixture
 def audit_home(tmp_path: Path) -> tuple[Path, Path]:
-    """Return (home, log_path). Subprocesses launched with HOME=home will
-    write hooks.log under home/.claude/logs/hooks.log."""
     home = tmp_path / "home"
     (home / ".claude" / "logs").mkdir(parents=True)
     return home, home / ".claude" / "logs" / "hooks.log"
@@ -42,20 +29,22 @@ def _read_records(log_path: Path) -> list[dict]:
 
 
 def test_block_emits_audit_record(hook_path, audit_home):
+    # Arrange
     home, log_path = audit_home
     payload = make_edit_payload("/repo/src/app.ts", "items.push(value)")
 
+    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
         env={"HOME": str(home), "CLAUDE_HOOK_AUDIT_DISABLE": "0"},
     )
 
+    # Assert
     assert code == 2
     records = _read_records(log_path)
-    assert records, "expected at least one audit record"
     block_records = [r for r in records if r.get("decision") == "block"]
-    assert block_records, f"no block decision found in {records}"
+    assert len(block_records) == 1, f"expected one block decision in {records}"
     block = block_records[0]
     assert block["hook"] == "mutation-method-blocker"
     assert block["tool"] == "Edit"
@@ -68,19 +57,22 @@ def test_block_emits_audit_record(hook_path, audit_home):
 
 
 def test_allow_emits_audit_record_when_files_scanned(hook_path, audit_home):
+    # Arrange
     home, log_path = audit_home
     payload = make_edit_payload("/repo/src/app.ts", "const next = [...items, value]")
 
+    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
         env={"HOME": str(home), "CLAUDE_HOOK_AUDIT_DISABLE": "0"},
     )
 
+    # Assert
     assert code == 0
     records = _read_records(log_path)
     allow_records = [r for r in records if r.get("decision") == "allow"]
-    assert allow_records, f"no allow decision found in {records}"
+    assert len(allow_records) == 1, f"expected one allow decision in {records}"
     allow = allow_records[0]
     assert allow["hook"] == "mutation-method-blocker"
     assert allow["tool"] == "Edit"
@@ -89,9 +81,11 @@ def test_allow_emits_audit_record_when_files_scanned(hook_path, audit_home):
 
 
 def test_bypass_env_emits_audit_record(hook_path, audit_home):
+    # Arrange
     home, log_path = audit_home
     payload = make_edit_payload("/repo/src/app.ts", "items.push(value)")
 
+    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
@@ -102,14 +96,16 @@ def test_bypass_env_emits_audit_record(hook_path, audit_home):
         },
     )
 
+    # Assert
     assert code == 0
     records = _read_records(log_path)
     bypass_records = [r for r in records if r.get("decision") == "bypass"]
-    assert bypass_records
+    assert len(bypass_records) == 1
     assert bypass_records[0]["bypass_env"] == "MUTATION_METHOD_DISABLE"
 
 
 def test_block_record_includes_state_mgmt_allow_reasons(hook_path, audit_home):
+    # Arrange
     home, log_path = audit_home
     snippet = """import { produce } from 'immer';
 const next = produce(state, (draft) => {
@@ -119,12 +115,14 @@ items.push(direct);
 """
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, _, _ = run_hook_subprocess(
         hook_path,
         payload,
         env={"HOME": str(home), "CLAUDE_HOOK_AUDIT_DISABLE": "0"},
     )
 
+    # Assert
     assert code == 2
     records = _read_records(log_path)
     block = next((r for r in records if r.get("decision") == "block"), None)

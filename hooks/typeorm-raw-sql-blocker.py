@@ -1,30 +1,4 @@
 #!/usr/bin/env python3
-"""
-typeorm-raw-sql-blocker.py
-
-PreToolUse hook that blocks TypeORM raw query methods in application code.
-Rule source: ~/.claude/rules/code-style.md "No raw SQL"
-            + ~/.claude/rules/lang/typeorm-migrations.md.
-
-Blocks .query() called on the typical TypeORM connection-like identifiers:
-  - dataSource.query(...)
-  - manager.query(...)
-  - entityManager.query(...)
-  - queryRunner.query(...) outside migrations
-  - connection.query(...)
-  - repository.query(...)
-
-Allowed paths (skipped):
-  - Documentation: *.md, *.mdx, *.markdown, *.rst, *.txt. A standard or README
-    that shows the anti-pattern in order to forbid it is teaching, not shipping.
-  - Anything under */migrations/*
-  - *.sql files
-  - Test files under */test/*, */__tests__/*, */spec/*, */e2e/*
-
-Bypass:
-  TYPEORM_RAW_SQL_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import json

@@ -1,15 +1,12 @@
-"""Coverage for ai-disclosure-checks hook.
-
-Source rule: `~/.claude/rules/ai-compliance-defaults.md`.
-"""
-
 from __future__ import annotations
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 
 HOOK = "ai-disclosure-checks"
 
 
-def test_blocks_aiResponse_without_disclosure(tool_use, assert_blocks):
+def test_blocks_aiResponse_without_disclosure(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -22,10 +19,15 @@ def test_blocks_aiResponse_without_disclosure(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "AIC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AIC001")
 
 
-def test_blocks_llmOutput_without_disclosure(tool_use, assert_blocks):
+def test_blocks_llmOutput_without_disclosure(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -36,10 +38,15 @@ def test_blocks_llmOutput_without_disclosure(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "AIC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AIC001")
 
 
-def test_blocks_modelOutput_without_disclosure(tool_use, assert_blocks):
+def test_blocks_modelOutput_without_disclosure(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -50,10 +57,15 @@ def test_blocks_modelOutput_without_disclosure(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "AIC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AIC001")
 
 
-def test_allows_aiResponse_with_disclosure(tool_use, assert_allows):
+def test_allows_aiResponse_with_disclosure(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -71,10 +83,15 @@ def test_allows_aiResponse_with_disclosure(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_aiResponse_with_powered_by_AI_label(tool_use, assert_allows):
+def test_allows_aiResponse_with_powered_by_AI_label(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -92,10 +109,15 @@ def test_allows_aiResponse_with_powered_by_AI_label(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_chatbot_without_AI_label(tool_use, assert_blocks):
+def test_blocks_chatbot_without_AI_label(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -112,10 +134,15 @@ def test_blocks_chatbot_without_AI_label(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "AIC002")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AIC002")
 
 
-def test_allows_chatbot_with_AI_label(tool_use, assert_allows):
+def test_allows_chatbot_with_AI_label(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -135,10 +162,15 @@ def test_allows_chatbot_with_AI_label(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_ai_variables(tool_use, assert_allows):
+def test_allows_non_ai_variables(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -149,10 +181,15 @@ def test_allows_non_ai_variables(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_files(tool_use, assert_allows):
+def test_skips_test_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -165,10 +202,15 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_non_jsx_files(tool_use, assert_allows):
+def test_skips_non_jsx_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -177,10 +219,15 @@ def test_skips_non_jsx_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_disables(tool_use, assert_allows):
+def test_bypass_env_disables(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -193,10 +240,15 @@ def test_bypass_env_disables(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"AI_DISCLOSURE_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"AI_DISCLOSURE_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_works_on_edit_payload(tool_use, assert_blocks):
+def test_works_on_edit_payload(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -206,10 +258,15 @@ def test_works_on_edit_payload(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "AIC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AIC001")
 
 
-def test_works_on_multiedit_payload(tool_use, assert_blocks):
+def test_works_on_multiedit_payload(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -223,19 +280,29 @@ def test_works_on_multiedit_payload(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "AIC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AIC001")
 
 
-def test_ignores_bash_tool(tool_use, assert_allows):
+def test_ignores_bash_tool(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "echo aiResponse"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_dist_folder(tool_use, assert_allows):
+def test_skips_dist_folder(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -244,10 +311,15 @@ def test_skips_dist_folder(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_empty_content_allows(tool_use, assert_allows):
+def test_empty_content_allows(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -256,4 +328,8 @@ def test_empty_content_allows(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

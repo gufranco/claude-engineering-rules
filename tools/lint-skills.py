@@ -6,12 +6,21 @@ Required (errors, exit non-zero):
   - `name` field, non-empty, matches the parent directory name
   - `description` field, non-empty, >= 30 characters
   - At least one body section (`## ` heading) after frontmatter
+  - Frontmatter that strict YAML accepts (`invalid-yaml`): no unquoted
+    plain scalar containing ": ", no value starting with a reserved
+    indicator, nothing after a closing quote. The check is dependency-free
+    because the linter runs under the system Python, which lacks PyYAML.
 
 Recommended (warnings, exit 0 in default mode):
   - `argument-hint` field with example invocations
   - `allowed-tools` or `disallowed-tools` declared
   - 6-section template: Overview, When to Use, Process,
     Common Rationalizations, Red Flags, Verification
+  - No `user-invocable: true`, which is the default (`noop-user-invocable`)
+  - A skill with `disable-model-invocation: true` carries one human-facing
+    sentence, not a "Use when" or "Do NOT" list (`trigger-list-on-user-invoked`)
+
+Discovery skips dot-prefixed directories and the harness-managed `synced/`.
 
 Modes:
   default      report errors AND warnings, exit 0 on warnings, exit 1 on errors
@@ -63,6 +72,17 @@ SECTION_ALIASES = {
 FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 HEADING_RE = re.compile(r"^##\s+(.+?)\s*$", re.MULTILINE)
 
+HARNESS_MANAGED_DIRS = frozenset({"synced"})
+
+TOP_LEVEL_KEY_RE = re.compile(r"^([A-Za-z0-9_][A-Za-z0-9_-]*):(?:\s+(.*))?$")
+DOUBLE_QUOTED_RE = re.compile(r'^"(?:[^"\\]|\\.)*"\s*(?:#.*)?$')
+SINGLE_QUOTED_RE = re.compile(r"^'(?:[^']|'')*'\s*(?:#.*)?$")
+BLOCK_SCALAR_RE = re.compile(r"^[|>][+-]?[1-9]?[+-]?\s*(?:#.*)?$")
+RESERVED_START = frozenset(",@`%*!]}")
+INDICATOR_WITH_SPACE = ("- ", "? ", ": ")
+LONE_INDICATORS = frozenset({"-", "?", ":"})
+USER_INVOKED_TRIGGER_MARKERS = ("Use when", "Do NOT")
+
 
 @dataclass
 class Finding:
@@ -111,6 +131,138 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     return fields, body
 
 
+def plain_scalar_error(text: str) -> str | None:
+    content = text.split(" #", 1)[0].rstrip()
+    if ": " in content or content.endswith(":"):
+        return "plain scalar contains ': ', so strict YAML reads a nested mapping; quote the value"
+    return None
+
+
+def value_error(value: str) -> tuple[str | None, str]:
+    if not value or value.startswith("#"):
+        return None, "free"
+    first = value[0]
+    if first == '"' or first == "'":
+        pattern = DOUBLE_QUOTED_RE if first == '"' else SINGLE_QUOTED_RE
+        if pattern.match(value):
+            return None, "free"
+        return "text after the closing quote, or the quote never closes", "free"
+    if first in "|>":
+        if BLOCK_SCALAR_RE.match(value):
+            return None, "free"
+        return "invalid block scalar header", "free"
+    if first in "[{":
+        return None, "free"
+    if first in RESERVED_START:
+        return (
+            f"plain scalar starts with reserved indicator '{first}'; quote the value",
+            "free",
+        )
+    if value in LONE_INDICATORS or value.startswith(INDICATOR_WITH_SPACE):
+        return f"plain scalar starts with indicator '{first}'; quote the value", "free"
+    return plain_scalar_error(value), "plain"
+
+
+def line_error(line: str, mode: str | None) -> tuple[str | None, str | None]:
+    if line.startswith("\t"):
+        return "tab in indentation", mode
+    if line.startswith(" "):
+        if mode is None:
+            return "indented line with no parent key", mode
+        if mode == "plain":
+            return plain_scalar_error(line.strip()), mode
+        return None, mode
+    match = TOP_LEVEL_KEY_RE.match(line)
+    if match is None:
+        return "expected a `key: value` line", None
+    return value_error((match.group(2) or "").strip())
+
+
+def find_yaml_errors(raw: str) -> list[str]:
+    errors: list[str] = []
+    mode: str | None = None
+    for number, line in enumerate(raw.splitlines(), start=1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        error, mode = line_error(line, mode)
+        if error:
+            errors.append(f"line {number}: {error}")
+    return errors
+
+
+def plain_line_text(line: str, mode: str | None) -> tuple[str | None, str | None]:
+    if line.startswith(" "):
+        return (line.strip() if mode == "plain" else None), mode
+    match = TOP_LEVEL_KEY_RE.match(line)
+    if match is None:
+        return None, None
+    value = (match.group(2) or "").strip()
+    _, next_mode = value_error(value)
+    return (value if next_mode == "plain" else None), next_mode
+
+
+def find_truncating_comments(raw: str) -> list[str]:
+    errors: list[str] = []
+    mode: str | None = None
+    for number, line in enumerate(raw.splitlines(), start=1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        text, mode = plain_line_text(line, mode)
+        if text is not None and " #" in text:
+            errors.append(
+                f"line {number}: ' #' in a plain scalar starts a YAML comment, "
+                "so everything after it is dropped; quote the value"
+            )
+    return errors
+
+
+def yaml_findings(text: str) -> list[Finding]:
+    match = FRONTMATTER_RE.match(text)
+    if match is None:
+        return []
+    raw = match.group(1)
+    invalid = [
+        Finding("error", "invalid-yaml", shift_line(error))
+        for error in find_yaml_errors(raw)
+    ]
+    truncated = [
+        Finding("error", "truncated-by-comment", shift_line(error))
+        for error in find_truncating_comments(raw)
+    ]
+    return invalid + truncated
+
+
+def shift_line(error: str) -> str:
+    number, _, rest = error.partition(": ")
+    frontmatter_line = int(number.removeprefix("line "))
+    return f"line {frontmatter_line + 1}: {rest}"
+
+
+def invocation_findings(fields: dict) -> list[Finding]:
+    findings: list[Finding] = []
+    if fields.get("user-invocable", "").strip().lower() == "true":
+        findings.append(
+            Finding(
+                "warning",
+                "noop-user-invocable",
+                "`user-invocable: true` is the default and does nothing",
+                fix_hint="Delete the `user-invocable: true` line.",
+            )
+        )
+    user_invoked = fields.get("disable-model-invocation", "").strip().lower() == "true"
+    description = fields.get("description", "")
+    if user_invoked and any(m in description for m in USER_INVOKED_TRIGGER_MARKERS):
+        findings.append(
+            Finding(
+                "warning",
+                "trigger-list-on-user-invoked",
+                "user-invoked skill carries a trigger list or routing clause the model never reads",
+                fix_hint="Replace the description with one human-facing sentence.",
+            )
+        )
+    return findings
+
+
 def find_sections(body: str) -> list[str]:
     return [m.group(1).strip() for m in HEADING_RE.finditer(body)]
 
@@ -141,6 +293,9 @@ def lint_file(path: Path) -> Report:
             )
         )
         return report
+
+    report.findings.extend(yaml_findings(text))
+    report.findings.extend(invocation_findings(fields))
 
     expected_name = path.parent.name
     name = fields.get("name", "").strip()
@@ -219,7 +374,12 @@ def lint_file(path: Path) -> Report:
     return report
 
 
-def discover_skills(targets: list[str]) -> list[Path]:
+def is_skill_dir(path: Path) -> bool:
+    name = path.parent.name
+    return not name.startswith(".") and name not in HARNESS_MANAGED_DIRS
+
+
+def discover_skills(targets: list[str], skills_dir: Path = SKILLS_DIR) -> list[Path]:
     if targets:
         out: list[Path] = []
         for t in targets:
@@ -233,7 +393,7 @@ def discover_skills(targets: list[str]) -> list[Path]:
             elif p.is_file():
                 out.append(p)
         return out
-    return sorted(SKILLS_DIR.rglob("SKILL.md"))
+    return sorted(p for p in skills_dir.glob("*/SKILL.md") if is_skill_dir(p))
 
 
 def print_text_report(reports: list[Report], strict: bool, fix_hints: bool) -> int:
@@ -305,9 +465,15 @@ def main(argv: list[str] | None = None) -> int:
         "--fix-hints", action="store_true", help="print fix hints inline"
     )
     parser.add_argument("--json", action="store_true", help="JSON output")
+    parser.add_argument(
+        "--skills-dir",
+        type=Path,
+        default=SKILLS_DIR,
+        help="root scanned when no targets are given",
+    )
     args = parser.parse_args(argv)
 
-    files = discover_skills(args.targets)
+    files = discover_skills(args.targets, args.skills_dir)
     if not files:
         print("no SKILL.md files found", file=sys.stderr)
         return 1

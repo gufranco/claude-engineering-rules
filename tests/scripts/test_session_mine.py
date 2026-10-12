@@ -1,10 +1,3 @@
-"""Coverage for the session miner.
-
-It turns Claude Code transcript metadata into vault notes. Everything it writes
-is observed from the record, never inferred from conversation bodies, and the
-generated notes must satisfy the same specification a hand-written note does.
-"""
-
 from __future__ import annotations
 
 import importlib.util
@@ -20,6 +13,8 @@ sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
 from _lib import knowledge_notes as kn  # noqa: E402
 
+VAULT_HEALTH = Path.home() / "second-brain" / ".ci" / "vault-health.py"
+
 
 def load():
     spec = importlib.util.spec_from_file_location("session_mine", SCRIPT)
@@ -31,6 +26,23 @@ def load():
 
 def record(**fields) -> str:
     return json.dumps(fields)
+
+
+def load_vault_health():
+    spec = importlib.util.spec_from_file_location("vh_mine", VAULT_HEALTH)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["vh_mine"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def write_titled_transcripts_sharing_a_basename(root: Path, count: int) -> None:
+    for index in range(count):
+        d = root / f"-x-{index}-shared"
+        d.mkdir(parents=True)
+        (d / "s.jsonl").write_text(
+            record(type="ai-title", aiTitle="t", sessionId="s") + "\n"
+        )
 
 
 @pytest.fixture
@@ -93,18 +105,24 @@ def vault(tmp_path: Path) -> Path:
 
 
 def test_scan_groups_by_project(projects):
+    # Arrange
     module = load()
 
+    # Act
     found = module.scan(projects)
 
+    # Assert
     assert list(found) == ["-Users-someone-work-widget"]
 
 
 def test_scan_collects_titles_sessions_and_branches(projects):
+    # Arrange
     module = load()
 
+    # Act
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Assert
     assert summary.sessions == 2
     assert summary.titles == [
         "Add retries to the widget client",
@@ -115,162 +133,212 @@ def test_scan_collects_titles_sessions_and_branches(projects):
 
 
 def test_scan_records_the_date_range(projects):
+    # Arrange
     module = load()
 
+    # Act
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Assert
     assert summary.first == "2026-05-01"
     assert summary.last == "2026-06-15"
 
 
 def test_scan_tolerates_malformed_lines(projects):
+    # Arrange
     module = load()
 
+    # Act
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Assert
     assert summary.sessions == 2
 
 
 def test_scan_ignores_a_directory_with_no_transcripts(tmp_path):
+    # Arrange
     module = load()
     (tmp_path / "projects" / "empty").mkdir(parents=True)
 
-    assert module.scan(tmp_path / "projects") == {}
+    # Act
+    result = module.scan(tmp_path / "projects")
+
+    # Assert
+    assert result == {}
 
 
 def test_render_carries_required_frontmatter(projects):
+    # Arrange
     module = load()
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Act
     text = module.render(summary)
 
+    # Assert
     fields = kn.parse_frontmatter(text)
     assert fields is not None
-    assert all(key in fields for key in kn.REQUIRED_KEYS)
+    assert set(kn.REQUIRED_KEYS) - set(fields) == set()
     assert fields["type"] == "project"
 
 
 def test_render_carries_the_preamble_and_states_its_coverage(projects):
+    # Arrange
     module = load()
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Act
     text = module.render(summary)
 
+    # Assert
     body = kn.body_after_frontmatter(text)
     assert kn.PREAMBLE in body
     assert "metadata" in body.lower()
 
 
 def test_render_stamps_every_count(projects):
+    # Arrange
     module = load()
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Act
     text = module.render(summary)
 
-    body = kn.body_after_frontmatter(text)
-    for _number, line, dated in kn.walk_lines(body):
-        if not dated:
-            assert not kn.is_volatile_claim(line), line
+    # Assert
+    undated_volatile = [
+        line
+        for _number, line, dated in kn.walk_lines(kn.body_after_frontmatter(text))
+        if not dated and kn.is_volatile_claim(line)
+    ]
+    assert undated_volatile == []
 
 
 def test_render_lists_the_titles(projects):
+    # Arrange
     module = load()
     summary = module.scan(projects)["-Users-someone-work-widget"]
 
+    # Act
     text = module.render(summary)
 
+    # Assert
     assert "Fix the widget parser" in text
 
 
 def test_apply_writes_one_note_per_project(projects, vault):
+    # Arrange
     module = load()
 
+    # Act
     written = module.apply(module.scan(projects), vault, dry_run=False)
 
+    # Assert
     assert written == ["wiki/projects/widget.md"]
-    assert (vault / "wiki" / "projects" / "widget.md").is_file()
+    assert (vault / "wiki" / "projects" / "widget.md").is_file() is True
 
 
 def test_dry_run_writes_nothing(projects, vault):
+    # Arrange
     module = load()
 
+    # Act
     written = module.apply(module.scan(projects), vault, dry_run=True)
 
+    # Assert
     assert written == ["wiki/projects/widget.md"]
-    assert not (vault / "wiki" / "projects" / "widget.md").exists()
+    assert (vault / "wiki" / "projects" / "widget.md").exists() is False
 
 
 def test_apply_never_overwrites_an_existing_note(projects, vault):
+    # Arrange
     module = load()
     target = vault / "wiki" / "projects" / "widget.md"
     target.write_text("hand written\n")
 
+    # Act
     written = module.apply(module.scan(projects), vault, dry_run=False)
 
+    # Assert
     assert written == []
     assert target.read_text() == "hand written\n"
 
 
+@pytest.mark.skipif(
+    not VAULT_HEALTH.exists(), reason="vault linters not present on this machine"
+)
 def test_generated_notes_pass_the_structural_linter(projects, vault):
+    # Arrange
     module = load()
-    module.apply(module.scan(projects), vault, dry_run=False)
-    linter = Path.home() / "second-brain" / ".ci" / "vault-health.py"
-    if not linter.exists():
-        pytest.skip("vault linters not present on this machine")
-    spec = importlib.util.spec_from_file_location("vh_mine", linter)
-    vh = importlib.util.module_from_spec(spec)
-    sys.modules["vh_mine"] = vh
-    spec.loader.exec_module(vh)
+    vh = load_vault_health()
 
+    # Act
+    written = module.apply(module.scan(projects), vault, dry_run=False)
+
+    # Assert
     errors = [f for f in vh.audit(vault) if f.severity == "error"]
-
+    assert written == ["wiki/projects/widget.md"]
     assert errors == []
 
 
 def test_main_reports_without_applying(projects, vault, capsys):
+    # Arrange
     module = load()
 
+    # Act
     code = module.main(["--projects", str(projects), "--path", str(vault)])
 
+    # Assert
     assert code == 0
     assert "widget" in capsys.readouterr().out
-    assert not (vault / "wiki" / "projects" / "widget.md").exists()
+    assert (vault / "wiki" / "projects" / "widget.md").exists() is False
 
 
 def test_main_applies_when_asked(projects, vault):
+    # Arrange
     module = load()
 
+    # Act
     code = module.main(["--projects", str(projects), "--path", str(vault), "--apply"])
 
+    # Assert
     assert code == 0
-    assert (vault / "wiki" / "projects" / "widget.md").is_file()
+    assert (vault / "wiki" / "projects" / "widget.md").is_file() is True
 
 
 def test_main_emits_json(projects, vault, capsys):
+    # Arrange
     module = load()
 
+    # Act
     module.main(["--projects", str(projects), "--path", str(vault), "--json"])
 
+    # Assert
     payload = json.loads(capsys.readouterr().out)
     assert payload["projects"] == 1
 
 
 def test_main_errors_without_a_vault(projects, tmp_path, capsys):
+    # Arrange
     module = load()
 
+    # Act
     code = module.main(
         ["--projects", str(projects), "--path", str(tmp_path / "absent")]
     )
 
+    # Assert
     assert code == 2
     assert "not a directory" in capsys.readouterr().err.lower()
 
 
 def test_main_errors_without_a_projects_directory(vault, tmp_path, capsys):
+    # Arrange
     module = load()
 
+    # Act
     code = module.main(["--projects", str(tmp_path / "absent"), "--path", str(vault)])
 
+    # Assert
     assert code == 2
     assert "transcript" in capsys.readouterr().err.lower()
 
@@ -278,6 +346,7 @@ def test_main_errors_without_a_projects_directory(vault, tmp_path, capsys):
 def test_a_project_without_a_recorded_cwd_falls_back_to_the_directory_name(
     tmp_path, vault
 ):
+    # Arrange
     module = load()
     root = tmp_path / "projects"
     d = root / "-Users-someone-orphan"
@@ -286,13 +355,16 @@ def test_a_project_without_a_recorded_cwd_falls_back_to_the_directory_name(
         record(type="ai-title", aiTitle="Something", sessionId="s") + "\n"
     )
 
+    # Act
     summary = module.scan(root)["-Users-someone-orphan"]
 
+    # Assert
     assert summary.name == "orphan"
     assert summary.first == ""
 
 
 def test_a_project_without_titles_says_so(tmp_path, vault):
+    # Arrange
     module = load()
     root = tmp_path / "projects"
     d = root / "-Users-someone-quiet"
@@ -304,13 +376,16 @@ def test_a_project_without_titles_says_so(tmp_path, vault):
         + "\n"
     )
 
+    # Act
     text = module.render(module.scan(root)["-Users-someone-quiet"])
 
+    # Assert
     assert "TBD" in text
     assert "No session titles" in text
 
 
 def test_a_long_title_list_is_capped(tmp_path):
+    # Arrange
     module = load()
     root = tmp_path / "projects"
     d = root / "-Users-someone-busy"
@@ -324,8 +399,10 @@ def test_a_long_title_list_is_capped(tmp_path):
     ]
     (d / "s.jsonl").write_text("\n".join(lines) + "\n")
 
+    # Act
     text = module.render(module.scan(root)["-Users-someone-busy"])
 
+    # Assert
     assert "more not listed" in text
 
 
@@ -341,36 +418,40 @@ def two_projects(tmp_path: Path, cwd_a: str, cwd_b: str) -> Path:
 
 
 def test_two_projects_with_the_same_basename_get_distinct_notes(tmp_path, vault):
+    # Arrange
     module = load()
     root = two_projects(
         tmp_path, "/Users/someone/.claude", "/Users/someone/work/.claude"
     )
 
+    # Act
     written = module.apply(module.scan(root), vault, dry_run=False)
 
+    # Assert
     assert len(written) == 2
     assert len(set(written)) == 2
 
 
 def test_a_leading_dot_is_stripped_from_the_note_name(tmp_path, vault):
+    # Arrange
     module = load()
     root = two_projects(tmp_path, "/Users/someone/.dotfiles", "/Users/someone/other")
 
+    # Act
     written = module.apply(module.scan(root), vault, dry_run=False)
 
-    assert not any(Path(w).name.startswith(".") for w in written)
+    # Assert
+    assert written == ["wiki/projects/dotfiles.md", "wiki/projects/other.md"]
 
 
 def test_collision_falls_back_to_a_numeric_suffix_without_a_cwd(tmp_path, vault):
+    # Arrange
     module = load()
     root = tmp_path / "projects"
-    for index in range(2):
-        d = root / f"-x-{index}-shared"
-        d.mkdir(parents=True)
-        (d / "s.jsonl").write_text(
-            record(type="ai-title", aiTitle="t", sessionId="s") + "\n"
-        )
+    write_titled_transcripts_sharing_a_basename(root, 2)
 
+    # Act
     written = module.apply(module.scan(root), vault, dry_run=False)
 
+    # Assert
     assert written == ["wiki/projects/shared.md", "wiki/projects/shared 2.md"]

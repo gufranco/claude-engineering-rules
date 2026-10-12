@@ -1,13 +1,3 @@
-"""Tests for .github/scripts/validate-instruction-budget.py.
-
-Claude Code loads CLAUDE.md, every file it imports with an @ line, and every
-Markdown file under rules/ into each session, and warns once the total passes
-150,000 characters. The set once reached 539,200 characters with no check
-noticing. These tests pin the gate that fails before the warning appears.
-
-Source rule: standards/rules-vs-standards.md.
-"""
-
 from __future__ import annotations
 
 import importlib.util
@@ -39,6 +29,7 @@ def _tree(root: Path, files: dict[str, str]) -> None:
 def test_counts_claude_md_imports_and_nested_rules(
     budget_module: ModuleType, tmp_path: Path
 ) -> None:
+    # Arrange
     _tree(
         tmp_path,
         {
@@ -50,8 +41,10 @@ def test_counts_claude_md_imports_and_nested_rules(
         },
     )
 
+    # Act
     files = budget_module.always_loaded_files(tmp_path)
 
+    # Assert
     assert sorted(p.relative_to(tmp_path).as_posix() for p in files) == [
         "CLAUDE.md",
         "RTK.md",
@@ -64,33 +57,47 @@ def test_counts_claude_md_imports_and_nested_rules(
 def test_ignores_an_import_that_does_not_resolve(
     budget_module: ModuleType, tmp_path: Path
 ) -> None:
+    # Arrange
     _tree(tmp_path, {"CLAUDE.md": "@missing.md\n"})
 
+    # Act
     files = budget_module.always_loaded_files(tmp_path)
 
+    # Assert
     assert [p.name for p in files] == ["CLAUDE.md"]
 
 
 def test_passes_at_the_budget(budget_module: ModuleType, tmp_path: Path) -> None:
+    # Arrange
     _tree(tmp_path, {"CLAUDE.md": "a" * 10})
 
+    # Act
     exit_code = budget_module.check(tmp_path, budget=10)
 
+    # Assert
     assert exit_code == 0
 
 
 def test_fails_over_the_budget_and_names_the_largest_file(
     budget_module: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    # Arrange
     _tree(tmp_path, {"CLAUDE.md": "a" * 5, "rules/big.md": "b" * 20})
 
+    # Act
     exit_code = budget_module.check(tmp_path, budget=10)
 
+    # Assert
     assert exit_code == 1
     assert "rules/big.md" in capsys.readouterr().out
 
 
 def test_the_real_tree_is_within_budget(budget_module: ModuleType) -> None:
-    exit_code = budget_module.check(REPO_ROOT, budget=budget_module.BUDGET_CHARS)
+    # Arrange
+    budget = budget_module.BUDGET_CHARS
 
+    # Act
+    exit_code = budget_module.check(REPO_ROOT, budget=budget)
+
+    # Assert
     assert exit_code == 0

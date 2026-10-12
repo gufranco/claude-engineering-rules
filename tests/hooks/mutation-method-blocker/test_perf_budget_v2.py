@@ -1,29 +1,23 @@
-"""Plan item 235: encode the v2 perf budget per D38.
-
-Budget thresholds (per fixture, multi-iteration):
-
-  - p95 < 180ms with AST-grep available
-  - p99 < 250ms
-  - mean < 60ms
-
-The test runs the hook against the 5KB synthetic fixture used by the
-legacy perf test, but takes 30 samples and asserts on p95/p99/mean
-rather than a single-shot wall time. Subprocess startup overhead
-(typically 60-90ms) is included in every sample, so the budget is
-deliberately loose.
-
-The strict per-fixture budgets (p95 180ms, p99 250ms, mean 60ms) are
-enforced serially by `scripts/bench_mutation_blocker.py` in CI. This
-test runs alongside the parallel pytest suite and uses inflated
-thresholds to absorb worker contention on multi-core machines.
-"""
-
 from __future__ import annotations
 
 import statistics
 import time
 
 from conftest import make_write_payload, run_hook_subprocess
+
+
+SAMPLE_RUNS = 30
+
+
+def _sample_runs(hook_path, payload: dict, runs: int) -> tuple[list[float], list[int]]:
+    samples_ms: list[float] = []
+    codes: list[int] = []
+    for _ in range(runs):
+        start = time.perf_counter()
+        code, _stdout, _stderr = run_hook_subprocess(hook_path, payload)
+        samples_ms.append((time.perf_counter() - start) * 1000.0)
+        codes.append(code)
+    return samples_ms, codes
 
 
 def _build_5kb_fixture() -> str:
@@ -45,19 +39,17 @@ def _percentile(values: list[float], pct: float) -> float:
 
 
 def test_hook_meets_v2_perf_budget(hook_path):
-    """p95 < 2500ms, p99 < 3500ms, mean < 1800ms (subprocess + parallel-inclusive)."""
+    # Arrange
     payload = make_write_payload("/repo/src/app.ts", _build_5kb_fixture())
-    samples_ms: list[float] = []
 
-    for _ in range(30):
-        start = time.perf_counter()
-        code, _stdout, _stderr = run_hook_subprocess(hook_path, payload)
-        samples_ms.append((time.perf_counter() - start) * 1000.0)
-        assert code == 0
+    # Act
+    samples_ms, codes = _sample_runs(hook_path, payload, SAMPLE_RUNS)
 
+    # Assert
     p95 = _percentile(samples_ms, 95.0)
     p99 = _percentile(samples_ms, 99.0)
     mean = statistics.fmean(samples_ms)
+    assert codes == [0] * SAMPLE_RUNS
     assert p95 < 2500.0, f"p95 {p95:.1f}ms exceeds 2500ms"
     assert p99 < 3500.0, f"p99 {p99:.1f}ms exceeds 3500ms"
     assert mean < 1800.0, f"mean {mean:.1f}ms exceeds 1800ms"

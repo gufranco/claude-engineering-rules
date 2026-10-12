@@ -1,10 +1,3 @@
-"""Direct unit tests for `scripts/suppression.py`.
-Covers every honored suppression marker on multi-line, single-line,
-escaped, and false-positive inputs. The hook-level integration tests in
-`tests/hooks/mutation-method-blocker/test_suppression.py` exercise the
-function through the mutation hook; this file exercises it in isolation.
-"""
-
 from __future__ import annotations
 import sys
 from pathlib import Path
@@ -48,12 +41,18 @@ from _lib.suppression import (  # noqa: E402
 def test_is_suppressed_marker_combinations(
     lines: list[str], target: int, expected: bool
 ) -> None:
+    # Arrange
     block_state = compute_block_state(lines)
+
+    # Act
     actual = is_suppressed(lines, target, block_state=block_state)
+
+    # Assert
     assert actual is expected
 
 
 def test_eslint_block_disable_covers_lines_in_range() -> None:
+    # Arrange
     lines = [
         "/* eslint-disable */",
         "arr.push(a)",
@@ -61,7 +60,11 @@ def test_eslint_block_disable_covers_lines_in_range() -> None:
         "/* eslint-enable */",
         "arr.push(c)",
     ]
+
+    # Act
     state = compute_block_state(lines)
+
+    # Assert
     assert 0 in state.disabled_lines
     assert 1 in state.disabled_lines
     assert 2 in state.disabled_lines
@@ -70,94 +73,183 @@ def test_eslint_block_disable_covers_lines_in_range() -> None:
 
 
 def test_block_state_dataclass_default_is_empty() -> None:
+    # Arrange
+    empty = frozenset()
+
+    # Act
     state = BlockState()
-    assert state.disabled_lines == frozenset()
+
+    # Assert
+    assert state.disabled_lines == empty
 
 
 def test_string_literal_does_not_count_as_marker() -> None:
+    # Arrange
     lines = ['const msg = "// eslint-disable-line not real";']
+
+    # Act
     actual = is_suppressed(lines, 0)
+
+    # Assert
     assert actual is False
 
 
 def test_has_inline_marker_requires_comment_prefix() -> None:
+    # Arrange
     line = 'const tag = "@ts-ignore"'
+
+    # Act
     actual = has_inline_marker(line, "@ts-ignore")
+
+    # Assert
     assert actual is False
 
 
 def test_has_inline_marker_recognizes_block_comment() -> None:
+    # Arrange
     line = "items.push(v) /* @ts-ignore */"
+
+    # Act
     actual = has_inline_marker(line, "@ts-ignore")
+
+    # Assert
     assert actual is True
 
 
 def test_has_top_of_file_marker_finds_directive() -> None:
+    # Arrange
     lines = ["", "// @ts-nocheck", "const x = 1;"]
+
+    # Act
     actual = has_top_of_file_marker(lines, "@ts-nocheck")
+
+    # Assert
     assert actual is True
 
 
 def test_has_top_of_file_marker_skips_past_scan_limit() -> None:
+    # Arrange
     lines = ["// line"] * 12 + ["// @ts-nocheck"]
+
+    # Act
     actual = has_top_of_file_marker(lines, "@ts-nocheck")
+
+    # Assert
     assert actual is False
 
 
-def test_has_ts_nocheck_directive_alias_matches() -> None:
-    lines = ["// @ts-nocheck", "code()"]
-    assert has_ts_nocheck_directive(lines) is True
-    assert has_ts_nocheck_directive(["code()"]) is False
+@pytest.mark.parametrize(
+    ("lines", "expected"),
+    [(["// @ts-nocheck", "code()"], True), (["code()"], False)],
+)
+def test_has_ts_nocheck_directive_alias_matches(lines, expected) -> None:
+    # Arrange
+    source_lines = list(lines)
+
+    # Act
+    result = has_ts_nocheck_directive(source_lines)
+
+    # Assert
+    assert result is expected
 
 
 def test_has_python_file_disable_recognizes_mypy() -> None:
+    # Arrange
     lines = ["# mypy: ignore-errors", "def f(): ..."]
-    assert has_python_file_disable(lines) is True
+
+    # Act
+    result = has_python_file_disable(lines)
+
+    # Assert
+    assert result is True
 
 
 def test_has_python_file_disable_recognizes_ruff() -> None:
+    # Arrange
     lines = ["# ruff: noqa", "def f(): ..."]
-    assert has_python_file_disable(lines) is True
+
+    # Act
+    result = has_python_file_disable(lines)
+
+    # Assert
+    assert result is True
 
 
 def test_has_python_file_disable_absent() -> None:
+    # Arrange
     lines = ["def f(): ...", "    pass"]
-    assert has_python_file_disable(lines) is False
+
+    # Act
+    result = has_python_file_disable(lines)
+
+    # Assert
+    assert result is False
 
 
 def test_line_or_prev_has_suppression_alias_matches_is_suppressed() -> None:
+    # Arrange
     lines = ["// eslint-disable-next-line", "items.push(v)"]
-    via_alias = line_or_prev_has_suppression(lines, 1)
     via_canonical = is_suppressed(lines, 1)
+
+    # Act
+    via_alias = line_or_prev_has_suppression(lines, 1)
+
+    # Assert
     assert via_alias is True
     assert via_alias == via_canonical
 
 
 def test_our_own_allow_marker_does_not_suppress() -> None:
+    # Arrange
     lines = ["arr.push(v) // @allow-mutation -- ok"]
 
-    assert line_or_prev_has_suppression(lines, 0) is False
+    # Act
+    result = line_or_prev_has_suppression(lines, 0)
+
+    # Assert
+    assert result is False
 
 
 def test_third_party_directive_still_suppresses() -> None:
+    # Arrange
     lines = ["arr.push(v) // eslint-disable-line"]
 
-    assert line_or_prev_has_suppression(lines, 0) is True
+    # Act
+    result = line_or_prev_has_suppression(lines, 0)
+
+    # Assert
+    assert result is True
 
 
-def test_is_suppressed_out_of_range_returns_false() -> None:
+@pytest.mark.parametrize("index", [-1, 5])
+def test_is_suppressed_out_of_range_returns_false(index) -> None:
+    # Arrange
     lines = ["arr.push(v)"]
-    assert is_suppressed(lines, -1) is False
-    assert is_suppressed(lines, 5) is False
+
+    # Act
+    result = is_suppressed(lines, index)
+
+    # Assert
+    assert result is False
 
 
 def test_block_state_open_without_close_extends_to_end() -> None:
+    # Arrange
     lines = ["/* eslint-disable */", "a", "b"]
+
+    # Act
     state = compute_block_state(lines)
+
+    # Assert
     assert state.disabled_lines == frozenset({0, 1, 2})
 
 
 def test_python_marker_on_preceding_line_suppresses() -> None:
+    # Arrange
     lines = ["arr.append(x)  # noqa", "y = 1"]
+
+    # Act
     actual = is_suppressed(lines, 1)
+
+    # Assert
     assert actual is True

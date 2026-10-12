@@ -2,6 +2,41 @@
 
 All notable changes to this Claude Code configuration are documented here.
 
+## 2026-10-12
+
+### Added
+
+- [`hooks/_lib/git_invocation.py`](hooks/_lib/git_invocation.py) strips git global options before a hook matches a subcommand. A force push written as `git -C <dir> push --force` or `git -c k=v push -f` slipped past the dangerous-command blocker, because every pattern expected `git` and the subcommand to be adjacent. Every hook that gates on a git subcommand now goes through the normaliser, so the same spelling cannot slip past a commit or push gate either.
+- `python3 tools/lint-skills.py --strict` runs in CI, and ruff now checks [`tools/`](tools/). The six-section skill template was adopted in May and never backfilled, and nothing enforced it, so 38 skills drifted from it unnoticed. Every skill now carries the six sections, an `argument-hint`, and a tool scope.
+- The skill linter parses frontmatter as strict YAML, and reports `truncated-by-comment` when a ` #` would make a loader drop the rest of a description. The `/fix-issue` description was silently cut at `"fix issue #N"`, and nine skills failed a strict parse on an unquoted colon.
+- The comment ban now holds in every language the owner's repositories use, from YAML, Make, Terraform, SQL, Lua and assembly to Vim script, TeX and Jupyter code cells, resolved by extension, file name, shebang or content. [`hooks/comment-blocker.py`](hooks/comment-blocker.py) only knew C-family languages, Python, Ruby and shell, allowed docstrings, and never saw a file written through Bash. Docstrings now count as comments, shell comments inside YAML `run` and `script` values are caught, and a `git commit` scans every staged file against `HEAD`.
+- Every test carries the bare `Arrange`, `Act` and `Assert` markers again, the one comment a test allows. [`hooks/test-aaa-markers.py`](hooks/test-aaa-markers.py) requires them, once each and in order, on every added or changed test in Python, JS/TS, Go and bats. All 3,343 test functions in this repository were migrated, and the fixtures that ran a hook and asserted in one call were replaced by `run_hook` plus plain assertion helpers.
+- [`hooks/zsh-special-name-guard.py`](hooks/zsh-special-name-guard.py) blocks a zsh special name such as `path` used as a variable, and an unquoted word with a leading `=`. Both traps were already written in the instructions and still broke commands in practice.
+- [`.github/scripts/validate-cross-refs.py`](.github/scripts/validate-cross-refs.py) checks every rule path a hook cites and every `/skill` reference in skills, agents and rules. Seven ORM hooks cited rule files merged months earlier, and three skills pointed at skills that never existed.
+
+### Changed
+
+- Fourteen hand-fired skills are user-invoked through `disable-model-invocation: true`, so their descriptions no longer load into every session. `/pr-summary` and `/fix-issue` stay model-invoked because `/morning` hands work to them, and [`CLAUDE.md`](CLAUDE.md) explains why a user-invoked skill is absent from the model's skill list.
+- Skill descriptions route positively, "for X, use /y", instead of "Do NOT use for X", since naming a behavior as a ban still puts it in front of the model. [`standards/agent-instruction-files.md`](standards/agent-instruction-files.md) carries the reasoning.
+- `/investigate` builds a reproduction command that has already run red on the user's exact symptom before any theory, minimises one element at a time, ranks three to five falsifiable hypotheses, and tags debug output so cleanup is one grep.
+- `/review` adds a Spec axis that checks the diff against its plan, spec, or ticket in an isolated subagent, and reviews in a fresh context when the same session wrote the diff.
+- A pull request description carries before and after Evidence and a Merge Danger call, a one-way or two-way door and the blast radius, across [`rules/git-workflow.md`](rules/git-workflow.md), `/ship`, and `/pr-summary`.
+- `/plan` writes vertical-slice tasks with blocking edges, puts prefactoring first, sequences wide refactors as expand, migrate, contract, runs a readiness check on every requirement covering failure cases and access, and opens issues blockers-first with native links.
+- Tests take expected values from an independent source, never from a recomputation of the code under test, per [`rules/testing.md`](rules/testing.md).
+- `/retro` sends a mechanical violation to a hook, lint rule, or CI job before a prose rule, and asks which item cost the most turns. `/morning` ranks the item closest to done first inside a lane. `/setup` collects secrets through a script the user runs, so a value never enters the transcript.
+- Every analysis reads each in-scope file in full on the first pass, per [`rules/verification.md`](rules/verification.md).
+- A pushed branch is never rebased or force pushed. Conflicts on it are resolved by merging the base, and only a branch that was never pushed is rebased before opening a pull request. The git standard and `/ship` contradicted the "never force push" rule.
+- The render gate drives every entry point, reads the saved change back, and requires empty page errors, console and body errors, with before and after screenshots. `/profile` measures statements per request, release notes come from the changelog, and a deploy refuses a build whose migration is missing.
+- `/fix-issue` treats issue text as untrusted input, `/research --history` traces a decision upstream, `/plan` tags each slice as needing a human or not, `/refactor` refuses uncovered code, `/module-audit` respects earlier rejections, and `/review` reports twelve code smells as judgement calls.
+
+### Fixed
+
+- `make validate` failed whenever the harness left an untracked `skills/.trash/`, which the skill validator counted as a skill.
+- [`.github/scripts/validate-counts.py`](.github/scripts/validate-counts.py) missed unbolded counts, so the README claimed 33 skills, 70 hooks, 83 standards, 20 agents, and 36 MCP servers while the true numbers were 42, 84, 139, 18, and 42. It now checks those phrasings and the README is corrected.
+- `/cleanup` closed a stale pull request with a comment, which the pull-request comment rule forbids. `/review` told a reviewer to file a ticket for deferred work, which the found-fix rule forbids. `/retro` and `/session-log` wrote memory files by hand while the vault is the source of truth.
+- [`hooks/git-author-guard.py`](hooks/git-author-guard.py) never blocked a push carrying a commit with an empty author email, because empty entries were dropped before the check.
+- `/plan` put the plan path and a task number into published issues, a dead link for every reader, and [`hooks/scope-guard.py`](hooks/scope-guard.py) gated edits to the never-committed workspace.
+
 ## 2026-09-30
 
 ### Added

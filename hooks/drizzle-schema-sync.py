@@ -1,33 +1,4 @@
 #!/usr/bin/env python3
-"""
-drizzle-schema-sync.py
-
-PreToolUse hook that blocks the most common Drizzle schema-drift sources:
-
-  1. `drizzle-kit push` invocations inside CI workflows, Dockerfiles, package.json
-     scripts, and shell scripts that target staging or production. The push
-     command bypasses the migration file system and can silently skip
-     ambiguous changes.
-  2. `index()` and `uniqueIndex()` declarations without an explicit name
-     argument. Anonymous indexes cannot be referenced by later migrations
-     and produce unreadable diffs.
-
-Rule source: ~/.claude/rules/lang/drizzle-migrations.md
-
-Scope:
-  Write/Edit/MultiEdit on:
-    - *.ts/*.tsx/*.js/*.jsx/*.mjs/*.cjs (schema and config files)
-    - *.yml/*.yaml under */.github/workflows/* (CI)
-    - Dockerfile, Dockerfile.*, *.dockerfile (container build)
-    - *.sh shell scripts
-    - package.json (npm scripts)
-  Bash payloads that invoke drizzle-kit push directly.
-
-Bypass:
-  DRIZZLE_SCHEMA_SYNC_DISABLE=1
-  Use only for local-development one-shot scripts.
-"""
-
 from __future__ import annotations
 
 import json
@@ -232,7 +203,7 @@ def main() -> int:
 
     print(
         "Blocked: Drizzle schema-sync defect. "
-        "Rule: ~/.claude/rules/lang/drizzle-migrations.md.\n"
+        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
         + "\n".join(all_findings)
         + "\n\nFix: replace `drizzle-kit push` with `drizzle-kit generate` + "
         "`drizzle-kit migrate` for any environment other than local dev. "

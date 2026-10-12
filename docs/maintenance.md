@@ -95,7 +95,7 @@ Run these outside the quarterly schedule when specific events occur:
 | New Claude Code major version | Read changelog, update `autoUpdatesChannel` if beta channel is needed for testing |
 | New MCP server released | Evaluate against existing servers, add to [`settings.json`](../settings.json) if it adds distinct capability |
 | Security advisory for an MCP package | Immediately update or remove the affected server |
-| Hook causes false positive | Add pattern to SAFE_CLEANUP (for rm) or update SUSPICIOUS threshold |
+| Hook causes false positive | Add the directory name to SAFE_CLEANUP (for rm of build output) or update SUSPICIOUS threshold |
 | New team member onboards | Walk through README.md workflows together, identify gaps |
 | CI failure rate spikes | Review recent hook changes, check if a new pattern is too aggressive |
 | Token costs increase unexpectedly | Run `rtk discover` to find commands not going through RTK |

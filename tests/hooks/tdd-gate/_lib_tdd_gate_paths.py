@@ -1,5 +1,3 @@
-"""Shared-temp-root constant read from the hook under test."""
-
 from __future__ import annotations
 
 import importlib.util

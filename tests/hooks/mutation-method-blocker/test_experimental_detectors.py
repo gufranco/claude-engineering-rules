@@ -1,15 +1,3 @@
-"""Experimental detector tests.
-
-Plan items 291-293. Verifies the experimental detector flag mechanism:
-
-  - The optional-chain detector is OFF by default. Payloads with
-    `obj?.field = v` produce no findings when the flag is unset.
-  - When `MUTATION_METHOD_EXPERIMENTAL_OPTIONAL_CHAIN_ASSIGN=1` is set,
-    the same payload is blocked.
-  - The detector function itself produces the expected matches when
-    invoked directly with arbitrary code.
-"""
-
 from __future__ import annotations
 
 import json
@@ -28,7 +16,11 @@ from _lib.mutation_detectors_assignments import detect_optional_chain_assignment
 def _run_hook(
     payload: dict, env_overrides: dict[str, str] | None = None
 ) -> tuple[int, str]:
-    env = dict(os.environ)
+    env = {
+        **os.environ,
+        "CLAUDE_BYPASS_STATE": os.devnull,
+        "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+    }
     if env_overrides:
         env.update(env_overrides)
     else:
@@ -52,27 +44,40 @@ def _payload(content: str) -> dict:
 
 
 def test_optional_chain_assignment_off_by_default() -> None:
-    code, err = _run_hook(_payload("user?.name = 'alice';\n"))
+    # Arrange
+    payload = _payload("user?.name = 'alice';\n")
+
+    # Act
+    code, err = _run_hook(payload)
+
+    # Assert
     assert code == 0
     assert "experimental.optional-chain" not in err
 
 
 def test_optional_chain_assignment_blocked_when_flag_set() -> None:
+    # Arrange
+    payload = _payload("user?.name = 'alice';\n")
+
+    # Act
     code, err = _run_hook(
-        _payload("user?.name = 'alice';\n"),
+        payload,
         env_overrides={"MUTATION_METHOD_EXPERIMENTAL_OPTIONAL_CHAIN_ASSIGN": "1"},
     )
+
+    # Assert
     assert code == 2
-    assert (
-        "experimental.optional-chain-assignment" in err.lower()
-        or "optional-chain" in err.lower()
-    )
+    assert "[experimental.optional-chain-assignment] user?.name" in err
 
 
 def test_optional_chain_detector_match_shape() -> None:
-    matches = detect_optional_chain_assignment(
-        "obj?.prop = value;\n", "ts", "/tmp/x.ts"
-    )
+    # Arrange
+    text = "obj?.prop = value;\n"
+
+    # Act
+    matches = detect_optional_chain_assignment(text, "ts", "/tmp/x.ts")
+
+    # Assert
     assert len(matches) == 1
     m = matches[0]
     assert m.detector == "experimental.optional-chain-assignment"
@@ -82,16 +87,22 @@ def test_optional_chain_detector_match_shape() -> None:
 
 
 def test_optional_chain_detector_skips_declarations() -> None:
-    """Declarations like `const a = obj?.prop;` are not assignments."""
-    matches = detect_optional_chain_assignment(
-        "const a = obj?.prop;\n", "ts", "/tmp/x.ts"
-    )
+    # Arrange
+    text = "const a = obj?.prop;\n"
+
+    # Act
+    matches = detect_optional_chain_assignment(text, "ts", "/tmp/x.ts")
+
+    # Assert
     assert matches == []
 
 
 def test_optional_chain_detector_skips_equality() -> None:
-    """`obj?.prop === value` is not an assignment."""
-    matches = detect_optional_chain_assignment(
-        "if (obj?.prop === value) {}\n", "ts", "/tmp/x.ts"
-    )
+    # Arrange
+    text = "if (obj?.prop === value) {}\n"
+
+    # Act
+    matches = detect_optional_chain_assignment(text, "ts", "/tmp/x.ts")
+
+    # Assert
     assert matches == []

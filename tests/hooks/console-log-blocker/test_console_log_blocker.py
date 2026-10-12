@@ -1,8 +1,3 @@
-"""Coverage for console-log-blocker hook.
-
-Source rule: `~/.claude/rules/code-style.md` Use the project logger, never console.
-"""
-
 from __future__ import annotations
 
 import os
@@ -11,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "console-log-blocker"
 
@@ -19,7 +15,8 @@ HOOK = "console-log-blocker"
     "method",
     ["log", "warn", "error", "info", "debug", "trace"],
 )
-def test_blocks_each_console_method(tool_use, assert_blocks, method):
+def test_blocks_each_console_method(tool_use, run_hook, method):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -28,10 +25,15 @@ def test_blocks_each_console_method(tool_use, assert_blocks, method):
         },
     )
 
-    assert_blocks(HOOK, payload, f"console.{method}")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, f"console.{method}")
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -41,10 +43,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "console.log")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "console.log")
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -56,10 +63,15 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "console.warn")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "console.warn")
 
 
-def test_allows_logger_call(tool_use, assert_allows):
+def test_allows_logger_call(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -68,10 +80,15 @@ def test_allows_logger_call(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_comment_with_console(tool_use, assert_allows):
+def test_allows_comment_with_console(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -80,10 +97,15 @@ def test_allows_comment_with_console(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_file_suffix(tool_use, assert_allows):
+def test_skips_test_file_suffix(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -92,10 +114,15 @@ def test_skips_test_file_suffix(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_spec_file_suffix(tool_use, assert_allows):
+def test_skips_spec_file_suffix(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -104,10 +131,15 @@ def test_skips_spec_file_suffix(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_tests_directory(tool_use, assert_allows):
+def test_skips_tests_directory(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -116,10 +148,15 @@ def test_skips_tests_directory(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_scripts_directory(tool_use, assert_allows):
+def test_skips_scripts_directory(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -128,10 +165,15 @@ def test_skips_scripts_directory(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_next_error_boundary(tool_use, assert_allows):
+def test_skips_next_error_boundary(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -140,10 +182,15 @@ def test_skips_next_error_boundary(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_config_file(tool_use, assert_allows):
+def test_skips_config_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -152,10 +199,15 @@ def test_skips_config_file(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_non_js_extension(tool_use, assert_allows):
+def test_skips_non_js_extension(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -164,10 +216,15 @@ def test_skips_non_js_extension(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_line_allow_marker_does_not_suppress(tool_use, assert_blocks):
+def test_line_allow_marker_does_not_suppress(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -176,10 +233,15 @@ def test_line_allow_marker_does_not_suppress(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "console")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "console")
 
 
-def test_file_allow_marker_does_not_suppress(tool_use, assert_blocks):
+def test_file_allow_marker_does_not_suppress(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -192,10 +254,15 @@ def test_file_allow_marker_does_not_suppress(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "console")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "console")
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -204,10 +271,15 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"CONSOLE_LOG_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"CONSOLE_LOG_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -216,39 +288,54 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "console.log",
-        env={"CONSOLE_LOG_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"CONSOLE_LOG_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "console.log")
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/app.ts"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_empty_file_path_is_skipped(tool_use, assert_allows):
+def test_empty_file_path_is_skipped(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "console.log('here');\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -257,10 +344,15 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allow_marker_above_call_does_not_suppress(tool_use, assert_blocks):
+def test_allow_marker_above_call_does_not_suppress(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -272,10 +364,15 @@ def test_allow_marker_above_call_does_not_suppress(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "console")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "console")
 
 
-def test_block_comment_with_console_pattern_is_ignored(tool_use, assert_allows):
+def test_block_comment_with_console_pattern_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -284,10 +381,15 @@ def test_block_comment_with_console_pattern_is_ignored(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_eslint_disable_next_line_suppresses(tool_use, assert_allows):
+def test_eslint_disable_next_line_suppresses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -298,10 +400,15 @@ def test_eslint_disable_next_line_suppresses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_file_allow_marker_after_blank_lines_does_not_suppress(tool_use, assert_blocks):
+def test_file_allow_marker_after_blank_lines_does_not_suppress(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -312,10 +419,15 @@ def test_file_allow_marker_after_blank_lines_does_not_suppress(tool_use, assert_
         },
     )
 
-    assert_blocks(HOOK, payload, "console")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "console")
 
 
-def test_eslint_directive_still_suppresses(tool_use, assert_allows):
+def test_eslint_directive_still_suppresses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -324,17 +436,19 @@ def test_eslint_directive_still_suppresses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "console-log-blocker.py"
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
+    env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -345,4 +459,5 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0

@@ -1,15 +1,3 @@
-"""Activate subprocess coverage for tests that shell out to hook scripts.
-
-Mirrors the wiring in `tests/conftest.py::_build_env` so that test files
-which call `subprocess.run([sys.executable, HOOK])` directly stitch their
-subprocess coverage into the parent pytest-cov report.
-
-Also sets `CLAUDE_HOOK_AUDIT_DISABLE=1` unconditionally, matching
-`_build_env`. Without it, every hook invoked through this helper appends a
-real record to `~/.claude/logs/hooks.log`, which is the dataset `/retro` and
-`hooks/retro-pointer.py` read to rank recurring failures.
-"""
-
 from __future__ import annotations
 
 import os
@@ -37,19 +25,13 @@ def _coverage_active() -> bool:
 
 
 def apply_coverage_env(env: dict, *, force_active: bool | None = None) -> dict:
-    """Return a copy of `env` with subprocess-coverage variables added when active.
-
-    Audit-log writes are suppressed in every case so test runs never pollute
-    the production hook log.
-
-    `force_active` is an override for tests of this helper.
-    """
     active = _coverage_active() if force_active is None else force_active
     out = dict(env)
     out["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
     if not active:
         return out
     out["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
+    out["CLAUDE_COVERAGE_ROOT"] = str(REPO_ROOT)
     existing = out.get("PYTHONPATH", "")
     out["PYTHONPATH"] = (
         f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing}"

@@ -6,72 +6,62 @@ parallel = True
 # until they are migrated to the shared harness (plan.md 1.1.10 + per-cluster
 # follow-ups).
 source =
-    hooks
-    .github/scripts
+    ${CLAUDE_COVERAGE_ROOT-.}/hooks
+    ${CLAUDE_COVERAGE_ROOT-.}/.github/scripts
 omit =
     # Hooks with tests but the hook body is hard to exercise from pytest
     # (requires git fixtures, large pattern catalogs, or runs only in
     # Stop-hook context). Tests in tests/hooks/<name>/ still run and guard
     # against regressions; they just don't push the total coverage above
     # 95% for these specific files.
-    hooks/dangerous-command-blocker.py
-    hooks/git-author-guard.py
-    hooks/retro-pointer.py
-    hooks/secret-scanner.py
-    hooks/settings-hygiene.py
+    */hooks/retro-pointer.py
+    */hooks/settings-hygiene.py
     # Untested hooks tracked in CI via subprocess only.
-    hooks/config-protection.py
-    hooks/gateguard-fact-force.py
-    hooks/mcp-health-check.py
+    */hooks/config-protection.py
+    */hooks/gateguard-fact-force.py
+    */hooks/mcp-health-check.py
     # markdown-link-discipline.py hardcodes REPO_ROOT and the detector
     # skip-list excludes tests/, so the BLOCK output path is unreachable
     # from pytest fixtures without polluting repo-root markdown.
-    hooks/markdown-link-discipline.py
-    # internal-config-leakage.py has 200+ branches across many leakage
-    # categories; hook tests cover happy paths but exhausting every
-    # pattern variant to 95% is impractical at the current test surface.
-    hooks/internal-config-leakage.py
+    */hooks/markdown-link-discipline.py
     # Lib modules not yet under test.
-    hooks/_lib/mutation_source_map.py
-    hooks/_lib/mutation_ts_project_service.py
+    */hooks/_lib/mutation_source_map.py
+    */hooks/_lib/mutation_ts_project_service.py
     # CLI tools not yet under test.
-    .github/scripts/context-monitor.py
-    .github/scripts/stale-memory-detector.py
-    .github/scripts/validate-agents.py
-    .github/scripts/validate-checklist-counts.py
-    .github/scripts/validate-counts.py
-    .github/scripts/validate-cross-refs.py
-    .github/scripts/validate-patterns.py
-    .github/scripts/validate-settings.py
-    .github/scripts/validate-skills.py
+    */.github/scripts/context-monitor.py
+    */.github/scripts/stale-memory-detector.py
+    */.github/scripts/validate-agents.py
+    */.github/scripts/validate-checklist-counts.py
+    */.github/scripts/validate-counts.py
+    */.github/scripts/validate-cross-refs.py
+    */.github/scripts/validate-settings.py
+    */.github/scripts/validate-skills.py
     # CLI tools at 88-92% coverage. Tests exist; remaining lines are CLI
     # entry points (`main()` argument parsing, file-not-found branches).
-    .github/scripts/audit-writing-quality.py
-    .github/scripts/fix-markdown-links.py
+    */.github/scripts/audit-writing-quality.py
+    */.github/scripts/fix-markdown-links.py
     # Mutation detector modules at 91-92% coverage. Tests exist for each
     # detector; remaining branches are defensive guards. Re-introduce once
     # the full branch matrix is covered.
-    hooks/_lib/mutation_detectors_assignments.py
-    hooks/_lib/mutation_detectors_methods.py
-    hooks/_lib/markdown_link_detector.py
+    */hooks/_lib/mutation_detectors_assignments.py
+    */hooks/_lib/mutation_detectors_methods.py
+    */hooks/_lib/markdown_link_detector.py
     # Hooks at 73-89% coverage. Tests exist; remaining branches are
     # error-path handlers or env-specific code that pytest cannot reach
     # without polluting the runner. Re-introduce per-hook once branch
     # coverage clears 95%.
-    hooks/force-push-during-review.py
-    hooks/found-fix-rationalization-blocker.py
-    hooks/docker-context-guard.py
-    hooks/aws-profile-guard.py
-    hooks/terraform-workspace-guard.py
-    hooks/gcloud-config-guard.py
-    hooks/kubectl-context-guard.py
-    hooks/mise-global-guard.py
-    hooks/bulk-resolve-blocker.py
-    hooks/gh-token-guard.py
-    hooks/glab-token-guard.py
-    hooks/review-state-guard.py
-    hooks/_lib/mutation_fix_lookup.py
-    hooks/_lib/hook_profile.py
+    */hooks/docker-context-guard.py
+    */hooks/aws-profile-guard.py
+    */hooks/terraform-workspace-guard.py
+    */hooks/gcloud-config-guard.py
+    */hooks/kubectl-context-guard.py
+    */hooks/mise-global-guard.py
+    */hooks/bulk-resolve-blocker.py
+    */hooks/gh-token-guard.py
+    */hooks/glab-token-guard.py
+    */hooks/review-state-guard.py
+    */hooks/_lib/mutation_fix_lookup.py
+    */hooks/_lib/hook_profile.py
 disable_warnings = include-ignored
 
 [report]

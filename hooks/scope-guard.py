@@ -39,6 +39,7 @@ except Exception:  # pragma: no cover
 
 try:
     from _lib.project_scope import repo_root, walk_up
+    from _lib.project_workspace import in_workspace
 except ImportError:  # pragma: no cover
     sys.exit(0)
 
@@ -248,6 +249,8 @@ def main() -> int:
 
     target = Path(file_path_str)
     if not governs(plan_path, target):
+        return 0
+    if in_workspace(target):
         return 0
     if is_in_scope(target, declared):
         return 0

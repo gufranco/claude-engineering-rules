@@ -1,10 +1,3 @@
-"""Coverage for the project-workspace hook.
-
-SessionStart claims a local workspace folder through the git exclude file,
-Stop blocks once when the continuation prompt is older than the newest change,
-and PreToolUse on Bash refuses a forced add that would stage the workspace.
-"""
-
 from __future__ import annotations
 
 import json
@@ -83,6 +76,11 @@ def bash(run_hook, tool_use, repo: Path, command: str, env=None):
     return run_hook(HOOK, payload, env={**GIT_ENV, **(env or {})})
 
 
+def commit_owned_folders(repo: Path, names: tuple[str, ...]) -> None:
+    for name in names:
+        commit_file(repo, f"{name}/owned.md")
+
+
 def claim_docs_with_stale_prompt(run_hook, repo: Path) -> None:
     start(run_hook, repo)
     (repo / "docs").mkdir()
@@ -94,79 +92,106 @@ def claim_docs_with_stale_prompt(run_hook, repo: Path) -> None:
 
 
 def test_start_claims_docs_in_the_exclude_file(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
 
+    # Act
     code, stdout, _ = start(run_hook, repo)
 
+    # Assert
     assert (code, stdout) == (0, "")
     assert "\n/docs/\n" in exclude_text(repo)
 
 
 def test_start_excludes_prompt_files_at_any_depth(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
 
+    # Act
     start(run_hook, repo)
 
+    # Assert
     assert "\nPROMPT.md\n" in exclude_text(repo)
 
 
 def test_start_claims_work_when_the_project_tracks_docs(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     commit_file(repo, "docs/guide.md")
 
+    # Act
     code, _, _ = start(run_hook, repo)
 
+    # Assert
     assert code == 0
     assert "\n/.work/\n" in exclude_text(repo)
     assert "/docs/" not in exclude_text(repo)
 
 
 def test_start_never_touches_project_files(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     commit_file(repo, "docs/guide.md")
     commit_file(repo, ".gitignore")
     before = run_git(repo, "status", "--porcelain", "--untracked-files=all")
 
-    start(run_hook, repo)
+    # Act
+    code, _, _ = start(run_hook, repo)
 
+    # Assert
     after = run_git(repo, "status", "--porcelain", "--untracked-files=all")
+    assert code == 0
     assert (before, after) == ("", "")
 
 
 def test_start_releases_a_folder_the_project_began_tracking(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     start(run_hook, repo)
     commit_file(repo, "docs/guide.md")
 
+    # Act
     start(run_hook, repo)
 
+    # Assert
     assert "/docs/" not in exclude_text(repo)
     assert "\n/.work/\n" in exclude_text(repo)
 
 
 def test_start_is_silent_outside_a_repository(run_hook, tmp_path):
-    code, stdout, stderr = start(run_hook, tmp_path)
+    # Arrange
+    outside = tmp_path
 
+    # Act
+    code, stdout, stderr = start(run_hook, outside)
+
+    # Assert
     assert (code, stdout, stderr) == (0, "", "")
 
 
 def test_start_writes_nothing_when_git_is_missing(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     before = exclude_text(repo)
 
+    # Act
     code, stdout, stderr = start(run_hook, repo, env={"PATH": str(tmp_path)})
 
+    # Assert
     assert (code, stdout) == (0, "")
     assert "project-workspace" in stderr
     assert exclude_text(repo) == before
 
 
 def test_stop_blocks_when_the_prompt_is_stale(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     claim_docs_with_stale_prompt(run_hook, repo)
 
+    # Act
     code, stdout, _ = stop(run_hook, repo)
 
+    # Assert
     decision = json.loads(stdout)
     assert code == 0
     assert decision["decision"] == "block"
@@ -174,47 +199,63 @@ def test_stop_blocks_when_the_prompt_is_stale(run_hook, tmp_path):
 
 
 def test_stop_allows_the_second_stop_in_a_chain(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     claim_docs_with_stale_prompt(run_hook, repo)
 
+    # Act
     code, stdout, _ = stop(run_hook, repo, active=True)
 
+    # Assert
     assert (code, stdout) == (0, "")
 
 
 def test_stop_allows_a_clean_tree(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
 
+    # Act
     code, stdout, _ = stop(run_hook, repo)
 
+    # Assert
     assert (code, stdout) == (0, "")
 
 
 def test_stop_allows_outside_a_repository(run_hook, tmp_path):
-    code, stdout, _ = stop(run_hook, tmp_path)
+    # Arrange
+    outside = tmp_path
 
+    # Act
+    code, stdout, _ = stop(run_hook, outside)
+
+    # Assert
     assert (code, stdout) == (0, "")
 
 
 def test_stop_names_the_fallback_folder(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     commit_file(repo, "docs/guide.md")
     (repo / "main.py").write_text(words())
 
+    # Act
     code, stdout, _ = stop(run_hook, repo)
 
+    # Assert
     assert code == 0
     assert ".work/PROMPT.md" in json.loads(stdout)["reason"]
 
 
 def test_stop_allows_and_logs_when_no_folder_is_free(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
-    for name in ("docs", ".work", ".work-local"):
-        commit_file(repo, f"{name}/owned.md")
+    commit_owned_folders(repo, ("docs", ".work", ".work-local"))
     (repo / "main.py").write_text(words())
 
+    # Act
     code, stdout, stderr = stop(run_hook, repo)
 
+    # Assert
     assert (code, stdout) == (0, "")
     assert "no free workspace" in stderr
 
@@ -236,11 +277,14 @@ def test_stop_allows_and_logs_when_no_folder_is_free(run_hook, tmp_path):
 def test_stage_blocks_a_forced_add_of_the_workspace(
     run_hook, tool_use, tmp_path, command
 ):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     start(run_hook, repo)
 
+    # Act
     code, _, stderr = bash(run_hook, tool_use, repo, command)
 
+    # Assert
     assert code == 2
     assert "docs/" in stderr
 
@@ -259,56 +303,75 @@ def test_stage_blocks_a_forced_add_of_the_workspace(
     ],
 )
 def test_stage_allows_other_commands(run_hook, tool_use, tmp_path, command):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     start(run_hook, repo)
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, command)
 
+    # Assert
     assert code == 0
 
 
 def test_stage_blocks_a_forced_add_from_inside_the_workspace(
     run_hook, tool_use, tmp_path
 ):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     start(run_hook, repo)
     (repo / "docs").mkdir()
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo / "docs", "git add -f PROMPT.md")
 
+    # Assert
     assert code == 2
 
 
 def test_stage_blocks_a_forced_add_when_git_fails(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
 
+    # Act
     code, _, stderr = bash(
         run_hook, tool_use, repo, "git add -f docs", env={"PATH": str(tmp_path)}
     )
 
+    # Assert
     assert code == 2
     assert "could not" in stderr
 
 
 def test_stage_blocks_an_unparseable_forced_add(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     start(run_hook, repo)
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, "git add -f 'docs/PROMPT.md")
 
+    # Assert
     assert code == 2
 
 
 def test_stage_allows_outside_a_repository(run_hook, tool_use, tmp_path):
-    code, _, _ = bash(run_hook, tool_use, tmp_path, "git add -f docs")
+    # Arrange
+    command = "git add -f docs"
 
+    # Act
+    code, _, _ = bash(run_hook, tool_use, tmp_path, command)
+
+    # Assert
     assert code == 0
 
 
 def test_env_bypass_skips_every_event(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     start(run_hook, repo)
 
+    # Act
     code, _, _ = bash(
         run_hook,
         tool_use,
@@ -317,13 +380,16 @@ def test_env_bypass_skips_every_event(run_hook, tool_use, tmp_path):
         env={"PROJECT_WORKSPACE_DISABLE": "1"},
     )
 
+    # Assert
     assert code == 0
 
 
 @pytest.mark.parametrize("raw", ["not json", "[]"])
 def test_malformed_payload_is_ignored(raw):
+    # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook)],
         input=raw,
@@ -335,10 +401,12 @@ def test_malformed_payload_is_ignored(raw):
         check=False,
     )
 
+    # Assert
     assert (proc.returncode, proc.stdout) == (0, "")
 
 
 def test_non_dict_tool_input_is_ignored(run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     payload = {
         "hook_event_name": "PreToolUse",
@@ -347,8 +415,10 @@ def test_non_dict_tool_input_is_ignored(run_hook, tmp_path):
         "cwd": str(repo),
     }
 
+    # Act
     code, _, _ = run_hook(HOOK, payload, env=GIT_ENV)
 
+    # Assert
     assert code == 0
 
 
@@ -389,19 +459,25 @@ def repo_with_tracked_prompt(tmp_path: Path) -> Path:
 def test_prompt_blocks_an_add_that_would_stage_it(
     run_hook, tool_use, tmp_path, command
 ):
+    # Arrange
     repo = repo_with_untracked_prompt(tmp_path)
 
+    # Act
     code, _, stderr = bash(run_hook, tool_use, repo, command)
 
+    # Assert
     assert code == 2
     assert "PROMPT.md" in stderr
 
 
 def test_prompt_match_ignores_case(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = repo_with_untracked_prompt(tmp_path, "notes/prompt.md")
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, "git add notes/prompt.md")
 
+    # Assert
     assert code == 2
 
 
@@ -417,20 +493,26 @@ def test_prompt_match_ignores_case(run_hook, tool_use, tmp_path):
 def test_prompt_allows_adds_and_commits_that_leave_it_out(
     run_hook, tool_use, tmp_path, command
 ):
+    # Arrange
     repo = repo_with_untracked_prompt(tmp_path)
     write(repo, "src/main.py")
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, command)
 
+    # Assert
     assert code == 0
 
 
 def test_prompt_blocks_a_commit_with_it_staged(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = repo_with_untracked_prompt(tmp_path)
     run_git(repo, "add", "-f", "notes/PROMPT.md")
 
+    # Act
     code, _, stderr = bash(run_hook, tool_use, repo, "git commit -m wip")
 
+    # Assert
     assert code == 2
     assert "notes/PROMPT.md" in stderr
 
@@ -449,78 +531,102 @@ def test_prompt_blocks_a_commit_with_it_staged(run_hook, tool_use, tmp_path):
 def test_prompt_blocks_a_commit_that_records_a_tracked_edit(
     run_hook, tool_use, tmp_path, command
 ):
+    # Arrange
     repo = repo_with_tracked_prompt(tmp_path)
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, command)
 
+    # Assert
     assert code == 2
 
 
 def test_prompt_allows_a_commit_leaving_a_tracked_edit_unstaged(
     run_hook, tool_use, tmp_path
 ):
+    # Arrange
     repo = repo_with_tracked_prompt(tmp_path)
 
+    # Act
     code, _, _ = bash(
         run_hook, tool_use, repo, "git commit --author 'A <a@b.c>' -m wip"
     )
 
+    # Assert
     assert code == 0
 
 
 def test_prompt_allows_removing_it_from_the_index(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = repo_with_tracked_prompt(tmp_path)
     run_git(repo, "rm", "-q", "--cached", "planning/PROMPT.md")
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, "git commit -m 'stop tracking'")
 
+    # Assert
     assert code == 0
 
 
 def test_prompt_allows_committing_a_deleted_tracked_prompt(
     run_hook, tool_use, tmp_path
 ):
+    # Arrange
     repo = repo_with_tracked_prompt(tmp_path)
     (repo / "planning" / "PROMPT.md").unlink()
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, "git commit -am 'drop prompt'")
 
+    # Assert
     assert code == 0
 
 
 def test_prompt_blocks_a_commit_when_git_fails(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
 
+    # Act
     code, _, stderr = bash(
         run_hook, tool_use, repo, "git commit -m wip", env={"PATH": str(tmp_path)}
     )
 
+    # Assert
     assert code == 2
     assert "could not" in stderr
 
 
 def test_prompt_blocks_an_unparseable_command_naming_it(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = repo_with_untracked_prompt(tmp_path)
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, repo, "git add 'notes/PROMPT.md")
 
+    # Assert
     assert code == 2
 
 
 def test_prompt_allows_git_commands_outside_a_repository(run_hook, tool_use, tmp_path):
+    # Arrange
     write(tmp_path, "PROMPT.md")
 
+    # Act
     code, _, _ = bash(run_hook, tool_use, tmp_path, "git add PROMPT.md")
 
+    # Assert
     assert code == 0
 
 
 def test_non_bash_tool_is_ignored(run_hook, tool_use, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path / "project")
     payload = tool_use(
         "Write", {"file_path": str(repo / "docs" / "x.md")}, cwd=str(repo)
     )
 
+    # Act
     code, stdout, _ = run_hook(HOOK, payload, env=GIT_ENV)
 
+    # Assert
     assert (code, stdout) == (0, "")

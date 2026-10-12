@@ -1,12 +1,3 @@
-"""The session must be told when vault maintenance has gone quiet.
-
-A maintenance loop that stops running produces exactly the same silence as one
-with nothing to do. The run record gives the loop a second, loud channel, which
-is the only way a fail-open component can report its own failure.
-
-Rule source: ``rules/agent-operating-limits.md`` "Fail Closed".
-"""
-
 from __future__ import annotations
 
 import json
@@ -53,50 +44,68 @@ def run(root: Path) -> str:
 
 
 def test_overdue_maintenance_is_reported(tmp_path):
+    # Arrange
     root = build_vault(tmp_path, ran_days_ago=30)
 
+    # Act
     out = run(root)
 
+    # Assert
     assert "maintenance" in out.lower()
     assert "overdue" in out.lower()
 
 
 def test_recent_maintenance_is_not_reported(tmp_path):
+    # Arrange
     root = build_vault(tmp_path, ran_days_ago=1)
 
+    # Act
     out = run(root)
 
+    # Assert
     assert "overdue" not in out.lower()
 
 
 def test_never_run_is_reported(tmp_path):
+    # Arrange
     root = build_vault(tmp_path, ran_days_ago=None)
 
+    # Act
     out = run(root)
 
+    # Assert
     assert "maintenance" in out.lower()
 
 
 def test_index_is_still_injected(tmp_path):
+    # Arrange
     root = build_vault(tmp_path, ran_days_ago=1)
 
+    # Act
     out = run(root)
 
+    # Assert
     assert "nothing yet" in out
 
 
 def test_a_recent_run_that_failed_is_reported(tmp_path):
+    # Arrange
     root = build_vault(tmp_path, ran_days_ago=1, exit_code=1)
 
+    # Act
     out = run(root)
 
+    # Assert
     assert "maintenance" in out.lower()
     assert "vault-freshness" in out
 
 
 def test_a_recent_run_that_passed_stays_quiet(tmp_path):
+    # Arrange
     root = build_vault(tmp_path, ran_days_ago=1, exit_code=0)
 
+    # Act
     out = run(root)
 
+    # Assert
     assert "maintenance" not in out.lower()

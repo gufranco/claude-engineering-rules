@@ -1,36 +1,4 @@
 #!/usr/bin/env python3
-"""
-drizzle-raw-sql-blocker.py
-
-PreToolUse hook that blocks Drizzle raw SQL templates in application code.
-Rule source: ~/.claude/rules/code-style.md "No raw SQL"
-            + ~/.claude/rules/lang/drizzle-migrations.md.
-
-Blocks:
-  - db.execute(sql`...`)
-  - db.run(sql`...`)
-  - db.all(sql`...`)
-  - db.get(sql`...`)
-  - sql.raw(...)
-  - sql`...` as a top-level expression assigned to a non-fragment use
-
-Allowed paths (skipped):
-  - Documentation: *.md, *.mdx, *.markdown, *.rst, *.txt. A standard or README
-    that shows the anti-pattern in order to forbid it is teaching, not shipping.
-  - Anything under */migrations/* or drizzle/
-  - *.sql files
-  - Schema files (Drizzle schemas declare `default(sql`now()`)` etc.)
-  - Test files
-
-Note: ``sql`fragment` `` inside .where(), .orderBy(), .having() is the
-intended escape hatch for query-builder fragments and is NOT blocked.
-This hook targets the top-level `db.execute(...)` and `db.run(...)`
-patterns that bypass the query builder entirely.
-
-Bypass:
-  DRIZZLE_RAW_SQL_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import json

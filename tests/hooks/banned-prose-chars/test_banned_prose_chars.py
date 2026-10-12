@@ -1,12 +1,3 @@
-"""Coverage for banned-prose-chars hook.
-
-Source rule: `~/.claude/rules/code-style.md` "Writing Style".
-
-Banned characters are constructed via `chr()` so the test source file itself
-stays plain ASCII. The hook ignores test fixture paths, so an inline literal
-would also work, but the chr-based form is portable across environments.
-"""
-
 from __future__ import annotations
 
 import os
@@ -15,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "banned-prose-chars"
 
@@ -27,7 +19,8 @@ FLAG_REGIONAL_INDICATOR = chr(0x1F1E7)
 ZERO_WIDTH_JOINER = chr(0x200D)
 
 
-def test_blocks_em_dash_in_write(tool_use, assert_blocks):
+def test_blocks_em_dash_in_write(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -36,10 +29,15 @@ def test_blocks_em_dash_in_write(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_blocks_em_dash_in_edit(tool_use, assert_blocks):
+def test_blocks_em_dash_in_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -49,10 +47,15 @@ def test_blocks_em_dash_in_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_blocks_em_dash_in_multiedit(tool_use, assert_blocks):
+def test_blocks_em_dash_in_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -64,23 +67,33 @@ def test_blocks_em_dash_in_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_blocks_em_dash_in_bash(tool_use, assert_blocks):
+def test_blocks_em_dash_in_bash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"git commit -m 'fix: handle null{EM_DASH}user id'"},
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
 @pytest.mark.parametrize(
     "box_char",
     [BOX_DRAWING_LIGHT_HORIZONTAL, BOX_DRAWING_DOUBLE_VERTICAL, chr(0x257F)],
 )
-def test_blocks_box_drawing(tool_use, assert_blocks, box_char):
+def test_blocks_box_drawing(tool_use, run_hook, box_char):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -89,7 +102,11 @@ def test_blocks_box_drawing(tool_use, assert_blocks, box_char):
         },
     )
 
-    assert_blocks(HOOK, payload, "box-drawing")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "box-drawing")
 
 
 @pytest.mark.parametrize(
@@ -103,7 +120,8 @@ def test_blocks_box_drawing(tool_use, assert_blocks, box_char):
         chr(0x1FAFF),
     ],
 )
-def test_blocks_emoji(tool_use, assert_blocks, emoji):
+def test_blocks_emoji(tool_use, run_hook, emoji):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -112,10 +130,15 @@ def test_blocks_emoji(tool_use, assert_blocks, emoji):
         },
     )
 
-    assert_blocks(HOOK, payload, "emoji")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "emoji")
 
 
-def test_blocks_multiple_violations_collected(tool_use, assert_blocks):
+def test_blocks_multiple_violations_collected(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -128,10 +151,15 @@ def test_blocks_multiple_violations_collected(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "Blocked")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Blocked")
 
 
-def test_blocks_em_dash_at_start_of_text(tool_use, assert_blocks):
+def test_blocks_em_dash_at_start_of_text(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -140,10 +168,15 @@ def test_blocks_em_dash_at_start_of_text(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_blocks_em_dash_at_end_of_text(tool_use, assert_blocks):
+def test_blocks_em_dash_at_end_of_text(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -152,10 +185,15 @@ def test_blocks_em_dash_at_end_of_text(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_blocks_em_dash_with_newline_in_snippet(tool_use, assert_blocks):
+def test_blocks_em_dash_with_newline_in_snippet(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -164,10 +202,15 @@ def test_blocks_em_dash_with_newline_in_snippet(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "em dash")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_allows_clean_ascii_write(tool_use, assert_allows):
+def test_allows_clean_ascii_write(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -176,19 +219,29 @@ def test_allows_clean_ascii_write(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_clean_bash(tool_use, assert_allows):
+def test_allows_clean_bash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix: handle null user id'"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_clean_multiedit(tool_use, assert_allows):
+def test_allows_clean_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -200,10 +253,15 @@ def test_allows_clean_multiedit(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_box_drawing_unicode(tool_use, assert_allows):
+def test_allows_non_box_drawing_unicode(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -212,10 +270,15 @@ def test_allows_non_box_drawing_unicode(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -224,10 +287,15 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"BANNED_PROSE_CHARS_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"BANNED_PROSE_CHARS_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -236,30 +304,40 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "em dash",
-        env={"BANNED_PROSE_CHARS_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"BANNED_PROSE_CHARS_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "em dash")
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/x.md"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/x.md", "content": 12345},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_edit_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -269,10 +347,15 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_items_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -281,10 +364,15 @@ def test_multiedit_non_dict_items_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_multiedit_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -293,23 +381,31 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bash_non_string_command_is_safe(tool_use, assert_allows):
+def test_bash_non_string_command_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 42})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "banned-prose-chars.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -320,4 +416,5 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0

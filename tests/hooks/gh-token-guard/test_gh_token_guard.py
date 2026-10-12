@@ -1,103 +1,157 @@
-"""Coverage for gh-token-guard hook.
-
-Source rule: standards/multi-account-cli.md.
-"""
-
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
 from pathlib import Path
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "gh-token-guard"
 
 
-def test_blocks_gh_pr_without_token(tool_use, assert_blocks):
+def test_blocks_gh_pr_without_token(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh pr list"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_gh_version(tool_use, assert_allows):
+def test_allows_gh_version(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh --version"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_gh_help(tool_use, assert_allows):
+def test_allows_gh_help(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh --help"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_gh_config_get(tool_use, assert_allows):
+def test_allows_gh_config_get(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh config get editor"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_no_api_call_chained_with_api_call(tool_use, assert_blocks):
+def test_blocks_no_api_call_chained_with_api_call(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh --version && gh pr list"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_blocks_gh_auth_switch(tool_use, assert_blocks):
+def test_blocks_gh_auth_switch(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh auth switch --user alice"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_gh_with_inline_token(tool_use, assert_allows):
+def test_allows_gh_with_inline_token(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash", {"command": "GH_TOKEN=$(gh auth token --user gufranco) gh pr list"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_gh_with_exported_token(tool_use, assert_allows):
+def test_allows_gh_with_exported_token(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "export GH_TOKEN=abc && gh pr list"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_gh_auth_status(tool_use, assert_allows):
+def test_allows_gh_auth_status(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh auth status"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_gh_auth_token(tool_use, assert_allows):
+def test_allows_gh_auth_token(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh auth token --user me"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_unrelated_command(tool_use, assert_allows):
+def test_allows_unrelated_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "ls -la"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_empty_command(tool_use, assert_allows):
+def test_allows_empty_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "gh-token-guard.py"
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
+    env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -108,38 +162,64 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_allows_gh_text_inside_a_single_quoted_pattern(tool_use, assert_allows):
+def test_allows_gh_text_inside_a_single_quoted_pattern(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash", {"command": "rg -n -e 'token --user\\|gh pr create' skills/"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_gh_text_inside_a_quoted_heredoc_body(tool_use, assert_allows):
+def test_allows_gh_text_inside_a_quoted_heredoc_body(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash", {"command": "cat <<'EOF' > notes.md\ngh pr create --fill\nEOF"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_real_gh_call_after_a_quoted_string(tool_use, assert_blocks):
+def test_blocks_real_gh_call_after_a_quoted_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "echo 'gh is quoted' && gh pr list"})
 
-    assert_blocks(HOOK, payload, "GH_TOKEN")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "GH_TOKEN")
 
 
-def test_blocks_gh_call_after_a_quoted_heredoc(tool_use, assert_blocks):
+def test_blocks_gh_call_after_a_quoted_heredoc(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "cat <<'EOF'\nnotes\nEOF\ngh pr list"})
 
-    assert_blocks(HOOK, payload, "GH_TOKEN")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "GH_TOKEN")
 
 
-def test_a_quoted_token_assignment_does_not_count(tool_use, assert_blocks):
+def test_a_quoted_token_assignment_does_not_count(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "echo 'GH_TOKEN=x' && gh pr list"})
 
-    assert_blocks(HOOK, payload, "GH_TOKEN")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "GH_TOKEN")

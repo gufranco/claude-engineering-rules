@@ -1,10 +1,3 @@
-"""Parameter reassignment coverage.
-
-Item 122 of the plan. Validates direct parameter reassignment in function
-declarations and arrow functions, and confirms the `no-param-reassign`
-allowlist names (acc, ctx, req, etc.) still pass for property mutation.
-"""
-
 from __future__ import annotations
 
 import pytest
@@ -48,14 +41,15 @@ PARAM_REASSIGN_BLOCKED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet"), PARAM_REASSIGN_BLOCKED)
 def test_param_reassignment_is_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: expected block, got {code}\n{stderr}"
-    assert ("param.reassign" in stderr) or ("property." in stderr), (
-        f"{label}: no relevant detector\n{stderr}"
-    )
+    assert "param.reassign" in stderr, f"{label}: no param.reassign detector\n{stderr}"
 
 
 PARAM_REASSIGN_ALLOWED: list[tuple[str, str]] = [
@@ -114,8 +108,11 @@ PARAM_REASSIGN_ALLOWED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("label", "snippet"), PARAM_REASSIGN_ALLOWED)
 def test_param_reassignment_allowlist_passes(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/app.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: unexpected block\n{stderr}"

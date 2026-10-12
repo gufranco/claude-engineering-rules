@@ -1,10 +1,3 @@
-"""Tests for hooks/vault-recall.py.
-
-The hook injects the vault notes most relevant to a prompt. It must stay
-silent whenever it cannot be confident, because a wrong injection costs
-context on every single turn.
-"""
-
 from __future__ import annotations
 
 import json
@@ -106,52 +99,72 @@ def run(hook_input: dict, vault: Path | None, env_extra: dict | None = None) -> 
 
 
 def test_injects_the_matching_note(tmp_path):
+    # Arrange
     vault = build_vault(tmp_path)
 
+    # Act
     out = run({"prompt": "our postgres pool keeps exhausting under load"}, vault)
 
+    # Assert
     assert "Postgres connection pooling exhaustion" in out
 
 
 def test_silent_when_nothing_matches(tmp_path):
+    # Arrange
     vault = build_vault(tmp_path)
 
+    # Act
     out = run({"prompt": "what is the weather in lisbon tomorrow"}, vault)
 
+    # Assert
     assert out.strip() == ""
 
 
-def test_silent_when_the_vault_is_absent(tmp_path):
-    out = run({"prompt": "our postgres pool keeps exhausting under load"}, None)
+def test_silent_when_the_vault_is_absent():
+    # Arrange
+    hook_input = {"prompt": "our postgres pool keeps exhausting under load"}
 
+    # Act
+    out = run(hook_input, None)
+
+    # Assert
     assert out.strip() == ""
 
 
 def test_silent_when_disabled(tmp_path):
+    # Arrange
     vault = build_vault(tmp_path)
 
+    # Act
     out = run(
         {"prompt": "our postgres pool keeps exhausting under load"},
         vault,
         {"VAULT_RECALL_DISABLE": "1"},
     )
 
+    # Assert
     assert out.strip() == ""
 
 
 @pytest.mark.parametrize("prompt", ["", "yes", "do it", "run the tests"])
 def test_silent_on_short_prompts(tmp_path, prompt):
+    # Arrange
     vault = build_vault(tmp_path)
 
+    # Act
     out = run({"prompt": prompt}, vault)
 
+    # Assert
     assert out.strip() == ""
 
 
-def test_survives_malformed_input(tmp_path):
-    result = subprocess.run(
-        [sys.executable, str(HOOK)], input="not json", capture_output=True, text=True
-    )
+def test_survives_malformed_input():
+    # Arrange
+    argv = [sys.executable, str(HOOK)]
 
+    # Act
+    result = subprocess.run(argv, input="not json", capture_output=True, text=True)
+
+    # Assert
     assert result.returncode == 0
     assert result.stdout.strip() == ""

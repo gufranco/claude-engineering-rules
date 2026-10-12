@@ -1,10 +1,7 @@
-"""Coverage for the transaction-scope-guard hook.
-
-Source rule: standards/concurrency.md, standards/database.md Transactions,
-checklists/checklist.md category 19.
-"""
-
 from __future__ import annotations
+from _helpers.hook_assertions import assert_allowed, assert_blocked
+import json
+from datetime import datetime, timedelta, timezone
 
 HOOK = "transaction-scope-guard"
 ENFORCE = {"TRANSACTION_SCOPE_ENFORCE": "1"}
@@ -20,33 +17,40 @@ FETCH_IN_TX = (
 )
 
 
-def test_blocks_fetch_inside_a_transaction(tool_use, assert_blocks):
+def test_blocks_fetch_inside_a_transaction(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/order.service.ts", "content": FETCH_IN_TX},
     )
 
-    _code, stderr = assert_blocks(
-        HOOK, payload, "I/O inside a transaction", env=ENFORCE
-    )
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
 
+    # Assert
+    _code, stderr = assert_blocked(result, "I/O inside a transaction")
     assert "BLOCKED by transaction-scope-guard" in stderr
     assert "L4" in stderr
 
 
-def test_warns_without_blocking_by_default(tool_use, assert_allows):
+def test_warns_without_blocking_by_default(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/order.service.ts", "content": FETCH_IN_TX},
     )
 
-    _code, stderr = assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert "INFO from transaction-scope-guard" in stderr
     assert "TRANSACTION_SCOPE_ENFORCE=1" in stderr
 
 
-def test_blocks_sdk_client_calls_inside_a_transaction(tool_use, assert_blocks):
+def test_blocks_sdk_client_calls_inside_a_transaction(tool_use, run_hook):
+    # Arrange
     content = (
         "await db.$transaction(async (tx) => {\n"
         "  await tx.payment.create({ data });\n"
@@ -58,10 +62,15 @@ def test_blocks_sdk_client_calls_inside_a_transaction(tool_use, assert_blocks):
         {"file_path": "/repo/src/services/payment.service.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "I/O inside a transaction", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_blocked(result, "I/O inside a transaction")
 
 
-def test_blocks_email_send_inside_a_transaction(tool_use, assert_blocks):
+def test_blocks_email_send_inside_a_transaction(tool_use, run_hook):
+    # Arrange
     content = (
         "await prisma.$transaction(async (tx) => {\n"
         "  await tx.invite.create({ data });\n"
@@ -73,10 +82,15 @@ def test_blocks_email_send_inside_a_transaction(tool_use, assert_blocks):
         {"file_path": "/repo/src/services/invite.service.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "I/O inside a transaction", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_blocked(result, "I/O inside a transaction")
 
 
-def test_blocks_sleep_inside_a_transaction(tool_use, assert_blocks):
+def test_blocks_sleep_inside_a_transaction(tool_use, run_hook):
+    # Arrange
     content = (
         "await db.transaction(async (tx) => {\n"
         "  await tx.job.update({ where: { id }, data: { state: 'running' } });\n"
@@ -87,10 +101,15 @@ def test_blocks_sleep_inside_a_transaction(tool_use, assert_blocks):
         "Write", {"file_path": "/repo/src/services/job.service.ts", "content": content}
     )
 
-    assert_blocks(HOOK, payload, "holds the transaction open", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_blocked(result, "holds the transaction open")
 
 
-def test_allows_io_outside_the_transaction(tool_use, assert_allows):
+def test_allows_io_outside_the_transaction(tool_use, run_hook):
+    # Arrange
     content = (
         "const charge = await stripe.charges.create({ amount });\n"
         "await db.$transaction(async (tx) => {\n"
@@ -104,12 +123,16 @@ def test_allows_io_outside_the_transaction(tool_use, assert_allows):
         {"file_path": "/repo/src/services/payment.service.ts", "content": content},
     )
 
-    _code, stderr = assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_allows_a_transaction_that_only_touches_the_database(tool_use, assert_allows):
+def test_allows_a_transaction_that_only_touches_the_database(tool_use, run_hook):
+    # Arrange
     content = (
         "await db.$transaction(async (tx) => {\n"
         "  await tx.account.update({ where: { id: from }, data: { balance: { decrement: amount } } });\n"
@@ -122,10 +145,15 @@ def test_allows_a_transaction_that_only_touches_the_database(tool_use, assert_al
         {"file_path": "/repo/src/services/transfer.service.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_flags_array_mode_transaction_spanning_two_models(tool_use, assert_blocks):
+def test_flags_array_mode_transaction_spanning_two_models(tool_use, run_hook):
+    # Arrange
     content = (
         "await db.$transaction([\n"
         "  db.token.update({ where: { id }, data: { userId: null } }),\n"
@@ -137,12 +165,16 @@ def test_flags_array_mode_transaction_spanning_two_models(tool_use, assert_block
         {"file_path": "/repo/src/services/bonus.service.ts", "content": content},
     )
 
-    _code, stderr = assert_blocks(HOOK, payload, "array-mode transaction", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
 
+    # Assert
+    _code, stderr = assert_blocked(result, "array-mode transaction")
     assert "interactive" in stderr
 
 
-def test_allows_array_mode_on_a_single_model(tool_use, assert_allows):
+def test_allows_array_mode_on_a_single_model(tool_use, run_hook):
+    # Arrange
     content = (
         "await db.$transaction([\n"
         "  db.audit.create({ data: first }),\n"
@@ -154,19 +186,29 @@ def test_allows_array_mode_on_a_single_model(tool_use, assert_allows):
         {"file_path": "/repo/src/services/audit.service.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_reports_the_offending_call(tool_use, assert_blocks):
+def test_reports_the_offending_call(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/order.service.ts", "content": FETCH_IN_TX},
     )
 
-    assert_blocks(HOOK, payload, "fetch(", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_blocked(result, "fetch(")
 
 
-def test_flags_edits(tool_use, assert_blocks):
+def test_flags_edits(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -176,10 +218,15 @@ def test_flags_edits(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "I/O inside a transaction", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_blocked(result, "I/O inside a transaction")
 
 
-def test_flags_multiedit(tool_use, assert_blocks):
+def test_flags_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -191,10 +238,15 @@ def test_flags_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "I/O inside a transaction", env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_blocked(result, "I/O inside a transaction")
 
 
-def test_skips_test_files(tool_use, assert_allows):
+def test_skips_test_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -203,43 +255,65 @@ def test_skips_test_files(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_non_source_files(tool_use, assert_allows):
+def test_skips_non_source_files(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write", {"file_path": "/repo/README.md", "content": FETCH_IN_TX}
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_short_circuits(tool_use, assert_allows):
+def test_disable_env_short_circuits(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/order.service.ts", "content": FETCH_IN_TX},
     )
 
-    _code, stderr = assert_allows(
-        HOOK, payload, env={"TRANSACTION_SCOPE_DISABLE": "1", **ENFORCE}
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"TRANSACTION_SCOPE_DISABLE": "1", **ENFORCE})
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_ignores_unrelated_tools(tool_use, assert_allows):
+def test_ignores_unrelated_tools(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "echo hi"})
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_survives_malformed_payload(run_hook):
-    code, _stdout, _stderr = run_hook(HOOK, "not-json")
+    # Arrange
+    command = "not-json"
 
+    # Act
+    code, _stdout, _stderr = run_hook(HOOK, command)
+
+    # Assert
     assert code == 0
 
 
-def test_handles_unterminated_transaction_callback(tool_use, assert_allows):
+def test_handles_unterminated_transaction_callback(tool_use, run_hook):
+    # Arrange
     content = (
         "await db.$transaction(async (tx) => {\n  await tx.order.create({ data });\n"
     )
@@ -248,7 +322,11 @@ def test_handles_unterminated_transaction_callback(tool_use, assert_allows):
         {"file_path": "/repo/src/services/order.service.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
 OFFENDING = FETCH_IN_TX
@@ -281,62 +359,92 @@ def _run_raw(hook_name: str, stdin_text: str, env_extra=None):
 
 
 def test_raw_invalid_json_is_ignored():
-    code, _stderr = _run_raw(HOOK, "{not json at all")
+    # Arrange
+    stdin_text = "{not json at all"
 
+    # Act
+    code, _stderr = _run_raw(HOOK, stdin_text)
+
+    # Assert
     assert code == 0
 
 
-def test_empty_file_path_is_ignored(tool_use, assert_allows):
+def test_empty_file_path_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": "", "content": OFFENDING})
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_string_content_is_ignored(tool_use, assert_allows):
+def test_non_string_content_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": 42})
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_string_new_string_is_ignored(tool_use, assert_allows):
+def test_non_string_new_string_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit", {"file_path": OFFENDING_PATH, "old_string": "a", "new_string": 42}
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_dict_edits_are_ignored(tool_use, assert_allows):
+def test_non_dict_edits_are_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit", {"file_path": OFFENDING_PATH, "edits": ["not-a-dict", None]}
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_string_new_string_is_ignored(tool_use, assert_allows):
+def test_multiedit_non_string_new_string_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {"file_path": OFFENDING_PATH, "edits": [{"old_string": "a", "new_string": 7}]},
     )
 
-    assert_allows(HOOK, payload, env=ENFORCE)
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_profile_disable_short_circuits(tool_use, assert_allows):
+def test_profile_disable_short_circuits(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": OFFENDING})
 
-    _code, stderr = assert_allows(
-        HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK, **ENFORCE}
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK, **ENFORCE})
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_live_bypass_entry_short_circuits(tmp_path, tool_use, assert_allows):
-    import json
-    from datetime import datetime, timedelta, timezone
-
+def test_live_bypass_entry_short_circuits(tmp_path, tool_use, run_hook):
+    # Arrange
     state = tmp_path / "bypass.json"
     expires = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
     state.write_text(
@@ -346,8 +454,9 @@ def test_live_bypass_entry_short_circuits(tmp_path, tool_use, assert_allows):
     )
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": OFFENDING})
 
-    _code, stderr = assert_allows(
-        HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state), **ENFORCE}
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state), **ENFORCE})
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""

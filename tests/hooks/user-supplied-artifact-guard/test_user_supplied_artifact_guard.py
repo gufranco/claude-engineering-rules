@@ -1,14 +1,3 @@
-"""Tests for `hooks/user-supplied-artifact-guard.py`.
-
-Observable behavior:
-- Ignores Bash commands that are neither `git add` nor `git commit`.
-- Blocks `git commit` when a staged file carries a user-supplied artifact
-  extension, or when its SHA-256 matches an entry in the project manifest.
-- Blocks `git add` when an explicit path argument is such an artifact.
-- Leaves ordinary source and documentation files alone, `.md` included.
-- Bypass via env var or file registry returns 0 immediately.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -19,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "user-supplied-artifact-guard.py"
@@ -73,44 +63,61 @@ def _manifest(repo: Path, payload: bytes, *, label: str = "base-rom") -> None:
     (repo / "artifacts.manifest.json").write_text(json.dumps(body), encoding="utf-8")
 
 
-def test_ignores_non_git_command(git_repo: Path, tool_use, assert_allows) -> None:
+def test_ignores_non_git_command(git_repo: Path, tool_use, run_hook) -> None:
+    # Arrange
     _stage(git_repo, "game.gba", b"rom-bytes")
-
     payload = tool_use("Bash", {"command": "ls -la"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_ordinary_staged_files(git_repo: Path, tool_use, assert_allows) -> None:
+def test_allows_ordinary_staged_files(git_repo: Path, tool_use, run_hook) -> None:
+    # Arrange
     _stage(git_repo, "src/index.ts", b"export const x = 1;\n")
-
     payload = tool_use("Bash", {"command": "git commit -m 'feat: add x'"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_ignores_markdown_extension(git_repo: Path, tool_use, assert_allows) -> None:
+def test_ignores_markdown_extension(git_repo: Path, tool_use, run_hook) -> None:
+    # Arrange
     _stage(git_repo, "docs/guide.md", b"# Guide\n")
-
     payload = tool_use("Bash", {"command": "git commit -m 'docs: add guide'"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_blocks_commit_of_artifact_extension(
-    git_repo: Path, tool_use, assert_blocks
+    git_repo: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     _stage(git_repo, "roms/game.gba", b"rom-bytes")
-
     payload = tool_use("Bash", {"command": "git commit -m 'chore: add rom'"})
 
-    _code, stderr = assert_blocks(HOOK, payload, "roms/game.gba")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _code, stderr = assert_blocked(result, "roms/game.gba")
     assert "user-supplied-artifact-guard" in stderr
 
 
 def test_blocks_commit_when_digest_matches_manifest(
-    git_repo: Path, tool_use, assert_blocks
+    git_repo: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     body = b"the-exact-artifact-bytes"
     _manifest(git_repo, body)
     _stage(
@@ -119,79 +126,105 @@ def test_blocks_commit_when_digest_matches_manifest(
         (git_repo / "artifacts.manifest.json").read_bytes(),
     )
     _stage(git_repo, "assets/blob.dat", body)
-
     payload = tool_use("Bash", {"command": "git commit -m 'chore: assets'"})
 
-    _code, stderr = assert_blocks(HOOK, payload, "assets/blob.dat")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _code, stderr = assert_blocked(result, "assets/blob.dat")
     assert "manifest" in stderr
 
 
 def test_allows_commit_when_manifest_has_no_match(
-    git_repo: Path, tool_use, assert_allows
+    git_repo: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     _manifest(git_repo, b"the-exact-artifact-bytes")
     _stage(git_repo, "notes.txt", b"unrelated content of a different length")
-
     payload = tool_use("Bash", {"command": "git commit -m 'docs: notes'"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_allows_same_size_but_different_content(
-    git_repo: Path, tool_use, assert_allows
+    git_repo: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     body = b"the-exact-artifact-bytes"
     _manifest(git_repo, body)
     _stage(git_repo, "notes.txt", b"x" * len(body))
-
     payload = tool_use("Bash", {"command": "git commit -m 'docs: notes'"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_blocks_explicit_git_add_of_artifact(
-    git_repo: Path, tool_use, assert_blocks
+    git_repo: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     _write(git_repo, "game.sfc", b"rom-bytes")
-
     payload = tool_use("Bash", {"command": "git add game.sfc"})
 
-    assert_blocks(HOOK, payload, "game.sfc")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "game.sfc")
 
 
-def test_allows_git_add_of_ordinary_file(
-    git_repo: Path, tool_use, assert_allows
-) -> None:
+def test_allows_git_add_of_ordinary_file(git_repo: Path, tool_use, run_hook) -> None:
+    # Arrange
     _write(git_repo, "README.md", b"# Title\n")
-
     payload = tool_use("Bash", {"command": "git add README.md"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_block_message_follows_canonical_schema(
-    git_repo: Path, tool_use, assert_blocks
+    git_repo: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     _stage(git_repo, "bios/scph1001.bin", b"bios-bytes")
     _stage(git_repo, "game.nds", b"rom-bytes")
-
     payload = tool_use("Bash", {"command": "git commit -m 'chore: add'"})
 
-    _code, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _code, stderr = assert_blocked(result)
     assert validate_block_message(stderr) == []
 
 
-def test_env_bypass_allows(git_repo: Path, tool_use, assert_allows) -> None:
+def test_env_bypass_allows(git_repo: Path, tool_use, run_hook) -> None:
+    # Arrange
     _stage(git_repo, "game.gba", b"rom-bytes")
-
     payload = tool_use("Bash", {"command": "git commit -m 'chore: add rom'"})
 
-    assert_allows(HOOK, payload, env={"USER_SUPPLIED_ARTIFACT_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"USER_SUPPLIED_ARTIFACT_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_registry_bypass_allows(
-    git_repo: Path, tmp_path: Path, tool_use, assert_allows
+    git_repo: Path, tmp_path: Path, tool_use, run_hook
 ) -> None:
+    # Arrange
     _stage(git_repo, "game.gba", b"rom-bytes")
     registry = tmp_path / "bypass.json"
     set_bypass(
@@ -200,7 +233,10 @@ def test_registry_bypass_allows(
         reason="test",
         state_path=registry,
     )
-
     payload = tool_use("Bash", {"command": "git commit -m 'chore: add rom'"})
 
-    assert_allows(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(registry)})
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(registry)})
+
+    # Assert
+    assert_allowed(result)

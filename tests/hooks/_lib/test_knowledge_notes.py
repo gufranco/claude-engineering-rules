@@ -1,8 +1,3 @@
-"""Coverage for the shared knowledge-note primitives.
-
-Source rule: rules/knowledge-notes.md.
-"""
-
 from __future__ import annotations
 
 import sys
@@ -46,47 +41,84 @@ def vault(tmp_path: Path) -> Path:
 
 
 def test_parse_frontmatter_reads_scalar_keys():
-    fields = kn.parse_frontmatter(GOOD)
+    # Arrange
+    text = GOOD
 
+    # Act
+    fields = kn.parse_frontmatter(text)
+
+    # Assert
     assert fields is not None
     assert fields["type"] == "concept"
     assert fields["ai-first"] == "true"
 
 
 def test_parse_frontmatter_skips_list_items():
+    # Arrange
     text = GOOD.replace("tags: [concept]", "tags:\n  - concept\n  - idea")
 
+    # Act
     fields = kn.parse_frontmatter(text)
 
+    # Assert
     assert fields is not None
     assert "tags" in fields
     assert "concept" not in fields
 
 
 def test_parse_frontmatter_returns_none_without_a_block():
-    assert kn.parse_frontmatter("# Heading\n\nbody\n") is None
+    # Arrange
+    text = "# Heading\n\nbody\n"
+
+    # Act
+    result = kn.parse_frontmatter(text)
+
+    # Assert
+    assert result is None
 
 
 def test_body_after_frontmatter_strips_the_block():
-    body = kn.body_after_frontmatter(GOOD)
+    # Arrange
+    text = GOOD
 
-    assert body.lstrip().startswith("## For future agent")
+    # Act
+    body = kn.body_after_frontmatter(text)
+
+    # Assert
+    assert body.lstrip().startswith("## For future agent") is True
 
 
 def test_body_after_frontmatter_returns_input_when_absent():
-    assert kn.body_after_frontmatter("plain") == "plain"
+    # Arrange
+    text = "plain"
+
+    # Act
+    result = kn.body_after_frontmatter(text)
+
+    # Assert
+    assert result == "plain"
 
 
 def test_relative_returns_none_outside_the_root(tmp_path):
+    # Arrange
     root = tmp_path / "vault"
     root.mkdir()
 
-    assert kn.relative(tmp_path / "other.md", root) is None
+    # Act
+    result = kn.relative(tmp_path / "other.md", root)
+
+    # Assert
+    assert result is None
 
 
 def test_relative_resolves_inside_the_root(vault):
-    result = kn.relative(vault / "wiki/concepts/A.md", vault)
+    # Arrange
+    path = vault / "wiki/concepts/A.md"
 
+    # Act
+    result = kn.relative(path, vault)
+
+    # Assert
     assert result == Path("wiki/concepts/A.md")
 
 
@@ -102,7 +134,14 @@ def test_relative_resolves_inside_the_root(vault):
     ],
 )
 def test_is_exempt(rel, expected):
-    assert kn.is_exempt(Path(rel)) is expected
+    # Arrange
+    path = Path(rel)
+
+    # Act
+    result = kn.is_exempt(path)
+
+    # Assert
+    assert result is expected
 
 
 @pytest.mark.parametrize(
@@ -115,79 +154,157 @@ def test_is_exempt(rel, expected):
     ],
 )
 def test_is_dated_container(rel, expected):
-    assert kn.is_dated_container(Path(rel)) is expected
+    # Arrange
+    path = Path(rel)
+
+    # Act
+    result = kn.is_dated_container(path)
+
+    # Assert
+    assert result is expected
 
 
 def test_wikilink_targets_ignores_aliases_and_anchors():
-    targets = kn.wikilink_targets("See [[Real Person|Alice]] and [[Note#Section]].")
+    # Arrange
+    text = "See [[Real Person|Alice]] and [[Note#Section]]."
 
+    # Act
+    targets = kn.wikilink_targets(text)
+
+    # Assert
     assert targets == ["Real Person", "Note"]
 
 
 def test_note_titles_skips_exempt_paths(vault):
+    # Arrange
     (vault / "wiki/concepts/Kept.md").write_text(GOOD)
     (vault / "templates/entity.md").write_text(GOOD)
 
+    # Act
     titles = kn.note_titles(vault)
 
+    # Assert
     assert "Kept" in titles
     assert "entity" not in titles
 
 
 def test_iter_notes_yields_only_specced_markdown(vault):
+    # Arrange
     (vault / "wiki/concepts/Kept.md").write_text(GOOD)
     (vault / "_trash/Gone.md").write_text(GOOD)
     (vault / "wiki/concepts/data.json").write_text("{}")
 
+    # Act
     found = {rel.name for rel, _text in kn.iter_notes(vault)}
 
+    # Assert
     assert found == {"Kept.md"}
 
 
 def test_is_volatile_claim_flags_an_undated_count():
-    assert kn.is_volatile_claim("The backlog has 42 open tasks.") is True
+    # Arrange
+    line = "The backlog has 42 open tasks."
+
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is True
 
 
 def test_is_volatile_claim_ignores_the_titles_inside_wikilinks():
+    # Arrange
     line = (
         "Related: [[Acme drizzle revert 2026 09 15]], "
         "[[Drizzle has no EXCLUDED and no multi-row UPDATE]]"
     )
 
-    assert kn.is_volatile_claim(line) is False
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is False
 
 
 def test_is_volatile_claim_still_judges_prose_beside_a_wikilink():
-    assert kn.is_volatile_claim("The backlog has 42 open tasks, see [[Board]].") is True
+    # Arrange
+    line = "The backlog has 42 open tasks, see [[Board]]."
+
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is True
 
 
 def test_is_volatile_claim_ignores_a_stamped_line():
-    assert kn.is_volatile_claim("The backlog has 42 tasks (as of 2026-08-18).") is False
+    # Arrange
+    line = "The backlog has 42 tasks (as of 2026-08-18)."
+
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is False
 
 
 def test_is_volatile_claim_ignores_prose_without_a_number():
-    assert kn.is_volatile_claim("The backlog is long.") is False
+    # Arrange
+    line = "The backlog is long."
+
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is False
 
 
 def test_is_volatile_claim_ignores_a_number_without_a_volatile_subject():
-    assert kn.is_volatile_claim("The book has 42 chapters.") is False
+    # Arrange
+    line = "The book has 42 chapters."
+
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is False
 
 
 def test_has_stamp_matches_month_precision():
-    assert kn.has_stamp("Revenue held steady (as of 2026-08).") is True
+    # Arrange
+    line = "Revenue held steady (as of 2026-08)."
+
+    # Act
+    result = kn.has_stamp(line)
+
+    # Assert
+    assert result is True
 
 
 def test_stamp_dates_extracts_every_stamp():
-    dates = kn.stamp_dates("a (as of 2026-08-18) and b (as of 2026-07).")
+    # Arrange
+    line = "a (as of 2026-08-18) and b (as of 2026-07)."
 
+    # Act
+    dates = kn.stamp_dates(line)
+
+    # Assert
     assert [d.isoformat() for d in dates] == ["2026-08-18", "2026-07-01"]
 
 
 def test_stamp_dates_ignores_an_impossible_date():
-    assert kn.stamp_dates("(as of 2026-13-45)") == []
+    # Arrange
+    line = "(as of 2026-13-45)"
+
+    # Act
+    result = kn.stamp_dates(line)
+
+    # Assert
+    assert result == []
 
 
 def test_walk_lines_reports_fence_and_heading_state():
+    # Arrange
     body = "\n".join(
         [
             "prose one",
@@ -201,9 +318,11 @@ def test_walk_lines_reports_fence_and_heading_state():
         ]
     )
 
+    # Act
     rows = list(kn.walk_lines(body))
-    visible = {text: dated for _number, text, dated in rows}
 
+    # Assert
+    visible = {text: dated for _number, text, dated in rows}
     assert "fenced line" not in visible
     assert visible["prose one"] is False
     assert visible["under a dated heading"] is True
@@ -211,49 +330,91 @@ def test_walk_lines_reports_fence_and_heading_state():
 
 
 def test_walk_lines_skips_blank_lines_and_headings():
-    rows = list(kn.walk_lines("first\n\n## Heading\n\nsecond\n"))
+    # Arrange
+    body = "first\n\n## Heading\n\nsecond\n"
 
+    # Act
+    rows = list(kn.walk_lines(body))
+
+    # Assert
     assert [text for _number, text, _dated in rows] == ["first", "second"]
 
 
 def test_vault_root_reads_the_environment(monkeypatch, vault):
+    # Arrange
     monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
 
-    assert kn.vault_root() == vault
+    # Act
+    result = kn.vault_root()
+
+    # Assert
+    assert result == vault
 
 
 def test_vault_root_returns_none_when_missing(monkeypatch, tmp_path):
+    # Arrange
     monkeypatch.setenv("SECOND_BRAIN_VAULT", str(tmp_path / "absent"))
 
-    assert kn.vault_root() is None
+    # Act
+    result = kn.vault_root()
+
+    # Assert
+    assert result is None
 
 
 def test_is_volatile_claim_ignores_a_date_prefixed_snapshot():
-    assert kn.is_volatile_claim("- 2026-08-18: the backlog has 42 open tasks") is False
+    # Arrange
+    line = "- 2026-08-18: the backlog has 42 open tasks"
+
+    # Act
+    result = kn.is_volatile_claim(line)
+
+    # Assert
+    assert result is False
 
 
 def test_in_vault_accepts_a_path_inside_the_root(monkeypatch, vault):
+    # Arrange
     monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
 
-    assert kn.in_vault(str(vault / "wiki/concepts/A.md")) is True
+    # Act
+    result = kn.in_vault(str(vault / "wiki/concepts/A.md"))
+
+    # Assert
+    assert result is True
 
 
 def test_in_vault_rejects_a_path_outside_the_root(monkeypatch, vault, tmp_path):
+    # Arrange
     monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
 
-    assert kn.in_vault(str(tmp_path / "elsewhere.md")) is False
+    # Act
+    result = kn.in_vault(str(tmp_path / "elsewhere.md"))
+
+    # Assert
+    assert result is False
 
 
 def test_in_vault_rejects_an_empty_path(monkeypatch, vault):
+    # Arrange
     monkeypatch.setenv("SECOND_BRAIN_VAULT", str(vault))
 
-    assert kn.in_vault("") is False
+    # Act
+    result = kn.in_vault("")
+
+    # Assert
+    assert result is False
 
 
 def test_in_vault_is_false_when_no_vault_exists(monkeypatch, tmp_path):
+    # Arrange
     monkeypatch.setenv("SECOND_BRAIN_VAULT", str(tmp_path / "absent"))
 
-    assert kn.in_vault(str(tmp_path / "absent" / "note.md")) is False
+    # Act
+    result = kn.in_vault(str(tmp_path / "absent" / "note.md"))
+
+    # Assert
+    assert result is False
 
 
 @pytest.mark.parametrize(
@@ -261,4 +422,11 @@ def test_in_vault_is_false_when_no_vault_exists(monkeypatch, tmp_path):
     [".pytest_cache/README.md", ".git/COMMIT_EDITMSG.md", ".github/workflows/notes.md"],
 )
 def test_is_exempt_skips_hidden_directories(rel):
-    assert kn.is_exempt(Path(rel)) is True
+    # Arrange
+    path = Path(rel)
+
+    # Act
+    result = kn.is_exempt(path)
+
+    # Assert
+    assert result is True

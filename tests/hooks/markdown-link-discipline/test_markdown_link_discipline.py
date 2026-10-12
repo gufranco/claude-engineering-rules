@@ -1,35 +1,42 @@
-"""Coverage for markdown-link-discipline hook.
-
-Source rule: rules/markdown-links.md.
-"""
-
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
 from pathlib import Path
+from _helpers.hook_assertions import assert_allowed
 
 HOOK = "markdown-link-discipline"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_allows_non_markdown_file(tool_use, assert_allows):
+def test_allows_non_markdown_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/tmp/foo.py", "content": "print('hi')"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_empty_command(tool_use, assert_allows):
+def test_allows_empty_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_markdown_with_linked_references(tool_use, assert_allows, tmp_path):
+def test_allows_markdown_with_linked_references(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "doc.md"
     target.write_text("# Doc\n\nSee [`README.md`](README.md) for details.\n")
     payload = tool_use(
@@ -41,27 +48,33 @@ def test_allows_markdown_with_linked_references(tool_use, assert_allows, tmp_pat
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_advisory_specs_directory(tool_use, assert_allows):
-    target = REPO_ROOT / "specs" / "test-advisory.md"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text("")
-    try:
-        payload = tool_use(
-            "Write",
-            {
-                "file_path": str(target),
-                "content": "Mention `README.md` without linking.\n",
-            },
-        )
-        assert_allows(HOOK, payload)
-    finally:
-        target.unlink(missing_ok=True)
+def test_allows_advisory_specs_directory(tool_use, run_hook, repo_scratch):
+    # Arrange
+    target = repo_scratch("specs/test-advisory.md", "")
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": str(target),
+            "content": "Mention `README.md` without linking.\n",
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_bypass_env(tool_use, assert_allows, tmp_path):
+def test_allows_bypass_env(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "doc.md"
     target.write_text("")
     payload = tool_use(
@@ -72,10 +85,15 @@ def test_allows_bypass_env(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload, env={"MARKDOWN_LINKS_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"MARKDOWN_LINKS_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_existing_path(tool_use, assert_allows, tmp_path):
+def test_allows_non_existing_path(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "doc.md"
     target.write_text("")
     payload = tool_use(
@@ -86,12 +104,15 @@ def test_allows_non_existing_path(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_pre_existing_bare_reference(tool_use, assert_allows, tmp_path):
-    """Editing a file that already contains a bare reference should not block
-    when the edit does not introduce new bare references."""
+def test_allows_pre_existing_bare_reference(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "doc.md"
     target.write_text("Existing `README.md` reference.\n")
     payload = tool_use(
@@ -103,7 +124,11 @@ def test_allows_pre_existing_bare_reference(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
@@ -141,8 +166,10 @@ def _build_subprocess_env(extra: dict[str, str] | None = None) -> dict[str, str]
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = REPO_ROOT / "hooks" / "markdown-link-discipline.py"
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -153,4 +180,5 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0

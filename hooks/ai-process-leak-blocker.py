@@ -171,6 +171,7 @@ except Exception:  # pragma: no cover
 
 
 from _lib import project_workspace as _workspace  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 SKIPPED_PATH_SEGMENTS = (
@@ -204,7 +205,7 @@ GIT_AND_PR_PATTERNS = (
 
 def bash_command_in_scope(command: str) -> bool:
     """True when the command publishes text, judged outside quoted literals."""
-    executed = mask_literal_text(command)
+    executed = strip_git_global_options(mask_literal_text(command))
     return any(pat.search(executed) for pat in GIT_AND_PR_PATTERNS)
 
 
