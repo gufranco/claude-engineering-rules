@@ -1,6 +1,6 @@
 name: Proposal
-description: Propose a new rule, standard, skill, hook, or agent.
-labels: [enhancement, triage]
+description: Propose a new rule, standard, skill, hook, or agent, or a change to one.
+labels: [enhancement]
 body:
   - type: dropdown
     id: kind
@@ -21,8 +21,8 @@ body:
     attributes:
       label: Problem
       description: >-
-        The failure this prevents. Describe a concrete situation where the
-        current configuration produced the wrong outcome.
+        What goes wrong or is missing today. A concrete case helps most: the
+        prompt you gave, what Claude did, and what you needed instead.
     validations:
       required: true
 
@@ -30,26 +30,29 @@ body:
     id: proposal
     attributes:
       label: Proposal
-      description: What the rule would say, or what the hook would block.
+      description: >-
+        What you want added or changed, and how it would behave once it
+        exists. For a hook, name what it would block; for a skill, what you
+        would type and what it would do.
     validations:
       required: true
 
   - type: textarea
-    id: prior-art
+    id: references
     attributes:
-      label: Prior art
+      label: References
       description: >-
-        Existing rules, standards, or hooks that already cover part of this,
-        and why extending one of them is not enough.
+        Optional. Links to other projects, skills, or articles that already do
+        this, so the idea can be compared against a working example.
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: false-positives
     attributes:
-      label: False positives
+      label: Hook false positives
       description: >-
-        For a hook, the legitimate code it would wrongly block, and how the
-        implementation avoids that.
+        Optional, for hooks only. Legitimate code or commands the hook could
+        wrongly block.
     validations:
       required: false

@@ -1,6 +1,6 @@
 name: Bug report
 description: A hook, rule, skill, or script behaves differently than documented.
-labels: [bug, triage]
+labels: [bug]
 body:
   - type: markdown
     attributes:
