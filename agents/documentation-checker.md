@@ -36,12 +36,12 @@ Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 | Stale TODO with no owner | A `TODO` comment with no tracking link, dated more than 6 months ago | Looks active; is actually abandoned. Promote to a tracked issue or delete |
 | AI-process language | A comment that names a planning phase, references a spec folder path, casually cites an ADR by number, or uses category-superlative hyperbole | Forbidden by [`rules/no-ai-process-leak.md`](../rules/no-ai-process-leak.md). Strip on sight |
 | AI attribution markers | A comment that claims AI authorship, co-authorship, or assistance | Forbidden by [`CLAUDE.md`](../CLAUDE.md) "No AI attribution". Strip on sight |
-| Restating the obvious | A comment that paraphrases the next line without adding new information | Adds noise, no value. Default policy is no comments unless WHY is non-obvious. Delete |
-| Explaining WHAT, not WHY | A comment that narrates the next block of code instead of explaining its motivation | Same as above. The code already says WHAT |
+| Restating the obvious | A comment that paraphrases the next line without adding new information | Comments are banned in every language, docstrings included; only tool directives and the bare test markers `Arrange`, `Act`, `Assert` are exempt. Delete |
+| Explaining WHAT or WHY | A comment that narrates the next block or explains its motivation | Same as above. The name, an extracted function, or the type carries the what; the PR description or an ADR carries the why |
 | Comment that contradicts the code | A return-value note that disagrees with the actual return statement | Either the comment is wrong or the code regressed |
 | Commented-out code with no context | A block of disabled code with no date, ticket, or rationale | Dead weight. Delete |
 
-Each finding is reported under category `comment-rot`. The fix line should suggest either an updated comment or deletion.
+Each finding is reported under category `comment-rot`. The fix line suggests deleting the comment and, when it carried information, moving that information into a name, a type, the PR description, or an ADR.
 
 ## Output format
 

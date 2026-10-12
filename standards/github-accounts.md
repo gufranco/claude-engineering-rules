@@ -9,11 +9,15 @@ Before running any `gh` command:
 1. Determine the target account. Check git remote: `git remote get-url origin 2>/dev/null`, or use the account the user specifies.
 2. Prefix every `gh` command with the account's token inline.
 
-```bash
-# Correct: token scoped to this command only
-GH_TOKEN=$(gh auth token --user <account>) gh repo create <account>/my-repo --private
+**Correct:** the token is scoped to this command only.
 
-# Wrong: changes global state, breaks other terminals
+```bash
+GH_TOKEN=$(gh auth token --user <account>) gh repo create <account>/my-repo --private
+```
+
+**Wrong:** this changes global state and breaks other terminals.
+
+```bash
 gh auth switch --user <account>
 gh repo create <account>/my-repo --private
 ```

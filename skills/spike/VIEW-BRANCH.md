@@ -8,11 +8,17 @@ Place several radically different visual approaches side by side on one route so
 
 ## Shape
 
-A single route under the project's existing routing convention, named `spike-<short-slug>`. Inside the route:
+Judge variants inside the app they will live in. A variant on an empty route looks fine in isolation; the real header, sidebar, data, and density expose the problems.
 
-- A query string parameter selects the variant: `?v=1`, `?v=2`, `?v=3`.
-- A small floating selector (corner of the viewport) switches the variant without reloading.
-- Each variant lives in its own component file.
+- **Existing page, the default.** Render the variants on the route that already exists, or inside the page that would host the new section, card, or step. The page keeps its data fetching, params, and auth; only the rendered subtree swaps per variant.
+- **New route, the last resort.** Only when nothing in the app could host the variants, create a route named `spike-<short-slug>` under the project's existing routing convention. Confirm first that no existing page fits.
+
+In both shapes:
+
+- A query string parameter selects the variant: `?v=1`, `?v=2`, `?v=3`. Default to three variants and cap at five.
+- Each variant lives in its own component file and receives the page's real data.
+- A small floating selector switches the variant and updates the query string through the framework router, so a variant is shareable and survives a reload. Arrow keys also cycle, except while focus is in an input, a textarea, or a contenteditable element.
+- The selector is dev-only: gate it on the build-time flag or config value the project already uses for development tooling, so a stray merge cannot ship it.
 - A banner at the top names the question and lists the variant ideas.
 
 ## What "radically different" means
@@ -26,17 +32,19 @@ If the user cannot tell which variant they prefer at a glance, the variants are 
 ## What to skip
 
 - Pixel-perfect spacing, accessibility polish, internationalization. Those land in the real implementation.
-- Real data. Use mock data inline so the spike survives offline.
+- Mock data. Variants read the page's real data; mock data hides the density and edge cases the question is about.
+- Real writes. When a variant needs to mutate, point it at a stub, since the question is how it looks, not whether the backend works.
 - State management beyond what each variant needs.
 
 ## Verdict capture
 
-When the user has picked, write a `NOTES.md` next to the spike:
+When the user has picked, record the verdict where the work continues:
 
 ```
 Question: how should the dispatch board surface overdue jobs?
 Variants tried: V1 ribbon at top; V2 inline badge on each row; V3 filter chip.
 Verdict: V2 inline badge. V1 was missed when the user scrolled; V3 hid the badge behind a click.
+Evidence: branch spike/dispatch-overdue
 ```
 
-Then delete the spike directory. If the verdict is hard to reverse, run `/plan adr new` first and link the ADR.
+Then rebuild the winner properly in the real code, with tests, since the variant was written without them. Commit every variant and the selector to `spike/<slug>` as [`SKILL.md`](SKILL.md) describes, and remove them from the working branch. If the verdict is hard to reverse, call the Skill tool with `plan` and the arguments `adr new <title>` first, and link the ADR.

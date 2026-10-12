@@ -47,7 +47,7 @@ A symptom-level note fires only on an exact repeat. A root-cause note fires on t
 | A fact about the user | A `user` memory |
 | A fact about ongoing work | A `project` memory, or the vault per [`knowledge-notes.md`](../rules/knowledge-notes.md) |
 | A gotcha in a specific repository | That repository's own instruction file |
-| A rule that keeps being violated | A hook, per [`/hookify`](../skills/retro/SKILL.md) |
+| A rule that keeps being violated | A hook, per the deterministic-check destination in [`/retro`](../skills/retro/SKILL.md) |
 
 A correction that fits an existing file updates that file. It does not create a second file saying almost the same thing. See [`memory-supersede.md`](../rules/memory-supersede.md).
 

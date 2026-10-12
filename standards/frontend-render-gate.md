@@ -41,7 +41,7 @@ Ranked. Prefer the highest rung the project already supports.
 
 1. **An automated check in the project's own harness.** When the repository has a browser-driven suite, the evidence is a new or extended case in that suite. This is the only rung that keeps holding after the change ships.
 2. **A scripted one-off against a real engine**, capturing computed style or the accessibility tree on the specific element in question. Appropriate when the harness cannot reach the surface, such as a flow requiring third-party credentials.
-3. **A rendered screenshot at a stated viewport**, when the claim is purely visual and no assertion can express it.
+3. **A before and after pair of rendered screenshots at a stated viewport**, when the claim is purely visual and no assertion can express it. A final screenshot alone shows an end state, never the change the action caused.
 
 A description of what the author expects to happen is not evidence at any rung.
 
@@ -53,6 +53,40 @@ A description of what the author expects to happen is not evidence at any rung.
 - **Name the viewport.** A layout claim without a width is untestable. State the width the assertion holds at, and include the smallest supported width when the change affects layout.
 - **A regression test outranks a fix.** When a browser surfaces a defect, the deliverable is the fix plus a case that fails without it. Confirm the case fails against the previous revision; a test that passes both ways asserts nothing.
 - **Record known findings rather than waiving the check.** When a pre-existing violation cannot be fixed in scope, record it in a per-route or per-screen allowlist so new findings still fail while the old ones stay visible. Suppressing the whole check hides the next regression.
+
+## Driving The Check
+
+A render check drives the behavior the way a user reaches it and reads every surface where a failure can hide.
+
+- **Drive every entry point.** When a route, a dialog, a menu item, and a keyboard shortcut all reach the same behavior, the check drives each of them. A proof through one convenient page is incomplete while another entry point stays unexercised.
+- **Read the persisted side effect back.** A page that renders the expected state over a row that never changed is a failure. After the action, read the stored state where the change was meant to land, through the service, the API, or a read-only query against a disposable database. List every table or store the action wrote. An unexpected extra write is a finding: a button that writes three tables when it should write one is a defect the check found.
+- **Read the page errors, the console, and the body text.** Run `agent-browser errors` and `agent-browser console` after each step, and both must be empty. A hydration failure renders straight through a screenshot. An empty errors list is still not a clean page, because a broken render can surface only as page text such as "Something went wrong", so read `agent-browser get text body` when a page looks blank or wrong.
+- **Reload once before reporting a dev-server failure.** A dev server's first visit to a route can optimise dependencies mid-render and crash the page. Wait a few seconds, run `agent-browser reload` once, and report the failure only when it survives the reload.
+- **Confirm the engine is yours.** Before trusting a snapshot, confirm the port is held by the pid you launched or a direct child of it. A server that announced a different port than the one requested is refused, never driven. A snapshot taken against someone else's server proves nothing.
+- **Re-snapshot after any DOM change.** Snapshot refs such as `@e12` are invalidated when the page changes, so take a fresh snapshot before the next interaction. Scope a large page with `-s "<selector>"`, cap it with `-d <n>`, or compact it with `-c`, so the tree stays readable.
+- **One browser session per parallel run.** Each concurrent check passes its own `--session <name>`. Sessions isolate cookies, storage, and tabs, and two runs sharing the default session overwrite each other's state.
+
+```bash
+agent-browser --session cart-a open http://localhost:4502/cart
+agent-browser --session cart-a snapshot -i -s "main"
+agent-browser --session cart-a click @e4
+agent-browser --session cart-a snapshot -i -s "main"
+agent-browser --session cart-a errors
+agent-browser --session cart-a console
+agent-browser --session cart-a get text body
+```
+
+### Assertion Hygiene
+
+- **Record every display setting that shapes the numbers on screen.** A filter, a toggle, or a checkbox that changes a count is part of the evidence, or the counts cannot be read back.
+- **A disabled control is an assertion.** Reading `[disabled]` on a gated button verifies the gate without opening it.
+- **A legitimate empty state is a correct render.** A list that reads "No items" because there are none is passing output, never a load failure. Verify list behavior on a view that has rows.
+
+### What The Pull Request States
+
+The pull request body states what was clicked and what was seen, with screenshots or the path to the evidence files. A change with no rendered effect says `No UI change` in one line instead.
+
+Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm skill, its feature notes and launch scripts, its CLAUDE.md, and the agent-browser skill references on snapshot refs and sessions.
 
 ## Mobile
 

@@ -78,7 +78,8 @@ Adjacent layers must present meaningfully different abstractions. If layer N exp
 For any non-trivial design decision, draft at least two approaches before committing.
 
 - The two approaches should be radically different, not minor variations of the same idea.
-- Compare on three axes: simplicity of interface, generality of use, implementation cost.
+- Compare on three axes: simplicity of interface, generality of use, and ease of correct use against ease of misuse.
+- Implementation effort is not an axis. A design chosen because it is cheap to build costs every caller for as long as it lives.
 - The first design is rarely the best. The second design often beats the first even when the first was the eventual choice, because the comparison sharpens the requirements.
 - This complements [`pre-flight.md`](../rules/pre-flight.md) step 5, "Evaluate alternatives". The pre-flight rule mandates 2 to 3 approaches; this rule names the technique.
 

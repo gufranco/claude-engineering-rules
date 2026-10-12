@@ -12,7 +12,7 @@ always_loaded:
     triggers: [architecture, defaults, ddd, hexagonal, ports, adapters, aggregate, domain, idempotency, deduplication, dedup, immutability, dry, solid, yagni, kiss, service, controller, repository, use case, feature]
 
   code-style:
-    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; every prose comment is banned in every file, test files included, with tool directives like eslint-disable, @ts-expect-error, noqa, type ignore and shellcheck disable as the one exempt class) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass
+    description: DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; every comment is banned in every language, scripts, build files, CI and infrastructure config included, docstrings and doc-comment blocks counted as comments, with two exempt classes, tool directives like eslint-disable, @ts-expect-error, noqa, type ignore and shellcheck disable, and the bare Arrange, Act, Assert markers that open a test's three blocks) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass
     triggers: [style, completeness, fundamentals, "command-query", cqs, "data safety", "delivery path", "defensive invariants", analyzability, validation, zod, dto, "removal safety", "locale-aware", i18n, accent, diacritical, "destructive action", "llm output", "trust boundary", "bisect", comment, comments, "no comments", "comments policy"]
 
   design-philosophy:
@@ -48,7 +48,7 @@ always_loaded:
     triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation", recommendation, "recommend an option", "which do you recommend", "option trade-off", "pick an option", choice, options]
 
   testing:
-    description: Integration-first philosophy, strict mock policy, unlabeled Arrange-Act-Assert test structure with one act per test, fake data generators, deterministic tests, snapshot guidelines
+    description: Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   verification:
@@ -707,7 +707,7 @@ on_demand:
 
   code-style:
     path: standards/code-style.md
-    description: "DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; every prose comment is banned in every file, test files included, with tool directives like eslint-disable, @ts-expect-error, noqa, type ignore and shellcheck disable as the one exempt class) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass"
+    description: "DRY/SOLID/KISS, command-query separation, error classification, data safety, defensive invariants, validation, file naming, removal safety, locale-aware components, i18n accents, destructive action confirmation, LLM trust boundary, bisect-friendly commits, no-comments policy (code must be self-explanatory; every comment is banned in every language, scripts, build files, CI and infrastructure config included, docstrings and doc-comment blocks counted as comments, with two exempt classes, tool directives like eslint-disable, @ts-expect-error, noqa, type ignore and shellcheck disable, and the bare Arrange, Act, Assert markers that open a test's three blocks) enforced by comment-blocker.py with no suppression marker and COMMENT_BLOCKER_DISABLE parent-shell operator bypass"
     triggers: [style, completeness, fundamentals, command-query, cqs, data safety, delivery path, defensive invariants, analyzability, validation, zod, dto, removal safety, locale-aware, i18n, accent, diacritical, destructive action, llm output, trust boundary, bisect, comment, comments, no comments, comments policy]
 
   completion-gates:
@@ -887,7 +887,7 @@ on_demand:
 
   testing:
     path: standards/testing.md
-    description: "Integration-first philosophy, strict mock policy, unlabeled Arrange-Act-Assert test structure with one act per test, fake data generators, deterministic tests, snapshot guidelines"
+    description: "Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines"
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   tone-and-writing:

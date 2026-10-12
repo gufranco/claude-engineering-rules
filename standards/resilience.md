@@ -14,14 +14,18 @@ Every error must be classified as **transient** or **permanent** before deciding
 
 Classify at the boundary where the error originates. Propagate the classification upstream so callers can make informed decisions.
 
-```
-// Bad: treats all errors the same
+**Bad:** treats all errors the same.
+
+```typescript
 catch (error) {
   logger.error("failed", { error });
   throw error;
 }
+```
 
-// Good: classifies and routes
+**Good:** classifies and routes.
+
+```typescript
 catch (error) {
   if (isTransient(error)) {
     logger.warn("transient failure, will retry", { error, attempt });
@@ -139,18 +143,21 @@ Classify each dependency call by its criticality to the current request:
 
 **Rule: wrap non-critical dependency reads in try/catch with a safe default. Never let a non-critical feature crash a critical path.**
 
-```typescript
-// Bad: Redis failure crashes the API response
-const scores = await getRecommendationScores(userId);
+**Bad:** a Redis failure crashes the API response.
 
-// Good: API responds without recommendations
-let scores: Map<string, number>;
-try {
-  scores = await getRecommendationScores(userId);
-} catch {
-  logger.warn("recommendation scores unavailable, returning defaults");
-  scores = new Map();
-}
+```typescript
+const scores = await getRecommendationScores(userId);
+```
+
+**Good:** the API responds without recommendations.
+
+```typescript
+const scores = await getRecommendationScores(userId).catch(
+  (error: unknown): Map<string, number> => {
+    logger.warn({ err: error, operation: "getRecommendationScores" }, "recommendation scores unavailable, returning defaults");
+    return new Map();
+  },
+);
 ```
 
 Log every fallback activation at `warn` level. Silent fallbacks hide chronic dependency issues.

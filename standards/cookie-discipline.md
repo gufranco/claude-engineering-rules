@@ -46,12 +46,16 @@ Bypass env: `PRIVACY_CHECKS_DISABLE=1` (parent shell only).
 
 ## Implementation Pattern
 
-```typescript
-// Bad: loads analytics on page load
-import { initAnalytics } from "./analytics";
-initAnalytics(); // runs before consent
+**Bad:** analytics loads on page load, before consent.
 
-// Good: gated on consent
+```typescript
+import { initAnalytics } from "./analytics";
+initAnalytics();
+```
+
+**Good:** analytics is gated on consent.
+
+```typescript
 import { onConsentChange } from "./consent";
 import { initAnalytics, teardownAnalytics } from "./analytics";
 

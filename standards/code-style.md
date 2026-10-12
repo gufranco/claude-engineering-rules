@@ -210,9 +210,14 @@ Write code that automated tools can reason about. Avoid patterns that defeat sta
 
 **Code must be self-explanatory. Comments are not permitted.** Never add a comment to project source code, in any language, under any circumstances.
 
-The ban covers every file, including test files, and every prose comment form: line comments, block comments, doc comments, banner comments, section labels, and inline explanations. Test bodies carry zero comments; structure a test with blank lines and a name that states the behavior. See [`testing.md`](../rules/testing.md).
+The ban covers every language and every file: application code, tests, shell and Python scripts, build files such as Makefiles and Dockerfiles, CI workflows, and infrastructure config such as Terraform, YAML, and TOML. It covers every comment form: line comments, block comments, banner comments, section labels, inline explanations, and docstrings and doc-comment blocks such as Python docstrings, JSDoc, Javadoc, and Rust `///` blocks, which count as comments.
 
-The one exempt class is the tool directive: a comment a tool parses and acts on, where the comment syntax is the only channel the tool offers.
+Two classes are exempt, and nothing else is:
+
+1. **The tool directive:** a comment a tool parses and acts on, where the comment syntax is the only channel the tool offers. The table below lists the families.
+2. **The three test markers:** the bare `Arrange`, `Act`, `Assert` comments that open a test's three blocks, in the language's comment syntax, with nothing after the word. They are the only comments a test carries. See [`testing.md`](../rules/testing.md) and [`standards/testing.md`](testing.md) "Test Structure".
+
+Provenance: 2026-10-12, owner decision. The owner observed comments landing in languages other than JavaScript and TypeScript, so the ban now names every language and file kind and counts docstrings as comments; the same decision restored the test markers.
 
 | Family | Examples |
 |--------|----------|
@@ -223,7 +228,7 @@ The one exempt class is the tool directive: a comment a tool parses and acts on,
 | Compilers and bundlers | `//go:build linux`, `//nolint:errcheck`, `/* webpackChunkName: "x" */`, `/* #__PURE__ */`, `//# sourceMappingURL=` |
 | Licensing and safety | `// SPDX-License-Identifier: Apache-2.0`, `# SPDX-FileCopyrightText: ...`, Rust `// SAFETY:` required by clippy's `undocumented_unsafe_blocks` |
 
-The drift argument does not apply to these: a directive that goes stale is reported by the tool that reads it, so nothing silently misleads a later reader. Two limits keep the carve-out from becoming an escape hatch. The directive must sit at the start of the comment, which leaves a trailing justification allowed (`// eslint-disable-next-line no-console -- CLI entry point`) and blocks prose that merely names a tool. And a directive is written because a tool requires it, never because a line needs explaining.
+The drift argument does not apply to directives: a directive that goes stale is reported by the tool that reads it, so nothing silently misleads a later reader. Two limits keep the carve-out from becoming an escape hatch. The directive must sit at the start of the comment, which leaves a trailing justification allowed (`// eslint-disable-next-line no-console -- CLI entry point`) and blocks prose that merely names a tool. And a directive is written because a tool requires it, never because a line needs explaining.
 
 When a piece of code feels like it needs a comment to be understood, that is the signal to improve the code, not to write the comment. Rename the symbol to say what it does. Extract a well-named function so the name carries the intent. Split a dense expression into named steps. Express an API contract in the type system, not in prose. The comment you were about to write is a description of a change the code itself should make.
 
@@ -252,6 +257,9 @@ Enforced by: [`hooks/comment-blocker.py`](../hooks/comment-blocker.py). There is
 4. **Size.** Avoid heavy packages for simple tasks.
 5. Pin exact versions. Separate dev dependencies. Commit lockfile.
 6. **Pin the package manager.** Different versions produce different lockfiles. Use Corepack, a manifest version field, or CI config to enforce consistency.
+7. **Resolve peers explicitly in peer-coupled ecosystems.** Families whose packages declare each other as peers, such as `@effect/*`, `@angular/*`, `@nestjs/*`, or a React renderer and its plugins, break when one member moves alone. Before adding a member, run `pnpm why <pkg>` for each peer it declares, then install the matching peer versions explicitly in the same command. Never pass `--force` or `--legacy-peer-deps`: both hide the conflict instead of resolving it, and `--legacy-peer-deps` under npm can silently strip existing peers and leave a lockfile that installs a different tree than the one tested.
+
+Provenance for item 7: 2026-10-12, owner request, adopted from the `install-effect-package` skill in Matt Pocock's course-video-manager repository, which records npm's `--legacy-peer-deps` stripping existing `@effect/*` peers from the lockfile.
 
 ## Validation
 

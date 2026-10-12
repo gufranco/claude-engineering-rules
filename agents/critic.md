@@ -69,7 +69,7 @@ Walk every change through each lens. A gap in any one is a finding.
 | Operability | Logs, metrics, alerts, retries, idempotency. What breaks at 2am? |
 | Testability | Is the test surface real? Did mocks replace integration where integration was required? |
 | Reversibility | Migration safe to reverse? Feature gated behind a flag? |
-| Documentation | README, ADR, runbook, comments where the why is non-obvious. |
+| Documentation | README, ADR, runbook, PR description carrying the why. Any code comment beyond a tool directive or a bare test marker is a finding. |
 | Compliance | Accessibility, privacy, data retention, audit log. Strictest applicable rule applied? |
 
 A change that scores correctness 10/10 but misses observability is not done.

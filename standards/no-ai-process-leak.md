@@ -175,14 +175,7 @@ Bad:
 # See the planning document, task 96.
 ```
 
-Good:
-
-```python
-# TODO: implement the worker idempotency path before the first
-# real provisioning request lands.
-```
-
-The good version uses the standard `TODO:` convention any reader recognizes, names the concrete future work, and contains no plan reference.
+Good: no comment at all. The comment ban in [`code-style.md`](../rules/code-style.md) covers source comments in every language, so a process-leaking comment is deleted, never rephrased, and the unfinished work is finished in the same change.
 
 ## Self-Test Before Committing Or Posting
 

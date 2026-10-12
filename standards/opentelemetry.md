@@ -4,8 +4,9 @@
 
 Initialize the OpenTelemetry SDK before importing any instrumented library. Auto-instrumentation patches library prototypes at import time. If the library is imported first, the patches miss it.
 
+In `instrumentation.ts`, which must be the first import in the application entry point:
+
 ```typescript
-// instrumentation.ts - must be the first import in the application entry point
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
@@ -20,9 +21,12 @@ const sdk = new NodeSDK({
 });
 
 sdk.start();
+```
 
-// main.ts
-import "./instrumentation"; // MUST be first
+In `main.ts`, the instrumentation import comes first:
+
+```typescript
+import "./instrumentation";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 ```
@@ -91,8 +95,9 @@ Never send telemetry directly from applications to the observability backend. Ro
 
 The Collector handles batching, retry, export to multiple backends, and sampling decisions. Applications export to `localhost` or a cluster-local endpoint. Backend changes require only Collector reconfiguration, not application redeployment.
 
+A Collector pipeline runs receivers, then processors, then exporters:
+
 ```yaml
-# Collector pipeline: receivers -> processors -> exporters
 receivers:
   otlp:
     protocols:
@@ -126,7 +131,6 @@ function getTraceContext(): { traceId: string; spanId: string } {
   return { traceId: context.traceId, spanId: context.spanId };
 }
 
-// In the logger configuration
 const logger = createLogger({
   mixin() {
     return getTraceContext();
@@ -174,8 +178,9 @@ Every span that is opened must be closed. Unclosed spans leak memory, produce in
 - Prefer the `tracer.startActiveSpan` callback pattern, which closes the span when the callback returns.
 - In tests, verify that all spans are exported and have an end time.
 
+**Correct:** the callback pattern guarantees closure.
+
 ```typescript
-// Correct: callback pattern guarantees closure
 await tracer.startActiveSpan("process-order", async (span) => {
   try {
     await processOrder(order);

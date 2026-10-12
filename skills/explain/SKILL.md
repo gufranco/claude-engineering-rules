@@ -1,11 +1,19 @@
 ---
 name: explain
-description: Explain code with educational depth. Generates Mermaid diagrams for architecture and data flow, traces data through the codebase, explains design decisions with rationale, identifies patterns, and suggests improvements. Use when user says "explain", "explain this code", "how does this work", "walk me through", "what does this do", "trace the data flow", or wants to understand a file, directory, or system with educational depth. Do NOT use for code review (use /review), debugging (use /investigate), or architecture assessment (use /assessment).
+description: Explain code with educational depth. Generates Mermaid diagrams for architecture and data flow, traces data through the codebase, explains design decisions with rationale, identifies patterns, and suggests improvements. Use when user says "explain", "explain this code", "how does this work", "walk me through", "what does this do", "trace the data flow", or wants to understand a file, directory, or system with educational depth. For code review, use /review; for debugging, use /investigate; for architecture assessment, use /assessment.
+argument-hint: "/explain [path] [--depth shallow|deep]"
+allowed-tools: "Read, Grep, Glob, Bash, AskUserQuestion"
 ---
+
+## Overview
 
 Code explanation skill with educational depth. Analyzes code structure, traces data flow, identifies patterns, and produces Mermaid diagrams to make complex systems understandable.
 
-## Invocation
+## When to Use
+
+Run when the goal is understanding a file, directory, or flow. Pick `--depth shallow` for a quick orientation and the default `deep` when the reader will change the code next.
+
+### Invocation
 
 | Invocation | Action |
 |-----------|--------|
@@ -114,6 +122,28 @@ When `--depth shallow` is specified, run only steps 1-3. Skip data flow tracing,
 - Do not explain language syntax unless the user appears to be learning the language.
 - When explaining a directory, focus on the module's public API and responsibilities. Do not explain every internal helper.
 - Improvements must reference specific rules. "This could be better" is not actionable.
+
+## Common Rationalizations
+
+- "The name says Strategy, so it is the Strategy pattern": a pattern claim needs the interface and its implementations in view. Cite the `file:line` that shows it.
+- "The rationale is obvious, I will state it": invented rationale reads as fact. Cite a comment, commit, or ADR, or say the reason is unclear.
+- "The diagram looks right": Mermaid that fails to parse renders nothing. Read it back and check every node and edge against the code.
+- "Every helper deserves a line": a directory explanation covers the public API and responsibilities. Internal helpers stay out.
+- "An improvement section looks thorough": "No improvements needed" is valid. Each suggestion names a rule.
+
+## Red Flags
+
+- Stop and ask which code to explain when there is no argument and no file was discussed.
+- Stop and re-read the source when a diagram node names a function or module that Grep cannot find.
+- Stop and mark the decision as unclear when no comment, commit message, or ADR supports a stated rationale.
+- Stop at step 3 when `--depth shallow` was passed.
+
+## Verification
+
+- The output follows the Output template with Purpose, Architecture, and, in deep mode, every remaining section.
+- Every `file:line` in the Patterns and Improvements tables opens to the cited code.
+- Every Mermaid block starts with a valid diagram type such as `graph TD`, `sequenceDiagram`, `flowchart`, or `classDiagram`.
+- Every improvement row names a file under [`rules/`](../../rules), or the table holds the single "No improvements needed." row.
 
 ## Related skills
 

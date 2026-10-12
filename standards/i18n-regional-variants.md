@@ -108,8 +108,13 @@ Example test structure:
 ```typescript
 describe('i18n regional variants', () => {
   it('pt-BR translations must not contain pt-PT words', () => {
+    // Arrange
     const ptBR = loadMessages('pt-BR');
+
+    // Act
     const flagged = checkForFlaggedWords(ptBR, PT_PT_FLAG_LIST);
+
+    // Assert
     expect(flagged).toEqual([]);
   });
 });

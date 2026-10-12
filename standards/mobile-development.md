@@ -89,10 +89,10 @@ A widget or component test renders into a headless tree. It proves structure and
 
 Both simulator runners are present on a configured macOS machine: `xcrun simctl list devices available` for iOS, `adb devices` for Android. Boot one and run the suite rather than reasoning about the widget tree.
 
-Flutter itself comes from `fvm`, because the mise plugin reports success while installing nothing on macOS arm64. Invoke the pinned SDK per project:
+Flutter itself comes from `fvm`, because the mise plugin reports success while installing nothing on macOS arm64. Invoke the pinned SDK per project. `fvm use` writes `.fvmrc`, after which `fvm flutter` resolves:
 
 ```bash
-fvm use <version>          # writes .fvmrc, then `fvm flutter …` resolves
+fvm use <version>
 fvm flutter test integration_test --device-id <simulator-id>
 ```
 

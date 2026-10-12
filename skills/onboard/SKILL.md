@@ -1,9 +1,20 @@
 ---
 name: onboard
-description: Onboard to a new codebase with structured exploration. Scans the project, generates an architecture map with Mermaid diagrams, identifies entry points, explains the tech stack, lists key patterns and conventions, and produces a "start here" guide. Use when user says "onboard", "new project", "understand this codebase", "what does this project do", "walk me through the project", "project overview", or joins a new team or repository. Do NOT use for explaining a single file (use /explain), code review (use /review), or assessment (use /assessment).
+description: Onboard to a new codebase with structured exploration. Scans the project, generates an architecture map with Mermaid diagrams, identifies entry points, explains the tech stack, lists key patterns and conventions, and produces a "start here" guide. Use when user says "onboard", "new project", "understand this codebase", "what does this project do", "walk me through the project", "project overview", or joins a new team or repository. For explaining a single file, use /explain; for code review, use /review; for assessment, use /assessment.
+argument-hint: "/onboard | /onboard <path> --verify | /onboard <path> --trust"
+allowed-tools: "Read, Grep, Glob, Bash, AskUserQuestion, Skill"
 ---
 
+## Overview
+
 Structured codebase exploration that produces a navigable architecture overview and a "Start Here" guide. Designed for the first hour on a new project.
+
+## When to Use
+
+- First session in a repository nobody on the current task has worked in.
+- Joining a team, or picking up a take-home, an external repository, or untrusted source that needs the Phase 0 trust scan before anything else runs.
+- Refreshing a mental model of a project whose structure moved since it was last read.
+- For one file or function, use `/explain`; for a quality score, use `/assessment`; for a single diff, use `/review`.
 
 ## Arguments
 
@@ -37,7 +48,7 @@ Options:
 | Option | Effect |
 |--------|--------|
 | Yes, trust it (skip scan) | Skip scan. Continue to Step 1. Start Here guide records `Safety verdict: SKIPPED (user trusts project)` |
-| No, scan it first (default focus, Recommended for new or external projects) | Run `/audit trust --json` against the project root. Apply the verdict mapping below |
+| No, scan it first (default focus, Recommended for new or external projects) | Call the Skill tool with `audit` and the arguments `trust --json` against the project root. Apply the verdict mapping below |
 
 **When the scan runs**, map the verdict to action:
 
@@ -169,6 +180,31 @@ Recommend running `/retro discover` to capture the detected conventions as durab
 - Flag discrepancies between docs and code as findings.
 - Keep the Start Here guide under 200 lines. Link to files instead of inlining code.
 - The Start Here guide must include a "Safety verdict" line near the top, summarizing the trust decision and the scan result if applicable.
+
+## Common Rationalizations
+
+- "The repository comes from a well-known organization, the trust question is noise": Phase 0 asks on every run without a flag, and the default focus is the scan.
+- "An install would let me read the generated types": onboarding installs nothing and runs no project command unless the user asks.
+- "The README says the service uses X, so it does": when the docs and the code disagree, the code wins, and the mismatch becomes a finding.
+- "Inlining the key functions saves the reader a click": the guide links to files and stays under 200 lines.
+- "The user insists, so the MALICIOUS verdict can be waived": MALICIOUS has no override, and HIGH-RISK continues only on the literal phrase `I accept the risk`.
+
+## Red Flags
+
+- Stop and ask the trust question when no flag was passed and no other step has run.
+- Stop and reject the invocation when both `--trust` and `--verify` were passed.
+- Stop and wait for the literal phrase `I accept the risk` when the scan returns HIGH-RISK.
+- Stop onboarding and recommend a Docker sandbox or deleting the directory when the scan returns MALICIOUS.
+- Stop and read `.env.example` instead when the next read targets `.env`, `.env.local`, or `.env.production`.
+
+## Verification
+
+- The Start Here guide carries a `Safety verdict` line near the top that matches the Phase 0 outcome.
+- The guide has all eight sections from Step 9 and stays under 200 lines.
+- Every file named under Where to Start Reading exists on disk.
+- The Mermaid diagram labels every edge with its interaction type.
+- `git status` shows no project file modified by the onboarding run.
+- Every mismatch found between the docs and the code is listed as a finding.
 
 ## Related skills
 

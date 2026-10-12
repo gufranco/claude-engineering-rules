@@ -1,11 +1,28 @@
 ---
 name: infra
-description: Manage infrastructure for local development. Subcommands: docker, terraform, db. Covers container orchestration with Colima awareness, IaC workflows with safety gates, and database migrations with ORM detection. Use when user says "docker compose", "start containers", "terraform plan", "run migration", "create migration", "database setup", or needs to manage local dev infrastructure. Do NOT use for deploying to production (use CI/CD), security scanning (use /audit), or Terraform test patterns (check standards/terraform-testing.md).
+description: Manage infrastructure for local development, with subcommands docker, terraform, and db. Covers container orchestration with Colima awareness, IaC workflows with safety gates, and database migrations with ORM detection. Use when user says "docker compose", "start containers", "terraform plan", "run migration", "create migration", "database setup", or needs to manage local dev infrastructure. For production deploys, use CI/CD; for security scanning, use /audit; for Terraform test patterns, read standards/terraform-testing.md.
+argument-hint: "/infra | /infra docker up api | /infra terraform plan | /infra db migrate"
+allowed-tools: "Read, Grep, Glob, Bash, AskUserQuestion"
 sensitive: true
 ---
-Unified infrastructure skill for local development. Replaces standalone `/docker`, `/terraform`, and `/db` skills.
 
-## Subcommand Routing
+## Overview
+
+Unified infrastructure skill for local development.
+
+## When to Use
+
+- Starting, stopping, building, or inspecting local containers and compose services.
+- Running a Terraform or OpenTofu format, validate, plan, apply, or destroy with the approval gates below.
+- Checking, running, creating, or rolling back database migrations against a local database.
+- For production deploys, use the CI/CD pipeline; for Dockerfile and image security, use `/audit docker`; for Terraform test patterns, read [`standards/terraform-testing.md`](../../standards/terraform-testing.md).
+
+## Process
+
+1. Route the invocation with the table below. With no subcommand, run `docker` and show status.
+2. Run the Steps of the matching section, then check the shared Rules at the end before any command that stops, removes, or rewrites state.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -123,6 +140,7 @@ Manage database migrations, containers, and data operations. Detects ORM and pac
    - **start/stop**: suggest user shell functions, `postgres-start`, `mongo-start`, etc..
    - **terminal**: suggest shell functions or direct exec (`docker exec -it postgres psql -U postgres`).
    - **migrate**: check container running, show pending, run ORM-specific migrate command, verify.
+   - **migrate against production**: never run it. Send the person who applies production migrations one message with the migration identifier and one exact command, per [`standards/database.md`](../../standards/database.md) Human-Gated Production Migrations, then stop and wait for their confirmation without polling.
    - **rollback**: show status, warn about data loss, require approval, run ORM-specific rollback.
    - **create**: require name, run ORM-specific create command, show file path.
    - **seed**: run ORM-specific seed command.
@@ -147,6 +165,31 @@ Volumes: named Docker volumes + bind mounts to `~/Docker/<Service>/`. Ports boun
 - Check container running before migrations.
 - Never run migrations against production.
 - Never modify existing migration files.
+
+## Common Rationalizations
+
+- "`docker context use` once is quicker than a flag on every command": it switches the context for every other shell too. Pass `--context <name>` per command.
+- "The migration has a typo, I will fix the file in place": a migration that already ran elsewhere diverges silently. Create a new migration with `/infra db create`.
+- "The plan was clean a minute ago, apply straight away": validate, plan, show the summary, and apply the saved `tfplan` after approval, every time.
+- "The disk is full and a prune frees it in one command": prune removes volumes the user still needs. List the specific containers and volumes and let the user choose.
+- "This is a Prisma project, so `prisma migrate` it is": detect the ORM from the files in the ORM Detection table before running any migration command.
+
+## Red Flags
+
+- Stop and start the runtime when `docker info` fails, using the Colima, Docker Desktop, or systemd hint from docker step 1.
+- Stop and ask for approval when the next command is `down`, `rollback`, `reset`, or `destroy`.
+- Stop and confirm the target when a database URL or Terraform workspace names production.
+- Stop and hand over one exact command when a migration targets production, then wait for confirmation without polling or redeploying.
+- Stop and report when the Docker context points at a stopped Colima profile.
+- Stop and show the user when a plan summary lists destroys they did not ask for.
+
+## Verification
+
+- After `up` or `restart`, `<compose> ps` shows every requested service running or healthy, and the logs of any unhealthy service were shown.
+- After a Terraform run, the workspace was displayed, the adds, changes, and destroys were summarized, and an apply consumed the saved `tfplan` and removed it afterward.
+- After `migrate`, the ORM status command reports no pending migrations.
+- Output named environment variables without printing their values.
+- Every `down`, `rollback`, `reset`, `apply`, and `destroy` followed an explicit user approval in the conversation.
 
 ## Related skills
 

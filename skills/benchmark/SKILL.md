@@ -1,11 +1,18 @@
 ---
 name: benchmark
-description: Performance regression detection. Measures API latency, bundle size, and database query time, then compares against saved baselines. Use when user says "benchmark", "performance check", "check for regressions", "bundle size", "latency", "is this slower", or wants to detect performance changes. Do NOT use for code quality scoring (use /health), load testing setup, or profiling.
+description: Measure API latency, bundle size, and database query time, and compare them against saved baselines to catch performance regressions.
+disable-model-invocation: true
+argument-hint: "/benchmark [api|bundle|db] [--save]"
+allowed-tools: "Read, Grep, Glob, Bash, Write, AskUserQuestion"
 ---
+
+## Overview
 
 Establishes performance baselines and detects regressions by comparing current measurements against stored reference values.
 
-## Arguments
+## When to Use
+
+Run before and after a change that can move latency, bundle size, or query time, and save a baseline from a known-good commit first, since a comparison needs one.
 
 | Invocation | Action |
 |-----------|--------|
@@ -15,6 +22,14 @@ Establishes performance baselines and detects regressions by comparing current m
 | `/benchmark db` | Measure database query time only |
 | `/benchmark --save` | Run all and save results as the new baseline |
 | `/benchmark api --save` | Run API latency and save as baseline |
+
+## Process
+
+1. Parse the invocation into categories and the `--save` flag; with no category, run all three.
+2. Confirm the target is local or staging, then record the runtime version, tool version, and date in GMT.
+3. Measure each requested category per Measurement Categories below.
+4. When `.claude/benchmarks/<project>.json` exists, compare per Comparison and flag regressions against the threshold table.
+5. With `--save`, write the new baseline per Saving Baselines.
 
 ## Measurement Categories
 
@@ -131,8 +146,31 @@ When `--save` is passed:
 - Never modify source code during benchmarking. This is a measurement-only skill.
 - Include the runtime version, tool version, and measurement date in every report.
 
+## Common Rationalizations
+
+- "Staging is down, production is close enough": production load skews every percentile and the run adds load to real users. Wait for staging or run locally.
+- "The build output from earlier is fine": a stale bundle measures the previous code. Rebuild, then measure.
+- "curl timing is good enough without k6": a single-request timer has no p95 or p99. Name the supported tools and ask before installing one.
+- "Mean latency reads cleaner": one outlier moves the mean. Report the median per the testing rule.
+- "Just overwrite the baseline": saving over a regression hides it for every later run. Show the diff first.
+
+## Red Flags
+
+- Stop and ask for a staging or local URL when the only reachable target is production.
+- Stop and rebuild when the build directory predates the last source change.
+- Stop and ask which endpoints to measure when the route files list more than 10.
+- Stop and revert when a source file changed during the run, since this skill measures only.
+
+## Verification
+
+- A report table exists for every requested category, with runtime version, tool version, and a GMT date.
+- Every metric with a baseline carries a delta and an `OK` or `REGRESSION` status.
+- The summary states the counts of regressions, improvements, and unchanged metrics.
+- With `--save`, `.claude/benchmarks/<project>.json` holds the new timestamp, and the diff against the old baseline was shown.
+- `git status` shows no source file changed by the run.
+
 ## Related Skills
 
-- `/health` -- Quality scoring covers different dimensions than performance.
+- `/profile` -- Find the bottleneck behind a regression this skill flags.
 - `/test` -- Run the test suite, which may include performance tests.
 - `/ship checks` -- Check CI pipeline, which may include performance gates.

@@ -101,15 +101,10 @@ Rules:
 
 A cluster of entities and value objects with a single root entity that enforces consistency boundaries. External code can only reference the aggregate through its root.
 
+In this example `Order` is the aggregate root, `OrderItem` is an entity within it, and `Money` and `Address` are value objects within it. Only the root has a public repository, so an `OrderItem` is never loaded independently.
+
 ```typescript
-// Order is the aggregate root
-// OrderItem is an entity within the aggregate
-// Money, Address are value objects within the aggregate
-
 class Order {
-  // Only the aggregate root has a public repository
-  // OrderItem is never loaded independently
-
   addItem(product: ProductId, quantity: Quantity, price: Money): Result<void, OrderError> {
     if (this._status !== OrderStatus.Draft) {
       return err(new OrderError('Cannot modify a placed order'));
@@ -178,7 +173,9 @@ class PricingService {
     customer: CustomerTier,
     activeCoupons: readonly Coupon[],
   ): Result<Money, PricingError> {
-    // Complex pricing logic that spans Order, Customer, and Coupon concepts
+    const tierDiscount = discountForTier(customer, order.total);
+    const couponDiscount = bestCouponDiscount(activeCoupons, order);
+    return tierDiscount.add(couponDiscount).mapErr(toPricingError);
   }
 }
 ```
@@ -193,18 +190,20 @@ Rules:
 
 Collection-like abstraction for aggregate persistence. Defined as a port in the domain layer, implemented as an adapter.
 
+The domain layer defines the interface:
+
 ```typescript
-// Domain layer defines the interface
 interface OrderRepository {
   findById(id: OrderId): Promise<Result<Order, NotFoundError>>;
   save(order: Order): Promise<Result<void, PersistenceError>>;
   nextId(): OrderId;
 }
+```
 
-// Adapter layer implements it
-class PostgresOrderRepository implements OrderRepository {
-  // Maps between database rows and domain objects
-}
+The adapter layer implements it, mapping between database rows and domain objects:
+
+```typescript
+class PostgresOrderRepository implements OrderRepository { ... }
 ```
 
 Rules:

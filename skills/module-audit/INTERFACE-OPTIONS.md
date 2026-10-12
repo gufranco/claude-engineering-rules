@@ -20,6 +20,7 @@ Use the Agent tool to spawn at least three subagents in parallel. Each produces 
 - Agent B: maximize flexibility. Support many use cases and explicit extension points.
 - Agent C: optimize for the most common caller. Make the common case trivial; accept that the uncommon case takes more work.
 - Agent D (when the dependency category requires it): design around ports and adapters for a remote-or-external dependency.
+- Agent E (when an established paradigm or library solves the same problem): take that paradigm or library's interface as the starting point, and name it.
 
 Each subagent must return:
 
@@ -33,14 +34,17 @@ Brief each subagent with both VOCABULARY.md terms and the project glossary terms
 
 ### Step 3: present and compare
 
-Show the designs sequentially so the user can absorb each one. Then write a comparison that contrasts the designs along three axes:
+Show the designs sequentially so the user can absorb each one. Then write a comparison that contrasts the designs along four axes:
 
 - Depth: how much behavior the interface lets a caller drive per element it exposes.
 - Locality: where the next change is likely to concentrate.
 - Seam placement: where the test surface lives.
+- Misuse resistance: how easy the correct call is against how easy a wrong one is, such as an invalid argument order or a forgotten setup step.
+
+Implementation effort is not an axis; the cheapest design to build is often the costliest to call.
 
 Recommend one design and explain why. If elements from different designs combine well, propose a hybrid. Be opinionated. The user wants a strong read, not a menu.
 
 ### Step 4: capture the decision
 
-When the user accepts a design, run `/plan adr new` if the design choice is hard to reverse. Otherwise capture the design in the spec folder's `decisions.md`.
+When the user accepts a design and the choice is hard to reverse, call the Skill tool with `plan` and the arguments `adr new <title>`. Otherwise capture the design in the spec folder's `decisions.md`.

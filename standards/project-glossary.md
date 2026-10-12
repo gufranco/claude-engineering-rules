@@ -75,6 +75,11 @@ Avoid: bill, payment request.
 <One or two sentences.>
 
 Avoid: client, buyer, account.
+
+## Relationships
+
+- A Customer places zero or more Orders.
+- An Order produces exactly one Invoice.
 ```
 
 Rules:
@@ -83,6 +88,7 @@ Rules:
 - Every entry includes an `Avoid` line listing the synonyms the team has rejected. This is half the value of the file. Without `Avoid`, the same concept slips back in under a different name in a future change.
 - Group terms under subheadings only when natural clusters emerge. A flat list is fine when the terms cohere.
 - Domain terms only. General programming concepts (timeout, error, retry) do not belong even when the project uses them constantly. Before adding a term, ask: is this concept specific to this context, or would a programmer in any project recognize it?
+- An optional `Relationships` list states how terms inside the context relate, with cardinality: exactly one, zero or more, one or more. One line per relationship, in the same domain terms. It stays out of the term entries, which keep their one or two sentences.
 - The glossary is a glossary, never a spec, a scratch pad, an ADR archive, or an implementation log. When a decision needs recording, use the project's ADR mechanism. When a plan needs recording, use `/plan`.
 
 ### Index file

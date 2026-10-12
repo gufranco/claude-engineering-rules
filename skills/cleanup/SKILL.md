@@ -1,7 +1,12 @@
 ---
 name: cleanup
-description: Stale branch, PR, and worktree cleanup. Lists branches with no recent commits, PRs open too long, merged branches not deleted, orphaned worktrees, and draft PRs that went stale. Offers to close or delete with confirmation per item. Use when user says "cleanup", "clean branches", "stale PRs", "delete old branches", "prune", "tidy up", or wants to reduce repository clutter. Do NOT use for code cleanup (use /refactor), dependency updates (use /audit deps), or git workflow (use /ship).
+description: List stale branches, long-open PRs, merged branches, and orphaned worktrees, then close or delete each one with confirmation.
+disable-model-invocation: true
+argument-hint: "/cleanup [branches|prs|worktrees] [--dry-run|--apply]"
+allowed-tools: "Bash, Read, AskUserQuestion"
 ---
+
+## Overview
 
 Repository hygiene tool that finds stale branches, lingering PRs, merged branches not yet deleted, and orphaned worktrees. Presents everything in a table, asks for confirmation per item, and cleans up what you approve.
 
@@ -93,8 +98,8 @@ The two-phase flow exists because cleanup is destructive: read the report, decid
 
    - Merged branches: `git branch -d <branch>`.
    - Stale branches: `git branch -D <branch>` with a warning that this force-deletes an unmerged branch.
-   - Stale PRs: close with a comment explaining the reason.
-     - GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh pr close <number> --comment "Closing: no activity for N days. Reopen if still needed."`
+   - Stale PRs: close without a comment, per [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md). The terminal report names each closed PR and its idle time, so the user can tell the author directly.
+     - GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh pr close <number>`
      - GitLab: `GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab mr close <number>`
    - Draft PRs: same as stale PRs.
    - Orphaned worktrees: `git worktree remove <path>`.
@@ -120,13 +125,35 @@ The two-phase flow exists because cleanup is destructive: read the report, decid
 - Never close PRs that have activity in the last 7 days, even if they are older than the stale threshold.
 - Always prefix `gh` commands with `GH_TOKEN` per the github-accounts rule.
 - Always prefix `glab` commands with `GITLAB_TOKEN` and `GITLAB_HOST` per the gitlab-accounts rule.
-- Always include a comment when closing a PR so the author understands why.
+- Close a PR with no comment. The reason goes in the terminal report, where the user decides how to tell the author.
 - In `--dry-run` mode, do not modify any state. Report only.
 - When a branch exists both locally and on the remote, delete both if approved. Delete local first, then remote.
 - Show age and last activity in relative format.
+
+## Common Rationalizations
+
+- "The user asked for cleanup, so `--apply` is implied": the default is a dry run. Print the report and wait for a re-run with `--apply`.
+- "The branch is stale, so `-D` is fine": a stale branch can hold the only copy of unmerged work. Show the force-delete warning and get a per-item answer.
+- "`origin/HEAD` is missing, so skip the merged scan": fall back to `origin/main`, then `origin/master`.
+- "The PR is 20 days old, close it": age alone is not staleness. Activity in the last 7 days keeps it open.
+- "The default token works for `gh`": the wrong account sees the wrong PRs or none. Prefix `GH_TOKEN` for the account read from the remote.
+
+## Red Flags
+
+- Stop and drop the item when a candidate branch is `main`, `master`, `develop`, `staging`, `production`, or matches `release/*`.
+- Stop after the report when the invocation lacks `--apply`.
+- Stop and ask again when the user's selection names an item absent from the report.
+- Stop and keep the worktree when `git worktree list --porcelain` shows uncommitted changes in it.
+
+## Verification
+
+- The report lists every category the invocation scanned, with relative ages.
+- In dry-run mode, `git branch -a`, `git worktree list`, and the open PR list are unchanged after the run.
+- With `--apply`, each approved branch is absent from `git branch -a` and each approved worktree from `git worktree list`.
+- Each closed PR shows the state `CLOSED` in `gh pr view <number> --json state`, or `glab mr view` on GitLab.
+- The summary counts match the items the user approved.
 
 ## Related skills
 
 - `/ship` - Commit, push, and create PRs.
 - [`/morning`](../morning/SKILL.md) - Cross-account sweep of open PRs, reviews, and issues. This skill covers one repository; that one covers every account.
-- `/weekly` - Sprint summary with delivery metrics.

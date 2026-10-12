@@ -1,10 +1,23 @@
 ---
 name: session-log
-description: Session activity logger for handoff and standup. Shows what was done in the current session, including files changed, tests run, commits made, and decisions taken. Use when user says "session log", "what did we do", "session summary", "handoff notes", "standup notes", "export session", or wants a summary of current session activity for handoff or standup prep. Do NOT use for retrospectives (use /retro), checkpoints (use /checkpoint), or morning standup dashboard (use /morning).
+description: Summarize the current session's files changed, tests run, commits, and decisions as handoff or standup notes.
+disable-model-invocation: true
+argument-hint: "/session-log | /session-log export"
+allowed-tools: "Read, Bash, Write, Skill"
 sensitive: true
 ---
 
+## Overview
+
 Session activity logger that builds a summary of what happened in the current session. Useful for handoff between developers, standup preparation, and session documentation.
+
+## When to Use
+
+- Handing the work to another developer at the end of a session.
+- Preparing standup notes from what the session actually changed.
+- Recording what a long session did before the context is cleared.
+
+For resumable working state, use `/checkpoint save`; for corrections that change how the assistant works, use `/retro`.
 
 ## Invocation
 
@@ -83,28 +96,27 @@ Session activity logger that builds a summary of what happened in the current se
 ### Export mode
 
 When `/session-log export` is invoked:
-- Write the output to a file named `session-log-<YYYY-MM-DD-HHMM>.md` in the project root.
+- Inside a git repository, write the output to `session-log-<YYYY-MM-DD-HHMM>.md` in the project workspace, per [`rules/project-workspace.md`](../../rules/project-workspace.md). Resolve the workspace root with [`hooks/_lib/project_workspace.py`](../../hooks/_lib/project_workspace.py) the same way [`/checkpoint`](../checkpoint/SKILL.md) does, never by guessing:
+
+  ```bash
+  python3 -c 'import sys,pathlib; sys.path.insert(0, str(pathlib.Path.home()/".claude/hooks")); from _lib import project_workspace as pw; top = pw.toplevel(pathlib.Path.cwd()); print(top / pw.resolve_root(top))'
+  ```
+
+- Outside a git repository, write it to the scratchpad directory.
+- The workspace is excluded through `.git/info/exclude`, so the export stays out of commits and the project's own files stay untouched.
 - Confirm the file path after writing.
 
-## Session Boundary Heuristics
+## Durable Facts
 
-A session boundary is a moment where short-term context should be flushed to long-term memory before it is lost to compaction or session end. The skill writes a memory entry whenever a boundary is detected, instead of waiting for an explicit save.
+This skill runs only when the user invokes it. While building the log, route each finding by what it is:
 
-| Trigger | Detection signal | Action |
-|---------|-----------------|--------|
-| Idle gap | More than 30 minutes between the last assistant turn and the next user turn | Write a project memory summarizing the in-progress task and any open decisions |
-| Topic shift | The user's new prompt has no shared keywords with the previous 5 turns and introduces a different domain (different repo, feature area, or skill family) | Write a project memory closing out the previous topic |
-| Pre-compaction | A `compact-context-saver` event fires or the assistant detects context near the 60% threshold | Write a feedback memory if any corrections happened, plus a project memory of the current task state |
-| Explicit handoff | The user says "I'll be back later", "save this for tomorrow", "let's pick up next session", or equivalent in any language | Write both a project memory and a checkpoint reference |
-| Task completion | A multi-step task ends with verified evidence (build green, PR merged, deploy confirmed) | Write a project memory marking the task done with the final state |
+| Finding | Destination |
+|---------|-------------|
+| Task state, open decisions, next steps | The log itself. When the work resumes in a later session, offer to call the Skill tool with `checkpoint` and the argument `save` |
+| A fact a future session needs, such as a gotcha with no trace in code or a decision with lasting effect | Call the Skill tool with `brain` and the argument `capture`, once per fact, after the user approves the list |
+| A correction to how the assistant works | Name it in the log and suggest `/retro`, which routes it to a rule, a skill, or the vault |
 
-When a boundary fires:
-
-1. Generate a one-paragraph summary of the current task state, open decisions, and unresolved questions.
-2. Save as a project memory using the auto-memory format from `~/.claude/CLAUDE.md`.
-3. Update `MEMORY.md` to point to the new entry.
-4. If the trigger was topic shift or idle gap, do not interrupt the user with a status message: write silently.
-5. If the trigger was explicit handoff or pre-compaction, briefly tell the user the memory was saved and where.
+Never write `MEMORY.md` or any memory file. The memory directory is compiled from the vault, per the Knowledge Single Source of Truth section of [`CLAUDE.md`](../../CLAUDE.md). When `SECOND_BRAIN_VAULT` does not resolve to a directory, list the durable facts under a `Worth keeping` heading in the log and tell the user that no vault is configured to hold them.
 
 ## Rules
 
@@ -113,6 +125,27 @@ When a boundary fires:
 - Decisions must reflect what was actually discussed, not inferred preferences.
 - Keep each section concise. The reader needs a quick overview, not a transcript.
 - If no activity exists in a section, state "None this session" instead of omitting the section.
+
+## Common Rationalizations
+
+- "The tests probably ran, so list them as passing": a test row needs output from this conversation. With no output, the Tests section says "None this session".
+- "The project root is the obvious place for the export": the root belongs to the project. The export goes to the resolved workspace, which git ignores locally.
+- "This fact is worth remembering, so write it to memory": memory is compiled from the vault. Route the fact through `brain` capture, or list it under `Worth keeping` when no vault exists.
+- "The decision was implied, so record it": the Decisions section holds only what the conversation settled out loud.
+
+## Red Flags
+
+- Stop and drop the row when a commit, test result, or decision has no source in `git log` or the conversation.
+- Stop and resolve the workspace with the helper when the export path you are about to write is the repository root or a tracked directory.
+- Stop and ask for approval of the fact list before the first `brain` capture call.
+- Stop and convert to GMT when a timestamp carries a local offset.
+
+## Verification
+
+- Every commit hash in the log appears in `git log` output from this session.
+- Every section is present, with "None this session" where it is empty.
+- An export lands under the resolved workspace root or the scratchpad directory, and `git status --short` does not list it.
+- No file in the memory directory was written.
 
 ## Related skills
 

@@ -1,15 +1,20 @@
 ---
 name: audit
-description: Security audit across dependencies, secrets, Docker, code patterns, images, STRIDE, and OWASP. Absorbs /deps for vulnerability scanning and /cso for threat modeling. Use when user says "security audit", "scan for vulnerabilities", "check dependencies", "find secrets", "audit Docker", "CVE scan", "cso", "threat model", "owasp audit", "deep security scan", or wants to find security issues across the full project. Do NOT use for code review (use /review), architecture completeness (use /assessment), or running tests (use /test).
-argument-hint: "/audit [full|deps|secrets|docker|images|stride|owasp]"
-allowed-tools: "Read, Grep, Glob, Bash, WebFetch"
-user-invocable: true
+description: Security audit across dependencies, secrets, Docker, code patterns, images, STRIDE, and OWASP. Covers dependency vulnerability scanning and threat modeling. Use when user says "security audit", "scan for vulnerabilities", "check dependencies", "find secrets", "audit Docker", "CVE scan", "cso", "threat model", "owasp audit", "deep security scan", or wants to find security issues across the full project. For code review, use /review; for architecture completeness, use /assessment; for running tests, use /test.
+argument-hint: "/audit [deps [outdated|update <pkg>]|secrets|docker|code|scan|image <name>|threat [component]|daily|comprehensive|trust [path]]"
+allowed-tools: "Read, Grep, Glob, Bash, WebFetch, AskUserQuestion"
 sensitive: true
 ---
 
-Multi-layer security audit, dependency management, and threat modeling. Replaces standalone `/audit`, `/deps`, and `/cso` skills.
+## Overview
 
-## Subcommand Routing
+Multi-layer security audit, dependency management, and threat modeling.
+
+## When to Use
+
+Run `trust` on any freshly received project before the first install or build command, `daily` before merging a significant PR, and `comprehensive` before a major release. The bare `/audit` covers dependencies, secrets, Docker, and code patterns in one pass.
+
+### Subcommand Routing
 
 | Invocation | Action |
 |-----------|--------|
@@ -28,6 +33,14 @@ Multi-layer security audit, dependency management, and threat modeling. Replaces
 | `/audit trust` | Untrusted-project safety scan. Run before `npm install`, `pip install`, or any build command on a freshly received project |
 
 If no subcommand is given, run all layers except threat modeling, daily, and full-scope, which require focused analysis.
+
+## Process
+
+1. Route the invocation per Subcommand Routing; with no subcommand, run Full Audit.
+2. Check which scanners are on `PATH` and report the missing ones before scanning.
+3. Run the Steps of the selected section in order.
+4. Report findings in that section's output format, with severity buckets or 1-10 scores, and masked secret matches.
+5. For `threat`, `daily`, and `comprehensive`, state every finding rated 8/10 or higher as blocking.
 
 ---
 
@@ -565,6 +578,30 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 - Never run `npm audit fix --force` without explicit approval.
 - If no vulnerabilities found, say so clearly.
 - Classify by actual severity, not quantity.
+
+## Common Rationalizations
+
+- "`trivy` is missing, so install it and continue": installing a scanner needs the user's approval. Report what is available and ask.
+- "`npm audit fix --force` clears the report fastest": it can jump major versions and break the build. Show the changes and get explicit approval.
+- "Showing the leaked key makes the finding concrete": the report carries file, line, and pattern name, with the match masked.
+- "Run `npm install` first so the dependency scan sees `node_modules`": on an untrusted project, install runs lifecycle scripts. Run `trust` first, from manifests and lockfiles only.
+- "Twelve LOW findings outweigh one HIGH": classify by actual severity, never by count.
+
+## Red Flags
+
+- Stop and recommend no install, no run, and a Docker sandbox when `trust` reaches a MALICIOUS verdict.
+- Stop and require the confirmation phrase when `trust` reaches HIGH-RISK.
+- Stop and redact when a draft finding contains a live secret value instead of a masked match.
+- Stop and read `.env.example` when a step points at `.env` or `*.local.env`.
+- Stop and ask for approval when a step would modify code, a lockfile, or an installed package.
+
+## Verification
+
+- The report names every layer or section scanned, the scanners used, and a GMT date.
+- Each finding carries a severity, a `file:line` or commit hash, and the matched pattern name.
+- `git status` shows no change made by the run, except packages the user approved under `deps update`.
+- After `deps update`, a re-audit ran and reports no new vulnerabilities.
+- `daily`, `comprehensive`, and `trust` end with an explicit verdict line.
 
 ## Related skills
 

@@ -211,11 +211,11 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 
 #### Test quality
 
-- [ ] Test bodies carry zero comments. Structure comes from the test name, blank lines between setup, call, and assertions, and named helpers. See [`rules/testing.md`](../rules/testing.md) for the full policy
-- [ ] Every test body is Arrange, Act, Assert in that order, as three statement blocks separated by one blank line each. Dropping the `// Arrange` labels does not license dropping the shape
+- [ ] The only comments in a test are the three bare markers `Arrange`, `Act`, `Assert` in the language's comment syntax. Every other comment in a test is a defect. See [`rules/testing.md`](../rules/testing.md) for the full policy
+- [ ] Every test body is three blocks in the order Arrange, Act, Assert, each opened by its marker and separated by one blank line. Nothing follows a marker on its line
 - [ ] Exactly one call to the unit under test per test, with its result bound to a name. Two calls means two behaviors and two tests
 - [ ] No assertion inside the arrange block, no setup between the act and the assertions
-- [ ] Two-block bodies only for expected-throw tests, where the rejection matcher takes the call as its argument. Shared arrangement hoisted to `beforeEach` or a fixture still counts as present
+- [ ] Expected-throw tests keep all three blocks: Act binds the pending promise or a thunk, or wraps the call in `pytest.raises`, and Assert checks the binding. Shared arrangement hoisted to `beforeEach` or a fixture leaves an Arrange block that binds what the act uses
 - [ ] Test names describe behavior, not implementation. Prefer `"should reject expired token"` over `"test validateToken"`
 - [ ] Assertions specific enough to catch regressions. Not just `toBeTruthy()` when a specific value matters
 - [ ] No test-only backdoors in production code
@@ -1300,7 +1300,7 @@ Apply on every PR that adds, edits, or removes a file under `prisma/migrations/`
 - [ ] Every `DROP INDEX` removes the corresponding `@@index` from the model
 - [ ] Every `CREATE TABLE` has a matching `model` block; every `DROP TABLE` removes it
 - [ ] Every index name follows `<Model>_<col>(_<col>)*_<purpose>_idx` and is passed via explicit `map:`
-- [ ] Unmanaged objects such as extensions, materialized views, triggers, or GIN/GiST trgm indexes are documented with a leading comment in the migration file explaining why no schema entry exists
+- [ ] Unmanaged objects such as extensions, materialized views, triggers, or GIN/GiST trgm indexes are documented in the PR description or an ADR explaining why no schema entry exists, never in a comment in the migration file
 
 **Authoritative drift, requires DB:**
 - [ ] `prisma migrate diff --from-schema-datamodel <schema> --to-migrations <dir> --exit-code` returns 0

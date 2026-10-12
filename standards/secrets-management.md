@@ -18,14 +18,13 @@ Generate secrets on demand with automatic expiration. The application requests a
 
 ### Database credentials example
 
-Instead of a static database password in an env var, the application requests a short-lived credential from the secrets engine.
+Instead of a static database password in an env var, the application requests a short-lived credential from the secrets engine. The read returns a lease shaped like `{ username: "v-app-xxxxx", password: "yyyyy", lease_duration: 3600 }`.
 
 ```typescript
 import { VaultClient } from "./vault";
 
 async function getDatabaseCredentials(): Promise<DatabaseCredentials> {
   const lease = await vault.read("database/creds/app-role");
-  // Returns: { username: "v-app-xxxxx", password: "yyyyy", lease_duration: 3600 }
 
   scheduleRenewal(lease.leaseId, lease.leaseDuration);
   return { username: lease.data.username, password: lease.data.password };
@@ -81,7 +80,7 @@ Scan every commit for accidentally committed secrets. Block the merge if any are
 - Use `truffleHog`, `gitleaks`, or `detect-secrets` in the CI pipeline.
 - Scan the full diff, not just the latest commit. Force-pushed branches may contain secrets in earlier commits.
 - Pre-commit hooks provide a first line of defense but are bypassable. CI scanning is the mandatory gate.
-- Maintain a `.gitleaks.toml` or equivalent allowlist for false positives. Each entry must have a comment explaining why it is safe.
+- Maintain a `.gitleaks.toml` or equivalent allowlist for false positives. Each entry carries its reason in the tool's own field, such as the `description` key of a gitleaks allowlist, never in a TOML comment, since comments are banned in config files too.
 
 ## Rotation Automation
 

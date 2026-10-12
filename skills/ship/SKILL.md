@@ -1,14 +1,24 @@
 ---
 name: ship
-description: Ship code through the full delivery pipeline. Subcommands: commit, pr, release, checks, worktree. Handles semantic commits, pull requests with CI monitoring, tagged releases, pipeline diagnosis, and parallel worktree management. Use when user says "commit", "create a PR", "push", "release", "check CI", "pipeline status", "worktree", or wants to move code from working directory to production. Do NOT use for code review (use /review), running tests (use /test), or planning (use /plan).
+description: Ship code through the full delivery pipeline, with subcommands commit, pr, release, checks, and worktree. Handles semantic commits, pull requests with CI monitoring, tagged releases, pipeline diagnosis, and parallel worktree management. Use when user says "commit", "create a PR", "push", "release", "check CI", "pipeline status", "worktree", or wants to move code from working directory to production. For code review, use /review; for running tests, use /test; for planning, use /plan.
 argument-hint: "/ship commit | /ship pr | /ship release | /ship checks | /ship worktree <new|list|prune>"
-allowed-tools: "Read, Bash, Grep, Glob, AskUserQuestion"
-user-invocable: true
+allowed-tools: "Read, Edit, Bash, Grep, Glob, AskUserQuestion"
 sensitive: true
 ---
-Unified delivery skill for getting code from working directory to production. Replaces standalone `/commit`, `/pr`, `/release`, `/checks`, and `/worktree` skills.
 
-## Subcommand Routing
+## Overview
+
+Unified delivery skill for getting code from working directory to production.
+
+## When to Use
+
+- The user says "commit", "create a PR", "push", "release", "check CI", "pipeline status", or "worktree".
+- Finished work needs semantic commits, a pull request, a tagged release, or a CI diagnosis.
+- Several tasks need parallel worktrees, or a worktree's task is ready to deliver.
+
+For reviewing a change, use `/review`; for running the suite, use `/test`; for human review comments on your own PR, use `/respond`; for merging and deploying, use `/deploy`.
+
+## Process
 
 | Invocation | Action |
 |-----------|--------|
@@ -91,12 +101,12 @@ Create or update a pull request with a structured description. Supports GitHub a
 2. **Check existing PR and base branch**, parallel: look up existing PR, detect base branch, unless `--base`. If PR exists and no `update` flag, show URL and ask.
 3. `git fetch origin`, `git log --oneline origin/<base>..HEAD`. Stop if no commits.
 4. **Run quality gate**: detect and run test, lint, build. Stop if they fail.
-5. **Rebase**: `git rebase origin/<base>`. If conflicts, `git rebase --abort` and stop. Track if rebase rewrote history for force-push.
+5. **Update from base**: when the branch has never been pushed, `git rebase origin/<base>`; if it conflicts, `git rebase --abort` and stop. When the branch is already on the remote, never rewrite it: merge `origin/<base>` only if it conflicts, per Conflict Resolution in [`standards/git-workflow.md`](../../standards/git-workflow.md).
 6. **Check PR size**, parallel: `git diff origin/<base>...HEAD --stat` and full diff. Warn at 400+ lines, confirm at 1000+.
 7. **Self-review**: scan for debug statements, TODO/FIXME, accidentally committed files, binaries.
 8. **Extract context**: check branch/commits for ticket patterns, check if frontend files changed, suggest screenshots.
-9. **Push**: use `-u` if no upstream, `--force-with-lease` only if rebase rewrote history.
-10. **Build title and description**: detect PR template at `.github/PULL_REQUEST_TEMPLATE.md` or the GitLab equivalent. Use What/How/Testing structure. Scale to PR size.
+9. **Push**: use `-u` if no upstream. Never force push; a pushed branch was never rewritten, so a plain push always applies.
+10. **Build title and description**: detect PR template at `.github/PULL_REQUEST_TEMPLATE.md` or the GitLab equivalent. Use the What, How, Evidence, and Merge Danger structure in [PR Description](#pr-description). Scale to PR size.
 11. **Create/update**: write body to temp file. `gh pr create --body-file` or `glab mr create --description-file`. Self-assign by default. Clean up temp file. AI reviews are requested by [`hooks/ai-review-request.py`](../../hooks/ai-review-request.py) after `gh pr create`, `gh pr ready` and `git push`; read its `ai-review:` line and report it with the PR URL.
 12. Show PR URL.
 13. **Documentation staleness check.** Read project documentation files such as README.md, CONTRIBUTING.md, and the docs/ directory, then cross-reference against the diff:
@@ -116,16 +126,18 @@ Conventional commit style when it fits. Max 70 chars. Prefix ticket ID if availa
 
 ### PR Description
 
-- **Small PR**: one paragraph, no headers.
-- **Standard PR**: What, How, Testing sections. Add Breaking Changes only if applicable.
-- Concise, direct. No filler.
+- **Small PR**: one paragraph, no headers, plus the Merge Danger and Evidence lines.
+- **Standard PR**: What, How, Evidence, Merge Danger sections. Add Breaking Changes only if applicable.
+- **Evidence** is a before and after: the exact test that failed and now passes, or the output that changed. "Tests are green" alone is a claim, not evidence. A visible UI change carries before and after screenshots.
+- **Merge Danger** states the **Door** and the **Blast Radius**. A two-way door is cheap to reverse; a one-way door is not. Always one-way: a migration that drops or rewrites data, an outbound send to users or partners, a deletion, and a public API removal. Blast radius names what breaks if the change is wrong, such as API consumers, layout on mobile, or a scheduled job. Be most suspicious of your own "two-way, small" call: a revert does not unsend an email, and a flagged rollout stays two-way only until the first write lands in the new format.
+- Concise, direct. No filler. Open questions go to the chat, never the PR body.
 - Do not hard-wrap the body. The platform renders single newlines as line breaks, so write each paragraph as one long line. The 72-column wrap is for commit bodies only. See [`rules/git-workflow.md`](../../rules/git-workflow.md) "PR/MR Creation".
 
 ---
 
 ## release
 
-Create a tagged release with an auto-generated changelog from conventional commits.
+Create a tagged release whose notes are written for users per [`standards/changelog.md`](../../standards/changelog.md). Conventional commits pick the version bump and locate what changed; they never become the notes verbatim.
 
 ### When to use
 
@@ -143,10 +155,13 @@ Create a tagged release with an auto-generated changelog from conventional commi
 1. **Gather context**, parallel: `git remote get-url origin`, `git describe --tags --abbrev=0`, `git status --porcelain`. Detect CLI tool. **Resolve account**. Stop if dirty.
 2. `git log --oneline <last-tag>..HEAD`. Stop if no commits.
 3. Determine version: parse last tag as semver. `BREAKING CHANGE`/`!` = major, `feat` = minor, `fix`/`perf`/`refactor` = patch. Only `chore`/`docs`/`style`/`test`/`build`/`ci` = no bump.
-4. Generate changelog grouped by type: Features, Bug fixes, Performance, Other changes, Breaking changes.
+4. Build the release notes per [`standards/changelog.md`](../../standards/changelog.md) Release Notes:
+   - When the project keeps a changelog file with an Unreleased section, the notes are those entries. Move them under the new version heading, in the heading format the file already uses, as part of the release.
+   - Never regenerate or rewrite existing entries in a hand-written changelog; only move its Unreleased entries.
+   - Otherwise draft from the commits in the range: one user-facing entry per change a user would notice, related commits grouped into a single entry, sections What's New, Improvements, Fixes, Breaking Changes, Deprecated, and Internal. A list of commit subjects is never release notes.
 5. If `--dry-run`, show and stop.
 6. **Run quality gate**: test, lint, build. Stop if they fail.
-7. Present version and changelog for approval.
+7. Present the version and the release notes for approval.
 8. After approval: `git tag -a v<version> -m "v<version>"`, `git push origin v<version>`, `gh release create` or `glab release create` with notes-file. Clean up temp file.
 9. Show release URL.
 10. **Restore account**.
@@ -374,11 +389,35 @@ Human comments open: inline 0 | review bodies 0 | PR-level 1 | commit 0  -> run 
 - Always detect base branch dynamically.
 - Always check for uncommitted changes before PR operations.
 - Always write body to temp file for shell safety.
-- Only force push with `--force-with-lease`, only after rebase.
+- Never force push. Rebase only a branch that has never been pushed; resolve conflicts on a pushed branch with a merge.
 - Never merge PRs. Only create or update.
 - Never auto-approve Terraform applies or releases without user approval.
 - Always restore account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 - `--pipeline` and any `pr` flow that opens a PR must run the full Pipeline Monitoring loop. The loop only exits when CI is 100% green AND every AI-tool comment across all four channels is closed on the latest pushed SHA. Resolving partial state, CI green but comments open, or comments closed but CI red is not "done".
+
+## Common Rationalizations
+
+- "The checks rollup is green, so the loop is done": a green rollup can mean CI never ran on the head SHA. Confirm the functional checks ran on the latest pushed SHA, then sweep all four comment channels.
+- "No open review threads, so no bot comments": inline threads are one channel of four. Bots post blocking findings as review bodies and PR-level comments too.
+- "The changes are small, so one commit is fine": unrelated changes go in separate commits whatever their size.
+- "A reply tells the bot the finding was handled": a bot thread gets no reply. The fix commit, or a resolved or minimized thread, is the record.
+- "The rebase was clean, so a force push is safe": a pushed branch is never rebased, so no push of it ever needs force. Merge the base instead.
+
+## Red Flags
+
+- Stop and ask the user how to proceed when the loop reaches its fifth fix-and-retry cycle.
+- Stop and stage file by file when the next command is `git add -A` or `git add .`.
+- Stop and abort the rebase when `git rebase origin/<base>` hits conflicts, then report them.
+- Stop and leave the item open, then report it, when the account lacks permission to resolve or minimize a bot comment.
+- Stop and re-verify both exit conditions when a fix lands on a new SHA after one condition was already clean.
+
+## Verification
+
+- `git status` shows no staged leftovers, and each commit subject matches `<type>(<scope>): <subject>` within 50 characters.
+- The final report prints per-channel counts for AI and human comments on the latest SHA, never a single total.
+- `gh pr checks <pr>` shows every functional check as `pass` on that same SHA.
+- The account active before the run is active again after it.
+- Temp files for PR bodies and release notes are deleted.
 
 ## Related skills
 

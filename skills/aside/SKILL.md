@@ -1,10 +1,9 @@
 ---
 name: aside
-description: Mid-task side question handler. Freezes the active task state, answers a side question without state mutation, then resumes the task exactly where it stopped. Lighter than /checkpoint save. Use when user says "aside", "quick question", "side question", "while we're at it", "before you continue", or interrupts mid-implementation with an unrelated question. Do NOT use for new scope (use /plan), retro (use /retro), or true context switches (use /checkpoint save).
+description: Mid-task side question handler. Freezes the active task state, answers a side question without state mutation, then resumes the task exactly where it stopped. Lighter than /checkpoint save. Use when user says "aside", "quick question", "side question", "while we're at it", "before you continue", or interrupts mid-implementation with an unrelated question. For new scope, use /plan; for a retro, use /retro; for a true context switch, use /checkpoint save.
 argument-hint: "/aside <question>"
 allowed-tools: "Read, Grep, Glob, AskUserQuestion"
 disallowed-tools: "Write, Edit, MultiEdit, Bash"
-user-invocable: true
 sensitive: false
 ---
 

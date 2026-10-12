@@ -84,19 +84,20 @@ The same pattern works with `ResultAsync`, neverthrow, or `Effect` for async ope
 
 ```typescript
 function submitOrder(input: unknown): ResultAsync<OrderConfirmation, SubmitOrderError> {
-  return parseOrderInput(input)       // sync validation
-    .asyncAndThen(checkInventory)     // async: hits database
-    .andThen(chargePayment)           // async: hits payment API
-    .andThen(confirmOrder);           // async: persists
+  return parseOrderInput(input)
+    .asyncAndThen(checkInventory)
+    .andThen(chargePayment)
+    .andThen(confirmOrder);
 }
 ```
 
+`parseOrderInput` is a synchronous validation. `asyncAndThen` lifts the chain into `ResultAsync`, so `checkInventory` can hit the database, `chargePayment` can call the payment API, and `confirmOrder` can persist.
+
 ## Boundary Conversion
 
-At framework boundaries, convert between Result and the framework's error mechanism:
+At framework boundaries, convert between Result and the framework's error mechanism. An HTTP controller in the adapter layer:
 
 ```typescript
-// HTTP controller (adapter layer)
 async handleSubmitOrder(req: Request, res: Response): Promise<void> {
   const result = await submitOrder(req.body);
 
@@ -159,13 +160,16 @@ Rules:
 
 Observable and Stream patterns extend Result pipelines to asynchronous sequences. Where a Result carries one value or one error, an Observable carries a sequence of values and can terminate with an error.
 
+In RxJS, `catchError` maps stream-level failures:
+
 ```typescript
-// RxJS: catchError maps stream-level failures
 source$.pipe(
-  switchMap((id) => fromResultAsync(fetchOrder(id))),  // bridge async Result into stream
-  catchError((error) => of(err(toOrderError(error)))), // map stream errors to typed errors
+  switchMap((id) => fromResultAsync(fetchOrder(id))),
+  catchError((error: unknown) => of(err(toOrderError(error)))),
 );
 ```
+
+`switchMap` bridges each async Result into the stream, and `catchError` maps stream errors to typed errors.
 
 Use `Result.fromPromise`, or the neverthrow equivalent, to bridge a single async operation into a Result. Use Observable pipelines when the delivery is an ongoing sequence, WebSocket messages, SSE events, polling intervals.
 

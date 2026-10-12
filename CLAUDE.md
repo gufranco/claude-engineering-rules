@@ -58,6 +58,8 @@ Skills do not self-invoke reliably from their descriptions alone, and nobody sho
 
 When two rows plausibly match, say which one you picked and why in one clause, then proceed. Do not stop to ask which command the user meant.
 
+Skills marked `disable-model-invocation: true` are hand-fired. They are missing from your skill list because only the user runs them, not because they are not installed. To learn what such a skill does, read its `skills/<name>/SKILL.md`, and do that before describing any skill.
+
 ## Core Principles
 
 Full checklist: [`checklists/checklist.md`](checklists/checklist.md), 71 categories. Full text of this section and the next four: [`standards/confidence-and-evidence.md`](standards/confidence-and-evidence.md).
@@ -132,7 +134,7 @@ Full text, including the zsh traps: [`standards/shell-and-tools.md`](standards/s
 
 ## Think Before You Code
 
-Non-trivial work: clarify, plan, state quality trade-offs up front, decompose, then implement. Run `/plan` for 3 or more files or real trade-offs; record lasting decisions with `/adr`. Read referenced external projects before implementing.
+Non-trivial work: clarify, plan, state quality trade-offs up front, decompose, then implement. Run `/plan` for 3 or more files or real trade-offs; record lasting decisions with `/plan adr`. Read referenced external projects before implementing.
 
 ## Completion Gates
 

@@ -4,6 +4,7 @@ A change to markup, styles, theme tokens, or the component tree is unverified un
 
 - Extend the project's browser harness when one exists; assert computed style and the accessibility tree, never class names.
 - Name the viewport, including the smallest supported width when layout changes.
+- Drive every entry point, read the persisted write back, and require empty page errors and console; the PR body states what was clicked and seen, or `No UI change`.
 - Mobile needs a simulator or emulator run; a widget test is not enough. If unverified, say so.
 
 `agent-browser` is installed globally:

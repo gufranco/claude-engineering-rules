@@ -13,13 +13,17 @@ Derived from internal penetration testing knowledge. Used by `/review`, `/assess
 
 **Detect:** `$queryRawUnsafe`, `$executeRawUnsafe`, string concatenation near SQL keywords, template literals in raw query calls.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 const users = await prisma.$queryRawUnsafe(
   `SELECT * FROM users WHERE email = '${req.body.email}'`
 )
+```
 
-// SAFE: parameterized tagged template
+**Safe:** parameterized tagged template.
+
+```typescript
 const users = await prisma.$queryRaw`
   SELECT * FROM users WHERE email = ${req.body.email}
 `
@@ -30,14 +34,18 @@ const users = await prisma.$queryRaw`
 
 **Detect:** `$queryRawUnsafe` or `$executeRawUnsafe` using values from ORM reads, not from `req.body`.
 
+**Vulnerable:** stored username used in raw query.
+
 ```typescript
-// VULNERABLE: stored username used in raw query
 const user = await prisma.user.findUnique({ where: { id: userId } })
 const logs = await prisma.$queryRawUnsafe(
   `SELECT * FROM audit_logs WHERE actor = '${user.username}'`
 )
+```
 
-// SAFE
+**Safe:**
+
+```typescript
 const logs = await prisma.$queryRaw`
   SELECT * FROM audit_logs WHERE actor = ${user!.username}
 `
@@ -48,13 +56,17 @@ const logs = await prisma.$queryRaw`
 
 **Detect:** ORM `where` clauses receiving `req.body` or `req.query` directly, `as any` casts on filter objects.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 const users = await prisma.user.findMany({
   where: req.query.filter as any
 })
+```
 
-// SAFE: explicit field extraction
+**Safe:** explicit field extraction.
+
+```typescript
 const users = await prisma.user.findMany({
   where: { role: String(req.query.role ?? 'user') }
 })
@@ -65,13 +77,17 @@ const users = await prisma.user.findMany({
 
 **Detect:** `child_process.exec` with string interpolation, `execSync` with user-derived arguments, `spawn` with `shell: true`.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 exec(`convert ${req.body.filename} output.png`, (err, stdout) => {
   res.send(stdout)
 })
+```
 
-// SAFE: execFile with argument array, no shell
+**Safe:** execFile with argument array, no shell.
+
+```typescript
 execFile('convert', [safePath, 'output.png'], (err, stdout) => {
   res.send(stdout)
 })
@@ -86,12 +102,16 @@ execFile('convert', [safePath, 'output.png'], (err, stdout) => {
 
 **Detect:** `jwt.sign` with hardcoded strings, `JWT_SECRET` defaulting to a fallback, secrets shorter than 32 characters.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 const token = jwt.sign({ userId: user.id }, 'secret')
 const token2 = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'changeme')
+```
 
-// SAFE
+**Safe:**
+
+```typescript
 const secret = process.env.JWT_SECRET
 if (!secret || secret.length < 32) {
   throw new Error('JWT_SECRET must be set and at least 32 characters')
@@ -104,13 +124,17 @@ const token = jwt.sign({ userId: user.id }, secret, { expiresIn: '15m' })
 
 **Detect:** Cookie configuration missing `httpOnly`, `secure`, or `sameSite` properties.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 app.use(session({
   cookie: { maxAge: 86400000 }
 }))
+```
 
-// SAFE
+**Safe:**
+
+```typescript
 app.use(session({
   cookie: {
     httpOnly: true,
@@ -126,15 +150,19 @@ app.use(session({
 
 **Detect:** `req.session.pending*`, `req.session.step`, `req.session.mfa*` set in one handler and read in another.
 
+**Vulnerable:** shared mutable session.
+
 ```typescript
-// VULNERABLE: shared mutable session
 app.post('/auth/login', async (req, res) => {
   const user = await verifyPassword(req.body.email, req.body.password)
   req.session.pendingUserId = user.id
   res.json({ nextStep: '2fa' })
 })
+```
 
-// SAFE: single-use state token
+**Safe:** single-use state token.
+
+```typescript
 app.post('/auth/login', async (req, res) => {
   const user = await verifyPassword(req.body.email, req.body.password)
   const stateToken = await createAuthState(user.id, '2fa_pending', { ttl: 300 })
@@ -147,8 +175,9 @@ app.post('/auth/login', async (req, res) => {
 
 **Detect:** `findFirst` with `usedAt: null` followed by a separate `update` on the same record.
 
+**Vulnerable:** two queries, race window between them.
+
 ```typescript
-// VULNERABLE: two queries, race window between them
 const authCode = await prisma.oauthCode.findFirst({
   where: { code, usedAt: null }
 })
@@ -156,8 +185,11 @@ await prisma.oauthCode.update({
   where: { id: authCode.id },
   data: { usedAt: new Date() }
 })
+```
 
-// SAFE: atomic conditional update
+**Safe:** atomic conditional update.
+
+```typescript
 const result = await prisma.oauthCode.updateMany({
   where: { code, usedAt: null, expiresAt: { gt: new Date() } },
   data: { usedAt: new Date() }
@@ -174,16 +206,20 @@ if (result.count === 0) throw new Error('Invalid or already-used code')
 
 **Detect:** `findUnique`/`findById` with `req.params` but no `userId`/`req.user` in the where clause.
 
+**Vulnerable:** no ownership check.
+
 ```typescript
-// VULNERABLE: no ownership check
 app.get('/orders/:id', async (req, res) => {
   const order = await prisma.order.findUnique({
     where: { id: parseInt(req.params.id) }
   })
   res.json(order)
 })
+```
 
-// SAFE: ownership in query
+**Safe:** ownership in query.
+
+```typescript
 app.get('/orders/:id', async (req, res) => {
   const order = await prisma.order.findFirst({
     where: { id: parseInt(req.params.id), userId: req.userId }
@@ -198,14 +234,18 @@ app.get('/orders/:id', async (req, res) => {
 
 **Detect:** `prisma.*.create({ data: req.body })`, `data: { ...req.body }`, spread of user input into ORM data argument.
 
+**Vulnerable:** the client sets `role`, `balance`, or `isAdmin` through the body.
+
 ```typescript
-// VULNERABLE
 await prisma.user.update({
   where: { id: req.userId },
-  data: req.body  // attacker sets role, balance, isAdmin
+  data: req.body
 })
+```
 
-// SAFE: explicit field allowlist
+**Safe:** explicit field allowlist.
+
+```typescript
 await prisma.user.update({
   where: { id: req.userId },
   data: { displayName: req.body.displayName, bio: req.body.bio }
@@ -221,16 +261,20 @@ await prisma.user.update({
 
 **Detect:** `findUnique` followed by `update` with computed value, balance arithmetic before save, missing `decrement`/`increment`.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 const account = await prisma.account.findUnique({ where: { userId } })
 if (account.balance < amount) throw new Error('Insufficient funds')
 await prisma.account.update({
   where: { userId },
   data: { balance: account.balance - amount }
 })
+```
 
-// SAFE: atomic conditional update
+**Safe:** atomic conditional update.
+
+```typescript
 const result = await prisma.account.updateMany({
   where: { userId, balance: { gte: amount } },
   data: { balance: { decrement: amount } }
@@ -243,8 +287,9 @@ if (result.count === 0) throw new Error('Insufficient funds')
 
 **Detect:** `findFirst` with `usedAt: null` or `used: false` followed by a separate `update`.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 const coupon = await prisma.coupon.findFirst({
   where: { code, usedAt: null }
 })
@@ -252,8 +297,11 @@ await prisma.coupon.update({
   where: { id: coupon.id },
   data: { usedAt: new Date(), usedBy: userId }
 })
+```
 
-// SAFE: atomic updateMany in transaction
+**Safe:** atomic updateMany in transaction.
+
+```typescript
 await prisma.$transaction(async (tx) => {
   const result = await tx.coupon.updateMany({
     where: { code, usedAt: null },
@@ -273,8 +321,9 @@ await prisma.$transaction(async (tx) => {
 
 **Detect:** `$transaction` containing `findUnique` + arithmetic + `update` without `FOR UPDATE` or atomic `decrement`/`increment`.
 
+**Vulnerable:** READ COMMITTED allows both to read same balance.
+
 ```typescript
-// VULNERABLE: READ COMMITTED allows both to read same balance
 await prisma.$transaction(async (tx) => {
   const account = await tx.account.findUnique({ where: { userId } })
   await tx.account.update({
@@ -282,8 +331,11 @@ await prisma.$transaction(async (tx) => {
     data: { balance: account.balance - amount }
   })
 })
+```
 
-// SAFE: SELECT FOR UPDATE serializes access
+**Safe:** SELECT FOR UPDATE serializes access.
+
+```typescript
 await prisma.$transaction(async (tx) => {
   const [account] = await tx.$queryRaw<Account[]>`
     SELECT * FROM accounts WHERE user_id = ${userId} FOR UPDATE
@@ -301,18 +353,22 @@ await prisma.$transaction(async (tx) => {
 
 **Detect:** Lock acquisition in try/catch where the catch returns `true`, does not rethrow, or calls the protected function.
 
+**Vulnerable:** catch returns true, lock becomes decorative.
+
 ```typescript
-// VULNERABLE: catch returns true, lock becomes decorative
 async function tryLock(key: string): Promise<boolean> {
   try {
     await prisma.lock.create({ data: { key } })
     return true
   } catch {
-    return true  // typo: should be false
+    return true
   }
 }
+```
 
-// SAFE
+**Safe:**
+
+```typescript
 async function tryLock(key: string): Promise<boolean> {
   try {
     await prisma.lock.create({ data: { key } })
@@ -328,16 +384,20 @@ async function tryLock(key: string): Promise<boolean> {
 
 **Detect:** Lock with hardcoded TTL followed by calls to external APIs, batch updates, or expensive queries.
 
+**Vulnerable:** 2s TTL, operation takes 5-15s.
+
 ```typescript
-// VULNERABLE: 2s TTL, operation takes 5-15s
 const lock = await prisma.lock.upsert({
   where: { key: `user-${userId}` },
   create: { key: `user-${userId}`, expiresAt: new Date(Date.now() + 2000) },
   update: { expiresAt: new Date(Date.now() + 2000) }
 })
 await runExpensiveBatchUpdate(userId)
+```
 
-// SAFE: row-level lock held for the duration of the transaction
+**Safe:** row-level lock held for the duration of the transaction.
+
+```typescript
 await prisma.$transaction(async (tx) => {
   await tx.$queryRaw`SELECT id FROM accounts WHERE user_id = ${userId} FOR UPDATE`
   await runExpensiveBatchUpdate(userId)
@@ -349,16 +409,20 @@ await prisma.$transaction(async (tx) => {
 
 **Detect:** Job handlers and webhook endpoints that write without checking a dedup key or `processedEvent` table.
 
+**Vulnerable:** no dedup, retries double-credit.
+
 ```typescript
-// VULNERABLE: no dedup, retries double-credit
 async function handlePaymentWebhook(event: PaymentEvent) {
   await prisma.account.update({
     where: { userId: event.userId },
     data: { balance: { increment: event.amount } }
   })
 }
+```
 
-// SAFE: dedup key in same transaction
+**Safe:** dedup key in same transaction.
+
+```typescript
 async function handlePaymentWebhook(event: PaymentEvent) {
   await prisma.$transaction(async (tx) => {
     await tx.processedEvent.create({ data: { eventId: event.id } })
@@ -375,12 +439,16 @@ async function handlePaymentWebhook(event: PaymentEvent) {
 
 **Detect:** `axiosRetry` or retry configuration on POST/PUT/PATCH without `Idempotency-Key` header.
 
+**Vulnerable:** retries re-execute the charge.
+
 ```typescript
-// VULNERABLE: retries re-execute the charge
 axiosRetry(axios, { retries: 3 })
 await axios.post('/charge', { userId, amount })
+```
 
-// SAFE: idempotency key reused across retries
+**Safe:** idempotency key reused across retries.
+
+```typescript
 const key = uuidv4()
 await axios.post('/charge', { userId, amount }, {
   headers: { 'Idempotency-Key': key }
@@ -396,11 +464,15 @@ await axios.post('/charge', { userId, amount }, {
 
 **Detect:** `cors({ origin: true, credentials: true })`, reflected `Origin` header in `Access-Control-Allow-Origin` with credentials.
 
-```typescript
-// VULNERABLE
-app.use(cors({ origin: true, credentials: true }))
+**Vulnerable:**
 
-// SAFE: explicit allowlist
+```typescript
+app.use(cors({ origin: true, credentials: true }))
+```
+
+**Safe:** explicit allowlist.
+
+```typescript
 const ALLOWED_ORIGINS = new Set(['https://app.example.com'])
 app.use(cors({
   origin: (origin, cb) => {
@@ -416,13 +488,17 @@ app.use(cors({
 
 **Detect:** `res.redirect` with `req.query`, `req.body`, or `req.params` as argument.
 
+**Vulnerable:**
+
 ```typescript
-// VULNERABLE
 app.get('/login', (req, res) => {
   res.redirect(req.query.next as string || '/dashboard')
 })
+```
 
-// SAFE: allowlist of relative paths
+**Safe:** allowlist of relative paths.
+
+```typescript
 const ALLOWED_PATHS = /^\/[a-zA-Z0-9/_-]*$/
 app.get('/login', (req, res) => {
   const next = req.query.next as string
@@ -435,11 +511,15 @@ app.get('/login', (req, res) => {
 
 **Detect:** `ApolloServer` without `validationRules`, missing `depthLimit` or `createComplexityLimitRule`.
 
-```typescript
-// VULNERABLE
-const server = new ApolloServer({ typeDefs, resolvers })
+**Vulnerable:**
 
-// SAFE
+```typescript
+const server = new ApolloServer({ typeDefs, resolvers })
+```
+
+**Safe:**
+
+```typescript
 import depthLimit from 'graphql-depth-limit'
 import { createComplexityLimitRule } from 'graphql-validation-complexity'
 

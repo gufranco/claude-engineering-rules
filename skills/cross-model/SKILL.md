@@ -1,10 +1,11 @@
 ---
 name: cross-model
-description: Consult a different model for orthogonal reasoning on a consequential decision, especially when confident. Discovers whichever model CLI is installed rather than assuming a vendor. Use when the user says "second opinion", "cross-model", "ask another model", "stress-test this", "what am I missing", "red-team this decision", or before committing to an architecture, a schema, a security boundary, or anything hard to reverse. Do NOT use for reversible local decisions, for questions with one verifiable answer (read the source instead), or for routine implementation.
+description: Consult a different model for orthogonal reasoning on a consequential decision, especially when confident. Discovers whichever model CLI is installed rather than assuming a vendor. Use when the user says "second opinion", "cross-model", "ask another model", "stress-test this", "what am I missing", "red-team this decision", or before committing to an architecture, a schema, a security boundary, or anything hard to reverse. For a reversible local decision or routine implementation, proceed directly; for a question with one verifiable answer, read the source instead.
 argument-hint: "/cross-model [expand|stress] <the decision, with context>"
 allowed-tools: "Read, Grep, Glob, Bash"
-user-invocable: true
 ---
+
+## Overview
 
 Different training data, different tuning, different sampling. The blindspots do not line up. That non-overlap is the entire product; agreement is a bonus, not the goal.
 
@@ -16,7 +17,7 @@ Consult **when the decision is consequential and you are confident.** Confidence
 
 The corollary: adversarial coverage from the same model shares its blindspots by construction. A subagent that reviews your reasoning is running the same priors that produced it. That is worth doing and it is not this.
 
-## When To Invoke
+## When to Use
 
 Consequential, regardless of confidence:
 
@@ -34,6 +35,15 @@ Moments where a second perspective pays for itself:
 - In a problem space where training coverage is plausibly thin.
 
 Skip it when the decision is reversible in the next commit with no migration and no coordination, when nothing downstream depends on it, or when the answer is a fact that reading the source settles. Reading the source is cheaper and definitive; see the anti-hallucination table in [the global instructions](../../CLAUDE.md).
+
+## Process
+
+1. Pick the mode per Two Modes: `expand` with no candidate yet, `stress` with one.
+2. Resolve the installed consultant per Discovering the Consultant, and read its `--help`.
+3. Compose the four-part prompt per Composing the Prompt, with secrets and personal data redacted.
+4. Send it, capture the session identifier, and run up to three rounds per Multi-Turn.
+5. Re-verify every specific in the reply per Reading the Response, then synthesize.
+6. Report the four items in Reporting Back.
 
 ## Two Modes
 
@@ -106,6 +116,29 @@ State four things, briefly:
 - What was re-verified against a primary source before being used.
 
 Never present its output as your own analysis, and never present it as authoritative. It is one more perspective that has been checked, per [`ai-guardrails.md`](../../rules/ai-guardrails.md).
+
+## Common Rationalizations
+
+- "I am confident, so a second opinion is wasted": confidence is the trigger, per The Key Inversion. Consult when the decision is consequential.
+- "A red-team subagent covers this": a same-model reviewer shares the priors that produced the decision. Label it same-model, and use it only when no other model is installed.
+- "The other model cited the file and line, so it is right": its citation is a relay. Open the coordinate before using it.
+- "Both models agree, so the decision is settled": agreement can be a shared blindspot. On a high-stakes call, ask what neither model would see.
+- "Pasting the config file gives better context": the prompt leaves the machine. Redact credentials and personal data, or summarize.
+
+## Red Flags
+
+- Stop and redact when the prompt draft contains a token, a key, a password, or personal data.
+- Stop and read `--help` when about to pass a flag to the consultant CLI from memory.
+- Stop and state the reason in writing when about to dismiss a divergent answer; failing to state it is the finding.
+- Stop and label the result same-model when the discovery loop printed no `available:` line.
+
+## Verification
+
+- The report names the consulted model and the CLI that ran it.
+- Each specific taken from the reply has a re-read of its primary source in this session.
+- The report states what the consultant added, where it diverged, and how the divergence was resolved.
+- The prompt that was sent contains no credential or personal data.
+- A decision the consultation changed is recorded through `/plan adr`, or the report says it changed nothing.
 
 ## Related
 

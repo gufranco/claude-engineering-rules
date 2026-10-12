@@ -8,29 +8,38 @@ Push the model through cases that are hard to reason about on paper. The spike i
 
 ## Shape
 
-A single entry file under `spike-<short-slug>/` next to the real module:
+Two files under `spike-<short-slug>/` next to the real module:
 
-- `index.<ext>` is the entry point. Runs a REPL or a sequence of prompts.
-- An in-memory store holds the model state.
-- Each interactive command applies one transition and prints the full state.
+- `model.<ext>` holds the logic that answers the question, as a pure module: no I/O, no prompts, no printing. The shell calls into it; nothing flows the other way. This file outlives the spike.
+- `index.<ext>` is the throwaway shell. It runs a REPL or a sequence of prompts, holds the current state in memory, applies one transition per command, and prints the full state.
 
-Example skeleton (TypeScript):
+Pick the module shape the question needs, not the one easiest to wire to the shell:
+
+- A reducer, `(state, action) => state`, when actions are discrete events over a single value.
+- A state machine with explicit states and transitions, when which actions are legal right now is part of the question.
+- A few pure functions over a plain data type, when there is no current state, only transformations.
+- A class with a small method surface, when the logic genuinely owns ongoing internal state.
+
+Example skeleton in TypeScript, for the question "should refunds split the order into two records or mutate one?", kept on `spike/refund-split` after the verdict. In `model.ts`:
 
 ```ts
-// SPIKE: should refunds split the order into two records or mutate one?
-// Delete after verdict captured.
-type Order = { id: string; lines: Line[]; status: 'open' | 'shipped' | 'refunded' };
+export type Order = Readonly<{ id: string; lines: readonly Line[]; status: 'open' | 'shipped' | 'refunded' }>;
+export type Action = { type: 'ship' } | { type: 'refund'; lineId: string };
 
-let order: Order = { id: 'o1', lines: [...], status: 'open' };
-
-const commands = {
-  ship: () => { order = { ...order, status: 'shipped' }; },
-  refund: (lineId: string) => { /* the branch under question */ },
+export const apply = (order: Order, action: Action): Order => {
+  switch (action.type) {
+    case 'ship':
+      return { ...order, status: 'shipped' };
+    case 'refund':
+      return refundLine(order, action.lineId);
+  }
 };
+```
 
-function printState() { console.log(JSON.stringify(order, null, 2)); }
+In `index.ts`, the throwaway shell:
 
-repl(commands, printState);
+```ts
+repl({ initial, apply, print: (order) => console.log(JSON.stringify(order, null, 2)) });
 ```
 
 ## What to include
@@ -47,12 +56,13 @@ repl(commands, printState);
 
 ## Verdict capture
 
-When the user has seen enough, write a `NOTES.md` next to the spike:
+When the user has seen enough, record the verdict where the work continues:
 
 ```
 Question: should refunds split the order into two records or mutate one?
 Verdict: split into two. The mutate path lost the original total once partial refunds layered.
+Evidence: branch spike/refund-split
 Owner of follow-up: <name>
 ```
 
-Then run `/plan adr new` if the verdict is hard to reverse, and delete the spike directory.
+Then lift the validated `model.<ext>` into the real module, adding the tests and error paths the spike skipped. Commit the whole spike, shell included, to `spike/<slug>` as [`SKILL.md`](SKILL.md) describes, and remove it from the working branch. If the verdict is hard to reverse, call the Skill tool with `plan` and the arguments `adr new <title>`.
