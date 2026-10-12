@@ -38,12 +38,11 @@ sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib import project_workspace as pw  # noqa: E402
 from _lib.audit_log import record as _audit  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 
 HOOK_NAME = "project-workspace"
 ADD_COMMANDS = frozenset({"add", "stage"})
-GIT_OPTIONS_WITH_VALUE = frozenset(
-    {"-C", "-c", "--git-dir", "--work-tree", "--namespace"}
-)
+GIT_OPTIONS_WITH_VALUE = frozenset(OPTIONS_WITH_SEPARATE_VALUE)
 SEGMENT_BREAK = re.compile(r"^[;&|]+$")
 ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 GLOB_CHARS = re.compile(r"[*?\[]")

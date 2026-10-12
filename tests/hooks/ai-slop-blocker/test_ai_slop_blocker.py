@@ -1,24 +1,19 @@
-"""Coverage for ai-slop-blocker's structural slop detectors.
-
-Every detector must fire on its own tell, stay silent on masked code, and
-stay silent on the disciplined prose already in this repository.
-
-Source rule: `~/.claude/rules/anti-slop.md`.
-"""
-
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "ai-slop-blocker"
 DOC = "/repo/docs/notes.md"
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
+from _lib.output import validate_block_message  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -54,23 +49,34 @@ sys.path.insert(0, str(REPO_ROOT / "hooks"))
         ("SLOP012", "The handler’s timeout is 30 seconds."),
     ],
 )
-def test_detector_blocks_its_tell(tool_use, assert_blocks, code, text):
+def test_detector_blocks_its_tell(tool_use, run_hook, code, text):
+    # Arrange
     payload = tool_use("Write", {"file_path": DOC, "content": f"# Notes\n\n{text}\n"})
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert code in stderr
 
 
-def test_vocabulary_cluster_needs_two_distinct_hits(
-    tool_use, assert_allows, assert_blocks
-):
+def test_a_single_vocabulary_hit_is_allowed(tool_use, run_hook):
+    # Arrange
     single = tool_use(
         "Write",
         {"file_path": DOC, "content": "# Notes\n\nThe migration is meticulous.\n"},
     )
-    assert_allows(HOOK, single)
 
+    # Act
+    result = run_hook(HOOK, single)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_two_distinct_vocabulary_hits_are_blocked(tool_use, run_hook):
+    # Arrange
     doubled = tool_use(
         "Write",
         {
@@ -81,11 +87,16 @@ def test_vocabulary_cluster_needs_two_distinct_hits(
             ),
         },
     )
-    _exit, stderr = assert_blocks(HOOK, doubled)
-    assert "SLOP009" in stderr
+
+    # Act
+    result = run_hook(HOOK, doubled)
+
+    # Assert
+    assert_blocked(result, "SLOP009")
 
 
-def test_fenced_code_is_masked(tool_use, assert_allows):
+def test_fenced_code_is_masked(tool_use, run_hook):
+    # Arrange
     content = (
         "# Notes\n\nThe parser rejects the header.\n\n"
         "```python\n"
@@ -94,17 +105,27 @@ def test_fenced_code_is_masked(tool_use, assert_allows):
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_inline_code_is_masked(tool_use, assert_allows):
+def test_inline_code_is_masked(tool_use, run_hook):
+    # Arrange
     content = "# Notes\n\nThe linter flags `plays a crucial role` in prose.\n"
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_line_number_survives_masking(tool_use, assert_blocks):
+def test_line_number_survives_masking(tool_use, run_hook):
+    # Arrange
     content = (
         "# Notes\n\n"
         "```python\n"
@@ -114,12 +135,16 @@ def test_line_number_survives_masking(tool_use, assert_blocks):
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "line 7" in stderr
 
 
-def test_clean_prose_is_allowed(tool_use, assert_allows):
+def test_clean_prose_is_allowed(tool_use, run_hook):
+    # Arrange
     content = (
         "# Retry budget\n\n"
         "The worker retries three times, then routes the message to the "
@@ -128,10 +153,15 @@ def test_clean_prose_is_allowed(tool_use, assert_allows):
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_markdown_file_is_ignored(tool_use, assert_allows):
+def test_non_markdown_file_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -140,10 +170,15 @@ def test_non_markdown_file_is_ignored(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_rule_file_itself_is_skipped(tool_use, assert_allows):
+def test_rule_file_itself_is_skipped(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -152,10 +187,15 @@ def test_rule_file_itself_is_skipped(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_publishing_bash_is_scanned(tool_use, assert_blocks):
+def test_publishing_bash_is_scanned(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -165,20 +205,29 @@ def test_publishing_bash_is_scanned(tool_use, assert_blocks):
         },
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP002" in stderr
 
 
-def test_non_publishing_bash_is_ignored(tool_use, assert_allows):
+def test_non_publishing_bash_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash", {"command": "echo 'this stands as a testament to nothing'"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_scans_new_string_only(tool_use, assert_blocks):
+def test_edit_scans_new_string_only(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -188,12 +237,16 @@ def test_edit_scans_new_string_only(tool_use, assert_blocks):
         },
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP003" in stderr
 
 
-def test_multiedit_reports_the_offending_index(tool_use, assert_blocks):
+def test_multiedit_reports_the_offending_index(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -205,67 +258,113 @@ def test_multiedit_reports_the_offending_index(tool_use, assert_blocks):
         },
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP004" in stderr
     assert "[1]" in stderr
 
 
-def test_env_bypass_allows(tool_use, assert_allows):
+def test_env_bypass_allows(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": DOC, "content": "This stands as a testament to the design.\n"},
     )
 
-    assert_allows(HOOK, payload, env={"AI_SLOP_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"AI_SLOP_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_agent_prompts_are_out_of_scope(tool_use, assert_allows):
+def test_agent_prompts_are_out_of_scope(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Agent", {"prompt": "This stands as a testament to the design."})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_block_message_matches_canonical_schema(tool_use, assert_blocks):
-    from _lib.output import validate_block_message
-
+def test_block_message_matches_canonical_schema(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": DOC, "content": "This stands as a testament to the design.\n"},
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert validate_block_message(stderr) == []
 
 
-def test_repository_corpus_stays_clean(tool_use, assert_allows):
-    """The detectors must not fire on the existing disciplined corpus."""
-    corpus = sorted((REPO_ROOT / "rules").glob("*.md"))
-    assert corpus, "expected rules/*.md to exist"
-    for path in corpus:
-        if path.name == "anti-slop.md":
-            continue
-        payload = tool_use(
-            "Write",
-            {"file_path": str(path), "content": path.read_text(encoding="utf-8")},
-        )
-        assert_allows(HOOK, payload)
+def test_repository_corpus_is_not_empty():
+    # Arrange
+    rules_dir = REPO_ROOT / "rules"
+
+    # Act
+    corpus = sorted(rules_dir.glob("*.md"))
+
+    # Assert
+    assert len(corpus) > 1
 
 
-def test_missing_file_path_is_ignored(tool_use, assert_allows):
+@pytest.mark.parametrize(
+    "path",
+    [
+        path
+        for path in sorted((REPO_ROOT / "rules").glob("*.md"))
+        if path.name != "anti-slop.md"
+    ],
+    ids=lambda path: path.name,
+)
+def test_repository_corpus_stays_clean(tool_use, run_hook, path):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": str(path), "content": path.read_text(encoding="utf-8")},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_missing_file_path_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"content": "This stands as a testament.\n"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unwatched_tool_is_ignored(tool_use, assert_allows):
+def test_unwatched_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": DOC})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_vocabulary_cluster_ignores_a_repeated_single_word(tool_use, assert_allows):
+def test_vocabulary_cluster_ignores_a_repeated_single_word(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -277,10 +376,15 @@ def test_vocabulary_cluster_ignores_a_repeated_single_word(tool_use, assert_allo
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_repeated_code_reports_its_fix_once(tool_use, assert_blocks):
+def test_repeated_code_reports_its_fix_once(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -292,21 +396,30 @@ def test_repeated_code_reports_its_fix_once(tool_use, assert_blocks):
         },
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert stderr.count("SLOP004: Name the source") == 1
 
 
-def test_profile_disable_short_circuits(tool_use, assert_allows):
+def test_profile_disable_short_circuits(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": DOC, "content": "This stands as a testament to the design.\n"},
     )
 
-    assert_allows(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK})
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_registry_bypass_short_circuits(tool_use, assert_allows, tmp_path):
+def test_registry_bypass_short_circuits(tool_use, run_hook, tmp_path):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": DOC, "content": "This stands as a testament to the design.\n"},
@@ -328,23 +441,31 @@ def test_registry_bypass_short_circuits(tool_use, assert_allows, tmp_path):
         encoding="utf-8",
     )
 
-    assert_allows(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(registry)})
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(registry)})
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_malformed_stdin_is_ignored():
-    import subprocess
+    # Arrange
+    hook_path = REPO_ROOT / "hooks" / "ai-slop-blocker.py"
 
+    # Act
     proc = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "hooks" / "ai-slop-blocker.py")],
+        [sys.executable, str(hook_path)],
         input="not json at all",
         capture_output=True,
         text=True,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_nested_list_prose_is_still_scanned(tool_use, assert_blocks):
+def test_nested_list_prose_is_still_scanned(tool_use, run_hook):
+    # Arrange
     content = (
         "# Notes\n\n"
         "- Top level item\n"
@@ -352,22 +473,31 @@ def test_nested_list_prose_is_still_scanned(tool_use, assert_blocks):
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP002" in stderr
 
 
-def test_indented_code_block_is_still_masked(tool_use, assert_allows):
+def test_indented_code_block_is_still_masked(tool_use, run_hook):
+    # Arrange
     content = (
         "# Notes\n\nThe snippet below is illustrative.\n\n"
         '    note = "This stands as a testament to the design"\n'
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_code_span_in_a_published_body_is_masked(tool_use, assert_allows):
+def test_code_span_in_a_published_body_is_masked(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -378,42 +508,60 @@ def test_code_span_in_a_published_body_is_masked(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_prose_in_a_published_body_is_still_scanned(tool_use, assert_blocks):
+def test_prose_in_a_published_body_is_still_scanned(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 12 --body 'The helper serves as the entry point.'"},
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP006" in stderr
 
 
-def test_named_source_is_not_evasive_attribution(tool_use, assert_allows):
+def test_named_source_is_not_evasive_attribution(tool_use, run_hook):
+    # Arrange
     content = (
         "# Notes\n\nMicrosoft research shows praise replies add work without value.\n"
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unnamed_source_is_still_evasive_attribution(tool_use, assert_blocks):
+def test_unnamed_source_is_still_evasive_attribution(tool_use, run_hook):
+    # Arrange
     content = "# Notes\n\nResearch shows praise replies add work without value.\n"
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP004" in stderr
 
 
 REPLY_ENDPOINT = "repos/acme/widgets/pulls/12/comments/9981/replies"
 
 
-def test_bold_label_bullet_blocked_in_a_reply(tool_use, assert_blocks, tmp_path):
+def test_bold_label_bullet_blocked_in_a_reply(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text(
         '{"body": "- **Fix:** the guard now runs on both paths.\\n'
@@ -425,12 +573,16 @@ def test_bold_label_bullet_blocked_in_a_reply(tool_use, assert_blocks, tmp_path)
         {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP013" in stderr
 
 
-def test_heading_blocked_in_a_reply(tool_use, assert_blocks, tmp_path):
+def test_heading_blocked_in_a_reply(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text(
         '{"body": "## Summary\\nThe guard now runs on both paths.\\n"}',
@@ -441,12 +593,16 @@ def test_heading_blocked_in_a_reply(tool_use, assert_blocks, tmp_path):
         {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP014" in stderr
 
 
-def test_plain_reply_is_allowed(tool_use, assert_allows, tmp_path):
+def test_plain_reply_is_allowed(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text(
         '{"body": "Fixed in a1b2c3d. The round-robin path skipped the guard, '
@@ -458,10 +614,15 @@ def test_plain_reply_is_allowed(tool_use, assert_allows, tmp_path):
         {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bold_label_bullet_allowed_in_repo_markdown(tool_use, assert_allows):
+def test_bold_label_bullet_allowed_in_repo_markdown(tool_use, run_hook):
+    # Arrange
     content = (
         "# Notes\n\n"
         "- **Idempotency key:** required on every write.\n"
@@ -469,10 +630,15 @@ def test_bold_label_bullet_allowed_in_repo_markdown(tool_use, assert_allows):
     )
     payload = tool_use("Write", {"file_path": DOC, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_heading_allowed_in_a_pr_description(tool_use, assert_allows, tmp_path):
+def test_heading_allowed_in_a_pr_description(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "description.md"
     body.write_text(
         "## What\n\nThe guard now runs on both placement paths.\n\n"
@@ -484,10 +650,15 @@ def test_heading_allowed_in_a_pr_description(tool_use, assert_allows, tmp_path):
         {"command": f"gh pr create --title fix --body-file {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_inline_reply_body_is_scanned(tool_use, assert_blocks):
+def test_inline_reply_body_is_scanned(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -498,14 +669,16 @@ def test_inline_reply_body_is_scanned(tool_use, assert_blocks):
         },
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP014" in stderr
 
 
-def test_review_payload_inline_comment_bodies_are_scanned(
-    tool_use, assert_blocks, tmp_path
-):
+def test_review_payload_inline_comment_bodies_are_scanned(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "review.json"
     body.write_text(
         '{"event": "COMMENT", "body": "", "comments": '
@@ -521,23 +694,32 @@ def test_review_payload_inline_comment_bodies_are_scanned(
         },
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP013" in stderr
 
 
 def test_unreadable_payload_path_falls_back_to_the_literal(
-    tool_use, assert_allows, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {tmp_path}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unparseable_reply_command_still_scans(tool_use, assert_blocks, tmp_path):
+def test_unparseable_reply_command_still_scans(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text('{"body": "## Summary\\nFixed."}', encoding="utf-8")
     payload = tool_use(
@@ -545,14 +727,18 @@ def test_unparseable_reply_command_still_scans(tool_use, assert_blocks, tmp_path
         {"command": f'gh api {REPLY_ENDPOINT} -X POST --input {body} --header "x'},
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP014" in stderr
 
 
 def test_malformed_json_payload_falls_back_to_the_raw_text(
-    tool_use, assert_blocks, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text('{"body": }\n## Summary of the fix\n', encoding="utf-8")
     payload = tool_use(
@@ -560,12 +746,16 @@ def test_malformed_json_payload_falls_back_to_the_raw_text(
         {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
     )
 
-    _exit, stderr = assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
 
+    # Assert
+    _exit, stderr = assert_blocked(result)
     assert "SLOP014" in stderr
 
 
-def test_payload_without_a_body_key_falls_back(tool_use, assert_allows, tmp_path):
+def test_payload_without_a_body_key_falls_back(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text('{"in_reply_to": 9981}', encoding="utf-8")
     payload = tool_use(
@@ -573,10 +763,19 @@ def test_payload_without_a_body_key_falls_back(tool_use, assert_allows, tmp_path
         {"command": f"gh api {REPLY_ENDPOINT} -X POST --input {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_non_string_command_is_ignored(tool_use, assert_allows):
+def test_non_string_command_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 12})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

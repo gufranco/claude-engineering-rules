@@ -1,18 +1,6 @@
-"""Unit tests for the fix-suggestion lookup table.
-
-Item 173 of the plan. Verifies:
-
-  - Exact-match resolution for every documented detector tag.
-  - Category-prefix fallback for dynamic codes (`date.setMonth`,
-    `typed-array.fill`, `collection.weakmap.set`).
-  - The env-var gate (`MUTATION_METHOD_FIX_SUGGESTIONS=0`) suppresses output.
-  - Stable MMB codes match the JSON registry.
-  - Unknown detector codes return `None`.
-"""
-
 from __future__ import annotations
 
-import os
+import json
 from pathlib import Path
 import sys
 
@@ -37,103 +25,171 @@ def _reset_env(monkeypatch):
 
 
 def test_array_push_exact_match():
-    suggestion = suggest_fix("array.push")
+    # Arrange
+    detector_code = "array.push"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "[...arr, item]" in suggestion
 
 
 def test_array_pop_exact_match():
-    suggestion = suggest_fix("array.pop")
+    # Arrange
+    detector_code = "array.pop"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "slice(0, -1)" in suggestion
 
 
 def test_array_sort_uses_to_sorted():
-    suggestion = suggest_fix("array.sort")
+    # Arrange
+    detector_code = "array.sort"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "toSorted" in suggestion
 
 
 def test_collection_map_set_exact_match():
-    suggestion = suggest_fix("collection.map.set")
+    # Arrange
+    detector_code = "collection.map.set"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "new Map" in suggestion
 
 
-def test_date_setter_resolves_via_category_prefix():
-    suggestion_month = suggest_fix("date.setMonth")
-    suggestion_hours = suggest_fix("date.setHours")
-    suggestion_year = suggest_fix("date.setUTCFullYear")
+@pytest.mark.parametrize(
+    "rule_id", ["date.setMonth", "date.setHours", "date.setUTCFullYear"]
+)
+def test_date_setter_resolves_via_category_prefix(rule_id):
+    # Arrange
+    detector = rule_id
 
-    assert suggestion_month is not None
-    assert suggestion_hours is not None
-    assert suggestion_year is not None
-    assert "date-fns" in suggestion_month
-    assert "Temporal" in suggestion_month
+    # Act
+    suggestion = suggest_fix(detector)
+
+    # Assert
+    assert suggestion is not None
+    assert "date-fns" in suggestion
+    assert "Temporal" in suggestion
 
 
-def test_typed_array_dynamic_code_resolves():
-    suggestion_set = suggest_fix("typed-array.set")
-    suggestion_fill = suggest_fix("typed-array.fill")
+@pytest.mark.parametrize("rule_id", ["typed-array.set", "typed-array.fill"])
+def test_typed_array_dynamic_code_resolves(rule_id):
+    # Arrange
+    detector = rule_id
 
-    assert suggestion_set is not None
-    assert suggestion_fill is not None
+    # Act
+    suggestion = suggest_fix(detector)
+
+    # Assert
+    assert suggestion is not None
 
 
 def test_array_bracket_dispatch_resolves_via_category():
-    suggestion = suggest_fix("array.bracket-dispatch.push")
+    # Arrange
+    detector_code = "array.bracket-dispatch.push"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "Array prototype" in suggestion or "ES2023" in suggestion
 
 
 def test_collection_weakmap_set_exact_match():
-    suggestion = suggest_fix("collection.weakmap.set")
+    # Arrange
+    detector_code = "collection.weakmap.set"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "WeakMap" in suggestion
 
 
 def test_property_increment_exact_match():
-    suggestion = suggest_fix("property.increment")
+    # Arrange
+    detector_code = "property.increment"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "+ 1" in suggestion or "+= 1" in suggestion or "..." in suggestion
 
 
 def test_let_could_be_const_exact_match():
-    suggestion = suggest_fix("let.could-be-const")
+    # Arrange
+    detector_code = "let.could-be-const"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "const" in suggestion
 
 
 def test_global_assignment_exact_match():
-    suggestion = suggest_fix("global.assignment")
+    # Arrange
+    detector_code = "global.assignment"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
     assert "globalThis" in suggestion or "global" in suggestion.lower()
 
 
 def test_param_reassign_exact_match():
-    suggestion = suggest_fix("param.reassign")
+    # Arrange
+    detector_code = "param.reassign"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is not None
 
 
 def test_unknown_detector_returns_none():
-    suggestion = suggest_fix("never.heard.of.this")
+    # Arrange
+    detector_code = "never.heard.of.this"
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is None
 
 
 def test_empty_detector_returns_none():
-    suggestion = suggest_fix("")
+    # Arrange
+    detector_code = ""
 
+    # Act
+    suggestion = suggest_fix(detector_code)
+
+    # Assert
     assert suggestion is None
 
 
@@ -141,80 +197,119 @@ def test_empty_detector_returns_none():
     "disabled_value", ["0", "false", "False", "FALSE", "no", "off"]
 )
 def test_env_var_disables_suggestions(monkeypatch, disabled_value):
+    # Arrange
     monkeypatch.setenv("MUTATION_METHOD_FIX_SUGGESTIONS", disabled_value)
 
+    # Act
     suggestion = suggest_fix("array.push")
 
+    # Assert
     assert suggestion is None
     assert fix_suggestions_enabled() is False
 
 
 @pytest.mark.parametrize("enabled_value", ["1", "true", "yes", "on"])
 def test_env_var_enabled_returns_suggestions(monkeypatch, enabled_value):
+    # Arrange
     monkeypatch.setenv("MUTATION_METHOD_FIX_SUGGESTIONS", enabled_value)
 
+    # Act
     suggestion = suggest_fix("array.push")
 
+    # Assert
     assert suggestion is not None
     assert fix_suggestions_enabled() is True
 
 
-def test_default_env_state_enabled():
-    if "MUTATION_METHOD_FIX_SUGGESTIONS" in os.environ:
-        del os.environ["MUTATION_METHOD_FIX_SUGGESTIONS"]
+def test_default_env_state_enabled(monkeypatch):
+    # Arrange
+    monkeypatch.delenv("MUTATION_METHOD_FIX_SUGGESTIONS", raising=False)
 
+    # Act
     enabled = fix_suggestions_enabled()
 
+    # Assert
     assert enabled is True
 
 
 def test_mmb_code_for_array_push():
-    code = detector_code_to_mmb("array.push")
+    # Arrange
+    detector_code = "array.push"
 
+    # Act
+    code = detector_code_to_mmb(detector_code)
+
+    # Assert
     assert code == "MMB001"
 
 
 def test_mmb_code_for_dynamic_date_setter():
-    code = detector_code_to_mmb("date.setMonth")
+    # Arrange
+    detector_code = "date.setMonth"
 
+    # Act
+    code = detector_code_to_mmb(detector_code)
+
+    # Assert
     assert code == "MMB027"
 
 
-def test_mmb_code_for_typed_array_dynamic():
-    code_set = detector_code_to_mmb("typed-array.set")
-    code_fill = detector_code_to_mmb("typed-array.fill")
+@pytest.mark.parametrize(
+    ("rule_id", "code"), [("typed-array.set", "MMB021"), ("typed-array.fill", "MMB022")]
+)
+def test_mmb_code_for_typed_array_dynamic(rule_id, code):
+    # Arrange
+    detector = rule_id
 
-    assert code_set == "MMB021"
-    assert code_fill == "MMB022"
+    # Act
+    result = detector_code_to_mmb(detector)
+
+    # Assert
+    assert result == code
 
 
 def test_mmb_code_unknown_returns_none():
-    code = detector_code_to_mmb("non.existent.code")
+    # Arrange
+    detector_code = "non.existent.code"
 
+    # Act
+    code = detector_code_to_mmb(detector_code)
+
+    # Assert
     assert code is None
 
 
+def _exact_table(table_path: Path) -> dict:
+    return json.loads(table_path.read_text(encoding="utf-8"))["exact"]
+
+
 def test_mmb_codes_have_unique_exact_values():
-    import json
-
+    # Arrange
     table_path = REPO_ROOT / "hooks" / "mutation_fix_suggestions.json"
-    table = json.loads(table_path.read_text(encoding="utf-8"))
-    exact = table["exact"]
 
+    # Act
+    exact = _exact_table(table_path)
+
+    # Assert
     codes = [entry["code"] for entry in exact.values()]
-
     assert len(codes) == len(set(codes)), f"duplicate MMB codes: {codes}"
 
 
 def test_every_exact_entry_has_code_category_fix():
-    import json
-
+    # Arrange
     table_path = REPO_ROOT / "hooks" / "mutation_fix_suggestions.json"
-    table = json.loads(table_path.read_text(encoding="utf-8"))
 
-    for tag, entry in table["exact"].items():
-        assert "code" in entry, f"{tag} missing code"
-        assert entry["code"].startswith("MMB"), f"{tag} code does not start with MMB"
-        assert "category" in entry, f"{tag} missing category"
-        assert "fix" in entry, f"{tag} missing fix"
-        assert len(entry["fix"]) > 20, f"{tag} fix is suspiciously short"
+    # Act
+    exact = _exact_table(table_path)
+
+    # Assert
+    malformed = [
+        tag
+        for tag, entry in exact.items()
+        if not (
+            entry.get("code", "").startswith("MMB")
+            and "category" in entry
+            and len(entry.get("fix", "")) > 20
+        )
+    ]
+    assert malformed == []

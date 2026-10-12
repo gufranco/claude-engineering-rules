@@ -1,5 +1,3 @@
-"""Tests for the session-start compile hook."""
-
 from __future__ import annotations
 
 import importlib.util
@@ -35,27 +33,34 @@ def run(
     )
 
 
-def test_the_slug_matches_how_claude_code_names_a_project(tmp_path: Path) -> None:
+def test_the_slug_matches_how_claude_code_names_a_project() -> None:
+    # Arrange
     module = load()
 
+    # Act
     memory = module.memory_dir_for(
         Path("/Users/someone/Workspace/Personal/battle")
     )
 
+    # Assert
     assert memory.parent.name == "-Users-someone-Dropbox-Workspace---Pessoal-battle"
     assert memory.name == "memory"
 
 
 def test_no_vault_configured_is_silent(tmp_path: Path) -> None:
-    result = run(
-        {"cwd": str(tmp_path)}, {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)}
-    )
+    # Arrange
+    argv = {"cwd": str(tmp_path)}
 
+    # Act
+    result = run(argv, {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path)})
+
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_a_broken_compile_never_fails_the_session(tmp_path: Path) -> None:
+    # Arrange
     vault = tmp_path / "vault"
     (vault / ".ci").mkdir(parents=True)
     (vault / ".ci" / "compile.py").write_text(
@@ -69,6 +74,7 @@ def test_a_broken_compile_never_fails_the_session(tmp_path: Path) -> None:
     )
     memory.mkdir(parents=True)
 
+    # Act
     result = run(
         {"cwd": str(project)},
         {
@@ -78,11 +84,13 @@ def test_a_broken_compile_never_fails_the_session(tmp_path: Path) -> None:
         },
     )
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_a_compile_that_changed_nothing_says_nothing(tmp_path: Path) -> None:
+    # Arrange
     vault = tmp_path / "vault"
     (vault / ".ci").mkdir(parents=True)
     (vault / ".ci" / "compile.py").write_text(
@@ -96,6 +104,7 @@ def test_a_compile_that_changed_nothing_says_nothing(tmp_path: Path) -> None:
     )
     memory.mkdir(parents=True)
 
+    # Act
     result = run(
         {"cwd": str(project)},
         {
@@ -105,11 +114,13 @@ def test_a_compile_that_changed_nothing_says_nothing(tmp_path: Path) -> None:
         },
     )
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_a_compile_that_changed_something_reports_it(tmp_path: Path) -> None:
+    # Arrange
     vault = tmp_path / "vault"
     (vault / ".ci").mkdir(parents=True)
     (vault / ".ci" / "compile.py").write_text("print('applied: 3')", encoding="utf-8")
@@ -121,6 +132,7 @@ def test_a_compile_that_changed_something_reports_it(tmp_path: Path) -> None:
     )
     memory.mkdir(parents=True)
 
+    # Act
     result = run(
         {"cwd": str(project)},
         {
@@ -130,14 +142,19 @@ def test_a_compile_that_changed_something_reports_it(tmp_path: Path) -> None:
         },
     )
 
+    # Assert
     assert result.returncode == 0
     assert "applied: 3" in result.stdout
 
 
 @pytest.mark.parametrize("value", ["1"])
 def test_the_bypass_switches_it_off(tmp_path: Path, value: str) -> None:
+    # Arrange
+    argv = {"cwd": str(tmp_path)}
+
+    # Act
     result = run(
-        {"cwd": str(tmp_path)},
+        argv,
         {
             "PATH": "/usr/bin:/bin",
             "HOME": str(tmp_path),
@@ -146,11 +163,13 @@ def test_the_bypass_switches_it_off(tmp_path: Path, value: str) -> None:
         },
     )
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_a_worktree_with_no_memory_directory_yet_gets_one(tmp_path: Path) -> None:
+    # Arrange
     vault = tmp_path / "vault"
     (vault / ".ci").mkdir(parents=True)
     (vault / ".ci" / "compile.py").write_text("print('applied: 2')", encoding="utf-8")
@@ -162,6 +181,7 @@ def test_a_worktree_with_no_memory_directory_yet_gets_one(tmp_path: Path) -> Non
     )
     memory.parent.mkdir(parents=True)
 
+    # Act
     result = run(
         {"cwd": str(project)},
         {
@@ -171,12 +191,14 @@ def test_a_worktree_with_no_memory_directory_yet_gets_one(tmp_path: Path) -> Non
         },
     )
 
+    # Assert
     assert result.returncode == 0
-    assert memory.is_dir()
+    assert memory.is_dir() is True
     assert "applied: 2" in result.stdout
 
 
 def test_a_directory_claude_code_never_opened_is_left_alone(tmp_path: Path) -> None:
+    # Arrange
     vault = tmp_path / "vault"
     (vault / ".ci").mkdir(parents=True)
     (vault / ".ci" / "compile.py").write_text("print('applied: 2')", encoding="utf-8")
@@ -187,6 +209,7 @@ def test_a_directory_claude_code_never_opened_is_left_alone(tmp_path: Path) -> N
         str(module.memory_dir_for(project)).replace(str(Path.home()), str(tmp_path))
     )
 
+    # Act
     result = run(
         {"cwd": str(project)},
         {
@@ -196,6 +219,7 @@ def test_a_directory_claude_code_never_opened_is_left_alone(tmp_path: Path) -> N
         },
     )
 
+    # Assert
     assert result.returncode == 0
-    assert not memory.exists()
+    assert memory.exists() is False
     assert result.stdout == ""

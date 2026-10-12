@@ -1,5 +1,3 @@
-"""Coverage for `hooks/_lib/shell_segments.py`."""
-
 from __future__ import annotations
 
 import sys
@@ -28,32 +26,46 @@ from _lib import shell_segments  # noqa: E402
     ],
 )
 def test_quoted_segments_split_only_at_real_operators(command, expected):
-    segments = shell_segments.quoted_segments(command)
+    # Arrange
+    command_input = command
 
+    # Act
+    segments = shell_segments.quoted_segments(command_input)
+
+    # Assert
     assert segments == expected
 
 
 def test_heredoc_body_is_dropped():
+    # Arrange
     command = "python3 - <<'EOF'\nimport os && rm -rf /\nEOF\necho after"
 
+    # Act
     segments = shell_segments.quoted_segments(command)
 
+    # Assert
     assert segments == [["python3", "-", "<<EOF"], ["echo", "after"]]
 
 
 def test_dash_heredoc_with_indented_terminator_is_dropped():
+    # Arrange
     command = "cat <<-END\n\tgh pr create\n\tEND\nls"
 
+    # Act
     segments = shell_segments.quoted_segments(command)
 
+    # Assert
     assert segments == [["cat", "<<-END"], ["ls"]]
 
 
 def test_here_string_is_not_a_heredoc():
+    # Arrange
     command = "read -r x <<<word\nkcov out run.sh"
 
+    # Act
     segments = shell_segments.quoted_segments(command)
 
+    # Assert
     assert segments == [["read", "-r", "x", "<<<word"], ["kcov", "out", "run.sh"]]
 
 
@@ -70,8 +82,13 @@ def test_here_string_is_not_a_heredoc():
     ],
 )
 def test_command_head_skips_env_and_command_builtin(tokens, expected):
-    head = shell_segments.command_head(tokens)
+    # Arrange
+    tokens_input = tokens
 
+    # Act
+    head = shell_segments.command_head(tokens_input)
+
+    # Assert
     assert head == expected
 
 
@@ -88,6 +105,11 @@ def test_command_head_skips_env_and_command_builtin(tokens, expected):
     ],
 )
 def test_mask_literal_text_blanks_only_unexecuted_text(command, expected):
-    masked = shell_segments.mask_literal_text(command)
+    # Arrange
+    command_input = command
 
+    # Act
+    masked = shell_segments.mask_literal_text(command_input)
+
+    # Assert
     assert masked == expected

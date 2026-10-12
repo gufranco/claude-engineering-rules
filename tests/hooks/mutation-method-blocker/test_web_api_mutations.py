@@ -1,12 +1,3 @@
-"""URLSearchParams / Headers / FormData mutation coverage.
-
-Items 200-205, 209 of the plan. Verifies the hook flags receiver-typed
-mutations on Web API collection values that have non-mutating
-alternatives via fresh-instance construction. Also verifies the
-suppression marker bypasses each detector and that fresh-instance
-patterns pass cleanly.
-"""
-
 from __future__ import annotations
 
 import pytest
@@ -39,10 +30,13 @@ URL_SEARCH_PARAMS_BLOCKED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("snippet", "detector"), URL_SEARCH_PARAMS_BLOCKED)
 def test_url_search_params_mutation_blocked(run_hook, snippet, detector):
+    # Arrange
     payload = make_edit_payload("/repo/src/url.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"unexpected exit {code}\n{stderr}"
     assert detector in stderr, f"detector {detector} missing in:\n{stderr}"
 
@@ -61,10 +55,13 @@ URL_SEARCH_PARAMS_ALLOWED: list[str] = [
 
 @pytest.mark.parametrize("snippet", URL_SEARCH_PARAMS_ALLOWED)
 def test_url_search_params_allowed_pattern_passes(run_hook, snippet):
+    # Arrange
     payload = make_edit_payload("/repo/src/url.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block:\n{stderr}"
 
 
@@ -90,10 +87,13 @@ HEADERS_BLOCKED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("snippet", "detector"), HEADERS_BLOCKED)
 def test_headers_mutation_blocked(run_hook, snippet, detector):
+    # Arrange
     payload = make_edit_payload("/repo/src/headers.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"unexpected exit {code}\n{stderr}"
     assert detector in stderr, f"detector {detector} missing in:\n{stderr}"
 
@@ -108,10 +108,13 @@ HEADERS_ALLOWED: list[str] = [
 
 @pytest.mark.parametrize("snippet", HEADERS_ALLOWED)
 def test_headers_allowed_pattern_passes(run_hook, snippet):
+    # Arrange
     payload = make_edit_payload("/repo/src/headers.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block:\n{stderr}"
 
 
@@ -137,10 +140,13 @@ FORM_DATA_BLOCKED: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("snippet", "detector"), FORM_DATA_BLOCKED)
 def test_form_data_mutation_blocked(run_hook, snippet, detector):
+    # Arrange
     payload = make_edit_payload("/repo/src/form.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"unexpected exit {code}\n{stderr}"
     assert detector in stderr, f"detector {detector} missing in:\n{stderr}"
 
@@ -158,10 +164,13 @@ FORM_DATA_ALLOWED: list[str] = [
 
 @pytest.mark.parametrize("snippet", FORM_DATA_ALLOWED)
 def test_form_data_allowed_pattern_passes(run_hook, snippet):
+    # Arrange
     payload = make_edit_payload("/repo/src/form.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block:\n{stderr}"
 
 
@@ -202,23 +211,30 @@ TOOL_DIRECTIVE_CASES: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize(("snippet", "label"), ALLOW_MARKER_CASES)
 def test_web_api_allow_marker_does_not_bypass_detector(run_hook, snippet, label):
+    # Arrange
     payload = make_edit_payload("/repo/src/web.ts", snippet)
 
+    # Act
     code, _stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: allow marker must not suppress"
 
 
 @pytest.mark.parametrize(("snippet", "label"), TOOL_DIRECTIVE_CASES)
 def test_web_api_tool_directive_bypasses_detector(run_hook, snippet, label):
+    # Arrange
     payload = make_edit_payload("/repo/src/web.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: expected pass, got exit {code}\n{stderr}"
 
 
 def test_dom_corpus_does_not_trigger_web_api_detectors(run_hook):
+    # Arrange
     snippet = (
         "const params = new URLSearchParams(window.location.search)\n"
         "const value = params.get('q')\n"
@@ -226,8 +242,10 @@ def test_dom_corpus_does_not_trigger_web_api_detectors(run_hook):
     )
     payload = make_edit_payload("/repo/src/dom-aware.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block on read-only URLSearchParams chain:\n{stderr}"
 
 
@@ -299,65 +317,77 @@ FORBIDDEN_DOM_FRAGMENTS: list[str] = [
 ]
 
 
-def _assert_dom_not_flagged(stderr: str) -> None:
-    """No DOM line may appear in the detector report.
-
-    DOM mutations are silently allowed; their presence in the diagnostic
-    output would indicate a regression in the DOM allowlist.
-    """
+def assert_dom_not_flagged(stderr: str) -> None:
     for fragment in FORBIDDEN_DOM_FRAGMENTS:
         assert fragment not in stderr, (
             f"DOM line '{fragment}' must not appear in detector report:\n{stderr}"
         )
 
 
+def assert_tags_reported(stderr: str, tags: list[str]) -> None:
+    missing = [tag for tag in tags if tag not in stderr]
+    assert missing == [], f"expected hits {missing} missing in:\n{stderr}"
+
+
 def test_mixed_url_search_params_fixture(run_hook):
-    """Item 209a: URLSearchParams mutations flagged, DOM lines silent."""
+    # Arrange
     payload = make_edit_payload("/repo/src/mixed-url.ts", URL_SEARCH_PARAMS_FIXTURE)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"expected block, got exit {code}\n{stderr}"
-    for tag in [
-        "web-api.url-search-params.append",
-        "web-api.url-search-params.set",
-        "web-api.url-search-params.delete",
-        "web-api.url-search-params.sort",
-    ]:
-        assert tag in stderr, f"expected hit {tag} missing in:\n{stderr}"
-    _assert_dom_not_flagged(stderr)
+    assert_tags_reported(
+        stderr,
+        [
+            "web-api.url-search-params.append",
+            "web-api.url-search-params.set",
+            "web-api.url-search-params.delete",
+            "web-api.url-search-params.sort",
+        ],
+    )
+    assert_dom_not_flagged(stderr)
 
 
 def test_mixed_headers_fixture(run_hook):
-    """Item 209b: Headers mutations flagged, DOM lines silent."""
+    # Arrange
     payload = make_edit_payload("/repo/src/mixed-headers.ts", HEADERS_FIXTURE)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"expected block, got exit {code}\n{stderr}"
-    for tag in [
-        "web-api.headers.append",
-        "web-api.headers.set",
-        "web-api.headers.delete",
-    ]:
-        assert tag in stderr, f"expected hit {tag} missing in:\n{stderr}"
-    _assert_dom_not_flagged(stderr)
+    assert_tags_reported(
+        stderr,
+        [
+            "web-api.headers.append",
+            "web-api.headers.set",
+            "web-api.headers.delete",
+        ],
+    )
+    assert_dom_not_flagged(stderr)
 
 
 def test_mixed_form_data_fixture(run_hook):
-    """Item 209c: FormData mutations flagged, DOM lines silent."""
+    # Arrange
     payload = make_edit_payload("/repo/src/mixed-form.ts", FORM_DATA_FIXTURE)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"expected block, got exit {code}\n{stderr}"
-    for tag in [
-        "web-api.form-data.append",
-        "web-api.form-data.set",
-        "web-api.form-data.delete",
-    ]:
-        assert tag in stderr, f"expected hit {tag} missing in:\n{stderr}"
-    _assert_dom_not_flagged(stderr)
+    assert_tags_reported(
+        stderr,
+        [
+            "web-api.form-data.append",
+            "web-api.form-data.set",
+            "web-api.form-data.delete",
+        ],
+    )
+    assert_dom_not_flagged(stderr)
 
 
 INDEXED_DB_OUT_OF_SCOPE: list[str] = [
@@ -372,15 +402,13 @@ INDEXED_DB_OUT_OF_SCOPE: list[str] = [
 
 @pytest.mark.parametrize("snippet", INDEXED_DB_OUT_OF_SCOPE)
 def test_indexed_db_mutations_out_of_scope(run_hook, snippet):
-    """Item 206: IndexedDB cursor and transaction mutations are out of scope.
-
-    The IndexedDB API is inherently mutating; flagging it would generate
-    noise. The mutation hook governs JS values, not Web platform side-effect APIs.
-    """
+    # Arrange
     payload = make_edit_payload("/repo/src/indexed-db.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block on IndexedDB API:\n{stderr}"
 
 
@@ -398,13 +426,11 @@ WEB_STORAGE_OUT_OF_SCOPE: list[str] = [
 
 @pytest.mark.parametrize("snippet", WEB_STORAGE_OUT_OF_SCOPE)
 def test_web_storage_mutations_out_of_scope(run_hook, snippet):
-    """Item 207: Web Storage setItem/removeItem/clear are out of scope.
-
-    Web Storage is a side-effect API. The 'no module-level side effects'
-    rule governs its placement; the mutation hook does not flag it.
-    """
+    # Arrange
     payload = make_edit_payload("/repo/src/storage.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"unexpected block on Web Storage API:\n{stderr}"

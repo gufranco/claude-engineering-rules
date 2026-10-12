@@ -1,10 +1,3 @@
-"""Generator for mutation-method-blocker conformance cases (plan item 386).
-
-Run once to populate `tests/conformance/cases/`. Idempotent: re-running
-overwrites existing files. Generated cases cover >=200 scenarios across
-all detector categories.
-"""
-
 from __future__ import annotations
 
 import os
@@ -14,7 +7,6 @@ BASE = os.path.join(os.path.dirname(__file__), "cases")
 
 
 def write_case(path: str, frontmatter: dict[str, str], body: str) -> None:
-    """Write one case file with `---` YAML frontmatter and body."""
     target = os.path.join(BASE, path)
     os.makedirs(os.path.dirname(target), exist_ok=True)
     lines = ["---"]
@@ -27,7 +19,6 @@ def write_case(path: str, frontmatter: dict[str, str], body: str) -> None:
 
 
 def gen_array_cases() -> int:
-    """Array prototype mutation cases."""
     n = 0
     methods_block = [
         ("push", "items.push(1)"),
@@ -161,7 +152,6 @@ def gen_array_cases() -> int:
 
 
 def gen_collection_cases() -> int:
-    """Map/Set/WeakMap/WeakSet mutation cases."""
     n = 0
     mutating = [
         ("Map", "set", "m", "m.set('k', 1)"),
@@ -233,7 +223,6 @@ def gen_collection_cases() -> int:
 
 
 def gen_property_cases() -> int:
-    """Direct property/computed/compound/increment assignment cases."""
     n = 0
     cases = [
         ("property", "obj.x = 1", "property.assignment"),
@@ -308,7 +297,6 @@ def gen_property_cases() -> int:
 
 
 def gen_date_cases() -> int:
-    """Date setter mutation cases."""
     n = 0
     setters = [
         "setDate(15)",
@@ -366,7 +354,6 @@ def gen_date_cases() -> int:
 
 
 def gen_symbol_cases() -> int:
-    """Symbol-keyed property assignment cases (Phase 39)."""
     n = 0
     keys = [
         ("Symbol.iterator", "function* () { yield 1 }"),
@@ -403,7 +390,6 @@ def gen_symbol_cases() -> int:
 
 
 def gen_private_field_cases() -> int:
-    """Private class field mutation cases (Phase 39)."""
     n = 0
     cases = [
         ("assign", "this.#count = 1"),
@@ -449,7 +435,6 @@ def gen_private_field_cases() -> int:
 
 
 def gen_static_block_cases() -> int:
-    """Static initialization block cases (Phase 39)."""
     n = 0
     n += 1
     write_case(
@@ -494,7 +479,6 @@ def gen_static_block_cases() -> int:
 
 
 def gen_allowlist_cases() -> int:
-    """State-management filename auto-allow cases."""
     n = 0
     n += 1
     write_case(
@@ -560,7 +544,6 @@ def gen_allowlist_cases() -> int:
 
 
 def gen_object_utility_cases() -> int:
-    """Object.assign/defineProperty/setPrototypeOf and Reflect cases."""
     n = 0
     cases = [
         ("object-assign-target", "Object.assign(target, src)", "object.assign"),
@@ -623,7 +606,6 @@ def gen_object_utility_cases() -> int:
 
 
 def gen_global_mutation_cases() -> int:
-    """globalThis/window/process.env mutation cases."""
     n = 0
     cases = [
         ("globalthis-x", "globalThis.x = 1", "global.assignment"),
@@ -646,7 +628,6 @@ def gen_global_mutation_cases() -> int:
 
 
 def gen_url_headers_formdata_cases() -> int:
-    """URLSearchParams/Headers/FormData mutation cases."""
     n = 0
     cases = [
         ("usp-append", "params.append('k', 'v')", "web-api.url-search-params."),
@@ -682,7 +663,6 @@ def gen_url_headers_formdata_cases() -> int:
 
 
 def gen_typed_array_cases() -> int:
-    """TypedArray mutation cases (default scope flags, hot path allows)."""
     n = 0
     methods = ["set", "fill", "sort", "reverse", "copyWithin"]
     for method in methods:
@@ -730,7 +710,6 @@ def gen_typed_array_cases() -> int:
 
 
 def gen_let_const_cases() -> int:
-    """let-could-be-const cases (full-file Write only)."""
     n = 0
     n += 1
     write_case(
@@ -757,7 +736,6 @@ def gen_let_const_cases() -> int:
 
 
 def gen_suppression_cases() -> int:
-    """Suppression marker cases."""
     n = 0
     n += 1
     write_case(
@@ -796,7 +774,6 @@ def gen_suppression_cases() -> int:
 
 
 def gen_increment_index_cases() -> int:
-    """Compound and increment on computed/index targets."""
     n = 0
     cases = [
         ("prop-postinc", "obj.x++", "property.increment"),
@@ -825,7 +802,6 @@ def gen_increment_index_cases() -> int:
 
 
 def gen_zustand_jotai_cases() -> int:
-    """Zustand/Jotai/Valtio callback auto-allow cases."""
     n = 0
     n += 1
     write_case(
@@ -900,7 +876,6 @@ def gen_zustand_jotai_cases() -> int:
 
 
 def gen_param_reassign_cases() -> int:
-    """Parameter reassignment cases."""
     n = 0
     n += 1
     write_case(
@@ -947,7 +922,6 @@ def gen_param_reassign_cases() -> int:
 
 
 def gen_extra_property_cases() -> int:
-    """Additional property-assignment variants on nested receivers."""
     n = 0
     receivers = ["state", "config", "settings", "data", "model"]
     for r in receivers:
@@ -967,7 +941,6 @@ def gen_extra_property_cases() -> int:
 
 
 def gen_extra_array_cases() -> int:
-    """Additional array method block variants."""
     n = 0
     for arg in ["1", "1, 2", "1, 2, 3", "...rest", "x"]:
         n += 1
@@ -999,7 +972,6 @@ def gen_extra_array_cases() -> int:
 
 
 def gen_atomics_cases() -> int:
-    """Atomics mutation cases (SharedArrayBuffer)."""
     n = 0
     cases = [
         ("store", "Atomics.store(buf, 0, 1)"),
@@ -1029,7 +1001,6 @@ def gen_atomics_cases() -> int:
 
 
 def gen_dom_cases() -> int:
-    """DOM-receiver cases must allow (out of scope per typescript-immutability.md)."""
     n = 0
     cases = [
         "element.innerHTML = '<p>x</p>'",
@@ -1066,7 +1037,6 @@ def gen_dom_cases() -> int:
 
 
 def gen_immer_mutative_cases() -> int:
-    """Library callback auto-allow cases."""
     n = 0
     n += 1
     write_case(

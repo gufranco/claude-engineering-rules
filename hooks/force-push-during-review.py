@@ -35,14 +35,23 @@ except Exception:  # pragma: no cover
         return None
 
 
+from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import (  # noqa: E402
+    FORCE_PUSH_LONG,
+    FORCE_PUSH_SHORT,
+    FORCE_PUSH_WITH_LEASE,
+    strip_git_global_options,
+)
+
 GIT_PUSH_PATTERN = re.compile(r"\bgit\s+push\b")
-FORCE_FLAGS = re.compile(r"--force(?:-with-lease)?\b|(?:^|\s)-f(?:\s|$)")
+FORCE_FLAGS = re.compile(
+    "|".join((FORCE_PUSH_LONG, FORCE_PUSH_SHORT, FORCE_PUSH_WITH_LEASE))
+)
 FORCE_REFSPEC = re.compile(r"\+[^\s]+:?[^\s]*")
 
-from _lib.bypass import is_bypassed  # noqa: E402
 
-
-def is_force_push(command: str) -> bool:
+def is_force_push(raw_command: str) -> bool:
+    command = strip_git_global_options(raw_command)
     if not GIT_PUSH_PATTERN.search(command):
         return False
     if FORCE_FLAGS.search(command):

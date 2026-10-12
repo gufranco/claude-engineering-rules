@@ -48,10 +48,10 @@ jobs:
           shellcheck --severity=warning --shell=bash --enable=all tests/test-hooks.sh
 
       - name: Python lint (ruff check)
-        run: ruff check hooks scripts .github/scripts tests
+        run: ruff check hooks scripts tools .github/scripts tests
 
       - name: Python format check (ruff format)
-        run: ruff format --check hooks scripts .github/scripts tests
+        run: ruff format --check hooks scripts tools .github/scripts tests
 
       - name: Validate counts
         run: python3 .github/scripts/validate-counts.py
@@ -121,6 +121,9 @@ jobs:
 
       - name: Validate skill definitions
         run: python3 .github/scripts/validate-skills.py
+
+      - name: Lint skill structure
+        run: python3 tools/lint-skills.py --strict
 
       - name: Validate cross-references
         run: python3 .github/scripts/validate-cross-refs.py

@@ -1,14 +1,3 @@
-"""Test262-style conformance runner for mutation-method-blocker (plan item 386).
-
-Walks `tests/conformance/cases/`, parses each `.test.ts` file's YAML
-frontmatter, and runs the hook with the body as the payload. Asserts the
-hook's exit code matches the declared verdict.
-
-Pass rate gate: the suite emits a summary at session-end. CI tooling that
-runs this suite is expected to require >=95% pass rate; per-case failures
-do not stop the run so the full picture is visible.
-"""
-
 from __future__ import annotations
 
 import json
@@ -32,12 +21,6 @@ VERDICT_TO_EXIT_CODE = {
 
 
 def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
-    """Split a `---`-delimited YAML frontmatter from the body.
-
-    Returns `(metadata, body)`. The frontmatter must begin with `---` on
-    line 1 and close with another `---`. Missing or malformed frontmatter
-    raises ValueError to surface as a test setup failure.
-    """
     lines = text.splitlines()
     if not lines or lines[0].strip() != "---":
         raise ValueError("missing opening --- frontmatter")
@@ -57,7 +40,6 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
 
 
 def _discover_cases() -> list[Path]:
-    """Walk CASES_DIR for *.test.ts files."""
     if not CASES_DIR.is_dir():
         return []
     return sorted(CASES_DIR.rglob("*.test.ts"))
@@ -77,6 +59,14 @@ def _build_payload(meta: dict[str, str], body: str) -> dict:
     }
 
 
+def _expectation(meta: dict[str, str], case_path: Path) -> tuple[int, str]:
+    verdict = meta.get("verdict", "").strip()
+    if verdict not in VERDICT_TO_EXIT_CODE:
+        raise ValueError(f"unknown verdict {verdict!r} in {case_path}")
+    detector = meta.get("detector", "").strip()
+    return VERDICT_TO_EXIT_CODE[verdict], detector if verdict == "block" else ""
+
+
 def _run_hook(payload: dict) -> tuple[int, str]:
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
@@ -94,23 +84,20 @@ def _run_hook(payload: dict) -> tuple[int, str]:
 
 @pytest.mark.parametrize("case_path", _discover_cases(), ids=lambda p: p.stem)
 def test_conformance_case(case_path: Path) -> None:
-    """Run a single conformance case and assert the verdict matches."""
-    text = case_path.read_text(encoding="utf-8")
-    meta, body = _parse_frontmatter(text)
-    verdict = meta.get("verdict", "").strip()
-    if verdict not in VERDICT_TO_EXIT_CODE:
-        pytest.fail(f"unknown verdict {verdict!r} in {case_path}")
-    expected_code = VERDICT_TO_EXIT_CODE[verdict]
+    # Arrange
+    meta, body = _parse_frontmatter(case_path.read_text(encoding="utf-8"))
+    expected_code, expected_detector = _expectation(meta, case_path)
     payload = _build_payload(meta, body)
+
+    # Act
     code, stderr = _run_hook(payload)
-    if code != expected_code:
-        pytest.fail(
-            f"{case_path.name}: expected exit {expected_code} ({verdict}), got {code}\n"
-            f"description: {meta.get('description', '')}\n"
-            f"stderr:\n{stderr}"
-        )
-    detector = meta.get("detector", "").strip()
-    if verdict == "block" and detector:
-        assert detector in stderr, (
-            f"{case_path.name}: expected detector {detector} in stderr, got:\n{stderr}"
-        )
+
+    # Assert
+    assert code == expected_code, (
+        f"{case_path.name}: expected exit {expected_code}, got {code}\n"
+        f"description: {meta.get('description', '')}\n"
+        f"stderr:\n{stderr}"
+    )
+    assert expected_detector in stderr, (
+        f"{case_path.name}: expected detector {expected_detector} in stderr, got:\n{stderr}"
+    )

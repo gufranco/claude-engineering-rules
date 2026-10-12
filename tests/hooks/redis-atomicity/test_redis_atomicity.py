@@ -1,20 +1,19 @@
-"""Coverage for redis-atomicity hook.
-
-Source rule: standards/redis.md and checklist.md cat 4.
-"""
-
 from __future__ import annotations
 
 import os
 import subprocess
 import sys
 from pathlib import Path
+from _helpers.hook_assertions import assert_allowed, assert_blocked
+import json as _json
+from datetime import datetime, timedelta, timezone
 
 
 HOOK = "redis-atomicity"
 
 
-def test_blocks_incr_then_expire(tool_use, assert_blocks):
+def test_blocks_incr_then_expire(tool_use, run_hook):
+    # Arrange
     content = (
         "async function bump() {\n"
         "  await client.incr('k');\n"
@@ -26,50 +25,75 @@ def test_blocks_incr_then_expire(tool_use, assert_blocks):
         {"file_path": "/repo/src/limiter.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_incrby_then_pexpire(tool_use, assert_blocks):
+def test_blocks_incrby_then_pexpire(tool_use, run_hook):
+    # Arrange
     content = "await client.incrBy('k', 1);\nawait client.pexpire('k', 60000);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/counter.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_setnx_then_expire(tool_use, assert_blocks):
+def test_blocks_setnx_then_expire(tool_use, run_hook):
+    # Arrange
     content = "await client.setnx('lock', '1');\nawait client.expire('lock', 30);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/lock.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_hset_then_expire(tool_use, assert_blocks):
+def test_blocks_hset_then_expire(tool_use, run_hook):
+    # Arrange
     content = "await client.hset('h', 'f', 'v');\nawait client.expire('h', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/h.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_sadd_then_expire(tool_use, assert_blocks):
+def test_blocks_sadd_then_expire(tool_use, run_hook):
+    # Arrange
     content = "await client.sadd('s', 'm');\nawait client.expire('s', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/s.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_get_then_set_toctou(tool_use, assert_blocks):
+def test_blocks_get_then_set_toctou(tool_use, run_hook):
+    # Arrange
     content = (
         "const value = await client.get('k');\n"
         "await client.set('k', String(Number(value) + 1));\n"
@@ -79,20 +103,30 @@ def test_blocks_get_then_set_toctou(tool_use, assert_blocks):
         {"file_path": "/repo/src/cas.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_get_then_hset(tool_use, assert_blocks):
+def test_blocks_get_then_hset(tool_use, run_hook):
+    # Arrange
     content = "const v = await client.get('k');\nawait client.hset('h', 'f', v);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/c.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -102,10 +136,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -122,30 +161,45 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "non-atomic Redis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_allows_set_with_ex_options(tool_use, assert_allows):
+def test_allows_set_with_ex_options(tool_use, run_hook):
+    # Arrange
     content = "await client.set('k', '1', { EX: 60, NX: true });\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/lock.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_multi_exec_pipeline(tool_use, assert_allows):
+def test_allows_multi_exec_pipeline(tool_use, run_hook):
+    # Arrange
     content = "await client.multi()\n  .incr('k')\n  .expire('k', 60)\n  .exec();\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/pipe.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_eval_script(tool_use, assert_allows):
+def test_allows_eval_script(tool_use, run_hook):
+    # Arrange
     content = (
         "await client.eval(\n"
         '  \'redis.call("incr", KEYS[1]); redis.call("expire", KEYS[1], ARGV[1])\',\n'
@@ -156,75 +210,115 @@ def test_allows_eval_script(tool_use, assert_allows):
         {"file_path": "/repo/src/script.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_when_bypass_env_set(tool_use, assert_allows):
+def test_allows_when_bypass_env_set(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload, env={"REDIS_ATOMICITY_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"REDIS_ATOMICITY_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_test_file_path(tool_use, assert_allows):
+def test_skips_test_file_path(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.test.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_spec_file_path(tool_use, assert_allows):
+def test_skips_spec_file_path(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.spec.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_tests_dir(tool_use, assert_allows):
+def test_skips_tests_dir(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/tests/limiter.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_non_supported_extension(tool_use, assert_allows):
+def test_skips_non_supported_extension(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.txt", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_unknown_tool(tool_use, assert_allows):
+def test_skips_unknown_tool(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/limiter.ts"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.ts", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_edit_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -234,10 +328,15 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -246,10 +345,15 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_multiedit_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -258,30 +362,45 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_empty_file_path_is_safe(tool_use, assert_allows):
+def test_empty_file_path_is_safe(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_increment_then_unrelated(tool_use, assert_allows):
+def test_allows_increment_then_unrelated(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nconsole.log('ok');\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/x.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_expire_after_window(tool_use, assert_allows):
+def test_allows_expire_after_window(tool_use, run_hook):
+    # Arrange
     content = (
         "await client.incr('k');\n"
         "// 1\n// 2\n// 3\n// 4\n// 5\n// 6\n"
@@ -292,35 +411,45 @@ def test_allows_expire_after_window(tool_use, assert_allows):
         {"file_path": "/repo/src/x.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload, env={"REDIS_ATOMICITY_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"REDIS_ATOMICITY_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/limiter.ts", "content": content},
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "non-atomic Redis",
-        env={"REDIS_ATOMICITY_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"REDIS_ATOMICITY_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "non-atomic Redis")
 
 
-def test_atomic_markers_in_window_break_pairing(tool_use, assert_allows):
+def test_atomic_markers_in_window_break_pairing(tool_use, run_hook):
+    # Arrange
     content = (
         "await client.incr('k');\n"
         "// MULTI/EXEC begin\n"
@@ -332,28 +461,43 @@ def test_atomic_markers_in_window_break_pairing(tool_use, assert_allows):
         {"file_path": "/repo/src/limiter.ts", "content": content},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_lock_acquisition_without_a_ttl(tool_use, assert_blocks):
+def test_blocks_lock_acquisition_without_a_ttl(tool_use, run_hook):
+    # Arrange
     content = "const acquired = await client.set('lock:order', token, 'NX');\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
     )
 
-    assert_blocks(HOOK, payload, "lock without a TTL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "lock without a TTL")
 
 
-def test_blocks_setnx_lock_without_a_ttl(tool_use, assert_blocks):
+def test_blocks_setnx_lock_without_a_ttl(tool_use, run_hook):
+    # Arrange
     content = "const ok = await client.setnx('lock:order', token);\nreturn ok;\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
     )
 
-    assert_blocks(HOOK, payload, "lock without a TTL")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "lock without a TTL")
 
 
-def test_allows_lock_acquisition_with_nx_and_ttl(tool_use, assert_allows):
+def test_allows_lock_acquisition_with_nx_and_ttl(tool_use, run_hook):
+    # Arrange
     content = (
         "const acquired = await client.set('lock:order', token, 'NX', 'EX', 30);\n"
     )
@@ -361,26 +505,34 @@ def test_allows_lock_acquisition_with_nx_and_ttl(tool_use, assert_allows):
         "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_lock_acquisition_with_options_object(tool_use, assert_allows):
+def test_allows_lock_acquisition_with_options_object(tool_use, run_hook):
+    # Arrange
     content = "const acquired = await client.set('lock:order', token, { NX: true, EX: 30 });\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/src/services/lock.ts", "content": content}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "redis-atomicity.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -391,26 +543,27 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_profile_disable_short_circuits(tool_use, assert_allows):
+def test_profile_disable_short_circuits(tool_use, run_hook):
+    # Arrange
     content = "await client.incr('k');\nawait client.expire('k', 60);\n"
     payload = tool_use(
         "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
     )
 
-    _code, stderr = assert_allows(
-        HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": "redis-atomicity"}
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": "redis-atomicity"})
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_live_bypass_entry_short_circuits(tmp_path, tool_use, assert_allows):
-    import json as _json
-    from datetime import datetime, timedelta, timezone
-
+def test_live_bypass_entry_short_circuits(tmp_path, tool_use, run_hook):
+    # Arrange
     state = tmp_path / "bypass.json"
     expires = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
     state.write_text(
@@ -427,14 +580,16 @@ def test_live_bypass_entry_short_circuits(tmp_path, tool_use, assert_allows):
         "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
     )
 
-    _code, stderr = assert_allows(
-        HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state)}
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state)})
 
+    # Assert
+    _code, stderr = assert_allowed(result)
     assert stderr.strip() == ""
 
 
-def test_suppression_on_the_first_command_skips_the_pair(tool_use, assert_allows):
+def test_suppression_on_the_first_command_skips_the_pair(tool_use, run_hook):
+    # Arrange
     content = (
         "// eslint-disable-next-line no-restricted-syntax\n"
         "await client.incr('k');\n"
@@ -444,10 +599,15 @@ def test_suppression_on_the_first_command_skips_the_pair(tool_use, assert_allows
         "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_suppression_on_the_second_command_skips_the_pair(tool_use, assert_allows):
+def test_suppression_on_the_second_command_skips_the_pair(tool_use, run_hook):
+    # Arrange
     content = (
         "await client.incr('k');\n"
         "// eslint-disable-next-line no-restricted-syntax\n"
@@ -457,4 +617,8 @@ def test_suppression_on_the_second_command_skips_the_pair(tool_use, assert_allow
         "Write", {"file_path": "/repo/src/limiter.ts", "content": content}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

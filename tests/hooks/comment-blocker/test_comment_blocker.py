@@ -1,38 +1,42 @@
-"""Coverage for comment-blocker hook.
-
-Source rule: `~/.claude/rules/code-style.md` Comments Policy. Code must be
-self-explanatory; no prose comment is permitted in any scanned file, test
-files included (`~/.claude/rules/testing.md`). Tool directives are the one
-exempt class.
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "comment-blocker"
 BLOCK_MSG = "comment added to source"
 
 
-def test_blocks_line_comment_ts(tool_use, assert_blocks):
+def test_blocks_line_comment_ts(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "// explain\nconst x = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_block_comment_ts(tool_use, assert_blocks):
+def test_blocks_block_comment_ts(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "/* explain */\nconst x = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_multiline_block_comment(tool_use, assert_blocks):
+def test_blocks_multiline_block_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -41,10 +45,15 @@ def test_blocks_multiline_block_comment(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_jsx_comment(tool_use, assert_blocks):
+def test_blocks_jsx_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -53,28 +62,43 @@ def test_blocks_jsx_comment(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_hash_comment_python(tool_use, assert_blocks):
+def test_blocks_hash_comment_python(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.py", "content": "# explain\nx = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_trailing_comment(tool_use, assert_blocks):
+def test_blocks_trailing_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "const x = 1 // trailing\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -84,10 +108,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -99,46 +128,71 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_allows_url_in_string(tool_use, assert_allows):
+def test_allows_url_in_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": 'const u = "https://x.com/a"\n'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_double_slash_in_template_literal(tool_use, assert_allows):
+def test_allows_double_slash_in_template_literal(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "const u = `a//b`\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_private_field_js(tool_use, assert_allows):
+def test_allows_private_field_js(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "class A { #x = 1 }\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_hash_in_python_string(tool_use, assert_allows):
+def test_allows_hash_in_python_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.py", "content": 'x = "a # b"\n'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_hash_in_python_docstring(tool_use, assert_allows):
+def test_blocks_a_docstring_holding_a_hash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -147,10 +201,16 @@ def test_allows_hash_in_python_docstring(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _, stderr = assert_blocked(result, BLOCK_MSG)
+    assert 'L2: """a # b"""' in stderr
 
 
-def test_allows_shebang_first_line(tool_use, assert_allows):
+def test_allows_shebang_first_line(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -159,28 +219,43 @@ def test_allows_shebang_first_line(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_no_comment(tool_use, assert_allows):
+def test_allows_no_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "const x = 1\nconst y = 2\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_scans_the_claude_tree_like_any_other_source(tool_use, assert_blocks):
+def test_scans_the_claude_tree_like_any_other_source(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/home/u/.claude/hooks/x.py", "content": "# doc\nx = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, "comment")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "comment")
 
 
-def test_allows_a_docstring_in_the_claude_tree(tool_use, assert_allows):
+def test_blocks_a_docstring_in_the_claude_tree(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -189,10 +264,16 @@ def test_allows_a_docstring_in_the_claude_tree(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _, stderr = assert_blocked(result, BLOCK_MSG)
+    assert "Docstrings and doc comments are comments" in stderr
 
 
-def test_allows_a_tool_directive_in_the_claude_tree(tool_use, assert_allows):
+def test_allows_a_tool_directive_in_the_claude_tree(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -201,32 +282,76 @@ def test_allows_a_tool_directive_in_the_claude_tree(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_planning_specs(tool_use, assert_allows):
+def test_skips_planning_specs(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/specs/plan/x.ts", "content": "// note\nconst x = 1\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-@pytest.mark.parametrize(
-    "marker",
-    ["// Arrange", "// Act", "// Assert", "// Act / Assert", "// Arrange / Act"],
-)
-def test_blocks_former_aaa_marker_in_test_file(tool_use, assert_blocks, marker):
+@pytest.mark.parametrize("marker", ["// Act / Assert", "// Arrange / Act"])
+def test_blocks_a_combined_marker_in_test_file(tool_use, run_hook, marker):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.test.ts", "content": f"{marker}\nconst x = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _, stderr = assert_blocked(result, BLOCK_MSG)
+    assert f"L1: {marker}" in stderr
 
 
-def test_blocks_former_aaa_hash_marker_in_python_test(tool_use, assert_blocks):
+@pytest.mark.parametrize("marker", ["// Arrange", "// Act", "// Assert"])
+def test_allows_a_bare_marker_in_test_file(tool_use, run_hook, marker):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/app.test.ts", "content": f"{marker}\nconst x = 1\n"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    code, _ = assert_allowed(result)
+    assert code == 0
+
+
+def test_blocks_a_bare_marker_outside_a_test_file(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/app.ts", "content": "// Arrange\nconst x = 1\n"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _, stderr = assert_blocked(result, BLOCK_MSG)
+    assert "L1: // Arrange" in stderr
+
+
+def test_blocks_former_aaa_hash_marker_in_python_test(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -235,10 +360,15 @@ def test_blocks_former_aaa_hash_marker_in_python_test(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_prose_comment_in_test_file(tool_use, assert_blocks):
+def test_blocks_prose_comment_in_test_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -247,10 +377,15 @@ def test_blocks_prose_comment_in_test_file(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_marker_with_description_in_test_file(tool_use, assert_blocks):
+def test_blocks_marker_with_description_in_test_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -259,10 +394,15 @@ def test_blocks_marker_with_description_in_test_file(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_no_per_line_suppression_marker(tool_use, assert_blocks):
+def test_no_per_line_suppression_marker(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -271,10 +411,15 @@ def test_no_per_line_suppression_marker(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_no_file_level_suppression_marker(tool_use, assert_blocks):
+def test_no_file_level_suppression_marker(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -283,7 +428,11 @@ def test_no_file_level_suppression_marker(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
 @pytest.mark.parametrize(
@@ -316,10 +465,15 @@ def test_no_file_level_suppression_marker(tool_use, assert_blocks):
         ("/repo/src/app.py", "# SPDX-FileCopyrightText: 2026 Example\nx = 1\n"),
     ],
 )
-def test_allows_tool_directive(tool_use, assert_allows, file_path, content):
+def test_allows_tool_directive(tool_use, run_hook, file_path, content):
+    # Arrange
     payload = tool_use("Write", {"file_path": file_path, "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -330,13 +484,19 @@ def test_allows_tool_directive(tool_use, assert_allows, file_path, content):
         "// noqa was removed from the python side\nconst x = 1\n",
     ],
 )
-def test_blocks_prose_that_mentions_a_tool(tool_use, assert_blocks, content):
+def test_blocks_prose_that_mentions_a_tool(tool_use, run_hook, content):
+    # Arrange
     payload = tool_use("Write", {"file_path": "/repo/src/app.ts", "content": content})
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_prose_continuation_of_directive_block(tool_use, assert_blocks):
+def test_blocks_prose_continuation_of_directive_block(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -345,64 +505,99 @@ def test_blocks_prose_continuation_of_directive_block(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_skips_non_source_extension(tool_use, assert_allows):
+def test_skips_non_source_extension(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/README.md", "content": "<!-- md comment -->\n# Title\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_unknown_comment_syntax_extension(tool_use, assert_allows):
+def test_skips_unknown_comment_syntax_extension(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts.tmpl", "content": "// note\nconst x = 1\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_empty_file_path(tool_use, assert_allows):
+def test_allows_empty_file_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "// note\nconst x = 1\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_string_with_escaped_backslash(tool_use, assert_allows):
+def test_allows_string_with_escaped_backslash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": 'const s = "a\\tb//c"\n'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_ignores_non_string_content(tool_use, assert_allows):
+def test_ignores_non_string_content(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": 123},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_ignores_non_string_edit(tool_use, assert_allows):
+def test_ignores_non_string_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {"file_path": "/repo/src/app.ts", "old_string": "a", "new_string": 5},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_ignores_multiedit_non_string_new_string(tool_use, assert_allows):
+def test_ignores_multiedit_non_string_new_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -411,10 +606,15 @@ def test_ignores_multiedit_non_string_new_string(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_skips_node_modules(tool_use, assert_allows):
+def test_skips_node_modules(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -423,43 +623,69 @@ def test_skips_node_modules(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_former_aaa_marker_in_go_test_file(tool_use, assert_blocks):
+def test_allows_a_bare_marker_in_go_test_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/pkg/x_test.go", "content": "// Arrange\nx := 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    code, _ = assert_allowed(result)
+    assert code == 0
 
 
-def test_blocks_former_aaa_marker_in_e2e_segment(tool_use, assert_blocks):
+def test_allows_a_bare_marker_in_e2e_segment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/e2e/flow.ts", "content": "// Act\nconst x = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    code, _ = assert_allowed(result)
+    assert code == 0
 
 
-def test_ignores_read_tool(tool_use, assert_allows):
+def test_ignores_read_tool(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Read",
         {"file_path": "/repo/src/app.ts"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_ignores_multiedit_non_dict_edit(tool_use, assert_allows):
+def test_ignores_multiedit_non_dict_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {"file_path": "/repo/src/app.ts", "edits": ["not-a-dict"]},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 MODULE_WITH_DOCSTRINGS = '''"""Module doc.
@@ -487,8 +713,9 @@ def python_module(tmp_path):
 
 
 def test_blocks_comment_below_a_docstring_closed_by_the_fragment(
-    tool_use, assert_blocks, python_module
+    tool_use, run_hook, python_module
 ):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -498,12 +725,17 @@ def test_blocks_comment_below_a_docstring_closed_by_the_fragment(
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
 def test_allows_a_hash_line_inside_a_docstring_opened_by_the_fragment(
-    tool_use, assert_allows, python_module
+    tool_use, run_hook, python_module
 ):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -513,12 +745,17 @@ def test_allows_a_hash_line_inside_a_docstring_opened_by_the_fragment(
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_allows_an_edit_that_carries_a_pre_existing_comment(
-    tool_use, assert_allows, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     path = tmp_path / "legacy.py"
     path.write_text("# inherited note\nx = 1\n", encoding="utf-8")
     payload = tool_use(
@@ -530,10 +767,15 @@ def test_allows_an_edit_that_carries_a_pre_existing_comment(
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_a_second_copy_of_an_existing_comment(tool_use, assert_blocks, tmp_path):
+def test_blocks_a_second_copy_of_an_existing_comment(tool_use, run_hook, tmp_path):
+    # Arrange
     path = tmp_path / "legacy.py"
     path.write_text("# inherited note\nx = 1\n", encoding="utf-8")
     payload = tool_use(
@@ -545,12 +787,17 @@ def test_blocks_a_second_copy_of_an_existing_comment(tool_use, assert_blocks, tm
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
 def test_blocks_a_comment_added_by_one_edit_of_a_multiedit(
-    tool_use, assert_blocks, python_module
+    tool_use, run_hook, python_module
 ):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -565,12 +812,15 @@ def test_blocks_a_comment_added_by_one_edit_of_a_multiedit(
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_allows_a_multiedit_that_adds_no_comment(
-    tool_use, assert_allows, python_module
-):
+def test_allows_a_multiedit_that_adds_no_comment(tool_use, run_hook, python_module):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -579,12 +829,17 @@ def test_allows_a_multiedit_that_adds_no_comment(
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_blocks_when_old_string_does_not_match_the_file(
-    tool_use, assert_blocks, python_module
+    tool_use, run_hook, python_module
 ):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -594,10 +849,15 @@ def test_blocks_when_old_string_does_not_match_the_file(
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_leaves_the_file_untouched(tool_use, assert_blocks, python_module):
+def test_leaves_the_file_untouched(tool_use, run_hook, python_module):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -607,13 +867,18 @@ def test_leaves_the_file_untouched(tool_use, assert_blocks, python_module):
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
     assert python_module.read_text(encoding="utf-8") == MODULE_WITH_DOCSTRINGS
 
 
 def test_falls_back_to_the_fragment_on_a_file_past_the_size_ceiling(
-    tool_use, assert_blocks, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     path = tmp_path / "huge.py"
     path.write_text("x = 1\n" * 120_000, encoding="utf-8")
     payload = tool_use(
@@ -625,19 +890,29 @@ def test_falls_back_to_the_fragment_on_a_file_past_the_size_ceiling(
         },
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_blocks_after_an_unterminated_python_quote(tool_use, assert_blocks):
+def test_blocks_after_an_unterminated_python_quote(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.py", "content": "s = 'abc\n# explain\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_allows_a_multiline_shell_string_containing_a_hash(tool_use, assert_allows):
+def test_allows_a_multiline_shell_string_containing_a_hash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -646,33 +921,53 @@ def test_allows_a_multiline_shell_string_containing_a_hash(tool_use, assert_allo
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("suffix", [".pyi", ".pyw"])
-def test_blocks_comment_in_python_sibling_extension(tool_use, assert_blocks, suffix):
+def test_blocks_comment_in_python_sibling_extension(tool_use, run_hook, suffix):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": f"/repo/src/app{suffix}", "content": "# explain\nx = 1\n"},
     )
 
-    assert_blocks(HOOK, payload, BLOCK_MSG)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
-def test_allows_docstring_in_a_stub_file(tool_use, assert_allows):
+def test_blocks_docstring_in_a_stub_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.pyi", "content": '"""Stub."""\n\nx: int\n'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _, stderr = assert_blocked(result, BLOCK_MSG)
+    assert 'L1: """Stub."""' in stderr
 
 
-def test_bypass_env(tool_use, assert_allows, monkeypatch):
+def test_bypass_env(tool_use, run_hook, monkeypatch):
+    # Arrange
     monkeypatch.setenv("COMMENT_BLOCKER_DISABLE", "1")
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/app.ts", "content": "// explain\nconst x = 1\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

@@ -1,30 +1,4 @@
 #!/usr/bin/env python3
-"""
-typeorm-schema-sync.py
-
-PreToolUse hook that blocks the most common TypeORM schema-drift sources:
-
-  1. `synchronize: true` in any DataSource/createConnection/TypeOrmModule config
-     outside test files. Synchronize mutates the schema in place without
-     writing a migration, breaking parity between entity decorators and
-     migration history.
-  2. Direct `.synchronize()` calls on a DataSource in application code.
-  3. `@Index(...)`, `@Unique(...)`, and `@Check(...)` declarations without
-     an explicit name argument. Default names are SHA1 hashes that collide
-     with raw-SQL names and produce unreadable diffs.
-
-Rule source: ~/.claude/rules/lang/typeorm-migrations.md
-
-Scope:
-  Write/Edit/MultiEdit on *.ts and *.js files that are not under
-  */test/* or */__tests__/*.
-
-Bypass:
-  TYPEORM_SCHEMA_SYNC_DISABLE=1
-  Use for greenfield prototyping where synchronize is intentional.
-  Never bypass in code paths that run in staging or production.
-"""
-
 from __future__ import annotations
 
 import json
@@ -254,7 +228,7 @@ def main() -> int:
 
     print(
         "Blocked: TypeORM schema-sync defect. "
-        "Rule: ~/.claude/rules/lang/typeorm-migrations.md.\n"
+        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
         + "\n".join(all_findings)
         + "\n\nFix: set synchronize to false, write migrations with "
         "`typeorm migration:generate`, and pass explicit names to every "

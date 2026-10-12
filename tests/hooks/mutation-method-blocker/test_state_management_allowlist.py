@@ -1,15 +1,3 @@
-"""State-management library allowlist coverage.
-
-Item 123 of the plan. Confirms that mutations inside Immer `produce`,
-Mutative `create`, Redux Toolkit `createSlice` reducers and `extraReducers`,
-Pinia `defineStore`, Vuex `mutations`, MobX actions, Zustand `set(produce(...))`,
-and Yjs CRDT types are auto-allowed.
-
-The allowlist is critical to avoid punishing canonical state-management
-patterns. This file validates each library scope individually so a regression
-in one detector does not silently break the others.
-"""
-
 from __future__ import annotations
 
 import os
@@ -476,28 +464,37 @@ ALL_ALLOWED = (
 
 @pytest.mark.parametrize(("label", "snippet"), ALL_ALLOWED)
 def test_state_management_scope_allowed(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/state.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: unexpected block\n{stderr}"
 
 
 @pytest.mark.parametrize(("label", "snippet"), SVELTE_RUNES_FIXTURES)
 def test_svelte_runes_scope_allowed(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/lib/Counter.svelte.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: unexpected block\n{stderr}"
 
 
 @pytest.mark.parametrize(("label", "path", "snippet"), STATE_MGMT_FILENAME_FIXTURES)
 def test_state_management_filename_allowed(run_hook, label, path, snippet):
+    # Arrange
     payload = make_write_payload(path, snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 0, f"{label}: unexpected block\n{stderr}"
 
 
@@ -547,10 +544,13 @@ items.push('x');
 
 @pytest.mark.parametrize(("label", "snippet"), STATE_MGMT_MISUSE_FIXTURES)
 def test_state_management_misuse_still_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/state.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: should have been blocked\n{stderr}"
 
 
@@ -576,10 +576,13 @@ function sortAsc() {
 
 @pytest.mark.parametrize(("label", "snippet"), SVELTE_STATE_RAW_BLOCKED_FIXTURES)
 def test_svelte_state_raw_mutations_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/lib/store.svelte.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: $state.raw mutation should block\n{stderr}"
 
 
@@ -607,10 +610,13 @@ function bump() {
 
 @pytest.mark.parametrize(("label", "snippet"), SVELTE_DERIVED_REASSIGN_FIXTURES)
 def test_svelte_derived_reassignment_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/lib/comp.svelte.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: $derived reassignment should block\n{stderr}"
     assert "svelte.derived-reassign" in stderr or "MMB098" in stderr
 
@@ -648,15 +654,19 @@ function bad(key) {
 
 @pytest.mark.parametrize(("label", "snippet"), VUE_SHALLOW_READONLY_BLOCKED_FIXTURES)
 def test_vue_shallow_readonly_nested_writes_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: nested write on shallowReadonly should block\n{stderr}"
     assert "vue.shallow-readonly-nested-write" in stderr or "MMB099" in stderr
 
 
 def test_pinia_patch_callback_allows_state_mutation(run_hook):
+    # Arrange
     snippet = """import { defineStore } from "pinia";
 const useCounter = defineStore("counter", {
   state: () => ({ count: 0 }),
@@ -670,12 +680,15 @@ function bump() {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
-    assert code in (0, 1), f"$patch callback mutation should not block\n{stderr}"
+    # Assert
+    assert code == 0, f"$patch callback mutation should not block\n{stderr}"
 
 
 def test_pinia_patch_arrow_single_param_allowed(run_hook):
+    # Arrange
     snippet = """import { defineStore } from "pinia";
 const useCounter = defineStore("counter", {
   state: () => ({ items: [] }),
@@ -689,9 +702,12 @@ function add(item) {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
-    assert "array.push" not in stderr or code == 0
+    # Assert
+    assert code == 0, f"$patch callback mutation should not block\n{stderr}"
+    assert "array.push" not in stderr
 
 
 XSTATE_NON_ASSIGN_BLOCKED_FIXTURES: list[tuple[str, str]] = [
@@ -724,15 +740,19 @@ const machine = setup({
 
 @pytest.mark.parametrize(("label", "snippet"), XSTATE_NON_ASSIGN_BLOCKED_FIXTURES)
 def test_xstate_non_assign_context_write_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/machine.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: direct context write should block\n{stderr}"
     assert "xstate.non-assign-context-write" in stderr or "MMB103" in stderr
 
 
 def test_xstate_assign_callback_context_write_allowed(run_hook):
+    # Arrange
     snippet = """import { setup, assign } from "xstate";
 const machine = setup({
   actions: {
@@ -744,8 +764,10 @@ const machine = setup({
 """
     payload = make_write_payload("/repo/src/machine.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "xstate.non-assign-context-write" not in stderr
 
 
@@ -773,15 +795,19 @@ function bad() {
 
 @pytest.mark.parametrize(("label", "snippet"), EFFECT_TS_REF_BLOCKED_FIXTURES)
 def test_effect_ts_ref_value_assign_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/program.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: Effect-TS Ref.value assignment should block\n{stderr}"
     assert "effect-ts.ref-value-assign" in stderr or "MMB102" in stderr
 
 
 def test_effect_ts_ref_set_allowed(run_hook):
+    # Arrange
     snippet = """import { Effect, Ref } from "effect";
 const program = Effect.gen(function* () {
   const ref = yield* Ref.make(0);
@@ -790,8 +816,10 @@ const program = Effect.gen(function* () {
 """
     payload = make_write_payload("/repo/src/program.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "effect-ts.ref-value-assign" not in stderr
 
 
@@ -821,15 +849,19 @@ function bad() {
 
 @pytest.mark.parametrize(("label", "snippet"), NANOSTORES_COMPUTED_BLOCKED_FIXTURES)
 def test_nanostores_computed_write_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, f"{label}: nanostores computed write should block\n{stderr}"
     assert "nanostores.computed-write" in stderr or "MMB101" in stderr
 
 
 def test_nanostores_atom_set_allowed(run_hook):
+    # Arrange
     snippet = """import { atom } from "nanostores";
 const counter = atom(0);
 function bump() {
@@ -838,8 +870,10 @@ function bump() {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "nanostores.computed-write" not in stderr
 
 
@@ -867,10 +901,13 @@ function bump() {
 
 @pytest.mark.parametrize(("label", "snippet"), TANSTACK_STORE_BLOCKED_FIXTURES)
 def test_tanstack_store_state_direct_write_blocked(run_hook, label, snippet):
+    # Arrange
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
+    # Act
     code, stderr = run_hook(payload)
 
+    # Assert
     assert code == 2, (
         f"{label}: TanStack store.state direct write should block\n{stderr}"
     )
@@ -878,6 +915,7 @@ def test_tanstack_store_state_direct_write_blocked(run_hook, label, snippet):
 
 
 def test_tanstack_setstate_callback_allowed(run_hook):
+    # Arrange
     snippet = """import { Store } from "@tanstack/store";
 const store = new Store({ count: 0 });
 function bump() {
@@ -886,12 +924,15 @@ function bump() {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "tanstack.store-state-write" not in stderr
 
 
 def test_vue_shallow_readonly_top_level_not_flagged_by_new_detector(run_hook):
+    # Arrange
     snippet = """import { shallowReadonly } from "vue";
 const state = shallowReadonly({ count: 0 });
 function bad() {
@@ -900,8 +941,10 @@ function bad() {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "vue.shallow-readonly-nested-write" not in stderr
 
 
@@ -943,16 +986,20 @@ function bump() {
     "name,snippet", MOBX_ENFORCE_ACTIONS_BLOCKED_FIXTURES, ids=lambda v: v
 )
 def test_mobx_observable_outside_action_blocks(name, snippet, run_hook):
+    # Arrange
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "mobx.observable-outside-action" in stderr, (
         f"{name}: detector did not fire\n{stderr}"
     )
 
 
 def test_mobx_runInAction_wrapped_allowed(run_hook):
+    # Arrange
     snippet = """import { observable, runInAction, configure } from "mobx";
 configure({ enforceActions: "always" });
 const store = observable({ count: 0 });
@@ -964,12 +1011,15 @@ function bump() {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "mobx.observable-outside-action" not in stderr
 
 
 def test_mobx_without_enforce_actions_skipped(run_hook):
+    # Arrange
     snippet = """import { observable } from "mobx";
 const store = observable({ count: 0 });
 function bump() {
@@ -978,8 +1028,10 @@ function bump() {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "mobx.observable-outside-action" not in stderr
 
 
@@ -1028,16 +1080,20 @@ function set() {
     "name,snippet", YJS_OUTSIDE_TRANSACT_BLOCKED_FIXTURES, ids=lambda v: v
 )
 def test_yjs_mutation_outside_transact_blocks(name, snippet, run_hook):
+    # Arrange
     payload = make_write_payload("/repo/src/sync.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "yjs.mutation-outside-transact" in stderr, (
         f"{name}: detector did not fire\n{stderr}"
     )
 
 
 def test_yjs_mutation_inside_transact_allowed(run_hook):
+    # Arrange
     snippet = """import * as Y from "yjs";
 const doc = new Y.Doc();
 const yMap = doc.getMap("settings");
@@ -1050,12 +1106,15 @@ function update() {
 """
     payload = make_write_payload("/repo/src/sync.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "yjs.mutation-outside-transact" not in stderr
 
 
 def test_yjs_nested_transact_allowed(run_hook):
+    # Arrange
     snippet = """import * as Y from "yjs";
 const doc = new Y.Doc();
 const yArr = new Y.Array();
@@ -1069,8 +1128,10 @@ function bulk(items) {
 """
     payload = make_write_payload("/repo/src/sync.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "yjs.mutation-outside-transact" not in stderr
 
 
@@ -1098,16 +1159,20 @@ const counter = atom({ key: 'counter', default: 0 });
 
 @pytest.mark.parametrize("name,snippet", RECOIL_DEPRECATION_FIXTURES, ids=lambda v: v)
 def test_recoil_deprecation_pointer_emitted(name, snippet, run_hook):
+    # Arrange
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "recoil.deprecation-pointer" in stderr, (
         f"{name}: deprecation pointer not emitted\n{stderr}"
     )
 
 
 def test_recoil_setter_mutations_remain_allowed(run_hook):
+    # Arrange
     snippet = """import { atom, useRecoilState } from 'recoil';
 const counterState = atom({ key: 'counter', default: 0 });
 function Counter() {
@@ -1117,32 +1182,38 @@ function Counter() {
 """
     payload = make_write_payload("/repo/src/state.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "recoil.deprecation-pointer" in stderr
     forbidden = (
         "array-mutation",
         "collection-mutation",
         "property-assignment",
     )
-    for token in forbidden:
-        assert token not in stderr, (
-            f"Recoil setter mutation incorrectly flagged with {token}\n{stderr}"
-        )
+    flagged = [token for token in forbidden if token in stderr]
+    assert flagged == [], (
+        f"Recoil setter mutation incorrectly flagged with {flagged}\n{stderr}"
+    )
 
 
 def test_recoil_deprecation_skipped_without_recoil_import(run_hook):
+    # Arrange
     snippet = """import { atom } from "jotai";
 const counter = atom(0);
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "recoil.deprecation-pointer" not in stderr
 
 
 def test_mobx_action_callback_allowed(run_hook):
+    # Arrange
     snippet = """import { observable, action, configure } from "mobx";
 configure({ enforceActions: "always" });
 const store = observable({ count: 0 });
@@ -1152,8 +1223,10 @@ const bump = action(() => {
 """
     payload = make_write_payload("/repo/src/store.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "mobx.observable-outside-action" not in stderr
 
 
@@ -1203,16 +1276,20 @@ function bad() {
     ids=lambda v: v,
 )
 def test_automerge_direct_mutation_blocks(name, snippet, run_hook):
+    # Arrange
     payload = make_write_payload("/repo/src/sync.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "automerge.direct-mutation" in stderr, (
         f"{name}: detector did not fire\n{stderr}"
     )
 
 
 def test_automerge_change_callback_mutation_allowed(run_hook):
+    # Arrange
     snippet = """import * as Automerge from "@automerge/automerge";
 let doc = Automerge.init();
 function update() {
@@ -1224,12 +1301,15 @@ function update() {
 """
     payload = make_write_payload("/repo/src/sync.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "automerge.direct-mutation" not in stderr
 
 
 def test_automerge_without_import_skipped(run_hook):
+    # Arrange
     snippet = """const doc = { count: 0 };
 function bump() {
   doc.count = 1;
@@ -1237,8 +1317,10 @@ function bump() {
 """
     payload = make_write_payload("/repo/src/plain.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "automerge.direct-mutation" not in stderr
 
 
@@ -1287,28 +1369,35 @@ def _stage3_filter():
 def test_async_iterator_return_throw_blocks_under_stage3(
     name, snippet, run_hook, _stage3_filter
 ):
+    # Arrange
     payload = make_write_payload("/repo/src/iter.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "async-iterator.return-throw" in stderr, (
         f"{name}: detector did not fire\n{stderr}"
     )
 
 
 def test_async_iterator_return_throw_silent_at_stage4_default(run_hook):
+    # Arrange
     snippet = """async function cleanup(iter: AsyncIterator<string>) {
   await iter.return("done");
 }
 """
     payload = make_write_payload("/repo/src/iter.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "async-iterator.return-throw" not in stderr
 
 
 def test_async_iterator_generator_return_not_flagged(run_hook, _stage3_filter):
+    # Arrange
     snippet = """function* gen() { yield 1; }
 function caller() {
   const it = gen();
@@ -1317,6 +1406,8 @@ function caller() {
 """
     payload = make_write_payload("/repo/src/iter.ts", snippet)
 
-    code, stderr = run_hook(payload)
+    # Act
+    _, stderr = run_hook(payload)
 
+    # Assert
     assert "async-iterator.return-throw" not in stderr

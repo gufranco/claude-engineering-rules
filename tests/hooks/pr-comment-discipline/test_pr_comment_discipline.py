@@ -1,13 +1,9 @@
-"""Coverage for the pr-comment-discipline hook.
-
-Source rule: `~/.claude/rules/pr-comment-discipline.md`.
-"""
-
 from __future__ import annotations
 
 import json
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "pr-comment-discipline"
 REPO = "repos/acme/widgets"
@@ -21,13 +17,19 @@ REPO = "repos/acme/widgets"
         "gh pr comment https://github.com/acme/widgets/pull/12 -b hi",
     ],
 )
-def test_blocks_pr_conversation_comment(tool_use, assert_blocks, command):
+def test_blocks_pr_conversation_comment(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_blocks(HOOK, payload, "PRC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC001")
 
 
-def test_blocks_review_with_body_flag(tool_use, assert_blocks):
+def test_blocks_review_with_body_flag(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -35,25 +37,40 @@ def test_blocks_review_with_body_flag(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC002")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC002")
 
 
-def test_blocks_review_with_body_file_flag(tool_use, assert_blocks):
+def test_blocks_review_with_body_file_flag(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr review 12 --comment --body-file /tmp/summary.md"},
     )
 
-    assert_blocks(HOOK, payload, "PRC002")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC002")
 
 
-def test_allows_review_event_without_body(tool_use, assert_allows):
+def test_allows_review_event_without_body(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "gh pr review 12 --approve"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_reviews_post_with_nonempty_body(tool_use, assert_blocks, tmp_path):
+def test_blocks_reviews_post_with_nonempty_body(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "review.json"
     body.write_text(
         json.dumps(
@@ -71,10 +88,15 @@ def test_blocks_reviews_post_with_nonempty_body(tool_use, assert_blocks, tmp_pat
         {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {body}"},
     )
 
-    assert_blocks(HOOK, payload, "PRC003")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC003")
 
 
-def test_allows_reviews_post_with_empty_body(tool_use, assert_allows, tmp_path):
+def test_allows_reviews_post_with_empty_body(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "review.json"
     body.write_text(
         json.dumps(
@@ -92,10 +114,15 @@ def test_allows_reviews_post_with_empty_body(tool_use, assert_allows, tmp_path):
         {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_standalone_review_comment(tool_use, assert_blocks, tmp_path):
+def test_blocks_standalone_review_comment(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "comment.json"
     body.write_text(
         json.dumps({"path": "src/a.ts", "line": 4, "body": "off by one"}),
@@ -106,10 +133,15 @@ def test_blocks_standalone_review_comment(tool_use, assert_blocks, tmp_path):
         {"command": f"gh api {REPO}/pulls/12/comments -X POST --input {body}"},
     )
 
-    assert_blocks(HOOK, payload, "PRC004")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC004")
 
 
-def test_allows_review_comment_with_in_reply_to(tool_use, assert_allows, tmp_path):
+def test_allows_review_comment_with_in_reply_to(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "comment.json"
     body.write_text(
         json.dumps({"in_reply_to": 9981, "body": "Fixed in a1b2c3d."}),
@@ -120,10 +152,15 @@ def test_allows_review_comment_with_in_reply_to(tool_use, assert_allows, tmp_pat
         {"command": f"gh api {REPO}/pulls/12/comments -X POST --input {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_thread_reply_endpoint(tool_use, assert_allows, tmp_path):
+def test_allows_thread_reply_endpoint(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text(json.dumps({"body": "Fixed in a1b2c3d."}), encoding="utf-8")
     payload = tool_use(
@@ -136,28 +173,43 @@ def test_allows_thread_reply_endpoint(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_issue_comments_endpoint(tool_use, assert_blocks):
+def test_blocks_issue_comments_endpoint(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPO}/issues/12/comments -X POST -f body=ping"},
     )
 
-    assert_blocks(HOOK, payload, "PRC005")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC005")
 
 
-def test_allows_gh_issue_comment_subcommand(tool_use, assert_allows):
+def test_allows_gh_issue_comment_subcommand(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": 'gh issue comment 12 --body "Repro is in the description."'},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_gitlab_mr_note(tool_use, assert_blocks):
+def test_blocks_gitlab_mr_note(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -168,10 +220,15 @@ def test_blocks_gitlab_mr_note(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC006")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC006")
 
 
-def test_blocks_commit_comment(tool_use, assert_blocks):
+def test_blocks_commit_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -181,10 +238,15 @@ def test_blocks_commit_comment(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC007")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC007")
 
 
-def test_blocks_new_gitlab_discussion(tool_use, assert_blocks):
+def test_blocks_new_gitlab_discussion(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -196,10 +258,15 @@ def test_blocks_new_gitlab_discussion(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC008")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC008")
 
 
-def test_allows_gitlab_discussion_note_reply(tool_use, assert_allows):
+def test_allows_gitlab_discussion_note_reply(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -211,10 +278,15 @@ def test_allows_gitlab_discussion_note_reply(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_bitbucket_parentless_comment(tool_use, assert_blocks, tmp_path):
+def test_blocks_bitbucket_parentless_comment(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "bb.json"
     body.write_text(json.dumps({"content": {"raw": "Fixed."}}), encoding="utf-8")
     payload = tool_use(
@@ -230,10 +302,15 @@ def test_blocks_bitbucket_parentless_comment(tool_use, assert_blocks, tmp_path):
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC009")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC009")
 
 
-def test_allows_bitbucket_reply_with_parent(tool_use, assert_allows, tmp_path):
+def test_allows_bitbucket_reply_with_parent(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "bb.json"
     body.write_text(
         json.dumps({"content": {"raw": "Fixed."}, "parent": {"id": 77}}),
@@ -251,7 +328,11 @@ def test_allows_bitbucket_reply_with_parent(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -265,33 +346,54 @@ def test_allows_bitbucket_reply_with_parent(tool_use, assert_allows, tmp_path):
         "git commit -m 'fix: off by one'",
     ],
 )
-def test_allows_unrelated_and_read_only_commands(tool_use, assert_allows, command):
+def test_allows_unrelated_and_read_only_commands(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_bash_tools(tool_use, assert_allows):
+def test_allows_non_bash_tools(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write", {"file_path": "/tmp/x.md", "content": "gh pr comment 1"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_allows(tool_use, assert_allows):
+def test_bypass_env_allows(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 'gh pr comment 12 --body "hi"'})
 
-    assert_allows(HOOK, payload, env={"PR_COMMENT_DISCIPLINE_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"PR_COMMENT_DISCIPLINE_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_malformed_payload_is_ignored(run_hook):
-    code, _stdout, _stderr = run_hook(HOOK, {"tool_name": "Bash"})
+    # Arrange
+    payload = {"tool_name": "Bash"}
 
+    # Act
+    code, _stdout, _stderr = run_hook(HOOK, payload)
+
+    # Assert
     assert code == 0
 
 
-def test_inline_heredoc_body_is_read(tool_use, assert_blocks):
+def test_inline_heredoc_body_is_read(tool_use, run_hook):
+    # Arrange
     command = (
         f"gh api {REPO}/pulls/12/reviews -X POST --input - <<'JSON'\n"
         '{"event": "COMMENT", "body": "Nice work overall.", "comments": []}\n'
@@ -299,13 +401,22 @@ def test_inline_heredoc_body_is_read(tool_use, assert_blocks):
     )
     payload = tool_use("Bash", {"command": command})
 
-    assert_blocks(HOOK, payload, "PRC003")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC003")
 
 
-def test_unparseable_quoting_still_blocks(tool_use, assert_blocks):
+def test_unparseable_quoting_still_blocks(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 'gh pr comment 12 --body "unbalanced'})
 
-    assert_blocks(HOOK, payload, "PRC001")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC001")
 
 
 @pytest.mark.parametrize(
@@ -317,22 +428,32 @@ def test_unparseable_quoting_still_blocks(tool_use, assert_blocks):
         "-XPATCH",
     ],
 )
-def test_recognizes_every_method_spelling(tool_use, assert_blocks, method_flag):
+def test_recognizes_every_method_spelling(tool_use, run_hook, method_flag):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPO}/issues/12/comments {method_flag}"},
     )
 
-    assert_blocks(HOOK, payload, "PRC005")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC005")
 
 
-def test_read_only_method_is_not_a_write(tool_use, assert_allows):
+def test_read_only_method_is_not_a_write(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPO}/issues/12/comments --method GET"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -343,10 +464,15 @@ def test_read_only_method_is_not_a_write(tool_use, assert_allows):
         f"cut -d, -f1 ids.csv; gh api {REPO}/issues/12/comments",
     ],
 )
-def test_a_flag_from_another_command_is_not_a_payload(tool_use, assert_allows, command):
+def test_a_flag_from_another_command_is_not_a_payload(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -358,32 +484,48 @@ def test_a_flag_from_another_command_is_not_a_payload(tool_use, assert_allows, c
     ],
 )
 def test_a_write_chained_after_another_command_is_still_caught(
-    tool_use, assert_blocks, command, code
+    tool_use, run_hook, command, code
 ):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_blocks(HOOK, payload, code)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, code)
 
 
-def test_trailing_payload_flag_without_a_value(tool_use, assert_blocks):
+def test_trailing_payload_flag_without_a_value(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPO}/pulls/12/comments -X POST --input"},
     )
 
-    assert_blocks(HOOK, payload, "PRC004")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC004")
 
 
-def test_stdin_payload_falls_back_to_the_command(tool_use, assert_blocks):
+def test_stdin_payload_falls_back_to_the_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPO}/pulls/12/comments -X POST --input -"},
     )
 
-    assert_blocks(HOOK, payload, "PRC004")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC004")
 
 
-def test_missing_payload_file_reads_as_no_summary(tool_use, assert_allows):
+def test_missing_payload_file_reads_as_no_summary(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -394,12 +536,17 @@ def test_missing_payload_file_reads_as_no_summary(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_unbalanced_json_in_payload_uses_the_text_fallback(
-    tool_use, assert_blocks, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     body = tmp_path / "broken.json"
     body.write_text('{"body": "Overall summary", "comments": [', encoding="utf-8")
     payload = tool_use(
@@ -407,10 +554,15 @@ def test_unbalanced_json_in_payload_uses_the_text_fallback(
         {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {body}"},
     )
 
-    assert_blocks(HOOK, payload, "PRC003")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC003")
 
 
-def test_field_flag_body_counts_as_a_summary(tool_use, assert_blocks):
+def test_field_flag_body_counts_as_a_summary(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -421,10 +573,15 @@ def test_field_flag_body_counts_as_a_summary(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC003")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC003")
 
 
-def test_empty_field_flag_body_is_allowed(tool_use, assert_allows):
+def test_empty_field_flag_body_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -434,10 +591,15 @@ def test_empty_field_flag_body_is_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_json_array_payload_is_not_a_body(tool_use, assert_allows, tmp_path):
+def test_json_array_payload_is_not_a_body(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "reply.json"
     body.write_text('[{"in_reply_to": 9981}]', encoding="utf-8")
     payload = tool_use(
@@ -445,10 +607,15 @@ def test_json_array_payload_is_not_a_body(tool_use, assert_allows, tmp_path):
         {"command": f"gh api {REPO}/pulls/12/comments -X POST --input {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_glab_read_of_discussions_is_allowed(tool_use, assert_allows):
+def test_glab_read_of_discussions_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -459,10 +626,15 @@ def test_glab_read_of_discussions_is_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_curl_to_an_unrelated_endpoint_is_allowed(tool_use, assert_allows):
+def test_curl_to_an_unrelated_endpoint_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -473,37 +645,53 @@ def test_curl_to_an_unrelated_endpoint_is_allowed(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_profile_disable_skips_the_hook(tool_use, assert_allows):
+def test_profile_disable_skips_the_hook(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 'gh pr comment 12 --body "hi"'})
 
-    assert_allows(
-        HOOK,
-        payload,
-        env={"CLAUDE_DISABLED_HOOKS": "pr-comment-discipline"},
+    # Act
+    result = run_hook(
+        HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": "pr-comment-discipline"}
     )
 
+    # Assert
+    assert_allowed(result)
 
-def test_empty_command_is_ignored(tool_use, assert_allows):
+
+def test_empty_command_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unreadable_payload_path_falls_back(tool_use, assert_allows, tmp_path):
+def test_unreadable_payload_path_falls_back(tool_use, run_hook, tmp_path):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {tmp_path}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_unparseable_command_still_reads_the_payload_file(
-    tool_use, assert_blocks, tmp_path
-):
+def test_unparseable_command_still_reads_the_payload_file(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "review.json"
     body.write_text('{"event": "COMMENT", "body": "Summary."}', encoding="utf-8")
     payload = tool_use(
@@ -515,10 +703,15 @@ def test_unparseable_command_still_reads_the_payload_file(
         },
     )
 
-    assert_blocks(HOOK, payload, "PRC003")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC003")
 
 
-def test_invalid_json_object_uses_the_text_fallback(tool_use, assert_blocks, tmp_path):
+def test_invalid_json_object_uses_the_text_fallback(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "review.json"
     body.write_text('{"body": } {"body": "Summary."}', encoding="utf-8")
     payload = tool_use(
@@ -526,10 +719,15 @@ def test_invalid_json_object_uses_the_text_fallback(tool_use, assert_blocks, tmp
         {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {body}"},
     )
 
-    assert_blocks(HOOK, payload, "PRC003")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "PRC003")
 
 
-def test_payload_without_a_body_key_is_allowed(tool_use, assert_allows, tmp_path):
+def test_payload_without_a_body_key_is_allowed(tool_use, run_hook, tmp_path):
+    # Arrange
     body = tmp_path / "review.json"
     body.write_text('{"event": "APPROVE"}', encoding="utf-8")
     payload = tool_use(
@@ -537,10 +735,15 @@ def test_payload_without_a_body_key_is_allowed(tool_use, assert_allows, tmp_path
         {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {body}"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_glab_write_to_an_unrelated_endpoint_is_allowed(tool_use, assert_allows):
+def test_glab_write_to_an_unrelated_endpoint_is_allowed(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -552,4 +755,8 @@ def test_glab_write_to_an_unrelated_endpoint_is_allowed(tool_use, assert_allows)
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

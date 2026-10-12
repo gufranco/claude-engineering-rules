@@ -1,11 +1,7 @@
-"""Coverage for the repo-fetch-blocker hook.
-
-Source rule: rules/repo-analysis.md.
-"""
-
 from __future__ import annotations
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "repo-fetch-blocker"
 
@@ -24,19 +20,29 @@ HOOK = "repo-fetch-blocker"
         "gh repo view anthropic/claude-code README.md",
     ],
 )
-def test_blocks_per_file_fetch(tool_use, assert_blocks, cmd):
+def test_blocks_per_file_fetch(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_blocks(HOOK, payload, "repo-analysis")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "repo-analysis")
 
 
-def test_blocks_in_compound_command(tool_use, assert_blocks):
+def test_blocks_in_compound_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "cd /tmp && curl https://raw.githubusercontent.com/o/r/main/x"},
     )
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
 @pytest.mark.parametrize(
@@ -58,10 +64,15 @@ def test_blocks_in_compound_command(tool_use, assert_blocks):
         "curl https://example.com/data.json",
     ],
 )
-def test_allows_carve_outs(tool_use, assert_allows, cmd):
+def test_allows_carve_outs(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -73,35 +84,60 @@ def test_allows_carve_outs(tool_use, assert_allows, cmd):
         "echo raw.githubusercontent.com",
     ],
 )
-def test_allows_unrelated(tool_use, assert_allows, cmd):
+def test_allows_unrelated(tool_use, run_hook, cmd):
+    # Arrange
     payload = tool_use("Bash", {"command": cmd})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("tool_name", ["Write", "Edit", "Read", "Grep"])
-def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
+def test_allows_unrelated_tools(tool_use, run_hook, tool_name):
+    # Arrange
     payload = tool_use(tool_name, {"file_path": "/tmp/x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_var_disables_check(tool_use, assert_allows):
+def test_bypass_env_var_disables_check(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "curl https://raw.githubusercontent.com/o/r/main/x.py"},
     )
 
-    assert_allows(HOOK, payload, env={"REPO_FETCH_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"REPO_FETCH_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_empty_command(tool_use, assert_allows):
+def test_handles_empty_command(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": ""})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_missing_tool_input(tool_use, assert_allows):
+def test_handles_missing_tool_input(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash")
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

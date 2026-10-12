@@ -1,15 +1,3 @@
-"""Tests for `hooks/compact-context-saver.py`.
-
-
-Observable behavior:
-- `pre`: writes a snapshot file containing the timestamp, current branch, and
-  porcelain git status to `~/.claude/.compact-context`.
-- `post`: reads the snapshot file and prints it to stdout under a context
-  header. No-op if the file does not exist.
-- Bypass via env or file registry skips both branches.
-- Unknown subcommand exits 1 with usage on stderr.
-"""
-
 from __future__ import annotations
 
 import os
@@ -62,9 +50,19 @@ def _snapshot_for(project: Path, *, timestamp: str = "2026-08-03 12:00:00 GMT") 
     )
 
 
+def _make_dirs(*directories: Path) -> None:
+    for directory in directories:
+        directory.mkdir()
+
+
 def test_pre_writes_snapshot(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
+
+    # Act
     result = _run("pre", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)})
+
+    # Assert
     assert result.returncode == 0
     assert snapshot.exists()
     body = snapshot.read_text(encoding="utf-8")
@@ -74,13 +72,16 @@ def test_pre_writes_snapshot(tmp_path: Path) -> None:
 
 
 def test_post_emits_saved_context(tmp_path: Path) -> None:
+    # Arrange
     project = tmp_path / "project"
     project.mkdir()
     snapshot = tmp_path / "snapshot"
     snapshot.write_text(_snapshot_for(project), encoding="utf-8")
 
+    # Act
     result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=project)
 
+    # Assert
     assert result.returncode == 0
     assert "Context preserved before compaction:" in result.stdout
     assert "=== Compact Context Snapshot ===" in result.stdout
@@ -89,6 +90,7 @@ def test_post_emits_saved_context(tmp_path: Path) -> None:
 def test_post_is_silent_when_the_snapshot_belongs_to_another_project(
     tmp_path: Path,
 ) -> None:
+    # Arrange
     mine = tmp_path / "minerva"
     theirs = tmp_path / "aesmovie"
     mine.mkdir()
@@ -96,8 +98,10 @@ def test_post_is_silent_when_the_snapshot_belongs_to_another_project(
     snapshot = tmp_path / "snapshot"
     snapshot.write_text(_snapshot_for(theirs), encoding="utf-8")
 
+    # Act
     result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=mine)
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
@@ -105,6 +109,7 @@ def test_post_is_silent_when_the_snapshot_belongs_to_another_project(
 def test_post_is_silent_for_a_legacy_snapshot_without_a_project_line(
     tmp_path: Path,
 ) -> None:
+    # Arrange
     project = tmp_path / "project"
     project.mkdir()
     snapshot = tmp_path / "snapshot"
@@ -113,13 +118,16 @@ def test_post_is_silent_for_a_legacy_snapshot_without_a_project_line(
         encoding="utf-8",
     )
 
+    # Act
     result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=project)
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_post_is_silent_when_the_snapshot_is_stale(tmp_path: Path) -> None:
+    # Arrange
     project = tmp_path / "project"
     project.mkdir()
     snapshot = tmp_path / "snapshot"
@@ -127,17 +135,21 @@ def test_post_is_silent_when_the_snapshot_is_stale(tmp_path: Path) -> None:
     ancient = time.time() - (48 * 60 * 60)
     os.utime(snapshot, (ancient, ancient))
 
+    # Act
     result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=project)
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_pre_records_the_project_root_and_session(tmp_path: Path) -> None:
+    # Arrange
     project = tmp_path / "project"
     project.mkdir()
     snapshot = tmp_path / "snapshot"
 
+    # Act
     result = _run(
         "pre",
         env={
@@ -147,6 +159,7 @@ def test_pre_records_the_project_root_and_session(tmp_path: Path) -> None:
         cwd=project,
     )
 
+    # Assert
     assert result.returncode == 0
     body = snapshot.read_text(encoding="utf-8")
     assert f"Project: {project.resolve()}" in body
@@ -154,28 +167,33 @@ def test_pre_records_the_project_root_and_session(tmp_path: Path) -> None:
 
 
 def test_pre_and_post_round_trip_within_one_project(tmp_path: Path) -> None:
+    # Arrange
     project = tmp_path / "project"
     project.mkdir()
     snapshot = tmp_path / "snapshot"
-
     _run("pre", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=project)
+
+    # Act
     result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=project)
 
+    # Assert
     assert result.returncode == 0
     assert "Context preserved before compaction:" in result.stdout
 
 
 def test_default_snapshot_path_is_distinct_per_project(tmp_path: Path) -> None:
+    # Arrange
     home = tmp_path / "home"
     first = tmp_path / "project-one"
     second = tmp_path / "project-two"
-    for directory in (home, first, second):
-        directory.mkdir()
+    _make_dirs(home, first, second)
     env = {"HOME": str(home), "CLAUDE_COMPACT_CONTEXT": ""}
-
     _run("pre", env=env, cwd=first)
+
+    # Act
     _run("pre", env=env, cwd=second)
 
+    # Assert
     written = sorted((home / ".claude" / ".compact-context.d").glob("*.snapshot"))
     assert len(written) == 2
 
@@ -183,74 +201,102 @@ def test_default_snapshot_path_is_distinct_per_project(tmp_path: Path) -> None:
 def test_default_post_ignores_a_snapshot_written_by_another_project(
     tmp_path: Path,
 ) -> None:
+    # Arrange
     home = tmp_path / "home"
     first = tmp_path / "project-one"
     second = tmp_path / "project-two"
-    for directory in (home, first, second):
-        directory.mkdir()
+    _make_dirs(home, first, second)
     env = {"HOME": str(home), "CLAUDE_COMPACT_CONTEXT": ""}
-
     _run("pre", env=env, cwd=first)
+
+    # Act
     result = _run("post", env=env, cwd=second)
 
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_pre_retires_the_legacy_global_snapshot(tmp_path: Path) -> None:
+    # Arrange
     home = tmp_path / "home"
     project = tmp_path / "project"
-    for directory in (home, project):
-        directory.mkdir()
+    _make_dirs(home, project)
     legacy = home / ".claude" / ".compact-context"
     legacy.parent.mkdir(parents=True, exist_ok=True)
     legacy.write_text(
         "=== Compact Context Snapshot ===\nBranch: other\n", encoding="utf-8"
     )
 
+    # Act
     result = _run(
         "pre", env={"HOME": str(home), "CLAUDE_COMPACT_CONTEXT": ""}, cwd=project
     )
 
+    # Assert
     assert result.returncode == 0
     assert not legacy.exists()
 
 
 def test_post_silent_when_snapshot_missing(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "missing"
+
+    # Act
     result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)})
+
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
 
 def test_default_subcommand_is_pre(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
+
+    # Act
     result = _run(env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)})
+
+    # Assert
     assert result.returncode == 0
     assert snapshot.exists()
 
 
 def test_unknown_subcommand_fails(tmp_path: Path) -> None:
-    result = _run("middle", env={"CLAUDE_COMPACT_CONTEXT": str(tmp_path / "x")})
+    # Arrange
+    text = "middle"
+
+    # Act
+    result = _run(text, env={"CLAUDE_COMPACT_CONTEXT": str(tmp_path / "x")})
+
+    # Assert
     assert result.returncode == 1
     assert "Usage" in result.stderr
 
 
 def test_env_disable_skips_pre(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
+
+    # Act
     result = _run(
         "pre",
         env={"CLAUDE_COMPACT_CONTEXT": str(snapshot), "COMPACT_CONTEXT_DISABLE": "1"},
     )
+
+    # Assert
     assert result.returncode == 0
     assert not snapshot.exists()
 
 
 def test_file_bypass_skips_post(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
     snapshot.write_text("=== Compact Context Snapshot ===\n", encoding="utf-8")
     state = tmp_path / "state.json"
     set_bypass("compact-context-saver", ttl_seconds=120, state_path=state)
+
+    # Act
     result = _run(
         "post",
         env={
@@ -258,6 +304,8 @@ def test_file_bypass_skips_post(tmp_path: Path) -> None:
             "CLAUDE_BYPASS_STATE": str(state),
         },
     )
+
+    # Assert
     assert result.returncode == 0
     assert result.stdout == ""
 
@@ -265,18 +313,26 @@ def test_file_bypass_skips_post(tmp_path: Path) -> None:
 def test_pre_handles_non_git_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
     monkeypatch.chdir(tmp_path)
+
+    # Act
     result = _run("pre", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)})
+
+    # Assert
     assert result.returncode == 0
     body = snapshot.read_text(encoding="utf-8")
     assert "Branch:" in body
 
 
 def test_git_branch_falls_back_when_git_missing(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
     bin_dir = tmp_path / "empty-bin"
     bin_dir.mkdir()
+
+    # Act
     result = subprocess.run(
         [sys.executable, str(HOOK), "pre"],
         input="",
@@ -287,6 +343,8 @@ def test_git_branch_falls_back_when_git_missing(tmp_path: Path) -> None:
         ),
         timeout=5,
     )
+
+    # Assert
     assert result.returncode == 0
     body = snapshot.read_text(encoding="utf-8")
     assert "Branch: unknown" in body
@@ -294,12 +352,15 @@ def test_git_branch_falls_back_when_git_missing(tmp_path: Path) -> None:
 
 
 def test_git_status_non_zero_returncode(tmp_path: Path) -> None:
+    # Arrange
     snapshot = tmp_path / "snapshot"
     bin_dir = tmp_path / "fakebin"
     bin_dir.mkdir()
     fake_git = bin_dir / "git"
     fake_git.write_text("#!/usr/bin/env bash\nexit 1\n", encoding="utf-8")
     fake_git.chmod(0o755)
+
+    # Act
     result = subprocess.run(
         [sys.executable, str(HOOK), "pre"],
         input="",
@@ -310,6 +371,8 @@ def test_git_status_non_zero_returncode(tmp_path: Path) -> None:
         ),
         timeout=5,
     )
+
+    # Assert
     assert result.returncode == 0
     body = snapshot.read_text(encoding="utf-8")
     assert "not a git repo" in body

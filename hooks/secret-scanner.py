@@ -120,6 +120,7 @@ SECRET_PATTERNS = [
 ]
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 
 def should_skip(filepath):
@@ -208,7 +209,7 @@ def main():
         sys.exit(0)
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
-    if not command or not COMMIT_PATTERN.search(command):
+    if not command or not COMMIT_PATTERN.search(strip_git_global_options(command)):
         sys.exit(0)
 
     findings = scan_staged_files()

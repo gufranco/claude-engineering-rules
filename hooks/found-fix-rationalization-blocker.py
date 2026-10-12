@@ -165,6 +165,7 @@ SKIPPED_PATH_SEGMENTS = (
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 
 def is_skipped_path(path: str) -> bool:
@@ -187,7 +188,8 @@ PUBLISHING_BASH_PATTERNS = (
 
 
 def bash_command_publishes(command: str) -> bool:
-    return any(pat.search(command) for pat in PUBLISHING_BASH_PATTERNS)
+    matched = strip_git_global_options(command)
+    return any(pat.search(matched) for pat in PUBLISHING_BASH_PATTERNS)
 
 
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:

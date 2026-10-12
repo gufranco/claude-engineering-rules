@@ -1,8 +1,3 @@
-"""Coverage for internal-config-leakage hook.
-
-Source rule: standards/code-review.md No Internal Config Leakage.
-"""
-
 from __future__ import annotations
 
 import os
@@ -11,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "internal-config-leakage"
 
@@ -25,10 +21,15 @@ HOOK = "internal-config-leakage"
         "gh gist create --desc 'snippet from ~/.claude'",
     ],
 )
-def test_blocks_tilde_claude_in_gh_commands(tool_use, assert_blocks, command):
+def test_blocks_tilde_claude_in_gh_commands(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
 @pytest.mark.parametrize(
@@ -40,37 +41,57 @@ def test_blocks_tilde_claude_in_gh_commands(tool_use, assert_blocks, command):
         "glab release create v1 --notes '.claude/standards/x.md'",
     ],
 )
-def test_blocks_dot_claude_dir_in_glab(tool_use, assert_blocks, command):
+def test_blocks_dot_claude_dir_in_glab(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_git_commit_message_with_internal_path(tool_use, assert_blocks):
+def test_blocks_git_commit_message_with_internal_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -m 'fix per .claude/checklists/checklist.md cat 3'"},
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_git_tag_with_internal_path(tool_use, assert_blocks):
+def test_blocks_git_tag_with_internal_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git tag -a v1 -m 'Per rules/security.md no-secret policy'"},
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_git_notes_with_internal_reference(tool_use, assert_blocks):
+def test_blocks_git_notes_with_internal_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git notes add -m 'See rules/index.yml entry'"},
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
 @pytest.mark.parametrize(
@@ -82,10 +103,15 @@ def test_blocks_git_notes_with_internal_reference(tool_use, assert_blocks):
         "git add rules/security.md && git commit -F - <<'MSG'\ndocs: tighten wording\nMSG",
     ],
 )
-def test_allows_internal_paths_as_git_arguments(tool_use, assert_allows, command):
+def test_allows_internal_paths_as_git_arguments(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -97,21 +123,30 @@ def test_allows_internal_paths_as_git_arguments(tool_use, assert_allows, command
         "git add x.py && git commit -F - <<'MSG'\ndocs: tighten\n\nSee rules/security.md\nMSG",
     ],
 )
-def test_still_blocks_internal_paths_inside_the_message(
-    tool_use, assert_blocks, command
-):
+def test_still_blocks_internal_paths_inside_the_message(tool_use, run_hook, command):
+    # Arrange
     payload = tool_use("Bash", {"command": command})
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_whole_command_when_message_cannot_be_isolated(tool_use, assert_blocks):
+def test_blocks_whole_command_when_message_cannot_be_isolated(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": "git commit --fixup rules/security.md"})
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_gh_body_paired_with_a_clean_git_commit(tool_use, assert_blocks):
+def test_blocks_gh_body_paired_with_a_clean_git_commit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -119,28 +154,43 @@ def test_blocks_gh_body_paired_with_a_clean_git_commit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_slack_send_with_category_reference(tool_use, assert_blocks):
+def test_blocks_slack_send_with_category_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "slack send 'review failed at category 5'"},
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_slack_cli_post(tool_use, assert_blocks):
+def test_blocks_slack_cli_post(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "slack-cli post '#chan' 'see categories 12'"},
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_curl_to_slack(tool_use, assert_blocks):
+def test_blocks_curl_to_slack(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -151,37 +201,57 @@ def test_blocks_curl_to_slack(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_category_number_reference(tool_use, assert_blocks):
+def test_blocks_category_number_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'Failed on category #3 checks'"},
     )
 
-    assert_blocks(HOOK, payload, "category number")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "category number")
 
 
-def test_blocks_cat_shorthand(tool_use, assert_blocks):
+def test_blocks_cat_shorthand(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'See cat 12 of the review checklist'"},
     )
 
-    assert_blocks(HOOK, payload, "cat <n> shorthand")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "cat <n> shorthand")
 
 
-def test_blocks_checklist_item_mention(tool_use, assert_blocks):
+def test_blocks_checklist_item_mention(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'Per checklist item 5 this fails'"},
     )
 
-    assert_blocks(HOOK, payload, "checklist")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "checklist")
 
 
-def test_blocks_md_write_with_internal_path(tool_use, assert_blocks):
+def test_blocks_md_write_with_internal_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -190,10 +260,15 @@ def test_blocks_md_write_with_internal_path(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_md_edit_with_internal_reference(tool_use, assert_blocks):
+def test_blocks_md_edit_with_internal_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -203,10 +278,15 @@ def test_blocks_md_edit_with_internal_reference(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_md_multiedit_with_internal_reference(tool_use, assert_blocks):
+def test_blocks_md_multiedit_with_internal_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -218,23 +298,33 @@ def test_blocks_md_multiedit_with_internal_reference(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
 @pytest.mark.parametrize(
     "verb",
     ["commit -F -", "tag -a v1.2.0 -F -", "notes add -F -"],
 )
-def test_allows_chore_commit_type_in_git_messages(tool_use, assert_allows, verb):
+def test_allows_chore_commit_type_in_git_messages(tool_use, run_hook, verb):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": f"git {verb} <<'MSG'\nchore: ignore daemon runtime state\nMSG"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_blocks_chore_label_in_gh_comment(tool_use, assert_blocks):
+def test_blocks_chore_label_in_gh_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {
@@ -242,28 +332,43 @@ def test_blocks_chore_label_in_gh_comment(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_blocks_review_label_in_git_commit_message(tool_use, assert_blocks):
+def test_blocks_review_label_in_git_commit_message(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "git commit -F -\nnitpick: rename the helper\nMSG"},
     )
 
-    assert_blocks(HOOK, payload, "internal Claude config")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_allows_clean_gh_comment(tool_use, assert_allows):
+def test_allows_clean_gh_comment(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'Fixed the null pointer in user service'"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_clean_md_write(tool_use, assert_allows):
+def test_allows_clean_md_write(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -272,10 +377,15 @@ def test_allows_clean_md_write(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_md_write_even_with_internal_reference(tool_use, assert_allows):
+def test_allows_non_md_write_even_with_internal_reference(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -284,19 +394,29 @@ def test_allows_non_md_write_even_with_internal_reference(tool_use, assert_allow
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_non_publishing_bash(tool_use, assert_allows):
+def test_allows_non_publishing_bash(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "cat $HOME/.claude/rules/code-style.md"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_skipped_claude_md_path(tool_use, assert_allows):
+def test_allows_skipped_claude_md_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -305,10 +425,15 @@ def test_allows_skipped_claude_md_path(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_skipped_rules_md_path(tool_use, assert_allows):
+def test_allows_skipped_rules_md_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -318,10 +443,15 @@ def test_allows_skipped_rules_md_path(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_skipped_hooks_path(tool_use, assert_allows):
+def test_allows_skipped_hooks_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -330,10 +460,15 @@ def test_allows_skipped_hooks_path(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_settings_json_edit(tool_use, assert_allows):
+def test_allows_settings_json_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -342,10 +477,16 @@ def test_allows_settings_json_edit(tool_use, assert_allows):
             "new_string": '"command": "python3 ~/.claude/hooks/bar.py"',
         },
     )
-    assert_allows(HOOK, payload)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_settings_local_json_edit(tool_use, assert_allows):
+def test_allows_settings_local_json_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -354,10 +495,16 @@ def test_allows_settings_local_json_edit(tool_use, assert_allows):
             "new_string": '"~/.claude/hooks/y.py"',
         },
     )
-    assert_allows(HOOK, payload)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_agents_path(tool_use, assert_allows):
+def test_allows_agents_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -365,10 +512,16 @@ def test_allows_agents_path(tool_use, assert_allows):
             "content": "Follow rules/code-style.md for context.\n",
         },
     )
-    assert_allows(HOOK, payload)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_tests_path(tool_use, assert_allows):
+def test_allows_tests_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -376,10 +529,16 @@ def test_allows_tests_path(tool_use, assert_allows):
             "content": "# Mentions ~/.claude/hooks/foo.py in assertion text.\n",
         },
     )
-    assert_allows(HOOK, payload)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_projects_memory_path(tool_use, assert_allows):
+def test_allows_projects_memory_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -387,54 +546,80 @@ def test_allows_projects_memory_path(tool_use, assert_allows):
             "content": "See ~/.claude/rules/x.md for the rule.\n",
         },
     )
-    assert_allows(HOOK, payload)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'See .claude/rules/x.md'"},
     )
 
-    assert_allows(HOOK, payload, env={"CONFIG_LEAKAGE_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"CONFIG_LEAKAGE_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Bash",
         {"command": "gh pr comment 1 --body 'See .claude/rules/x.md'"},
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "internal Claude config",
-        env={"CONFIG_LEAKAGE_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"CONFIG_LEAKAGE_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/notes.md"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/docs/x.md", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bash_non_string_command_is_safe(tool_use, assert_allows):
+def test_bash_non_string_command_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Bash", {"command": 12345})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -443,10 +628,15 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_string_new_string(tool_use, assert_allows):
+def test_multiedit_non_string_new_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -455,10 +645,15 @@ def test_multiedit_non_string_new_string(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_with_non_string_new_string(tool_use, assert_allows):
+def test_edit_with_non_string_new_string(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -468,19 +663,29 @@ def test_edit_with_non_string_new_string(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_empty_file_path_md_write_is_treated_as_non_md(tool_use, assert_allows):
+def test_empty_file_path_md_write_is_treated_as_non_md(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": "Reference rules/index.yml here.\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_md_write_without_findings_passes(tool_use, assert_allows):
+def test_md_write_without_findings_passes(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -489,19 +694,22 @@ def test_md_write_without_findings_passes(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "internal-config-leakage.py"
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -512,12 +720,14 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
 def test_allows_config_paths_inside_the_second_brain_vault(
-    tool_use, assert_allows, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     vault = tmp_path / "vault" / "wiki" / "concepts"
     vault.mkdir(parents=True)
     target = vault / "Tooling.md"
@@ -529,10 +739,17 @@ def test_allows_config_paths_inside_the_second_brain_vault(
         },
     )
 
-    assert_allows(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")})
+    # Act
+    result = run_hook(
+        HOOK, payload, env={"SECOND_BRAIN_VAULT": str(tmp_path / "vault")}
+    )
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_still_blocks_config_paths_outside_the_vault(tool_use, assert_blocks, tmp_path):
+def test_still_blocks_config_paths_outside_the_vault(tool_use, run_hook, tmp_path):
+    # Arrange
     vault = tmp_path / "vault"
     vault.mkdir()
     outside = tmp_path / "project" / "NOTES.md"
@@ -545,7 +762,11 @@ def test_still_blocks_config_paths_outside_the_vault(tool_use, assert_blocks, tm
         },
     )
 
-    assert_blocks(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})
+    # Act
+    result = run_hook(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})
+
+    # Assert
+    assert_blocked(result)
 
 
 GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
@@ -563,21 +784,29 @@ def make_repo(root: Path) -> Path:
     return root
 
 
-def test_allows_config_paths_in_the_local_workspace(tool_use, assert_allows, tmp_path):
+def test_allows_config_paths_in_the_local_workspace(tool_use, run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path)
     target = repo / "docs" / "PROMPT.md"
     payload = tool_use("Write", {"file_path": str(target), "content": CONFIG_TEXT})
 
-    assert_allows(HOOK, payload, env=GIT_ENV)
+    # Act
+    result = run_hook(HOOK, payload, env=GIT_ENV)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_still_blocks_config_paths_in_project_owned_docs(
-    tool_use, assert_blocks, tmp_path
-):
+def test_still_blocks_config_paths_in_project_owned_docs(tool_use, run_hook, tmp_path):
+    # Arrange
     repo = make_repo(tmp_path)
     (repo / "docs").mkdir()
     (repo / "docs" / "index.md").write_text("# Project docs\n")
     target = repo / "docs" / "guide.md"
     payload = tool_use("Write", {"file_path": str(target), "content": CONFIG_TEXT})
 
-    assert_blocks(HOOK, payload, env=GIT_ENV)
+    # Act
+    result = run_hook(HOOK, payload, env=GIT_ENV)
+
+    # Assert
+    assert_blocked(result)

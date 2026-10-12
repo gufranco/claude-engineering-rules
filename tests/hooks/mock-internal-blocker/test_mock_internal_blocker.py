@@ -1,12 +1,3 @@
-"""Coverage for mock-internal-blocker hook.
-
-Source rule: rules/testing.md Mocks Policy STRICT.
-
-The fixture strings below are constructed via concatenation so that the
-hook scanning this test file (because the path contains /tests/) does not
-match its own JS mock regex against the literal fixtures.
-"""
-
 from __future__ import annotations
 
 import os
@@ -15,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "mock-internal-blocker"
 
@@ -60,17 +52,23 @@ PY_PATCH = "pat" + "ch"
         "kafkajs",
     ],
 )
-def test_blocks_jest_mock_internal_targets(tool_use, assert_blocks, target):
+def test_blocks_jest_mock_internal_targets(tool_use, run_hook, target):
+    # Arrange
     content = f"{JEST}('{target}');\n"
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/services/user.test.ts", "content": content},
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_vi_mock_in_spec(tool_use, assert_blocks):
+def test_blocks_vi_mock_in_spec(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -79,10 +77,15 @@ def test_blocks_vi_mock_in_spec(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_vitest_mock(tool_use, assert_blocks):
+def test_blocks_vitest_mock(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -91,10 +94,15 @@ def test_blocks_vitest_mock(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_sinon_mock(tool_use, assert_blocks):
+def test_blocks_sinon_mock(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -103,10 +111,15 @@ def test_blocks_sinon_mock(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_python_patch_of_prisma_in_tests_dir(tool_use, assert_blocks):
+def test_blocks_python_patch_of_prisma_in_tests_dir(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -115,10 +128,15 @@ def test_blocks_python_patch_of_prisma_in_tests_dir(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_python_mock_patch_in_underscore_test(tool_use, assert_blocks):
+def test_blocks_python_mock_patch_in_underscore_test(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -127,10 +145,15 @@ def test_blocks_python_mock_patch_in_underscore_test(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_in_underscored_tests_dir(tool_use, assert_blocks):
+def test_blocks_in_underscored_tests_dir(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -139,10 +162,15 @@ def test_blocks_in_underscored_tests_dir(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_on_edit(tool_use, assert_blocks):
+def test_blocks_on_edit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -152,10 +180,15 @@ def test_blocks_on_edit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_blocks_on_multiedit(tool_use, assert_blocks):
+def test_blocks_on_multiedit(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -167,10 +200,15 @@ def test_blocks_on_multiedit(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(HOOK, payload, "internal infrastructure")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_allows_jest_mock_external_axios(tool_use, assert_allows):
+def test_allows_jest_mock_external_axios(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -179,10 +217,15 @@ def test_allows_jest_mock_external_axios(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_jest_mock_external_stripe(tool_use, assert_allows):
+def test_allows_jest_mock_external_stripe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -191,10 +234,15 @@ def test_allows_jest_mock_external_stripe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_mock_in_non_test_file(tool_use, assert_allows):
+def test_allows_mock_in_non_test_file(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -203,10 +251,15 @@ def test_allows_mock_in_non_test_file(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_bypasses(tool_use, assert_allows):
+def test_disable_env_bypasses(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -215,10 +268,15 @@ def test_disable_env_bypasses(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload, env={"MOCK_INTERNAL_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"MOCK_INTERNAL_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
+def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -227,30 +285,40 @@ def test_disable_env_other_value_does_not_bypass(tool_use, assert_blocks):
         },
     )
 
-    assert_blocks(
-        HOOK,
-        payload,
-        "internal infrastructure",
-        env={"MOCK_INTERNAL_DISABLE": "0"},
-    )
+    # Act
+    result = run_hook(HOOK, payload, env={"MOCK_INTERNAL_DISABLE": "0"})
+
+    # Assert
+    assert_blocked(result, "internal infrastructure")
 
 
-def test_unknown_tool_is_ignored(tool_use, assert_allows):
+def test_unknown_tool_is_ignored(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Read", {"file_path": "/repo/src/user.test.ts"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, assert_allows):
+def test_write_non_string_content_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "/repo/src/user.test.ts", "content": 42},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_edit_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Edit",
         {
@@ -260,10 +328,15 @@ def test_edit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
+def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -272,10 +345,15 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
+def test_multiedit_non_string_new_string_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "MultiEdit",
         {
@@ -284,19 +362,29 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_empty_file_path_is_safe(tool_use, assert_allows):
+def test_empty_file_path_is_safe(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {"file_path": "", "content": f"{JEST}('./services/x');\n"},
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_clean_test_file_passes(tool_use, assert_allows):
+def test_clean_test_file_passes(tool_use, run_hook):
+    # Arrange
     payload = tool_use(
         "Write",
         {
@@ -305,19 +393,21 @@ def test_clean_test_file_passes(tool_use, assert_allows):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_invalid_json_stdin_does_not_crash():
+    # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "mock-internal-blocker.py"
     )
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    for k in ("COVERAGE_PROCESS_START", "PYTHONPATH"):
-        if k in os.environ:
-            env[k] = os.environ[k]
+    env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not valid json",
@@ -328,4 +418,5 @@ def test_invalid_json_stdin_does_not_crash():
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0

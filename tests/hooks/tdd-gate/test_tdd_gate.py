@@ -1,13 +1,11 @@
-"""Coverage for the tdd-gate hook.
-
-Source rule: rules/testing.md.
-"""
-
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
+from _helpers.hook_assertions import assert_allowed, assert_blocked
+import subprocess
+import sys
 
 HOOK = "tdd-gate"
 
@@ -24,19 +22,29 @@ HOOK = "tdd-gate"
     ],
 )
 def test_blocks_new_production_source_without_test(
-    tool_use, assert_blocks, tmp_path, rel_path
+    tool_use, run_hook, tmp_path, rel_path
 ):
+    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    assert_blocks(HOOK, payload, "without a companion test")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "without a companion test")
 
 
-def test_blocks_typescript_service(tool_use, assert_blocks, tmp_path):
+def test_blocks_typescript_service(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "src/api/orders.service.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    assert_blocks(HOOK, payload, "BLOCKED")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "BLOCKED")
 
 
 @pytest.mark.parametrize(
@@ -51,13 +59,18 @@ def test_blocks_typescript_service(tool_use, assert_blocks, tmp_path):
         "e2e/checkout.spec.ts",
     ],
 )
-def test_allows_test_file_creation(tool_use, assert_allows, tmp_path, rel_path):
+def test_allows_test_file_creation(tool_use, run_hook, tmp_path, rel_path):
+    # Arrange
     target = tmp_path / rel_path
     payload = tool_use(
         "Write", {"file_path": str(target), "content": "test('x', () => {})"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -73,11 +86,16 @@ def test_allows_test_file_creation(tool_use, assert_allows, tmp_path, rel_path):
         "Makefile",
     ],
 )
-def test_allows_non_source_files(tool_use, assert_allows, tmp_path, rel_path):
+def test_allows_non_source_files(tool_use, run_hook, tmp_path, rel_path):
+    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -92,11 +110,16 @@ def test_allows_non_source_files(tool_use, assert_allows, tmp_path, rel_path):
         "coverage/lcov.info",
     ],
 )
-def test_allows_excluded_directories(tool_use, assert_allows, tmp_path, rel_path):
+def test_allows_excluded_directories(tool_use, run_hook, tmp_path, rel_path):
+    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -108,33 +131,46 @@ def test_allows_excluded_directories(tool_use, assert_allows, tmp_path, rel_path
         "src/proto/schema.generated.ts",
     ],
 )
-def test_allows_generated_and_minified_files(
-    tool_use, assert_allows, tmp_path, rel_path
-):
+def test_allows_generated_and_minified_files(tool_use, run_hook, tmp_path, rel_path):
+    # Arrange
     target = tmp_path / rel_path
     payload = tool_use("Write", {"file_path": str(target), "content": "x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_when_sibling_test_exists(tool_use, assert_allows, tmp_path):
+def test_allows_when_sibling_test_exists(tool_use, run_hook, tmp_path):
+    # Arrange
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     (src_dir / "calculator.test.ts").write_text("test('x', () => {})")
     target = src_dir / "calculator.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_when_spec_sibling_exists(tool_use, assert_allows, tmp_path):
+def test_allows_when_spec_sibling_exists(tool_use, run_hook, tmp_path):
+    # Arrange
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     (src_dir / "calculator.spec.ts").write_text("test('x', () => {})")
     target = src_dir / "calculator.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -145,20 +181,26 @@ def test_allows_when_spec_sibling_exists(tool_use, assert_allows, tmp_path):
     ],
 )
 def test_allows_when_a_qualified_sibling_test_exists(
-    tool_use, assert_allows, tmp_path, companion
+    tool_use, run_hook, tmp_path, companion
 ):
+    # Arrange
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     (src_dir / companion).write_text("test('x', () => {})")
     target = src_dir / "databaseExplorerService.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 def test_a_qualified_test_of_another_source_is_not_a_companion(
-    tool_use, assert_blocks, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     (src_dir / "databaseExplorerServiceV2.integration.test.ts").write_text(
@@ -167,20 +209,30 @@ def test_a_qualified_test_of_another_source_is_not_a_companion(
     target = src_dir / "databaseExplorerService.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    assert_blocks(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
 
 
-def test_allows_when_go_test_sibling_exists(tool_use, assert_allows, tmp_path):
+def test_allows_when_go_test_sibling_exists(tool_use, run_hook, tmp_path):
+    # Arrange
     pkg = tmp_path / "internal" / "api"
     pkg.mkdir(parents=True)
     (pkg / "handler_test.go").write_text("package api\n")
     target = pkg / "handler.go"
     payload = tool_use("Write", {"file_path": str(target), "content": "package api"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_when_tests_dir_mirror_exists(tool_use, assert_allows, tmp_path):
+def test_allows_when_tests_dir_mirror_exists(tool_use, run_hook, tmp_path):
+    # Arrange
     pkg = tmp_path / "src" / "services"
     pkg.mkdir(parents=True)
     tests = tmp_path / "tests"
@@ -189,10 +241,15 @@ def test_allows_when_tests_dir_mirror_exists(tool_use, assert_allows, tmp_path):
     target = pkg / "user.py"
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_when_nested_tests_subfolder_exists(tool_use, assert_allows, tmp_path):
+def test_allows_when_nested_tests_subfolder_exists(tool_use, run_hook, tmp_path):
+    # Arrange
     pkg = tmp_path / "src"
     pkg.mkdir()
     subtests = pkg / "__tests__"
@@ -201,10 +258,15 @@ def test_allows_when_nested_tests_subfolder_exists(tool_use, assert_allows, tmp_
     target = pkg / "Button.tsx"
     payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_edit_of_existing_file(tool_use, assert_allows, tmp_path):
+def test_allows_edit_of_existing_file(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "src" / "user.py"
     target.parent.mkdir(parents=True)
     target.write_text("x = 1\n")
@@ -217,42 +279,71 @@ def test_allows_edit_of_existing_file(tool_use, assert_allows, tmp_path):
         },
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_write_overwriting_existing_file(tool_use, assert_allows, tmp_path):
+def test_allows_write_overwriting_existing_file(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "src" / "user.py"
     target.parent.mkdir(parents=True)
     target.write_text("x = 1\n")
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 2\n"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("tool_name", ["Bash", "Read", "Grep", "Glob", "WebFetch"])
-def test_allows_unrelated_tools(tool_use, assert_allows, tool_name):
+def test_allows_unrelated_tools(tool_use, run_hook, tool_name):
+    # Arrange
     payload = tool_use(tool_name, {"command": "echo hi"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_bypass_env_var_disables_check(tool_use, assert_allows, tmp_path):
+def test_bypass_env_var_disables_check(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "src/user.py"
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1"})
 
-    assert_allows(HOOK, payload, env={"TDD_GATE_DISABLE": "1"})
+    # Act
+    result = run_hook(HOOK, payload, env={"TDD_GATE_DISABLE": "1"})
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_missing_tool_input(tool_use, assert_allows):
+def test_handles_missing_tool_input(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write")
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_handles_empty_file_path(tool_use, assert_allows):
+def test_handles_empty_file_path(tool_use, run_hook):
+    # Arrange
     payload = tool_use("Write", {"file_path": "", "content": "x"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -268,15 +359,18 @@ def test_handles_empty_file_path(tool_use, assert_allows):
         "src/types.py",
     ],
 )
-def test_allows_config_and_declaration_files(
-    tool_use, assert_allows, tmp_path, rel_path
-):
+def test_allows_config_and_declaration_files(tool_use, run_hook, tmp_path, rel_path):
+    # Arrange
     target = tmp_path / rel_path
     payload = tool_use(
         "Write", {"file_path": str(target), "content": "export default {}"}
     )
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -289,11 +383,16 @@ def test_allows_config_and_declaration_files(
         "",
     ],
 )
-def test_allows_barrel_index(tool_use, assert_allows, tmp_path, content):
+def test_allows_barrel_index(tool_use, run_hook, tmp_path, content):
+    # Arrange
     target = tmp_path / "src/index.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": content})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -304,21 +403,23 @@ def test_allows_barrel_index(tool_use, assert_allows, tmp_path, content):
         "const internal = 1;\nexport { internal };",
     ],
 )
-def test_blocks_index_that_declares_behavior(
-    tool_use, assert_blocks, tmp_path, content
-):
+def test_blocks_index_that_declares_behavior(tool_use, run_hook, tmp_path, content):
+    # Arrange
     target = tmp_path / "src/index.ts"
     payload = tool_use("Write", {"file_path": str(target), "content": content})
 
-    assert_blocks(HOOK, payload, "without a companion test")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "without a companion test")
 
 
-def test_handles_malformed_json(run_hook, tmp_path):
-    import subprocess
-    import sys
+def test_handles_malformed_json():
+    # Arrange
+    hook_path = Path(__file__).resolve().parents[3] / "hooks" / "tdd-gate.py"
 
-    hook_path = Path.home() / ".claude" / "hooks" / "tdd-gate.py"
-
+    # Act
     proc = subprocess.run(
         [sys.executable, str(hook_path)],
         input="not json at all",
@@ -328,38 +429,50 @@ def test_handles_malformed_json(run_hook, tmp_path):
         check=False,
     )
 
+    # Assert
     assert proc.returncode == 0
 
 
-def test_allows_source_in_session_scratchpad(tool_use, assert_allows, tmp_path):
+def test_allows_source_in_session_scratchpad(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "session-abc" / "scratchpad" / "build_review.py"
-
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_allows_source_written_directly_to_shared_tmp(tool_use, assert_allows):
+def test_allows_source_written_directly_to_shared_tmp(tool_use, run_hook):
+    # Arrange
     target = Path("/tmp") / "retro-probe-measure-drift.py"
-
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    assert_allows(HOOK, payload)
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_still_blocks_source_under_the_per_user_tmpdir(
-    tool_use, assert_blocks, tmp_path
-):
+def test_still_blocks_source_under_the_per_user_tmpdir(tool_use, run_hook, tmp_path):
+    # Arrange
     target = tmp_path / "src" / "services" / "user.py"
-
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    assert_blocks(HOOK, payload, "without a companion test")
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "without a companion test")
 
 
 def test_a_test_directory_outside_the_repository_does_not_satisfy_the_gate(
-    tool_use, assert_blocks, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     outer = tmp_path / "home"
     stray = outer / "tests"
     stray.mkdir(parents=True)
@@ -368,19 +481,23 @@ def test_a_test_directory_outside_the_repository_does_not_satisfy_the_gate(
     (project / ".git").mkdir(parents=True)
     (project / "src").mkdir()
     target = project / "src" / "widget.py"
-
     payload = tool_use(
         "Write",
         {"file_path": str(target), "content": "def widget():\n    return 1\n"},
         cwd=str(project),
     )
 
-    assert_blocks("tdd-gate", payload)
+    # Act
+    result = run_hook("tdd-gate", payload)
+
+    # Assert
+    assert_blocked(result)
 
 
 def test_a_repo_local_test_directory_still_satisfies_the_gate(
-    tool_use, assert_allows, tmp_path
+    tool_use, run_hook, tmp_path
 ):
+    # Arrange
     project = tmp_path / "project"
     (project / ".git").mkdir(parents=True)
     (project / "src").mkdir()
@@ -388,37 +505,48 @@ def test_a_repo_local_test_directory_still_satisfies_the_gate(
     tests.mkdir()
     (tests / "test_widget.py").write_text("def test_widget():\n    assert True\n")
     target = project / "src" / "widget.py"
-
     payload = tool_use(
         "Write",
         {"file_path": str(target), "content": "def widget():\n    return 1\n"},
         cwd=str(project),
     )
 
-    assert_allows("tdd-gate", payload)
+    # Act
+    result = run_hook("tdd-gate", payload)
+
+    # Assert
+    assert_allowed(result)
 
 
-def test_a_loosely_named_test_is_not_a_companion(tool_use, assert_blocks, tmp_path):
+def test_a_loosely_named_test_is_not_a_companion(tool_use, run_hook, tmp_path):
+    # Arrange
     tests = tmp_path / "tests"
     tests.mkdir()
     (tests / "test_user_supplied_artifact_guard.py").write_text("def test_x(): pass\n")
     pkg = tmp_path / "src" / "services"
     pkg.mkdir(parents=True)
     target = pkg / "user.py"
-
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    assert_blocks("tdd-gate", payload, "without a companion test")
+    # Act
+    result = run_hook("tdd-gate", payload)
+
+    # Assert
+    assert_blocked(result, "without a companion test")
 
 
-def test_a_precisely_named_test_is_a_companion(tool_use, assert_allows, tmp_path):
+def test_a_precisely_named_test_is_a_companion(tool_use, run_hook, tmp_path):
+    # Arrange
     tests = tmp_path / "tests"
     tests.mkdir()
     (tests / "test_user.py").write_text("def test_x(): pass\n")
     pkg = tmp_path / "src" / "services"
     pkg.mkdir(parents=True)
     target = pkg / "user.py"
-
     payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
 
-    assert_allows("tdd-gate", payload)
+    # Act
+    result = run_hook("tdd-gate", payload)
+
+    # Assert
+    assert_allowed(result)
