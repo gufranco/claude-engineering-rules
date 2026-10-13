@@ -20,9 +20,11 @@ def test_allows_non_force_push(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_allows_force_push_with_no_blocking_review(tool_use, run_hook):
+def test_allows_force_push_outside_a_repository(tool_use, run_hook, tmp_path):
     # Arrange
-    payload = tool_use("Bash", {"command": "git push --force-with-lease"})
+    payload = tool_use(
+        "Bash", {"command": "git push --force-with-lease"}, cwd=str(tmp_path)
+    )
 
     # Act
     result = run_hook(HOOK, payload)
@@ -42,9 +44,11 @@ def test_allows_force_push_with_bypass_env(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_allows_short_dash_f_force(tool_use, run_hook):
+def test_allows_short_dash_f_force_outside_a_repository(tool_use, run_hook, tmp_path):
     # Arrange
-    payload = tool_use("Bash", {"command": "git push -f origin feature"})
+    payload = tool_use(
+        "Bash", {"command": "git push -f origin feature"}, cwd=str(tmp_path)
+    )
 
     # Act
     result = run_hook(HOOK, payload)
@@ -53,11 +57,10 @@ def test_allows_short_dash_f_force(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_allows_force_refspec(tool_use, run_hook):
+def test_allows_force_refspec_outside_a_repository(tool_use, run_hook, tmp_path):
     # Arrange
     payload = tool_use(
-        "Bash",
-        {"command": "git push origin +feature:main"},
+        "Bash", {"command": "git push origin +feature:main"}, cwd=str(tmp_path)
     )
 
     # Act
