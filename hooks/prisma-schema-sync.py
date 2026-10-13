@@ -65,18 +65,16 @@ DROP_INDEX_RE = re.compile(
     re.IGNORECASE,
 )
 
-ALTER_ADD_COL_RE = re.compile(
-    r'\bALTER\s+TABLE\s+(?:ONLY\s+)?"?(?P<table>[A-Za-z0-9_]+)"?'
-    r"[^;]*?\bADD\s+COLUMN\s+"
-    r'(?:IF\s+NOT\s+EXISTS\s+)?"?(?P<col>[A-Za-z0-9_]+)"?',
+ALTER_TABLE_RE = re.compile(
+    r'\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?"?(?P<table>[A-Za-z0-9_]+)"?(?P<body>[^;]*)',
     re.IGNORECASE | re.DOTALL,
 )
-
-ALTER_DROP_COL_RE = re.compile(
-    r'\bALTER\s+TABLE\s+(?:ONLY\s+)?"?(?P<table>[A-Za-z0-9_]+)"?'
-    r"[^;]*?\bDROP\s+COLUMN\s+"
-    r'(?:IF\s+EXISTS\s+)?"?(?P<col>[A-Za-z0-9_]+)"?',
-    re.IGNORECASE | re.DOTALL,
+ADD_COLUMN_RE = re.compile(
+    r'\bADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?"?(?P<col>[A-Za-z0-9_]+)"?',
+    re.IGNORECASE,
+)
+DROP_COLUMN_RE = re.compile(
+    r'\bDROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?"?(?P<col>[A-Za-z0-9_]+)"?', re.IGNORECASE
 )
 
 CREATE_TABLE_RE = re.compile(
@@ -100,8 +98,8 @@ SCHEMA_UNIQUE_RE = re.compile(
     r"@@unique\s*\([^)]*?\bmap\s*:\s*\"(?P<name>[^\"]+)\"",
     re.DOTALL,
 )
-SCHEMA_MAP_RE = re.compile(
-    r"@(?:@)?map\s*\(\s*\"(?P<name>[^\"]+)\"",
+FIELD_UNIQUE_RE = re.compile(
+    r"(?<!@)@unique\s*\([^)]*?\bmap\s*:\s*\"(?P<name>[^\"]+)\""
 )
 
 
@@ -149,8 +147,20 @@ def parse_schema_models(schema_text: str) -> dict:
 def parse_schema_indexes(schema_text: str) -> tuple[set, set]:
     """Return (index_map_names, unique_map_names)."""
     idx = {m.group("name") for m in SCHEMA_INDEX_RE.finditer(schema_text)}
-    unq = {m.group("name") for m in SCHEMA_UNIQUE_RE.finditer(schema_text)}
+    unq = {
+        m.group("name")
+        for pattern in (SCHEMA_UNIQUE_RE, FIELD_UNIQUE_RE)
+        for m in pattern.finditer(schema_text)
+    }
     return idx, unq
+
+
+def column_changes(sql: str, pattern: re.Pattern[str]) -> list[tuple[str, str]]:
+    return [
+        (alter.group("table"), column.group("col"))
+        for alter in ALTER_TABLE_RE.finditer(sql)
+        for column in pattern.finditer(alter.group("body"))
+    ]
 
 
 def find_table_to_model(models: dict) -> dict:
@@ -185,9 +195,7 @@ def analyze(sql: str, schema_text: str) -> list[str]:
                 f"remove the matching @@index/@@unique entry"
             )
 
-    for m in ALTER_ADD_COL_RE.finditer(sql):
-        table = m.group("table")
-        col = m.group("col")
+    for table, col in column_changes(sql, ADD_COLUMN_RE):
         model_name = table_to_model.get(table)
         if model_name is None:
             findings.append(
@@ -201,9 +209,7 @@ def analyze(sql: str, schema_text: str) -> list[str]:
                 f"field on model {model_name}"
             )
 
-    for m in ALTER_DROP_COL_RE.finditer(sql):
-        table = m.group("table")
-        col = m.group("col")
+    for table, col in column_changes(sql, DROP_COLUMN_RE):
         model_name = table_to_model.get(table)
         if model_name and col in models[model_name]["fields"]:
             findings.append(

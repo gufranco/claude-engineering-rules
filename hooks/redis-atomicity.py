@@ -71,16 +71,21 @@ SKIP_SEGMENTS = (
     "/.claude/hooks/",
 )
 
+RECEIVER = r"(?P<recv>[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)\s*\.\s*"
 INCR_LIKE = re.compile(
-    r"\.(?:incr|incrBy|incrby|incrByFloat|incrbyfloat|hincrBy|hincrby|sadd|hset|rpush|lpush|setnx|setNX)\s*\(",
+    RECEIVER
+    + r"(?:incr|incrBy|incrby|incrByFloat|incrbyfloat|hincrBy|hincrby|sadd|hset|rpush|lpush|setnx|setNX)\s*\(",
     re.IGNORECASE,
 )
 EXPIRE_LIKE = re.compile(
-    r"\.(?:expire|pexpire|expireAt|pexpireAt)\s*\(",
-    re.IGNORECASE,
+    RECEIVER + r"(?:expire|pexpire|expireAt|pexpireAt)\s*\(", re.IGNORECASE
 )
-GET_LIKE = re.compile(r"\.(?:get|hget|smembers|lrange)\s*\(", re.IGNORECASE)
-SET_LIKE = re.compile(r"\.(?:set|hset|sadd|lpush|rpush)\s*\(", re.IGNORECASE)
+GET_LIKE = re.compile(RECEIVER + r"(?:get|hget|smembers|lrange)\s*\(", re.IGNORECASE)
+SET_LIKE = re.compile(RECEIVER + r"(?:set|hset|sadd|lpush|rpush)\s*\(", re.IGNORECASE)
+MAP_DECLARATION = re.compile(
+    r"(?P<name>[A-Za-z_$][\w$]*)\s*(?::\s*(?:Readonly)?(?:Weak)?Map<[^=;\n]*)?=\s*new\s+(?:Weak)?Map\b"
+    r"|(?P<typed>[A-Za-z_$][\w$]*)\s*:\s*(?:Readonly)?(?:Weak)?Map<"
+)
 
 ATOMIC_MARKERS = re.compile(
     r"\b(?:multi\s*\(|pipeline\s*\(|exec\s*\(|eval\s*\(|evalsha\s*\(|MULTI|EXEC|defineCommand)\b",
@@ -130,47 +135,68 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
     return out
 
 
-def find(text: str) -> list[str]:
-    if ATOMIC_MARKERS.search(text):
-        if len(ATOMIC_MARKERS.findall(text)) >= 2:
-            return []
+def _map_names(text: str) -> frozenset[str]:
+    return frozenset(
+        m.group("name") or m.group("typed") for m in MAP_DECLARATION.finditer(text)
+    )
 
+
+def _receiver(pattern: re.Pattern[str], line: str) -> str | None:
+    match = pattern.search(line)
+    return match.group("recv").split(".")[-1] if match else None
+
+
+def _lock_hit(lines: list[str], i: int) -> list[str]:
+    line = lines[i]
+    if not (LOCK_ACQUIRE.search(line) and LOCK_NX_MARKER.search(line)):
+        return []
+    if LOCK_TTL_MARKER.search(line) or line_or_prev_has_suppression(lines, i):
+        return []
+    return [
+        f"L{i + 1}: lock without a TTL (survives a crash of the holder): "
+        f"{line.strip()[:80]}"
+    ]
+
+
+def _pair_hit(lines: list[str], i: int, j: int, maps: frozenset[str]) -> str | None:
+    line, target = lines[i], lines[j]
+    incr = _receiver(INCR_LIKE, line)
+    if incr and incr not in maps and incr == _receiver(EXPIRE_LIKE, target):
+        return (
+            f"L{i + 1}->L{j + 1}: increment/setnx then expire (not atomic): "
+            f"{line.strip()[:80]} ... {target.strip()[:80]}"
+        )
+    read = _receiver(GET_LIKE, line)
+    if read and read not in maps and read == _receiver(SET_LIKE, target):
+        return (
+            f"L{i + 1}->L{j + 1}: get then set (TOCTOU race): "
+            f"{line.strip()[:80]} ... {target.strip()[:80]}"
+        )
+    return None
+
+
+def _race_hit(lines: list[str], i: int, maps: frozenset[str]) -> list[str]:
+    if line_or_prev_has_suppression(lines, i):
+        return []
+    for j in range(i + 1, min(i + 1 + WINDOW_LINES, len(lines))):
+        if ATOMIC_MARKERS.search("\n".join(lines[i : j + 1])):
+            return []
+        if line_or_prev_has_suppression(lines, j):
+            return []
+        hit = _pair_hit(lines, i, j, maps)
+        if hit:
+            return [hit]
+    return []
+
+
+def find(text: str) -> list[str]:
     lines = text.splitlines()
-    hits: list[str] = []
-    for i, line in enumerate(lines):
-        if LOCK_ACQUIRE.search(line) and LOCK_NX_MARKER.search(line):
-            if not LOCK_TTL_MARKER.search(line) and not line_or_prev_has_suppression(
-                lines, i
-            ):
-                hits.append(
-                    f"L{i + 1}: lock without a TTL (survives a crash of the holder): "
-                    f"{line.strip()[:80]}"
-                )
-        if not (INCR_LIKE.search(line) or GET_LIKE.search(line)):
-            continue
-        if line_or_prev_has_suppression(lines, i):
-            continue
-        for j in range(i + 1, min(i + 1 + WINDOW_LINES, len(lines))):
-            window = "\n".join(lines[i : j + 1])
-            if ATOMIC_MARKERS.search(window):
-                break
-            target = lines[j]
-            if line_or_prev_has_suppression(lines, j):
-                break
-            if INCR_LIKE.search(line) and EXPIRE_LIKE.search(target):
-                hits.append(
-                    f"L{i + 1}->L{j + 1}: increment/setnx then expire (not atomic): "
-                    f"{line.strip()[:80]} ... {target.strip()[:80]}"
-                )
-                break
-            if GET_LIKE.search(line) and SET_LIKE.search(target):
-                if ".set" in target.lower() or "hset" in target.lower():
-                    hits.append(
-                        f"L{i + 1}->L{j + 1}: get then set (TOCTOU race): "
-                        f"{line.strip()[:80]} ... {target.strip()[:80]}"
-                    )
-                    break
-    return hits
+    maps = _map_names(text)
+    return [
+        hit
+        for i in range(len(lines))
+        for hit in (*_lock_hit(lines, i), *_race_hit(lines, i, maps))
+    ]
 
 
 from _lib.hook_profile import should_run  # noqa: E402
