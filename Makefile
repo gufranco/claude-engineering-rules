@@ -83,7 +83,7 @@ help:
 	@echo "  test         Run pytest (parallel, no coverage gate)"
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
 	@echo "  test-cov     Run pytest with branch coverage, enforce 95%"
-	@echo "  test-bats    Run bats-core suites for shell hooks"
+	@echo "  test-bats    Run bats-core suites for the shell scripts"
 	@echo "  test-smoke   Run the hook smoke suite CI runs, tests/test-hooks.sh"
 	@echo "  benchmark    Hold every hook under 500 ms, as CI does"
 	@echo "  test-all     test-cov + test-bats + test-smoke + benchmark + lint + typecheck + validate"
@@ -115,11 +115,11 @@ ifndef BATS
 	@echo "bats not installed. brew install bats-core"
 	@exit 1
 else
-	@if [ -n "$$(find tests/bats -name '*.bats' 2>/dev/null)" ]; then \
-		$(BATS) -r tests/bats; \
-	else \
-		echo "no .bats files under tests/bats/; skipping"; \
+	@if [ -z "$$(find tests/bats -name '*.bats' 2>/dev/null)" ]; then \
+		echo "no .bats files under tests/bats/"; \
+		exit 1; \
 	fi
+	$(BATS) -r tests/bats
 endif
 
 test-smoke:
