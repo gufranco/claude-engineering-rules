@@ -98,6 +98,10 @@ FLAG_PATTERNS = (
     re.compile(r"\.long\(\s*['\"]([a-z][a-z0-9-]*)['\"]\s*\)"),
 )
 
+EXPORT_ANCHORS = ("export",)
+
+FLAG_ANCHORS = ("add_argument(", ".option(", ".long(")
+
 SCRIPT_KEY = re.compile(r'^\s*"([a-z][a-z0-9:_-]*)"\s*:\s*"')
 
 ENV_EXAMPLE_NAMES = (".env.example", ".env.sample", ".env.template")
@@ -241,6 +245,23 @@ def _script_names(cwd: Path, ref: str) -> set[str] | None:
     return {str(key) for key in scripts}
 
 
+def _surviving_definitions(
+    cwd: Path,
+    base: str,
+    patterns: tuple[re.Pattern[str], ...],
+    anchors: tuple[str, ...],
+) -> set[str]:
+    scope = ("--cached",) if base == "--cached" else ()
+    expressions = [arg for anchor in anchors for arg in ("-e", anchor)]
+    excluded = [f":(exclude)*{suffix}" for suffix in DOC_SUFFIXES]
+    out = _git(
+        cwd, "grep", *scope, "-h", "-I", "-F", *expressions, "--", ".", *excluded
+    )
+    if out is None:
+        return set()
+    return _matches(patterns, out.splitlines())
+
+
 def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
     tracked_all = _git(cwd, "ls-files")
     if tracked_all is None:
@@ -274,14 +295,16 @@ def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
 
     unstaged_docs = [doc for doc in docs if doc not in staged]
 
-    dropped_exports = _matches(EXPORT_PATTERNS, removed) - _matches(
-        EXPORT_PATTERNS, added
+    dropped_exports = _matches(EXPORT_PATTERNS, removed) - _surviving_definitions(
+        cwd, base, EXPORT_PATTERNS, EXPORT_ANCHORS
     )
     for name in sorted(dropped_exports):
         for doc in _docs_naming(cwd, unstaged_docs, name):
             findings.append(f"export {name} was removed but {doc} still names it")
 
-    dropped_flags = _matches(FLAG_PATTERNS, removed) - _matches(FLAG_PATTERNS, added)
+    dropped_flags = _matches(FLAG_PATTERNS, removed) - _surviving_definitions(
+        cwd, base, FLAG_PATTERNS, FLAG_ANCHORS
+    )
     for flag in sorted(dropped_flags):
         needle = flag if flag.startswith("--") else f"--{flag}"
         for doc in _docs_naming(cwd, unstaged_docs, needle):
