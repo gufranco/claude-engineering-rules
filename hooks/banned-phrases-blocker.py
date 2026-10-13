@@ -1,28 +1,4 @@
 #!/usr/bin/env python3
-"""
-banned-phrases-blocker.py
-
-PreToolUse hook that blocks banned conversational phrases in external output
-and meta-question openers in subagent prompts.
-Rule sources:
-  - ~/.claude/CLAUDE.md "Banned Phrases" (openers, closers, hedges, transitions, fluff).
-  - ~/.claude/rules/design-philosophy.md "Strategic vs Tactical Programming"
-    (tactical hyperbole: "quick fix", "temporary workaround", "cleanup later").
-  - ~/.claude/rules/smart-questions.md "Briefing Subagents" + "Ship the Question"
-    (Agent/Task prompts must not start with a meta-question).
-
-Coverage:
-  - Bash commands that publish text: gh pr/issue/api, glab mr/issue/api, git commit -m,
-    slack send, curl to webhooks.
-  - Write/Edit on Markdown files (.md) outside ~/.claude/.
-  - Agent/Task tool `prompt` field: leading meta-question phrases.
-
-The bypass is intended for quoting other people's text (review responses, citations).
-
-Bypass:
-  BANNED_PHRASES_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os
@@ -209,12 +185,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 
 def find_agent_meta_question(prompt: str) -> str | None:
-    """Detect a meta-question opener in a subagent prompt.
-
-    Only fires when the prompt's first non-whitespace tokens match one of
-    the banned meta-question phrases. Mid-prompt occurrences are allowed
-    because they may be quoted examples.
-    """
     if not isinstance(prompt, str) or not prompt.strip():
         return None
     m = AGENT_META_LEADING.match(prompt)

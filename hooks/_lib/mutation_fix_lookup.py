@@ -1,21 +1,3 @@
-"""Fix-suggestion lookup table for the mutation-method-blocker hook.
-
-Loads `~/.claude/hooks/mutation_fix_suggestions.json` once at import time.
-The JSON is keyed by detector tag (`array.push`, `collection.map.set`, ...)
-with a category-prefix fallback so dynamic codes like `date.setMonth` and
-`typed-array.fill` resolve via the `date.setter` / `typed-array` entries.
-
-Public API:
-
-    suggest_fix(detector_code: str, line_text: str = "") -> str | None
-    fix_suggestions_enabled() -> bool
-
-When the env var `MUTATION_METHOD_FIX_SUGGESTIONS=0` is set, the helper
-returns `None` so detectors fall back to their hard-coded fix strings.
-This is useful for benchmarking the suggestion overhead and for downstream
-agents that prefer raw detector tags without prose.
-"""
-
 from __future__ import annotations
 
 import json
@@ -32,7 +14,6 @@ _BY_CATEGORY: dict[str, dict[str, str]] = {}
 
 
 def _load_table() -> None:
-    """Populate module-level lookup dicts. Safe to call repeatedly."""
     global _TABLE, _EXACT, _BY_CATEGORY
     if _TABLE:
         return
@@ -55,22 +36,11 @@ _load_table()
 
 
 def fix_suggestions_enabled() -> bool:
-    """Return False when the env var disables fix suggestions."""
     val = os.environ.get("MUTATION_METHOD_FIX_SUGGESTIONS", "1")
     return val not in ("0", "false", "False", "FALSE", "no", "off")
 
 
 def tc39_stage_filter() -> int:
-    """Return the minimum TC39 stage required for a suggestion to surface.
-
-    Default `4` shows only Stage 4 (shipped) features. Setting the env var
-    `MUTATION_METHOD_TC39_STAGE_FILTER=3` opts into Stage 3 entries.
-    Setting `=2` opts into Stage 2 hack-stage entries. Values below `2`
-    are clamped to `2`; values above `4` are clamped to `4`.
-
-    Pre-Stage-4 suggestions are prefixed with a proposal-volatility
-    warning so consumers (CI, IDE) can highlight them.
-    """
     raw = os.environ.get("MUTATION_METHOD_TC39_STAGE_FILTER", "4")
     try:
         val = int(raw)
@@ -84,7 +54,6 @@ def tc39_stage_filter() -> int:
 
 
 def _entry_stage(entry: dict[str, Any]) -> int:
-    """Return the TC39 stage for an entry. Stage 4 when unspecified."""
     stage = entry.get("stage")
     if isinstance(stage, int) and 1 <= stage <= 4:
         return stage
@@ -92,11 +61,6 @@ def _entry_stage(entry: dict[str, Any]) -> int:
 
 
 def _category_lookup(detector_code: str) -> dict[str, str] | None:
-    """Resolve a detector tag to a category entry.
-
-    Tries longest prefix first so `date.setter` wins over `date` for a code
-    like `date.setMonth`, and `typed-array` wins for `typed-array.fill`.
-    """
     if not detector_code:
         return None
     if "date.set" in detector_code and "date.setter" in _BY_CATEGORY:
@@ -110,17 +74,6 @@ def _category_lookup(detector_code: str) -> dict[str, str] | None:
 
 
 def suggest_fix(detector_code: str, line_text: str = "") -> str | None:
-    """Return the fix suggestion for a detector code, or None when disabled.
-
-    Resolution order:
-      1. Env-var gate (`MUTATION_METHOD_FIX_SUGGESTIONS=0` short-circuits to None).
-      2. Stage filter (`MUTATION_METHOD_TC39_STAGE_FILTER`): entries above
-         the configured max stage return None so unstable proposals do not
-         appear in suggestions by default.
-      3. Exact match in the `exact` table.
-      4. Category prefix match in the `by_category` table.
-      5. None (caller falls back to its hard-coded fix string).
-    """
     if not fix_suggestions_enabled():
         return None
     if not detector_code:
@@ -148,7 +101,6 @@ def suggest_fix(detector_code: str, line_text: str = "") -> str | None:
 
 
 def detector_code_to_mmb(detector_code: str) -> str | None:
-    """Return the stable MMB code for a detector tag, or None."""
     if not detector_code:
         return None
     exact = _EXACT.get(detector_code)

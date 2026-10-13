@@ -1,31 +1,4 @@
 #!/usr/bin/env python3
-"""
-normative-keyword-discipline.py
-
-PreToolUse hook that flags ambiguous normative keywords in rule files,
-standards, checklists, and CLAUDE.md.
-
-Rule sources:
-  - ~/.claude/rules/normative-keywords.md (BCP 14 glossary, lowercase-primary).
-  - ~/.claude/rules/writing-precision.md "Eliminate weasel words".
-
-Coverage:
-  - Write/Edit/MultiEdit on Markdown files under ~/.claude/rules/,
-    ~/.claude/standards/, ~/.claude/checklists/, or named CLAUDE.md.
-
-Detection (Phase 3, conservative):
-  - Bullet items starting with "Should " or "should " in a position the
-    weasel-words rule already calls a violation.
-
-Severity:
-  - Advisory (exit 0). Prints a warning to stderr; does not block the write.
-  - Promoted to blocking (exit 2) in a later phase after the rules/ retrofit
-    lands, by flipping ADVISORY_MODE.
-
-Bypass:
-  NORMATIVE_KEYWORD_DISABLE=1 (per-shell export, not inline).
-"""
-
 from __future__ import annotations
 
 import json

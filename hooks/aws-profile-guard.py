@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""Block global AWS profile mutations.
-
-`aws configure set` without `--profile` writes to the default profile in
-`~/.aws/config`, silently changing what every other shell sees. The fix
-is to scope the write with `--profile <name>` or to use `aws --profile`
-on every call.
-
-This hook hard-blocks `aws configure set ...` when no `--profile` flag
-is present. Read-only `aws configure list` / `aws configure get` is
-allowed. Bare `aws s3 ls` is allowed (it reads the current profile, not
-mutates it); the agent is still expected to set `--profile` or
-`AWS_PROFILE` for clarity per `standards/multi-account-cli.md`.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import sys
 

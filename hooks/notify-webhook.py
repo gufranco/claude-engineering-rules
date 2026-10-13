@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Stop hook: POST a notification when Claude Code finishes a response.
-
-Requires `CLAUDE_NOTIFY_WEBHOOK` env var (Slack or Discord compatible).
-Silently exits 0 when the env var is unset, when bypass is engaged, or
-when the network call fails. Never blocks the session.
-
-Bypass channels:
-    1. Env var `NOTIFY_WEBHOOK_DISABLE=1` (parent shell).
-    2. File registry entry for hook `notify-webhook`.
-"""
-
 from __future__ import annotations
 
 import json

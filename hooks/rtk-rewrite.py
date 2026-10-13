@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""PreToolUse Bash hook: delegate to `rtk rewrite` for token-saving rewrites.
-
-The Rust binary `rtk rewrite` is the source of truth for the command catalog.
-Hook only translates its exit code into Claude Code's PreToolUse output shape:
-
-    0 + stdout : rewrite found, no permission rule matched. Emit allow plus updatedInput.
-    1          : no rtk equivalent. Pass through.
-    2          : deny rule matched. Pass through (settings deny handles it).
-    3 + stdout : ask rule matched. Emit updatedInput; let Claude Code prompt.
-
-Requires `rtk >= 0.23.0` on PATH. Missing or too-old binary: warn and exit 0.
-
-Bypass channels:
-    1. Env var `RTK_REWRITE_DISABLE=1` (parent shell).
-    2. File registry entry for hook `rtk-rewrite`.
-"""
-
 from __future__ import annotations
 
 import json

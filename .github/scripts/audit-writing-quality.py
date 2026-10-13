@@ -1,29 +1,4 @@
 #!/usr/bin/env python3
-"""audit-writing-quality.py
-
-One-shot scanner for drift in ~/.claude/ markdown files. Surfaces violations
-of the current writing rules in older content that predates them.
-
-Categories:
-  banned-em-dash       em dash codepoint in prose
-  banned-box-drawing   box-drawing codepoints in prose
-  banned-emoji         emoji or decorative unicode in prose
-  parens-in-prose      parentheses outside code, tables, headings, links
-  banned-opener        sycophantic openers
-  banned-closer        rhetorical closers
-  banned-hedge         hedge phrases
-  banned-transition    weak transitions
-  banned-fluff         fluff adjectives
-  banned-tactical      tactical hyperbole
-  should-bullet        bullet items starting with Should or should
-  vague-quantifier     often, usually, sometimes, a few, several
-  stale-link           markdown link to a path that does not exist
-
-Output:
-  audit-findings.md     grouped by file, ordered by finding count
-  audit-findings.jsonl  one JSON object per finding
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -180,9 +155,6 @@ FENCE_RE = re.compile(r"^(`{3,}|~{3,})(.*)$")
 
 
 def _fence_match(stripped: str) -> tuple[str, bool]:
-    """Return (fence marker, is_closing_capable). A closing fence cannot have
-    an info string per CommonMark. A bare fence with no info string can
-    close any open fence whose marker length is less than or equal to it."""
     m = FENCE_RE.match(stripped)
     if not m:
         return "", False
@@ -408,10 +380,6 @@ def scan_links(
 
 
 def _mask_code_regions(text: str) -> str:
-    """Return text with code-fence, inline-code, and YAML-frontmatter regions
-    blanked out. Code spans become spaces so character positions stay aligned.
-    Supports nested fences: a 4-backtick block can contain a 3-backtick block.
-    """
     result: list[str] = []
     in_fence = False
     fence_marker = ""

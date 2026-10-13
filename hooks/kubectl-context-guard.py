@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""Block global kubectl context switches.
-
-The active Kubernetes context is shared across every shell. A
-`kubectl config use-context <name>` (or its `kubectx <name>` wrapper)
-silently breaks parallel terminals targeting a different cluster.
-
-The fix is to use the per-command `--context <name>` flag, or set
-`KUBECONFIG=<path>` for the duration of a script. This hook hard-blocks
-the global mutation commands and points to
-`standards/multi-account-cli.md` for the per-command form.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import re
 import sys

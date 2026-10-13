@@ -1,24 +1,4 @@
 #!/usr/bin/env python3
-"""Block per-file source fetching from remote repos (gh / GitLab / raw URLs).
-
-When more than two source files from the same remote repo are needed, the
-correct workflow is a shallow clone into a temp directory followed by local
-Read/Grep/Glob. Fetching one file at a time through `gh api .../contents`,
-`gh repo view <o>/<r> <path>`, `glab api .../repository/files/<path>`, or
-`raw.githubusercontent.com` is slow, rate-limited, and returns base64-wrapped
-content that has to be decoded per call.
-
-This hook blocks the most common per-file fetch patterns at PreToolUse on
-Bash. Carve-outs (issues, PRs, diffs, search, single README probe, repo
-metadata view, git clone itself) remain allowed.
-
-Triggers PreToolUse on Bash. Exit 0 = allow, exit 2 = block.
-
-Bypass: REPO_FETCH_DISABLE=1 in the parent shell (export, not inline).
-
-Enforces: rules/repo-analysis.md.
-"""
-
 from __future__ import annotations
 
 import json

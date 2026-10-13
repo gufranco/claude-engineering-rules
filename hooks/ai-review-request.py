@@ -1,22 +1,4 @@
 #!/usr/bin/env python3
-"""Request AI reviews after a command opens, readies, or pushes to my PR.
-
-PostToolUse on Bash. Fires after `gh pr create`, `gh pr ready` and
-`git push`, finds the pull request, and asks `_lib/ai_review.py` to request
-every review the repository supports. Only an open pull request authored by
-the acting account is touched. The hook never blocks: it always exits 0 and
-reports one line per pull request as additional context.
-
-Account: the `--user <login>` the command named, otherwise every logged-in
-account in turn until one is the pull request's author, at most four.
-
-CLI, for a manual or dry run:
-    python3 hooks/ai-review-request.py --repo owner/name --pr 42 \
-        [--account login] [--dry-run]
-
-Bypass: AI_REVIEW_REQUEST_DISABLE=1, or the bypass registry.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -102,7 +84,6 @@ def _git_push_dir(args: list[str], cwd: str) -> str | None:
 
 
 def _split_pr_args(args: list[str]) -> tuple[list[str], str]:
-    """Positional arguments, and the `--repo`/`-R` value when one is given."""
     positional: list[str] = []
     repo = ""
     skip = False
@@ -120,7 +101,6 @@ def _split_pr_args(args: list[str]) -> tuple[list[str], str]:
 
 
 def find_triggers(command: str, cwd: str) -> list[Trigger]:
-    """Every PR-moving command in `command`, with the directory it runs in."""
     triggers: list[Trigger] = []
     current = cwd
     for tokens in quoted_segments(command):
@@ -220,7 +200,6 @@ def _summaries_for(
 
 
 def handle(data: dict, deps: Dependencies) -> list[str]:
-    """One summary line per pull request a review was requested on."""
     if data.get("tool_name") != "Bash":
         return []
     command = (data.get("tool_input") or {}).get("command") or ""
@@ -274,7 +253,6 @@ def branch_pr_number(owner: str, name: str, branch: str, token: str) -> int | No
 
 
 def ssh_hostname(host: str) -> str:
-    """The real host behind an SSH alias, per `ssh -G`; the alias when unknown."""
     try:
         config = _run(["ssh", "-G", host])
     except (OSError, subprocess.SubprocessError):

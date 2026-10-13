@@ -1,33 +1,4 @@
 #!/usr/bin/env python3
-"""
-banned-prose-chars.py
-
-PreToolUse hook that blocks tool calls whose payloads contain characters
-banned by ~/.claude/rules/code-style.md "Writing Style":
-
-  - Em dashes (U+2014)
-  - Emojis and decorative Unicode (multiple ranges)
-  - Box-drawing characters (U+2500-U+257F)
-
-Scans:
-  - Write.content
-  - Edit.new_string
-  - MultiEdit.edits[].new_string
-  - Bash.command  (catches `gh api --field body=...`, `git commit -m ...`,
-                   `cat <<'EOF' ... EOF` heredocs, etc.)
-
-Other tool inputs pass through unchecked. Read.* is never scanned: the rule
-forbids producing these characters, not seeing them.
-
-Exit codes:
-  0 - allow
-  2 - block; stderr explains which character + a snippet of context
-
-Bypass:
-  BANNED_PROSE_CHARS_DISABLE=1 to skip (intended for one-off cases where the
-  user explicitly asks to preserve banned characters in existing content).
-"""
-
 from __future__ import annotations
 
 import os

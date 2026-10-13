@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""
-mock-internal-blocker.py
-
-PreToolUse hook that blocks mocks of internal infrastructure in tests.
-Rule source: ~/.claude/rules/testing.md "Mocks Policy (STRICT)".
-
-Bans jest.mock / vi.mock / unittest.mock.patch targeting:
-  - Own services (anything under services/, repositories/, controllers/, domain/)
-  - Database clients (db, prisma, @repo/prisma-client, mongoose, knex)
-  - Cache and queue (redis, valkey, ioredis, bull, bullmq, sqs, kafka)
-  - Internal packages (@repo/*, @org/*, ../services, ./services)
-
-Only fires on test files. External APIs you do not own are still allowed
-(e.g., 'axios', 'stripe', 'sendgrid'), per the rule.
-
-Bypass:
-  MOCK_INTERNAL_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

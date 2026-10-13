@@ -1,32 +1,4 @@
 #!/usr/bin/env python3
-"""Pre-write quality and security hook for Dockerfile and Compose files.
-
-Fires on PreToolUse for Write, Edit, and MultiEdit. Activates only when the
-target file path matches a Dockerfile or Compose pattern.
-
-BLOCKs four high-confidence dangerous patterns:
-    1. COPY of `.env*`, key, cert, or SSH-key files
-    2. ENV/ARG that names a secret and has a literal value
-    3. Compose `privileged: true`
-    4. Compose `pid: host`, `ipc: host`, `network_mode: host`, `userns_mode: host`
-
-WARNs on four lower-confidence smells:
-    1. `FROM image:latest`, `FROM image:lts`, or `FROM image` with no tag
-    2. `USER root` in the final stage, or missing non-root `USER` on Write
-    3. Compose top-level `version:` (deprecated under Compose v2)
-    4. Compose `environment:` block with a literal secret-named value
-
-Bypass for the whole hook: set `DOCKERFILE_QUALITY_DISABLE=1` in the parent
-shell.
-
-Receives the tool input as JSON on stdin.
-Exit 0 = allow (may print warnings to stderr).
-Exit 2 = block.
-
-Conforms to the hook conventions used by `docker-context-guard.py` and
-`secret-scanner.py`. Pure stdlib, no YAML parser dependency.
-"""
-
 import os
 import json
 import re
@@ -144,7 +116,6 @@ COMPOSE_ENV_LITERAL_SECRET = re.compile(
 
 
 def detect_kind(path: str) -> str:
-    """Return 'dockerfile', 'compose', or 'other' based on the file path."""
     if not path:
         return "other"
     name = Path(path).name
@@ -162,11 +133,6 @@ def detect_kind(path: str) -> str:
 
 
 def extract_new_content(tool_name: str, tool_input: dict) -> tuple[str, bool]:
-    """Return the text the tool would persist or add.
-
-    Second element is True when the text represents the FULL post-change file
-    (Write), False when it is an additive fragment (Edit / MultiEdit).
-    """
     if tool_name == "Write":
         return tool_input.get("content", "") or "", True
     if tool_name == "Edit":
@@ -183,7 +149,6 @@ def extract_new_content(tool_name: str, tool_input: dict) -> tuple[str, bool]:
 
 
 def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
-    """Return (blocks, warns) for a Dockerfile fragment or full file."""
     blocks: list[str] = []
     warns: list[str] = []
     lines = text.splitlines()
@@ -266,7 +231,6 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
 
 
 def scan_compose(text: str, full_file: bool) -> tuple[list[str], list[str]]:
-    """Return (blocks, warns) for a Compose YAML fragment or full file."""
     blocks: list[str] = []
     warns: list[str] = []
     lines = text.splitlines()

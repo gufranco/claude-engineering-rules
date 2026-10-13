@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""Inject the vault catalog at session start.
-
-A session that does not know what the vault already holds re-derives knowledge
-it has and files duplicates of notes that exist. The index is the cheapest
-possible answer to "what do we already know", so it goes in once, at the start,
-rather than being searched for repeatedly.
-
-Read-only. This hook never writes to the vault.
-
-Bypass: set ``VAULT_CONTEXT_DISABLE=1`` in a parent shell.
-"""
-
 from __future__ import annotations
 
 import json
@@ -43,19 +31,6 @@ CAPTURE_QUEUE = "capture-queue.jsonl"
 
 
 def maintenance_notice(root: Path) -> str:
-    """Return a line when the maintenance loop has gone quiet, else empty.
-
-    A loop that stops running is silent in exactly the way a loop with nothing
-    to do is silent, so the record is the only channel that can tell them
-    apart. An unreadable or absent record is treated as overdue rather than as
-    fine, because failing closed costs a visible false alarm and failing open
-    costs an unnoticed stall.
-
-    The same reasoning covers the exit code. A run that failed writes a fresh
-    timestamp, so reading only the timestamp treats a failure as a success and
-    stays quiet until the window elapses. A failed check is a failed check and
-    never a skipped one, so the exit code is read before the age.
-    """
     from datetime import datetime, timezone
 
     path = root / MAINTENANCE_RECORD
@@ -90,13 +65,6 @@ def maintenance_notice(root: Path) -> str:
 
 
 def pending_captures(root: Path) -> str:
-    """Return a line naming the captures a previous session queued, else empty.
-
-    The Stop hook records that a turn produced something worth keeping and
-    stops there, because a process cannot judge what is durable. This is the
-    other half: it hands the queue to a session that can, which is the first
-    moment a model with real context is available to make that call.
-    """
     path = root / CAPTURE_RUN_DIR / CAPTURE_QUEUE
     try:
         lines = path.read_text(encoding="utf-8").splitlines()

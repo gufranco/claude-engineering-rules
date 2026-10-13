@@ -1,39 +1,4 @@
 #!/usr/bin/env python3
-"""Validate SKILL.md structure across skills/.
-
-Required (errors, exit non-zero):
-  - YAML frontmatter delimited by `---` at the top of the file
-  - `name` field, non-empty, matches the parent directory name
-  - `description` field, non-empty, >= 30 characters
-  - At least one body section (`## ` heading) after frontmatter
-  - Frontmatter that strict YAML accepts (`invalid-yaml`): no unquoted
-    plain scalar containing ": ", no value starting with a reserved
-    indicator, nothing after a closing quote. The check is dependency-free
-    because the linter runs under the system Python, which lacks PyYAML.
-
-Recommended (warnings, exit 0 in default mode):
-  - `argument-hint` field with example invocations
-  - `allowed-tools` or `disallowed-tools` declared
-  - 6-section template: Overview, When to Use, Process,
-    Common Rationalizations, Red Flags, Verification
-  - No `user-invocable: true`, which is the default (`noop-user-invocable`)
-  - A skill with `disable-model-invocation: true` carries one human-facing
-    sentence, not a "Use when" or "Do NOT" list (`trigger-list-on-user-invoked`)
-
-Discovery skips dot-prefixed directories and the harness-managed `synced/`.
-
-Modes:
-  default      report errors AND warnings, exit 0 on warnings, exit 1 on errors
-  --strict     treat warnings as errors
-  --fix-hints  print exact frontmatter and headings to add
-  --json       machine-readable output for CI integration
-
-Usage:
-  python3 tools/lint-skills.py
-  python3 tools/lint-skills.py --strict
-  python3 tools/lint-skills.py skills/plan/SKILL.md
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -107,7 +72,6 @@ class Report:
 
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
-    """Parse minimal YAML frontmatter. Returns (fields, body)."""
     match = FRONTMATTER_RE.match(text)
     if not match:
         return {}, text

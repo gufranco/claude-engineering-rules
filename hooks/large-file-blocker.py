@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""PreToolUse Bash hook: block `git commit` when staged files exceed 5 MB.
-
-Prevents accidental commits of build artifacts, database dumps, media, BIOSes.
-
-Bypass channels:
-    1. Env var `LARGE_FILE_DISABLE=1` (parent shell). Use for intentionally
-       tracked large binary assets.
-    2. File registry entry for hook `large-file-blocker`.
-"""
-
 from __future__ import annotations
 
 import os

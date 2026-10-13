@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""ai-disclosure-checks
-
-PreToolUse hook on Write, Edit, MultiEdit. Catches AI-generated content
-rendered without a disclosure label.
-
-Rule source: ~/.claude/rules/ai-compliance-defaults.md and
-~/.claude/standards/ai-compliance.md "AI Disclosure Tag Pattern".
-
-Detected patterns:
-  - JSX expression rendering a variable named like aiResponse, llmOutput,
-    generated*, completion, modelOutput, etc. without a nearby disclosure
-    label
-  - Chatbot UI component instantiated without nearby "AI" / "powered by AI"
-    text
-
-Scope: .tsx, .jsx, .vue, .svelte files.
-
-Bypass:
-  AI_DISCLOSURE_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

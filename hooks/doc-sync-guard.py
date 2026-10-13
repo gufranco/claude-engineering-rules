@@ -1,42 +1,4 @@
 #!/usr/bin/env python3
-"""Block a commit whose staged diff makes existing documentation false.
-
-Documentation that describes code is a claim about the code. This hook runs
-at `git commit`, reads the staged diff, and refuses the commit when the
-change falsifies a claim that is still on disk.
-
-Only four checks ship, each chosen because it leaves no judgment call:
-
-  1. The code reads an environment variable `.env.example` does not name.
-     The example file is a complete list by definition, so the absence is
-     certain rather than a style opinion.
-  2. An exported symbol disappears while tracked markdown still names it.
-  3. A parser flag disappears while tracked markdown still names it.
-  4. A `package.json` script disappears while tracked markdown still names it.
-
-Checks 2 through 4 are one mechanism: a name vanished from the code while a
-document still asserts it exists.
-
-Documenting an addition is the author's obligation and is deliberately not
-enforced here. A README that documents three of five flags is a style choice
-no tool can distinguish from an omission, and a check that needs a maybe is a
-check that trains people to disable the hook.
-
-Historical records are exempt. A changelog, an architecture decision record,
-an incident report, and an archived plan are supposed to name things that no
-longer exist.
-
-Staging the affected document clears the check. The hook verifies the
-document was touched, never that it was touched correctly, because
-correctness is a review judgment.
-
-Enforces: rules/doc-truth.md
-Bypass: DOC_SYNC_DISABLE=1 in the parent shell.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 from __future__ import annotations
 
 import json

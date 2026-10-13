@@ -1,31 +1,4 @@
 #!/usr/bin/env python3
-"""Block global mise tool mutations.
-
-`mise use --global <tool>@<version>` and `mise use -g <tool>@<version>`
-write to `~/.config/mise/config.toml`, the shared global config every
-shell reads when no project-local `.mise.toml` or `.tool-versions`
-applies. Mutating it from one terminal silently changes the fallback
-runtime for every other shell on the machine.
-
-Unlike other multi-account CLIs, mise defaults to project-local writes:
-plain `mise use <tool>@<version>` updates the cwd's `.mise.toml`. The
-`--global`/`-g` flag is an explicit opt-in to the shared file. This
-hook hard-blocks that opt-in.
-
-Allowed:
-- `mise use <tool>@<version>` (writes to project-local `.mise.toml`)
-- `mise install`, `mise current`, `mise ls`, `mise which`, `mise where`
-- `mise exec ...` / `mise x ...` (per-command, no global mutation)
-- `mise run ...`
-
-Blocked:
-- `mise use --global ...` / `mise use -g ...`
-- `mise unuse --global ...` / `mise unuse -g ...`
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import re
 import sys

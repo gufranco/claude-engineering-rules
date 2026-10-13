@@ -1,30 +1,4 @@
 #!/usr/bin/env python3
-"""Block catastrophic and dangerous bash commands at runtime.
-
-Three severity levels:
-  Level 1 BLOCK: Catastrophic, irreversible system damage
-  Level 2 BLOCK: Critical path protection and destructive operations
-  Level 3 WARN:  Suspicious patterns that might be intentional
-
-Categories covered:
-  - Filesystem destruction (rm, dd, mkfs, shred, wipe)
-  - Privilege escalation (sudo, setuid, capabilities, sudoers)
-  - Reverse shells and remote code execution
-  - Git destructive operations (force push, reset, filter-branch, reflog)
-  - Cloud CLI (AWS, GCP, Azure, Vercel, Netlify, Firebase, Cloudflare, Fly.io)
-  - Container and orchestration (Docker, Podman, Kubernetes, Helm)
-  - Database CLI (Redis, MongoDB, PostgreSQL, MySQL, SQLite, Cassandra)
-  - Infrastructure as Code (Terraform, Pulumi, Ansible, CDK, Serverless)
-  - SQL destructive statements (DROP, TRUNCATE, DELETE, UPDATE without WHERE)
-  - Secret exfiltration via command arguments (curl headers, inline creds)
-  - Cron and systemd manipulation
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-
-Cross-platform: works on macOS and Linux (Ubuntu).
-"""
-
 from __future__ import annotations
 
 import fnmatch
@@ -465,18 +439,6 @@ def _names_protected_ref(text: str) -> bool:
 
 
 def _command_cwd(command: str) -> str:
-    """Return the directory a leading `cd` moves the command into.
-
-    The hook runs in whatever directory the harness pins, which is not
-    necessarily the repository the command operates on. A command shaped
-    `cd <path> && git ...` therefore resolves the wrong repository, or none
-    at all, and an allowlist keyed on the repository root cannot match.
-    Reading the leading `cd` makes the resolution follow the command.
-
-    Only a `cd` in first position counts. A `cd` later in the chain runs
-    after the command being inspected, so it does not describe where that
-    command executes.
-    """
     match = re.match(r"""\s*cd\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:&&|;)""", command)
     if not match:
         return ""
@@ -530,7 +492,6 @@ def _repo_root(cwd: str = "") -> str:
 
 
 def _solo_repo_entries() -> list[str]:
-    """Return the allowlist entries, minus blank lines and `#` comments."""
     try:
         with open(SOLO_REPO_ALLOWLIST, encoding="utf-8") as fh:
             lines = fh.read().splitlines()
@@ -558,12 +519,6 @@ def _is_safe_cleanup(command: str) -> bool:
 
 
 def _is_solo_repo(root: str) -> bool:
-    """True when `root` is listed in the solo-repo allowlist.
-
-    Entries are absolute paths or fnmatch globs. A solo repo has no PR
-    workflow, so pushing to its default branch is the intended path rather
-    than an accident.
-    """
     if not root:
         return False
     for entry in _solo_repo_entries():

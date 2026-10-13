@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""CLI for the in-session hook bypass registry.
-
-
-Usage:
-
-    python scripts/bypass.py set <hook> [--ttl 600] [--reason TEXT]
-    python scripts/bypass.py clear [hook]
-    python scripts/bypass.py list
-
-Wraps `hooks/_lib/bypass_writer.set_bypass` and `clear_bypass` so the
-assistant can engage and release a bypass through Bash without crafting
-JSON by hand. Both bypass channels (env var and this file registry)
-coexist; either grants a pass.
-"""
-
 from __future__ import annotations
 
 import argparse

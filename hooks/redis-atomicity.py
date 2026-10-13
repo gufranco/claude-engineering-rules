@@ -1,33 +1,4 @@
 #!/usr/bin/env python3
-"""
-redis-atomicity.py
-
-PreToolUse hook that flags non-atomic Redis sequences.
-Rule source: ~/.claude/standards/redis.md and ~/.claude/checklists/checklist.md cat 4.
-
-  Two sequential Redis commands (e.g., INCRBY then EXPIRE) are not atomic.
-  Use a Lua script (eval/evalsha), MULTI/EXEC pipeline, or a single-command equivalent
-  (SET ... EX, SET ... NX EX).
-
-Detected sequences (within 5 lines of each other on the same client):
-  - INCR / INCRBY / INCRBYFLOAT  followed by  EXPIRE / PEXPIRE
-  - SETNX / SET ... NX            followed by  EXPIRE / PEXPIRE
-  - HSET / SADD / RPUSH / LPUSH   followed by  EXPIRE   (when first command creates the key)
-  - GET                            followed by  SET (on the same key)  -> check-then-set TOCTOU
-  - SET ... NX / SETNX with no EX or PX -> a lock that outlives the process
-    holding it, so the resource stays locked until a human intervenes. See
-    standards/redis.md TTL Management and standards/concurrency.md
-    "Timeouts, Retries, and Locks".
-
-Skipped:
-  - Test files
-  - Lines wrapped in multi() / pipeline() / eval()
-  - Files importing 'pipeline' or showing MULTI/EXEC markers nearby
-
-Bypass:
-  REDIS_ATOMICITY_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

@@ -1,38 +1,4 @@
 #!/usr/bin/env python3
-"""Block the first Edit/Write/MultiEdit per file per session until the file
-was actually read or the user named the path.
-
-Rationale: ~/.claude/rules/pre-flight.md and ~/.claude/CLAUDE.md
-"Confidence" require reading every file you will modify before changing
-it. The rule is enforced in prose. Agents still occasionally edit a file
-on the strength of a search snippet or a memory guess. This hook turns
-the prose rule into a mechanical gate.
-
-How it works:
-  1. Track per-session state at ~/.claude/cache/gateguard-state.json.
-     Keys are session IDs. Values are dicts of {file_path: True} marking
-     files this session has already edited.
-  2. On the first Edit/Write/MultiEdit for a given file in a session, check
-     the recent transcript for evidence that the file was read or named.
-     Evidence is a Read call on the path, a Grep call covering the path,
-     or a user message containing the path string.
-  3. If evidence is found, mark the file as cleared and allow. Subsequent
-     edits to the same file in this session pass through without a check.
-  4. If no evidence, block with a message instructing the agent to read
-     the file or cite the user message.
-
-The hook does not run during the second edit, third edit, etc. of the same
-file in a session. It only gates the first touch.
-
-Exit 0 = allow, exit 2 = block.
-
-Bypass:
-  - Set `GATEGUARD_DISABLE=1` in the environment. Suitable for unattended
-    cron-style sessions where prior reads are not possible.
-  - Set `GATEGUARD_ALLOW_NEW_FILES=1` to allow Write on a path that does
-    not yet exist on disk. New files cannot have been read.
-"""
-
 from __future__ import annotations
 
 import json

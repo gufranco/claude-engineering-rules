@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Block edits that introduce NEW bare file mentions in markdown.
-
-The hook is diff-aware. It does not flag pre-existing bare references in
-the file being edited so legacy markdown can be edited without triggering.
-Only new bare references introduced by the change are blocked.
-
-Rule source: ``rules/markdown-links.md``.
-
-Bypass: set ``MARKDOWN_LINKS_DISABLE=1`` in the environment.
-"""
-
 from __future__ import annotations
 
 import os
@@ -53,7 +42,6 @@ def relative_to_repo(path: str) -> str | None:
 
 
 def derive_post_text(tool: str, tool_input: dict, pre_text: str) -> str:
-    """Apply the Write/Edit/MultiEdit operation to produce the post-edit text."""
     if tool == "Write":
         return tool_input.get("content", "")
     if tool == "Edit":

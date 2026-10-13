@@ -1,28 +1,3 @@
-"""Benchmark Claude Code Python hooks against representative payloads.
-The runtime dispatches every hook on every matching tool call. A hook that
-spends 400 ms parsing pushes user latency into the visible range. The bench
-records per-hook p50/p95/p99 so a regression that doubles a hook's cost is
-caught by `notes/perf-baseline.md` rather than by user complaints.
-For each hook the bench runs the same payload N times in a fresh subprocess
-to mirror Claude Code's invocation model (one process per call). Three
-canonical payloads are dispatched:
-    1. `bash` - a Bash tool call with a benign command. Exercises the no-op
-       fast-allow path that every hook must take when the tool does not
-       match its area of interest.
-    2. `write` - a Write tool call writing a small TypeScript snippet.
-       Exercises the typical content-scanning path.
-    3. `edit` - an Edit tool call with a small `new_string`. Exercises the
-       single-line code-style path.
-All three are intentionally small. Fixture-realism is covered by the per-hook
-suites in `tests/hooks/<name>/`. The bench is the regression gate, not a
-correctness test.
-Usage:
-    python3 scripts/bench_hooks.py                 # all hooks, table output
-    python3 scripts/bench_hooks.py --iterations 50 --format json
-    python3 scripts/bench_hooks.py --hook secret-scanner --hook redis-atomicity
-    python3 scripts/bench_hooks.py --write-baseline notes/perf-baseline.md
-"""
-
 from __future__ import annotations
 import argparse
 import json
@@ -76,8 +51,6 @@ PAYLOADS: dict[str, dict[str, Any]] = {
 
 @dataclass(frozen=True)
 class Sample:
-    """One subprocess invocation result."""
-
     hook: str
     payload: str
     duration_ms: float
@@ -87,8 +60,6 @@ class Sample:
 
 @dataclass(frozen=True)
 class HookStats:
-    """Aggregate latency stats for a single hook."""
-
     hook: str
     n: int
     mean_ms: float
@@ -117,7 +88,6 @@ def _percentile(sorted_values: list[float], p: float) -> float:
 
 
 def discover_hooks(hooks_dir: str) -> list[str]:
-    """Return absolute paths of `hooks_dir/*.py`, skipping underscore files."""
     if not os.path.isdir(hooks_dir):
         return []
     out: list[str] = []
@@ -172,7 +142,6 @@ def run_one(
     timeout_s: float = DEFAULT_TIMEOUT_S,
     env: dict[str, str] | None = None,
 ) -> tuple[float, int, bool]:
-    """Run one subprocess invocation and return `(duration_ms, exit_code, timed_out)`."""
     invocation_env = dict(os.environ)
     invocation_env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
     if env:
@@ -204,10 +173,6 @@ def iter_samples(
     warmup: int = 1,
     env: dict[str, str] | None = None,
 ) -> Iterator[Sample]:
-    """Yield Sample objects across the hook list, payloads, and iterations.
-    A small `warmup` number of un-recorded runs precedes the recorded loop
-    so disk-cache and Python-startup cost are amortized.
-    """
     payloads = payloads or PAYLOADS
     for hook_path in hook_paths:
         hook = _hook_basename(hook_path)
@@ -229,7 +194,6 @@ def iter_samples(
 
 
 def aggregate(samples: Iterable[Sample]) -> list[HookStats]:
-    """Group samples by hook, compute summary stats for each."""
     grouped: dict[str, list[Sample]] = {}
     for sample in samples:
         grouped.setdefault(sample.hook, []).append(sample)

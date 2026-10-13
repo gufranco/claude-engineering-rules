@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""PreToolUse Bash hook: validate `git commit` message against conventional format.
-
-Extracts the message from `-m '<text>'`, `-m "<text>"`, or heredoc-style
-`-m $(cat <<'X' ... X )`. Skips amend/no-edit/squash. Validates:
-    1. Subject matches `<type>(<scope>)?(!)?: <subject>`.
-    2. Subject is at most 50 characters.
-    3. Body lines are at most 72 characters (trailers, URLs, indented code skipped).
-    4. `Rejected:` trailers include a `|` separator before the reason.
-
-Bypass channels:
-    1. Env var `CONVENTIONAL_COMMITS_DISABLE=1` (parent shell).
-    2. File registry entry for hook `conventional-commits`.
-"""
-
 from __future__ import annotations
 
 import os
@@ -159,7 +145,6 @@ def _block(message: str, reason: str, command: str) -> int:
 
 
 def _shortening_hint(subject: str) -> str:
-    """Return a ready-to-use shorter subject when dropping the scope fits."""
     match = SUBJECT_RE.match(subject)
     if match is None or not match.group(2):
         return ""

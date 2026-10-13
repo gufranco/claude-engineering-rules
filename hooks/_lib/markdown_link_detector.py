@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Shared markdown link discipline detector.
-
-Detects bare file-path mentions in markdown that should be wrapped in a
-link to the actual file. Used by both the validator at
-``.github/scripts/validate-markdown-links.py`` and the hook at
-``hooks/markdown-link-discipline.py`` so the two cannot drift.
-
-Rule source: ``rules/markdown-links.md``.
-"""
-
 from __future__ import annotations
 
 import os.path
@@ -61,8 +51,6 @@ GENERIC_FILENAME_TOKENS = frozenset(
 
 @dataclass(frozen=True)
 class Finding:
-    """A bare file-path reference that should be linked."""
-
     file: str
     line: int
     column: int
@@ -78,13 +66,6 @@ class Finding:
 
 @dataclass(frozen=True)
 class BrokenLinkFinding:
-    """An existing markdown link whose target file is missing.
-
-    ``correct_path`` is the file-relative path that would resolve to the same
-    target when the original link was written as repo-root-relative. None when
-    the target does not exist anywhere in the repo.
-    """
-
     file: str
     line: int
     column: int
@@ -104,23 +85,11 @@ class BrokenLinkFinding:
 
 
 def file_relative_path(target: Path, doc_dir: Path) -> str:
-    """Return ``target`` as a path relative to ``doc_dir`` using POSIX separators."""
     rel = os.path.relpath(str(target), str(doc_dir))
     return rel.replace(os.sep, "/")
 
 
 def find_code_block_ranges(text: str) -> list[tuple[int, int]]:
-    """Return a list of (start_line, end_line) for fenced code blocks.
-
-    Both ends are 1-based and inclusive. Follows the CommonMark rule that a
-    closing fence must use the same character (backtick or tilde) as the
-    opening fence and have at least as many of them. This lets templates
-    nest a 3-backtick block inside a 4-backtick block without confusing
-    the detector.
-
-    Front-matter blocks delimited by ``---`` at the start of the file are
-    also treated as code blocks.
-    """
     ranges: list[tuple[int, int]] = []
     lines = text.split("\n")
     fence_open = re.compile(r"^\s*(`{3,}|~{3,})")
@@ -166,8 +135,6 @@ def line_is_inside_ranges(line_no: int, ranges: list[tuple[int, int]]) -> bool:
 
 
 def find_link_url_ranges(line: str) -> list[tuple[int, int]]:
-    """Return (start, end) character ranges within a single line that fall
-    inside the URL portion of a markdown link ``[text](url)``."""
     return [(m.start("url"), m.end("url")) for m in MARKDOWN_LINK.finditer(line)]
 
 
@@ -176,13 +143,6 @@ def column_inside_ranges(col: int, ranges: list[tuple[int, int]]) -> bool:
 
 
 def is_already_linked(line: str, span_start: int, span_end: int) -> bool:
-    r"""Determine whether the inline-code span at [span_start:span_end] is
-    wrapped in a markdown link, either as ``[`token`](url)`` (backticks inside
-    the link text) or ``[token](url)`` referencing the same token.
-
-    The span boundaries refer to the full ``\`token\``` span including the
-    backticks.
-    """
     if span_start >= 1 and line[span_start - 1] == "[":
         after = line[span_end : span_end + 2]
         if after == "](":
@@ -198,7 +158,6 @@ def is_already_linked(line: str, span_start: int, span_end: int) -> bool:
 
 
 def is_file_path_token(token: str) -> bool:
-    """Decide whether ``token`` looks like a file path or directory."""
     if not token or token.startswith("#") or token.startswith("?"):
         return False
     if len(token) < 3:
@@ -219,10 +178,6 @@ def is_file_path_token(token: str) -> bool:
 
 
 def resolve_path(token: str, doc_dir: Path, repo_root: Path) -> Path | None:
-    """Resolve ``token`` relative to ``doc_dir`` first, then ``repo_root``.
-
-    Returns the resolved path when it exists in the repo, otherwise None.
-    """
     candidates: list[Path] = []
     cleaned = token[2:] if token.startswith("./") else token
 
@@ -249,15 +204,6 @@ def detect_findings(
     *,
     tracked: set[str] | None = None,
 ) -> list[Finding]:
-    """Run the detector on ``text`` from ``file_path``.
-
-    Returns the list of findings. Empty list when the file is clean.
-
-    Pass ``tracked`` to scope existence checks to the git tree. Without
-    it, the detector checks the filesystem (used by ad-hoc input). The
-    distinction matters because a bare reference to a gitignored path
-    would otherwise be auto-wrapped into a link that 404s in CI.
-    """
     rel = file_path
     if rel in EXEMPT_FILES:
         return []
@@ -309,14 +255,6 @@ _LINK_TARGET_SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "ftp://", "
 
 
 def tracked_paths(repo_root: Path) -> set[str]:
-    """Return the set of repo-relative paths tracked by git, plus every
-    directory derived from those paths.
-
-    Used as the source of truth for "does this link target exist?" when
-    validating cross-document links. A bare filesystem check would let
-    gitignored artifacts (logs/, specs/, .last-cleanup, etc.) pass on a
-    developer machine but fail in CI where the checkout never had them.
-    """
     import subprocess
 
     try:
@@ -344,12 +282,6 @@ def _target_exists(
     repo_root: Path,
     tracked: set[str] | None,
 ) -> bool:
-    """Return True if ``candidate`` is a real link destination.
-
-    When ``tracked`` is provided, membership in the git tree is the
-    source of truth. Targets outside the repo always fall back to a
-    filesystem check (the tracked set is repo-relative).
-    """
     try:
         rel = str(candidate.relative_to(repo_root))
     except ValueError:
@@ -360,12 +292,6 @@ def _target_exists(
 
 
 def _inline_code_span_ranges(line: str) -> list[tuple[int, int]]:
-    r"""Return (start, end) character ranges of inline code spans in ``line``.
-
-    Both ends are 0-based indices into the line. Used to skip markdown-link
-    pattern matches that fall inside ``\`code\``` spans (e.g. table cells like
-    ``\`arr['push'](...)\```).
-    """
     ranges: list[tuple[int, int]] = []
     for m in INLINE_CODE_SPAN.finditer(line):
         ranges.append((m.start(), m.end()))
@@ -379,19 +305,6 @@ def detect_broken_link_targets(
     *,
     tracked: set[str] | None = None,
 ) -> list[BrokenLinkFinding]:
-    """Return links whose target does not exist when resolved file-relative.
-
-    GitHub resolves markdown link paths relative to the document containing
-    the link. A link that uses a repo-root-relative path (e.g. linking to
-    ``rules/foo.md`` from inside another ``rules/`` document) 404s on GitHub.
-    This detector flags those cases, plus links whose target is missing
-    entirely.
-
-    Pass ``tracked`` (a set of repo-relative paths from ``tracked_paths()``)
-    to scope the existence check to the git tree. Without it, the detector
-    falls back to filesystem existence, which is correct for ad-hoc input
-    but lets gitignored paths slip through CI.
-    """
     rel = file_path
     if rel in EXEMPT_FILES:
         return []

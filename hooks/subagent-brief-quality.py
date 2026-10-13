@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""subagent-brief-quality
-
-PreToolUse hook that validates the structure of Agent/Task subagent prompts.
-
-Rule source: ~/.claude/rules/smart-questions.md "Briefing Subagents".
-
-Required elements in a well-formed Agent prompt:
-
-  1. Specific reference: a file path, `file:line`, function name, or error code.
-  2. Response-length cap: a word/sentence/paragraph budget.
-  3. Output shape: a noun naming what the agent must return.
-  4. Not a meta-prompt: the first line is the actual instruction.
-
-Severity ladder:
-  - Two or more failures: block (exit 2).
-  - Exactly one failure: advisory audit, exit 0.
-  - All four satisfied: silent pass.
-
-Bypass:
-  SUBAGENT_BRIEF_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

@@ -1,30 +1,4 @@
 #!/usr/bin/env python3
-"""Append what a session worked on to today's vault note, before compaction.
-
-Opt-in and inert until ``VAULT_AUTO_CAPTURE=1`` is set, because this is an
-unattended process writing to a knowledge base.
-
-It records what was worked on, never what was concluded. A hook is a Python
-process, not a model: it can observe that files changed and that commits
-landed, and it cannot tell durable knowledge from incidental work. Pretending
-otherwise would file inference as fact, which is the failure the note
-specification exists to prevent. Promotion into the knowledge graph stays a
-deliberate act.
-
-The landing zone is deliberate too. Daily notes are dated containers, which the
-freshness policy exempts, so a machine-written snapshot claims what was true on
-a date and can never rot into a false current claim.
-
-Safety properties, all of them load-bearing:
-
-  - appends only, and never rewrites or removes existing content
-  - writes only under the vault's daily folder
-  - caps its own output
-  - exits zero on every failure, so compaction is never broken
-
-Bypass: unset ``VAULT_AUTO_CAPTURE``, or set ``VAULT_CAPTURE_DISABLE=1``.
-"""
-
 from __future__ import annotations
 
 import fcntl
@@ -64,13 +38,6 @@ CAVEAT = (
 
 
 def git(args: list[str], cwd: Path, *, strip: bool = True) -> str:
-    """Run git and return stdout, empty on any failure.
-
-    `strip` is opt-out because porcelain status encodes state in the first two
-    columns and a path begins at the third. An unstaged edit leaves column one
-    blank, so stripping the output removes that blank from the first line only
-    and every later slice takes one character too many from that one path.
-    """
     try:
         result = subprocess.run(
             ["git", *args],
