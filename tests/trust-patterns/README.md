@@ -4,11 +4,9 @@ Synthetic fixtures used to verify the `/audit trust` scan behaves as documented 
 
 ## Directory layout
 
-- [`positive/`](positive): minimal files that should trigger a specific pattern.
-- [`negative/`](negative): files that resemble a pattern but are benign and should not fire.
 - [`verdicts/`](verdicts): full mini-project fixtures, one per verdict tier, used to verify end-to-end behavior.
 
-Every fixture file documents the expected behavior in a leading comment so the verifier can compare.
+Each fixture directory documents its expected behavior in its own `FIXTURE.md`; the source files carry no comments.
 
 ## How to run
 
@@ -25,7 +23,7 @@ The trust scan is markdown-driven and interpreted by the assistant. The verifier
 
 ## Adding new fixtures
 
-Each fixture lives in its own subdirectory under the appropriate parent. Add a `FIXTURE.md` inside each directory documenting:
+Each fixture lives in its own subdirectory under [`verdicts/`](verdicts). Add a `FIXTURE.md` inside each directory documenting:
 
 1. Which pattern from [`../../skills/audit/trust-patterns.md`](../../skills/audit/trust-patterns.md) the fixture exercises.
 2. The expected per-file severity and the expected verdict.

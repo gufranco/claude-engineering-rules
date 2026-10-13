@@ -1,3 +1,3 @@
-export function add(a, b) {
-  return a + b;
+export function renderTemplate(expression, context) {
+  return eval(expression);
 }

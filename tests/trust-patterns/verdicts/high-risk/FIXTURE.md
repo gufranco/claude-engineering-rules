@@ -2,12 +2,12 @@
 
 ## Purpose
 
-A project that triggers one HIGH finding without rising to MALICIOUS. Postinstall lifecycle script runs a network download but does not pipe to a shell.
+A project that triggers exactly one HIGH finding and nothing that rises to CRITICAL. The source calls `eval` with a dynamic argument, which Section B rates HIGH. No lifecycle script is declared, because Section A rates any lifecycle value containing `curl` CRITICAL.
 
 ## Files in this fixture
 
-- `package.json`: declares a `postinstall` script that runs `curl` to download a payload to `/tmp` without execution.
-- `src/index.js`: normal code, no other findings.
+- `package.json`: a normal manifest with a `test` script. No lifecycle hooks.
+- `src/index.js`: one `eval(expression)` call with a dynamic argument, no base64 decode.
 
 ## Expected outcome
 
