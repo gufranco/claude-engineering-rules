@@ -4,11 +4,11 @@
 
 Every sentence must carry information that changes what the reader knows, decides, or does. Text that fails this test is slop, and slop is banned from every artifact regardless of who or what produced it.
 
-Slop is not a vocabulary problem. It is text whose shape was chosen before its content: a structure gets picked because it sounds finished, and then filler is poured in until the structure is full.
+Slop is text whose shape was chosen before its content: a structure gets picked because it sounds finished, and then filler is poured in until the structure is full.
 
 ## Why This Rule Exists
 
-[`../CLAUDE.md`](../CLAUDE.md) "Banned Phrases" already blocks a wordlist, and [`../hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py) enforces it. A wordlist is necessary and insufficient. It catches vocabulary; slop is mostly grammar, rhetoric, and layout. The shapes are productive, so a writer barred from "it's worth noting" reaches for "it bears mentioning" and the sentence stays exactly as empty. Blocking the word never touched the move.
+[`tone-and-writing.md`](tone-and-writing.md) "Banned Phrases" already blocks a wordlist, and [`../hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py) enforces it. A wordlist is necessary and insufficient. It catches vocabulary; slop is mostly grammar, rhetoric, and layout. The shapes are productive, so a writer barred from "it's worth noting" reaches for "it bears mentioning" and the sentence stays exactly as empty. Blocking the word never touched the move.
 
 The catalogue below comes from the field guide maintained by WikiProject AI Cleanup at <https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing>, which is derived from thousands of reviewed instances rather than from intuition, cross-checked against <https://arxiv.org/abs/2509.19163> and <https://tomyandell.dev/blog/llm-voice>. Two properties make it usable here: the tells are structural, so they survive paraphrase, and each one has a stated mechanism, so a novel variant is recognizable.
 
@@ -115,7 +115,7 @@ Bold-label bullets are the most recognizable machine format in circulation, and 
 |---|---|
 | Curly quotation marks and apostrophes | Use ASCII `'` and `"`. Typographic quotes in a source file are auto-substitution residue |
 | Boldface on every occurrence of a chosen term | Bold marks a definition once. Repeated bolding is decoration |
-| Em dashes joining clauses | Already banned outright by [`../CLAUDE.md`](../CLAUDE.md) "Writing Style" |
+| Em dashes joining clauses | Already banned outright by [`tone-and-writing.md`](tone-and-writing.md) "Writing Style" |
 | Emoji as structure, decorative Unicode | Already banned outright |
 | Headings that contain only other headings | A heading introduces text. Merge or add the text |
 | Skipped heading levels, multiple level-1 headings | One level-1 heading. No gaps in the ladder |
@@ -194,13 +194,13 @@ Four sentences. Lead with what changed or with the answer. Courtesy in a clause.
 | A bulleted form with **Fix**, **Test**, **Risk** labels | One or two sentences naming the fix and the test. |
 | "To summarize the above:" | Delete it. The above is four sentences long. |
 
-The reason is not economy for its own sake. A reviewer opens a thread expecting one thing back, and a long reply makes them hunt for it. Length reads as effort to the author and as work to the reader.
+A reviewer opens a thread expecting one thing back, and a long reply makes them hunt for it. Length reads as effort to the author and as work to the reader.
 
 ## Interaction With Other Rules
 
 [`writing-precision.md`](../rules/writing-precision.md) governs how a sentence is built. This rule governs the shapes a sentence must not take. The precision gate runs first; a passage that clears it can still be slop, because every sentence can be individually precise while the passage as a whole says nothing.
 
-[`../CLAUDE.md`](../CLAUDE.md) "Banned Phrases" and "Natural Writing" remain in force. This rule is the structural layer beneath both.
+[`tone-and-writing.md`](tone-and-writing.md) "Banned Phrases" and "Natural Writing" remain in force. This rule is the structural layer beneath both.
 
 [`no-ai-process-leak.md`](../rules/no-ai-process-leak.md) covers workflow vocabulary such as phase markers and plan references. The overlap is only the chat-residue row.
 

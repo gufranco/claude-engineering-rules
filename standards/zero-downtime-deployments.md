@@ -69,8 +69,13 @@ Database schema changes must not break the currently running application version
 **Phase 1: Expand.** Add new columns, tables, or indexes alongside the existing schema. The old application version ignores them. Here the new column is nullable with a default:
 
 ```sql
-ALTER TABLE orders ADD COLUMN status_v2 VARCHAR(50) DEFAULT 'pending';
-CREATE INDEX idx_orders_status_v2 ON orders(status_v2);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(50) DEFAULT 'pending';
+```
+
+The index goes in its own migration file, because `CREATE INDEX CONCURRENTLY` cannot run inside a transaction. `CONCURRENTLY` keeps writes flowing while the index builds:
+
+```sql
+CREATE INDEX CONCURRENTLY IF NOT EXISTS orders_status_v2_lookup_idx ON orders (status_v2);
 ```
 
 **Phase 2: Migrate.** Deploy code that writes to both old and new structures. Backfill existing data.
@@ -82,9 +87,10 @@ UPDATE orders SET status_v2 = status WHERE status_v2 IS NULL;
 **Phase 3: Contract.** After all application versions use the new structure, remove the old columns or tables.
 
 ```sql
-ALTER TABLE orders DROP COLUMN status;
-ALTER TABLE orders RENAME COLUMN status_v2 TO status;
+ALTER TABLE orders DROP COLUMN IF EXISTS status;
 ```
+
+Keep the new name. Renaming `status_v2` back to `status` breaks every running instance that still reads `status_v2`, so a rename needs its own expand-contract cycle: add the column, dual-write, migrate reads, then drop.
 
 Never combine expand and contract in the same deployment. The gap between phases must span at least one full deployment cycle.
 
@@ -167,4 +173,3 @@ Before every production deployment:
 
 - [`standards/database.md`](database.md): Database
 - [`standards/infrastructure.md`](infrastructure.md): Infrastructure
-- `standards/feature-flags.md`: Feature Flags

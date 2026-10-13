@@ -37,7 +37,8 @@
 
 ## Unsafe
 
-- `unsafe` blocks require a `// SAFETY:` comment naming the invariants the caller must uphold. This is the one comment the Rust toolchain itself demands: clippy's `undocumented_unsafe_blocks` fails without it, which makes it a tool directive under [`../rules/code-style.md`](../rules/code-style.md) "Comments Policy", not prose
+- `unsafe` blocks require a `// SAFETY:` comment naming the invariants the caller must uphold. This is the one comment the Rust toolchain can demand: clippy's `undocumented_unsafe_blocks` lint fails without it, which makes it a tool directive under [`code-style.md`](code-style.md) "Comments Policy", not prose
+- `undocumented_unsafe_blocks` is a `clippy::restriction` lint, so `clippy::pedantic` does not enable it. Turn it on explicitly in `Cargo.toml` with `[lints.clippy] undocumented_unsafe_blocks = "deny"`
 - Encapsulate `unsafe` behind safe abstractions; never expose raw pointers to library consumers
 - Run `cargo miri` on test suites that exercise `unsafe` code
 

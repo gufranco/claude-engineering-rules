@@ -52,7 +52,7 @@ A description of what the author expects to happen is not evidence at any rung.
 - **Assert on the accessibility tree for any semantics change.** Accessible name, role, and the absence of nested interactives. A snapshot of the tree catches the duplicate-node class that markup review misses.
 - **Name the viewport.** A layout claim without a width is untestable. State the width the assertion holds at, and include the smallest supported width when the change affects layout.
 - **A regression test outranks a fix.** When a browser surfaces a defect, the deliverable is the fix plus a case that fails without it. Confirm the case fails against the previous revision; a test that passes both ways asserts nothing.
-- **Record known findings rather than waiving the check.** When a pre-existing violation cannot be fixed in scope, record it in a per-route or per-screen allowlist so new findings still fail while the old ones stay visible. Suppressing the whole check hides the next regression.
+- **Record blocked findings rather than waiving the check.** A pre-existing violation the check finds is fixed in this change per [`found-fix.md`](../rules/found-fix.md). Only one whose fix is blocked outside the change, such as a third-party frame the page does not own, goes in a per-route or per-screen allowlist that names the blocker, so new findings still fail while the old ones stay visible. Suppressing the whole check hides the next regression.
 
 ## Driving The Check
 
@@ -146,9 +146,9 @@ The split matters because that standard is loaded on demand, so it reaches the s
 
 ## Interaction With Other Rules
 
-[`verification.md`](../rules/verification.md) governs evidence generally, and this rule names what evidence means for rendered output. [`accessibility-defaults.md`](../rules/accessibility-defaults.md) sets the conformance target this gate measures against. [`surgical-edits.md`](../rules/surgical-edits.md) still bounds the diff: the gate widens what must be verified, never what may be changed.
+[`verification.md`](../rules/verification.md) governs evidence generally, and this rule names what evidence means for rendered output. [`accessibility-defaults.md`](../rules/accessibility-defaults.md) sets the conformance target this gate measures against. [`surgical-edits.md`](../rules/surgical-edits.md) still bounds the diff: the gate widens what must be verified, and only its findings widen what may be changed.
 
-When a render check surfaces a pre-existing defect outside the current scope, [`found-fix.md`](../rules/found-fix.md) applies to what the change touches, and the rest is reported rather than silently absorbed.
+When a render check surfaces a pre-existing defect, [`found-fix.md`](../rules/found-fix.md) puts it in scope: fix it in this change and name it in one line of the PR body. Only a fix blocked outside the change waits, with the blocker stated in one sentence.
 
 ## Enforcement
 

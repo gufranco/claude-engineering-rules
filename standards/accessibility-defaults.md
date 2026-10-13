@@ -54,13 +54,13 @@ For every frontend change:
 
 1. The accessibility-auditor agent runs unconditionally (see [`../agents/accessibility-auditor.md`](../agents/accessibility-auditor.md)).
 2. Automated tests via axe-core (jest-axe, playwright-axe, or cypress-axe) at the component layer.
-3. Lighthouse CI threshold ≥ 0.9 accessibility score.
+3. Lighthouse CI threshold >= 0.9 accessibility score.
 4. Pa11y CI on multi-page audits with zero errors.
 5. Manual pass: keyboard navigation, screen reader on one desktop + one mobile, zoom 400%, reduced-motion enabled.
 
 ## Law Coverage
 
-The rule covers the union of WCAG 2.2 AA + AAA-aspirational obligations from every accessibility law in Europe, North America, and South America. Per-law citations and effective dates in the spec folder's `references.md`. Authority for conflict resolution: spec folder's `conflicts.md`.
+The rule covers the union of WCAG 2.2 AA + AAA-aspirational obligations from every accessibility law in Europe, North America, and South America. A conflict between two of those laws resolves by the strictest-applicable-rule lock in [`compliance-defaults.md`](../rules/compliance-defaults.md).
 
 ## Cross-References
 

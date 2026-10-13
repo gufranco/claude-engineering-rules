@@ -128,7 +128,8 @@ users.map(user => ordersByUser.get(user.id));
 | Single branch, n shrinks by 1 | O(n) | Factorial, linked list traversal |
 | Single branch, n halves each call | O(log n) | Binary search |
 | Two branches, n shrinks by 1 | O(2^n) | Naive Fibonacci, subset generation |
-| Two branches, n halves each call | O(n) | Merge sort (combine step is O(n)) |
+| Two branches, n halves each call, O(1) combine | O(n) | Balanced binary tree traversal |
+| Two branches, n halves each call, O(n) combine | O(n log n) | Merge sort |
 | k branches, n shrinks by 1 | O(k^n) | Backtracking without pruning |
 
 **Master theorem shortcut** for `T(n) = a * T(n/b) + O(n^d)`:
@@ -159,7 +160,7 @@ Patterns that hide quadratic or worse complexity behind innocent-looking code.
 | `JSON.parse(JSON.stringify(obj))` for deep clone | O(n) with high constant: serialization + parsing + memory | `structuredClone(obj)` is faster and handles more types |
 | String concatenation in a loop | O(n^2) total: each concat copies the growing string | Collect in array, `.join()` at the end |
 | `Array.shift()` in a while loop | O(n^2): each shift reindexes the entire array | Use a queue, pointer index, or reverse + pop |
-| Nested `.reduce()` with spread accumulator | O(n^2): spread copies the accumulator on every iteration | Mutate the accumulator inside reduce, or use a loop |
+| Nested `.reduce()` with spread accumulator | O(n^2): spread copies the accumulator on every iteration | Build the result in one pass with `Object.fromEntries(entries)`, `new Map(entries)`, or `Map.groupBy` |
 | `delete obj[key]` in V8 | Transitions object to slow "dictionary mode" | Set to `undefined` or use a `Map` |
 | Regex with catastrophic backtracking | O(2^n) for pathological input | Avoid nested quantifiers on overlapping patterns. Use linear-time regex engines for user input |
 | Recursive Fibonacci without memoization | O(2^n) | Memoize (O(n) time, O(n) space) or use iteration (O(n) time, O(1) space) |
@@ -179,7 +180,7 @@ Time gets measured. Space gets forgotten. Then the OOM kill arrives.
 | `.map()` / `.filter()` chains | O(n) per step | Each step allocates a new array. For large datasets, use a single loop or generators |
 | Buffering entire HTTP response | O(response size) | Stream large responses. Set body size limits |
 | Event listener accumulation | O(listeners) | Listeners registered in loops or hot paths without cleanup. Use `AbortController` or cleanup in `useEffect` return |
-| Object spread in reduce | O(n^2) total | Each spread copies the growing object. Mutate the accumulator instead |
+| Object spread in reduce | O(n^2) total | Each spread copies the growing object. Build it once with `Object.fromEntries(entries)` or `new Map(entries)` instead |
 
 ### Space Optimization Strategies
 
@@ -200,9 +201,9 @@ Time gets measured. Space gets forgotten. Then the OOM kill arrives.
 | Bellman-Ford | O(V * E) | O(V) | Handles negative weights, detects negative cycles |
 | Floyd-Warshall | O(V^3) | O(V^2) | All-pairs shortest path. Only practical for small graphs (V < 500) |
 | Topological sort | O(V + E) | O(V) | DAG dependency resolution. Kahn's algorithm or DFS-based |
-| Union-Find | O(α(n)) amortized | O(V) | Connected components, cycle detection. α is the inverse Ackermann function, effectively O(1) |
+| Union-Find | O(alpha(n)) amortized | O(V) | Connected components, cycle detection. alpha is the inverse Ackermann function, effectively O(1) |
 
-V = vertices, E = edges. For sparse graphs E ≈ V; for dense graphs E ≈ V^2.
+V = vertices, E = edges. For sparse graphs E ~ V; for dense graphs E ~ V^2.
 
 **Selection guide:**
 

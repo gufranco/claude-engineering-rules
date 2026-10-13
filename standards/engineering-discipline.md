@@ -10,13 +10,13 @@ Loaded on demand. Triggers in [`../rules/index.yml`](../rules/index.yml).
 
 The following principles are already encoded elsewhere and are not re-stated here:
 
-- Single-source-of-knowledge representation. See [`../rules/code-style.md`](../rules/code-style.md) DRY references and "Single source of truth".
-- Assertions and defensive invariants. See [`../rules/code-style.md`](../rules/code-style.md) "Defensive Invariants" and "Total Functions".
-- Error classification (transient, permanent, ambiguous). See [`../rules/code-style.md`](../rules/code-style.md) "Error Classification".
+- Single-source-of-knowledge representation. See [`../CLAUDE.md`](../CLAUDE.md) "Single source of truth" and the DRY principle in [`code-style.md`](code-style.md) "Fundamentals".
+- Assertions and defensive invariants. See [`code-style.md`](code-style.md) "Defensive Invariants" and "Total Functions".
+- Error classification (transient, permanent, ambiguous). See [`code-style.md`](code-style.md) "Error Classification".
 - Idempotency and deduplication. See [`../rules/architecture-defaults.md`](../rules/architecture-defaults.md).
 - Domain modeling via DDD tactical patterns. See [`../rules/architecture-defaults.md`](../rules/architecture-defaults.md) "Architecture Gate" and [`ddd-tactical-patterns.md`](ddd-tactical-patterns.md).
 - Source-code control hygiene. See [`../rules/git-workflow.md`](../rules/git-workflow.md).
-- Validation at system boundaries. See [`../rules/code-style.md`](../rules/code-style.md) "Validation".
+- Validation at system boundaries. See [`code-style.md`](code-style.md) "Validation".
 
 ## Principles
 
@@ -102,7 +102,7 @@ Source: Ch 3, Sec 18.
 
 A clear head is the most efficient debugging tool. Reread the actual error before theorizing. State the symptom before the hypothesis.
 
-How we encode it: [`../rules/smart-questions.md`](../rules/smart-questions.md) "Status and Error Reports" insists on symptom-then-chronology-then-hypothesis. `/investigate` Phase 1 step 1 ("understand the symptom") makes the order mechanical.
+How we encode it: [`smart-questions.md`](smart-questions.md) "Status and Error Reports" insists on symptom-then-chronology-then-hypothesis. `/investigate` Phase 0, "Take in the symptom", makes the order mechanical.
 
 Source: Ch 3, Sec 18.
 
@@ -110,7 +110,7 @@ Source: Ch 3, Sec 18.
 
 Bugs in the language runtime, the operating system, the compiler, the database engine, or a popular library are real but rare. Assume your code is at fault until evidence forces the other conclusion.
 
-How we encode it: investigate phase 3 hypothesis ranking puts "my code" first by default. Promoting "library bug" to a candidate requires a reproducer outside the project.
+How we encode it: rank "my code" first among the `/investigate` Phase 4 hypotheses by default. Promoting "library bug" to a candidate requires a reproducer outside the project.
 
 Source: Ch 3, Sec 18.
 
@@ -134,7 +134,7 @@ Source: Ch 5, Sec 26.
 
 Hard-coded choices become hard-removed choices. Push variability into configuration, into runtime registries, into declarative metadata. Code holds policy; metadata holds the values that swing.
 
-How we encode it: [`../rules/code-style.md`](../rules/code-style.md) "No environment conditionals" and "No magic numbers" sections cover one face. This file's contribution: when in doubt, the value lives in config.
+How we encode it: the environment-conditional and magic-number bullets in [`code-style.md`](code-style.md) "Fundamentals" cover one face. This file's contribution: when in doubt, the value lives in config.
 
 Source: Ch 5, Sec 27.
 
@@ -142,7 +142,7 @@ Source: Ch 5, Sec 27.
 
 Independent, well-defined services compose better than monolithic objects. Even single-threaded code lives in a concurrent world (signals, timeouts, retries, queues). Never assume single access; design data structures for safe concurrent use from the start.
 
-How we encode it: [`../rules/architecture-defaults.md`](../rules/architecture-defaults.md) "Hexagonal Architecture" covers the boundary shape. The concurrency framing here applies to in-process state: assume two callers, not one.
+How we encode it: [`hexagonal-architecture.md`](hexagonal-architecture.md) covers the boundary shape. The concurrency framing here applies to in-process state: assume two callers, not one.
 
 Source: Ch 5, Sec 28.
 
@@ -150,7 +150,7 @@ Source: Ch 5, Sec 28.
 
 Underlying data is distinct from how it is presented. The same model powers many views. The principle applies outside GUIs: an event source has many consumers; a domain entity has many serializations.
 
-How we encode it: applies during frontend planning (component vs. store) and backend planning (entity vs. response DTO). [`../rules/code-style.md`](../rules/code-style.md) "API Boundary Types" already enforces the entity-vs-DTO split.
+How we encode it: applies during frontend planning (component vs. store) and backend planning (entity vs. response DTO). [`orm-migrations.md`](orm-migrations.md) "API Boundary Types" already enforces the entity-vs-DTO split.
 
 Source: Ch 5, Sec 29.
 
@@ -158,7 +158,7 @@ Source: Ch 5, Sec 29.
 
 Refactor when duplication, outdated knowledge, or design that no longer fits is seen. Refactoring is continuous gardening, not periodic surgery. Never refactor alongside feature work. Have tests in place first.
 
-How we encode it: `/refactor` skill. [`../rules/git-workflow.md`](../rules/git-workflow.md) bisect-friendly commits rule ("Never mix formatting changes with logic changes").
+How we encode it: `/refactor` skill. [`code-style.md`](code-style.md) "Bisect-Friendly Commits": never mix formatting changes with logic changes.
 
 Source: Ch 6, Sec 33.
 
@@ -166,7 +166,7 @@ Source: Ch 6, Sec 33.
 
 Testability is a property of the design. Code that is hard to test through its interface is hard to maintain. Treat untestable code as a design defect, not a testing gap.
 
-How we encode it: [`../rules/testing.md`](../rules/testing.md) integration-first philosophy. [`../rules/code-style.md`](../rules/code-style.md) "Pit of Success" and "Functional core, imperative shell" enforce the design shape that makes tests natural.
+How we encode it: [`../rules/testing.md`](../rules/testing.md) integration-first philosophy. The "Pit of Success" and "functional core, imperative shell" bullets in [`code-style.md`](code-style.md) "Fundamentals" enforce the design shape that makes tests natural.
 
 Source: Ch 6, Sec 34.
 
@@ -174,7 +174,7 @@ Source: Ch 6, Sec 34.
 
 Generated scaffolding from an IDE wizard or an LLM is your code the moment you keep it. Read what was produced. Understand each line before extending it. If you cannot maintain it, do not ship it.
 
-How we encode it: [`../rules/ai-guardrails.md`](../rules/ai-guardrails.md) "Never Commit Code You Cannot Explain".
+How we encode it: [`ai-guardrails.md`](ai-guardrails.md) "Never Commit Code You Cannot Explain".
 
 Source: Ch 6, Sec 35.
 
@@ -204,7 +204,7 @@ Source: Ch 1, Sec 2.
 
 ### 23. Do not live with broken windows
 
-Fix bad designs, wrong decisions, and poor code as soon as they are seen. If you cannot fix immediately, board it up (file an issue, stub a fix, leave a TODO with a tracking link) so the rot does not spread.
+Fix bad designs, wrong decisions, and poor code as soon as they are seen, in the change that saw them. A TODO, a stub, or a tracker item is never a fix. Only a fix blocked outside the change waits, and the blocker is stated in one sentence where the work happens.
 
 How we encode it: [`../rules/found-fix.md`](../rules/found-fix.md) covers verification-surface findings. This principle extends it to general code smells the engineer notices while passing through.
 
@@ -238,7 +238,7 @@ Source: Ch 8, Sec 43.
 
 Humans are not as repeatable as computers. Scripts in source control are. Every repeatable build, deploy, test, and provisioning step is a script. Cron and CI run the script the same way every time.
 
-How we encode it: [`../rules/git-workflow.md`](../rules/git-workflow.md) Local Quality Gate. [`../rules/architecture-defaults.md`](../rules/architecture-defaults.md) Verification Gate. CI files in the repo.
+How we encode it: [`../rules/git-workflow.md`](../rules/git-workflow.md) Local Quality Gate. [`architecture-defaults.md`](architecture-defaults.md) "Verification Gate (Post-Implementation)". CI files in the repo.
 
 Source: Ch 8, Sec 42.
 
@@ -246,7 +246,7 @@ Source: Ch 8, Sec 42.
 
 Documentation generated from the code stays in sync. Documentation added at the end goes stale immediately. API docs derive from the signatures and types, not from prose the compiler cannot check.
 
-How we encode it: [`../rules/code-style.md`](../rules/code-style.md) "Comments Policy" already bans prose comments outright. This principle adds the source-derived API doc rule.
+How we encode it: [`code-style.md`](code-style.md) "Comments Policy" already bans prose comments outright. This principle adds the source-derived API doc rule.
 
 Source: Ch 8, Sec 44.
 

@@ -69,7 +69,7 @@ PostgreSQL-specific guidance. Generic database concerns live in [`database.md`](
 
 ## PostgreSQL 18 Features
 
-PostgreSQL 18 is the current major release. New surfaces worth adopting:
+PostgreSQL 18, released in September 2025, added these surfaces worth adopting:
 
 | Feature | Use |
 |---------|-----|

@@ -40,7 +40,7 @@ The remaining five domains load on keyword match. Triggers in [`index.yml`](../r
 
 ## Cross-Cutting Targets (Locked)
 
-The full conflict catalog lives in the spec folder. Locked targets that every frontend task applies by default:
+Locked targets that every frontend task applies by default. A conflict this table does not name resolves by the first policy lock above.
 
 | Decision | Locked target |
 |----------|---------------|

@@ -48,6 +48,6 @@ Every tool call consumes context. Wasteful patterns to avoid:
 | Pattern | Cost | Alternative |
 |---------|------|-------------|
 | Reading the same file twice | 2x the tokens | Read once, reference by line numbers |
-| Reading entire large files | Thousands of tokens | Use offset and limit to read relevant sections |
+| Re-reading a large file already read in full | Thousands of tokens | Read every in-scope file in full once, per [`../rules/verification.md`](../rules/verification.md); afterwards use offset and limit to revisit a known region |
 | Verbose agent output | Inflates main context | Require structured, minimal output format |
 | Spawning 3+ agents concurrently | 3-5x context duplication | Sequence or do inline |

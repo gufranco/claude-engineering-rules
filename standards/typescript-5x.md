@@ -215,7 +215,7 @@ Enable every new strictness flag on each TypeScript upgrade. The cost of fixing 
 
 | Flag | Version | What it catches |
 |------|---------|----------------|
-| `strict` | 2.3+ | Baseline strict mode, enables all flags below it |
+| `strict` | 2.3+ | Baseline strict family, such as `strictNullChecks` and `noImplicitAny`. It enables none of the flags below, so set each one explicitly |
 | `noUncheckedIndexedAccess` | 4.1 | Index access on arrays and records returns `T \| undefined` |
 | `exactOptionalPropertyTypes` | 4.4 | `undefined` must be explicit, not implicit via `?:` |
 | `noPropertyAccessFromIndexSignature` | 4.2 | Forces bracket notation for dynamic keys |
@@ -235,9 +235,9 @@ Process for each TypeScript upgrade:
 
 ## ES2024+ and ES2026 Built-ins
 
-When `target` is ES2024 or higher, prefer non-mutating standard-library methods over polyfills, custom helpers, and old mutation-based idioms. The mutation-method-blocker hook (`~/.claude/hooks/mutation-method-blocker.py`) flags the mutating equivalents and points at the replacements below.
+When `target` and `lib` include the edition named in each heading below, prefer non-mutating standard-library methods over polyfills, custom helpers, and old mutation-based idioms. The mutation-method-blocker hook (`~/.claude/hooks/mutation-method-blocker.py`) flags the mutating equivalents and points at the replacements below.
 
-### Set composition (ES2024)
+### Set composition (ES2025)
 
 Set instances expose seven new composition methods. None mutate the receiver; each returns a new Set. Use them instead of building union/intersection logic by hand.
 
@@ -266,7 +266,7 @@ const disjoint = evens.isDisjointFrom(new Set([7, 9]));
 
 When the hook flags `set.add(v)` or `set.delete(v)`, prefer `set.union(new Set([v]))` and `set.difference(new Set([v]))` over `new Set([...set, v])` for clarity.
 
-### Iterator helpers (ES2024)
+### Iterator helpers (ES2025)
 
 Iterator instances now compose lazily: `map`, `filter`, `take`, `drop`, `flatMap`, `forEach`, `toArray`, `reduce`, `some`, `every`, `find`. Calls do not allocate intermediate arrays.
 
@@ -296,7 +296,7 @@ const groupedMap = Map.groupBy(items, (item) => item.category);
 
 `Object.groupBy` returns a null-prototype object. Use `Map.groupBy` when keys are not strings or when prototype-pollution safety is required.
 
-### Promise.withResolvers and Promise.try (ES2024)
+### Promise.withResolvers (ES2024) and Promise.try (ES2025)
 
 ```typescript
 const { promise, resolve, reject } = Promise.withResolvers<number>();
@@ -306,7 +306,7 @@ const safe = await Promise.try(() => maybeThrowingFunction());
 
 `Promise.withResolvers` is the modern replacement for the manual `let resolve, reject; const p = new Promise(...)` dance. `Promise.try` wraps synchronous and asynchronous functions in a single Promise so callers do not need to remember whether the callee throws synchronously or returns a rejected promise.
 
-### Array.fromAsync (ES2024)
+### Array.fromAsync (Stage 4)
 
 Builds an array from an async iterable.
 
@@ -314,7 +314,7 @@ Builds an array from an async iterable.
 const collected = await Array.fromAsync(asyncStream);
 ```
 
-### RegExp.escape (ES2024)
+### RegExp.escape (ES2025)
 
 Escapes a string for safe use inside a regex literal.
 
@@ -324,7 +324,7 @@ const pattern = new RegExp(RegExp.escape(userInput));
 
 Replaces hand-rolled escape helpers and inline `replace(/[.*+?^${}()|[\]\\]/g, '\\$&')` patterns.
 
-### Atomics.pause and Error.isError (ES2024)
+### Atomics.pause and Error.isError (Stage 4)
 
 ```typescript
 Atomics.pause();
@@ -338,7 +338,7 @@ if (Error.isError(value)) {
 
 `Error.isError` survives realm boundaries; prefer it over `instanceof Error` in worker, iframe, or vm contexts.
 
-### Float16Array (ES2024)
+### Float16Array (ES2025)
 
 The 12th TypedArray. Same allocation and slicing semantics as `Float32Array`, half the byte width. Useful for ML and graphics buffers.
 
@@ -443,5 +443,5 @@ Absent one of those, the platform API wins.
 
 - [`frontend.md`](frontend.md): Frontend Design
 - [`performance.md`](performance.md): benchmark thresholds for the hot-path carve-out above
-- [`../rules/lang/typescript-immutability.md`](../rules/lang/typescript-immutability.md) "ES2024+ Fix Suggestions" lists every mutating call and its non-mutating replacement.
+- [`typescript-immutability.md`](typescript-immutability.md) "ES2024+ Fix Suggestions" lists every mutating call and its non-mutating replacement.
 - [`../checklists/checklist.md`](../checklists/checklist.md) category 4 carries the `Promise.all` and `Promise.allSettled` check from the concurrency-safety angle.

@@ -12,7 +12,7 @@
 - Errors are values. Always check the `error` return; never assign to `_` without a reason
 - Wrap errors with `fmt.Errorf("operation: %w", err)` to preserve the chain. Use `errors.Is`/`errors.As` to inspect
 - Define typed sentinel errors at package level: `var ErrNotFound = errors.New("not found")`
-- Don't log and return; either log or return, not both. Logging twice creates duplicate noise
+- Every `if err != nil` branch logs with context through the project logger, then returns a wrapped or typed error. Never discard an error, and never log one without returning it
 - For domain errors, define a struct that implements `error` with structured fields
 
 ## Concurrency

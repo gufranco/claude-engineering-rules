@@ -68,7 +68,7 @@ For collections, use immutable types from `collections.abc`:
 | `set[T]` parameter | `AbstractSet[T]` |
 | Internal mutable list | `tuple[T, ...]` when the size is unbounded |
 
-The same logic that drives [`typescript-immutability.md`](../rules/lang/typescript-immutability.md) applies: parameters and return values are immutable views; mutation lives behind a function boundary.
+The same logic that drives [`typescript-immutability.md`](typescript-immutability.md) applies: parameters and return values are immutable views; mutation lives behind a function boundary.
 
 ## Validation at Boundaries
 
@@ -85,7 +85,7 @@ Pydantic models replace ad hoc dict shape checks at every system boundary: HTTP 
 - Enable `asyncio_mode = "auto"` in `pyproject.toml`. Every async test runs without a per-test decorator
 - Split `tests/unit` and `tests/integration`. Unit tests run on every save. Integration tests run in CI and pre-push
 - Use the `@pytest.fixture` mechanism for setup and teardown. Avoid `setUp`/`tearDown` style classes
-- Use real databases for integration tests, not mocks. See the integration-first philosophy in [`rules/testing.md`](../rules/testing.md)
+- Use real databases for integration tests, not mocks. See the integration-first philosophy in [`testing.md`](testing.md)
 - Use `faker` for fake data generation. Seed deterministically per test file
 - For property-based tests, use `hypothesis`. One property test catches a class of bugs that a hundred example-based tests miss
 
@@ -101,7 +101,7 @@ def fake() -> Faker:
     return fake
 ```
 
-The strict mock policy from [`rules/testing.md`](../rules/testing.md) applies: mock external third-party APIs, time, and randomness. Never mock the database, Redis, the project's own services, or modules under test.
+The strict mock policy from [`testing.md`](testing.md) applies: mock external third-party APIs, time, and randomness. Never mock the database, Redis, the project's own services, or modules under test.
 
 ## Async Patterns
 
@@ -118,12 +118,12 @@ async with asyncio.TaskGroup() as tg:
     tg.create_task(fetch_recommendations(user_id))
 ```
 
-When TaskGroup is unavailable, use `asyncio.gather(..., return_exceptions=False)` so the first exception cancels the rest.
+When TaskGroup is unavailable, `asyncio.gather` does not cancel the other awaitables when one raises, with or without `return_exceptions=False`. The first exception propagates and the remaining tasks keep running. Wrap the awaitables in tasks, catch the exception, cancel every unfinished task, log, and re-raise.
 
 ## Error Handling
 
 - Catch the narrowest exception possible. `except Exception:` is acceptable only at the top of a request handler or background task, where the alternative is a crashed process
-- Re-raise after logging, unless the catch site is the final boundary. The error classification rule in [`rules/code-style.md`](../rules/code-style.md) applies
+- Re-raise after logging, unless the catch site is the final boundary. The "Error Classification" section of [`code-style.md`](code-style.md) applies
 - Use `raise ... from ...` to preserve the cause chain. `raise NewError("...") from original_error` keeps the traceback readable
 - Define domain exceptions as subclasses of a single project-root exception. HTTP-mapping lives in a framework boundary, not in the domain layer
 - For Result-style error returns, use a discriminated union via `typing.Literal` and `dataclasses`, or the `result` library if the project benefits from a richer API
@@ -132,7 +132,7 @@ When TaskGroup is unavailable, use `asyncio.gather(..., return_exceptions=False)
 
 Use `structlog` or a structured-logging wrapper around `logging`. Never use `print()` in production code. Configure a single logger at the application entry point with JSON output in production and console output in dev.
 
-- Include context: request ID, user ID, tenant ID, operation name. The structured logger handles this; string-formatted logs lose it
+- Include context: request ID, tenant ID, operation name. The structured logger handles this; string-formatted logs lose it. User IDs stay out, since pseudonymous data is personal data per [`privacy-defaults.md`](privacy-defaults.md)
 - Never log secrets, tokens, or PII. The `secret-scanner.py` hook catches the obvious cases, but design the log call so the sensitive value never reaches the logger in the first place
 
 ## Common Pitfalls
@@ -150,7 +150,7 @@ Use `structlog` or a structured-logging wrapper around `logging`. Never use `pri
 
 ## Versions
 
-- Target Python 3.12 or newer for new projects. 3.13 is current stable as of 2026
+- Target Python 3.12 or newer for new projects. 3.14 is the current stable release (as of 2026-10-13)
 - Pin the Python version in `pyproject.toml` under `[project] requires-python` and in `.python-version` for `uv`
 - Avoid features behind `from __future__ import annotations` unless the project explicitly chooses delayed evaluation. PEP 695 generic syntax in 3.12+ removes most need for it
 

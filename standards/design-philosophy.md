@@ -51,9 +51,9 @@ When proposing a fix, state which root cause the fix targets. A fix that address
 
 Tactical programming gets the feature shipped today, accepts complexity as accumulated debt. Strategic programming invests a fraction of every task in better design. The mindset is the design choice; the technique follows.
 
-- **Budget.** Around 10 to 20 percent of any non-trivial task goes to design improvement of the surrounding code: a clearer name, a tightened type, a removed dependency. Not a full refactor, not a separate ticket.
+- **Budget.** Around 10 to 20 percent of any non-trivial task goes to design improvement inside the lines the change already touches: a clearer name, a tightened type, a removed dependency. Not a full refactor, not a separate ticket, and never wider than [`surgical-edits.md`](../rules/surgical-edits.md) allows.
 - **Trigger to switch modes.** When the same area is touched a third time in a quarter, pause and pay the strategic cost. Three touches without consolidation is the signal.
-- **No tactical apologies.** Code does not need a comment saying "this is temporary". If the design is wrong, fix it now or open a tracked issue. "Temporary" without a tracking link is a synonym for "permanent".
+- **No tactical apologies.** Code does not need a comment saying "this is temporary". If the design is wrong, fix it now. A tracked issue is never a substitute for the fix; "temporary" is a synonym for "permanent". See [`found-fix.md`](../rules/found-fix.md).
 
 This complements the "Completeness" rule in [`code-style.md`](../rules/code-style.md). Completeness governs the depth of the current task; strategic mindset governs the carry-cost of the surrounding code.
 
@@ -81,7 +81,7 @@ For any non-trivial design decision, draft at least two approaches before commit
 - Compare on three axes: simplicity of interface, generality of use, and ease of correct use against ease of misuse.
 - Implementation effort is not an axis. A design chosen because it is cheap to build costs every caller for as long as it lives.
 - The first design is rarely the best. The second design often beats the first even when the first was the eventual choice, because the comparison sharpens the requirements.
-- This complements [`pre-flight.md`](../rules/pre-flight.md) step 5, "Evaluate alternatives". The pre-flight rule mandates 2 to 3 approaches; this rule names the technique.
+- This complements [`pre-flight.md`](pre-flight.md) step 2, "Architecture Fit", which requires two radically different approaches when the design is not obvious; this rule names the technique.
 
 ## Define Errors Out of Existence
 
@@ -152,7 +152,7 @@ This complements [`ai-guardrails.md`](../rules/ai-guardrails.md) "Multi-Agent Va
 |---------------------------|------------|
 | Deep modules vs 30-line function limit in [`code-style.md`](../rules/code-style.md) | The 30-line limit wins at the function level. Deep modules applies at the module and file level. |
 | Write comments first vs default no comments in [`code-style.md`](../rules/code-style.md) | The no-comments-by-default rule wins. Ousterhout's comments stance is intentionally not adopted. |
-| Strategic budget vs surgical edits in [`surgical-edits.md`](../rules/surgical-edits.md) | Surgical edits wins. Strategic improvements happen in their own focused task or in the diff the user explicitly asked for. |
+| Strategic budget vs surgical edits in [`surgical-edits.md`](../rules/surgical-edits.md) | Surgical edits sets the width. The budget spends only inside the lines the change already touches; an improvement wider than that gets its own focused task. |
 | General-purpose modules vs YAGNI in [`code-style.md`](../rules/code-style.md) | YAGNI wins for speculative features. Generality is preferred only when two or more concrete callers exist today. |
 
 ## Self-Test

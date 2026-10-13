@@ -442,7 +442,7 @@ When changing environment variable schemas, validation rules, or defaults, updat
 | Change env var from optional to required | `.env.test` must provide a value |
 | Remove env var | Grep all `.env*` files and CI configs for references |
 
-When changing the database schema, Prisma, migrations, push to both dev and test databases before running tests. Use the connection string from `.env.test`, not a manually constructed one.
+When changing the database schema, apply the change to the local dev database and the disposable test database before running tests. A schema-sync shortcut such as `prisma db push` is allowed on those two databases only; every other database receives the change through migrations, per [`orm-migrations.md`](orm-migrations.md) "Schema Sync Strategy". Use the connection string from `.env.test`, not a manually constructed one.
 
 ## Test Resource Isolation
 
@@ -458,7 +458,7 @@ Tests running in parallel must not compete for shared resources.
 Every page and component must render correctly on the smallest supported viewport. A layout that works on desktop but breaks on mobile is a bug.
 
 - Test on 320px width, iPhone SE as the minimum. If it works at 320px, it works everywhere
-- E2E tests must include at least one mobile viewport test per page using Playwright's `page.setViewportSize({ width: 375, height: 667 })`
+- E2E tests must include at least one mobile viewport test per page using Playwright's `page.setViewportSize({ width: 320, height: 568 })`, matching the 320px minimum
 - Verify: no horizontal overflow, no truncated buttons, no overlapping elements, no unreadable text
 - Tables must either scroll horizontally or collapse into a card layout on mobile
 - Page headers must stack vertically on mobile (`flex-col gap-4 sm:flex-row`)

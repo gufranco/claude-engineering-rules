@@ -83,7 +83,7 @@ The guard saw the path next to `git commit` and read it as published
 text. It was an argument to `git add`, not a word in the message.
 ```
 
-This is why the replacement tables in [`lang/typescript-immutability.md`](../rules/lang/typescript-immutability.md) and [`../standards/typescript-5x.md`](typescript-5x.md) are built as "instead of X, use Y" rows rather than as prose about preferring immutable or native code. Each row names both sides, so there is nothing left to interpret. Write new API guidance the same way.
+This is why the replacement tables in [`typescript-immutability.md`](typescript-immutability.md) and [`../standards/typescript-5x.md`](typescript-5x.md) are built as "instead of X, use Y" rows rather than as prose about preferring immutable or native code. Each row names both sides, so there is nothing left to interpret. Write new API guidance the same way.
 
 ### 4. One idea per sentence
 
@@ -138,7 +138,7 @@ The service validates the input, persists the entity, and sends
 a confirmation email.
 ```
 
-### 7. Quantify when possible
+### 7. Quantify
 
 Vague qualifiers are interpreted differently by every reader.
 

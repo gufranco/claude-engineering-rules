@@ -41,7 +41,7 @@ When the scope of completeness crosses into multi-week rewrites or cross-cutting
 - Use braces for all control structures
 - **Never swallow errors**: no empty `catch`, no `catch {}`, no `catch { /* comment */ }`. Every catch must log the error with context, such as entity ID and operation name, using the project's logger, then either rethrow or return a typed error. "The operation is best-effort" is not an excuse: log the failure so it can be diagnosed in production
 - **Fire-and-forget side effects must have error logging**: when using `void promise` to satisfy `no-floating-promises`, always append `.catch((error: unknown) => logger.error({ err: error }, 'description'))`. A void promise without `.catch()` silently drops errors. This applies to activity logging, touchpoint triggers, notification sends, and any async side effect that runs outside the main request path
-- **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, document why
+- **Never ignore return values**: every non-void return value must be used or explicitly discarded. Unchecked return values hide failures silently. In TypeScript, enable `@typescript-eslint/no-floating-promises`. In Go, handle every error return. In Rust, never use `let _ =` on a `Result` without justification. If a return value is genuinely irrelevant, discard it explicitly and give the reason in the PR body, never in a comment
 - **Use the project logger, never console**: `console.log`, `console.error`, `console.warn`, and `console.info` must not appear in production code. Use the project's structured logger such as Pino or Winston, which provides log levels, JSON formatting, and context. The only exceptions are Next.js error boundaries at `error.tsx`, where the logger may not be available
 - **No deep nesting**: max 3 levels of indentation. Guard clauses and early returns to flatten control flow
 - **Flat control flow**: avoid recursion unless the data structure is inherently recursive, like trees or graphs. Prefer iterative solutions with explicit bounds. Recursion hides stack growth, making resource usage unpredictable and stack overflows hard to diagnose. When recursion is necessary, always add a depth limit
@@ -99,7 +99,7 @@ A function either changes state as a command that returns void, or returns data 
 - Commands perform an action: `saveUser(user)`, `sendEmail(message)`. Return `void` or a `Result` indicating success/failure
 - Queries return data without side effects: `getUserById(id)`, `calculateTotal(items)`. Safe to call multiple times
 - When you need both, split into two: a `createOrder()` command then a `getOrder(id)` query, not `createAndReturnOrder()`
-- Exceptions: stack/queue `pop` operations where the removal and retrieval are inherently atomic. Document these cases
+- Exceptions: stack/queue `pop` operations where the removal and retrieval are inherently atomic. Name these cases in the PR body
 
 ## Immutability
 
@@ -181,7 +181,7 @@ Where to assert:
 | Before irreversible operations | State preconditions that, if violated, would corrupt data |
 | After complex transformations | Output satisfies postconditions the caller depends on |
 
-Use the language's native assertion mechanism: `assert` in Python, `console.assert` or throwing on violation in TypeScript, `debug_assert!`/`assert!` in Rust, `if err != nil` patterns in Go. The goal is executable documentation of assumptions, not ceremony.
+Use the language's native assertion mechanism: `assert` in Python, throwing a typed error on violation in TypeScript, `debug_assert!`/`assert!` in Rust, `if err != nil` patterns in Go. The goal is executable documentation of assumptions, not ceremony.
 
 ### Total Functions
 
@@ -303,7 +303,7 @@ Stricter checks catch bugs at compile time instead of production. The cost of fi
 - When joining an existing project, verify the strictness configuration. If flags are missing, add them and fix the resulting errors in the same PR
 - Never lower strictness to make code compile. Fix the code instead
 - When a new strictness flag becomes available in a toolchain update, enable it
-- Document any flag intentionally left disabled with the specific reason in the config file
+- Record any flag intentionally left disabled, with its specific reason, as a waiver in the PR body per [`deviation-waivers.md`](../rules/deviation-waivers.md). Never as a comment in the config file
 
 ## Zero Warnings
 

@@ -12,7 +12,7 @@ Every frontend task that collects, stores, processes, or displays personal data.
 | Consent | Opt-in, granular, withdrawable as easily as granted; no pre-ticked boxes; no bundled consents |
 | DSAR window | 30 days from request to fulfillment |
 | Erasure | Truly gone or irreversibly anonymized; soft delete is insufficient |
-| Breach notification | 72 hours to supervisory authority (GDPR Art. 33) + 4 business days SEC for reporting entities + 3 business days ANPD per Resolução 15/2024 for LGPD scope |
+| Breach notification | 72 hours from awareness, to every authority in scope. One 72-hour window meets GDPR Art. 33, the 3 business days ANPD allows under Resolução CD/ANPD 15/2024, and the 4 business days the SEC allows reporting entities |
 | Retention default | 24 months operational; longer only with explicit legal hold |
 | DPO designation | Every project designates a DPO; LGPD requires one |
 | DPIA trigger | Profiling, large-scale sensitive data, systematic monitoring, automated decision-making, new technology, children's data, biometric, geolocation |
@@ -31,7 +31,7 @@ Every frontend task that collects, stores, processes, or displays personal data.
 | Pre-ticked consent checkboxes | EDPB Guidelines 05/2020 fail |
 | "Reject all" requiring more clicks than "Accept all" | Withdrawal not as easy as grant; CNIL guidance fails |
 | Storing raw ID documents long-term | Data minimization fails |
-| Logging personal data in application logs | Log the identifier, not the value |
+| Logging personal data in application logs | Pseudonymous IDs are personal data too; log the request ID, and send actor identity to the access-controlled audit log |
 | PII in URLs or query parameters | Leaks to referrer, logs, browser history |
 | Personal data in error messages | Leaks to logs, tickets, support channels |
 | Hashing email as "pseudonymization" | Still personal data; hash is reversible with rainbow tables |

@@ -6,10 +6,16 @@ Extends the "typed error returns" principle from code-style into a full composit
 
 Every operation returns a `Result<T, E>`. The happy path flows forward. An error at any step short-circuits the rest. No try/catch, no null checks, no boolean flags.
 
-```
-  [parseInput] → [validateOrder] → [checkInventory] → [chargePayment] → [confirmOrder]
-       ↓ err          ↓ err             ↓ err              ↓ err
-    ─────────────── error track ──────────────────────────────────────→ [handleError]
+```mermaid
+flowchart LR
+  parseInput -->|ok| validateOrder
+  validateOrder -->|ok| checkInventory
+  checkInventory -->|ok| chargePayment
+  chargePayment -->|ok| confirmOrder
+  parseInput -->|err| handleError
+  validateOrder -->|err| handleError
+  checkInventory -->|err| handleError
+  chargePayment -->|err| handleError
 ```
 
 ## Result Type
@@ -35,11 +41,11 @@ For projects with multi-step pipelines, use neverthrow or Effect instead of hand
 
 | Operation | Signature | Use when |
 |-----------|-----------|----------|
-| `map` | `Result<A, E>` → `(A → B)` → `Result<B, E>` | Transform the success value without new failure modes |
-| `flatMap` / `andThen` | `Result<A, E>` → `(A → Result<B, E>)` → `Result<B, E>` | Chain an operation that can itself fail |
-| `mapErr` | `Result<A, E1>` → `(E1 → E2)` → `Result<A, E2>` | Transform the error type (e.g., reclassify at a boundary) |
-| `unwrapOr` | `Result<A, E>` → `A` → `A` | Extract value with a fallback default |
-| `match` | `Result<A, E>` → `{ ok: (A → B), err: (E → B) }` → `B` | Handle both tracks at the boundary |
+| `map` | `(result: Result<A, E>, fn: (value: A) => B) => Result<B, E>` | Transform the success value without new failure modes |
+| `flatMap` / `andThen` | `(result: Result<A, E>, fn: (value: A) => Result<B, E>) => Result<B, E>` | Chain an operation that can itself fail |
+| `mapErr` | `(result: Result<A, E1>, fn: (error: E1) => E2) => Result<A, E2>` | Transform the error type (e.g., reclassify at a boundary) |
+| `unwrapOr` | `(result: Result<A, E>, fallback: A) => A` | Extract value with a fallback default |
+| `match` | `(result: Result<A, E>, handlers: { ok: (value: A) => B; err: (error: E) => B }) => B` | Handle both tracks at the boundary |
 
 ## Composition Patterns
 
@@ -145,10 +151,12 @@ Start with neverthrow. Move to Effect when you need its runtime features, struct
 
 In a pipeline, an error in step N short-circuits steps N+1 through the end. The error value is passed as-is to the final error handler. Intermediate steps never see errors from earlier steps unless explicitly mapped.
 
-```
-[step1] → ok → [step2] → err → ✗ [step3] ✗ [step4] → [handleError]
-                          ↑
-                    short-circuit here
+```mermaid
+flowchart LR
+  step1 -->|ok| step2
+  step2 -->|err, short-circuit| handleError
+  step3[step3, skipped]
+  step4[step4, skipped]
 ```
 
 Rules:

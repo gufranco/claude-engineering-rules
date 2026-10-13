@@ -4,7 +4,7 @@
 
 The only comment this configuration publishes on a pull request is a reply inside a thread a person opened.
 
-Four consequences, each absolute:
+Seven surfaces, each with an absolute rule:
 
 | Surface | Rule |
 |---|---|

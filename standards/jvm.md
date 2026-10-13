@@ -21,7 +21,7 @@ Standards for code targeting the Java Virtual Machine. Applies to Java 17+ and K
 ## Null Handling
 
 - Java: prefer `Optional<T>` for return values, never for parameters or fields. Annotate with JSpecify, `@Nullable`, `@NonNull`, for tooling
-- Kotlin: nullable types are part of the type system. Use `!!` only when a runtime invariant is documented; never for hopeful access
+- Kotlin: nullable types are part of the type system. Use `!!` only when a runtime invariant guarantees the value, checked by a test; never for hopeful access
 
 ## Immutability
 
@@ -47,7 +47,7 @@ Standards for code targeting the Java Virtual Machine. Applies to Java 17+ and K
 
 - Don't catch `Exception` or `Throwable` except at framework boundaries
 - Checked exceptions in Java public APIs only when callers can meaningfully recover
-- Kotlin has no checked exceptions; document failure modes in KDoc
+- Kotlin has no checked exceptions; encode expected failure modes in the return type with a sealed `Result` hierarchy, never in KDoc
 - Wrap and rethrow: `throw new MyException("context", cause)`. Never swallow
 
 ## Spring and Frameworks

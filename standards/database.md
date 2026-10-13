@@ -102,7 +102,7 @@ Daily partitions keyed on UTC date break when the consumer's "day" does not alig
 
 | Strategy | When to use | How |
 |----------|-------------|-----|
-| Query-time boundaries | Default. User picks a date range, you compute UTC start/end | No daily partitions. Continuous timestamp index. Compute `start = localMidnight.toUTC()` and `end = nextLocalMidnight.toUTC()`, query with `BETWEEN` |
+| Query-time boundaries | Default. User picks a date range, you compute UTC start/end | No daily partitions. Continuous timestamp index. Compute `start = localMidnight.toUTC()` and `end = nextLocalMidnight.toUTC()`, query with `ts >= start AND ts < end`. Never `BETWEEN`, which includes the next midnight in both days |
 | Pre-aggregate per offset | Dashboards with fixed timezone per tenant, high read volume | Rollup rows keyed by `(offset, local_date)`. Write to the correct local-day bucket on ingestion |
 | Overlapping fetch | Daily partitions already exist and cannot be changed | Fetch the two UTC days that overlap with the local day, filter the edges in the application |
 
@@ -226,8 +226,8 @@ Never combine expand and contract in a single deployment. The old application ve
 - Tables: `plural_snake_case`
 - Columns: `singular_snake_case`
 - FK: `<table>_id`
-- Indexes: `idx_<table>_<columns>`
-- Unique constraints: `uq_<table>_<columns>`
+- Indexes: `<Table>_<col>(_<col>)*_<purpose>_idx`, per the Index Naming Convention in [`orm-migrations.md`](orm-migrations.md)
+- Unique constraints: an explicit name on the same pattern, never the ORM default
 
 ## Related Standards
 

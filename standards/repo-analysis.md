@@ -77,6 +77,6 @@ The hook [`../hooks/repo-fetch-blocker.py`](../hooks/repo-fetch-blocker.py) bloc
 
 ## Cross-References
 
-- [`pre-flight.md`](../rules/pre-flight.md) "Duplicate Check" step 5 names `gh search code` as a cross-repo grep tool, which remains correct and is not in conflict with this rule.
+- [`pre-flight.md`](pre-flight.md) "1. Duplicate Check" step 5 names `gh search code` as a cross-repo grep tool, which remains correct and is not in conflict with this rule.
 - [`../standards/multi-account-cli.md`](multi-account-cli.md) for the authentication pattern when the target repo is private.
 - [`../CLAUDE.md`](../CLAUDE.md) "External Tools" section is the cross-tooling baseline this rule extends.

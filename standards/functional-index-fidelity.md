@@ -18,12 +18,12 @@ Each of these defeats the index while preserving the result:
 |---|---|
 | A different but equivalent pattern | `regexp_replace(col, '[^0-9]', '', 'g')` against an index built on `'\D'` |
 | Dropping a wrapper that looks redundant | Omitting `COALESCE(col, '')` when the index includes it |
-| Reordering commutative arguments | `b \|\| a` against an index on `a \|\| b` |
+| Reordering commutative arguments | `b + a` against an index on `a + b` |
 | A different cast spelling | `col::text` against `CAST(col AS text)` where the planner does not normalize |
 | Changing collation or case handling | `upper(col)` against an index on `lower(col)` |
-| A predicate shape the index does not cover | A range or prefix scan against an index that only supports exact match |
+| A predicate shape the operator class does not cover | A `LIKE 'abc%'` prefix scan against a B-tree on `lower(col)` built without `text_pattern_ops` under a non-C collation |
 
-The last row is the subtle one: an index on `fn(col)` supports `fn(col) = value` and nothing else. A `LIKE`, a range, or an inequality on the same expression does not use it.
+The last row is the subtle one. A B-tree index on `fn(col)` serves `=`, `<`, `<=`, `>`, `>=`, and `BETWEEN` on `fn(col)`. It never serves `<>`, and it serves a `LIKE` prefix only when built with `text_pattern_ops` or the C collation. A hash index on `fn(col)` serves `=` alone.
 
 ## Obligations
 

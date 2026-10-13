@@ -111,7 +111,7 @@ Deleting a rule is itself a change with provenance: record what was removed and 
 
 [`same-turn-persistence.md`](../rules/same-turn-persistence.md) is the intake path. A lesson lands there first, and its recurrence count is what feeds this rule.
 
-[`writing-precision.md`](../rules/writing-precision.md) section 7b already requires that a stated decision carry the measurement behind it. This rule applies the same obligation to the rules themselves.
+[`writing-precision.md`](writing-precision.md) section 7b already requires that a stated decision carry the measurement behind it. This rule applies the same obligation to the rules themselves.
 
 [`normative-keywords.md`](../rules/normative-keywords.md) governs the obligation word. Provenance governs whether the obligation should exist at all.
 

@@ -37,7 +37,7 @@ async function getDatabaseCredentials(): Promise<DatabaseCredentials> {
 
 ## External Secrets Operator for Kubernetes
 
-Never store secrets in Kubernetes manifests, Helm values, or CI variables. Use External Secrets Operator to sync secrets from the secrets manager into Kubernetes Secrets at runtime.
+Never store secrets in Kubernetes manifests or Helm values. CI secrets follow the CI/CD row of the Static Secrets Policy below. Use External Secrets Operator to sync secrets from the secrets manager into Kubernetes Secrets at runtime.
 
 ```yaml
 apiVersion: external-secrets.io/v1beta1
@@ -69,7 +69,7 @@ Static secrets are acceptable only in local development. Production environments
 | Environment | Static secrets allowed? | Rotation requirement |
 |-------------|----------------------|---------------------|
 | Local development | Yes, via `.env` files | None |
-| CI/CD | Minimize, use OIDC federation where possible | 90 days maximum |
+| CI/CD | Only when the cloud provider offers no OIDC federation. Store it in the CI platform's encrypted secret store, scoped to one environment, never in a plain CI variable | 90 days maximum |
 | Staging | No, use secrets manager | Automated |
 | Production | No, use secrets manager with dynamic generation | Automated, TTL-based |
 
@@ -108,7 +108,7 @@ When a secret is compromised, speed matters more than process. Have a runbook re
 5. **Audit.** Review access logs for the compromised credential's lifetime. Identify unauthorized access.
 6. **Postmortem.** Document how the leak happened and add preventive controls.
 
-Target time from detection to revocation: under 15 minutes. Practice this with tabletop exercises quarterly.
+Target time from detection to revocation: under 15 minutes. Rotation of every affected secret completes within 1 hour of detection. Practice this with tabletop exercises quarterly.
 
 ## Environment Isolation
 

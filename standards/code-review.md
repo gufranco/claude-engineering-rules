@@ -21,11 +21,11 @@ When others review your PR, the goal is to close every open thread with either a
 
 ### Mechanics
 
-- Acknowledge a new comment from a person within 4 hours of becoming aware. A 5-word "starting on this" is enough, in the thread.
+- Start on a new comment from a person within 4 hours of becoming aware. Reply in the thread only once the fix exists, naming its SHA. A placeholder such as "starting on this" is noise.
 - Respond substantively to a batch within 1 business day. Slower than that, the reviewer disengages.
 - Batch your response. One push covers all approved replies and fixes for the round. Multiple drips burn CI minutes and reviewer attention.
 - Re-request review explicitly after a batch of fixes. The re-request is the whole signal; what changed goes in the description, never in a top-level comment.
-- Use the project's standard shortcuts inside a thread: `nit:`, `suggestion:`, `issue:`, `question:` per Conventional Comments when posting your own clarifications. `PTAL` belongs to a re-request, which now carries no comment.
+- Write your own clarifications as plain prose. Never open them with a Conventional Comments label such as `nit:` or `question:`; the leakage hook blocks those prefixes. `PTAL` belongs to a re-request, which now carries no comment.
 - Keep a reply to four sentences. Polite in a clause, direct in the rest. See [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md).
 
 ### Reply Form
@@ -55,7 +55,7 @@ When others review your PR, the goal is to close every open thread with either a
 
 ### Triage
 
-- Triage AI bot comments by failure mode. Style suggestions that contradict the project's lint config, imagined APIs, and refactors that do not compile are common false positives. Dismiss with one line of reasoning so the bot learns.
+- Triage AI bot comments by failure mode. Style suggestions that contradict the project's lint config, imagined APIs, and refactors that do not compile are common false positives. Never reply to a bot thread. Fix a finding that holds up against the code, then resolve or minimize the thread either way. See [`../rules/pr-comment-discipline.md`](../rules/pr-comment-discipline.md).
 - Treat AI bot blocking reviews as P3 until a human reviewer also flags the issue.
 
 ### When Two Reviewers Disagree
@@ -166,7 +166,7 @@ Use this table to decide what action a finding triggers. The label itself never 
 | Internal severity | Action | Maps to GitHub | Tone of comment |
 |-------------------|--------|----------------|------------------|
 | CRITICAL | Block the PR. Do not approve under any condition. Explain the failure mode and the minimum fix. | `REQUEST_CHANGES` | Direct, names the failure mode, suggests the fix |
-| HIGH | Block the PR. Acceptable to negotiate scope (split into a follow-up) if the author offers a credible plan. | `REQUEST_CHANGES` | Direct, gives the rationale and the trade-off |
+| HIGH | Block the PR. The fix lands in this PR; a follow-up change or tracker item never substitutes for it. | `REQUEST_CHANGES` | Direct, gives the rationale and the trade-off |
 | MEDIUM | Do not block. Leave an inline comment the author should address before merge. If ignored, raise to HIGH on re-review. | `COMMENT` | Plain inline note |
 | LOW | Do not block. Optional improvement, taste call, or nitpick. The author may accept or dismiss without justification. | `COMMENT` | Brief, signal it is optional |
 
@@ -203,13 +203,14 @@ Every task completion MUST include a README check. If the change affects how som
 
 ## Technical Debt
 
-Not all tech debt is bad. Intentional debt taken with a plan to repay is a valid engineering trade-off. Untracked debt that accumulates silently is the problem.
+Debt seen while working is in scope for the change that saw it. A tracker item records debt; it never repays it. See [`../rules/found-fix.md`](../rules/found-fix.md).
 
 **When reviewing or completing work:**
 
-- If you introduce a shortcut or known limitation, file a tracked issue naming the ideal solution and why it was not done now, then link it from the PR description. Never a `TODO` comment in the source
-- If you encounter existing debt while working, note it but do not fix it in the same PR. File it separately
-- Classify debt by impact: **blocks future work**, fix soon, **slows development**, schedule, **cosmetic**. Backlog
+- Never introduce a shortcut or known limitation. Ship the complete implementation. Never a `TODO` comment in the source, and never a tracked issue in place of the fix
+- If you encounter existing debt while working, fix it in the same PR and name it in one line of the description
+- Only a fix blocked outside the change waits: another team's module, an unshipped upstream release, or a coordinated multi-service release. State the blocker in one sentence where the work happens
+- Classify blocked debt by impact: **blocks future work**, **slows development**, **cosmetic**. The class orders the work once the blocker clears
 
 ### Architecture Decision Records (ADR)
 
@@ -241,7 +242,7 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17 during
 
 ## Pre-Completion Checklist
 
-Run through [`checklists/checklist.md`](../checklists/checklist.md). All 52 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Categories 8, 13, 17, and 50 specifically cover reuse verification, test evidence, zero warnings, and clean room verification. Category 51 covers deployment verification and category 52 covers design quality.
+Run through [`checklists/checklist.md`](../checklists/checklist.md). All 71 categories apply during implementation as a self-review loop: read the diff, check every applicable category, fix issues, re-read, repeat until clean. Category 8 covers testing, 13 dependencies, 17 zero warnings, 50 clean room verification, 51 deployment verification, and 52 design quality.
 
 ## Enforcement
 

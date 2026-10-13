@@ -10,9 +10,9 @@ Use hexagonal architecture when the project has two or more infrastructure depen
 
 Three concentric layers. Dependencies always point inward. The domain never imports from adapters.
 
-```
-adapters/  →  application/  →  domain/
-(outer)       (middle)         (inner)
+```mermaid
+flowchart LR
+  adapters["adapters/, outer"] --> application["application/, middle"] --> domain["domain/, inner"]
 ```
 
 | Layer | Contains | Depends on | Never imports |
@@ -72,7 +72,7 @@ class PostgresOrderRepository implements OrderRepository {
 ```
 
 Rules:
-- One adapter per port per infrastructure. `PostgresOrderRepository` and `InMemoryOrderRepository` both implement `OrderRepository`
+- One adapter per port per infrastructure. `SendGridNotificationAdapter` and `InMemoryNotificationAdapter` both implement `NotificationPort`
 - Adapters handle mapping between external representations and domain types. The domain never sees a database row, HTTP request, or message envelope
 - Adapters catch infrastructure exceptions and convert them to domain error types
 - Business rule validation belongs in domain objects and application services, not in adapters. Adapters validate structure, types, required fields only. See [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md) for tactical patterns.
@@ -99,7 +99,7 @@ Each layer has a different testing approach:
 | Layer | Test type | Infrastructure | Speed |
 |-------|-----------|---------------|-------|
 | Domain | Unit tests | None. Pure logic, no mocks needed | Instant |
-| Application | Integration tests with in-memory adapters | In-memory implementations of ports, or in-memory SQL engines (SQLite, better-sqlite3) for lightweight persistence tests | Fast |
+| Application | Integration tests with real persistence | The real database in docker-compose for persistence ports; in-memory adapters only for ports over third-party systems you do not control | Fast |
 | Adapters | Integration tests with real infrastructure | Real database, real API (or contract tests) | Slower |
 | Full stack | E2E tests | Everything real | Slowest |
 
@@ -109,13 +109,14 @@ The domain layer is the functional core: pure functions and types, testable with
 
 Adapters are wired at application startup, not at compile time. Use constructor injection or a DI container to map ports to adapters. Never hardcode adapter selection inside domain logic.
 
-**Correct:** the composition root selects and injects the adapter.
+**Correct:** the composition root selects and injects the adapter from externalized config, never from `NODE_ENV`.
 
 ```typescript
-const repo = process.env.NODE_ENV === 'test'
-  ? new InMemoryOrderRepository()
-  : new PostgresOrderRepository(db);
-const useCase = new SubmitOrderUseCase(repo);
+const repo = new PostgresOrderRepository(db);
+const notifier = config.notificationTransport === NotificationTransport.InMemory
+  ? new InMemoryNotificationAdapter()
+  : new SendGridNotificationAdapter(sendGridClient);
+const useCase = new SubmitOrderUseCase(repo, notifier);
 ```
 
 **Wrong:** domain logic selects its own adapter, so the domain knows about infrastructure.
@@ -178,7 +179,7 @@ Avoid hard-coded plugin lists. Discover adapters at runtime through one of these
 
 **In-memory adapters in tests:**
 
-Every port must have an in-memory adapter for use in tests and local development. This is not a mock. It is a real adapter implementation that satisfies the port interface using in-process data structures.
+Every port over a third-party system you do not control has an in-memory adapter for tests and local development. It is a real adapter implementation that satisfies the port interface using in-process data structures. Persistence, cache, and queue ports never get one: tests run them against the real service in docker-compose, per [`../rules/testing.md`](../rules/testing.md).
 
 **Port:**
 
@@ -191,16 +192,26 @@ interface NotificationPort {
 **Production adapter**, wrapping SendGrid:
 
 ```typescript
-class SendGridAdapter implements NotificationPort { ... }
+class SendGridNotificationAdapter implements NotificationPort { ... }
 ```
 
 **In-memory adapter**, used in tests and local dev:
 
 ```typescript
+interface SentNotification {
+  readonly userId: string
+  readonly message: string
+}
+
 class InMemoryNotificationAdapter implements NotificationPort {
-  readonly sent: Array<{ userId: string; message: string }> = []
-  async send(userId: string, message: string) {
-    this.sent.push({ userId, message })
+  private delivered: readonly SentNotification[] = []
+
+  async send(userId: string, message: string): Promise<void> {
+    this.delivered = [...this.delivered, { userId, message }]
+  }
+
+  sent(): readonly SentNotification[] {
+    return this.delivered
   }
 }
 ```

@@ -11,6 +11,7 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-grpc";
+import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 
 const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter(),
@@ -31,11 +32,13 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 ```
 
-In Node.js, use the `--require` or `--import` flag to guarantee initialization order:
+Alternatively, drop that import from `main.ts` and preload the compiled file with Node's `--import` flag, which guarantees initialization order without depending on import position:
 
 ```bash
-node --import ./instrumentation.ts dist/main.js
+node --import ./dist/instrumentation.js dist/main.js
 ```
+
+Use one mechanism, never both. Each one runs `sdk.start()`, and a second start registers every instrumentation twice.
 
 ## Semantic Convention Attribute Naming
 

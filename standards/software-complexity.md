@@ -8,7 +8,7 @@ Loaded on demand. Triggers in [`../rules/index.yml`](../rules/index.yml).
 
 ## What this file deliberately does not repeat
 
-The following principles are already encoded in [`../rules/design-philosophy.md`](../rules/design-philosophy.md):
+The following principles are already encoded in [`design-philosophy.md`](design-philosophy.md):
 
 - Complexity manifestations: change amplification, cognitive load, unknown unknowns.
 - Two root causes: dependencies and obscurity.
@@ -22,7 +22,7 @@ The following principles are already encoded in [`../rules/design-philosophy.md`
 - Red flags catalog (pass-through methods, pass-through variables, configuration parameters, classitis, decorator overuse, getters and setters, adjacent layers same abstraction, temporal decomposition, repeated try-catch).
 - Design taste.
 
-The chapters that frame comment-writing as a design discipline (Ch 12 to 15 of the source) are intentionally not adopted. We default to no comments. See [`../rules/design-philosophy.md`](../rules/design-philosophy.md) "Boundary Conditions".
+The chapters that frame comment-writing as a design discipline (Ch 12 to 15 of the source) are intentionally not adopted. We default to no comments. See [`design-philosophy.md`](design-philosophy.md) "Boundary Conditions".
 
 ## Principles
 
@@ -72,7 +72,7 @@ Source: Ch 4.
 
 Hide variables and methods as aggressively as the language allows. Private by default. Public only when at least one outside caller has a real need. The justification is information hiding: every public symbol is a future-change cost.
 
-How we encode it: apply at every code change. Existing public symbols with no external callers are dead surface and should be made private during the touching change, per the cleanup-as-you-go rule.
+How we encode it: apply to every symbol a change adds. Existing public symbols with no external callers are dead surface: report them, and make one private only when the request covers it, per [`surgical-edits.md`](surgical-edits.md).
 
 Source: Ch 5.
 
@@ -158,7 +158,7 @@ Source: Ch 9.
 
 A long method that performs a single coherent operation is fine. The question is not how many lines the method has but whether the lines belong together. Splitting a coherent method into pieces that have to be called in a specific order is worse, not better, because the order becomes part of the interface.
 
-How we encode it: our existing 30-line guideline in [`../rules/code-style.md`](../rules/code-style.md) is a default, not a ceiling. Coherence wins over arbitrary length.
+How we encode it: the 30-line function limit in [`code-style.md`](code-style.md) "Size Thresholds And Their Valve" is a ceiling. Coherence decides where to split a long method, never whether to exceed the limit. A function over 30 lines needs one of the exceptions that section lists, a flat branchless step sequence or an exhaustive one-line-per-branch match, or a recorded waiver.
 
 Source: Ch 9.
 
@@ -208,7 +208,7 @@ Source: Ch 13.
 
 Short names (one or two characters) are acceptable in tight scopes: a loop index, a lambda's parameter, a short helper's only argument. Names at module scope or public-API scope must be descriptive. The line is "could a reader land on this name with no surrounding context and guess its meaning?". Tight-scope names are read with surrounding context; module-scope names are not.
 
-How we encode it: extends [`../rules/code-style.md`](../rules/code-style.md) "Meaningful names". A function called `t` is fine inside a three-line callback and wrong as a top-level export.
+How we encode it: extends the "Meaningful names" item under "Fundamentals" in [`code-style.md`](code-style.md). A function called `t` is fine inside a three-line callback and wrong as a top-level export.
 
 Source: Ch 14.
 
@@ -216,7 +216,7 @@ Source: Ch 14.
 
 The act of choosing a name forces clarity about what the entity is. Refusal to name (using `tmp`, `helper`, `process`) is refusal to design. When the name is hard to find, the design is muddled.
 
-How we encode it: covered by the `Hard to Pick Name` red flag added to [`../rules/design-philosophy.md`](../rules/design-philosophy.md).
+How we encode it: covered by the "Hard to pick a name" row in the "Red Flags" table of [`design-philosophy.md`](design-philosophy.md).
 
 Source: Ch 14.
 
@@ -258,7 +258,7 @@ Source: Ch 18.
 
 Event-driven and reactive programming hide the control flow inside the framework. The reader cannot tell when a handler is called or by whom. The handler must document its invocation context: when is this called, by what, with what state.
 
-How we encode it: applies to React effects, queue consumers, signal subscribers, observers. The invocation context belongs in a single sentence at the top of the handler.
+How we encode it: applies to React effects, queue consumers, signal subscribers, observers. The handler's name and parameter types carry the invocation context, such as `onOrderCreatedMessage(event: OrderCreatedEvent)`, and the handler is registered next to the code that wires it, never explained in a comment.
 
 Source: Ch 18.
 

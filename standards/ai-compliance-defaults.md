@@ -9,7 +9,7 @@ Loaded on-demand when a frontend task uses any AI feature: LLM chatbot, recommen
 | Target | Rule |
 |--------|------|
 | Risk classification | Every AI feature classified per EU AI Act: prohibited, high-risk (Annex III), limited-risk (transparency), minimal-risk |
-| Prohibited uses (EU AI Act Art. 5) | Never deploy: social scoring by public authorities, real-time biometric ID in public spaces (limited exceptions), exploitation of vulnerabilities, manipulative subliminal techniques, emotion recognition in workplace/education, predictive policing based on profiling alone |
+| Prohibited uses (EU AI Act Art. 5) | Never deploy: social scoring by any public or private actor, real-time biometric ID in public spaces (limited exceptions), exploitation of vulnerabilities, manipulative subliminal techniques, emotion recognition in workplace/education, predictive policing based on profiling alone |
 | High-risk obligations | Conformity assessment, technical documentation, human oversight, accuracy + robustness + cybersecurity, logging, post-market monitoring |
 | Disclosure tag | Every model-produced user-facing output carries a visible AI disclosure label |
 | Chatbot identification | Bot identifies its nature on first interaction; never deceives the user about being human |
@@ -35,8 +35,8 @@ Loaded on-demand when a frontend task uses any AI feature: LLM chatbot, recommen
 
 | Pattern | Reason |
 |---------|--------|
-| Rendering model output without a disclosure label | EU AI Act Art. 52 + California SB 942 + Brazil PL 2338 |
-| Chatbot pretending to be human | EU AI Act Art. 52 transparency obligation |
+| Rendering model output without a disclosure label | EU AI Act Art. 50 + California SB 942 + Brazil PL 2338 |
+| Chatbot pretending to be human | EU AI Act Art. 50 transparency obligation |
 | Automated decision with legal/significant effect without human review path | GDPR Art. 22 + LGPD Art. 20 |
 | Emotion recognition in employment or education | EU AI Act Art. 5 prohibition |
 | Social scoring | EU AI Act Art. 5 prohibition |

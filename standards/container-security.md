@@ -60,7 +60,7 @@ COPY --link package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     corepack enable && pnpm install --frozen-lockfile
 COPY --link . .
-RUN pnpm build
+RUN pnpm build && pnpm prune --prod
 
 FROM gcr.io/distroless/nodejs22@sha256:...
 WORKDIR /app
@@ -94,16 +94,20 @@ Keep the `.dockerignore` file next to the Dockerfile. Without one, every Dockerf
 
 ## BuildKit Modern Features
 
-BuildKit is the default builder since Docker 23.0. Use its primitives instead of legacy patterns. In the example below, the first `RUN` uses a cache mount that persists between builds and never lands in a layer. The second reads a build-time secret that is visible during the `RUN` and never persists. The third uses a heredoc, which reads cleaner than backslash continuation.
+BuildKit is the default builder since Docker 23.0. Use its primitives instead of legacy patterns. In the example below, the first `RUN` uses a cache mount that persists between builds and never lands in a layer. The second sits in its own Node stage, because the Python image ships no `npm`, and reads a build-time secret that is visible during the `RUN` and never persists. The third uses a heredoc, which reads cleaner than backslash continuation.
 
 ```dockerfile
 # syntax=docker/dockerfile:1
-FROM python:3.12-slim@sha256:... AS deps
+FROM python:3.12-slim@sha256:... AS python-deps
 WORKDIR /app
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=/tmp/requirements.txt \
     pip install --requirement /tmp/requirements.txt
+
+FROM node:22-slim@sha256:... AS node-deps
+WORKDIR /app
+COPY --link package.json package-lock.json ./
 
 RUN --mount=type=secret,id=npm_token,target=/run/secrets/npm_token \
     npm config set //registry.npmjs.org/:_authToken=$(cat /run/secrets/npm_token) && \

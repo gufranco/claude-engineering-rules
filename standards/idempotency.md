@@ -57,7 +57,7 @@ Hash the semantic content of the request: the normalized body, the path paramete
 |-----------|----------|
 | Same key, same fingerprint, completed | Replay the stored response |
 | Same key, same fingerprint, still running | 409, or wait and replay. See the concurrency section |
-| Same key, different fingerprint | 422. The client reused a key for different content, which is a client bug |
+| Same key, different fingerprint | 409 with an `idempotency_key_reused_with_different_body` error. The client reused a key for different content, which is a client bug |
 | New key | Execute |
 
 Returning the stored response for a mismatched fingerprint is the worst available outcome, because the caller receives a success for an operation that never ran.
@@ -114,7 +114,7 @@ export async function withIdempotency<T>(
   const claim = await claimKey(ctx, fingerprint);
 
   if (claim.kind === 'FingerprintMismatch') {
-    return { status: 422, body: { error: 'idempotency_key_reused_with_different_body' } };
+    return { status: 409, body: { error: 'idempotency_key_reused_with_different_body' } };
   }
 
   if (claim.kind === 'Replay') {
@@ -251,7 +251,7 @@ it('creates one order and replays the response when called twice with the same k
 Also required:
 
 - Ten parallel calls with the same key produce one row, and every caller receives either the response or a 409.
-- The same key with a changed body returns 422.
+- The same key with a changed body returns 409 with the `idempotency_key_reused_with_different_body` error.
 - A restart between the two calls does not produce a second row. This is the test that catches an in-memory store.
 - A permanent failure replays the failure rather than re-executing.
 - A key past its TTL is treated as new.
