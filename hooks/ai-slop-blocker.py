@@ -1,40 +1,4 @@
 #!/usr/bin/env python3
-"""
-ai-slop-blocker.py
-
-PreToolUse hook that blocks structural AI-slop tells in published text.
-
-Rule source:
-  - ~/.claude/rules/anti-slop.md (catalogue, deciding tests, provenance).
-
-Relationship to neighbouring hooks:
-  - banned-phrases-blocker.py blocks a vocabulary list.
-  - banned-prose-chars.py blocks em dashes, prose parens, emoji, ASCII art.
-  - This hook blocks the grammatical and rhetorical shapes that survive any
-    wordlist: negative parallelism, significance inflation, participial
-    evaluation tails, evasive attribution, hedged speculation, marketing
-    verbs standing in for "is" and "has", chat residue, markup residue.
-
-Coverage:
-  - Write/Edit/MultiEdit on Markdown files.
-  - Bash commands that publish text (gh, glab, git commit/tag, chat webhooks).
-
-Fenced code blocks, indented blocks, inline code spans, link targets and
-HTML comments are masked before matching, so quoted examples and sample
-output never trip a detector.
-
-Calibration:
-  Every detector was measured against the 209 Markdown files under
-  rules/, standards/, checklists/, skills/, agents/ and docs/ before
-  inclusion. Only patterns at or below three corpus hits were wired
-  up. Bold-label bullets measured 311 hits and are documented in the rule
-  rather than enforced. Rule of three and structural symmetry are not
-  mechanically decidable and stay review-time obligations.
-
-Bypass:
-  AI_SLOP_DISABLE=1 (parent shell export, not inline)
-"""
-
 from __future__ import annotations
 
 import json
@@ -42,6 +6,7 @@ import os
 import re
 import shlex
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
@@ -75,6 +40,7 @@ except Exception:  # pragma: no cover
     _block_message = None  # type: ignore
 
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
+from _lib.project_workspace import in_workspace, is_prompt_file  # noqa: E402
 
 
 HOOK_ID = "ai-slop-blocker"
@@ -244,7 +210,9 @@ DETECTORS: list[tuple[str, str, re.Pattern[str], str, int]] = [
             r"|\bvaluable insights\b|\bseamlessly\b|\beffortlessly\b"
             r"|\bunparalleled\b|\bholistic\b|\btransformative\b"
             r"|\ba (?:wide|diverse|broad) (?:range|array|variety) of\b"
-            r"|\bwhen it comes to\b|\bat its core\b|\bnestled\b",
+            r"|\bwhen it comes to\b|\bat its core\b|\bnestled\b"
+            r"|\bpivotal\b|\bintricate\b|\bfoster(?:s|ing)\b|\btestament\b"
+            r"|\bcrucial(?:ly)?\b|(?m:^\s*Additionally,)",
             re.IGNORECASE,
         ),
         "Replace each with the specific claim. Density is the signal, so this "
@@ -307,8 +275,58 @@ DETECTORS.extend(
             "A comment with sections is a summary. Answer the point and stop.",
             1,
         ),
+        (
+            "SLOP015",
+            "search narration",
+            re.compile(
+                r"\b(?:refused|returned|blocked|denied|answered)\b[^.\n]{0,25}"
+                r"\b(?:HTTP\s*)?(?:401|403|404|429)\b"
+                r"|\b(?:HTTP\s*)?(?:401|403|404|429)\b[^.\n]{0,40}"
+                r"\b(?:refused|returned|blocked|denied)\b"
+                r"|\bcould not be (?:verified|confirmed|located|found|reached|fetched)\b"
+                r"|\b(?:I|we) (?:could not|couldn'?t|was unable to|were unable to) "
+                r"(?:find|locate|confirm|verify|access|reach|fetch)\b"
+                r"|\b(?:returned|yielded|turned up)\s+no\s+(?:results|hits|matches|records)\b"
+                r"|\b(?:checked|verified|confirmed|searched|fetched)\s+on\s+\d{4}-\d{2}-\d{2}\b"
+                r"|\bsearch(?:es)? (?:for|of|on)\b[^.\n]{0,60}"
+                r"\b(?:found|returned|turned up) nothing\b",
+                re.IGNORECASE,
+            ),
+            "Describe what exists. A reader of the finished project needs the fact, "
+            "never which sites refused, what was not found, or when a check ran. "
+            "State the fact, mark it unknown, or drop the line.",
+            1,
+        ),
     ]
 )
+
+RECORD_ONLY_CODES = frozenset({"SLOP015"})
+
+VAULT_ENV = "SECOND_BRAIN_VAULT"
+
+
+def under_vault(path: str) -> bool:
+    vault = os.environ.get(VAULT_ENV, "").strip()
+    if not vault:
+        return False
+    root = os.path.realpath(os.path.expanduser(vault))
+    return os.path.realpath(path).startswith(root + os.sep)
+
+
+def keeps_provenance(path: str) -> bool:
+    if not path:
+        return False
+    return under_vault(path) or is_prompt_file(path) or in_workspace(Path(path))
+
+
+def drop_record_findings(
+    path: str, findings: list[tuple[str, str, str, str]]
+) -> list[tuple[str, str, str, str]]:
+    if not any(code in RECORD_ONLY_CODES for code, *_ in findings):
+        return findings
+    if not keeps_provenance(path):
+        return findings
+    return [f for f in findings if f[0] not in RECORD_ONLY_CODES]
 
 
 CONTEXT_EXCLUSIONS: dict[str, re.Pattern[str]] = {
@@ -586,8 +604,9 @@ def main() -> int:
         return 0
 
     all_findings: list[tuple[str, list[tuple[str, str, str, str]]]] = []
+    path = tool_input.get("file_path", "") or ""
     for label, text, is_markdown, is_comment in items:
-        findings = find(text, is_markdown, is_comment)
+        findings = drop_record_findings(path, find(text, is_markdown, is_comment))
         if findings:
             all_findings.append((label, findings[:6]))
 

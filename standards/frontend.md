@@ -184,9 +184,6 @@ This section governs projects that ship a component library. For projects that d
 - `<a>`: native links are correct. Use `Link` from Next.js for client-side navigation
 - `<form>`: native form element is the correct semantic choice. The library handles field rendering, not the form itself
 - `<dialog>`: acceptable, and the right default when the project does not already ship a dialog component. `showModal()` makes the rest of the page `inert`, and the browser provides that behavior, so outside content is unreachable by keyboard and by assistive technology without any custom focus code. Note that the W3C Accessible Platform Architectures Working Group concluded `showModal()` should deliberately not trap focus in the strict sense, so users can still tab to browser chrome. That is intended, not a gap. `::backdrop` has been Baseline widely available since March 2022, alongside `showModal()`, `show()`, `close()`, and the close and cancel events. **One caveat decides it:** entry animation works through `@starting-style` and keyframes, but a clean exit transition needs the `overlay` property, which is still limited availability. When an exit transition matters, or when the project already uses shadcn/ui, use `Dialog` or `AlertDialog` instead
-
-The "Native elements to avoid" table above used to carry a `<dialog>` row giving three reasons. All three were checked on 2026-07-27. Inconsistent backdrop behavior and the absence of a built-in focus trap no longer hold, so the row was removed. Limited animation support survives only in the narrow `overlay` form stated above.
-
 ### Rules
 
 - Every interactive component must handle keyboard navigation across Tab, Enter, Escape, and arrow keys without custom code. This is why library components exist: they implement the WAI-ARIA patterns

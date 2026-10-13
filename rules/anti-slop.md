@@ -24,6 +24,7 @@ Every sentence must change what the reader knows, decides, or does. Slop is text
 | Stating a fact is unknown, then supplying it as likely | Say it is unknown and stop |
 | Marketing verbs, `serves as`, `boasts` | `is`, `has` |
 | Chat residue, `I hope this helps`, unfilled placeholders | Nothing |
+| Search narration: sites that refused, what was not found, the date a check ran | The fact, or that it is unknown |
 | Curly quotes, repeated bolding, uniform section lengths | ASCII quotes, bold once, uneven structure |
 
 Tables, headings, and correct grammar are never tells by themselves. Never cite an AI-detector score as evidence.
