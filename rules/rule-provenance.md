@@ -10,3 +10,7 @@ Every rule states when it became binding and what made it binding.
 - Prune rules whose origin no longer applies or is now caught mechanically, merge rules sharing an origin, and record every removal.
 
 Full rule and rationale: [`standards/rule-provenance.md`](../standards/rule-provenance.md). Read it before adding, promoting, or deleting a rule.
+
+## Provenance
+
+Promoted 2026-08-26, `single-incident`, under the unbounded-growth condition. Origin: speculative and incident-backed rules had become indistinguishable, which made pruning impossible. Full account in [`standards/rule-provenance.md`](../standards/rule-provenance.md).

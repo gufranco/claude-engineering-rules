@@ -25,3 +25,7 @@ No completion claim without fresh evidence run in this session. Previous runs, c
 - Any read or analysis covers every in-scope file in full, the first time and without being asked. Never return a grep-only or excerpt-based verdict. Subagent briefs require full reads with the Read tool, and analysis never goes to `Explore`, which reads excerpts.
 
 Full rule, examples, and rationale: [`standards/verification.md`](../standards/verification.md). Read it before declaring a task done, reporting CI status, or verifying infrastructure, deploys, or scheduled jobs.
+
+## Provenance
+
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.

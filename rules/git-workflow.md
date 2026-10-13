@@ -11,7 +11,7 @@ Conventional commits, a full local quality gate before every commit, one push pe
 - Lint does not imply format: run `prettier --check` separately, over the whole project as CI does: `prettier --write .` then `prettier --check .`.
 - Schema changes: push to dev and test DBs, `prisma generate`, full suite. Env var changes update `.env.example`, `.env.test`, CI, and Compose.
 - Push once, at the end of the task, after all gates pass. Batch CI fixes into one push. Subagents never push.
-- After push: cancel superseded runs, watch the latest, fix every annotation and deprecation warning. Check `gh api rate_limit` before a watcher; below 500 remaining, use one-shot `gh run view`. Poll a `queued` run at multi-minute intervals.
+- After push: cancel superseded runs, follow the latest to completion, fix every annotation and deprecation warning. Check `gh api rate_limit` before polling; poll a one-shot `gh run view <id>` at multi-minute intervals.
 - If CI does not start, check `gh pr view --json mergeable,mergeableState`; `dirty` means conflicts.
 - Run `actionlint`, `yamllint`, and `shellcheck` before committing CI files.
 - Never hard-wrap PR, issue, or review-reply bodies. One line per paragraph; 72-column wrap applies only to commit bodies.
@@ -35,3 +35,7 @@ Enforced by: [`hooks/gh-run-watch-blocker.py`](../hooks/gh-run-watch-blocker.py)
 Enforced by: [`hooks/git-author-guard.py`](../hooks/git-author-guard.py).
 Enforced by: [`hooks/large-file-blocker.py`](../hooks/large-file-blocker.py).
 Enforced by: [`hooks/review-state-guard.py`](../hooks/review-state-guard.py).
+
+## Provenance
+
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.

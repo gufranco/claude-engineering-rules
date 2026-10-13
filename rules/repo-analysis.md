@@ -10,3 +10,7 @@ To read code from a repository not on disk, clone it to a temp directory and wor
 - Bypass `REPO_FETCH_DISABLE=1` from a parent shell.
 
 Full rule and rationale: [`standards/repo-analysis.md`](../standards/repo-analysis.md). Read it before analyzing a private or remote repository.
+
+## Provenance
+
+Added 2026-06-02, recurrence not recorded. Origin: not recorded at creation.

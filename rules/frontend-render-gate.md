@@ -21,3 +21,7 @@ Full rule, examples, and rationale: [`standards/frontend-render-gate.md`](../sta
 ## Enforcement
 
 Enforced by: [`hooks/frontend-render-gate.py`](../hooks/frontend-render-gate.py).
+
+## Provenance
+
+Added 2026-08-20, recurrence not recorded. Origin: not recorded at creation.

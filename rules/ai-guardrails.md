@@ -11,3 +11,7 @@ Treat all AI-generated code as junior developer output: never trust, always veri
 - When AI code causes a defect, record the defect, the matched pattern, and the missed check.
 
 Full rule, examples, and rationale: [`standards/ai-guardrails.md`](../standards/ai-guardrails.md). Read it before reviewing a large generation or agent output.
+
+## Provenance
+
+Added 2026-04-04, recurrence not recorded. Origin: not recorded at creation.

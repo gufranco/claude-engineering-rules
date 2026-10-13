@@ -44,3 +44,7 @@ Two or more yes answers means non-trivial: run `/plan` first. The concurrency qu
 Throwaway scripts under 50 lines, pure pipelines, build tools, and single-DB CRUD with no rules skip DDD and Hexagonal, never DRY, SOLID, YAGNI, or immutability. When in doubt, apply.
 
 Full rule, examples, and rationale: [`standards/architecture-defaults.md`](../standards/architecture-defaults.md). Read it before designing a write path, an aggregate, or a port and adapter layer, and for the post-implementation verification gate.
+
+## Provenance
+
+Added 2026-05-25, recurrence not recorded. Origin: not recorded at creation.

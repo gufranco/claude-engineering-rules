@@ -3,8 +3,9 @@
   description: |
     Block in-place mutations (Array, Map/Set, TypedArray, Date setters, Object
     utilities, parameter reassignment, let-could-be-const) in JavaScript and
-    TypeScript files. Honors hot-path allowlists and per-line suppression
-    markers. Emits SARIF 2.1.0 when MUTATION_METHOD_OUTPUT=sarif.
+    TypeScript files. Honors the built-in and per-project allowlists and
+    third-party tool directives such as eslint-disable; it has no allow
+    marker of its own. Batch mode reads the file paths pre-commit passes.
   entry: hooks/mutation-method-blocker.py
   language: python
   language_version: python3
@@ -14,6 +15,4 @@
   args: []
   env:
     MUTATION_METHOD_BATCH_MODE: "1"
-    MUTATION_METHOD_OUTPUT: "text"
-    MUTATION_METHOD_FAIL_THRESHOLD: "error"
   stages: [pre-commit, manual]

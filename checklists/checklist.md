@@ -44,7 +44,7 @@ Not every category applies to every change. Skip categories clearly irrelevant t
 
 ### 3. Error Handling
 
-Error classification and typed error returns: [`rules/code-style.md`](../rules/code-style.md). Retry parameters and HTTP status mapping: category 20.
+Error classification and typed error returns: [`standards/code-style.md`](../standards/code-style.md) covering Error Classification, Typed Error Returns. Retry parameters and HTTP status mapping: category 20.
 
 - [ ] Every error path covered with context, not silently swallowed
 - [ ] Error messages helpful for debugging without leaking internals
@@ -103,7 +103,7 @@ Data structure selection guide and anti-pattern catalog: [`standards/algorithmic
 - [ ] No `.find()`, `.includes()`, or `.indexOf()` called inside a loop over another collection. Build a Map or Set first
 - [ ] No string concatenation in loops. Collect in array, `.join()` at the end
 - [ ] No `Array.shift()` in a while loop (O(n^2) from reindexing). Use a queue, pointer index, or reverse + pop
-- [ ] No nested `.reduce()` with spread accumulator, which is O of n-squared from copying. Mutate the accumulator
+- [ ] No nested `.reduce()` with spread accumulator, which is O of n-squared from copying. Build the result in one pass with `Object.groupBy`, `Map.groupBy`, `Object.fromEntries`, or `new Map(entries)` instead of copying on every iteration
 - [ ] No sorting when only min/max/k-th element is needed. Use a heap or selection algorithm
 - [ ] No re-sorting after single insertions. Use binary search + insert or a sorted data structure
 - [ ] Sorting only when necessary, using the right algorithm for the data size
@@ -153,9 +153,9 @@ Skip if no frontend code changed. Full reference: [`standards/frontend.md`](../s
 
 #### Core Web Vitals
 
-- [ ] LCP < 2.5s. LCP element preloaded with `fetchpriority="high"` and `loading="eager"`. Critical CSS inlined, < 14 KB. No render-blocking JS in `<head>`
-- [ ] INP < 200ms. No tasks > 50ms on main thread. Event handlers complete in < 100ms. Heavy work deferred with `requestIdleCallback`. Visual feedback provided immediately on interaction
-- [ ] CLS < 0.1. All images and videos have explicit `width`/`height` or `aspect-ratio`. Ads and embeds have `min-height` containers. Dynamic content inserted below viewport, not above. Fonts use `font-display: optional` or matched `size-adjust` metrics. Animations use `transform`/`opacity` only
+- [ ] LCP under 2.0s, the budget below the 2.5s threshold. LCP element preloaded with `fetchpriority="high"` and `loading="eager"`. Critical CSS inlined, < 14 KB. No render-blocking JS in `<head>`
+- [ ] INP under 150ms, the budget below the 200ms threshold. No tasks > 50ms on main thread. Event handlers complete in < 100ms. Heavy work deferred with `requestIdleCallback`. Visual feedback provided immediately on interaction
+- [ ] CLS under 0.05, the budget below the 0.1 threshold. All images and videos have explicit `width`/`height` or `aspect-ratio`. Ads and embeds have `min-height` containers. Dynamic content inserted below viewport, not above. Fonts use `font-display: optional` or matched `size-adjust` metrics. Animations use `transform`/`opacity` only
 
 #### Images
 
@@ -191,7 +191,7 @@ Skip if the project is not a public-facing web application.
 
 Full testing strategy: [`standards/accessibility-testing.md`](../standards/accessibility-testing.md). Design rules: [`standards/frontend.md`](../standards/frontend.md).
 
-- [ ] All interactive targets meet 24x24 CSS pixel minimum. WCAG 2.5.8
+- [ ] All interactive targets meet the 44x44 CSS pixel minimum from [`rules/accessibility-defaults.md`](../rules/accessibility-defaults.md), 48x48 on Android, above the WCAG 2.5.8 floor of 24x24
 - [ ] Focused element not entirely hidden by sticky headers, footers, or overlays, WCAG 2.4.11. `scroll-margin-top`/`scroll-margin-bottom` set to account for fixed bars
 - [ ] Drag actions have single-pointer alternatives: buttons, inputs, or click-based interactions. WCAG 2.5.7
 - [ ] Help mechanisms, contact, chat, FAQ appear in the same relative position across pages. WCAG 3.2.6
@@ -200,7 +200,7 @@ Full testing strategy: [`standards/accessibility-testing.md`](../standards/acces
 
 ### 8. Testing
 
-Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules/testing.md).
+Full testing philosophy, policies, and guidelines: [`standards/testing.md`](../standards/testing.md).
 
 #### Coverage
 
@@ -211,7 +211,7 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 
 #### Test quality
 
-- [ ] The only comments in a test are the three bare markers `Arrange`, `Act`, `Assert` in the language's comment syntax. Every other comment in a test is a defect. See [`rules/testing.md`](../rules/testing.md) for the full policy
+- [ ] The only comments in a test are the three bare markers `Arrange`, `Act`, `Assert` in the language's comment syntax. Every other comment in a test is a defect. See [`standards/testing.md`](../standards/testing.md) Test Structure for the full policy
 - [ ] Every test body is three blocks in the order Arrange, Act, Assert, each opened by its marker and separated by one blank line. Nothing follows a marker on its line
 - [ ] Exactly one call to the unit under test per test, with its result bound to a name. Two calls means two behaviors and two tests
 - [ ] No assertion inside the arrange block, no setup between the act and the assertions
@@ -223,20 +223,20 @@ Full testing philosophy, policies, and guidelines: [`rules/testing.md`](../rules
 - [ ] Tests verify the behavior they claim to test, not just that no error was thrown
 - [ ] Negative tests present: invalid input, unauthorized access, missing resources
 - [ ] Boundary value tests: empty arrays, zero, max int, empty string, null
-- [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values. See [`rules/testing.md`](../rules/testing.md) for the library table and seeding guidelines
+- [ ] Test data uses fake data generator with deterministic seed. No hardcoded static values. See [`standards/testing.md`](../standards/testing.md) Test Data for the library table and seeding guidelines
 - [ ] Contract tests at service boundaries: consumer expectations verified against provider responses
 - [ ] Property-based tests for complex logic: invariants hold across randomized inputs, not just hand-picked examples
 - [ ] Every new or modified write path has a concurrent-duplicate test: N parallel identical calls, N at 10 or more, asserting one effect and a defined outcome for the losers
-- [ ] Every new or modified write path has a sequential-duplicate test: call twice, assert one effect and a replayed response. Restart the process between the calls when a dedup store is involved. See [`rules/testing.md`](../rules/testing.md) Write-Path Tests
+- [ ] Every new or modified write path has a sequential-duplicate test: call twice, assert one effect and a replayed response. Restart the process between the calls when a dedup store is involved. See [`standards/testing.md`](../standards/testing.md) Write-Path Tests
 
 #### Determinism
 
-- [ ] No dependency on current time, unseeded random values, network calls, shared database state, execution order, timing delays, or file system state. See [`rules/testing.md`](../rules/testing.md) for the full flakiness table
+- [ ] No dependency on current time, unseeded random values, network calls, shared database state, execution order, timing delays, or file system state. See [`standards/testing.md`](../standards/testing.md) Deterministic Tests for the full flakiness table
 - [ ] Snapshot tests strip non-deterministic values: timestamps, UUIDs, random tokens
 
 #### Mock policy (STRICT, blocking issue)
 
-See [`rules/testing.md`](../rules/testing.md) for the full mock policy with rationale.
+See [`standards/testing.md`](../standards/testing.md) Mocks Policy for the full mock policy with rationale.
 
 - [ ] Database, Redis, queues, and caches use real connections via docker-compose, with `beforeAll()` seed and `afterAll()` cleanup
 - [ ] Own services and modules tested with real implementations, not mocks
@@ -359,7 +359,7 @@ Review the diff as a whole after per-file checks. Look for contradictions betwee
 - [ ] Feature flag states consistent. If a flag guards behavior in one file, all related files respect the same flag
 - [ ] Env var completeness. Every env var referenced in code exists in `.env.example`, Docker Compose, CI/CD, and Terraform with matching names
 - [ ] Error type consistency. Domain error classes used across modules share a common base or discriminant, not ad-hoc strings
-- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic, pricing, permissions, formatting is identical across all paths. No path reimplements the calculation inline. See [`rules/code-style.md`](../rules/code-style.md) "Delivery Path Consistency"
+- [ ] Delivery path consistency. When the same data is served via REST, WebSocket, background job, or other paths, the business logic, pricing, permissions, formatting is identical across all paths. No path reimplements the calculation inline. See [`standards/code-style.md`](../standards/code-style.md) "Delivery Path Consistency"
 
 ### 16. Cascading Fix Analysis
 
@@ -379,7 +379,7 @@ Treat every warning as an error. A warning ignored today becomes a broken build 
 
 #### Strictness configuration
 
-- [ ] Compiler, type checker, and linter configured at maximum strictness. See [`rules/code-style.md`](../rules/code-style.md) "Maximum Compiler and Checker Strictness" for per-language requirements
+- [ ] Compiler, type checker, and linter configured at maximum strictness. See [`standards/code-style.md`](../standards/code-style.md) "Maximum Compiler and Checker Strictness" for per-language requirements
 - [ ] No strictness flags intentionally disabled without a documented reason in the config file
 - [ ] When joining an existing project with missing strictness flags, add them and fix resulting errors in the same PR
 
@@ -435,16 +435,16 @@ Do not check these items by reading the code in isolation. Trace the key from so
 
 - [ ] **Key derivation traced.** What exact input produces the idempotency key? Write it down: `key = f of timestamp and body` or `key = header value`. If the key is derived from request metadata, timestamp, nonce, signature, it changes on every retry by the external system. This is a broken idempotency mechanism that only catches network-level duplicates, not application-level retries
 - [ ] **Key stability across retries verified.** Simulate the external system retrying: does the retry produce the same key? If the external system re-signs with a new timestamp, the derived key changes. If the external system sends a stable idempotency header, verify the code uses it. If neither is guaranteed, the idempotency key must be derived from semantically stable fields, email + sorted promotion codes, user ID + action type + date not from transport metadata
-- [ ] **Key-consumed-before-completion recovery verified.** If the idempotency key is stored in Redis/DB before the protected operation completes, trace what happens when the operation fails after key storage:, a Is the key deleted on transient failure so retries can proceed?, b Is the key preserved on permanent failure to prevent re-execution?, c If the external system retries with a different key, transport-derived, does the retry bypass the consumed key entirely?
+- [ ] **Key-consumed-before-completion recovery verified.** If the idempotency key is stored in Redis/DB before the protected operation completes, trace what happens when the operation fails after key storage. Is the key deleted on transient failure so retries can proceed? Is the key preserved on permanent failure to prevent re-execution? If the external system retries with a different, transport-derived key, does the retry bypass the consumed key entirely?
 - [ ] **Multi-step mutation atomicity verified.** If the idempotent operation has multiple steps, void old data, create new data, are all steps in a single transaction? If step 2 fails after step 1 succeeded, is the state recoverable? A consumed idempotency key + partially completed mutation = permanently corrupted state if retries are blocked
 - [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys, different timestamps, different request IDs, do they both pass the dedup check? If yes, is there a secondary guard, per-entity mutex, database constraint that prevents double-processing?
 
 - [ ] **Concurrent same-key requests do not both execute.** The loser receives a 409 or waits for the winner's stored response. The claim is an insert against a primary key, never a read followed by an insert
-- [ ] **A reused key with a different body is rejected.** The stored request fingerprint is compared, and a mismatch returns 422 rather than replaying a response for work that never ran
+- [ ] **A reused key with a different body is rejected.** The stored request fingerprint is compared, and a mismatch returns 409 rather than replaying a response for work that never ran
 - [ ] **The stored record can reproduce the original response.** Status code and body, not only the resource ID
 - [ ] **The TTL exceeds the caller's full retry window.** Payment webhooks commonly re-send for three days; a 24-hour window permits a duplicate on day two
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) covering Data Safety, [`standards/idempotency.md`](../standards/idempotency.md) covering key sourcing, fingerprints, storage, and replay, [`standards/resilience.md`](../standards/resilience.md) covering the overview
+Reference: [`standards/code-style.md`](../standards/code-style.md) covering Data Safety, [`standards/idempotency.md`](../standards/idempotency.md) covering key sourcing, fingerprints, storage, and replay, [`standards/resilience.md`](../standards/resilience.md) covering the overview
 
 ### 19. Atomicity and Transactions
 
@@ -477,7 +477,7 @@ Reference: [`standards/database.md`](../standards/database.md) covering Transact
 - [ ] Batch processing: individual item failures reported without aborting the batch?
 - [ ] Errors in cleanup code, finally blocks, defer handled separately?
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) covering Error Classification, [`standards/resilience.md`](../standards/resilience.md) covering Error Classification, Retry Strategy
+Reference: [`standards/code-style.md`](../standards/code-style.md) covering Error Classification, [`standards/resilience.md`](../standards/resilience.md) covering Error Classification, Retry Strategy
 
 ### 21. Caching
 
@@ -497,7 +497,7 @@ Reference: [`standards/caching.md`](../standards/caching.md)
 - [ ] Consistency model chosen explicitly such as strong, eventual, read-your-writes, or causal?
 - [ ] Weakest tolerable model used such as strong only for finance, auth, or inventory?
 - [ ] Read-your-writes implemented where users mutate and immediately read their own data?
-- [ ] Implementation of read-your-writes explicit such as read from primary after write, version token, or or optimistic UI update?
+- [ ] Implementation of read-your-writes explicit such as read from primary after write, version token, or optimistic UI update?
 - [ ] Eventual consistency communicated to consumers, not silently stale?
 
 Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Consistency Models
@@ -517,7 +517,7 @@ Reference: [`standards/resilience.md`](../standards/resilience.md) covering Back
 
 - [ ] Separate connection pool per external dependency?
 - [ ] One slow dependency cannot exhaust the shared pool?
-- [ ] Critical and non-critical workloads isolated such as separate processes, queues, or or deployments?
+- [ ] Critical and non-critical workloads isolated such as separate processes, queues, or deployments?
 - [ ] Per-tenant or per-priority queue isolation where applicable?
 
 Reference: [`standards/resilience.md`](../standards/resilience.md) covering Bulkhead
@@ -555,7 +555,7 @@ Reference: [`standards/distributed-systems.md`](../standards/distributed-systems
 - [ ] At-least-once delivery paired with idempotent consumers?
 - [ ] Ordering scope chosen such as per-entity, global, causal, or none?
 - [ ] Partition key set for per-entity ordering such as Kafka partition key, or SQS FIFO group ID?
-- [ ] Out-of-order events handled such as version check, last-write-wins, or or buffer and reorder?
+- [ ] Out-of-order events handled such as version check, last-write-wins, or buffer and reorder?
 - [ ] Consumers handle message redelivery without duplicate side effects?
 
 Reference: [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Event Ordering and Delivery Guarantees
@@ -589,7 +589,7 @@ Reference: [`standards/distributed-systems.md`](../standards/distributed-systems
 - [ ] Audit-sensitive data append-only such as versioned rows, or not in-place updates?
 - [ ] Events stored as immutable facts in event-driven systems?
 
-Reference: [`rules/code-style.md`](../rules/code-style.md) covering Immutability
+Reference: [`standards/code-style.md`](../standards/code-style.md) covering Immutability
 
 ### 31. Query Optimization
 
@@ -640,7 +640,7 @@ Reference: [`standards/observability.md`](../standards/observability.md)
 - [ ] SQL injection: all queries parameterized or using ORM? No string concatenation in queries?
 - [ ] XSS: all user input escaped before rendering? Framework auto-escaping not bypassed?
 - [ ] Command injection: no user input passed to `exec`, `spawn`, or shell commands without sanitization?
-- [ ] Path traversal: no user input used in file paths without validation? [`../`](.) sequences blocked?
+- [ ] Path traversal: no user input used in file paths without validation? `../` sequences blocked?
 - [ ] SSRF: no user-controlled URLs fetched without allowlist validation?
 - [ ] Header injection: no user input in HTTP headers without sanitization?
 - [ ] Template injection: no user input in template strings evaluated server-side?
@@ -652,7 +652,7 @@ Reference: [`standards/observability.md`](../standards/observability.md)
 - [ ] Token expiration configured? Refresh token rotation?
 - [ ] Tokens validated for expiration, signature, and audience?
 - [ ] Session management: tokens rotated after auth state changes? Proper invalidation on logout?
-- [ ] CSRF protection on state-changing endpoints such as SameSite cookies, CSRF tokens, or or origin validation?
+- [ ] CSRF protection on state-changing endpoints such as SameSite cookies, CSRF tokens, or origin validation?
 - [ ] Access control: default deny? Permissions explicitly granted, never explicitly denied?
 - [ ] Per-resource authorization checked, not just per-role, IDOR prevention?
 - [ ] Authorization logic centralized, not scattered across controllers?
@@ -698,7 +698,7 @@ Reference: [`standards/observability.md`](../standards/observability.md)
 - [ ] Zero trust applied? No implicit trust based on network location. Every request authenticated and authorized regardless of origin.
 - [ ] Certificate management automated? TLS certificates rotated before expiry. No manual cert renewal in production.
 
-Reference: [`rules/security.md`](../rules/security.md), [`standards/infrastructure.md`](../standards/infrastructure.md) covering Networking and Service Discovery
+Reference: [`standards/security.md`](../standards/security.md), [`standards/infrastructure.md`](../standards/infrastructure.md) covering Networking and Service Discovery
 
 ### 34. API Contract Design
 
@@ -829,7 +829,7 @@ Reference: [`standards/database.md`](../standards/database.md) covering Connecti
 - [ ] Test data builders or factories used? No brittle test setup with hardcoded object literals duplicated across tests.
 - [ ] Time and randomness injectable? Tests do not depend on the current clock or random output.
 
-Reference: [`rules/testing.md`](../rules/testing.md) covering Philosophy, Mock Policy, [`rules/code-style.md`](../rules/code-style.md) covering Immutability
+Reference: [`standards/testing.md`](../standards/testing.md) covering Philosophy, Mocks Policy, [`standards/code-style.md`](../standards/code-style.md) covering Immutability
 
 ### 42. Cost Awareness
 
@@ -855,7 +855,7 @@ Reference: [`standards/caching.md`](../standards/caching.md) covering When to Ca
 - [ ] Tenant onboarding and offboarding automated? Provisioning and deprovisioning do not require manual steps or code changes.
 - [ ] Tenant-specific configuration supported? Feature flags, plan limits, and custom settings per tenant without code deploys.
 
-Reference: [`rules/security.md`](../rules/security.md) covering Access Control, [`standards/database.md`](../standards/database.md) covering Access Pattern Design
+Reference: [`standards/security.md`](../standards/security.md) covering Access Control, [`standards/database.md`](../standards/database.md) covering Access Pattern Design
 
 ### 44. Migration Strategy
 
@@ -945,7 +945,7 @@ Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) cover
 
 Applies when any external project, codebase, article, or third-party source was consulted during planning or implementation. If no external sources were consulted, state that explicitly and skip this category.
 
-Full process and similarity thresholds: `rules/clean-room.md`.
+Full process and similarity thresholds: [`standards/clean-room.md`](../standards/clean-room.md), sections Verification Checklist and Similarity Thresholds.
 
 #### Structural independence (section A)
 
@@ -996,7 +996,7 @@ A failing check does not mean delete the work. The functionality is correct; onl
 3. Rewrite preserving the same functionality but with independent expression
 4. Re-run the failing check to confirm it passes
 
-Reference: `rules/clean-room.md`
+Reference: [`standards/clean-room.md`](../standards/clean-room.md)
 
 ### 51. Deployment Verification
 
@@ -1029,7 +1029,7 @@ Apply to frontend changes. Reference: `/review design` subcommand, [`standards/f
 
 ### 53. LLM Trust Boundary
 
-Apply when code processes, stores, or acts on LLM-generated output. Reference: [`rules/code-style.md`](../rules/code-style.md) LLM Output Trust Boundary section.
+Apply when code processes, stores, or acts on LLM-generated output. Reference: [`standards/code-style.md`](../standards/code-style.md) LLM Output Trust Boundary section.
 
 - [ ] LLM-generated values validated for format and shape before database write
 - [ ] LLM output sanitized before vector database insertion to prevent stored prompt injection
@@ -1063,7 +1063,7 @@ Apply to database migrations and deployment changes. Reference: [`standards/data
 
 ### 56. Supply Chain Security
 
-Apply when adding or updating dependencies. Reference: [`rules/security.md`](../rules/security.md) Supply Chain section.
+Apply when adding or updating dependencies. Reference: [`standards/security.md`](../standards/security.md) Supply Chain Security section.
 
 - [ ] SBOM generated on CI build in SPDX or CycloneDX format
 - [ ] Build artifacts signed for provenance verification
@@ -1075,7 +1075,7 @@ Apply when adding or updating dependencies. Reference: [`rules/security.md`](../
 
 ### 57. Event-Driven Architecture
 
-Apply when implementing message-based or event-driven systems. Reference: `standards/event-driven-architecture.md`.
+Apply when implementing message-based or event-driven systems. Reference: [`standards/message-queues.md`](../standards/message-queues.md), [`standards/distributed-systems.md`](../standards/distributed-systems.md) covering Outbox Pattern, Event Ordering and Delivery Guarantees.
 
 - [ ] All event handlers are idempotent with deduplication by event ID
 - [ ] Event schemas versioned with backward-compatible handlers
@@ -1086,7 +1086,7 @@ Apply when implementing message-based or event-driven systems. Reference: `stand
 
 ### 58. Licensing and SPDX Compliance
 
-Apply when creating or modifying source files. Reference: `rules/licensing.md`.
+Apply when creating or modifying source files. Reference: [`standards/licensing.md`](../standards/licensing.md).
 
 **File Headers:**
 - [ ] Every new source file has `SPDX-FileCopyrightText` and `SPDX-License-Identifier` on the first comment lines
@@ -1290,7 +1290,7 @@ Apply when creating or modifying source files. Reference: `rules/licensing.md`.
 
 ### 69. Schema-Migration Sync (Prisma)
 
-Apply on every PR that adds, edits, or removes a file under `prisma/migrations/` or modifies `schema.prisma`. Reference rule: `~/.claude/rules/lang/orm-migrations.md (Prisma section)`.
+Apply on every PR that adds, edits, or removes a file under `prisma/migrations/` or modifies `schema.prisma`. Reference: [`standards/orm-migrations.md`](../standards/orm-migrations.md) Prisma section, core rule [`rules/lang/orm-migrations.md`](../rules/lang/orm-migrations.md).
 
 **Static parity, offline:**
 - [ ] Every `CREATE INDEX` in migration SQL has a matching `@@index([...], map: "<exact name>")` on the target model
@@ -1307,10 +1307,10 @@ Apply on every PR that adds, edits, or removes a file under `prisma/migrations/`
 - [ ] `prisma migrate dev` against a fresh DB after deploying all migrations produces no follow-up migration
 
 **Cross-checks:**
-- [ ] Migration timestamp is later than every migration on the base branch. Cross-reference with `git-workflow.md` "Migration Ordering"
-- [ ] Migration file uses `IF NOT EXISTS` / `IF EXISTS` per `git-workflow.md` "Migration Idempotency"
+- [ ] Migration timestamp is later than every migration on the base branch. Cross-reference with [`standards/git-workflow.md`](../standards/git-workflow.md) "Migration Ordering"
+- [ ] Migration file uses `IF NOT EXISTS` / `IF EXISTS` per [`standards/git-workflow.md`](../standards/git-workflow.md) "Migration Idempotency"
 - [ ] If the migration creates indexes on tables with significant row counts, `CREATE INDEX CONCURRENTLY` is used
-- [ ] New model passes `code-style.md` "Prisma Schema Completeness" gate such as createdAt, updatedAt, companyId index, or FK indexes
+- [ ] New model passes the [`standards/orm-migrations.md`](../standards/orm-migrations.md) "Schema Completeness in Prisma" gate such as createdAt, updatedAt, companyId index, or FK indexes
 
 **Verification evidence:**
 - [ ] Output of `prisma migrate diff --exit-code` pasted in PR description
@@ -1318,7 +1318,7 @@ Apply on every PR that adds, edits, or removes a file under `prisma/migrations/`
 
 ### 70. Question and Communication Quality
 
-Apply on every message that asks a clarifying question, briefs a subagent, reports status or an error, or closes a loop. Reference rule: `~/.claude/rules/smart-questions.md`.
+Apply on every message that asks a clarifying question, briefs a subagent, reports status or an error, or closes a loop. Reference rule: [`rules/smart-questions.md`](../rules/smart-questions.md).
 
 - [ ] Pre-flight investigation was exhausted before asking; the message states what was read, grepped, or checked, with file paths and line numbers when relevant
 - [ ] Clarifying questions to the user are single, one blocking question per turn, specific, and present the viable options with one decisive trade-off each
@@ -1344,7 +1344,7 @@ Apply to every frontend change. Reference: [`../rules/compliance-defaults.md`](.
 - [ ] Heading order: one `<h1>` per page, no skipped levels
 - [ ] `<html>` has `lang` attribute; multi-language content uses `lang` on inline elements
 - [ ] Focus indicator is visible with 3:1 contrast against adjacent colors
-- [ ] Target size is at least 44x44 CSS pixels (locked at AAA per `conflicts.md`); 48x48 on Android
+- [ ] Target size is at least 44x44 CSS pixels, locked per [`standards/compliance-defaults.md`](../standards/compliance-defaults.md) Cross-Cutting Targets; 48x48 on Android
 - [ ] Color contrast aims for 7:1 (AAA target); 4.5:1 is the absolute floor
 - [ ] `prefers-reduced-motion: reduce` is honored on every animation
 - [ ] Authentication uses passkey, OAuth, or magic link; no image-recognition CAPTCHA, no math puzzle
@@ -1440,7 +1440,7 @@ Apply to every frontend change. Reference: [`../rules/compliance-defaults.md`](.
 - [ ] Financial: PCI DSS 4.0 client-side script management; PSD2 SCA; GLBA Safeguards
 - [ ] Biometric: BIPA-grade written consent + retention schedule everywhere; treated as sensitive
 - [ ] Identity/KYC: regulated provider; never store raw ID documents long-term
-- [ ] Crypto: MiCA authorization; reserve disclosure; FATF Travel Rule on transfers ≥ USD/EUR 1,000
+- [ ] Crypto: MiCA authorization; reserve disclosure; FATF Travel Rule on transfers at or above USD/EUR 1,000
 - [ ] Tax: EU VAT OSS/IOSS; US post-Wayfair sales tax; Brazil PIS/COFINS + ISS
 - [ ] Whistleblower: anonymous channel; 7-day acknowledgment; 3-month feedback (EU 2019/1937)
 

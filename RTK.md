@@ -26,4 +26,4 @@ which rtk             # Verify correct binary
 All other commands are automatically rewritten by the Claude Code hook.
 Example: `git status` becomes `rtk git status`, transparent with zero tokens overhead.
 
-Refer to CLAUDE.md for full command reference.
+Run `rtk --help` for the full command reference.

@@ -81,3 +81,7 @@ Enforced by: [`hooks/config-protection.py`](../hooks/config-protection.py).
 Enforced by: [`hooks/console-log-blocker.py`](../hooks/console-log-blocker.py).
 Enforced by: [`hooks/interactive-cmd-blocker.py`](../hooks/interactive-cmd-blocker.py).
 Enforced by: [`hooks/settings-hygiene.py`](../hooks/settings-hygiene.py).
+
+## Provenance
+
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.
