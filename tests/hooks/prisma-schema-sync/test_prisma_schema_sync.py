@@ -741,3 +741,36 @@ def test_schema_read_failure_is_reported(unreadable_schema, tool_use, run_hook):
 
     # Assert
     assert_blocked(result, "failed to read")
+
+
+def test_blocks_a_second_added_column_missing_from_the_model(
+    tmp_path, tool_use, run_hook
+):
+    # Arrange
+    migration_sql = _write_schema(
+        tmp_path, "model Game {\n  id String @id\n  homeTeam String\n}\n"
+    )
+    sql = 'ALTER TABLE "Game" ADD COLUMN "homeTeam" TEXT, ADD COLUMN "venue" TEXT;\n'
+    payload = tool_use("Write", {"file_path": str(migration_sql), "content": sql})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, '"venue"')
+
+
+def test_allows_a_unique_index_declared_on_the_field(tmp_path, tool_use, run_hook):
+    # Arrange
+    migration_sql = _write_schema(
+        tmp_path,
+        'model User {\n  id String @id\n  email String @unique(map: "User_email_key")\n}\n',
+    )
+    sql = 'CREATE UNIQUE INDEX "User_email_key" ON "User" ("email");\n'
+    payload = tool_use("Write", {"file_path": str(migration_sql), "content": sql})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

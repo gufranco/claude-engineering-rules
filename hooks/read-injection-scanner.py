@@ -124,20 +124,24 @@ def scan(text: str) -> list[str]:
     return findings
 
 
-def extract_payload(tool_name: str, tool_response: dict) -> str:
-    """Pull the human-readable text from a PostToolUse tool_response."""
-    if not isinstance(tool_response, dict):
-        return ""
-    for key in ("text", "content", "result", "body", "output", "stdout"):
-        val = tool_response.get(key)
-        if isinstance(val, str):
-            return val
-        if isinstance(val, list):
-            return "\n".join(str(x) for x in val if isinstance(x, (str, int)))
-    try:
-        return json.dumps(tool_response)[:200_000]
-    except (TypeError, ValueError):
-        return ""
+MAX_PAYLOAD_CHARS = 200_000
+MAX_NESTING = 8
+
+
+def _strings(value: object, depth: int) -> list[str]:
+    if depth > MAX_NESTING:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [text for item in value.values() for text in _strings(item, depth + 1)]
+    if isinstance(value, list):
+        return [text for item in value for text in _strings(item, depth + 1)]
+    return []
+
+
+def extract_payload(tool_name: str, tool_response: object) -> str:
+    return "\n".join(_strings(tool_response, 0))[:MAX_PAYLOAD_CHARS]
 
 
 def emit_context(findings: list[str], tool_name: str) -> None:
