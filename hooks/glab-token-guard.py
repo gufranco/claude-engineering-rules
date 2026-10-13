@@ -10,9 +10,10 @@ Receives Bash tool input as JSON on stdin.
 Exit 0 = allow, exit 2 = block.
 """
 
+from __future__ import annotations
+
 import json
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
@@ -24,13 +25,19 @@ except Exception:  # pragma: no cover
         return None
 
 
-GLAB_COMMAND = re.compile(r"(?:^|&&|\|\||;|\|)\s*glab\s+")
+from _lib.cli_invocations import Invocation, invocations  # noqa: E402
 
-GLAB_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\|)\s*glab\s+auth\s+")
+EXEMPT_SUBCOMMANDS = frozenset({"auth", "version", "--version", "help", "--help", "-h"})
 
-GITLAB_TOKEN_SET = re.compile(r"GITLAB_TOKEN=|export\s+GITLAB_TOKEN=")
 
-GLAB_AUTH_LOGIN = re.compile(r"\bglab\s+auth\s+login\b")
+def _logs_in(call: Invocation) -> bool:
+    return call.args[:2] == ("auth", "login")
+
+
+def _needs_token(call: Invocation) -> bool:
+    if call.args[:1] and call.args[0] in EXEMPT_SUBCOMMANDS:
+        return False
+    return "GITLAB_TOKEN" not in call.assigned
 
 
 import sys as _sys  # noqa: E402
@@ -64,7 +71,8 @@ def main():
     if not command:
         sys.exit(0)
 
-    if GLAB_AUTH_LOGIN.search(command):
+    calls = invocations(command, "glab")
+    if any(_logs_in(call) for call in calls):
         print(
             "BLOCKED: glab auth login changes the global config "
             "and affects all terminals.\n"
@@ -82,15 +90,7 @@ def main():
         )
         sys.exit(2)
 
-    if not GLAB_COMMAND.search(command):
-        sys.exit(0)
-
-    glab_calls = GLAB_COMMAND.findall(command)
-    glab_auth_calls = GLAB_AUTH_EXEMPT.findall(command)
-    if len(glab_calls) == len(glab_auth_calls):
-        sys.exit(0)
-
-    if GITLAB_TOKEN_SET.search(command):
+    if not any(_needs_token(call) for call in calls):
         sys.exit(0)
 
     print(
