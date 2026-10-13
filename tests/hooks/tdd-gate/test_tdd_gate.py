@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from pathlib import Path
 
 import pytest
@@ -213,7 +215,10 @@ def test_a_qualified_test_of_another_source_is_not_a_companion(
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: creating production source `databaseExplorerService.ts` without a companion",
+    )
 
 
 def test_allows_when_go_test_sibling_exists(tool_use, run_hook, tmp_path):
@@ -425,12 +430,18 @@ def test_blocks_malformed_json():
         input="not json at all",
         capture_output=True,
         text=True,
-        timeout=5,
+        timeout=30,
         check=False,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_allows_source_in_session_scratchpad(tool_use, run_hook, tmp_path):
@@ -491,7 +502,10 @@ def test_a_test_directory_outside_the_repository_does_not_satisfy_the_gate(
     result = run_hook("tdd-gate", payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: creating production source `widget.py` without a companion test.",
+    )
 
 
 def test_a_repo_local_test_directory_still_satisfies_the_gate(

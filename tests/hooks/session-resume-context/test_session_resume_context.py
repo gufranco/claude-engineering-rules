@@ -9,9 +9,6 @@ from pathlib import Path
 
 import pytest
 
-TESTS_ROOT = Path(__file__).resolve().parents[2]
-if str(TESTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TESTS_ROOT))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 EXCLUDE_MARKER = "# local workspace, never committed"
@@ -230,6 +227,7 @@ def make_repo(root) -> None:
             check=True,
             capture_output=True,
             env={**os.environ, **GIT_ENV},
+            timeout=30,
         )
 
 
@@ -374,6 +372,7 @@ def test_malformed_payload_is_ignored():
         text=True,
         env=apply_coverage_env({**os.environ, "CLAUDE_BYPASS_STATE": os.devnull}),
         check=False,
+        timeout=30,
     )
 
     # Assert

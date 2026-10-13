@@ -40,15 +40,26 @@ def vault(tmp_path: Path) -> Path:
 def project(tmp_path: Path, faker: Faker) -> Path:
     repo = tmp_path / "project"
     repo.mkdir()
-    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.email", faker.email()], cwd=repo, check=True)
     subprocess.run(
-        ["git", "config", "user.name", faker.first_name()], cwd=repo, check=True
+        ["git", "init", "-q", "-b", "main"], cwd=repo, check=True, timeout=30
     )
-    subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", faker.email()], cwd=repo, check=True, timeout=30
+    )
+    subprocess.run(
+        ["git", "config", "user.name", faker.first_name()],
+        cwd=repo,
+        check=True,
+        timeout=30,
+    )
+    subprocess.run(
+        ["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True, timeout=30
+    )
     (repo / "seed.txt").write_text("seed\n")
-    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-qm", "chore: seed"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, timeout=30)
+    subprocess.run(
+        ["git", "commit", "-qm", "chore: seed"], cwd=repo, check=True, timeout=30
+    )
     return repo
 
 
@@ -220,7 +231,9 @@ def test_nothing_is_written_when_there_is_no_new_work(monkeypatch, vault, tmp_pa
     # Arrange
     quiet = tmp_path / "quiet"
     quiet.mkdir()
-    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=quiet, check=True)
+    subprocess.run(
+        ["git", "init", "-q", "-b", "main"], cwd=quiet, check=True, timeout=30
+    )
 
     # Act
     code = run(monkeypatch, vault, quiet)
@@ -346,7 +359,9 @@ def test_a_nonexistent_cwd_is_tolerated(monkeypatch, vault, tmp_path):
 
 def test_a_rename_records_only_the_destination(monkeypatch, vault, project):
     # Arrange
-    subprocess.run(["git", "mv", "seed.txt", "renamed.txt"], cwd=project, check=True)
+    subprocess.run(
+        ["git", "mv", "seed.txt", "renamed.txt"], cwd=project, check=True, timeout=30
+    )
 
     # Act
     run(monkeypatch, vault, project)
@@ -366,6 +381,7 @@ def git_in(cwd: Path, *args: str) -> None:
             "GIT_CONFIG_GLOBAL": "/dev/null",
             "GIT_CONFIG_SYSTEM": "/dev/null",
         },
+        timeout=30,
     )
 
 

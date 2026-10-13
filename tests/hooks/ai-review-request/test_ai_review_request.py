@@ -11,9 +11,6 @@ from pathlib import Path
 
 import pytest
 
-TESTS_ROOT = Path(__file__).resolve().parents[2]
-if str(TESTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TESTS_ROOT))
 
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 from _helpers.raising import raising  # noqa: E402
@@ -497,7 +494,7 @@ def fake_env(tmp_path):
         ["git", "init", "-q", "-b", "feature"],
         ["git", "remote", "add", "origin", "git@github.com:acme/app.git"],
     ):
-        subprocess.run(cmd, cwd=repo, check=True, env=git_env)
+        subprocess.run(cmd, cwd=repo, check=True, env=git_env, timeout=30)
     env = {
         "PATH": f"{bin_dir}:{os.environ['PATH']}",
         "HOME": str(tmp_path),

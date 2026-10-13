@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 import subprocess
@@ -504,10 +506,17 @@ def test_invalid_json_blocks():
         capture_output=True,
         text=True,
         check=False,
+        timeout=30,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_suppression_without_justification_does_not_allow(tool_use, run_hook):

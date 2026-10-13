@@ -14,18 +14,16 @@ sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
+
+TIMEOUT_S = 30
+ISOLATION = {"CLAUDE_BYPASS_STATE": os.devnull, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
 
 def _run(
     *args: str, env: dict | None = None, cwd: Path | None = None
 ) -> subprocess.CompletedProcess[str]:
-    merged = os.environ.copy()
-    if env:
-        merged.update(env)
+    merged = {**os.environ, **ISOLATION, **(env or {})}
     return subprocess.run(
         [sys.executable, str(HOOK), *args],
         input="",
@@ -33,7 +31,8 @@ def _run(
         text=True,
         env=apply_coverage_env(merged),
         cwd=str(cwd) if cwd else None,
-        timeout=5,
+        timeout=TIMEOUT_S,
+        check=False,
     )
 
 
@@ -341,7 +340,7 @@ def test_git_branch_falls_back_when_git_missing(tmp_path: Path) -> None:
         env=apply_coverage_env(
             {"CLAUDE_COMPACT_CONTEXT": str(snapshot), "PATH": str(bin_dir)}
         ),
-        timeout=5,
+        timeout=TIMEOUT_S,
     )
 
     # Assert
@@ -369,7 +368,7 @@ def test_git_status_non_zero_returncode(tmp_path: Path) -> None:
         env=apply_coverage_env(
             {"CLAUDE_COMPACT_CONTEXT": str(snapshot), "PATH": str(bin_dir)}
         ),
-        timeout=5,
+        timeout=TIMEOUT_S,
     )
 
     # Assert

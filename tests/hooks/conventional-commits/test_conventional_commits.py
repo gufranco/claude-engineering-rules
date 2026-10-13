@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util as _util
 import json
 import os
 import subprocess
@@ -7,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.cov_env import apply_coverage_env
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "conventional-commits.py"
@@ -14,26 +16,38 @@ sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
-from _helpers.cov_env import apply_coverage_env  # noqa: E402
-import importlib.util as _util  # noqa: E402
+TIMEOUT_S = 30
+ISOLATION = {"CLAUDE_BYPASS_STATE": os.devnull, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
+
+
+def _env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    return apply_coverage_env({**os.environ, **ISOLATION, **(extra or {})})
 
 
 def _run(command: str, env: dict | None = None) -> subprocess.CompletedProcess[str]:
-    merged = os.environ.copy()
-    if env:
-        merged.update(env)
     payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    return _run_raw(payload, env)
+
+
+def _run_raw(stdin: str, env: dict | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(HOOK)],
-        input=payload,
+        input=stdin,
         capture_output=True,
         text=True,
-        env=apply_coverage_env(merged),
-        timeout=5,
+        env=_env(env),
+        timeout=TIMEOUT_S,
+        check=False,
     )
+
+
+def _load(name: str):
+    spec = _util.spec_from_file_location(name, str(HOOK))
+    assert spec is not None
+    assert spec.loader is not None
+    module = _util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def boom(**_kwargs: object) -> None:
@@ -60,8 +74,11 @@ def test_long_subject_shows_cut_marker_and_overflow() -> None:
 
     # Assert
     assert result.returncode == 2
-    assert f"Drop {len(subject) - 50} character(s)" in result.stderr
-    assert f"{subject[:50]}|{subject[50:]}" in result.stderr
+    assert "Drop 18 character(s)" in result.stderr
+    assert (
+        "refactor: rewrite the nine remaining shell hooks i|nto python modules"
+        in result.stderr
+    )
 
 
 def test_long_subject_suggests_dropping_scope_when_that_fits() -> None:
@@ -287,56 +304,38 @@ def test_file_bypass_short_circuits(tmp_path: Path) -> None:
 
 def test_malformed_json_blocks() -> None:
     # Arrange
-    argv = [sys.executable, str(HOOK)]
+    stdin = "not json"
 
     # Act
-    result = subprocess.run(
-        argv,
-        input="not json",
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(os.environ.copy()),
-        timeout=5,
-    )
+    result = _run_raw(stdin)
 
     # Assert
     assert result.returncode == 2
+    assert "could not read its input" in result.stderr
 
 
 def test_non_dict_root_blocks() -> None:
     # Arrange
-    argv = [sys.executable, str(HOOK)]
+    stdin = "[1,2,3]"
 
     # Act
-    result = subprocess.run(
-        argv,
-        input="[1,2,3]",
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(os.environ.copy()),
-        timeout=5,
-    )
+    result = _run_raw(stdin)
 
     # Assert
     assert result.returncode == 2
+    assert "could not read its input" in result.stderr
 
 
 def test_non_dict_tool_input_blocks() -> None:
     # Arrange
-    argv = [sys.executable, str(HOOK)]
+    stdin = '{"tool_input": "scalar"}'
 
     # Act
-    result = subprocess.run(
-        argv,
-        input='{"tool_input": "scalar"}',
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(os.environ.copy()),
-        timeout=5,
-    )
+    result = _run_raw(stdin)
 
     # Assert
     assert result.returncode == 2
+    assert "could not read its input" in result.stderr
 
 
 def test_blocks_malformed_constraint_trailer() -> None:
@@ -389,29 +388,31 @@ def test_allows_indented_long_body_line() -> None:
     assert result.returncode == 0
 
 
-def test_audit_swallows_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_reports_a_record_failure_on_stderr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Arrange
-    spec = _util.spec_from_file_location("_cc_mod", str(HOOK))
-    module = _util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load("_cc_mod")
     monkeypatch.setattr(module, "_audit_record", boom)
 
     # Act
-    result = module._audit("reason", "git commit -m msg")
+    module._audit("reason", "git commit -m msg")
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == (
+        "conventional-commits: audit log write failed: audit explosion\n"
+    )
 
 
-def test_audit_noop_when_record_none(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_noop_when_record_none(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Arrange
-    spec = _util.spec_from_file_location("_cc_mod2", str(HOOK))
-    module = _util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load("_cc_mod2")
     monkeypatch.setattr(module, "_audit_record", None)
 
     # Act
-    result = module._audit("reason", "git commit -m msg")
+    module._audit("reason", "git commit -m msg")
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == ""

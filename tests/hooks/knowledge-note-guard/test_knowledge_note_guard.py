@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from pathlib import Path
 
 import pytest
@@ -665,10 +667,17 @@ def test_blocks_malformed_stdin():
         capture_output=True,
         text=True,
         check=False,
+        timeout=30,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_skips_flag_tokens_in_a_removal(tool_use, run_hook, vault, env):

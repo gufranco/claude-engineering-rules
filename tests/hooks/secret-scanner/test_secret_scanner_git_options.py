@@ -12,9 +12,11 @@ FAKE_KEY = "AKIA" + "ABCDEFGHIJKLMNOP"
 
 @pytest.fixture()
 def repo_with_staged_secret(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, timeout=30)
     (tmp_path / "config.py").write_text(f"KEY = '{FAKE_KEY}'\n", encoding="utf-8")
-    subprocess.run(["git", "add", "config.py"], check=True, cwd=str(tmp_path))
+    subprocess.run(
+        ["git", "add", "config.py"], check=True, cwd=str(tmp_path), timeout=30
+    )
     monkeypatch.chdir(tmp_path)
     return tmp_path
 

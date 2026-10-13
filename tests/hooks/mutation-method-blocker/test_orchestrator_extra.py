@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import builtins as _builtins
 import importlib.util
 import io
+import json
 import sys
 from pathlib import Path
-import json as _json
-import builtins as _builtins
 
 import pytest
 
@@ -150,62 +150,85 @@ def test_read_batch_items_skips_blank_and_comment_lines(monkeypatch) -> None:
     assert items == []
 
 
-def test_entrypoint_no_profile_calls_main_directly(monkeypatch) -> None:
+BLOCKED_PAYLOAD = json.dumps(
+    {
+        "tool_name": "Write",
+        "tool_input": {"file_path": "/repo/src/app.ts", "content": "items.push(1)\n"},
+    }
+)
+ALLOWED_PAYLOAD = json.dumps(
+    {
+        "tool_name": "Write",
+        "tool_input": {"file_path": "/repo/src/app.ts", "content": "const x = 1\n"},
+    }
+)
+
+
+def test_entrypoint_without_profile_returns_the_main_verdict(monkeypatch) -> None:
     # Arrange
     monkeypatch.delenv("MUTATION_METHOD_PROFILE", raising=False)
-    sentinel = object()
-    monkeypatch.setattr(hook, "main", lambda: sentinel)
+    monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
+    monkeypatch.setattr(sys, "argv", ["hook"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(BLOCKED_PAYLOAD))
 
     # Act
-    result = hook._entrypoint()
+    rc = hook._entrypoint()
 
     # Assert
-    assert result is sentinel
+    assert rc == 2
 
 
 def test_entrypoint_profile_writes_report(monkeypatch, tmp_path: Path) -> None:
     # Arrange
     monkeypatch.setenv("MUTATION_METHOD_PROFILE", "1")
-    monkeypatch.setattr(hook.os.path, "expanduser", lambda p: str(tmp_path))
-    monkeypatch.setattr(hook, "main", lambda: 0)
+    monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setattr(sys, "argv", ["hook"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(ALLOWED_PAYLOAD))
 
     # Act
     rc = hook._entrypoint()
 
     # Assert
+    report = tmp_path / ".claude" / "logs" / "mutation_blocker_profile.txt"
     assert rc == 0
-    profile_file = tmp_path / ".claude" / "logs" / "mutation_blocker_profile.txt"
-    assert profile_file.is_file() is True
+    assert "Ordered by: cumulative time" in report.read_text(encoding="utf-8")
 
 
-def test_entrypoint_profile_swallows_os_error(monkeypatch) -> None:
+def test_entrypoint_profile_reports_an_unwritable_log_dir(
+    monkeypatch, tmp_path: Path, capsys
+) -> None:
     # Arrange
+    home = tmp_path / "home-is-a-file"
+    home.write_text("", encoding="utf-8")
     monkeypatch.setenv("MUTATION_METHOD_PROFILE", "1")
-    monkeypatch.setattr(hook, "main", lambda: 7)
-    monkeypatch.setattr(
-        hook.os, "makedirs", lambda *a, **k: (_ for _ in ()).throw(OSError("denied"))
-    )
+    monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setattr(sys, "argv", ["hook"])
+    monkeypatch.setattr(sys, "stdin", io.StringIO(BLOCKED_PAYLOAD))
 
     # Act
     rc = hook._entrypoint()
 
     # Assert
-    assert rc == 7
+    assert rc == 2
+    assert "mutation-method-blocker: profile write failed:" in capsys.readouterr().err
 
 
-def test_main_handles_disable_env(monkeypatch) -> None:
+def test_main_disable_env_allows_a_blocking_payload(monkeypatch, capsys) -> None:
     # Arrange
     monkeypatch.setenv("MUTATION_METHOD_DISABLE", "1")
-    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(BLOCKED_PAYLOAD))
 
     # Act
     rc = hook.main()
 
     # Assert
     assert rc == 0
+    assert capsys.readouterr().err == ""
 
 
-def test_main_blocks_invalid_json_payload(monkeypatch) -> None:
+def test_main_blocks_invalid_json_payload(monkeypatch, capsys) -> None:
     # Arrange
     monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
     monkeypatch.delenv("MUTATION_METHOD_BATCH_MODE", raising=False)
@@ -217,6 +240,7 @@ def test_main_blocks_invalid_json_payload(monkeypatch) -> None:
 
     # Assert
     assert exit_info.value.code == 2
+    assert "could not read its input" in capsys.readouterr().err
 
 
 def test_handle_cli_flags_version(monkeypatch, capsys) -> None:
@@ -240,7 +264,7 @@ def test_handle_cli_flags_print_detectors(monkeypatch, capsys) -> None:
 
     # Assert
     assert rc == 0
-    payload = _json.loads(capsys.readouterr().out)
+    payload = json.loads(capsys.readouterr().out)
     assert type(payload["detectors"]) is list
     assert len(payload["detectors"]) > 50
 
@@ -254,7 +278,7 @@ def test_handle_cli_flags_list_allowlists(monkeypatch, capsys) -> None:
 
     # Assert
     assert rc == 0
-    payload = _json.loads(capsys.readouterr().out)
+    payload = json.loads(capsys.readouterr().out)
     assert type(payload["version"]) is str
     assert payload["version"] != ""
 

@@ -23,7 +23,9 @@ def test_blocks_inline_credentials(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: settings.json contains project- or machine-specific data."
+    )
 
 
 def test_the_block_report_never_echoes_the_password(tool_use, run_hook):
@@ -59,7 +61,9 @@ def test_blocks_absolute_home_path(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: settings.json contains project- or machine-specific data."
+    )
 
 
 def test_allows_env_var_password(tool_use, run_hook):
@@ -145,7 +149,9 @@ def test_blocks_on_edit(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: settings.json contains project- or machine-specific data."
+    )
 
 
 def test_blocks_on_multiedit(tool_use, run_hook):
@@ -164,7 +170,9 @@ def test_blocks_on_multiedit(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: settings.json contains project- or machine-specific data."
+    )
 
 
 def test_disable_env_bypasses(tool_use, run_hook):
@@ -202,6 +210,7 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_no_file_path_is_allowed(tool_use, run_hook):

@@ -6,9 +6,12 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from _helpers.cov_env import apply_coverage_env
 
-HOOK = Path.home() / ".claude" / "hooks" / "vault-context-loader.py"
+
+HOOK = Path(__file__).resolve().parents[3] / "hooks" / "vault-context-loader.py"
 RECORD = ".maintenance.json"
+TIMEOUT_S = 30
 
 
 def build_vault(
@@ -38,9 +41,19 @@ def run(root: Path) -> str:
         input=json.dumps({"hook_event_name": "SessionStart"}),
         capture_output=True,
         text=True,
-        env={"PATH": "/usr/bin:/bin", "SECOND_BRAIN_VAULT": str(root)},
+        env=apply_coverage_env(
+            {
+                "PATH": "/usr/bin:/bin",
+                "HOME": str(root.parent),
+                "SECOND_BRAIN_VAULT": str(root),
+                "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            }
+        ),
+        timeout=TIMEOUT_S,
+        check=False,
     )
-    return proc.stdout
+    assert proc.returncode == 0, proc.stderr
+    return json.loads(proc.stdout)["hookSpecificOutput"]["additionalContext"]
 
 
 def test_overdue_maintenance_is_reported(tmp_path):
@@ -51,8 +64,7 @@ def test_overdue_maintenance_is_reported(tmp_path):
     out = run(root)
 
     # Assert
-    assert "maintenance" in out.lower()
-    assert "overdue" in out.lower()
+    assert "Vault maintenance is overdue: last run 30 days ago" in out
 
 
 def test_recent_maintenance_is_not_reported(tmp_path):
@@ -63,7 +75,7 @@ def test_recent_maintenance_is_not_reported(tmp_path):
     out = run(root)
 
     # Assert
-    assert "overdue" not in out.lower()
+    assert "overdue" not in out
 
 
 def test_never_run_is_reported(tmp_path):
@@ -74,7 +86,7 @@ def test_never_run_is_reported(tmp_path):
     out = run(root)
 
     # Assert
-    assert "maintenance" in out.lower()
+    assert "Vault maintenance has no run record, so it is overdue." in out
 
 
 def test_index_is_still_injected(tmp_path):
@@ -85,7 +97,7 @@ def test_index_is_still_injected(tmp_path):
     out = run(root)
 
     # Assert
-    assert "nothing yet" in out
+    assert "- nothing yet" in out
 
 
 def test_a_recent_run_that_failed_is_reported(tmp_path):
@@ -96,8 +108,7 @@ def test_a_recent_run_that_failed_is_reported(tmp_path):
     out = run(root)
 
     # Assert
-    assert "maintenance" in out.lower()
-    assert "vault-freshness" in out
+    assert "and failed: vault-freshness." in out
 
 
 def test_a_recent_run_that_passed_stays_quiet(tmp_path):
@@ -108,4 +119,4 @@ def test_a_recent_run_that_passed_stays_quiet(tmp_path):
     out = run(root)
 
     # Assert
-    assert "maintenance" not in out.lower()
+    assert "Vault maintenance" not in out

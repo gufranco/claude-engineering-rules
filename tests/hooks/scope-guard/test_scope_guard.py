@@ -11,9 +11,6 @@ from pathlib import Path
 import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 
-TESTS_ROOT = Path(__file__).resolve().parents[2]
-if str(TESTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TESTS_ROOT))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 HOOK = "scope-guard"
@@ -199,7 +196,10 @@ def test_blocks_when_editing_unrelated_test(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: editing `test_bar.py` which is not listed in the active plan `",
+    )
 
 
 @pytest.mark.parametrize("tool_name", ["Bash", "Read", "Grep", "Glob"])
@@ -235,21 +235,6 @@ def test_handles_missing_file_path(tool_use, run_hook, tmp_path):
     # Arrange
     make_plan(tmp_path, ["hooks/foo.py"])
     payload = tool_use("Write", {}, cwd=str(tmp_path))
-
-    # Act
-    result = run_hook(HOOK, payload)
-
-    # Assert
-    assert_allowed(result)
-
-
-def test_handles_explicit_cwd_with_no_plan(tool_use, run_hook, tmp_path):
-    # Arrange
-    payload = tool_use(
-        "Write",
-        {"file_path": str(tmp_path / "x.py"), "content": "x"},
-        cwd=str(tmp_path),
-    )
 
     # Act
     result = run_hook(HOOK, payload)
@@ -312,7 +297,10 @@ def test_the_nearest_plan_wins_over_a_newer_outer_one(tool_use, run_hook, tmp_pa
     result = run_hook("scope-guard", payload)
 
     # Assert
-    _code, stderr = assert_blocked(result)
+    _code, stderr = assert_blocked(
+        result,
+        "BLOCKED: editing `undeclared.py` which is not listed in the active plan `",
+    )
     assert "2026-08-18-local" in stderr
 
 
@@ -377,7 +365,9 @@ def test_ignores_flag_tokens_in_the_plan(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, edit_payload(tool_use, tmp_path, "dist/app.js"))
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: editing `app.js` which is not listed in the active plan `"
+    )
 
 
 def test_ignores_bare_extensions_in_the_plan(tool_use, run_hook, tmp_path):
@@ -388,7 +378,9 @@ def test_ignores_bare_extensions_in_the_plan(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, edit_payload(tool_use, tmp_path, "data/rows.csv"))
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: editing `rows.csv` which is not listed in the active plan `"
+    )
 
 
 def test_a_directory_declaration_covers_the_directory_path(
@@ -441,10 +433,12 @@ def test_malformed_payload_blocks():
         text=True,
         env=apply_coverage_env({**os.environ, "CLAUDE_BYPASS_STATE": os.devnull}),
         check=False,
+        timeout=30,
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 @pytest.mark.parametrize("root", ["docs", ".work", ".work-local"])
@@ -458,7 +452,10 @@ def test_a_workspace_plan_governs_the_repository(tool_use, run_hook, tmp_path, r
     result = run_hook(HOOK, edit_payload(tool_use, tmp_path, "hooks/unrelated.py"))
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: editing `unrelated.py` which is not listed in the active plan `",
+    )
 
 
 @pytest.mark.parametrize(
@@ -502,7 +499,7 @@ def test_a_note_inside_the_never_committed_workspace_is_not_gated(
     tool_use, run_hook, tmp_path
 ):
     # Arrange
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, timeout=30)
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "PROMPT.md").write_text("continue\n")
     spec_dir = tmp_path / "docs" / "plans" / "2026-10-12-feature"

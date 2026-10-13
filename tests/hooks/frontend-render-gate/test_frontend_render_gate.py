@@ -36,11 +36,16 @@ def run_hook(staged, command="git commit -m 'x'", env_extra=None, diff_exit=0):
         )
         stub.chmod(0o755)
 
-        env = dict(os.environ)
-        env["PATH"] = f"{tmp}:{env.get('PATH', '')}"
-        env.pop("FRONTEND_RENDER_GATE_DISABLE", None)
-        if env_extra:
-            env.update(env_extra)
+        inherited = {
+            k: v for k, v in os.environ.items() if k != "FRONTEND_RENDER_GATE_DISABLE"
+        }
+        env = {
+            **inherited,
+            "PATH": f"{tmp}:{os.environ.get('PATH', '')}",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            **(env_extra or {}),
+        }
 
         payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
         result = subprocess.run(
@@ -49,6 +54,7 @@ def run_hook(staged, command="git commit -m 'x'", env_extra=None, diff_exit=0):
             capture_output=True,
             text=True,
             env=apply_coverage_env(env),
+            timeout=30,
             check=False,
         )
         return result
@@ -213,6 +219,7 @@ class RenderGateTest(unittest.TestCase):
             text=True,
             env=apply_coverage_env(dict(os.environ)),
             check=False,
+            timeout=30,
         )
 
         # Assert
@@ -280,6 +287,7 @@ class RenderGateTest(unittest.TestCase):
             text=True,
             env=apply_coverage_env(dict(os.environ)),
             check=False,
+            timeout=30,
         )
 
         # Assert

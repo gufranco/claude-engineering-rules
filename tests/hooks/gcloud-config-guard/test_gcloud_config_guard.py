@@ -17,7 +17,10 @@ def test_blocks_gcloud_config_set(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `gcloud config set ...` without `--configuration=<name>` writes to the active",
+    )
 
 
 def test_blocks_gcloud_config_activate(tool_use, run_hook):
@@ -28,7 +31,10 @@ def test_blocks_gcloud_config_activate(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `gcloud config configurations activate <name>` switches the active gcloud",
+    )
 
 
 def test_allows_gcloud_config_set_with_configuration_flag(tool_use, run_hook):
@@ -109,3 +115,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

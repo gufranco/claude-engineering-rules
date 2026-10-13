@@ -28,7 +28,7 @@ def test_resolving_several_threads_at_once_is_blocked(tool_use, run_hook, comman
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: bulk resolution of review threads.")
 
 
 def test_resolving_one_thread_across_lines_is_allowed(tool_use, run_hook):
@@ -73,4 +73,4 @@ def test_a_query_fed_to_the_api_by_heredoc_is_still_counted(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: bulk resolution of review threads.")

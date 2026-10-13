@@ -34,7 +34,7 @@ def test_a_help_flag_after_a_value_does_not_exempt_a_real_call(tool_use, run_hoo
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: glab command without explicit GITLAB_TOKEN.")
 
 
 def test_reading_the_stored_token_for_the_call_needs_no_token(tool_use, run_hook):

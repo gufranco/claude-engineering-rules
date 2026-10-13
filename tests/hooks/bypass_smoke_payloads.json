@@ -1,0 +1,588 @@
+{
+  "accessibility-mechanical-checks": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "<img src=\"/logo.png\" />",
+        "file_path": "/repo/src/Page.tsx"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "ai-attribution-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gh pr create --body 'Authored-by-Claude\nSee diff.'"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "ai-disclosure-checks": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "function X({ data }) {\n  return <p>{data.modelOutput}</p>;\n}\n",
+        "file_path": "/repo/src/X.tsx"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "ai-process-leak-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "Phase 7 work"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "ai-slop-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "git -c a=b commit -m 'The cache serves as a buffer'"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "as-any-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "const arr: any[] = [];\n",
+        "file_path": "/repo/src/user.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "aws-profile-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "aws configure set region us-east-1"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "banned-phrases-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "prompt": "Can you find the bug"
+      },
+      "tool_name": "Task"
+    }
+  },
+  "banned-prose-chars": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "git commit -m 'fix: handle null\u2014user id'"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "bulk-resolve-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "for d in D1 D2; do glab api -X PUT 'projects/foo/merge_requests/1/discussions/'$d --field resolved=true; done"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "check-then-act-blocker": {
+    "env": {
+      "CHECK_THEN_ACT_ENFORCE": "1"
+    },
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "const found = await userRepository.findOne({ email });\nif (!found) {\n  await userRepository.save({ email });\n}\n",
+        "file_path": "/repo/src/services/user.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "comment-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "--[[ explain ]]\n",
+        "file_path": "/repo/lua/a.lua"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "concurrent-fanout-guard": {
+    "env": {
+      "CONCURRENT_FANOUT_ENFORCE": "1"
+    },
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "const outcomes = await Promise.allSettled(\n  userIds.map(async (id) => sendEmail(id)),\n);\n",
+        "file_path": "/repo/src/services/notify.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "config-protection": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "{}",
+        "file_path": "/repo/mypy.ini"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "console-log-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "console.log('hello');\n",
+        "file_path": "/repo/src/app.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "conventional-commits": {
+    "env": {},
+    "payload": {
+      "tool_input": {
+        "command": "git commit -m 'updated stuff'"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "dangerous-command-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "rm -rf /"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "dedup-store-guard": {
+    "env": {
+      "DEDUP_STORE_ENFORCE": "1"
+    },
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "const handledDeliveryIds: string[] = [];\nexport function onDelivery(id: string) {\n  if (handledDeliveryIds.includes(id)) return;\n  handledDeliveryIds.push(id);\n}\n",
+        "file_path": "/repo/src/webhooks/delivery.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "docker-context-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "docker context use staging"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "dockerfile-compose-quality": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "FROM alpine\nCOPY .env /app/\n",
+        "file_path": "/repo/api.Dockerfile"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "drizzle-raw-sql-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "await db.execute(sql`SELECT 1`);\n",
+        "file_path": "/repo/src/services/account.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "drizzle-schema-sync": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "pnpm exec drizzle-kit push --config drizzle.config.ts"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "env-file-guard": {
+    "env": {},
+    "payload": {
+      "tool_input": {
+        "file_path": "/project/.env"
+      },
+      "tool_name": "Edit"
+    }
+  },
+  "found-fix-rationalization-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "git commit -m \"fix - Not blocking the run\""
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "gcloud-config-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gcloud config set project foo"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "gh-run-watch-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gh run watch"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "gh-token-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gh pr list"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "git-author-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "git config user.name 'Tester'"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "glab-token-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "glab mr list"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "interactive-cmd-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "rm file.txt"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "internal-config-leakage": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "git commit --fixup rules/security.md"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "kubectl-context-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "kubectx -"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "migration-idempotency": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "CREATE ROLE reader;",
+        "file_path": "/repo/prisma/migrations/20261013000000_x/migration.sql"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "mise-global-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "mise use -g python@3.12"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "mock-internal-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "sinon.mock('./db');\n",
+        "file_path": "/repo/src/x.test.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "mutation-method-blocker": {
+    "env": {},
+    "payload": {
+      "tool_input": {
+        "file_path": "/repo/src/app.ts",
+        "new_string": "arr[0] = 1"
+      },
+      "tool_name": "Edit"
+    }
+  },
+  "normative-keyword-discipline": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "file_path": "/Users/anyone/.claude/CLAUDE.md",
+        "new_string": "- Should validate input."
+      },
+      "tool_name": "Edit"
+    }
+  },
+  "pr-comment-discipline": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gh pr comment 12 --body \"unbalanced"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "prisma-raw-sql-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "await db.$queryRaw`SELECT 1`;\n",
+        "file_path": "/repo/src/services/account.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "privacy-leakage-checks": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "document.cookie = \"uid=123\";",
+        "file_path": "/repo/src/track.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "python-mutation-guard": {
+    "env": {
+      "PYTHON_MUTATION_ENFORCE": "1"
+    },
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "def build(options=dict()):\n    return options\n",
+        "file_path": "/repo/app/services/build.py"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "redis-atomicity": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "await client.sadd('s', 'm');\nawait client.expire('s', 60);\n",
+        "file_path": "/repo/src/s.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "repo-fetch-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gh api /repos/o/r/contents/path/to/file.ts"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "review-state-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "ls && gh pr review 123 -r -b fix"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "sequelize-raw-sql-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "await sequelize.query('SELECT 1');\n",
+        "file_path": "/repo/src/services/account.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "sequelize-schema-sync": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "import { sequelize } from './db';\nawait sequelize.sync({ force: true });\n",
+        "file_path": "/repo/src/server.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "settings-hygiene": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "{\"path\": \"/Users/alice/work/repo\"}",
+        "file_path": "/repo/settings.json"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "subagent-brief-quality": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "prompt": "Hi"
+      },
+      "tool_name": "Agent"
+    }
+  },
+  "terraform-workspace-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "terraform workspace new prod"
+      },
+      "tool_name": "Bash"
+    }
+  },
+  "test-aaa-markers": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "@test \"a\" {\n  true\n}\n",
+        "file_path": "/repo/tests/a.bats"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "todo-marker-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "// todo: fix this\n",
+        "file_path": "/repo/src/app.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "transaction-scope-guard": {
+    "env": {
+      "TRANSACTION_SCOPE_ENFORCE": "1"
+    },
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "await prisma.$transaction(async (tx) => {\n  await tx.invite.create({ data });\n  await sendEmail(invite.email);\n});\n",
+        "file_path": "/repo/src/services/invite.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "typeorm-raw-sql-blocker": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "await queryRunner.query('SELECT 1');\n",
+        "file_path": "/repo/src/services/account.service.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "typeorm-schema-sync": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "content": "@Index()\nexport class X {}\n",
+        "file_path": "/repo/src/entities/x.entity.ts"
+      },
+      "tool_name": "Write"
+    }
+  },
+  "zsh-special-name-guard": {
+    "env": {
+      "SHELL": "/bin/zsh"
+    },
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "echo ==up"
+      },
+      "tool_name": "Bash"
+    }
+  }
+}

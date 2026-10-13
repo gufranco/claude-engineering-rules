@@ -331,8 +331,7 @@ def test_allows_a_bare_marker_in_test_file(tool_use, run_hook, marker):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_blocks_a_bare_marker_outside_a_test_file(tool_use, run_hook):
@@ -641,8 +640,7 @@ def test_allows_a_bare_marker_in_go_test_file(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_a_bare_marker_in_e2e_segment(tool_use, run_hook):
@@ -656,8 +654,7 @@ def test_allows_a_bare_marker_in_e2e_segment(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_ignores_read_tool(tool_use, run_hook):

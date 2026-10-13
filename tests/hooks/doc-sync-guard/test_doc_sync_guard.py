@@ -20,6 +20,7 @@ def _git(repo: Path, *args: str) -> None:
         check=True,
         capture_output=True,
         text=True,
+        timeout=30,
     )
 
 
@@ -630,7 +631,11 @@ class TestDegradedEnvironment:
 
         # Assert
         assert proc.returncode == 2
+        assert "could not read its input" in proc.stderr
 
+    @pytest.mark.skipif(
+        os.geteuid() == 0, reason="root reads files without permission bits"
+    )
     def test_allows_when_an_unreadable_doc_blocks_the_scan(
         self, repo: Path, tool_use, run_hook
     ) -> None:
@@ -653,6 +658,9 @@ class TestDegradedEnvironment:
         # Assert
         assert_allowed(result)
 
+    @pytest.mark.skipif(
+        os.geteuid() == 0, reason="root reads files without permission bits"
+    )
     def test_allows_when_the_example_file_is_unreadable(
         self, repo: Path, tool_use, run_hook
     ) -> None:

@@ -17,7 +17,10 @@ def test_blocks_kubectl_use_context(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `kubectl config use-context` mutates the active Kubernetes context for every",
+    )
 
 
 def test_blocks_kubectx_with_name(tool_use, run_hook):
@@ -28,7 +31,10 @@ def test_blocks_kubectx_with_name(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `kubectx <name>` calls `kubectl config use-context` and mutates the active",
+    )
 
 
 def test_blocks_kubectx_previous(tool_use, run_hook):
@@ -39,7 +45,10 @@ def test_blocks_kubectx_previous(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `kubectx <name>` calls `kubectl config use-context` and mutates the active",
+    )
 
 
 def test_allows_kubectx_list(tool_use, run_hook):
@@ -104,6 +113,7 @@ def test_invalid_json_stdin_blocks():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -118,3 +128,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

@@ -19,7 +19,7 @@ def test_date_setter_with_temporal_import_suggests_temporal(run_hook):
     # Assert
     assert code == 2
     assert "Temporal" in stderr
-    assert "Temporal.PlainDate" in stderr or ".with(" in stderr
+    assert "Temporal.PlainDate.from(d).with({ month: m })" in stderr
 
 
 def test_date_setter_without_temporal_suggests_date_fns(run_hook):
@@ -33,7 +33,7 @@ def test_date_setter_without_temporal_suggests_date_fns(run_hook):
     # Assert
     assert code == 2
     assert "date-fns" in stderr
-    assert "subMonths" in stderr or "addMonths" in stderr or "setMonth(d, m)" in stderr
+    assert "`subMonths(d, 1)`" in stderr
 
 
 def test_date_setter_with_native_temporal_use_suggests_temporal(run_hook):
@@ -164,7 +164,7 @@ def test_real_set_add_still_flagged_when_temporal_in_file(run_hook):
 
     # Assert
     assert code == 2
-    assert "set.add" in stderr.lower() or "collection.set.add" in stderr.lower()
+    assert "[collection.set.add]" in stderr
 
 
 def test_real_map_set_still_flagged_when_temporal_in_file(run_hook):
@@ -182,4 +182,4 @@ def test_real_map_set_still_flagged_when_temporal_in_file(run_hook):
 
     # Assert
     assert code == 2
-    assert "map.set" in stderr.lower() or "collection.map.set" in stderr.lower()
+    assert "[collection.map.set]" in stderr

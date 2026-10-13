@@ -21,12 +21,14 @@ COMMIT = "git commit -m 'fix: y'"
 
 
 def _repo_with(tmp_path: Path, files: dict[str, str]) -> Path:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, timeout=30)
     for name, body in files.items():
         target = tmp_path / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(body, encoding="utf-8")
-        subprocess.run(["git", "add", "-f", name], check=True, cwd=str(tmp_path))
+        subprocess.run(
+            ["git", "add", "-f", name], check=True, cwd=str(tmp_path), timeout=30
+        )
     return tmp_path
 
 

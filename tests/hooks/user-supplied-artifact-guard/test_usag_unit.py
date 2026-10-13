@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import io
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType
 
 import pytest
 from _helpers.raising import raising
@@ -14,26 +15,58 @@ from _helpers.raising import raising
 ROOT = Path(__file__).resolve().parents[3]
 HOOK_PATH = ROOT / "hooks" / "user-supplied-artifact-guard.py"
 sys.path.insert(0, str(ROOT / "hooks"))
+from _lib.bypass_writer import set_bypass  # noqa: E402
 from _lib.output import validate_block_message  # noqa: E402
+
+HOOK_NAME = "user-supplied-artifact-guard"
+CONTENT_SHA256 = "ed7002b439e9ac845f22357d822bac1444730fbdb6016d3ec9432297b9ec9f73"
+BYPASS_TTL_S = 120
+GIT_ENV = {
+    "GIT_AUTHOR_NAME": "t",
+    "GIT_AUTHOR_EMAIL": "t@t",
+    "GIT_COMMITTER_NAME": "t",
+    "GIT_COMMITTER_EMAIL": "t@t",
+}
 
 
 @pytest.fixture()
-def hook(monkeypatch: pytest.MonkeyPatch):
+def hook(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location("_usag_mod", str(HOOK_PATH))
-    module = importlib.util.module_from_spec(spec)
+    assert spec is not None
     assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     monkeypatch.delenv("USER_SUPPLIED_ARTIFACT_DISABLE", raising=False)
-    monkeypatch.delenv("CLAUDE_BYPASS_STATE", raising=False)
+    monkeypatch.delenv("CLAUDE_DISABLED_HOOKS", raising=False)
+    monkeypatch.setenv("CLAUDE_HOOK_AUDIT_DISABLE", "1")
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    monkeypatch.setattr("_lib.bypass.STATE_PATH", Path(os.devnull))
     return module
 
 
-def _stdin_with(payload: dict, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+@pytest.fixture()
+def git_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    repo = tmp_path / "repo"
+    subprocess.run(
+        ["git", "init", "-q", str(repo)],
+        check=True,
+        env={**os.environ, **GIT_ENV},
+        timeout=30,
+    )
+    monkeypatch.chdir(repo)
+    return repo
 
 
-def boom(*_args: object, **_kwargs: object) -> object:
-    raise OSError("simulated")
+def _stage(repo: Path, name: str, payload: bytes) -> None:
+    target = repo / name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(payload)
+    subprocess.run(["git", "add", "--", name], check=True, cwd=str(repo), timeout=30)
+
+
+def _stdin_with(payload: object, monkeypatch: pytest.MonkeyPatch) -> None:
+    raw = payload if isinstance(payload, str) else json.dumps(payload)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(raw))
 
 
 class VanishingPath(Path):
@@ -45,7 +78,9 @@ class VanishingPath(Path):
 
 
 def test_read_command_blocks_on_malformed_json(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
@@ -56,10 +91,13 @@ def test_read_command_blocks_on_malformed_json(
 
     # Assert
     assert exit_info.value.code == 2
+    assert f"{HOOK_NAME} could not read its input" in capsys.readouterr().err
 
 
 def test_read_command_blocks_on_non_dict_root(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("[1, 2, 3]"))
@@ -70,10 +108,13 @@ def test_read_command_blocks_on_non_dict_root(
 
     # Assert
     assert exit_info.value.code == 2
+    assert f"{HOOK_NAME} could not read its input" in capsys.readouterr().err
 
 
 def test_read_command_blocks_on_non_dict_tool_input(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": "scalar"}, monkeypatch)
@@ -84,10 +125,13 @@ def test_read_command_blocks_on_non_dict_tool_input(
 
     # Assert
     assert exit_info.value.code == 2
+    assert f"{HOOK_NAME} could not read its input" in capsys.readouterr().err
 
 
 def test_read_command_blocks_when_command_non_string(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": {"command": 42}}, monkeypatch)
@@ -98,6 +142,7 @@ def test_read_command_blocks_when_command_non_string(
 
     # Assert
     assert exit_info.value.code == 2
+    assert "tool_input.command is not a string" in capsys.readouterr().err
 
 
 def test_read_command_returns_string(hook, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -112,10 +157,12 @@ def test_read_command_returns_string(hook, monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_git_returns_empty_when_binary_missing(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setattr(hook.subprocess, "run", boom)
+    empty = tmp_path / "empty-bin"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", str(empty))
 
     # Act
     result = hook._git(["status"])
@@ -125,14 +172,10 @@ def test_git_returns_empty_when_binary_missing(
 
 
 def test_git_returns_empty_on_non_zero_returncode(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setattr(
-        hook.subprocess,
-        "run",
-        lambda *_a, **_k: SimpleNamespace(stdout="ignored\n", returncode=128),
-    )
+    monkeypatch.chdir(tmp_path)
 
     # Act
     result = hook._git(["diff", "--cached", "--name-only"])
@@ -231,29 +274,32 @@ def test_explicit_add_paths_ignores_other_git_subcommands(hook) -> None:
     assert result == []
 
 
-def test_repo_root_falls_back_to_cwd(
-    hook, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_repo_root_falls_back_to_cwd_outside_a_repo(
+    hook: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "_git", lambda _args: [])
     monkeypatch.chdir(tmp_path)
 
     # Act
     result = hook._repo_root()
 
     # Assert
-    assert result == Path.cwd()
+    assert result.resolve() == tmp_path.resolve()
 
 
-def test_repo_root_uses_git_toplevel(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_repo_root_uses_git_toplevel_from_a_subdirectory(
+    hook: ModuleType, git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "_git", lambda _args: ["/repo/root"])
+    nested = git_repo / "packages" / "core"
+    nested.mkdir(parents=True)
+    monkeypatch.chdir(nested)
 
     # Act
     result = hook._repo_root()
 
     # Assert
-    assert result == Path("/repo/root")
+    assert result.resolve() == git_repo.resolve()
 
 
 def test_manifest_claims_reads_digests_and_sizes(hook, tmp_path: Path) -> None:
@@ -334,7 +380,7 @@ def test_sha256_returns_none_for_unreadable_path(hook, tmp_path: Path) -> None:
     assert result is None
 
 
-def test_sha256_matches_hashlib(hook, tmp_path: Path) -> None:
+def test_sha256_returns_the_known_digest(hook: ModuleType, tmp_path: Path) -> None:
     # Arrange
     target = tmp_path / "payload.bin"
     target.write_bytes(b"content")
@@ -343,7 +389,7 @@ def test_sha256_matches_hashlib(hook, tmp_path: Path) -> None:
     result = hook._sha256(target)
 
     # Assert
-    assert result == hashlib.sha256(b"content").hexdigest()
+    assert result == CONTENT_SHA256
 
 
 def test_classify_returns_none_for_missing_path(hook, tmp_path: Path) -> None:
@@ -365,22 +411,20 @@ def test_classify_flags_artifact_extension(hook, tmp_path: Path) -> None:
     result = hook._classify("game.gba", tmp_path, set(), set())
 
     # Assert
-    assert result is not None
-    assert ".gba" in result
+    assert result == ".gba is a user-supplied artifact extension"
 
 
 def test_classify_flags_manifest_digest(hook, tmp_path: Path) -> None:
     # Arrange
-    body = b"artifact"
+    body = b"content"
     (tmp_path / "blob.dat").write_bytes(body)
-    digest = hashlib.sha256(body).hexdigest()
+    digest = CONTENT_SHA256
 
     # Act
     result = hook._classify("blob.dat", tmp_path, {digest}, {len(body)})
 
     # Assert
-    assert result is not None
-    assert "manifest" in result
+    assert result == f"SHA-256 {digest[:12]} is declared in the artifacts manifest"
 
 
 def test_classify_ignores_size_match_with_different_content(
@@ -405,7 +449,7 @@ def test_classify_accepts_absolute_paths(hook, tmp_path: Path) -> None:
     result = hook._classify(str(target), tmp_path, set(), set())
 
     # Assert
-    assert result is not None
+    assert result == ".nds is a user-supplied artifact extension"
 
 
 def test_classify_resolves_paths_relative_to_the_working_directory(
@@ -421,7 +465,7 @@ def test_classify_resolves_paths_relative_to_the_working_directory(
     result = hook._classify("game.gba", tmp_path, set(), set())
 
     # Assert
-    assert result is not None
+    assert result == ".gba is a user-supplied artifact extension"
 
 
 def test_resolve_returns_none_for_missing_absolute_path(hook, tmp_path: Path) -> None:
@@ -449,80 +493,120 @@ def test_classify_survives_stat_failure_after_is_file(
 
 
 def test_git_returns_output_lines_inside_a_repo(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType, git_repo: Path
 ) -> None:
     # Arrange
-    monkeypatch.chdir(ROOT)
+    _stage(git_repo, "b.txt", b"b")
+    _stage(git_repo, "a.txt", b"a")
 
     # Act
-    result = hook._git(["rev-parse", "--show-toplevel"])
+    result = hook._git(["diff", "--cached", "--name-only"])
 
     # Assert
-    assert result == [str(ROOT)]
+    assert result == ["a.txt", "b.txt"]
 
 
 def test_audit_noop_when_record_unavailable(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
     monkeypatch.setattr(hook, "_audit_record", None)
 
     # Act
-    result = hook._audit("git commit -m x", [("game.gba", "reason")])
+    hook._audit("git commit -m x", [("game.gba", "reason")])
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == ""
 
 
-def test_audit_swallows_record_exception(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_reports_a_record_exception_on_stderr(
+    hook: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
     boom = raising(RuntimeError("audit explosion"))
     monkeypatch.setattr(hook, "_audit_record", boom)
 
     # Act
-    result = hook._audit("git commit -m x", [("game.gba", "reason")])
+    hook._audit("git commit -m x", [("game.gba", "reason")])
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == (
+        f"{HOOK_NAME}: audit log write failed: audit explosion\n"
+    )
 
 
-def test_main_env_disable_short_circuits(hook, monkeypatch: pytest.MonkeyPatch) -> None:
-    # Arrange
-    monkeypatch.setenv("USER_SUPPLIED_ARTIFACT_DISABLE", "1")
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    assert result == 0
+@pytest.fixture()
+def staged_rom(hook: ModuleType, git_repo: Path, faker) -> Path:
+    _stage(git_repo, "game.gba", faker.binary(length=64))
+    return git_repo
 
 
-def test_main_profile_gate_short_circuits(
-    hook, monkeypatch: pytest.MonkeyPatch
+def test_main_env_disable_allows_a_staged_artifact(
+    hook: ModuleType,
+    staged_rom: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "should_run", lambda _name: False)
+    monkeypatch.setenv("USER_SUPPLIED_ARTIFACT_DISABLE", "1")
+    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
 
     # Act
     result = hook.main()
 
     # Assert
     assert result == 0
+    assert capsys.readouterr().err == ""
 
 
-def test_main_file_bypass_short_circuits(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_profile_gate_allows_a_staged_artifact(
+    hook: ModuleType,
+    staged_rom: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "is_bypassed", lambda _name: True)
+    monkeypatch.setenv("CLAUDE_DISABLED_HOOKS", HOOK_NAME)
+    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
 
     # Act
     result = hook.main()
 
     # Assert
     assert result == 0
+    assert capsys.readouterr().err == ""
 
 
-def test_main_returns_zero_on_unrelated_command(
-    hook, monkeypatch: pytest.MonkeyPatch
+def test_main_file_bypass_allows_a_staged_artifact(
+    hook: ModuleType,
+    staged_rom: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Arrange
+    state = tmp_path / "bypass-state.json"
+    set_bypass(HOOK_NAME, ttl_seconds=BYPASS_TTL_S, state_path=state)
+    monkeypatch.setattr("_lib.bypass.STATE_PATH", state)
+    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
+
+    # Act
+    result = hook.main()
+
+    # Assert
+    assert result == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_main_ignores_an_unrelated_command_with_an_artifact_staged(
+    hook: ModuleType,
+    staged_rom: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": {"command": "ls -la"}}, monkeypatch)
@@ -532,76 +616,83 @@ def test_main_returns_zero_on_unrelated_command(
 
     # Assert
     assert result == 0
+    assert capsys.readouterr().err == ""
 
 
-def test_main_allows_when_nothing_staged(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_allows_a_commit_when_nothing_is_staged(
+    hook: ModuleType,
+    git_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
     _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
-    monkeypatch.setattr(hook, "_staged_files", lambda: [])
 
     # Act
     result = hook.main()
 
     # Assert
     assert result == 0
+    assert capsys.readouterr().err == ""
 
 
 def test_main_allows_when_no_candidate_is_an_artifact(
-    hook, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    hook: ModuleType,
+    git_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
-    (tmp_path / "notes.md").write_bytes(b"# notes\n")
-    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
-    monkeypatch.setattr(hook, "_staged_files", lambda: ["notes.md", "ghost.bin"])
-    monkeypatch.setattr(hook, "_repo_root", lambda: tmp_path)
+    _stage(git_repo, "notes.md", b"# notes\n")
+    _stdin_with(
+        {"tool_input": {"command": "git add ghost.bin && git commit -m x"}}, monkeypatch
+    )
 
     # Act
     result = hook.main()
 
     # Assert
     assert result == 0
+    assert capsys.readouterr().err == ""
 
 
 def test_main_deduplicates_repeated_candidates(
-    hook,
+    hook: ModuleType,
+    staged_rom: Path,
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Arrange
-    (tmp_path / "game.gba").write_bytes(b"rom")
     _stdin_with(
         {"tool_input": {"command": "git add game.gba && git commit -m x"}}, monkeypatch
     )
-    monkeypatch.setattr(hook, "_staged_files", lambda: ["game.gba"])
-    monkeypatch.setattr(hook, "_repo_root", lambda: tmp_path)
 
     # Act
     result = hook.main()
 
     # Assert
-    captured = capsys.readouterr()
+    stderr = capsys.readouterr().err
     assert result == 2
-    assert captured.err.count("game.gba:") == 1
-    assert "1 user-supplied artifact(s)" in captured.err
+    assert stderr.count("game.gba:") == 1
+    assert "1 user-supplied artifact(s)" in stderr
 
 
 def test_main_blocks_and_renders_canonical_message(
-    hook,
+    hook: ModuleType,
+    git_repo: Path,
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
+    faker,
 ) -> None:
     # Arrange
-    (tmp_path / "game.z64").write_bytes(b"rom")
+    _stage(git_repo, "game.z64", faker.binary(length=64))
     _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
-    monkeypatch.setattr(hook, "_staged_files", lambda: ["game.z64"])
-    monkeypatch.setattr(hook, "_repo_root", lambda: tmp_path)
 
     # Act
     result = hook.main()
 
     # Assert
-    captured = capsys.readouterr()
+    stderr = capsys.readouterr().err
     assert result == 2
-    assert validate_block_message(captured.err) == []
+    assert "game.z64: .z64 is a user-supplied artifact extension" in stderr
+    assert validate_block_message(stderr) == []

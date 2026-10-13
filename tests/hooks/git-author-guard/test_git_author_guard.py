@@ -17,7 +17,7 @@ def test_blocks_git_config_user_email_local(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: unscoped write to user.* defaults to --local.")
 
 
 def test_blocks_git_config_user_name_local(tool_use, run_hook):
@@ -28,7 +28,7 @@ def test_blocks_git_config_user_name_local(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: unscoped write to user.* defaults to --local.")
 
 
 def test_allows_git_config_get(tool_use, run_hook):
@@ -126,3 +126,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

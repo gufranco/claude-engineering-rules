@@ -35,6 +35,7 @@ class GitRepo:
             capture_output=True,
             text=True,
             env=isolated_git_env(),
+            timeout=30,
         )
         return completed.stdout
 

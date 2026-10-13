@@ -19,7 +19,10 @@ def test_a_configuration_flag_on_another_call_does_not_cover_config_set(
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `gcloud config set ...` without `--configuration=<name>` writes to the active",
+    )
 
 
 @pytest.mark.parametrize(
