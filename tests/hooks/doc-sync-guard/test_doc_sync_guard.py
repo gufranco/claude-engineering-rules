@@ -802,3 +802,45 @@ class TestBypass:
 
         # Assert
         assert_allowed(result)
+
+
+class TestCommandScope:
+    def test_a_commit_in_another_directory_is_checked_there(
+        self, repo: Path, tool_use, run_hook, tmp_path: Path
+    ) -> None:
+        # Arrange
+        (repo / ".env.example").write_text("EXISTING=placeholder\n", encoding="utf-8")
+        _commit_all(repo)
+        (repo / "app.js").write_text(
+            "const k = process.env.NEW_KEY;\n", encoding="utf-8"
+        )
+        _stage(repo, "app.js")
+        payload = tool_use(
+            "Bash", {"command": f"git -C {repo} commit -m 'feat: k'"}, cwd=str(tmp_path)
+        )
+
+        # Act
+        result = run_hook(HOOK, payload)
+
+        # Assert
+        assert_blocked(result, "NEW_KEY")
+
+    def test_commit_all_checks_unstaged_tracked_changes(
+        self, repo: Path, tool_use, run_hook
+    ) -> None:
+        # Arrange
+        (repo / ".env.example").write_text("EXISTING=placeholder\n", encoding="utf-8")
+        (repo / "app.js").write_text("const a = 1;\n", encoding="utf-8")
+        _commit_all(repo)
+        (repo / "app.js").write_text(
+            "const k = process.env.NEW_KEY;\n", encoding="utf-8"
+        )
+        payload = tool_use(
+            "Bash", {"command": "git commit -am 'feat: k'"}, cwd=str(repo)
+        )
+
+        # Act
+        result = run_hook(HOOK, payload)
+
+        # Assert
+        assert_blocked(result, "NEW_KEY")

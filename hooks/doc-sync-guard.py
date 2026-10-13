@@ -66,6 +66,7 @@ except ImportError:  # pragma: no cover
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.commit_scope import commits_all, repo_dir  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 GIT_TIMEOUT_SECONDS = 10
@@ -131,15 +132,15 @@ def _git(cwd: Path, *args: str) -> str | None:
     return proc.stdout
 
 
-def _staged_paths(cwd: Path) -> set[str]:
-    out = _git(cwd, "diff", "--cached", "--name-only")
+def _staged_paths(cwd: Path, base: str) -> set[str]:
+    out = _git(cwd, "diff", base, "--name-only")
     if out is None:
         return set()
     return {line.strip() for line in out.splitlines() if line.strip()}
 
 
-def _staged_diff(cwd: Path) -> str:
-    return _git(cwd, "diff", "--cached", "-U0") or ""
+def _staged_diff(cwd: Path, base: str) -> str:
+    return _git(cwd, "diff", base, "-U0") or ""
 
 
 def _code_hunks(diff: str) -> str:
@@ -207,7 +208,7 @@ def _env_example_names(cwd: Path, tracked: set[str]) -> tuple[str | None, set[st
             stripped = line.strip()
             if not stripped or stripped.startswith("#") or "=" not in stripped:
                 continue
-            names.add(stripped.split("=", 1)[0].strip().lstrip("export ").strip())
+            names.add(stripped.split("=", 1)[0].strip().removeprefix("export ").strip())
         return candidate, names
     return None, set()
 
@@ -240,17 +241,17 @@ def _script_names(cwd: Path, ref: str) -> set[str] | None:
     return {str(key) for key in scripts}
 
 
-def _collect_findings(cwd: Path) -> list[str]:
+def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
     tracked_all = _git(cwd, "ls-files")
     if tracked_all is None:
         return []
     tracked = {line.strip() for line in tracked_all.splitlines() if line.strip()}
 
-    staged = _staged_paths(cwd)
+    staged = _staged_paths(cwd, base)
     if not staged:
         return []
 
-    diff = _staged_diff(cwd)
+    diff = _staged_diff(cwd, base)
     if not diff:
         return []
 
@@ -319,11 +320,11 @@ def main() -> int:
     if not COMMIT_COMMAND.search(strip_git_global_options(command)):
         return 0
 
-    cwd = Path(data.get("cwd") or os.getcwd())
+    cwd = Path(repo_dir(command, str(data.get("cwd") or os.getcwd())))
     if not cwd.is_dir():
         return 0
 
-    findings = _collect_findings(cwd)
+    findings = _collect_findings(cwd, "HEAD" if commits_all(command) else "--cached")
     if not findings:
         return 0
 
