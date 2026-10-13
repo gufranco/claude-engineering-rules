@@ -44,7 +44,7 @@ This skill accepts optional arguments after `/assessment`:
 - No arguments: assess all changed files on the current branch compared to the base branch.
 - A file or directory path: assess those specific files.
 - `--scope <description>`: provide a description of what was implemented so the assessment can focus on relevant patterns.
-- `--focus <area>`: narrow the assessment to a specific concern: `security`, `resilience`, `api`, `data`, `ops`, `quality`, `tenancy`, `infra`, or `all` (default).
+- `--focus <area>`: narrow the assessment to a specific concern: `security`, `resilience`, `api`, `data`, `ops`, `quality`, `tenancy`, `infra`, `slop`, or `all` (default).
 - `--rationale`: when fixing gaps, collect the reasoning behind each change into a `DECISIONS.md` at the repo root. Useful for interview take-homes where reviewers need to follow your decision-making. The reasoning goes in that file, never in a source comment. This is the default way to explain a change.
 - `--comments`: same reasoning, written as inline comments above each change instead. Only for an external take-home whose reviewer expects annotated source. This deliberately violates [`../../rules/code-style.md`](../../rules/code-style.md) "Comments Policy", so it requires `COMMENT_BLOCKER_DISABLE=1` exported in the parent shell before the session starts. Without that export, [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks every write and the flag cannot work.
 
@@ -77,6 +77,7 @@ This skill accepts optional arguments after `/assessment`:
    - [`rules/pre-flight.md`](../../rules/pre-flight.md): verify interfaces before implementing fixes
    - [`rules/verification.md`](../../rules/verification.md): evidence-based verification for every claim, zero warnings
    - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for generated README and comments
+   - [`rules/anti-slop.md`](../../rules/anti-slop.md) and [`standards/anti-slop.md`](../../standards/anti-slop.md): the slop tells step 5 scans for and the fix order step 10 uses
    - [`rules/git-workflow.md`](../../rules/git-workflow.md): commit format during fix phase
    - [`rules/security.md`](../../rules/security.md): security criteria beyond the checklist categories, OAuth 2.1, passkeys, NIST 800-63B, secrets management, supply chain
    - [`rules/code-style.md`](../../rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x patterns
@@ -124,6 +125,7 @@ This skill accepts optional arguments after `/assessment`:
 
      An outdated runtime is a MEDIUM finding. A runtime past end-of-life is HIGH. Missing version manager config is MEDIUM.
    - **Dependency audit and update**: run the package manager's audit command, `pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc.. Record any known vulnerabilities by severity. Then check for outdated dependencies, `pnpm outdated`, `npm outdated`, `pip list --outdated`, etc.. **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest`, or equivalent and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
+   - **AI slop scan**: run `python3 ~/.claude/tools/slop-scan.py <repo> --commits origin/<base>..HEAD`. It reuses the detectors of [`../../hooks/ai-slop-blocker.py`](../../hooks/ai-slop-blocker.py) over every Markdown file, skipping dependency and build directories, and over each commit message in the range. Exit 0 is clean, 1 lists findings, 2 is a scan error and counts as a failed check. Add `--json` to parse the rows. Record each finding by code.
    - **Output verification**: if the requirements include example inputs, expected outputs, or acceptance criteria, actually run the code with those inputs and verify the results match. Reading the code and believing it works is not proof.
 
    Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Low test coverage, below 95%, is MEDIUM.
@@ -196,6 +198,7 @@ This skill accepts optional arguments after `/assessment`:
    - `mobile`: categories 7, 33, 41. Standard: `mobile-development.md`
    - `i18n`: category 7, plus 59, time zones and 61, locale edge cases when applicable. Standards: `i18n-l10n.md`, `i18n-regional-variants.md`
    - `docs`: category 14. Standard: `documentation-generation.md`, `documentation.md`
+   - `slop`: category 14 plus the AI slop item in step 8. Standards: `anti-slop.md`, `writing-precision.md`
    - `frontend`: categories 7, 52, 54, 62. Standards: `frontend.md`, `accessibility-testing.md`, `browser-testing.md`, `performance-budgets.md`
    - `auth`: category 33. Standard: `authentication.md`
    - `deploy`: categories 51, 55. Standards: `zero-downtime-deployments.md`, `infrastructure.md`
@@ -249,6 +252,13 @@ This skill accepts optional arguments after `/assessment`:
    In addition to the 71 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
+
+   - **AI slop.** A reviewer who meets generated filler in the README stops trusting the code behind it. Grade the step 5 scan, then read every README, doc and source comment for the shapes no detector decides: sections of uniform length, lists of exactly three, headings such as "Key Features" or "Future Work" with nothing under them, bold-label bullets standing in for sentences, and comments that restate the next line. Severity:
+     - Search narration, chat residue or an unfilled placeholder in the README or the PR description is HIGH.
+     - Any other tell in the README is MEDIUM.
+     - A tell in another document or a commit message is LOW.
+     - A prose comment in source is the comment-policy finding from [`../../rules/code-style.md`](../../rules/code-style.md), graded there.
+     Never run or cite an AI-text detector score as evidence, per [`../../standards/anti-slop.md`](../../standards/anti-slop.md).
 
    - **Git history quality.** For interview submissions, commit history signals engineering discipline. Check: are commits logical and atomic, one concern per commit? Do messages follow conventional commit format? Is there a meaningful progression, infrastructure first, then core logic, then tests, then polish? A single "initial commit" with everything is a MEDIUM finding. Messy or meaningless commit messages are LOW.
 
@@ -336,6 +346,14 @@ This skill accepts optional arguments after `/assessment`:
 
    **Mock policy, STRICT.** Tests must connect to real infrastructure. If the code talks to a database, the test connects to a real database. If it uses Redis, the test uses a real Redis instance. Same for queues, caches, and any other data store. Add test dependencies to docker-compose with a `beforeAll()` hook to seed required data. Only external third-party APIs outside your control, time, and randomness may be mocked. Mocking your own database, services, or modules is a CRITICAL finding: the test may pass while the actual integration is broken, which is worse than no test at all. When fixing mock violations, replace the mock with a real connection, add the dependency to docker-compose if missing, and use `beforeAll()` / `afterAll()` for setup and teardown.
 
+   **Remove slop by deleting it.** Most slop is text that should not exist, so the fix is removal, in this order, each its own commit:
+
+   1. Delete prose comments in source, keeping tool directives and the bare test markers. Move any meaning a comment carried into a name, a smaller function, or a type.
+   2. Rebuild the README from the code: list the commands, flags, environment variables and setup steps that exist, one plain sentence each, then keep from the old README only what is still true and not already said. Step 12 writes the final version.
+   3. Fix the other documents by pattern: search narration, significance clauses, empty framing sections, bold-label bullets. Apply the deletion test to each paragraph.
+
+   Never rewrite pushed commit messages or merged PR descriptions to clean them.
+
    **For any fix involving transactions**, follow [`../../checklists/checklist.md`](../../checklists/checklist.md) category 19: explicit lock type, explicit isolation level, conditional expressions for NoSQL.
 
 **If `--rationale` was passed**, append one entry per significant change to `DECISIONS.md` at the repo root, each naming:
@@ -350,6 +368,7 @@ Rationale guidelines:
 - Only non-obvious decisions. Skip anything the code states plainly on its own.
 - Focus on the "why". The reader can already see the "what" in the diff.
 - Sound like a human engineer, not a generated template. Vary phrasing. No labels like "Pattern:" or "Reason:".
+- `DECISIONS.md` passes [`tools/slop-scan.py`](../../tools/slop-scan.py) with exit 0 before it is committed.
 - Never write this reasoning as a source comment unless `--comments` was passed. [`../../rules/code-style.md`](../../rules/code-style.md) "Comments Policy" bans prose comments, and [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks them.
 
    Example entry:
@@ -407,6 +426,7 @@ State in the assessment output that the branch carries explanatory comments and 
        - Did any fix leave dead code behind? Check for unused imports, orphaned functions, unreferenced variables, and stale exports after extractions or refactors.
        - Are all new tests following project conventions? such as faker for test data, three blocks opened by the bare `Arrange`, `Act`, `Assert` markers with no other comment, or no mocks for DB
        - Did the README, CI config, or other generated artifacts become stale due to the fixes?
+       - Does [`tools/slop-scan.py`](../../tools/slop-scan.py) still exit 0 on every Markdown file the fixes wrote, including the README and `DECISIONS.md`, and on the fix commits?
     4. **Classify new findings.** If there are new PARTIAL or MISSING findings, or new defects introduced by the fixes, collect them.
     5. **If no new findings:** break the loop. Convergence achieved.
     6. **If new findings exist:** fix them using the same priority order, CRITICAL → HIGH → MEDIUM, lower effort first. Each fix gets its own commit. Then return to sub-step 1.
@@ -554,6 +574,10 @@ The lines are observational, not blocking. They surface the timing pressure to t
 [Does it explain what the project does, how to set up, run, and test?]
 [Architecture decisions documented? Trade-offs discussed?]
 
+### AI Slop. Status: [PRESENT | PARTIAL | MISSING] [severity if not PRESENT]
+[slop-scan findings by code and file, plus the shapes found by reading]
+[PRESENT means the scan exits 0 and the read found nothing]
+
 ### Git History. Status: [PRESENT | PARTIAL | MISSING] [severity if not PRESENT]
 [Are commits logical, atomic, and well-messaged?]
 [Is there a meaningful progression?]
@@ -629,6 +653,7 @@ The steps above define **what** to do. These rules define **constraints** on how
 - Every MISSING finding has a code example, and every non-PRESENT finding has a severity, an effort, a Conventional Comments label, and a cited standard or rule.
 - After a fix pass, the last convergence iteration reports no new findings, and lint, typecheck, build, and tests each exit 0.
 - Each fix is its own commit, visible in `git log --oneline origin/<base>..HEAD`.
+- After the fix pass, `python3 ~/.claude/tools/slop-scan.py <repo>` exits 0, and so does `--commits <pre-fix-sha>..HEAD`, where `<pre-fix-sha>` is the HEAD recorded before step 10. Earlier commits are graded, never rewritten.
 - For `harness` and `skills`, `git status` in `~/.claude/` shows no change made by the run.
 
 ## Harness Audit (`/assessment harness`)
