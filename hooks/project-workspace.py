@@ -35,6 +35,11 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
+from _lib.shell_segments import (  # noqa: E402
+    CODE_INTERPRETERS,
+    DATA_SINKS,
+    strip_data_heredoc_bodies,
+)
 from _lib import project_workspace as pw  # noqa: E402
 from _lib.audit_log import record as _audit  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -44,7 +49,8 @@ from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 HOOK_NAME = "project-workspace"
 ADD_COMMANDS = frozenset({"add", "stage"})
 GIT_OPTIONS_WITH_VALUE = frozenset(OPTIONS_WITH_SEPARATE_VALUE)
-SEGMENT_BREAK = re.compile(r"^[;&|]+$")
+SEGMENT_BREAK = re.compile(r"^[;&|()]+$")
+COMMAND_PREFIXES = frozenset({"command", "builtin", "exec", "nohup"})
 ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 GLOB_CHARS = re.compile(r"[*?\[]")
 UNPARSEABLE_FORCED_ADD = re.compile(
@@ -122,7 +128,7 @@ def _split_git_prefix(tokens: list[str], cwd: Path) -> tuple[Path, list[str]] | 
 
 def _first_command_index(tokens: list[str]) -> int:
     for index, token in enumerate(tokens):
-        if not ENV_ASSIGNMENT.match(token):
+        if not ENV_ASSIGNMENT.match(token) and token not in COMMAND_PREFIXES:
             return index
     return len(tokens)
 
@@ -260,7 +266,8 @@ def _command(data: dict[str, object]) -> str:
     tool_input = data.get("tool_input")
     if not isinstance(tool_input, dict):
         return ""
-    return str(tool_input.get("command") or "")
+    command = str(tool_input.get("command") or "")
+    return strip_data_heredoc_bodies(command, DATA_SINKS | CODE_INTERPRETERS)
 
 
 def _prompt_reason(paths: list[str]) -> str:
