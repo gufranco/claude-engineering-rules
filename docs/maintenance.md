@@ -11,17 +11,17 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 - [ ] Update all MCP server packages: `npx -y <package>@latest` for each entry in [`settings.json`](../settings.json)
 - [ ] Check for new Claude Code releases: `claude --version`
 - [ ] Review [`standards/`](../standards) files for outdated version references such as Node.js LTS, Python, Go, or Rust
-- [ ] Run `python3 scripts/validate-checklist-counts.py` and fix any count mismatches in README.md and CLAUDE.md
+- [ ] Run `python3 .github/scripts/validate-checklist-counts.py` and fix any count mismatches in README.md and CLAUDE.md
 
 ### Hook health
 
-- [ ] Run `bash scripts/mcp-health-check.sh`, fix any FAIL entries
-- [ ] Run `bash scripts/hook-benchmark.sh`, investigate any hook exceeding 500ms
+- [ ] Run `bash .github/scripts/mcp-health-check.sh`, fix any FAIL entries. It launches each stdio server in `~/.claude/settings.json` for up to 3 seconds: PASS when the process stays up or exits 0, FAIL on a non-zero exit, SKIP when the command is not installed. Remote HTTP servers have no command and always show as SKIP. It proves the process starts, not that it answers MCP requests
+- [ ] Run `bash .github/scripts/hook-benchmark.sh`, investigate any hook exceeding 500ms
 - [ ] Verify all hooks in [`settings.json`](../settings.json) reference files that still exist in [`hooks/`](../hooks)
 
 ### Memory hygiene
 
-- [ ] Run `python3 scripts/stale-memory-detector.py`, review all WARN entries
+- [ ] Run `python3 .github/scripts/stale-memory-detector.py`, review all WARN entries
 - [ ] Delete or update memory files flagged as nearly empty or referencing non-existent paths
 - [ ] Archive memory files older than 180 days if content is no longer relevant
 

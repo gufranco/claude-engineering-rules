@@ -13,3 +13,7 @@ Complexity is the primary cost axis of every design decision. Name the symptom a
 - On conflict: the 30-line function limit, the no-comments policy, surgical edits, and YAGNI win
 
 Full rule, examples, and rationale: [`standards/design-philosophy.md`](../standards/design-philosophy.md). Read it before a design review, a module consolidation, or naming red flags in someone's code.
+
+## Provenance
+
+Added 2026-05-22, recurrence not recorded. Origin: not recorded at creation.

@@ -8,3 +8,7 @@ GDPR-grade by default everywhere, for any task that touches personal data.
 - Never put personal data in logs, URLs, error messages, or non-production data; pseudonymous data is personal.
 
 Full rule, examples, and rationale: [`standards/privacy-defaults.md`](../standards/privacy-defaults.md). Read it before collecting, storing, or displaying personal data.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

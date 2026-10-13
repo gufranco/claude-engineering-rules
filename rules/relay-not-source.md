@@ -12,3 +12,7 @@ A report from a subagent, search tool, summary, memory, or other intermediary is
 - Brief subagents to return `file:line`, verbatim quotes marked as such, read versus concluded kept separate, and unconfirmed coordinates flagged.
 
 Full rule, examples, and rationale: [`standards/relay-not-source.md`](../standards/relay-not-source.md). Read it before publishing findings a subagent or search tool reported.
+
+## Provenance
+
+Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition. Origin: relayed timestamps and identifiers pointed at neighboring records, each producing a citation that was well-formed, specific, and wrong. Full account in [`standards/relay-not-source.md`](../standards/relay-not-source.md).

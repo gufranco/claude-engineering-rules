@@ -12,3 +12,7 @@ Never silently overwrite a memory; the prior version is history.
 - Max chain depth 5. With a vault configured, the chain lives in the note's `timeline:`.
 
 Full rule, examples, and rationale: [`standards/memory-supersede.md`](../standards/memory-supersede.md). Read it before updating any memory.
+
+## Provenance
+
+Added 2026-05-03, recurrence not recorded. Origin: not recorded at creation.

@@ -26,3 +26,7 @@ Full rule, examples, and rationale: [`standards/security.md`](../standards/secur
 Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
 Enforced by: [`hooks/env-file-guard.py`](../hooks/env-file-guard.py).
 Enforced by: [`hooks/secret-scanner.py`](../hooks/secret-scanner.py).
+
+## Provenance
+
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.

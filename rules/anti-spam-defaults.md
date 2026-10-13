@@ -8,3 +8,7 @@ Applies to any email, SMS, push, or in-app message, marketing or transactional.
 - Promotion beyond a small footer turns a transactional email into marketing.
 
 Full rule, examples, and rationale: [`standards/anti-spam-defaults.md`](../standards/anti-spam-defaults.md). Read it before building any outbound messaging.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

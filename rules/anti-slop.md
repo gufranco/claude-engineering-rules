@@ -40,3 +40,7 @@ Full rule, examples, and rationale: [`standards/anti-slop.md`](../standards/anti
 Enforced by: [`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py).
 Enforced by: [`../hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 Enforced by: [`../hooks/banned-prose-chars.py`](../hooks/banned-prose-chars.py).
+
+## Provenance
+
+Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition. Origin: the phrase blocklist was measured against the WikiProject AI Cleanup tell catalogue and covered vocabulary only, leaving structural tells such as negative parallelism and significance inflation unenforced. Full account in [`standards/anti-slop.md`](../standards/anti-slop.md).

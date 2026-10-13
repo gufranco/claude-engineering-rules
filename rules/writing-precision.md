@@ -22,3 +22,7 @@ Full rule, examples, and rationale: [`standards/writing-precision.md`](../standa
 Enforced by: [`hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py).
 Enforced by: [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 Enforced by: [`hooks/banned-prose-chars.py`](../hooks/banned-prose-chars.py).
+
+## Provenance
+
+Added 2026-03-10, recurrence not recorded. Origin: not recorded at creation.

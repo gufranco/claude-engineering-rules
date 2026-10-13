@@ -8,3 +8,7 @@ Every non-trivial change, meaning 3 or more files or changed behavior, updates t
 - When a decision pivots mid-change, update every invalidated plan, decision record, and delta in the same session.
 
 Full rule, examples, and rationale: [`standards/living-specs.md`](../standards/living-specs.md). Read it before writing a spec delta or archiving a change.
+
+## Provenance
+
+Added 2026-07-10, recurrence not recorded. Origin: not recorded at creation.

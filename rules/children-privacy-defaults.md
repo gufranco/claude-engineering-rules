@@ -8,3 +8,7 @@ Applies when a product targets, attracts, or may be used by anyone under 18.
 - Prefer behavioral age estimation over ID upload.
 
 Full rule, examples, and rationale: [`standards/children-privacy-defaults.md`](../standards/children-privacy-defaults.md). Read it before building sign-up, age gates, or social features.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

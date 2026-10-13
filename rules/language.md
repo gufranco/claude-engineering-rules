@@ -12,3 +12,7 @@ Full rule, examples, and rationale: [`standards/language.md`](../standards/langu
 ## Enforcement
 
 Enforced by: [`hooks/english-only-reminder.py`](../hooks/english-only-reminder.py).
+
+## Provenance
+
+Added 2026-03-09, recurrence not recorded. Origin: not recorded at creation.

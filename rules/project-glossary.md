@@ -7,3 +7,7 @@ Applies when `GLOSSARY.md` or `GLOSSARY-INDEX.md` exists at the project root, or
 - Create it lazily on the first real term; add the index when a second context appears.
 
 Full rule, examples, and rationale: [`standards/project-glossary.md`](../standards/project-glossary.md). Read it before creating or editing a glossary.
+
+## Provenance
+
+Added 2026-05-31, recurrence not recorded. Origin: not recorded at creation.

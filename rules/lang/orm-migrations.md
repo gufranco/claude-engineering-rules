@@ -21,3 +21,7 @@ Enforced by: [`hooks/sequelize-raw-sql-blocker.py`](../../hooks/sequelize-raw-sq
 Enforced by: [`hooks/sequelize-schema-sync.py`](../../hooks/sequelize-schema-sync.py).
 Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../../hooks/typeorm-raw-sql-blocker.py).
 Enforced by: [`hooks/typeorm-schema-sync.py`](../../hooks/typeorm-schema-sync.py).
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

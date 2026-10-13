@@ -8,3 +8,7 @@ Applies to any flow that sells, subscribes, or forms a contract with a user.
 - Seller legal name, contact, and complaint channel visible from every page.
 
 Full rule, examples, and rationale: [`standards/consumer-defaults.md`](../standards/consumer-defaults.md). Read it before building checkout, pricing, or subscription flows.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

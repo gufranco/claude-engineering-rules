@@ -10,3 +10,7 @@ Always loaded for UI work: [accessibility](../standards/accessibility-defaults.m
 Loaded on keyword match: [children](../standards/children-privacy-defaults.md), [AI](../standards/ai-compliance-defaults.md), [anti-spam](../standards/anti-spam-defaults.md), [sectoral](../standards/sectoral-compliance.md), [topical](../standards/topical-compliance.md).
 
 Full rule, locked targets, and rationale: [`standards/compliance-defaults.md`](../standards/compliance-defaults.md). Read it before any UI task that touches a compliance domain or a locked target.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

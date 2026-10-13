@@ -15,7 +15,7 @@
 
 </div>
 
-**41** always-on rules · **139** on-demand standards · **42** slash-command skills · **86** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **86** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -30,7 +30,7 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-41 universal rules ship with every conversation. 139 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 139.
+45 universal rules ship with every conversation. 139 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 139.
 
 </td>
 </tr>
@@ -85,11 +85,11 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-45 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). 41 of the rules load into every conversation as short cores, and the four listed after the table load on demand. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
+45 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the four listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
 
 | Rule | What it covers |
 |:-----|:---------------|
-| [`architecture-defaults`](rules/architecture-defaults.md) | Five-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
+| [`architecture-defaults`](rules/architecture-defaults.md) | Six-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
 | [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule, platform-first API selection, no-comments policy |
 | [`design-philosophy`](rules/design-philosophy.md) | Complexity manifestations and root causes, deep modules, strategic vs tactical, design it twice, red flags, design taste |
 | [`testing`](rules/testing.md) | Integration-first, strict mock policy, unlabeled Arrange-Act-Assert test structure, expected values from an independent source rather than a recomputation of the code, fake data, deterministic tests |
@@ -133,7 +133,7 @@ A layered config where each layer catches what the layer above missed.
 
 Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
-Four more rules live in [`rules/`](rules/) but load on demand through [`rules/index.yml`](rules/index.yml) rather than on every turn: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
+Four more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
 
 ### Standards, loaded on demand
 
@@ -489,10 +489,10 @@ The hooks, rules, and skills activate automatically.
 
 ### Permissions
 
-- **76 deny rules** protect sensitive files: `.env` variants, SSH keys, AWS creds, GnuPG, `*.pem`, `*.key`, `*.tfstate`, `node_modules`
-- **21 allow rules** enable read-only operations without prompting: `git diff`, `git log`, `git status`, `pnpm run`, `npx`
+- **51 deny rules** block Read and Edit on sensitive files: `.env` variants, `secrets/`, SSH keys, AWS creds, GnuPG, kube and Docker config, `.npmrc`, `.pypirc`, `.netrc`, `*.pem`, `*.key`, `*.tfstate`, `*.tfvars`, plus Read on `node_modules`
+- **21 allow rules** skip the permission prompt. They include the unscoped `Read`, `Write`, `Edit`, `Bash`, `WebFetch`, `WebSearch`, `Skill`, and `NotebookEdit` tools, so the allow list is broad rather than read-only, plus scoped entries such as `git diff`, `git log`, `git status`, `pnpm run`, `npm run`, and `npx`. Deny rules still win over these allows, and the hooks are the layer that blocks destructive commands
 
-The `env-file-guard.py` hook adds a runtime layer that catches anything permissions miss.
+The `env-file-guard.py` hook adds a runtime block on Write and Edit to the same file classes at any path, plus `credentials/` directories, `.pgpass`, and `service-account*.json`. It does not cover Read or Bash, so a secret file outside the deny globs is still readable.
 
 <details>
 <summary><strong>Project structure</strong></summary>

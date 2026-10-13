@@ -18,3 +18,7 @@ Full rule, examples, and rationale: [`standards/pre-flight.md`](../standards/pre
 ## Enforcement
 
 Enforced by: [`hooks/scope-guard.py`](../hooks/scope-guard.py).
+
+## Provenance
+
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.

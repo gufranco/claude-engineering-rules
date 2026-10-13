@@ -15,3 +15,7 @@ Full rule and rationale: [`standards/doc-truth.md`](../standards/doc-truth.md). 
 ## Enforcement
 
 Enforced by: [`hooks/doc-sync-guard.py`](../hooks/doc-sync-guard.py).
+
+## Provenance
+
+Added 2026-08-17, recurrence not recorded. Origin: not recorded at creation.
