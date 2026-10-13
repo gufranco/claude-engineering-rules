@@ -112,14 +112,83 @@ def test_allows_safe_git_status(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_allows_protected_push_when_env_bypass_inline(tool_use, run_hook):
+@pytest.fixture
+def team_repo(tmp_path):
+    repo = tmp_path / "team-repo"
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    return repo
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "ALLOW_PROTECTED_BRANCH_PUSH=1 git push origin main",
+        "echo ALLOW_PROTECTED_BRANCH_PUSH=1; git push origin main",
+    ],
+)
+def test_an_inline_bypass_token_does_not_unlock_a_protected_push(
+    tool_use, run_hook, team_repo, command
+):
     # Arrange
-    payload = tool_use(
-        "Bash",
-        {
-            "command": "ALLOW_PROTECTED_BRANCH_PUSH=1 git push origin main",
-        },
-    )
+    payload = tool_use("Bash", {"command": f"cd {team_repo} && {command}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Direct push to protected branch")
+
+
+def test_a_parent_shell_bypass_unlocks_a_protected_push(tool_use, run_hook, team_repo):
+    # Arrange
+    payload = tool_use("Bash", {"command": f"cd {team_repo} && git push origin main"})
+
+    # Act
+    result = run_hook(HOOK, payload, env={"ALLOW_PROTECTED_BRANCH_PUSH": "1"})
+
+    # Assert
+    assert_allowed(result)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push --force-with-lease origin main",
+        "git push --force-with-lease=main origin main",
+        "git push --force-if-includes --force-with-lease origin develop",
+    ],
+)
+def test_a_lease_push_to_a_protected_branch_is_blocked(
+    tool_use, run_hook, team_repo, command
+):
+    # Arrange
+    payload = tool_use("Bash", {"command": f"cd {team_repo} && {command}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Direct push to protected branch")
+
+
+@pytest.mark.parametrize(
+    "target",
+    ["~", "~/", "~/*", "$HOME", "${HOME}", '"$HOME"', '"${HOME}"', "$HOME/"],
+)
+def test_deleting_the_home_directory_is_catastrophic(tool_use, run_hook, target):
+    # Arrange
+    payload = tool_use("Bash", {"command": f"rm -rf {target}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "recursive delete of the home directory")
+
+
+def test_deleting_a_path_under_home_is_not_catastrophic(tool_use, run_hook):
+    # Arrange
+    payload = tool_use("Bash", {"command": "rm -rf ~/projects/app/tmp-output"})
 
     # Act
     result = run_hook(HOOK, payload)
@@ -137,17 +206,6 @@ def test_allows_empty_command(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
-
-
-def _load_module():
-    import importlib.util as _util
-    from pathlib import Path as _Path
-
-    hook = _Path.home() / ".claude" / "hooks" / "dangerous-command-blocker.py"
-    spec = _util.spec_from_file_location("_dcb_mod", str(hook))
-    module = _util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def _with_allowlist(monkeypatch, tmp_path, body: str):

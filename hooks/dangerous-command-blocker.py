@@ -25,6 +25,8 @@ Exit 0 = allow, exit 2 = block.
 Cross-platform: works on macOS and Linux (Ubuntu).
 """
 
+from __future__ import annotations
+
 import fnmatch
 import json
 import os
@@ -78,6 +80,10 @@ CATASTROPHIC: list[tuple[str, str]] = [
     (r"\bdd\s+.*\bof=/dev/[sh]d", "dd to a disk device"),
     (r"\bdd\s+.*\bof=/dev/nvme", "dd to an NVMe device"),
     (r"\bsudo\s+dd\s+.*\bof=/dev/", "privileged dd to any device"),
+    (
+        r"\brm\s[^;&|\n]*?(?<=\s)(?:~|\"?\$(?:HOME|\{HOME\})\"?)/?\*?(?=$|[\s;&|])",
+        "recursive delete of the home directory",
+    ),
     (r"\bmkfs\b", "format filesystem"),
     (r"\bsudo\s+mkfs\b", "privileged format filesystem"),
     (r":\(\)\s*\{\s*:\|:\s*&\s*\}\s*;", "fork bomb"),
@@ -650,7 +656,7 @@ def main():
             )
             break
 
-    if re.search(r"\bgit\s+push\b", matched) and not re.search(r"--force", matched):
+    if re.search(r"\bgit\s+push\b", matched):
         push_cwd = _push_cwd(command)
         command_cwd = push_cwd or ""
         try:
@@ -683,8 +689,7 @@ def main():
                     command=command[:300],
                 )
                 sys.exit(0)
-            inline_bypass = re.search(r"\bALLOW_PROTECTED_BRANCH_PUSH=1\b", command)
-            if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1" or inline_bypass:
+            if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1":
                 _audit(
                     hook="dangerous-command-blocker",
                     decision="bypass",
@@ -708,7 +713,7 @@ def main():
                     "Use a feature branch and create a PR instead.\n"
                     "Solo repo with no PR workflow? Add it to ~/.claude/solo-repos.txt "
                     "once instead of bypassing on every push.\n"
-                    "Bypass (one-off): ALLOW_PROTECTED_BRANCH_PUSH=1.\n"
+                    "Bypass (one-off): export ALLOW_PROTECTED_BRANCH_PUSH=1 in the parent shell.\n"
                     f"Command: {command}",
                     file=sys.stderr,
                 )
