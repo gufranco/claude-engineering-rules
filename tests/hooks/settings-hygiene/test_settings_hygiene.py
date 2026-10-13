@@ -184,7 +184,7 @@ def test_disable_env_bypasses(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "settings-hygiene.py"
     env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
@@ -201,7 +201,7 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_no_file_path_is_allowed(tool_use, run_hook):

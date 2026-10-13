@@ -27,7 +27,6 @@ Bypass: set REVIEW_STATE_GUARD_DISABLE=1 in the environment.
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -79,6 +78,7 @@ DELETE_REVIEW_ALT = re.compile(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def detect_violation(command: str) -> tuple[str, str] | None:
@@ -130,10 +130,7 @@ def main() -> None:
     if is_bypassed("review-state-guard"):
         sys.exit(0)
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("review-state-guard")
 
     tool_input = data.get("tool_input", data.get("input", {}))
     command = tool_input.get("command", "")

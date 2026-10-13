@@ -65,6 +65,7 @@ except ImportError:  # pragma: no cover
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 GIT_TIMEOUT_SECONDS = 10
@@ -306,10 +307,7 @@ def main() -> int:
     if not should_run("doc-sync-guard"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError, ValueError):
-        return 0
+    data = read_hook_payload("doc-sync-guard")
 
     if data.get("tool_name", "Bash") != "Bash":
         return 0

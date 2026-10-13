@@ -26,7 +26,6 @@ Exit 0 = allow, exit 2 = block.
 Bypass: set BULK_RESOLVE_DISABLE=1 in the environment.
 """
 
-import json
 import os
 import re
 import sys
@@ -67,6 +66,7 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def main() -> None:
@@ -77,10 +77,7 @@ def main() -> None:
     if is_bypassed("bulk-resolve-blocker"):
         sys.exit(0)
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("bulk-resolve-blocker")
 
     tool_input = data.get("tool_input", data.get("input", {}))
     command = tool_input.get("command", "")

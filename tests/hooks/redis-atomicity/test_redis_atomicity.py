@@ -303,7 +303,7 @@ def test_skips_unknown_tool(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, run_hook):
+def test_write_non_string_content_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write",
@@ -314,10 +314,10 @@ def test_write_non_string_content_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_edit_non_string_new_string_is_safe(tool_use, run_hook):
+def test_edit_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Edit",
@@ -332,10 +332,10 @@ def test_edit_non_string_new_string_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+def test_multiedit_non_dict_edits_block(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -349,10 +349,10 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_non_string_new_string_is_safe(tool_use, run_hook):
+def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -366,7 +366,7 @@ def test_multiedit_non_string_new_string_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_empty_file_path_is_safe(tool_use, run_hook):
@@ -526,7 +526,7 @@ def test_allows_lock_acquisition_with_options_object(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "redis-atomicity.py"
     env = dict(os.environ)
@@ -544,7 +544,7 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_profile_disable_short_circuits(tool_use, run_hook):

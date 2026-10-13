@@ -461,7 +461,7 @@ def test_registry_bypass_short_circuits(tool_use, run_hook, tmp_path):
     assert_allowed(result)
 
 
-def test_malformed_stdin_is_ignored():
+def test_malformed_stdin_blocks():
     # Arrange
     hook_path = REPO_ROOT / "hooks" / "ai-slop-blocker.py"
 
@@ -474,7 +474,7 @@ def test_malformed_stdin_is_ignored():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_nested_list_prose_is_still_scanned(tool_use, run_hook):
@@ -783,7 +783,7 @@ def test_payload_without_a_body_key_falls_back(tool_use, run_hook, tmp_path):
     assert_allowed(result)
 
 
-def test_non_string_command_is_ignored(tool_use, run_hook):
+def test_non_string_command_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use("Bash", {"command": 12})
 
@@ -791,7 +791,7 @@ def test_non_string_command_is_ignored(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 @pytest.mark.parametrize(

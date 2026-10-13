@@ -389,7 +389,7 @@ def test_unknown_tool_allows(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_payload_via_subprocess():
+def test_invalid_payload_via_subprocess_blocks():
     # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "privacy-leakage-checks.py"
@@ -406,7 +406,7 @@ def test_invalid_payload_via_subprocess():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_skips_non_scan_extensions(tool_use, run_hook):

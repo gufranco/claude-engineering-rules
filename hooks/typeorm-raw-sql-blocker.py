@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -21,6 +20,7 @@ PATTERN = re.compile(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 DOCUMENTATION_EXTENSIONS: tuple[str, ...] = (
@@ -110,10 +110,7 @@ def main() -> int:
     if is_bypassed("typeorm-raw-sql-blocker"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("typeorm-raw-sql-blocker")
 
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}

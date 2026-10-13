@@ -20,7 +20,6 @@ Receives Bash tool input as JSON on stdin.
 Exit 0 = allow, exit 2 = block.
 """
 
-import json
 import os
 import re
 import sys
@@ -44,6 +43,7 @@ except ImportError:  # pragma: no cover
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.session_lock import is_locked  # noqa: E402
 
 LOCK_NAME = "morning"
@@ -90,10 +90,7 @@ def main() -> int:
     if not should_run("pr-merge-blocker"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError, ValueError):
-        return 0
+    data = read_hook_payload("pr-merge-blocker")
 
     tool_input = data.get("tool_input", data.get("input", {})) or {}
     command = tool_input.get("command", "")

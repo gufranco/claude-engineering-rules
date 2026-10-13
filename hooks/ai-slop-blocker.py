@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -589,10 +590,7 @@ def main() -> int:
     if is_bypassed(HOOK_ID):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("ai-slop-blocker")
 
     tool = payload.get("tool_name", "")
     if tool in AGENT_TOOL_NAMES:

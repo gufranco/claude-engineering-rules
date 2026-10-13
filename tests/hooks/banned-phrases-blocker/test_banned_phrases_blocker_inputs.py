@@ -43,15 +43,11 @@ def test_an_empty_path_is_not_a_skipped_doc():
 @pytest.mark.parametrize(
     ("tool", "tool_input"),
     [
-        ("Write", {"file_path": DOC, "content": 7}),
         ("Edit", {"file_path": DOC, "new_string": None}),
-        ("MultiEdit", {"file_path": DOC, "edits": ["text", {"new_string": 3}]}),
         ("MultiEdit", {"file_path": DOC, "edits": None}),
     ],
 )
-def test_text_fields_that_are_not_strings_are_ignored(
-    tool, tool_input, tool_use, run_hook
-):
+def test_absent_text_fields_are_allowed(tool, tool_input, tool_use, run_hook):
     # Arrange
     payload = tool_use(tool, tool_input)
 
@@ -64,7 +60,7 @@ def test_text_fields_that_are_not_strings_are_ignored(
 
 def test_a_banned_phrase_in_one_multiedit_entry_blocks(tool_use, run_hook):
     # Arrange
-    edits = ["text", {"new_string": 3}, {"new_string": PHRASE}]
+    edits = [{"new_string": "one"}, {"new_string": "two"}, {"new_string": PHRASE}]
     payload = tool_use("MultiEdit", {"file_path": DOC, "edits": edits})
 
     # Act
@@ -98,7 +94,7 @@ def test_a_live_bypass_entry_allows(tmp_path, tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_a_payload_that_is_not_json_allows():
+def test_a_payload_that_is_not_json_blocks():
     # Arrange
     env = apply_coverage_env(dict(os.environ))
     env["CLAUDE_BYPASS_STATE"] = os.devnull
@@ -115,4 +111,22 @@ def test_a_payload_that_is_not_json_allows():
     )
 
     # Assert
-    assert (proc.returncode, proc.stderr) == (0, "")
+    assert (proc.returncode, "could not read its input" in proc.stderr) == (2, True)
+
+
+@pytest.mark.parametrize(
+    ("tool", "tool_input"),
+    [
+        ("Write", {"file_path": DOC, "content": 7}),
+        ("MultiEdit", {"file_path": DOC, "edits": ["text", {"new_string": 3}]}),
+    ],
+)
+def test_a_text_field_that_is_not_a_string_blocks(tool, tool_input, tool_use, run_hook):
+    # Arrange
+    payload = tool_use(tool, tool_input)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "could not read its input")

@@ -151,7 +151,7 @@ def test_missing_prompt_field_is_ignored(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_non_string_prompt_is_ignored(tool_use, run_hook):
+def test_non_string_prompt_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use("Agent", {"prompt": ["a", "b"]})
 
@@ -159,7 +159,7 @@ def test_non_string_prompt_is_ignored(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_disable_env_bypasses_block(tool_use, run_hook):
@@ -199,7 +199,7 @@ def test_block_message_includes_remediation_hint(tool_use, run_hook):
     assert "SUBAGENT_BRIEF_DISABLE=1" in stderr
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "subagent-brief-quality.py"
@@ -219,4 +219,4 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2

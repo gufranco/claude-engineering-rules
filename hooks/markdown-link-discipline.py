@@ -12,7 +12,6 @@ Bypass: set ``MARKDOWN_LINKS_DISABLE=1`` in the environment.
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -42,6 +41,7 @@ except ImportError:  # pragma: no cover
 MARKDOWN_EXTENSIONS = (".md", ".mdx")
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_markdown_path(path: str) -> bool:
@@ -116,10 +116,7 @@ def main() -> None:
     if is_bypassed("markdown-link-discipline"):
         sys.exit(0)
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("markdown-link-discipline")
 
     tool = data.get("tool_name", "")
     if tool not in {"Write", "Edit", "MultiEdit"}:

@@ -25,7 +25,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import re
 import os
 import sys
@@ -101,6 +100,7 @@ PROTECTED_PREFIXES = ("tsconfig.",)
 PROTECTED_TSCONFIG_SUFFIXES = (".json",)
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def _is_protected(path: str) -> bool:
@@ -155,10 +155,7 @@ def main() -> None:
         sys.exit(0)
     if is_bypassed("config-protection"):
         sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("config-protection")
 
     tool_input = data.get("tool_input", data.get("input", {}))
     file_path = tool_input.get("file_path") or tool_input.get("path") or ""

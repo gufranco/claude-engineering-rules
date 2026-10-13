@@ -22,10 +22,12 @@ case is migrating a pre-existing hand-written file into the vault.
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 GENERATED_MARKER = "generated_from"
 EXEMPT_BASENAMES = {"MEMORY.md"}
@@ -75,12 +77,7 @@ def main() -> int:
     if not _vault_configured():
         return 0
 
-    try:
-        event = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
-    if not isinstance(event, dict):
-        return 0
+    event = read_hook_payload("memory-write-guard")
 
     if event.get("tool_name") not in WATCHED_TOOLS:
         return 0

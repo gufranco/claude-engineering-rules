@@ -227,7 +227,7 @@ def test_disable_env_other_value_does_not_bypass(tool_use, run_hook):
     assert_blocked(result, "dataSource.query")
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "typeorm-raw-sql-blocker.py"
@@ -247,7 +247,7 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_invalid_json_via_run_hook(run_hook):
@@ -275,7 +275,7 @@ def test_empty_file_path_with_clean_content_is_allowed(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_write_with_non_string_content_is_safe(tool_use, run_hook):
+def test_write_with_non_string_content_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write",
@@ -286,10 +286,10 @@ def test_write_with_non_string_content_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_with_non_dict_items_is_safe(tool_use, run_hook):
+def test_multiedit_with_non_dict_items_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -303,10 +303,10 @@ def test_multiedit_with_non_dict_items_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_with_non_string_new_string_is_safe(tool_use, run_hook):
+def test_multiedit_with_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -320,7 +320,7 @@ def test_multiedit_with_non_string_new_string_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_unknown_tool_is_ignored(tool_use, run_hook):

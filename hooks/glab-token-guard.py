@@ -12,7 +12,6 @@ Exit 0 = allow, exit 2 = block.
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 
@@ -53,6 +52,7 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def main():
@@ -62,10 +62,7 @@ def main():
         return 0
     if not should_run("glab-token-guard"):
         sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("glab-token-guard")
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:
