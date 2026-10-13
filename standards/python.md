@@ -49,6 +49,7 @@ The Python equivalent of the TypeScript readonly rule:
 ```python
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True, slots=True)
 class Order:
     id: str
@@ -91,6 +92,7 @@ Pydantic models replace ad hoc dict shape checks at every system boundary: HTTP 
 ```python
 import pytest
 from faker import Faker
+
 
 @pytest.fixture
 def fake() -> Faker:
