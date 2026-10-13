@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 STATE_PATH = Path(
@@ -54,6 +54,13 @@ STATE_PATH = Path(
 )
 
 WILDCARD = "*"
+MAX_TTL_SECONDS = 3600
+WILDCARD_MAX_TTL_SECONDS = 1200
+CLOCK_TOLERANCE = timedelta(seconds=60)
+
+
+def ttl_ceiling(hook_name: str) -> int:
+    return WILDCARD_MAX_TTL_SECONDS if hook_name == WILDCARD else MAX_TTL_SECONDS
 
 
 def _now() -> datetime:
@@ -108,6 +115,7 @@ def is_bypassed(
         expires_at = _parse_expiry(entry.get("expires_at"))
         if expires_at is None:
             continue
-        if expires_at > current:
+        ceiling = current + timedelta(seconds=ttl_ceiling(str(target)))
+        if current < expires_at <= ceiling + CLOCK_TOLERANCE:
             return True
     return False

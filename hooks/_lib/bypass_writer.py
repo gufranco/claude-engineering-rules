@@ -26,12 +26,20 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .bypass import STATE_PATH, WILDCARD
+from .bypass import STATE_PATH, WILDCARD, ttl_ceiling
 
 DEFAULT_TTL_SECONDS = 600
 MIN_TTL_SECONDS = 60
-MAX_TTL_SECONDS = 3600
 WILDCARD_DEFAULT_TTL_SECONDS = 300
+
+
+def default_ttl(hook: str) -> int:
+    return WILDCARD_DEFAULT_TTL_SECONDS if hook == WILDCARD else DEFAULT_TTL_SECONDS
+
+
+def applied_ttl(hook: str, ttl_seconds: int | None) -> int:
+    requested = ttl_seconds if ttl_seconds is not None else default_ttl(hook)
+    return _clamp_ttl(int(requested), hook=hook)
 
 
 def _now() -> datetime:
@@ -41,12 +49,7 @@ def _now() -> datetime:
 def _clamp_ttl(ttl_seconds: int, *, hook: str) -> int:
     if ttl_seconds < MIN_TTL_SECONDS:
         return MIN_TTL_SECONDS
-    if hook == WILDCARD:
-        cap = min(MAX_TTL_SECONDS, WILDCARD_DEFAULT_TTL_SECONDS * 4)
-        return min(ttl_seconds, cap)
-    if ttl_seconds > MAX_TTL_SECONDS:
-        return MAX_TTL_SECONDS
-    return ttl_seconds
+    return min(ttl_seconds, ttl_ceiling(hook))
 
 
 def _load_state(path: Path) -> dict:
@@ -85,7 +88,7 @@ def _atomic_write(path: Path, payload: dict) -> None:
 def set_bypass(
     hook: str,
     *,
-    ttl_seconds: int = DEFAULT_TTL_SECONDS,
+    ttl_seconds: int | None = None,
     reason: str | None = None,
     state_path: Path | None = None,
     now: datetime | None = None,
@@ -95,7 +98,7 @@ def set_bypass(
         raise ValueError("hook name is required")
     path = state_path if state_path is not None else STATE_PATH
     current = now if now is not None else _now()
-    ttl = _clamp_ttl(int(ttl_seconds), hook=hook)
+    ttl = applied_ttl(hook, ttl_seconds)
     expires_at = current + timedelta(seconds=ttl)
     state = _load_state(path)
     state["bypasses"] = [

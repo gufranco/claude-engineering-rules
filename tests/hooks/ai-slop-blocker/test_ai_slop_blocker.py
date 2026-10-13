@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -442,7 +443,9 @@ def test_registry_bypass_short_circuits(tool_use, run_hook, tmp_path):
                 "bypasses": [
                     {
                         "hook": HOOK,
-                        "expires_at": "2999-01-01T00:00:00+00:00",
+                        "expires_at": (
+                            datetime.now(timezone.utc) + timedelta(minutes=10)
+                        ).isoformat(),
                         "reason": "test",
                     }
                 ],
