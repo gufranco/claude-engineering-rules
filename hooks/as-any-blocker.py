@@ -65,6 +65,7 @@ PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 )
 
 MAX_HITS_PER_FILE = 8
+ESLINT_RULES = frozenset({"@typescript-eslint/no-explicit-any"})
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
@@ -112,7 +113,7 @@ def find(text: str) -> list[str]:
     disable the hook out-of-band.
     """
     lines = text.splitlines()
-    block_state = compute_block_state(lines)
+    block_state = compute_block_state(lines, rules=ESLINT_RULES)
     hits: list[str] = []
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -122,7 +123,7 @@ def find(text: str) -> list[str]:
             or stripped.startswith("/*")
         ):
             continue
-        if is_suppressed(lines, i, block_state=block_state):
+        if is_suppressed(lines, i, block_state=block_state, rules=ESLINT_RULES):
             continue
         for pat, label in PATTERNS:
             m = pat.search(line)
@@ -186,7 +187,8 @@ def main() -> int:
         + "\n\nFix: replace `any` with `unknown` and narrow at the boundary, or define a "
         "proper type. For ORM queries use the generated types (Prisma.WhereInput, etc.). "
         "For payloads use Zod parsing.\n"
-        "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
+        "Third-party tool directives are honored: @ts-expect-error, and an "
+        "eslint-disable that names no rule or names @typescript-eslint/no-explicit-any.\n"
         "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1, "
         "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
         "set as-any-blocker`.",

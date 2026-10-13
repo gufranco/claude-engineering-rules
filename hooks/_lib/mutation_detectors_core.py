@@ -205,6 +205,10 @@ def mask_lines(text: str) -> list[str]:
     return "".join(out).splitlines()
 
 
+def mask_text(text: str) -> str:
+    return "\n".join(mask_lines(text))
+
+
 def window_around(
     lines: list[str], lineno: int, before: int = 2, after: int = 2
 ) -> str:

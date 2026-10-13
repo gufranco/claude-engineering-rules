@@ -47,9 +47,11 @@ Honored markers:
     # type: ignore                 (top-of-file when sole content of header)
     # ruff: noqa                   (top-of-file ruff file disable)
 Public API:
-    is_suppressed(lines, i, *, block_state=None) -> bool
+    is_suppressed(lines, i, *, block_state=None, rules=None) -> bool
     line_or_prev_has_suppression(lines, line_no) -> bool
-    compute_block_state(lines) -> BlockState
+    compute_block_state(lines, *, rules=None) -> BlockState
+An eslint directive that names rules is honored only when one of them is in
+`rules`; a directive naming no rule is honored for every caller.
     has_top_of_file_marker(lines, marker) -> bool
     has_inline_marker(line, marker) -> bool
     has_ts_nocheck_directive(lines) -> bool
@@ -61,12 +63,16 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-ESLINT_BLOCK_OPEN = re.compile(r"/\*\s*eslint-disable\s*\*/")
-ESLINT_BLOCK_CLOSE = re.compile(r"/\*\s*eslint-enable\s*\*/")
-ESLINT_LINE_OPEN = re.compile(r"//\s*eslint-disable\b(?!-(?:line|next-line))")
-ESLINT_LINE_CLOSE = re.compile(r"//\s*eslint-enable\b")
+ESLINT_DIRECTIVE = re.compile(
+    r"(?://|/\*)\s*eslint-(disable-next-line|disable-line|disable|enable)"
+    r"(?![\w-])([^\n]*)"
+)
+ESLINT_DIRECTIVE_END = re.compile(r"\*/|\s--(?:\s|$)")
+ESLINT_SAME_LINE = "disable-line"
+ESLINT_NEXT_LINE = "disable-next-line"
+ESLINT_RANGE_OPEN = "disable"
+ESLINT_RANGE_CLOSE = "enable"
 SAME_LINE_TOKENS = (
-    "eslint-disable-line",
     "@ts-expect-error",
     "@ts-ignore",
     "@ts-nocheck",
@@ -74,7 +80,6 @@ SAME_LINE_TOKENS = (
     "rome-ignore",
 )
 PRECEDING_LINE_TOKENS = (
-    "eslint-disable-next-line",
     "@ts-expect-error",
     "@ts-ignore",
     "biome-ignore",
@@ -92,6 +97,7 @@ PYTHON_FILE_DISABLE_PATTERNS = (
     re.compile(r"#\s*flake8\s*:\s*noqa"),
 )
 TOP_OF_FILE_SCAN_LIMIT = 10
+RESTRICTED_SYNTAX_RULES = frozenset({"no-restricted-syntax"})
 
 
 @dataclass
@@ -101,39 +107,48 @@ class BlockState:
     disabled_lines: frozenset[int] = field(default_factory=frozenset)
 
 
-def compute_block_state(lines: list[str]) -> BlockState:
-    """Scan once and record indices inside any eslint-disable block.
-    Indices are zero-based, matching `lines[i]` access. Ranges include the
-    opening line and exclude the closing line per ESLint convention.
-    """
+def compute_block_state(
+    lines: list[str], *, rules: frozenset[str] | None = None
+) -> BlockState:
     disabled: set[int] = set()
     block_open = False
     for i, line in enumerate(lines):
-        if not block_open:
-            if ESLINT_BLOCK_OPEN.search(line) or _is_lone_block_disable(line):
-                block_open = True
-                disabled.add(i)
-            continue
-        if ESLINT_BLOCK_CLOSE.search(line) or ESLINT_LINE_CLOSE.search(line):
+        kinds = _eslint_kinds(line, rules)
+        if block_open and ESLINT_RANGE_CLOSE in kinds:
             block_open = False
             continue
-        disabled.add(i)
+        block_open = block_open or ESLINT_RANGE_OPEN in kinds
+        if block_open:
+            disabled.add(i)
     return BlockState(disabled_lines=frozenset(disabled))
+
+
+def _eslint_kinds(line: str, rules: frozenset[str] | None) -> frozenset[str]:
+    sanitized = _strip_strings(line)
+    return frozenset(
+        match.group(1)
+        for match in ESLINT_DIRECTIVE.finditer(sanitized)
+        if _directive_applies(_directive_rules(match.group(2)), rules)
+    )
+
+
+def _directive_rules(tail: str) -> frozenset[str]:
+    end = ESLINT_DIRECTIVE_END.search(tail)
+    names = tail[: end.start()] if end else tail
+    return frozenset(name.strip() for name in names.split(",") if name.strip())
+
+
+def _directive_applies(named: frozenset[str], rules: frozenset[str] | None) -> bool:
+    if not named:
+        return True
+    return rules is not None and bool(named & rules)
 
 
 def _is_lone_block_disable(line: str) -> bool:
     stripped = line.strip()
     if not stripped.startswith("/*") and not stripped.startswith("//"):
         return False
-    if not ESLINT_LINE_OPEN.search(line) and not _looks_like_blanket_disable(line):
-        return False
-    return True
-
-
-def _looks_like_blanket_disable(line: str) -> bool:
-    if "eslint-disable-line" in line or "eslint-disable-next-line" in line:
-        return False
-    return "eslint-disable" in line and "enable" not in line
+    return ESLINT_RANGE_OPEN in _eslint_kinds(line, None)
 
 
 def has_inline_marker(line: str, marker: str) -> bool:
@@ -207,42 +222,43 @@ def is_suppressed(
     i: int,
     *,
     block_state: BlockState | None = None,
+    rules: frozenset[str] | None = None,
 ) -> bool:
-    """True when `lines[i]` is covered by any honored suppression form."""
     if i < 0 or i >= len(lines):
         return False
-    line = lines[i]
-    if block_state is None:
-        block_state = compute_block_state(lines)
-    if i in block_state.disabled_lines:
+    state = block_state or compute_block_state(lines, rules=rules)
+    if i in state.disabled_lines:
         return True
-    sanitized_line = _strip_strings(line)
-    for tok in SAME_LINE_TOKENS:
-        if tok in sanitized_line and ("//" in sanitized_line or "/*" in sanitized_line):
-            return True
+    if _line_suppresses(lines[i], SAME_LINE_TOKENS, ESLINT_SAME_LINE, rules):
+        return True
+    return i > 0 and _line_suppresses(
+        lines[i - 1], PRECEDING_LINE_TOKENS, ESLINT_NEXT_LINE, rules
+    )
+
+
+def _line_suppresses(
+    line: str,
+    tokens: tuple[str, ...],
+    eslint_kind: str,
+    rules: frozenset[str] | None,
+) -> bool:
+    if eslint_kind in _eslint_kinds(line, rules):
+        return True
     if _has_python_inline_suppression(line):
         return True
-    if i > 0:
-        prev = lines[i - 1]
-        sanitized_prev = _strip_strings(prev)
-        for tok in PRECEDING_LINE_TOKENS:
-            if tok in sanitized_prev and (
-                "//" in sanitized_prev or "/*" in sanitized_prev
-            ):
-                return True
-        if _has_python_inline_suppression(prev):
-            return True
-    return False
+    sanitized = _strip_strings(line)
+    if "//" not in sanitized and "/*" not in sanitized:
+        return False
+    return any(tok in sanitized for tok in tokens)
 
 
-def line_or_prev_has_suppression(lines: list[str], line_no: int) -> bool:
-    """Canonical contract: True when `lines[line_no]` or the preceding line is suppressed.
-    This is the
-    single entrypoint hooks should call. Internally delegates to `is_suppressed`,
-    which already handles preceding-line tokens, block ranges, and Python markers.
-    `line_no` is zero-based to match list indexing across hook payloads.
-    """
-    return is_suppressed(lines, line_no)
+def line_or_prev_has_suppression(
+    lines: list[str],
+    line_no: int,
+    *,
+    rules: frozenset[str] = RESTRICTED_SYNTAX_RULES,
+) -> bool:
+    return is_suppressed(lines, line_no, rules=rules)
 
 
 def _strip_strings(line: str) -> str:

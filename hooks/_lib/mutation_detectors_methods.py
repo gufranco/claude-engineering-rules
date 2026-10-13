@@ -19,6 +19,7 @@ references the ES2023 non-mutating equivalent or the relevant rule.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 
 from .mutation_allowlists import (
     collect_temporal_receivers,
@@ -29,6 +30,7 @@ from .mutation_allowlists import (
 )
 from .mutation_detectors_core import (
     Match,
+    mask_text,
     strip_strings_comments,
     truncate_excerpt,
 )
@@ -52,8 +54,17 @@ MAP_DELETE_PATTERN = re.compile(r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\.delete\s*\(")
 MAP_CLEAR_PATTERN = re.compile(r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\.clear\s*\(")
 SET_ADD_PATTERN = re.compile(r"(?P<owner>[a-zA-Z_$][\w$]*)\s*\.add\s*\(")
 
-MAP_RECEIVER_HINT = re.compile(r"\b(?:Map|Maps|map)\b|new\s+Map\s*\(|:\s*Map[<\s,]")
-SET_RECEIVER_HINT = re.compile(r"\b(?:Set|Sets|set)\b|new\s+Set\s*\(|:\s*Set[<\s,]")
+MAP_RECEIVER_HINT = re.compile(
+    r"(?<![.\w$])(?:Map|Maps|map)\b(?!\s*\()|new\s+Map\s*\(|:\s*Map[<\s,]"
+)
+SET_RECEIVER_HINT = re.compile(
+    r"(?<![.\w$])(?:Set|Sets|set)\b(?!\s*\()|new\s+Set\s*\(|:\s*Set[<\s,]"
+)
+COLLECTION_DECLARATION = re.compile(
+    r"(?P<owner>[a-zA-Z_$][\w$]*)\s*"
+    r"(?::\s*(?:Readonly)?(?P<annotated>WeakMap|WeakSet|Map|Set)\b[^=;\n]*)?"
+    r"(?:=\s*new\s+(?P<constructed>WeakMap|WeakSet|Map|Set)\b)?"
+)
 WEAKMAP_RECEIVER_HINT = re.compile(r"\bWeakMap\b|new\s+WeakMap\s*\(")
 WEAKSET_RECEIVER_HINT = re.compile(r"\bWeakSet\b|new\s+WeakSet\s*\(")
 
@@ -351,45 +362,53 @@ def detect_bracket_dispatch(text: str, lang: str | None, file_path: str) -> list
 
 
 def _collection_receiver_kind(window: str) -> str | None:
-    """Best-effort guess of the receiver type from surrounding text."""
-    if WEAKMAP_RECEIVER_HINT.search(window):
-        return "WeakMap"
-    if WEAKSET_RECEIVER_HINT.search(window):
-        return "WeakSet"
-    if MAP_RECEIVER_HINT.search(window):
-        return "Map"
-    if SET_RECEIVER_HINT.search(window):
-        return "Set"
-    return None
+    kinds = _collection_receiver_kinds(window)
+    return kinds[0] if kinds else None
+
+
+def _collection_receiver_kinds(window: str) -> tuple[str, ...]:
+    hints = (
+        ("WeakMap", WEAKMAP_RECEIVER_HINT),
+        ("WeakSet", WEAKSET_RECEIVER_HINT),
+        ("Map", MAP_RECEIVER_HINT),
+        ("Set", SET_RECEIVER_HINT),
+    )
+    return tuple(kind for kind, hint in hints if hint.search(window))
+
+
+def _declared_collection_kinds(text: str) -> dict[str, str]:
+    return {
+        m.group("owner"): m.group("constructed") or m.group("annotated")
+        for m in COLLECTION_DECLARATION.finditer(text)
+        if m.group("constructed") or m.group("annotated")
+    }
+
+
+def _owner_filter(
+    kind: str, primary: str, declared: dict[str, str]
+) -> Callable[[str | None], bool]:
+    def accepts(owner: str | None) -> bool:
+        return declared.get(owner or "", primary) == kind
+
+    return accepts
 
 
 def detect_map_set_collection_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect Map / Set / WeakMap / WeakSet mutations.
-
-    Receiver-kind heuristic looks at the surrounding 4-line window for a
-    `new Map(...)` / `new Set(...)` declaration or a typed annotation
-    (`: Map<K, V>`). When the heuristic is inconclusive the detector emits
-    no hit so it stays conservative on unfamiliar code.
-
-    Temporal API receivers are excluded: `t.add({ hours: 1 })` on a
-    `Temporal.Now.instant()` value returns a new immutable Temporal,
-    not a Set mutation.
-    """
     results: list[Match] = []
     lines = text.splitlines()
     temporal_receivers = (
         collect_temporal_receivers(text) if has_temporal_usage(text) else frozenset()
     )
     web_api_receivers = collect_web_api_receivers(text)
+    declared = _declared_collection_kinds(text)
     for lineno, raw, masked in _iter_lines(text):
         window = "\n".join(lines[max(0, lineno - 5) : lineno + 4])
-        kind = _collection_receiver_kind(window)
-        if not kind:
-            continue
-        if kind in ("Map", "WeakMap"):
-            _emit_map_mutations(
+        kinds = _collection_receiver_kinds(window)
+        for kind in kinds:
+            emit = _emit_map_mutations if kind.endswith("Map") else _emit_set_mutations
+            emit(
                 results,
                 lineno,
                 raw,
@@ -397,16 +416,7 @@ def detect_map_set_collection_mutations(
                 kind,
                 temporal_receivers,
                 web_api_receivers,
-            )
-        if kind in ("Set", "WeakSet"):
-            _emit_set_mutations(
-                results,
-                lineno,
-                raw,
-                masked,
-                kind,
-                temporal_receivers,
-                web_api_receivers,
+                _owner_filter(kind, kinds[0], declared),
             )
     return results
 
@@ -419,6 +429,7 @@ def _emit_map_mutations(
     kind: str,
     temporal_receivers: frozenset[str] = frozenset(),
     web_api_receivers: frozenset[str] = frozenset(),
+    accepts: Callable[[str | None], bool] = lambda _owner: True,
 ) -> None:
     set_fix = (
         f"Replace `{kind.lower()}.set(k, v)` with `new {kind}([...{kind.lower()}, [k, v]])`. "
@@ -438,6 +449,8 @@ def _emit_map_mutations(
     )
     for m in MAP_SET_PATTERN.finditer(masked):
         owner = m.group("owner")
+        if not accepts(owner):
+            continue
         if is_temporal_chain_call(raw, owner, temporal_receivers):
             continue
         if is_web_api_receiver(owner, web_api_receivers):
@@ -454,6 +467,8 @@ def _emit_map_mutations(
         )
     for m in MAP_DELETE_PATTERN.finditer(masked):
         owner = m.group("owner")
+        if not accepts(owner):
+            continue
         if is_temporal_chain_call(raw, owner, temporal_receivers):
             continue
         if is_web_api_receiver(owner, web_api_receivers):
@@ -471,6 +486,8 @@ def _emit_map_mutations(
     if kind == "Map":
         for m in MAP_CLEAR_PATTERN.finditer(masked):
             owner = m.group("owner") if "owner" in (m.groupdict() or {}) else None
+            if not accepts(owner):
+                continue
             if is_web_api_receiver(owner, web_api_receivers):
                 continue
             results.append(
@@ -493,6 +510,7 @@ def _emit_set_mutations(
     kind: str,
     temporal_receivers: frozenset[str] = frozenset(),
     web_api_receivers: frozenset[str] = frozenset(),
+    accepts: Callable[[str | None], bool] = lambda _owner: True,
 ) -> None:
     add_fix = (
         f"Replace `{kind.lower()}.add(v)` with `new {kind}([...{kind.lower()}, v])`. "
@@ -512,6 +530,8 @@ def _emit_set_mutations(
     )
     for m in SET_ADD_PATTERN.finditer(masked):
         owner = m.group("owner")
+        if not accepts(owner):
+            continue
         if is_temporal_chain_call(raw, owner, temporal_receivers):
             continue
         if is_web_api_receiver(owner, web_api_receivers):
@@ -528,6 +548,8 @@ def _emit_set_mutations(
         )
     for m in MAP_DELETE_PATTERN.finditer(masked):
         owner = m.group("owner")
+        if not accepts(owner):
+            continue
         if is_temporal_chain_call(raw, owner, temporal_receivers):
             continue
         if is_web_api_receiver(owner, web_api_receivers):
@@ -544,6 +566,8 @@ def _emit_set_mutations(
         )
     if kind == "Set":
         for m in MAP_CLEAR_PATTERN.finditer(masked):
+            if not accepts(m.group("owner")):
+                continue
             results.append(
                 _make_match(
                     f"collection.{kind.lower()}.clear",
@@ -889,7 +913,7 @@ def detect_dataview_setters(text: str, lang: str | None, file_path: str) -> list
         "(also flagged but with the SAB-aware fix) so the write is ordered. Suppress with "
         "a single builder function when the caller requires pointer stability."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     context_signal = bool(
         DATAVIEW_DECL_PATTERN.search(masked)
         or DATAVIEW_NAME_HINT_PATTERN.search(masked)
@@ -950,7 +974,7 @@ def detect_atomics_mutations(
         "lock-free queue when possible. For one-shot publish, allocate a fresh SAB and swap "
         "the reference via a message rather than mutating in place. Info-level signal."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     if not ATOMICS_PATTERN.search(masked):
         return []
     results: list[Match] = []
@@ -992,7 +1016,7 @@ def detect_wasm_memory_grow(text: str, lang: str | None, file_path: str) -> list
         "`memory.buffer`. Document the new pre-grow/post-grow boundary in code comments. "
         "Prefer growing in coarse steps to amortize view recreation cost."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     if not WASM_MEMORY_HINT_PATTERN.search(masked):
         return []
     results: list[Match] = []
@@ -1051,7 +1075,7 @@ def detect_uint8array_set_buffer_offset(
         "`new Uint8Array(buffer.slice(...))` and concatenate. For codec hot paths, suppress "
         "inside a codec module and audit the offset arithmetic."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     if not UINT8_NAME_HINT_PATTERN.search(masked):
         return []
     results: list[Match] = []
@@ -1113,7 +1137,7 @@ def detect_proxy_mutating_traps(
         "Proxy is genuinely a mutable façade, document that contract in the handler's JSDoc "
         "and keep the facade behind one module boundary."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     if not PROXY_HANDLER_CONTEXT_PATTERN.search(masked):
         return []
     results: list[Match] = []
@@ -1181,7 +1205,7 @@ def detect_weakref_then_mutate(
         "if (target) { ... }` and treat absence as a no-op. Beyond safety, prefer non-mutating "
         "operations on the dereferenced value."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     if (
         not WEAKREF_DECL_PATTERN.search(masked)
         and "WeakRef" not in masked
@@ -1270,7 +1294,7 @@ def detect_finalization_registry(
         "shared application state from the callback. Spec note: callbacks may not run at all "
         "if the registry itself is collected. Treat the callback as best-effort cleanup."
     )
-    masked = strip_strings_comments(text)
+    masked = mask_text(text)
     if not FINALIZATION_REGISTRY_PATTERN.search(masked):
         return []
     results: list[Match] = []

@@ -410,6 +410,9 @@ def _batch_mode_enabled() -> bool:
 
 SAMPLE_LINE_CAP = 100
 MAX_HITS_PER_FILE = 8
+ESLINT_RULES = frozenset(
+    {"functional/immutable-data", "fp/no-mutating-methods", "no-param-reassign"}
+)
 
 PROPERTY_DETECTORS: frozenset[str] = frozenset(
     {
@@ -651,7 +654,9 @@ def _filter_matches(
     for m in matches:
         idx = m.line - 1
 
-        if 0 <= idx < len(lines) and is_suppressed(lines, idx, block_state=block_state):
+        if 0 <= idx < len(lines) and is_suppressed(
+            lines, idx, block_state=block_state, rules=ESLINT_RULES
+        ):
             allow_reasons["eslint-or-ts-marker"] = (
                 allow_reasons.get("eslint-or-ts-marker", 0) + 1
             )
@@ -1053,7 +1058,7 @@ def main() -> int:
             continue
         files_scanned += 1
         lang = detect_lang(path)
-        block_state = compute_block_state(text.splitlines())
+        block_state = compute_block_state(text.splitlines(), rules=ESLINT_RULES)
         matches = _detect_all(text, lang, path, is_full_file)
         survived, reasons = _filter_matches(matches, text, path, block_state)
         for k, v in reasons.items():
