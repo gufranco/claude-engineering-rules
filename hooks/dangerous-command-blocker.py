@@ -50,6 +50,7 @@ from _lib.git_invocation import (  # noqa: E402
     OPTIONS_WITH_SEPARATE_VALUE,
     strip_git_global_options,
 )
+from _lib.hook_warning import emit_warning  # noqa: E402
 from _lib.shell_segments import (  # noqa: E402
     command_head,
     quoted_segments,
@@ -651,14 +652,12 @@ def main():
             print(f"BLOCKED: {reason}\nCommand: {command}", file=sys.stderr)
             sys.exit(2)
 
-    for pattern, guidance in RECOVERABLE:
-        if re.search(pattern, matched):
-            print(
-                f"CONFIRM REQUIRED: {guidance}\nCommand: {command}\n"
-                "Ask the user to confirm before running this command.",
-                file=sys.stderr,
-            )
-            break
+    notices = [
+        f"CONFIRM REQUIRED: {guidance}\nCommand: {command}\n"
+        "Ask the user to confirm before running this command."
+        for pattern, guidance in RECOVERABLE
+        if re.search(pattern, matched)
+    ][:1]
 
     if re.search(r"\bgit\s+push\b", matched):
         push_cwd = _push_cwd(command)
@@ -692,7 +691,7 @@ def main():
                     branch=branch,
                     command=command[:300],
                 )
-                sys.exit(0)
+                _allow(notices)
             if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1":
                 _audit(
                     hook="dangerous-command-blocker",
@@ -723,11 +722,17 @@ def main():
                 )
                 sys.exit(2)
 
-    for pattern, reason in SUSPICIOUS:
-        if re.search(pattern, matched):
-            print(f"WARNING: {reason}\nCommand: {command}", file=sys.stderr)
-            break
+    suspicious = [
+        f"WARNING: {reason}\nCommand: {command}"
+        for pattern, reason in SUSPICIOUS
+        if re.search(pattern, matched)
+    ][:1]
+    _allow([*notices, *suspicious])
 
+
+def _allow(notices: list[str]) -> NoReturn:
+    if notices:
+        emit_warning("\n\n".join(notices))
     sys.exit(0)
 
 

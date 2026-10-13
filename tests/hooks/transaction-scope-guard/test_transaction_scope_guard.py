@@ -44,9 +44,12 @@ def test_warns_without_blocking_by_default(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_allowed(result)
-    assert "INFO from transaction-scope-guard" in stderr
-    assert "TRANSACTION_SCOPE_ENFORCE=1" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert (
+        "INFO from transaction-scope-guard" in context,
+        "TRANSACTION_SCOPE_ENFORCE=1" in context,
+    ) == (True, True)
 
 
 def test_blocks_sdk_client_calls_inside_a_transaction(tool_use, run_hook):

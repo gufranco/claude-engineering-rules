@@ -38,9 +38,12 @@ def test_warns_without_blocking_by_default(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_allowed(result)
-    assert "INFO from python-mutation-guard" in stderr
-    assert "PYTHON_MUTATION_ENFORCE=1" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert (
+        "INFO from python-mutation-guard" in context,
+        "PYTHON_MUTATION_ENFORCE=1" in context,
+    ) == (True, True)
 
 
 def test_blocks_mutable_default_list(tool_use, run_hook):

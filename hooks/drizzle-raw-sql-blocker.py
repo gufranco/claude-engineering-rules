@@ -15,7 +15,7 @@ except Exception:  # pragma: no cover
 
 
 EXECUTE_RE = re.compile(
-    r"\b(?:db|database|drizzle|conn|client)\s*"
+    r"\b(?:db|database|drizzle|conn|client|tx|trx|transaction)\s*"
     r"\.\s*(?:execute|run|all|get)\s*\(\s*sql\s*[`(]",
 )
 SQL_RAW_RE = re.compile(
@@ -48,15 +48,6 @@ def is_skipped_path(path: str) -> bool:
     if any(
         seg in p
         for seg in (
-            "/test/",
-            "/tests/",
-            "/__tests__/",
-            "/spec/",
-            ".spec.",
-            ".test.",
-            "/e2e/",
-            "/__mocks__/",
-            "/fixtures/",
             "/schema/",
             "/db/schema",
             "/db/schemas/",

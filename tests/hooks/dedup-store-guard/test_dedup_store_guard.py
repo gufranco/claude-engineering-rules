@@ -44,9 +44,12 @@ def test_warns_without_blocking_by_default(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_allowed(result)
-    assert "INFO from dedup-store-guard" in stderr
-    assert "DEDUP_STORE_ENFORCE=1" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert (
+        "INFO from dedup-store-guard" in context,
+        "DEDUP_STORE_ENFORCE=1" in context,
+    ) == (True, True)
 
 
 def test_blocks_map_named_for_deduplication(tool_use, run_hook):

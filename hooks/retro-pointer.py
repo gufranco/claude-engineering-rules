@@ -22,6 +22,7 @@ TAIL_BYTES = 64 * 1024
 MAX_AGE_SECONDS = 6 * 60 * 60
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_warning import emit_user_notice  # noqa: E402
 
 
 def _session_id() -> str:
@@ -199,25 +200,27 @@ def main() -> int:
         if bypasses:
             parts.append(f"{bypasses} bypass(es)")
 
+        notices: list[str] = []
         if parts:
             top = ", ".join(hooks[:3]) if hooks else ""
             suffix = f" (top: {top})" if top else ""
-            msg = (
+            notices = [
                 "[retro] "
                 + " and ".join(parts)
                 + " this session"
                 + suffix
                 + ". Run /retro to propose upstream fixes."
-            )
-            print(msg, file=sys.stderr)
+            ]
 
         if instinct_patterns:
-            print(
+            notices = [
+                *notices,
                 "[retro instinct] session patterns worth capturing: "
                 + "; ".join(instinct_patterns)
                 + ". Run /retro instinct to record.",
-                file=sys.stderr,
-            )
+            ]
+        if notices:
+            emit_user_notice("\n".join(notices))
 
         _mark_shown()
         return 0
