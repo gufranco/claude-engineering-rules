@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -9,6 +10,9 @@ from types import ModuleType
 
 import pytest
 from faker import Faker
+
+from _helpers.cov_env import apply_coverage_env
+from _helpers.raising import raising
 
 SCANNER = Path(__file__).resolve().parents[2] / "tools" / "slop-scan.py"
 CLEAN = "# Retry budget\n\nThe worker retries three times, then dead-letters.\n"
@@ -246,11 +250,7 @@ def test_an_unknown_revision_range_exits_two(scanner, tmp_path, faker, capsys):
 def test_git_that_cannot_start_exits_two(scanner, tmp_path, faker, monkeypatch, capsys):
     # Arrange
     repo = repo_with_commits(tmp_path, faker, ["chore: start"])
-
-    def refuse(*_args: object, **_kwargs: object) -> None:
-        raise OSError("git missing")
-
-    monkeypatch.setattr(scanner.subprocess, "run", refuse)
+    monkeypatch.setattr(scanner.subprocess, "run", raising(OSError("git missing")))
 
     # Act
     exit_code = scanner.main([str(repo), "--commits", "HEAD"])
@@ -281,6 +281,7 @@ def test_the_script_runs_as_a_command(tmp_path):
         [sys.executable, str(SCANNER), str(tmp_path)],
         capture_output=True,
         text=True,
+        env=apply_coverage_env(dict(os.environ)),
         check=False,
     )
 

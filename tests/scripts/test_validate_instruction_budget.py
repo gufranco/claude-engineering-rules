@@ -5,6 +5,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "validate-instruction-budget.py"
@@ -27,17 +28,17 @@ def _tree(root: Path, files: dict[str, str]) -> None:
 
 
 def test_counts_claude_md_imports_and_nested_rules(
-    budget_module: ModuleType, tmp_path: Path
+    budget_module: ModuleType, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
     _tree(
         tmp_path,
         {
             "CLAUDE.md": "abc\n@RTK.md\n",
-            "RTK.md": "12345",
-            "rules/a.md": "xy",
-            "rules/lang/b.md": "z",
-            "standards/full.md": "not loaded",
+            "RTK.md": faker.pystr(min_chars=5, max_chars=5),
+            "rules/a.md": faker.pystr(min_chars=2, max_chars=2),
+            "rules/lang/b.md": faker.pystr(min_chars=1, max_chars=1),
+            "standards/full.md": faker.sentence(),
         },
     )
 
@@ -67,9 +68,11 @@ def test_ignores_an_import_that_does_not_resolve(
     assert [p.name for p in files] == ["CLAUDE.md"]
 
 
-def test_passes_at_the_budget(budget_module: ModuleType, tmp_path: Path) -> None:
+def test_passes_at_the_budget(
+    budget_module: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
-    _tree(tmp_path, {"CLAUDE.md": "a" * 10})
+    _tree(tmp_path, {"CLAUDE.md": faker.pystr(min_chars=10, max_chars=10)})
 
     # Act
     exit_code = budget_module.check(tmp_path, budget=10)
@@ -79,17 +82,30 @@ def test_passes_at_the_budget(budget_module: ModuleType, tmp_path: Path) -> None
 
 
 def test_fails_over_the_budget_and_names_the_largest_file(
-    budget_module: ModuleType, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    budget_module: ModuleType,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    faker: Faker,
 ) -> None:
     # Arrange
-    _tree(tmp_path, {"CLAUDE.md": "a" * 5, "rules/big.md": "b" * 20})
+    _tree(
+        tmp_path,
+        {
+            "CLAUDE.md": faker.pystr(min_chars=5, max_chars=5),
+            "rules/big.md": faker.pystr(min_chars=20, max_chars=20),
+        },
+    )
 
     # Act
     exit_code = budget_module.check(tmp_path, budget=10)
 
     # Assert
     assert exit_code == 1
-    assert "rules/big.md" in capsys.readouterr().out
+    assert capsys.readouterr().out.splitlines()[1:4] == [
+        "FAILED: 15 chars over budget. Largest files:",
+        "       20  rules/big.md",
+        "        5  CLAUDE.md",
+    ]
 
 
 def test_the_real_tree_is_within_budget(budget_module: ModuleType) -> None:

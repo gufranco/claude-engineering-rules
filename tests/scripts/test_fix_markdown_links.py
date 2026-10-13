@@ -1,79 +1,86 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
+import pytest
+from faker import Faker
+
+from _helpers.cov_env import apply_coverage_env
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
-FIX_SCRIPT = REPO_ROOT / ".github" / "scripts" / "fix-markdown-links.py"
-SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
-COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
+FIX_SCRIPT_RELATIVE = Path(".github") / "scripts" / "fix-markdown-links.py"
+
+Scratch = Callable[[str, str], Path]
+FixRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 
-def _coverage_active() -> bool:
-    if "COVERAGE_PROCESS_START" in os.environ or "COVERAGE_RUN" in os.environ:
-        return True
-    if "pytest_cov" in sys.modules or "pytest_cov.plugin" in sys.modules:
-        return True
-    cov_module = sys.modules.get("coverage")
-    if cov_module is None:
-        return False
-    current = getattr(cov_module, "Coverage", None)
-    if current is None:
-        return False
-    return getattr(current, "current", lambda: None)() is not None
+def _install_fix_script(root: Path) -> Path:
+    script = root / FIX_SCRIPT_RELATIVE
+    script.parent.mkdir(parents=True)
+    shutil.copyfile(REPO_ROOT / FIX_SCRIPT_RELATIVE, script)
+    (root / "hooks").symlink_to(REPO_ROOT / "hooks", target_is_directory=True)
+    return script
 
 
-def run_fix(*args: str) -> subprocess.CompletedProcess:
-    env = dict(os.environ)
-    if _coverage_active():
-        env["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
-        existing_pp = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = (
-            f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing_pp}"
-            if existing_pp
-            else str(SUBPROCESS_COV_DIR)
+@pytest.fixture
+def run_fix(scratch_repo_root: Path) -> FixRunner:
+    script = _install_fix_script(scratch_repo_root)
+
+    def _run(*args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(script), *args],
+            capture_output=True,
+            text=True,
+            env=apply_coverage_env(dict(os.environ)),
+            timeout=30.0,
+            check=False,
         )
-    return subprocess.run(
-        [sys.executable, str(FIX_SCRIPT), *args],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=30.0,
-        check=False,
-    )
+
+    return _run
 
 
-def test_dry_run_does_not_modify_file(repo_scratch):
+def test_dry_run_does_not_modify_file(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
-    target = repo_scratch("tmp-fix-dryrun.md", "Bare `README.md` mention.\n")
+    text = f"{faker.word()} `README.md` mention.\n"
+    target = repo_scratch("dryrun.md", text)
 
     # Act
     proc = run_fix(str(target), "--dry-run")
 
     # Assert
     assert proc.returncode == 0
-    assert target.read_text() == "Bare `README.md` mention.\n"
+    assert target.read_text() == text
     assert "Would apply 1 fix(es) across 1 file(s) (dry run)." in proc.stdout
 
 
-def test_fix_applies_wrapping(repo_scratch):
+def test_fix_applies_wrapping(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
-    target = repo_scratch("tmp-fix-apply.md", "Look at `README.md` for details.\n")
+    word = faker.word()
+    target = repo_scratch("apply.md", f"Look at `README.md` for {word}.\n")
 
     # Act
     proc = run_fix(str(target))
 
     # Assert
     assert proc.returncode == 0
-    assert "[`README.md`](README.md)" in target.read_text()
+    assert target.read_text() == f"Look at [`README.md`](README.md) for {word}.\n"
 
 
-def test_fix_is_idempotent(repo_scratch):
+def test_fix_is_idempotent(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
-    text = "Already [`README.md`](README.md) linked.\n"
-    target = repo_scratch("tmp-fix-idempotent.md", text)
+    text = f"{faker.word()} [`README.md`](README.md) linked.\n"
+    target = repo_scratch("idempotent.md", text)
 
     # Act
     proc = run_fix(str(target))
@@ -83,10 +90,12 @@ def test_fix_is_idempotent(repo_scratch):
     assert target.read_text() == text
 
 
-def test_fix_skips_advisory_unless_flag(repo_scratch):
+def test_fix_skips_advisory_unless_flag(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
-    text = "Bare `README.md` mention.\n"
-    spec_target = repo_scratch("specs/tmp-fix-advisory.md", text)
+    text = f"{faker.word()} `README.md` mention.\n"
+    spec_target = repo_scratch("specs/advisory.md", text)
 
     # Act
     proc = run_fix(str(spec_target))
@@ -96,40 +105,42 @@ def test_fix_skips_advisory_unless_flag(repo_scratch):
     assert spec_target.read_text() == text
 
 
-def test_fix_with_include_advisory_modifies_specs(repo_scratch):
+def test_fix_with_include_advisory_modifies_specs(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
-    spec_target = repo_scratch(
-        "specs/tmp-fix-include-advisory.md", "Bare `README.md` mention.\n"
-    )
+    word = faker.word()
+    spec_target = repo_scratch("specs/include-advisory.md", f"{word} `README.md`.\n")
 
     # Act
     proc = run_fix(str(spec_target), "--include-advisory")
 
     # Assert
     assert proc.returncode == 0
-    assert "[`README.md`](../README.md)" in spec_target.read_text()
+    assert spec_target.read_text() == f"{word} [`README.md`](../README.md).\n"
 
 
-def test_fix_rewrites_broken_target_to_file_relative(repo_scratch):
+def test_fix_rewrites_broken_target_to_file_relative(
+    repo_scratch: Scratch, run_fix: FixRunner
+) -> None:
     # Arrange
-    repo_scratch("tmp-fix-broken-target.md", "See [the spec](README.md).\n")
-    subdir_target = repo_scratch(
-        "tmp-fix-broken-subdir/doc.md", "See [home](README.md).\n"
-    )
+    subdir_target = repo_scratch("broken-subdir/doc.md", "See [home](README.md).\n")
 
     # Act
     proc = run_fix(str(subdir_target))
 
     # Assert
     assert proc.returncode == 0
-    assert "[home](../README.md)" in subdir_target.read_text()
-    assert "rewrote 1 broken target" in proc.stdout
+    assert subdir_target.read_text() == "See [home](../README.md).\n"
+    assert "rewrote 1 broken target(s) in broken-subdir/doc.md" in proc.stdout
 
 
-def test_fix_dry_run_lists_broken_targets(repo_scratch):
+def test_fix_dry_run_lists_broken_targets(
+    repo_scratch: Scratch, run_fix: FixRunner
+) -> None:
     # Arrange
     text = "See [home](README.md).\n"
-    subdir_target = repo_scratch("tmp-fix-dry-broken-subdir/doc.md", text)
+    subdir_target = repo_scratch("dry-broken-subdir/doc.md", text)
 
     # Act
     proc = run_fix(str(subdir_target), "--dry-run")
@@ -137,13 +148,17 @@ def test_fix_dry_run_lists_broken_targets(repo_scratch):
     # Assert
     assert proc.returncode == 0
     assert subdir_target.read_text() == text
-    assert "would rewrite" in proc.stdout
+    assert "would rewrite 1 broken target(s) in dry-broken-subdir/doc.md" in (
+        proc.stdout
+    )
 
 
-def test_fix_warns_on_unfixable_broken_target(repo_scratch):
+def test_fix_warns_on_unfixable_broken_target(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
-    text = "See [ghost](truly-missing-file.md).\n"
-    target = repo_scratch("tmp-fix-unfixable.md", text)
+    text = f"See [ghost]({faker.uuid4()}.md).\n"
+    target = repo_scratch("unfixable.md", text)
 
     # Act
     proc = run_fix(str(target))
@@ -155,10 +170,13 @@ def test_fix_warns_on_unfixable_broken_target(repo_scratch):
     assert "manual review" in proc.stdout
 
 
-def test_fix_preserves_fragment_when_rewriting_target(repo_scratch):
+def test_fix_preserves_fragment_when_rewriting_target(
+    repo_scratch: Scratch, run_fix: FixRunner, faker: Faker
+) -> None:
     # Arrange
+    anchor = faker.word()
     subdir_target = repo_scratch(
-        "tmp-fix-fragment-subdir/doc.md", "See [intro](README.md#intro).\n"
+        "fragment-subdir/doc.md", f"See [intro](README.md#{anchor}).\n"
     )
 
     # Act
@@ -166,4 +184,4 @@ def test_fix_preserves_fragment_when_rewriting_target(repo_scratch):
 
     # Assert
     assert proc.returncode == 0
-    assert "[intro](../README.md#intro)" in subdir_target.read_text()
+    assert subdir_target.read_text() == f"See [intro](../README.md#{anchor}).\n"

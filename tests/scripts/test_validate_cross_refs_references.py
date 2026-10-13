@@ -5,6 +5,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "validate-cross-refs.py"
@@ -45,10 +46,10 @@ def test_reports_a_hook_citing_a_rule_file_that_does_not_exist(
 
 
 def test_accepts_a_hook_citing_an_existing_rule_file(
-    cross_refs: ModuleType, tmp_path: Path
+    cross_refs: ModuleType, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
-    write(tmp_path, "rules/lang/orm-migrations.md", "# ORM\n")
+    write(tmp_path, "rules/lang/orm-migrations.md", f"# {faker.word()}\n")
     write(
         tmp_path,
         "hooks/orm-guard.py",
@@ -63,10 +64,10 @@ def test_accepts_a_hook_citing_an_existing_rule_file(
 
 
 def test_reports_a_slash_reference_to_a_skill_that_does_not_exist(
-    cross_refs: ModuleType, tmp_path: Path
+    cross_refs: ModuleType, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
-    write(tmp_path, "skills/plan/SKILL.md", "# Plan\n")
+    write(tmp_path, "skills/plan/SKILL.md", f"# {faker.word()}\n")
     write(
         tmp_path,
         "skills/review/SKILL.md",
@@ -85,10 +86,10 @@ def test_reports_a_slash_reference_to_a_skill_that_does_not_exist(
 
 
 def test_accepts_skills_built_ins_and_paths_that_only_look_like_commands(
-    cross_refs: ModuleType, tmp_path: Path
+    cross_refs: ModuleType, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
-    write(tmp_path, "skills/plan/SKILL.md", "# Plan\n")
+    write(tmp_path, "skills/plan/SKILL.md", f"# {faker.word()}\n")
     write(
         tmp_path,
         "CLAUDE.md",

@@ -8,15 +8,17 @@ from pathlib import Path
 
 import pytest
 
+from _helpers.cov_env import apply_coverage_env
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOK_PATH = REPO_ROOT / "hooks" / "mutation-method-blocker.py"
 CASES_DIR = Path(__file__).parent / "cases"
 
+HOOK_TIMEOUT_S = 6.0
+DEFAULT_CASE_FILE = "/repo/src/business/conformance.ts"
 VERDICT_TO_EXIT_CODE = {
     "allow": 0,
     "block": 2,
-    "defer": 0,
-    "ask": 1,
 }
 
 
@@ -40,13 +42,14 @@ def _parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
 
 
 def _discover_cases() -> list[Path]:
-    if not CASES_DIR.is_dir():
-        return []
-    return sorted(CASES_DIR.rglob("*.test.ts"))
+    cases = sorted(CASES_DIR.rglob("*.test.ts")) if CASES_DIR.is_dir() else []
+    if not cases:
+        raise RuntimeError(f"no conformance cases found under {CASES_DIR}")
+    return cases
 
 
-def _build_payload(meta: dict[str, str], body: str) -> dict:
-    file_path = meta.get("file", "/repo/src/business/conformance.ts")
+def _build_payload(meta: dict[str, str], body: str) -> dict[str, object]:
+    file_path = meta.get("file", DEFAULT_CASE_FILE)
     payload_kind = meta.get("payload", "write")
     if payload_kind == "edit":
         return {
@@ -67,16 +70,14 @@ def _expectation(meta: dict[str, str], case_path: Path) -> tuple[int, str]:
     return VERDICT_TO_EXIT_CODE[verdict], detector if verdict == "block" else ""
 
 
-def _run_hook(payload: dict) -> tuple[int, str]:
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+def _run_hook(payload: dict[str, object]) -> tuple[int, str]:
     proc = subprocess.run(
         [sys.executable, str(HOOK_PATH)],
         input=json.dumps(payload),
         capture_output=True,
         text=True,
-        env=env,
-        timeout=6.0,
+        env=apply_coverage_env(dict(os.environ)),
+        timeout=HOOK_TIMEOUT_S,
         check=False,
     )
     return proc.returncode, proc.stderr

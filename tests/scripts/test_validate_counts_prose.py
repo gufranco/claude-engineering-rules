@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 from types import ModuleType
 
@@ -17,6 +18,10 @@ def counts_module() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def _rel(module: ModuleType, tmp_path: Path) -> str:
+    return os.path.relpath(tmp_path / "doc.md", module.CLAUDE_DIR)
 
 
 def scan(module: ModuleType, tmp_path: Path, text: str) -> list[str]:
@@ -36,8 +41,9 @@ def test_line_leading_skills_count_mismatch_is_reported(
     mismatches = scan(counts_module, tmp_path, text)
 
     # Assert
-    assert len(mismatches) == 1
-    assert "found 33, expected 42" in mismatches[0]
+    assert mismatches == [
+        f"  {_rel(counts_module, tmp_path)}:1: skills count leading a line: found 33, expected 42"
+    ]
 
 
 def test_line_leading_hooks_count_mismatch_is_reported(
@@ -50,8 +56,9 @@ def test_line_leading_hooks_count_mismatch_is_reported(
     mismatches = scan(counts_module, tmp_path, text)
 
     # Assert
-    assert len(mismatches) == 1
-    assert "found 70, expected 84" in mismatches[0]
+    assert mismatches == [
+        f"  {_rel(counts_module, tmp_path)}:1: hooks count leading a line: found 70, expected 84"
+    ]
 
 
 def test_mid_sentence_hooks_in_mismatch_is_reported(
@@ -64,8 +71,9 @@ def test_mid_sentence_hooks_in_mismatch_is_reported(
     mismatches = scan(counts_module, tmp_path, text)
 
     # Assert
-    assert len(mismatches) == 1
-    assert "found 12, expected 84" in mismatches[0]
+    assert mismatches == [
+        f"  {_rel(counts_module, tmp_path)}:1: hooks count in prose: found 12, expected 84"
+    ]
 
 
 def test_line_leading_count_with_adjective_is_checked(
@@ -78,8 +86,9 @@ def test_line_leading_count_with_adjective_is_checked(
     mismatches = scan(counts_module, tmp_path, text)
 
     # Assert
-    assert len(mismatches) == 1
-    assert "found 80, expected 84" in mismatches[0]
+    assert mismatches == [
+        f"  {_rel(counts_module, tmp_path)}:1: hooks count leading a line: found 80, expected 84"
+    ]
 
 
 def test_matching_counts_report_nothing(
@@ -134,41 +143,53 @@ def scan_all(module: ModuleType, tmp_path: Path, text: str) -> list[str]:
     [
         (
             "83 standards in [`standards/`](standards/). Each entry.\n",
-            "found 83, expected 139",
+            "standards count leading a line: found 83, expected 139",
         ),
         (
             "44 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/).\n",
-            "found 44, expected 45",
+            "rules count leading a line: found 44, expected 45",
         ),
         (
             "45 rules in [`rules/`](rules/) plus 4 in [`rules/lang/`](rules/lang/).\n",
-            "found 4, expected 5",
+            "language rules count: found 4, expected 5",
         ),
         (
             "Plus 6 language-specific files in [`rules/lang/`](rules/lang/).\n",
-            "found 6, expected 5",
+            "language files count: found 6, expected 5",
         ),
         (
             "20 specialized subagents in [`agents/`](agents/).\n",
-            "found 20, expected 18",
+            "agents count in prose: found 20, expected 18",
         ),
         (
             "  agents/                20 specialized subagents\n",
-            "found 20, expected 18",
+            "agents count in prose: found 20, expected 18",
         ),
-        ("**17** custom agents\n", "found 17, expected 18"),
-        ("36 MCP servers wired in settings.\n", "found 36, expected 42"),
-        ("The 76 standards total roughly 16,000 lines.\n", "found 76, expected 139"),
+        ("**17** custom agents\n", "agents count in bold: found 17, expected 18"),
+        (
+            "36 MCP servers wired in settings.\n",
+            "MCP servers count: found 36, expected 42",
+        ),
+        (
+            "The 76 standards total roughly 16,000 lines.\n",
+            "standards total in prose: found 76, expected 139",
+        ),
         (
             "  rules/                 44 short rule cores, each linking.\n",
-            "found 44, expected 45",
+            "rule cores count: found 44, expected 45",
         ),
         (
             "    lang/                4 language-specific cores: TypeScript.\n",
-            "found 4, expected 5",
+            "language cores count: found 4, expected 5",
         ),
-        ("  skills/                40 slash-command skills\n", "found 40, expected 42"),
-        ("  hooks/                 80 runtime hooks\n", "found 80, expected 84"),
+        (
+            "  skills/                40 slash-command skills\n",
+            "skills count in tree: found 40, expected 42",
+        ),
+        (
+            "  hooks/                 80 runtime hooks\n",
+            "hooks count in tree: found 80, expected 84",
+        ),
     ],
 )
 def test_readme_count_prose_mismatch_is_reported(
@@ -182,8 +203,7 @@ def test_readme_count_prose_mismatch_is_reported(
     mismatches, _ = counts_module.scan_file(str(doc), FULL_COUNTS)
 
     # Assert
-    assert len(mismatches) == 1
-    assert expected in mismatches[0]
+    assert mismatches == [f"  {_rel(counts_module, tmp_path)}:1: {expected}"]
 
 
 def test_readme_count_prose_matching_reports_nothing(

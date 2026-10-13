@@ -3,30 +3,40 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from types import ModuleType
 
+import pytest
 from coverage.config import read_coverage_config
+
+from _helpers.cov_env import apply_coverage_env
+from _helpers.hook_assertions import HookResult, assert_blocked
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
-sys.path.insert(0, str(REPO_ROOT / "tests"))
 
-from _helpers.cov_env import apply_coverage_env  # noqa: E402
-from _helpers.hook_assertions import assert_blocked  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
 
+Payload = dict[str, object]
 
-def _load_conftest():
+
+def _load_conftest() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "harness_conftest", REPO_ROOT / "tests" / "conftest.py"
     )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load tests/conftest.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-def test_build_env_neutralizes_the_ambient_bypass_registry():
+def test_build_env_neutralizes_the_ambient_bypass_registry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     # Arrange
+    monkeypatch.setenv("CLAUDE_BYPASS_STATE", str(tmp_path / "ambient.json"))
     conftest = _load_conftest()
 
     # Act
@@ -36,7 +46,21 @@ def test_build_env_neutralizes_the_ambient_bypass_registry():
     assert env["CLAUDE_BYPASS_STATE"] == os.devnull
 
 
-def test_a_test_can_still_point_the_registry_at_its_own_file(tmp_path):
+def test_build_env_neutralizes_an_ambient_audit_opt_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Arrange
+    monkeypatch.setenv("CLAUDE_HOOK_AUDIT_DISABLE", "0")
+    conftest = _load_conftest()
+
+    # Act
+    env = conftest._build_env()
+
+    # Assert
+    assert env["CLAUDE_HOOK_AUDIT_DISABLE"] == "1"
+
+
+def test_a_test_can_still_point_the_registry_at_its_own_file(tmp_path: Path) -> None:
     # Arrange
     conftest = _load_conftest()
     state = tmp_path / "bypass.json"
@@ -48,7 +72,7 @@ def test_a_test_can_still_point_the_registry_at_its_own_file(tmp_path):
     assert env["CLAUDE_BYPASS_STATE"] == str(state)
 
 
-def test_the_neutralized_registry_reads_as_empty():
+def test_the_neutralized_registry_reads_as_empty() -> None:
     # Arrange
     registry = Path(os.devnull)
 
@@ -59,7 +83,9 @@ def test_the_neutralized_registry_reads_as_empty():
     assert bypassed is False
 
 
-def test_a_blocking_hook_still_blocks_under_the_harness(tool_use, run_hook):
+def test_a_blocking_hook_still_blocks_under_the_harness(
+    tool_use: Callable[..., Payload], run_hook: Callable[..., HookResult]
+) -> None:
     # Arrange
     payload = tool_use(
         "Write",
@@ -81,10 +107,12 @@ def test_a_blocking_hook_still_blocks_under_the_harness(tool_use, run_hook):
     assert_blocked(result, "read that decides a write")
 
 
-def test_build_env_anchors_subprocess_coverage_at_the_repository(monkeypatch):
+def test_build_env_anchors_subprocess_coverage_at_the_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Arrange
+    monkeypatch.setenv("COVERAGE_RUN", "1")
     conftest = _load_conftest()
-    monkeypatch.setattr(conftest, "_coverage_active", lambda: True)
 
     # Act
     env = conftest._build_env()
@@ -93,7 +121,7 @@ def test_build_env_anchors_subprocess_coverage_at_the_repository(monkeypatch):
     assert env["CLAUDE_COVERAGE_ROOT"] == str(REPO_ROOT)
 
 
-def test_apply_coverage_env_anchors_subprocess_coverage_at_the_repository():
+def test_apply_coverage_env_anchors_subprocess_coverage_at_the_repository() -> None:
     # Arrange
     base_env: dict[str, str] = {}
 
@@ -105,8 +133,8 @@ def test_apply_coverage_env_anchors_subprocess_coverage_at_the_repository():
 
 
 def test_coverage_sources_resolve_to_the_repository_from_any_directory(
-    tmp_path, monkeypatch
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     # Arrange
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("CLAUDE_COVERAGE_ROOT", str(REPO_ROOT))
@@ -118,7 +146,7 @@ def test_coverage_sources_resolve_to_the_repository_from_any_directory(
     assert sources == [f"{REPO_ROOT}/hooks", f"{REPO_ROOT}/.github/scripts"]
 
 
-def test_every_omit_entry_matches_from_any_working_directory():
+def test_every_omit_entry_matches_from_any_working_directory() -> None:
     # Arrange
     coveragerc = str(REPO_ROOT / ".coveragerc")
 

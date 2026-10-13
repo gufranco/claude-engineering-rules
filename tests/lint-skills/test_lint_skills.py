@@ -2,17 +2,26 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
+from faker import Faker
 
-LINTER = Path.home() / ".claude" / "tools" / "lint-skills.py"
+from _helpers.cov_env import apply_coverage_env
 
-FULL_BODY = (
-    "## Overview\nx\n## When to Use\nx\n## Process\nx\n"
-    "## Common Rationalizations\nx\n## Red Flags\nx\n## Verification\nx\n"
+LINTER = Path(__file__).resolve().parents[2] / "tools" / "lint-skills.py"
+
+SECTION_HEADINGS = (
+    "Overview",
+    "When to Use",
+    "Process",
+    "Common Rationalizations",
+    "Red Flags",
+    "Verification",
 )
 
 COMPLETE_FIELDS = 'argument-hint: "/example"\nallowed-tools: "Read"'
@@ -49,8 +58,10 @@ STRICT_YAML_CORPUS = (
 )
 
 
-def load_linter_module():
+def load_linter_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location("lint_skills", LINTER)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {LINTER}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -66,15 +77,20 @@ def yaml_accepts(raw: str) -> bool:
     return True
 
 
-def run_linter(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
+def run_linter(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(LINTER), *args],
         capture_output=True,
         text=True,
         timeout=10,
-        cwd=str(cwd) if cwd else None,
+        env=apply_coverage_env(dict(os.environ)),
         check=False,
     )
+
+
+@pytest.fixture
+def full_body(faker: Faker) -> str:
+    return "".join(f"## {heading}\n{faker.word()}\n" for heading in SECTION_HEADINGS)
 
 
 def make_skill(root: Path, name: str, frontmatter: str, body: str) -> Path:
@@ -224,18 +240,14 @@ def test_warns_on_short_description(tmp_path):
     assert "short-description" in proc.stdout
 
 
-def test_warns_on_missing_argument_hint(tmp_path):
+def test_warns_on_missing_argument_hint(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: "Adequate description with enough characters to pass the length check."\n'
         'allowed-tools: "Read"'
     )
-    body = (
-        "## Overview\nx\n## When to Use\nx\n## Process\nx\n"
-        "## Common Rationalizations\nx\n## Red Flags\nx\n## Verification\nx\n"
-    )
-    sk = make_skill(tmp_path, "example", fm, body)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -245,18 +257,14 @@ def test_warns_on_missing_argument_hint(tmp_path):
     assert "missing-argument-hint" in proc.stdout
 
 
-def test_warns_on_missing_tool_scope(tmp_path):
+def test_warns_on_missing_tool_scope(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: "Adequate description with enough characters to pass the length check."\n'
         'argument-hint: "/example"'
     )
-    body = (
-        "## Overview\nx\n## When to Use\nx\n## Process\nx\n"
-        "## Common Rationalizations\nx\n## Red Flags\nx\n## Verification\nx\n"
-    )
-    sk = make_skill(tmp_path, "example", fm, body)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -285,27 +293,25 @@ def test_warns_on_missing_sections(tmp_path):
     assert "missing-sections" in proc.stdout
 
 
-def test_strict_mode_fails_on_warnings(tmp_path):
+def test_strict_mode_fails_on_warnings(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: "Adequate description with enough characters to pass the length check."\n'
         'allowed-tools: "Read"'
     )
-    body = (
-        "## Overview\nx\n## When to Use\nx\n## Process\nx\n"
-        "## Common Rationalizations\nx\n## Red Flags\nx\n## Verification\nx\n"
-    )
-    sk = make_skill(tmp_path, "example", fm, body)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
 
     # Assert
     assert proc.returncode == 1
+    assert "[WARN ] missing-argument-hint: no `argument-hint` declared" in proc.stdout
+    assert "1 files scanned, 0 errors, 1 warnings" in proc.stdout
 
 
-def test_discovers_skills_in_default_root(tmp_path):
+def test_discovers_the_skill_file_inside_a_directory_argument(tmp_path):
     # Arrange
     fm = (
         "name: x\n"
@@ -339,27 +345,30 @@ def test_json_output(tmp_path):
     assert proc.returncode == 1
     parsed = json.loads(proc.stdout)
     codes = [f["code"] for file in parsed["files"] for f in file["findings"]]
-    assert "missing-name" in codes
+    assert codes == [
+        "missing-name",
+        "short-description",
+        "missing-argument-hint",
+        "missing-tool-scope",
+        "missing-sections",
+    ]
 
 
-def test_fix_hints_emit_extra_lines(tmp_path):
+def test_fix_hints_emit_extra_lines(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: "Adequate description with enough characters to pass the length check."'
     )
-    body = (
-        "## Overview\nx\n## When to Use\nx\n## Process\nx\n"
-        "## Common Rationalizations\nx\n## Red Flags\nx\n## Verification\nx\n"
-    )
-    sk = make_skill(tmp_path, "example", fm, body)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--fix-hints"])
 
     # Assert
     assert proc.returncode == 0
-    assert "argument-hint:" in proc.stdout
+    assert 'Add: argument-hint: "<example invocation>"' in proc.stdout
+    assert "1 files scanned, 0 errors, 2 warnings" in proc.stdout
 
 
 def test_no_files_returns_error(tmp_path):
@@ -375,14 +384,14 @@ def test_no_files_returns_error(tmp_path):
     assert "no SKILL.md" in proc.stderr
 
 
-def test_errors_on_unquoted_colon_space_in_description(tmp_path):
+def test_errors_on_unquoted_colon_space_in_description(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         "description: Ship code. Subcommands: commit, pr, release, checks.\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -392,14 +401,14 @@ def test_errors_on_unquoted_colon_space_in_description(tmp_path):
     assert "invalid-yaml: line 3" in proc.stdout
 
 
-def test_errors_on_value_starting_with_reserved_indicator(tmp_path):
+def test_errors_on_value_starting_with_reserved_indicator(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         "description: @mention starts this description and breaks strict parsers.\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -409,14 +418,14 @@ def test_errors_on_value_starting_with_reserved_indicator(tmp_path):
     assert "reserved indicator '@'" in proc.stdout
 
 
-def test_errors_on_trailing_text_after_quoted_scalar(tmp_path):
+def test_errors_on_trailing_text_after_quoted_scalar(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: "A quoted description" followed by stray trailing text.\n'
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -426,7 +435,7 @@ def test_errors_on_trailing_text_after_quoted_scalar(tmp_path):
     assert "text after the closing quote" in proc.stdout
 
 
-def test_errors_on_colon_space_in_plain_continuation_line(tmp_path):
+def test_errors_on_colon_space_in_plain_continuation_line(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -434,7 +443,7 @@ def test_errors_on_colon_space_in_plain_continuation_line(tmp_path):
         "  where a note: breaks the mapping.\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -444,14 +453,14 @@ def test_errors_on_colon_space_in_plain_continuation_line(tmp_path):
     assert "invalid-yaml: line 4" in proc.stdout
 
 
-def test_errors_when_hash_after_space_truncates_plain_description(tmp_path):
+def test_errors_when_hash_after_space_truncates_plain_description(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: Fix a GitHub issue. Use when user says "fix issue #N" or similar.\n'
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -461,7 +470,7 @@ def test_errors_when_hash_after_space_truncates_plain_description(tmp_path):
     assert "truncated-by-comment: line 3" in proc.stdout
 
 
-def test_errors_when_hash_after_space_truncates_continuation_line(tmp_path):
+def test_errors_when_hash_after_space_truncates_continuation_line(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -469,7 +478,7 @@ def test_errors_when_hash_after_space_truncates_continuation_line(tmp_path):
         "  and then mentions issue #12 in passing.\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -479,14 +488,14 @@ def test_errors_when_hash_after_space_truncates_continuation_line(tmp_path):
     assert "truncated-by-comment: line 4" in proc.stdout
 
 
-def test_accepts_hash_inside_quoted_description(tmp_path):
+def test_accepts_hash_inside_quoted_description(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         "description: 'Fix a GitHub issue. Use when user says \"fix issue #N\" or similar.'\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
@@ -495,14 +504,14 @@ def test_accepts_hash_inside_quoted_description(tmp_path):
     assert proc.returncode == 0, proc.stdout
 
 
-def test_accepts_hash_without_preceding_space_in_plain_value(tmp_path):
+def test_accepts_hash_without_preceding_space_in_plain_value(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         "description: Adequate description naming C# and issue-#7 without a comment marker.\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
@@ -511,14 +520,14 @@ def test_accepts_hash_without_preceding_space_in_plain_value(tmp_path):
     assert proc.returncode == 0, proc.stdout
 
 
-def test_accepts_quoted_description_containing_colon_space(tmp_path):
+def test_accepts_quoted_description_containing_colon_space(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: "Ship code. Subcommands: commit, pr, release, and checks."\n'
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
@@ -527,7 +536,7 @@ def test_accepts_quoted_description_containing_colon_space(tmp_path):
     assert proc.returncode == 0, proc.stdout
 
 
-def test_accepts_block_sequence_tool_list(tmp_path):
+def test_accepts_block_sequence_tool_list(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -537,7 +546,7 @@ def test_accepts_block_sequence_tool_list(tmp_path):
         "  - Read\n"
         "  - Edit"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
@@ -546,7 +555,7 @@ def test_accepts_block_sequence_tool_list(tmp_path):
     assert proc.returncode == 0, proc.stdout
 
 
-def test_warns_on_noop_user_invocable(tmp_path):
+def test_warns_on_noop_user_invocable(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -554,7 +563,7 @@ def test_warns_on_noop_user_invocable(tmp_path):
         f"{COMPLETE_FIELDS}\n"
         "user-invocable: true"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -564,7 +573,7 @@ def test_warns_on_noop_user_invocable(tmp_path):
     assert "noop-user-invocable" in proc.stdout
 
 
-def test_warns_on_trigger_list_on_user_invoked_skill(tmp_path):
+def test_warns_on_trigger_list_on_user_invoked_skill(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -572,7 +581,7 @@ def test_warns_on_trigger_list_on_user_invoked_skill(tmp_path):
         "disable-model-invocation: true\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -582,7 +591,7 @@ def test_warns_on_trigger_list_on_user_invoked_skill(tmp_path):
     assert "trigger-list-on-user-invoked" in proc.stdout
 
 
-def test_warns_on_routing_clause_on_user_invoked_skill(tmp_path):
+def test_warns_on_routing_clause_on_user_invoked_skill(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -590,7 +599,7 @@ def test_warns_on_routing_clause_on_user_invoked_skill(tmp_path):
         "disable-model-invocation: true\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk)])
@@ -600,7 +609,7 @@ def test_warns_on_routing_clause_on_user_invoked_skill(tmp_path):
     assert "trigger-list-on-user-invoked" in proc.stdout
 
 
-def test_user_invoked_one_line_description_passes_strict(tmp_path):
+def test_user_invoked_one_line_description_passes_strict(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
@@ -608,7 +617,7 @@ def test_user_invoked_one_line_description_passes_strict(tmp_path):
         "disable-model-invocation: true\n"
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
@@ -617,14 +626,14 @@ def test_user_invoked_one_line_description_passes_strict(tmp_path):
     assert proc.returncode == 0, proc.stdout
 
 
-def test_model_invoked_trigger_list_passes_strict(tmp_path):
+def test_model_invoked_trigger_list_passes_strict(tmp_path, full_body):
     # Arrange
     fm = (
         "name: example\n"
         'description: Deploys things to production. Use when user says "deploy".\n'
         f"{COMPLETE_FIELDS}"
     )
-    sk = make_skill(tmp_path, "example", fm, FULL_BODY)
+    sk = make_skill(tmp_path, "example", fm, full_body)
 
     # Act
     proc = run_linter([str(sk), "--strict"])
@@ -633,13 +642,13 @@ def test_model_invoked_trigger_list_passes_strict(tmp_path):
     assert proc.returncode == 0, proc.stdout
 
 
-def test_default_discovery_skips_dot_and_harness_directories(tmp_path):
+def test_default_discovery_skips_dot_and_harness_directories(tmp_path, full_body):
     # Arrange
     fm = (
         "name: kept\n"
         "description: Adequate description with enough characters to pass the length check."
     )
-    make_skill(tmp_path, "kept", fm, FULL_BODY)
+    make_skill(tmp_path, "kept", fm, full_body)
     make_skill(tmp_path, ".trash", "name: other", "no sections")
     make_skill(tmp_path, "synced", "name: other", "no sections")
 
