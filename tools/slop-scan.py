@@ -73,12 +73,43 @@ def markdown_files(target: Path) -> list[Path]:
         raise ScanError(f"no such path: {target}")
     if target.is_file():
         return [target]
+    tracked = git_markdown(target)
+    candidates = iter(tracked) if tracked is not None else walk_markdown(target)
     found: list[Path] = []
-    for path in walk_markdown(target):
+    for path in candidates:
         if len(found) >= MAX_FILES:
             raise ScanError(f"more than {MAX_FILES} Markdown files under {target}")
         found = [*found, path]
     return found
+
+
+def git_markdown(directory: Path) -> list[Path] | None:
+    command = [
+        "git",
+        "-C",
+        str(directory),
+        "ls-files",
+        "-z",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+    ]
+    try:
+        result = subprocess.run(
+            command, capture_output=True, text=True, timeout=GIT_TIMEOUT_S, check=False
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ScanError(f"git ls-files in {directory} failed: {error}") from error
+    if result.returncode != 0:
+        return None
+    names = sorted(name for name in result.stdout.split("\0") if name)
+    return [
+        directory / name
+        for name in names
+        if name.lower().endswith(MARKDOWN_SUFFIXES)
+        and not SKIPPED_DIRS.intersection(Path(name).parts)
+        and (directory / name).is_file()
+    ]
 
 
 def to_findings(source: str, raw: list[tuple[str, str, str, str]]) -> list[Finding]:
@@ -137,7 +168,8 @@ def scan(targets: list[Path], revision_range: str | None) -> list[Finding]:
     found = [finding for path in files for finding in scan_file(detector, path)]
     if revision_range is None:
         return found
-    return [*found, *scan_commits(detector, targets[0], revision_range)]
+    repo = targets[0] if targets[0].is_dir() else targets[0].parent
+    return [*found, *scan_commits(detector, repo, revision_range)]
 
 
 def render_text(findings: list[Finding]) -> str:

@@ -23,6 +23,9 @@ make install
 npm ci --ignore-scripts
 ```
 
+[`.mise.toml`](.mise.toml) pins Python 3.14 and Node 24, the versions CI runs;
+`mise install` provides both.
+
 `make install` reads [`requirements-dev.txt`](requirements-dev.txt), which is
 the single source of truth for the Python toolchain. CI installs from the same
 file, so a version bump lands in one place and cannot drift between your
@@ -47,11 +50,23 @@ That expands to:
 |--------|--------------|
 | `make test-cov` | pytest with branch coverage, gated at 95% |
 | `make test-bats` | bats-core suites for the shell hooks |
-| `make lint` | ruff, shellcheck, actionlint, yamllint |
+| `make test-smoke` | the hook smoke suite, [`tests/test-hooks.sh`](tests/test-hooks.sh) |
+| `make benchmark` | every registered PreToolUse hook under 500 ms |
+| `make lint` | ruff, shellcheck, actionlint, yamllint, zizmor, lint-skills |
 | `make typecheck` | mypy --strict |
+| `make validate` | the eleven repository validators under [`.github/scripts/`](.github/scripts) |
 
 Run `make format` before `make lint` if the formatter complains. Individual
 targets are listed by `make help`.
+
+[`.pre-commit-config.yaml`](.pre-commit-config.yaml) mirrors the same tools
+at the versions pinned in [`requirements-dev.txt`](requirements-dev.txt); a
+different ruff locally gives a green commit and a red pipeline. Install it
+once with `pre-commit install && pre-commit install --hook-type commit-msg`,
+and run it by hand with `pre-commit run --all-files`. Its `local` hooks run the
+repository's own guardrails against the staged diff, the same scripts the
+Claude Code runtime hooks call, so a commit made outside the agent still gets
+the checks.
 
 `make lint` includes zizmor. Two release checks are worth running by hand when
 you touch [`.releaserc.json`](.releaserc.json) or the release scripts:

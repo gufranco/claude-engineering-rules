@@ -1,10 +1,3 @@
-# Local mirror of the CI gate. Every tool version here matches the pin in
-# requirements-dev.txt, because a pre-commit run that uses a different ruff
-# than CI gives a green local commit and a red pipeline.
-#
-# Install once:  pre-commit install && pre-commit install --hook-type commit-msg
-# Run manually:  pre-commit run --all-files
-
 default_install_hook_types: [pre-commit, commit-msg]
 fail_fast: false
 
@@ -31,7 +24,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.3
+    rev: v0.16.10
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -54,7 +47,7 @@ repos:
       - id: actionlint
 
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.29.0
+    rev: v1.30.1
     hooks:
       - id: zizmor
         args: [--persona=regular, --min-severity=low]
@@ -65,9 +58,6 @@ repos:
       - id: shellcheck
         args: [--severity=warning]
 
-  # The repository's own guardrails, run against the staged diff. These are the
-  # same scripts the Claude Code runtime hooks call, so a commit made outside
-  # the agent still gets the checks.
   - repo: local
     hooks:
       - id: validate-markdown-links

@@ -48,6 +48,7 @@ GENERIC_FILENAME_TOKENS = frozenset(
         "package-lock.json",
         "requirements-dev.txt",
         ".pre-commit-config.yaml",
+        ".mise.toml",
         "CONTRIBUTING.md",
         "CODE_OF_CONDUCT.md",
         "SECURITY.md",

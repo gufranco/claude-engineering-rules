@@ -185,7 +185,7 @@ def test_walk_handles_missing_dirs(clarity_mod, tmp_path):
     assert files == []
 
 
-def test_scan_handles_unreadable(clarity_mod, tmp_path):
+def test_scan_reports_an_unreadable_file(clarity_mod, tmp_path):
     # Arrange
     f = tmp_path / "bad.md"
     f.write_bytes(b"\xff\xfe\xfd")
@@ -194,7 +194,7 @@ def test_scan_handles_unreadable(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert findings == []
+    assert [finding[:2] for finding in findings] == [(0, "unreadable")]
 
 
 @pytest.mark.parametrize("line", ["", "   "])
