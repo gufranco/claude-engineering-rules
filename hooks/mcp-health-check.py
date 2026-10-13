@@ -19,16 +19,7 @@ except Exception:  # pragma: no cover
         return None
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 CACHE_DIR = os.path.expanduser("~/.claude/cache")
