@@ -398,8 +398,12 @@ def _batch_mode_enabled() -> bool:
     file paths from stdin (one per line) instead of a JSON tool envelope.
     Used by CI to scan a repository in a single invocation.
     """
+    if sys.argv[1:2] == [BATCH_FLAG]:
+        return True
     return (os.environ.get("MUTATION_METHOD_BATCH_MODE") or "").strip() == "1"
 
+
+BATCH_FLAG = "--batch"
 
 SAMPLE_LINE_CAP = 100
 MAX_HITS_PER_FILE = 8
@@ -907,7 +911,7 @@ def _read_batch_items() -> list[tuple[str, str, str, bool]]:
     items: list[tuple[str, str, str, bool]] = []
     paths: list[str] = []
     if len(sys.argv) > 1:
-        paths.extend(arg for arg in sys.argv[1:] if arg)
+        paths.extend(arg for arg in sys.argv[1:] if arg and arg != BATCH_FLAG)
     if not paths:
         try:
             raw = sys.stdin.read()
