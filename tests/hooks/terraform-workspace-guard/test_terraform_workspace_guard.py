@@ -19,7 +19,10 @@ def test_blocks_workspace_select(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `terraform workspace select|new <name>` writes the active workspace to",
+    )
 
 
 def test_blocks_workspace_new(tool_use, run_hook):
@@ -30,7 +33,10 @@ def test_blocks_workspace_new(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `terraform workspace select|new <name>` writes the active workspace to",
+    )
 
 
 def test_allows_workspace_select_help(tool_use, run_hook):
@@ -108,6 +114,7 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 @pytest.mark.parametrize(
@@ -125,4 +132,7 @@ def test_blocks_a_workspace_switch_after_global_options(tool_use, run_hook, comm
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `terraform workspace select|new <name>` writes the active workspace to",
+    )

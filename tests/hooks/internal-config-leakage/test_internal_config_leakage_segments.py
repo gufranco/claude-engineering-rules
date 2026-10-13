@@ -26,7 +26,10 @@ def test_a_publishing_call_behind_an_inert_command_is_scanned(
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: internal Claude config or templated scaffolding leaking into external output.",
+    )
 
 
 @pytest.mark.parametrize(

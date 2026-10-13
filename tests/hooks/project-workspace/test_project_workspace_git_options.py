@@ -8,9 +8,6 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK_PATH = ROOT / "hooks" / "project-workspace.py"
-sys.path.insert(0, str(ROOT / "hooks"))
-
-from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 
 
 def _load_module():
@@ -45,9 +42,19 @@ def test_value_options_are_skipped_before_the_subcommand(tokens, base):
     )
 
 
-def test_the_value_option_set_matches_the_shared_normaliser():
+def test_the_value_option_set_names_every_git_global_option_taking_a_value():
     # Arrange
-    expected = frozenset(OPTIONS_WITH_SEPARATE_VALUE)
+    expected = frozenset(
+        {
+            "-C",
+            "-c",
+            "--git-dir",
+            "--work-tree",
+            "--namespace",
+            "--config-env",
+            "--attr-source",
+        }
+    )
 
     # Act
     options = _load_module().GIT_OPTIONS_WITH_VALUE

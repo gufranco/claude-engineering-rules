@@ -314,7 +314,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: redis-atomicity could not read its input: tool_input.content is not a string.",
+    )
 
 
 def test_edit_non_string_new_string_blocks(tool_use, run_hook):
@@ -332,7 +335,10 @@ def test_edit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: redis-atomicity could not read its input: tool_input.new_string is not a",
+    )
 
 
 def test_multiedit_non_dict_edits_block(tool_use, run_hook):
@@ -349,7 +355,10 @@ def test_multiedit_non_dict_edits_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: redis-atomicity could not read its input: tool_input.edits is not a list of",
+    )
 
 
 def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
@@ -366,7 +375,10 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: redis-atomicity could not read its input: tool_input.edits is not a list of",
+    )
 
 
 def test_empty_file_path_is_safe(tool_use, run_hook):
@@ -413,21 +425,6 @@ def test_allows_expire_after_window(tool_use, run_hook):
 
     # Act
     result = run_hook(HOOK, payload)
-
-    # Assert
-    assert_allowed(result)
-
-
-def test_disable_env_bypasses(tool_use, run_hook):
-    # Arrange
-    content = "await client.incr('k');\nawait client.expire('k', 60);\n"
-    payload = tool_use(
-        "Write",
-        {"file_path": "/repo/src/limiter.ts", "content": content},
-    )
-
-    # Act
-    result = run_hook(HOOK, payload, env={"REDIS_ATOMICITY_DISABLE": "1"})
 
     # Assert
     assert_allowed(result)
@@ -531,6 +528,7 @@ def test_invalid_json_stdin_blocks():
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "redis-atomicity.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -545,6 +543,7 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_profile_disable_short_circuits(tool_use, run_hook):
@@ -670,4 +669,4 @@ def test_unrelated_transactions_elsewhere_do_not_hide_a_race(tool_use, run_hook)
     result = run_hook(HOOK, _redis_write(tool_use, content))
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "Blocked: non-atomic Redis sequence detected.")

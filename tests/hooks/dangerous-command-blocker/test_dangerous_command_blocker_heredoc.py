@@ -49,4 +49,6 @@ def test_a_heredoc_body_the_shell_executes_is_still_scanned(
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: Catastrophic command detected: recursive delete of the root"
+    )

@@ -62,8 +62,7 @@ def test_allows_a_comment_that_head_already_holds(tool_use, run_hook, repo):
     result = run_hook(HOOK, commit_payload(tool_use, repo))
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_bare_markers_in_a_staged_test(tool_use, run_hook, repo):
@@ -78,8 +77,7 @@ def test_allows_bare_markers_in_a_staged_test(tool_use, run_hook, repo):
     result = run_hook(HOOK, commit_payload(tool_use, repo))
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_blocks_a_worktree_comment_committed_with_all(tool_use, run_hook, repo):
@@ -121,8 +119,7 @@ def test_allows_a_bash_command_that_does_not_commit(tool_use, run_hook, repo):
     result = run_hook(HOOK, commit_payload(tool_use, repo, "git status"))
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_fails_closed_when_the_index_cannot_be_read(tool_use, run_hook, repo):
@@ -155,8 +152,7 @@ def test_allows_a_payload_with_nothing_to_check(run_hook, payload):
     result = run_hook(HOOK, candidate)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_blocks_a_comment_in_a_notebook_code_cell(tool_use, run_hook):
@@ -215,8 +211,7 @@ def test_allows_a_documented_env_example(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_a_rewrite_that_keeps_existing_comments(tool_use, run_hook, tmp_path):
@@ -231,8 +226,7 @@ def test_allows_a_rewrite_that_keeps_existing_comments(tool_use, run_hook, tmp_p
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -253,8 +247,7 @@ def test_allows_when_the_profile_skips_the_hook(tool_use, run_hook, env):
     result = run_hook(HOOK, payload, env=env)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_a_bash_command_without_a_commit(tool_use, run_hook):
@@ -265,8 +258,7 @@ def test_allows_a_bash_command_without_a_commit(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("raw", ["not json", '["not", "an", "object"]', ""])
@@ -282,6 +274,7 @@ def test_blocks_input_it_cannot_read(raw, hooks_dir):
         text=True,
         env={**os.environ, "CLAUDE_BYPASS_STATE": os.devnull},
         check=False,
+        timeout=30,
     )
 
     # Assert

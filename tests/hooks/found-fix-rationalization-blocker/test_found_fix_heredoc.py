@@ -27,4 +27,6 @@ def test_a_commit_message_fed_by_heredoc_is_still_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "Blocked: 'found, did not fix' rationalization detected in artifact."
+    )

@@ -333,7 +333,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: banned-prose-chars could not read its input: tool_input.content is not a",
+    )
 
 
 def test_edit_non_string_new_string_blocks(tool_use, run_hook):
@@ -351,7 +354,10 @@ def test_edit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: banned-prose-chars could not read its input: tool_input.new_string is not a",
+    )
 
 
 def test_multiedit_non_dict_items_block(tool_use, run_hook):
@@ -368,7 +374,10 @@ def test_multiedit_non_dict_items_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: banned-prose-chars could not read its input: tool_input.edits is not a list of",
+    )
 
 
 def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
@@ -385,7 +394,10 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: banned-prose-chars could not read its input: tool_input.edits is not a list of",
+    )
 
 
 def test_bash_non_string_command_blocks(tool_use, run_hook):
@@ -396,7 +408,10 @@ def test_bash_non_string_command_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: banned-prose-chars could not read its input: tool_input.command is not a",
+    )
 
 
 def test_invalid_json_stdin_blocks():
@@ -404,6 +419,7 @@ def test_invalid_json_stdin_blocks():
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "banned-prose-chars.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -418,3 +434,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

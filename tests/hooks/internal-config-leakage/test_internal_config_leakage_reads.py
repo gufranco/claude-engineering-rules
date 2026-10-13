@@ -48,7 +48,10 @@ def test_a_write_call_is_still_scanned(tool_use, run_hook, command):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: internal Claude config or templated scaffolding leaking into external output.",
+    )
 
 
 @pytest.mark.parametrize("prefix", ["cd /repo && ", "echo start; "])
@@ -63,7 +66,10 @@ def test_a_publishing_call_after_a_harmless_prefix_is_scanned(
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: internal Claude config or templated scaffolding leaking into external output.",
+    )
 
 
 @pytest.mark.parametrize(
@@ -96,7 +102,10 @@ def test_a_commit_message_fed_by_heredoc_is_still_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: internal Claude config or templated scaffolding leaking into external output.",
+    )
 
 
 def test_a_publish_after_a_heredoc_is_still_scanned(tool_use, run_hook):
@@ -111,4 +120,7 @@ def test_a_publish_after_a_heredoc_is_still_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: internal Claude config or templated scaffolding leaking into external output.",
+    )

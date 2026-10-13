@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import os
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 import subprocess as sub
 import sys as _sys
@@ -44,13 +46,14 @@ def test_allows_cookie_with_consent_context(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_blocks_console_log_email(tool_use, run_hook):
+def test_blocks_console_log_email(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Write",
         {
             "file_path": "/repo/src/login.ts",
-            "content": 'console.log("user signed in: alice@example.com");',
+            "content": f'console.log("user signed in: {email}");',
         },
     )
 
@@ -256,13 +259,14 @@ def test_allows_logger_with_identifier(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_skips_test_files(tool_use, run_hook):
+def test_skips_test_files(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Write",
         {
             "file_path": "/repo/src/login.test.ts",
-            "content": 'console.log("test email: alice@example.com");',
+            "content": f'console.log("test email: {email}");',
         },
     )
 
@@ -273,13 +277,14 @@ def test_skips_test_files(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_bypass_env_disables(tool_use, run_hook):
+def test_bypass_env_disables(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Write",
         {
             "file_path": "/repo/src/login.ts",
-            "content": 'console.log("alice@example.com");',
+            "content": f'console.log("{email}");',
         },
     )
 
@@ -290,14 +295,15 @@ def test_bypass_env_disables(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_works_on_edit_payload(tool_use, run_hook):
+def test_works_on_edit_payload(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Edit",
         {
             "file_path": "/repo/src/login.ts",
             "old_string": "old",
-            "new_string": 'console.log("alice@example.com");',
+            "new_string": f'console.log("{email}");',
         },
     )
 
@@ -308,14 +314,15 @@ def test_works_on_edit_payload(tool_use, run_hook):
     assert_blocked(result, "PLC002")
 
 
-def test_works_on_multiedit_payload(tool_use, run_hook):
+def test_works_on_multiedit_payload(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "MultiEdit",
         {
             "file_path": "/repo/src/login.ts",
             "edits": [
-                {"old_string": "a", "new_string": 'console.log("alice@example.com");'},
+                {"old_string": "a", "new_string": f'console.log("{email}");'},
             ],
         },
     )
@@ -327,11 +334,12 @@ def test_works_on_multiedit_payload(tool_use, run_hook):
     assert_blocked(result, "PLC002")
 
 
-def test_ignores_bash_tool(tool_use, run_hook):
+def test_ignores_bash_tool(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Bash",
-        {"command": 'echo "alice@example.com"'},
+        {"command": f'echo "{email}"'},
     )
 
     # Act
@@ -341,13 +349,14 @@ def test_ignores_bash_tool(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_skips_node_modules(tool_use, run_hook):
+def test_skips_node_modules(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Write",
         {
             "file_path": "/repo/node_modules/lib/x.ts",
-            "content": 'console.log("alice@example.com");',
+            "content": f'console.log("{email}");',
         },
     )
 
@@ -401,21 +410,28 @@ def test_invalid_payload_via_subprocess_blocks():
         input="not valid json",
         capture_output=True,
         text=True,
-        timeout=5,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
+        timeout=30,
         check=False,
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
-def test_skips_non_scan_extensions(tool_use, run_hook):
+def test_skips_non_scan_extensions(tool_use, run_hook, faker):
     # Arrange
+    email = faker.email()
     payload = tool_use(
         "Write",
         {
             "file_path": "/repo/src/script.py",
-            "content": 'print("alice@example.com")',
+            "content": f'print("{email}")',
         },
     )
 

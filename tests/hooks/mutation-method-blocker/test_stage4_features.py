@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime as _dt
 import importlib
 import importlib.util
-import os
 import sys
 from pathlib import Path
 
@@ -13,26 +12,24 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
 
-@pytest.fixture(autouse=True)
-def _restore_tc39_stage_filter():
-    original = os.environ.get("MUTATION_METHOD_TC39_STAGE_FILTER")
-    yield
-    if original is None:
-        os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
-    else:
-        os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = original
+STAGE_FILTER_VAR = "MUTATION_METHOD_TC39_STAGE_FILTER"
+
+
+@pytest.fixture()
+def load_fix_lookup(monkeypatch: pytest.MonkeyPatch):
+    def _load(stage: str | None):
+        if stage is None:
+            monkeypatch.delenv(STAGE_FILTER_VAR, raising=False)
+        else:
+            monkeypatch.setenv(STAGE_FILTER_VAR, stage)
+        from _lib import mutation_fix_lookup as mfl
+
+        return importlib.reload(mfl)
+
+    yield _load
+    monkeypatch.undo()
     if "_lib.mutation_fix_lookup" in sys.modules:
         importlib.reload(sys.modules["_lib.mutation_fix_lookup"])
-
-
-def _load_fix_lookup(stage: str | None):
-    if stage is None:
-        os.environ.pop("MUTATION_METHOD_TC39_STAGE_FILTER", None)
-    else:
-        os.environ["MUTATION_METHOD_TC39_STAGE_FILTER"] = stage
-    from _lib import mutation_fix_lookup as mfl
-
-    return importlib.reload(mfl)
 
 
 def _load_maintenance():
@@ -115,7 +112,7 @@ def test_for_await_without_push_quiet() -> None:
     assert matches == []
 
 
-def test_push_without_for_await_not_owned_by_phase35_detector() -> None:
+def test_push_without_for_await_is_not_reported_by_the_for_await_detector() -> None:
     # Arrange
     text = "const arr = [];\nfor (let i = 0; i < 5; i++) {\n  arr.push(i);\n}\n"
 
@@ -299,9 +296,11 @@ def test_stage4_dirty_corpus_flags_uint8_setters() -> None:
         ("async-iterable.for-await-push", True),
     ],
 )
-def test_tc39_stage_filter_default_4_suppresses_stage3(rule_id, suggested) -> None:
+def test_tc39_stage_filter_default_4_suppresses_stage3(
+    rule_id, suggested, load_fix_lookup
+) -> None:
     # Arrange
-    mfl = _load_fix_lookup(None)
+    mfl = load_fix_lookup(None)
 
     # Act
     suggestion = mfl.suggest_fix(rule_id)
@@ -317,9 +316,11 @@ def test_tc39_stage_filter_default_4_suppresses_stage3(rule_id, suggested) -> No
         ("iterator.range-replacement", False),
     ],
 )
-def test_tc39_stage_filter_3_includes_stage3(rule_id, suggested) -> None:
+def test_tc39_stage_filter_3_includes_stage3(
+    rule_id, suggested, load_fix_lookup
+) -> None:
     # Arrange
-    mfl = _load_fix_lookup("3")
+    mfl = load_fix_lookup("3")
 
     # Act
     suggestion = mfl.suggest_fix(rule_id)
@@ -328,9 +329,9 @@ def test_tc39_stage_filter_3_includes_stage3(rule_id, suggested) -> None:
     assert (suggestion is not None) is suggested
 
 
-def test_tc39_stage_filter_2_prepends_volatility_marker() -> None:
+def test_tc39_stage_filter_2_prepends_volatility_marker(load_fix_lookup) -> None:
     # Arrange
-    mfl = _load_fix_lookup("2")
+    mfl = load_fix_lookup("2")
 
     # Act
     range_repl = mfl.suggest_fix("iterator.range-replacement")
@@ -340,9 +341,9 @@ def test_tc39_stage_filter_2_prepends_volatility_marker() -> None:
     assert "Stage 2 proposal" in range_repl
 
 
-def test_tc39_stage_filter_invalid_value_falls_back_to_default() -> None:
+def test_tc39_stage_filter_invalid_value_falls_back_to_default(load_fix_lookup) -> None:
     # Arrange
-    mfl = _load_fix_lookup("notanumber")
+    mfl = load_fix_lookup("notanumber")
 
     # Act
     helper_collect = mfl.suggest_fix("async-iterator.helper-collect")
@@ -351,9 +352,9 @@ def test_tc39_stage_filter_invalid_value_falls_back_to_default() -> None:
     assert helper_collect is None
 
 
-def test_tc39_stage_filter_clamps_above_4() -> None:
+def test_tc39_stage_filter_clamps_above_4(load_fix_lookup) -> None:
     # Arrange
-    mfl = _load_fix_lookup("9")
+    mfl = load_fix_lookup("9")
 
     # Act
     stage = mfl.tc39_stage_filter()

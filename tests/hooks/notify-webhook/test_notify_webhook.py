@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import http.server
 import os
-import socket
 import subprocess
 import sys
 import threading
@@ -16,9 +15,6 @@ sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 
@@ -39,11 +35,8 @@ class _CapturingHandler(http.server.BaseHTTPRequestHandler):
 @pytest.fixture()
 def webhook() -> tuple[str, list[bytes]]:
     _CapturingHandler.posts = []
-    sock = socket.socket()
-    sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
-    sock.close()
-    server = http.server.HTTPServer(("127.0.0.1", port), _CapturingHandler)
+    server = http.server.HTTPServer(("127.0.0.1", 0), _CapturingHandler)
+    port = server.server_address[1]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -54,15 +47,20 @@ def webhook() -> tuple[str, list[bytes]]:
 
 
 def _run(env: dict) -> subprocess.CompletedProcess[str]:
-    merged = os.environ.copy()
-    merged.update(env)
+    merged = {
+        **os.environ,
+        "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+        "CLAUDE_BYPASS_STATE": os.devnull,
+        **env,
+    }
     return subprocess.run(
         [sys.executable, str(HOOK)],
         input="",
         capture_output=True,
         text=True,
         env=apply_coverage_env(merged),
-        timeout=5,
+        timeout=30,
+        check=False,
     )
 
 

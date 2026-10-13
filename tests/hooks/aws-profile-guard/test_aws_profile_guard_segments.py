@@ -23,7 +23,10 @@ def test_a_profile_on_another_call_does_not_cover_configure_set(
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `aws configure set ...` without `--profile <name>` writes to the default AWS",
+    )
 
 
 @pytest.mark.parametrize(

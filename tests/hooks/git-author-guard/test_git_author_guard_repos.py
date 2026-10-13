@@ -44,6 +44,7 @@ def _git(repo: Path, env: dict[str, str], *args: str) -> None:
         env={**os.environ, **env},
         check=True,
         capture_output=True,
+        timeout=30,
     )
 
 

@@ -34,7 +34,7 @@ def test_mocking_internal_infrastructure_is_blocked(tool_use, run_hook, path, co
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "Blocked: mocking internal infrastructure.")
 
 
 @pytest.mark.parametrize(

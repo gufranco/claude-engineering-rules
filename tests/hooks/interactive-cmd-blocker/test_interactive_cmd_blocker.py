@@ -64,7 +64,7 @@ def test_blocks_in_compound_command(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: `rm` invoked without `-f`.")
 
 
 def test_blocks_after_or(tool_use, run_hook):
@@ -75,7 +75,7 @@ def test_blocks_after_or(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: `rm` invoked without `-f`.")
 
 
 @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ def test_blocks_after_a_quoted_heredoc_marker(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: `rm` invoked without `-f`.")
 
 
 @pytest.mark.parametrize(
@@ -225,7 +225,7 @@ def test_handles_env_var_prefix(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: `rm` invoked without `-f`.")
 
 
 @pytest.mark.parametrize(

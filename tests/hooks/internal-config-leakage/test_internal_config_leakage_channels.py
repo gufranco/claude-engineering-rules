@@ -209,7 +209,18 @@ def _directory(directory: Path) -> Path:
 
 
 @pytest.mark.parametrize(
-    "make_path", [_absent_file, _oversized_file, _unreadable_file, _directory]
+    "make_path",
+    [
+        _absent_file,
+        _oversized_file,
+        pytest.param(
+            _unreadable_file,
+            marks=pytest.mark.skipif(
+                os.geteuid() == 0, reason="root reads files without permission bits"
+            ),
+        ),
+        _directory,
+    ],
 )
 def test_payload_files_that_cannot_be_read_yield_nothing(hook, tmp_path, make_path):
     # Arrange

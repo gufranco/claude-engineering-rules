@@ -13,9 +13,11 @@ OVER_LIMIT_BYTES = 6 * 1024 * 1024
 
 @pytest.fixture()
 def repo_with_large_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, timeout=30)
     (tmp_path / "huge.bin").write_bytes(b"x" * OVER_LIMIT_BYTES)
-    subprocess.run(["git", "add", "huge.bin"], check=True, cwd=str(tmp_path))
+    subprocess.run(
+        ["git", "add", "huge.bin"], check=True, cwd=str(tmp_path), timeout=30
+    )
     monkeypatch.chdir(tmp_path)
     return tmp_path
 

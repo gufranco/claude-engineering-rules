@@ -5,47 +5,79 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import TypedDict
 
 import pytest
+from _helpers.cov_env import apply_coverage_env
 
 ROOT = Path(__file__).resolve().parents[2]
 HOOKS_DIR = ROOT / "hooks"
-sys.path.insert(0, str(ROOT / "hooks"))
+sys.path.insert(0, str(HOOKS_DIR))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
-from _helpers.cov_env import apply_coverage_env  # noqa: E402
-
-SKIP = {"mutation-method-blocker.py"}
+PAYLOADS_FILE = Path(__file__).resolve().parent / "bypass_smoke_payloads.json"
 
 
-def _hooks() -> list[Path]:
-    return sorted(p for p in HOOKS_DIR.glob("*.py") if p.name not in SKIP)
+class SmokeCase(TypedDict):
+    env: dict[str, str]
+    payload: dict[str, object]
 
 
-@pytest.mark.parametrize("hook_path", _hooks(), ids=lambda p: p.stem)
-def test_file_bypass_short_circuits_hook(hook_path: Path, tmp_path: Path) -> None:
-    # Arrange
-    state = tmp_path / ".bypass-state.json"
-    set_bypass(hook_path.stem, ttl_seconds=120, state_path=state)
-    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "echo noop"}})
-    env = apply_coverage_env({**os.environ, "CLAUDE_BYPASS_STATE": str(state)})
+BLOCKING_PAYLOADS: dict[str, SmokeCase] = json.loads(
+    PAYLOADS_FILE.read_text(encoding="utf-8")
+)
+CREDENTIAL_VARS = ("GH_TOKEN", "GITHUB_TOKEN", "GITLAB_TOKEN", "GLAB_TOKEN")
+TIMEOUT_S = 30
+BYPASS_TTL_S = 120
 
-    # Act
-    result = subprocess.run(
-        [sys.executable, str(hook_path)],
-        input=payload,
+
+def _env(case: SmokeCase, state: Path) -> dict[str, str]:
+    inherited = {k: v for k, v in os.environ.items() if k not in CREDENTIAL_VARS}
+    return apply_coverage_env(
+        {**inherited, **case["env"], "CLAUDE_BYPASS_STATE": str(state)}
+    )
+
+
+def _run(hook: str, case: SmokeCase, state: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(HOOKS_DIR / f"{hook}.py")],
+        input=json.dumps(case["payload"]),
         capture_output=True,
         text=True,
-        env=env,
-        timeout=5,
+        env=_env(case, state),
+        timeout=TIMEOUT_S,
+        check=False,
     )
 
+
+@pytest.mark.parametrize("hook", sorted(BLOCKING_PAYLOADS))
+def test_hook_blocks_the_payload_when_no_bypass_is_set(
+    hook: str, tmp_path: Path
+) -> None:
+    # Arrange
+    state = tmp_path / ".bypass-state.json"
+    case = BLOCKING_PAYLOADS[hook]
+
+    # Act
+    result = _run(hook, case, state)
+
     # Assert
-    assert result.returncode == 0, (
-        f"{hook_path.name} expected exit 0 with bypass active; got "
-        f"{result.returncode}; stderr={result.stderr[:200]}"
-    )
+    assert result.returncode == 2, result.stderr[:400]
+
+
+@pytest.mark.parametrize("hook", sorted(BLOCKING_PAYLOADS))
+def test_file_bypass_allows_a_payload_the_hook_otherwise_blocks(
+    hook: str, tmp_path: Path
+) -> None:
+    # Arrange
+    state = tmp_path / ".bypass-state.json"
+    set_bypass(hook, ttl_seconds=BYPASS_TTL_S, state_path=state)
+    case = BLOCKING_PAYLOADS[hook]
+
+    # Act
+    result = _run(hook, case, state)
+
+    # Assert
+    assert result.returncode == 0, result.stderr[:400]
+    assert "Blocked" not in result.stderr

@@ -17,7 +17,7 @@ def test_blocks_glab_mr_without_token(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: glab command without explicit GITLAB_TOKEN.")
 
 
 def test_blocks_glab_auth_login(tool_use, run_hook):
@@ -28,7 +28,10 @@ def test_blocks_glab_auth_login(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: glab auth login changes the global config and affects all terminals.",
+    )
 
 
 def test_allows_glab_with_inline_token(tool_use, run_hook):
@@ -94,6 +97,7 @@ def test_invalid_json_stdin_blocks():
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "glab-token-guard.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -108,3 +112,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

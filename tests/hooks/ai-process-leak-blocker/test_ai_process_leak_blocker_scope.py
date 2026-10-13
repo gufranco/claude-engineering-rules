@@ -46,4 +46,7 @@ def test_comments_and_prose_are_still_scanned(tool_use, run_hook, path, content)
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )

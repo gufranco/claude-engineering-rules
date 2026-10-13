@@ -10,9 +10,6 @@ from pathlib import Path
 
 import pytest
 
-TESTS_ROOT = Path(__file__).resolve().parents[2]
-if str(TESTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TESTS_ROOT))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 HOOK = "project-workspace"
@@ -36,7 +33,7 @@ def words(count: int = 4) -> str:
 
 def run_git(repo: Path, *args: str) -> str:
     return subprocess.run(
-        ["git", *args], cwd=repo, check=True, capture_output=True, text=True
+        ["git", *args], cwd=repo, check=True, capture_output=True, text=True, timeout=30
     ).stdout
 
 
@@ -399,6 +396,7 @@ def test_malformed_payload_blocks(raw):
             {**os.environ, "CLAUDE_BYPASS_STATE": os.devnull, **GIT_ENV}
         ),
         check=False,
+        timeout=30,
     )
 
     # Assert

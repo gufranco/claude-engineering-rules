@@ -381,7 +381,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-attribution-blocker could not read its input: tool_input.content is not a",
+    )
 
 
 def test_edit_non_string_new_string_blocks(tool_use, run_hook):
@@ -399,7 +402,10 @@ def test_edit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-attribution-blocker could not read its input: tool_input.new_string is not",
+    )
 
 
 def test_multiedit_non_dict_items_block(tool_use, run_hook):
@@ -416,7 +422,10 @@ def test_multiedit_non_dict_items_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-attribution-blocker could not read its input: tool_input.edits is not a",
+    )
 
 
 def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
@@ -433,7 +442,10 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-attribution-blocker could not read its input: tool_input.edits is not a",
+    )
 
 
 def test_bash_non_string_command_blocks(tool_use, run_hook):
@@ -444,7 +456,10 @@ def test_bash_non_string_command_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-attribution-blocker could not read its input: tool_input.command is not a",
+    )
 
 
 def test_empty_file_path_with_clean_content(tool_use, run_hook):
@@ -500,3 +515,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

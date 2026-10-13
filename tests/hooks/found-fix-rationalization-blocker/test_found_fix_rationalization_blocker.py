@@ -119,7 +119,9 @@ def test_blocks_leave_for_later(tool_use, run_hook, phrase):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "Blocked: 'found, did not fix' rationalization detected in artifact."
+    )
 
 
 def test_blocks_not_blocking_the_run(tool_use, run_hook):
@@ -162,7 +164,9 @@ def test_blocks_in_gh_release_create(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "Blocked: 'found, did not fix' rationalization detected in artifact."
+    )
 
 
 def test_blocks_in_write_payload_to_code(tool_use, run_hook, tmp_path):
@@ -180,7 +184,9 @@ def test_blocks_in_write_payload_to_code(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "Blocked: 'found, did not fix' rationalization detected in artifact."
+    )
 
 
 def test_allows_clean_commit_message(tool_use, run_hook):

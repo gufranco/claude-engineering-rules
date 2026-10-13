@@ -504,7 +504,7 @@ def test_disabled_profile(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_silently_allows(run_hook):
+def test_write_without_tool_input_is_allowed_silently(run_hook):
     # Arrange
     payload = {"tool_name": "Write"}
 
@@ -512,7 +512,7 @@ def test_invalid_json_silently_allows(run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
 
 
 def test_multistage_user_before_final_from_warns(tool_use, run_hook):

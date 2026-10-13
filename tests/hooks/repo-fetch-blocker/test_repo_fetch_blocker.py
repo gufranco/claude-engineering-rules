@@ -42,7 +42,9 @@ def test_blocks_in_compound_command(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result, "BLOCKED: curl/wget against raw.githubusercontent.com (or equivalent)."
+    )
 
 
 @pytest.mark.parametrize(

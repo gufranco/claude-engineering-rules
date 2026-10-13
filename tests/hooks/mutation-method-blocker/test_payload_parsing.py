@@ -141,6 +141,7 @@ def test_malformed_json_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_non_string_content_blocks(run_hook):

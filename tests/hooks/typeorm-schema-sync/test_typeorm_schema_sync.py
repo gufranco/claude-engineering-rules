@@ -284,6 +284,7 @@ def test_invalid_json_stdin_blocks():
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "typeorm-schema-sync.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -298,17 +299,18 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
-def test_invalid_json_stdin_with_run_hook(run_hook):
+def test_payload_without_tool_input_is_allowed_silently(run_hook):
     # Arrange
     payload = {"_not": "a-valid-tool-payload"}
 
     # Act
-    code, _stdout, _stderr = run_hook(HOOK, payload)
+    result = run_hook(HOOK, payload)
 
     # Assert
-    assert code == 0
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
 
 
 def test_empty_file_path_with_clean_content_is_allowed(tool_use, run_hook):
@@ -408,7 +410,10 @@ def test_write_with_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: typeorm-schema-sync could not read its input: tool_input.content is not a",
+    )
 
 
 def test_multiedit_with_non_dict_items_blocks(tool_use, run_hook):
@@ -425,7 +430,10 @@ def test_multiedit_with_non_dict_items_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: typeorm-schema-sync could not read its input: tool_input.edits is not a list",
+    )
 
 
 def test_edit_with_non_string_new_string_blocks(tool_use, run_hook):
@@ -443,7 +451,10 @@ def test_edit_with_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: typeorm-schema-sync could not read its input: tool_input.new_string is not a",
+    )
 
 
 def test_multiedit_with_non_string_new_string_blocks(tool_use, run_hook):
@@ -460,7 +471,10 @@ def test_multiedit_with_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: typeorm-schema-sync could not read its input: tool_input.edits is not a list",
+    )
 
 
 def test_disable_audit_env_bypasses_branch(tool_use, run_hook):

@@ -133,6 +133,7 @@ def test_blocks_unreadable_input_with_a_message(hooks_dir):
         text=True,
         env={"SHELL": "/bin/zsh", "PATH": "/usr/bin:/bin"},
         check=False,
+        timeout=30,
     )
 
     # Assert

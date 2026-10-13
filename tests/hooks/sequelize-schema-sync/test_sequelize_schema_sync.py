@@ -251,6 +251,7 @@ def test_invalid_json_stdin_blocks():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -265,17 +266,18 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
-def test_invalid_json_via_run_hook(run_hook):
+def test_payload_without_tool_input_is_allowed_silently(run_hook):
     # Arrange
     payload = {"_invalid": True}
 
     # Act
-    code, _stdout, _stderr = run_hook(HOOK, payload)
+    result = run_hook(HOOK, payload)
 
     # Assert
-    assert code == 0
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
 
 
 def test_empty_file_path_with_clean_content_is_allowed(tool_use, run_hook):
@@ -303,7 +305,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: sequelize-schema-sync could not read its input: tool_input.content is not a",
+    )
 
 
 def test_multiedit_non_dict_edits_block(tool_use, run_hook):
@@ -320,7 +325,10 @@ def test_multiedit_non_dict_edits_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: sequelize-schema-sync could not read its input: tool_input.edits is not a list",
+    )
 
 
 def test_indexes_entry_with_complex_fields_and_name_is_allowed(tool_use, run_hook):

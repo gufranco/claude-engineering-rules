@@ -19,6 +19,17 @@ SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
 COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
 
 
+@pytest.fixture(autouse=True)
+def isolated_hook_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    state = tmp_path / "bypass-state.json"
+    monkeypatch.setenv("CLAUDE_BYPASS_STATE", str(state))
+    monkeypatch.setenv("CLAUDE_HOOK_AUDIT_DISABLE", "1")
+    bypass_module = sys.modules.get("_lib.bypass")
+    if bypass_module is not None:
+        monkeypatch.setattr(bypass_module, "STATE_PATH", state)
+    return state
+
+
 @pytest.fixture(scope="session")
 def hook_path() -> Path:
     return HOOK_PATH

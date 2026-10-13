@@ -8,9 +8,6 @@ from pathlib import Path
 import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 
-TESTS_ROOT = Path(__file__).resolve().parents[2]
-if str(TESTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TESTS_ROOT))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 HOOK = "ai-process-leak-blocker"
@@ -58,7 +55,10 @@ def test_blocks_of_the_plan_references(tool_use, run_hook, phrase):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_allows_a_search_whose_quoted_pattern_names_a_publishing_command(
@@ -91,7 +91,10 @@ def test_blocks_a_quoted_body_on_a_real_publishing_command(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_refs_specs_trailer(tool_use, run_hook):
@@ -162,7 +165,10 @@ def test_blocks_state_of_the_art(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_faithful_hyperbole(tool_use, run_hook):
@@ -204,7 +210,10 @@ def test_blocks_lands_in_phase(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_following_the_plan(tool_use, run_hook):
@@ -218,7 +227,10 @@ def test_blocks_following_the_plan(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_gh_pr_create_with_leak(tool_use, run_hook):
@@ -246,7 +258,10 @@ def test_blocks_gh_pr_edit_with_leak(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_gh_release_create(tool_use, run_hook):
@@ -260,7 +275,10 @@ def test_blocks_gh_release_create(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_gh_issue_create(tool_use, run_hook):
@@ -274,7 +292,10 @@ def test_blocks_gh_issue_create(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_glab_mr_create(tool_use, run_hook):
@@ -288,7 +309,10 @@ def test_blocks_glab_mr_create(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_git_tag_with_message(tool_use, run_hook):
@@ -302,7 +326,10 @@ def test_blocks_git_tag_with_message(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_write_to_source_file(tool_use, run_hook):
@@ -337,7 +364,10 @@ def test_blocks_edit_with_leak(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_multiedit_with_leak(tool_use, run_hook):
@@ -357,7 +387,10 @@ def test_blocks_multiedit_with_leak(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_allows_clean_commit(tool_use, run_hook):
@@ -497,10 +530,17 @@ def test_invalid_json_blocks():
         capture_output=True,
         text=True,
         check=False,
+        timeout=30,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_allows_unknown_tool(tool_use, run_hook):
@@ -556,7 +596,10 @@ def test_write_with_empty_path_still_checked(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_write_with_no_path_still_checked(tool_use, run_hook):
@@ -570,7 +613,10 @@ def test_write_with_no_path_still_checked(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_multiedit_with_non_dict_edit_blocks(tool_use, run_hook):
@@ -587,7 +633,10 @@ def test_multiedit_with_non_dict_edit_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-process-leak-blocker could not read its input: tool_input.edits is not a",
+    )
 
 
 def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, run_hook):
@@ -625,7 +674,10 @@ def test_blocks_gh_pr_body_file_with_equals_form(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_blocks_glab_description_file_with_leak(tmp_path, tool_use, run_hook):
@@ -663,7 +715,10 @@ def test_blocks_gh_release_notes_file_with_leak(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_allows_gh_pr_body_file_when_clean(tmp_path, tool_use, run_hook):
@@ -715,7 +770,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-process-leak-blocker could not read its input: tool_input.content is not a",
+    )
 
 
 @pytest.mark.parametrize(
@@ -913,7 +971,10 @@ def test_blocks_glab_mr_note_with_leak(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 def test_allows_human_phrasing_about_tests(tool_use, run_hook):
@@ -975,7 +1036,10 @@ def test_still_blocks_process_language_outside_the_vault(tool_use, run_hook, tmp
     result = run_hook(HOOK, payload, env={"SECOND_BRAIN_VAULT": str(vault)})
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: AI process language detected in artifact that other engineers will read.",
+    )
 
 
 GIT_ENV = {"GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
@@ -989,6 +1053,7 @@ def make_repo(root: Path) -> Path:
         check=True,
         capture_output=True,
         env={**os.environ, **GIT_ENV},
+        timeout=30,
     )
     return root
 
@@ -1096,9 +1161,10 @@ def test_blocks_a_quoted_body_file_with_a_leak(tmp_path, tool_use, run_hook):
     body = tmp_path / "body.md"
     body.write_text("Phase 3 landed.\n", encoding="utf-8")
     command = f"gh pr create --title fix --body-file '{body}'"
+    payload = tool_use("Bash", {"command": command})
 
     # Act
-    result = run_hook(HOOK, tool_use("Bash", {"command": command}))
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "Phase")
@@ -1107,23 +1173,28 @@ def test_blocks_a_quoted_body_file_with_a_leak(tmp_path, tool_use, run_hook):
 def test_allows_an_empty_body_file_value(tool_use, run_hook):
     # Arrange
     command = "gh pr create --title fix --body-file ''"
+    payload = tool_use("Bash", {"command": command})
 
     # Act
-    result = run_hook(HOOK, tool_use("Bash", {"command": command}))
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
 
 
+@pytest.mark.skipif(
+    os.geteuid() == 0, reason="root reads files without permission bits"
+)
 def test_allows_an_unreadable_body_file(tmp_path, tool_use, run_hook):
     # Arrange
     body = tmp_path / "locked.md"
     body.write_text("Phase 3 landed.\n", encoding="utf-8")
     body.chmod(0)
     command = f"gh pr create --title fix --body-file {body}"
+    payload = tool_use("Bash", {"command": command})
 
     # Act
-    result = run_hook(HOOK, tool_use("Bash", {"command": command}))
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -1137,7 +1208,10 @@ def test_edit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-process-leak-blocker could not read its input: tool_input.new_string is not",
+    )
 
 
 def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
@@ -1149,7 +1223,10 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-process-leak-blocker could not read its input: tool_input.edits is not a",
+    )
 
 
 def test_malformed_payload_blocks():
@@ -1164,7 +1241,9 @@ def test_malformed_payload_blocks():
         text=True,
         env=apply_coverage_env({**os.environ, "CLAUDE_BYPASS_STATE": os.devnull}),
         check=False,
+        timeout=30,
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

@@ -285,6 +285,7 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_unknown_tool_is_ignored(tool_use, run_hook):
@@ -477,7 +478,10 @@ def test_write_non_string_content_blocks(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-schema-sync could not read its input: tool_input.content is not a",
+    )
 
 
 def test_edit_non_string_new_string_blocks(tmp_path, tool_use, run_hook):
@@ -499,7 +503,10 @@ def test_edit_non_string_new_string_blocks(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-schema-sync could not read its input: tool_input.new_string is not a",
+    )
 
 
 def test_multiedit_non_dict_edits_blocks(tmp_path, tool_use, run_hook):
@@ -520,7 +527,10 @@ def test_multiedit_non_dict_edits_blocks(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-schema-sync could not read its input: tool_input.edits is not a list of",
+    )
 
 
 def test_drop_column_for_unknown_table_allowed(tmp_path, tool_use, run_hook):
@@ -710,7 +720,10 @@ def test_multiedit_with_dict_non_string_new_string_blocks(tmp_path, tool_use, ru
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-schema-sync could not read its input: tool_input.edits is not a list of",
+    )
 
 
 @pytest.fixture
@@ -726,6 +739,9 @@ def unreadable_schema(tmp_path: Path) -> Iterator[Path]:
     schema.chmod(0o644)
 
 
+@pytest.mark.skipif(
+    os.geteuid() == 0, reason="root reads files without permission bits"
+)
 def test_schema_read_failure_is_reported(unreadable_schema, tool_use, run_hook):
     # Arrange
     payload = tool_use(

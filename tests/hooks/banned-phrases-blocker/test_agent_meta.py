@@ -127,7 +127,10 @@ def test_non_string_prompt_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: banned-phrases-blocker could not read its input: tool_input.prompt is not a",
+    )
 
 
 def test_well_formed_agent_prompt_passes(tool_use, run_hook):

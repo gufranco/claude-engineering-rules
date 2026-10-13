@@ -18,4 +18,7 @@ def test_a_context_switch_on_a_later_line_is_blocked(tool_use, run_hook, command
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `kubectx <name>` calls `kubectl config use-context` and mutates the active",
+    )

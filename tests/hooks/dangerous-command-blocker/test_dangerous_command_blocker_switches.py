@@ -50,7 +50,9 @@ def test_a_live_bypass_entry_turns_the_blocker_off(tmp_path, tool_use, run_hook)
 @pytest.fixture()
 def solo_home(tmp_path: Path) -> tuple[Path, Path]:
     repo = tmp_path / "solo-repo"
-    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    subprocess.run(
+        ["git", "init", "-q", "-b", "main", str(repo)], check=True, timeout=30
+    )
     home = tmp_path / "home"
     (home / ".claude").mkdir(parents=True)
     (home / ".claude" / "solo-repos.txt").write_text(f"{repo}\n", encoding="utf-8")
@@ -75,7 +77,9 @@ def test_a_push_to_main_in_an_unlisted_repo_is_blocked(
     # Arrange
     home, _repo = solo_home
     other = tmp_path / "team-repo"
-    subprocess.run(["git", "init", "-q", "-b", "main", str(other)], check=True)
+    subprocess.run(
+        ["git", "init", "-q", "-b", "main", str(other)], check=True, timeout=30
+    )
     payload = tool_use("Bash", {"command": f"git -C {other} push origin main"})
 
     # Act

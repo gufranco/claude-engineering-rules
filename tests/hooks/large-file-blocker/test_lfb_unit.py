@@ -35,7 +35,7 @@ def boom(**_kwargs: object) -> None:
 
 
 def test_read_command_blocks_on_malformed_json(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
@@ -46,10 +46,11 @@ def test_read_command_blocks_on_malformed_json(
 
     # Assert
     assert exit_info.value.code == 2
+    assert "large-file-blocker could not read its input" in capsys.readouterr().err
 
 
 def test_read_command_blocks_on_non_dict_root(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("[1, 2, 3]"))
@@ -60,10 +61,11 @@ def test_read_command_blocks_on_non_dict_root(
 
     # Assert
     assert exit_info.value.code == 2
+    assert "large-file-blocker could not read its input" in capsys.readouterr().err
 
 
 def test_read_command_blocks_on_non_dict_tool_input(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": "scalar"}, monkeypatch)
@@ -74,6 +76,7 @@ def test_read_command_blocks_on_non_dict_tool_input(
 
     # Assert
     assert exit_info.value.code == 2
+    assert "large-file-blocker could not read its input" in capsys.readouterr().err
 
 
 def test_read_command_returns_string(hook, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -90,7 +93,7 @@ def test_read_command_returns_string(hook, monkeypatch: pytest.MonkeyPatch) -> N
 
 
 def test_read_command_blocks_when_command_non_string(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": {"command": 42}}, monkeypatch)
@@ -101,19 +104,20 @@ def test_read_command_blocks_when_command_non_string(
 
     # Assert
     assert exit_info.value.code == 2
+    assert "large-file-blocker could not read its input" in capsys.readouterr().err
 
 
 def test_audit_noop_when_record_unavailable(
-    hook, monkeypatch: pytest.MonkeyPatch
+    hook, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     # Arrange
     monkeypatch.setattr(hook, "_audit_record", None)
 
     # Act
-    result = hook._audit("git commit -m x")
+    hook._audit("git commit -m x")
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == ""
 
 
 def test_audit_reports_a_record_failure(
@@ -126,39 +130,6 @@ def test_audit_reports_a_record_failure(
     hook._audit("git commit -m x")
 
     # Assert
-    assert "audit log write failed" in capsys.readouterr().err
-
-
-def test_main_env_disable_short_circuits(hook, monkeypatch: pytest.MonkeyPatch) -> None:
-    # Arrange
-    monkeypatch.setenv("LARGE_FILE_DISABLE", "1")
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    assert result == 0
-
-
-def test_main_file_bypass_short_circuits(hook, monkeypatch: pytest.MonkeyPatch) -> None:
-    # Arrange
-    monkeypatch.setattr(hook, "is_bypassed", lambda _name: True)
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    assert result == 0
-
-
-def test_main_returns_zero_on_non_commit_command(
-    hook, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Arrange
-    _stdin_with({"tool_input": {"command": "ls"}}, monkeypatch)
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    assert result == 0
+    assert capsys.readouterr().err == (
+        "large-file-blocker: audit log write failed: audit explosion\n"
+    )

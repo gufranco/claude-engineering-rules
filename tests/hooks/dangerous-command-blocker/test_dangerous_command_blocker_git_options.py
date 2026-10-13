@@ -10,9 +10,6 @@ from pathlib import Path
 import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 
-TESTS_ROOT = Path(__file__).resolve().parents[2]
-if str(TESTS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TESTS_ROOT))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 HOOK = "dangerous-command-blocker"
@@ -152,7 +149,9 @@ def test_block_message_shows_the_command_as_typed(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_blocked(result)
+    _code, stderr = assert_blocked(
+        result, "BLOCKED: Use --force-with-lease instead of --force"
+    )
     assert f"Command: {command}" in stderr
 
 

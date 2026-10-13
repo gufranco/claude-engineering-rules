@@ -14,23 +14,22 @@ sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
+
+TIMEOUT_S = 30
+ISOLATION = {"CLAUDE_BYPASS_STATE": os.devnull, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
 
 
 def _run(env: dict | None = None) -> subprocess.CompletedProcess[str]:
-    merged = os.environ.copy()
-    if env:
-        merged.update(env)
+    merged = {**os.environ, **ISOLATION, **(env or {})}
     return subprocess.run(
         [sys.executable, str(HOOK)],
         input="",
         capture_output=True,
         text=True,
         env=apply_coverage_env(merged),
-        timeout=5,
+        timeout=TIMEOUT_S,
+        check=False,
     )
 
 

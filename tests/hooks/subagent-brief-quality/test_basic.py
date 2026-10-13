@@ -159,7 +159,10 @@ def test_non_string_prompt_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: subagent-brief-quality could not read its input: tool_input.prompt is not a",
+    )
 
 
 def test_disable_env_bypasses_block(tool_use, run_hook):
@@ -181,7 +184,7 @@ def test_disable_env_value_other_than_one_does_not_bypass(tool_use, run_hook):
     result = run_hook(HOOK, payload, env={"SUBAGENT_BRIEF_DISABLE": "0"})
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "Blocked: subagent prompt fails 3 of 4 quality heuristics.")
 
 
 def test_block_message_includes_remediation_hint(tool_use, run_hook):
@@ -192,7 +195,9 @@ def test_block_message_includes_remediation_hint(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_blocked(result)
+    _, stderr = assert_blocked(
+        result, "Blocked: subagent prompt fails 3 of 4 quality heuristics."
+    )
     assert "standards/smart-questions.md" in stderr
     assert "Briefing Subagents" in stderr
     assert "Fix:" in stderr
@@ -206,6 +211,7 @@ def test_invalid_json_stdin_blocks():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -220,3 +226,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

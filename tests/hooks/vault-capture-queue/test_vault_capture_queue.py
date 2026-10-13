@@ -334,7 +334,8 @@ def test_an_unreadable_queue_directory_does_not_fail_the_turn(
     monkeypatch, tmp_path, vault, project, transcript, no_subprocess
 ):
     # Arrange
-    (vault / ".claude-runs").write_text("not a directory", encoding="utf-8")
+    blocker = vault / ".claude-runs"
+    blocker.write_text("not a directory", encoding="utf-8")
     path = transcript([CORRECTION_LINE])
 
     # Act
@@ -342,3 +343,4 @@ def test_an_unreadable_queue_directory_does_not_fail_the_turn(
 
     # Assert
     assert code == 0
+    assert blocker.read_text(encoding="utf-8") == "not a directory"

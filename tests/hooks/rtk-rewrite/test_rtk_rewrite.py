@@ -7,6 +7,8 @@ import sys
 import textwrap
 from pathlib import Path
 
+from _helpers.cov_env import apply_coverage_env
+
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "rtk-rewrite.py"
@@ -14,9 +16,7 @@ sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
+TIMEOUT_S = 30
 
 
 def _make_rtk_stub(
@@ -47,7 +47,11 @@ def _make_rtk_stub(
 def _run(
     payload: dict, *, bin_dir: Path | None = None, env: dict | None = None
 ) -> subprocess.CompletedProcess[str]:
-    merged = {**os.environ, "CLAUDE_BYPASS_STATE": os.devnull}
+    merged = {
+        **os.environ,
+        "CLAUDE_BYPASS_STATE": os.devnull,
+        "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+    }
     if bin_dir is not None:
         merged["PATH"] = f"{bin_dir}:{merged.get('PATH', '')}"
     if env:
@@ -57,8 +61,9 @@ def _run(
         input=json.dumps(payload),
         capture_output=True,
         text=True,
-        env=merged,
-        timeout=5,
+        env=apply_coverage_env(merged),
+        timeout=TIMEOUT_S,
+        check=False,
     )
 
 
@@ -74,13 +79,21 @@ def test_missing_rtk_warns_and_exits_zero(tmp_path: Path) -> None:
         input=json.dumps(payload),
         capture_output=True,
         text=True,
-        env={"PATH": str(empty), "CLAUDE_BYPASS_STATE": os.devnull},
-        timeout=5,
+        env=apply_coverage_env(
+            {
+                "PATH": str(empty),
+                "CLAUDE_BYPASS_STATE": os.devnull,
+                "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            }
+        ),
+        timeout=TIMEOUT_S,
+        check=False,
     )
 
     # Assert
     assert result.returncode == 0
-    assert "rtk" in result.stderr.lower()
+    assert "rtk is not installed or not in PATH" in result.stderr
+    assert result.stdout == ""
 
 
 def test_old_rtk_warns_and_exits_zero(tmp_path: Path) -> None:
@@ -220,9 +233,11 @@ def test_file_bypass_short_circuits(tmp_path: Path) -> None:
     assert result.stdout == ""
 
 
-def test_malformed_json(tmp_path: Path) -> None:
+def test_malformed_json_passes_through_without_rewrite(tmp_path: Path) -> None:
     # Arrange
-    bin_dir = _make_rtk_stub(tmp_path, version="0.25.0", rewrite_exit=0)
+    bin_dir = _make_rtk_stub(
+        tmp_path, version="0.25.0", rewrite_exit=0, rewrite_stdout="rtk x"
+    )
 
     # Act
     result = subprocess.run(
@@ -230,13 +245,18 @@ def test_malformed_json(tmp_path: Path) -> None:
         input="not json",
         capture_output=True,
         text=True,
-        env={
-            **os.environ,
-            "PATH": f"{bin_dir}:{os.environ.get('PATH', '')}",
-            "CLAUDE_BYPASS_STATE": os.devnull,
-        },
-        timeout=5,
+        env=apply_coverage_env(
+            {
+                **os.environ,
+                "PATH": f"{bin_dir}:{os.environ.get('PATH', '')}",
+                "CLAUDE_BYPASS_STATE": os.devnull,
+                "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            }
+        ),
+        timeout=TIMEOUT_S,
+        check=False,
     )
 
     # Assert
     assert result.returncode == 0
+    assert result.stdout == ""
