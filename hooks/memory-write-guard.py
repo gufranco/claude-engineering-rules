@@ -59,6 +59,24 @@ def _keeps_generated_index(tool: str, tool_input: dict) -> bool:
     return _generated_region(change.before) == _generated_region(change.after)
 
 
+def _block_message(file_path: str) -> str:
+    return (
+        "BLOCKED: the memory directory is generated from the vault, not written "
+        "by hand.\n\n"
+        f"  {file_path}\n\n"
+        "A hand written memory file records neither when the fact was learned "
+        "nor where it came from, and it escapes the compile's token budget.\n\n"
+        "Instead:\n"
+        "  1. Capture the fact as a vault note carrying `memory: true` and a\n"
+        "     `memory-scope` of user, feedback, project, or reference.\n"
+        "  2. Run `/brain compile` to regenerate this directory.\n\n"
+        'Rule: CLAUDE.md "Knowledge Single Source of Truth", '
+        "rules/knowledge-notes.md\n"
+        "Bypass when migrating a pre-existing file: "
+        "export MEMORY_WRITE_GUARD_DISABLE=1\n"
+    )
+
+
 def main() -> int:
     if os.environ.get("MEMORY_WRITE_GUARD_DISABLE") == "1" or is_bypassed(HOOK):
         return 0
@@ -82,21 +100,7 @@ def main() -> int:
         return 0
     _audit(hook=HOOK, decision="block", tool=tool, file_path=file_path)
 
-    sys.stderr.write(
-        "BLOCKED: the memory directory is generated from the vault, not written "
-        "by hand.\n\n"
-        f"  {file_path}\n\n"
-        "A hand written memory file records neither when the fact was learned "
-        "nor where it came from, and it escapes the compile's token budget.\n\n"
-        "Instead:\n"
-        "  1. Capture the fact as a vault note carrying `memory: true` and a\n"
-        "     `memory-scope` of user, feedback, project, or reference.\n"
-        "  2. Run `/brain compile` to regenerate this directory.\n\n"
-        'Rule: CLAUDE.md "Knowledge Single Source of Truth", '
-        "rules/knowledge-notes.md\n"
-        "Bypass when migrating a pre-existing file: "
-        "export MEMORY_WRITE_GUARD_DISABLE=1\n"
-    )
+    sys.stderr.write(_block_message(file_path))
     return 2
 
 

@@ -122,50 +122,33 @@ def _proposed_path(tool_input: dict) -> str | None:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> None:
+def _should_skip() -> bool:
     if not should_run("gateguard-fact-force"):
-        sys.exit(0)
+        return True
     if os.environ.get("GATEGUARD_DISABLE") == "1":
-        sys.exit(0)
-    if is_bypassed("gateguard-fact-force"):
-        sys.exit(0)
-    data = read_hook_payload("gateguard-fact-force")
+        return True
+    return is_bypassed("gateguard-fact-force")
 
-    tool_input = data.get("tool_input", data.get("input", {}))
-    file_path = _proposed_path(tool_input)
-    if not file_path:
-        sys.exit(0)
 
-    session_id = data.get("session_id") or "default"
-    transcript_path = data.get("transcript_path", "")
-    tool_name = data.get("tool_name", "")
+def _record_and_allow(
+    state: dict[str, Any], session_id: str, session_data: dict[str, Any], file_path: str
+) -> None:
+    session_data["files"][file_path] = True
+    session_data["ts"] = time.time()
+    state[session_id] = session_data
+    _save_state(state)
+    sys.exit(0)
 
-    state = _prune(_load_state())
-    session_data = state.get(session_id) or {"ts": time.time(), "files": {}}
-    if not isinstance(session_data.get("files"), dict):
-        session_data["files"] = {}
 
-    if session_data["files"].get(file_path):
-        sys.exit(0)
-
-    if _transcript_evidence(transcript_path, file_path):
-        session_data["files"][file_path] = True
-        session_data["ts"] = time.time()
-        state[session_id] = session_data
-        _save_state(state)
-        sys.exit(0)
-
-    if (
+def _new_file_allowed(tool_name: str, file_path: str) -> bool:
+    return (
         tool_name == "Write"
         and not os.path.exists(file_path)
         and os.environ.get("GATEGUARD_ALLOW_NEW_FILES") == "1"
-    ):
-        session_data["files"][file_path] = True
-        session_data["ts"] = time.time()
-        state[session_id] = session_data
-        _save_state(state)
-        sys.exit(0)
+    )
 
+
+def _block(tool_name: str, file_path: str) -> None:
     print(
         f"BLOCKED: first edit on `{file_path}` requires evidence of prior read or user instruction.\n",
         file=sys.stderr,
@@ -191,6 +174,41 @@ def main() -> None:
         file_path=file_path,
     )
     sys.exit(2)
+
+
+def _session_entry(state: dict[str, Any], session_id: str) -> dict[str, Any]:
+    session_data = state.get(session_id) or {"ts": time.time(), "files": {}}
+    if not isinstance(session_data.get("files"), dict):
+        session_data["files"] = {}
+    return session_data
+
+
+def main() -> None:
+    if _should_skip():
+        sys.exit(0)
+    data = read_hook_payload("gateguard-fact-force")
+
+    tool_input = data.get("tool_input", data.get("input", {}))
+    file_path = _proposed_path(tool_input)
+    if not file_path:
+        sys.exit(0)
+
+    session_id = data.get("session_id") or "default"
+    transcript_path = data.get("transcript_path", "")
+    tool_name = data.get("tool_name", "")
+
+    state = _prune(_load_state())
+    session_data = _session_entry(state, session_id)
+
+    if session_data["files"].get(file_path):
+        sys.exit(0)
+
+    if _transcript_evidence(transcript_path, file_path) or _new_file_allowed(
+        tool_name, file_path
+    ):
+        _record_and_allow(state, session_id, session_data, file_path)
+
+    _block(tool_name, file_path)
 
 
 if __name__ == "__main__":

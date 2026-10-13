@@ -130,6 +130,17 @@ def emit_block(reason: str, command: str) -> None:
     sys.exit(2)
 
 
+def _force_flag_reason(base: str) -> str:
+    return (
+        f"BLOCKED: `{base}` invoked without `-f`. On macOS this often hangs "
+        f"because the default alias adds `-i` and prompts for confirmation "
+        f"that the agent cannot answer.\n"
+        f"Fix: add `-f` (e.g. `{base} -f <path>` or `{base} -rf <path>` for "
+        f"directories).\n"
+        f"Bypass (one-off): set INTERACTIVE_CMD_DISABLE=1 in parent shell."
+    )
+
+
 def main() -> int:
     if os.environ.get("INTERACTIVE_CMD_DISABLE") == "1":
         return 0
@@ -153,15 +164,7 @@ def main() -> int:
     if not blocked:
         return 0
 
-    reason = (
-        f"BLOCKED: `{base}` invoked without `-f`. On macOS this often hangs "
-        f"because the default alias adds `-i` and prompts for confirmation "
-        f"that the agent cannot answer.\n"
-        f"Fix: add `-f` (e.g. `{base} -f <path>` or `{base} -rf <path>` for "
-        f"directories).\n"
-        f"Bypass (one-off): set INTERACTIVE_CMD_DISABLE=1 in parent shell."
-    )
-    emit_block(reason, command)
+    emit_block(_force_flag_reason(base), command)
     return 2
 
 

@@ -31,12 +31,45 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
-def main() -> None:
+USE_CONTEXT_MESSAGE = (
+    "BLOCKED: `kubectl config use-context` mutates the active "
+    "Kubernetes context for every shell.\n"
+)
+
+KUBECTX_MESSAGE = (
+    "BLOCKED: `kubectx <name>` calls `kubectl config use-context` "
+    "and mutates the active context globally.\n"
+)
+
+ALTERNATIVES_MESSAGE = (
+    "Use the per-command flag instead: `kubectl --context <name> ...`\n"
+    "Or set the env var: `export KUBECONFIG=<path>` then run kubectl.\n"
+    "See: standards/multi-account-cli.md\n"
+)
+
+
+def _should_skip() -> bool:
     if os.environ.get("KUBECTL_CONTEXT_GUARD_DISABLE") == "1":
-        sys.exit(0)
+        return True
     if is_bypassed("kubectl-context-guard"):
-        sys.exit(0)
-    if not should_run("kubectl-context-guard"):
+        return True
+    return not should_run("kubectl-context-guard")
+
+
+def _block(headline: str, command: str) -> None:
+    print(f"{headline}{ALTERNATIVES_MESSAGE}Command: {command}", file=sys.stderr)
+    _audit(
+        hook="kubectl-context-guard",
+        decision="block",
+        tool="Bash",
+        reason="kubectl context global switch",
+        command_excerpt=command[:240],
+    )
+    sys.exit(2)
+
+
+def main() -> None:
+    if _should_skip():
         sys.exit(0)
     data = read_hook_payload("kubectl-context-guard")
 
@@ -45,42 +78,10 @@ def main() -> None:
         sys.exit(0)
 
     if KUBECTL_USE_CONTEXT.search(command):
-        print(
-            "BLOCKED: `kubectl config use-context` mutates the active "
-            "Kubernetes context for every shell.\n"
-            "Use the per-command flag instead: `kubectl --context <name> ...`\n"
-            "Or set the env var: `export KUBECONFIG=<path>` then run kubectl.\n"
-            "See: standards/multi-account-cli.md\n"
-            f"Command: {command}",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="kubectl-context-guard",
-            decision="block",
-            tool="Bash",
-            reason="kubectl context global switch",
-            command_excerpt=command[:240],
-        )
-        sys.exit(2)
+        _block(USE_CONTEXT_MESSAGE, command)
 
     if KUBECTX_SWITCH.search(command) or KUBECTX_PREVIOUS.search(command):
-        print(
-            "BLOCKED: `kubectx <name>` calls `kubectl config use-context` "
-            "and mutates the active context globally.\n"
-            "Use the per-command flag instead: `kubectl --context <name> ...`\n"
-            "Or set the env var: `export KUBECONFIG=<path>` then run kubectl.\n"
-            "See: standards/multi-account-cli.md\n"
-            f"Command: {command}",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="kubectl-context-guard",
-            decision="block",
-            tool="Bash",
-            reason="kubectl context global switch",
-            command_excerpt=command[:240],
-        )
-        sys.exit(2)
+        _block(KUBECTX_MESSAGE, command)
 
     sys.exit(0)
 

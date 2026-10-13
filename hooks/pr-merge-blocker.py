@@ -61,36 +61,26 @@ def is_merge_command(command: str) -> bool:
     )
 
 
-def main() -> int:
+BLOCK_MESSAGE = (
+    "BLOCKED: merging a pull request is not permitted while a morning "
+    "sweep is running.\n"
+    "The /morning skill reviews, replies, and fixes. It never merges.\n"
+    "To merge deliberately, finish the sweep first, then use /deploy land.\n"
+    "The lock clears when the sweep ends, or on its own time-to-live.\n"
+    "See: skills/morning/SKILL.md\n"
+)
+
+
+def _disabled() -> bool:
     if os.environ.get("PR_MERGE_BLOCKER_DISABLE") == "1":
-        return 0
+        return True
     if is_bypassed("pr-merge-blocker"):
-        return 0
-    if not should_run("pr-merge-blocker"):
-        return 0
+        return True
+    return not should_run("pr-merge-blocker")
 
-    data = read_hook_payload("pr-merge-blocker")
 
-    tool_input = data.get("tool_input", data.get("input", {})) or {}
-    command = tool_input.get("command", "")
-    if not command:
-        return 0
-
-    if not is_merge_command(command):
-        return 0
-
-    if not is_locked(LOCK_NAME):
-        return 0
-
-    sys.stderr.write(
-        "BLOCKED: merging a pull request is not permitted while a morning "
-        "sweep is running.\n"
-        "The /morning skill reviews, replies, and fixes. It never merges.\n"
-        "To merge deliberately, finish the sweep first, then use /deploy land.\n"
-        "The lock clears when the sweep ends, or on its own time-to-live.\n"
-        "See: skills/morning/SKILL.md\n"
-        f"Command: {command[:240]}\n"
-    )
+def _block(command: str) -> int:
+    sys.stderr.write(f"{BLOCK_MESSAGE}Command: {command[:240]}\n")
     _audit(
         hook="pr-merge-blocker",
         decision="block",
@@ -99,6 +89,21 @@ def main() -> int:
         command_excerpt=command[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+    data = read_hook_payload("pr-merge-blocker")
+    tool_input = data.get("tool_input", data.get("input", {})) or {}
+    command = tool_input.get("command", "")
+    if not command:
+        return 0
+    if not is_merge_command(command):
+        return 0
+    if not is_locked(LOCK_NAME):
+        return 0
+    return _block(command)
 
 
 if __name__ == "__main__":
