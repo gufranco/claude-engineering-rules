@@ -38,13 +38,9 @@ except Exception:  # pragma: no cover
         return None
 
 
-GCLOUD_CONFIG_SET = re.compile(r"\bgcloud\s+config\s+set\b")
-
 GCLOUD_CONFIG_ACTIVATE = re.compile(
     r"\bgcloud\s+config\s+configurations\s+activate\s+(?!--help\b|-h\b)\S+"
 )
-
-GCLOUD_CONFIGURATION_FLAG = re.compile(r"--configuration[\s=]\S+")
 
 
 import sys as _sys  # noqa: E402
@@ -60,6 +56,16 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.cli_invocations import Invocation, invocations  # noqa: E402
+
+
+def _sets_without_configuration(call: Invocation) -> bool:
+    args = list(call.args)
+    sets = any(args[i : i + 2] == ["config", "set"] for i in range(len(args)))
+    scoped = "CLOUDSDK_ACTIVE_CONFIG_NAME" in call.assigned or any(
+        arg == "--configuration" or arg.startswith("--configuration=") for arg in args
+    )
+    return sets and not scoped
 
 
 def main() -> None:
@@ -100,9 +106,7 @@ def main() -> None:
         )
         sys.exit(2)
 
-    if GCLOUD_CONFIG_SET.search(command) and not GCLOUD_CONFIGURATION_FLAG.search(
-        command
-    ):
+    if any(_sets_without_configuration(c) for c in invocations(command, "gcloud")):
         print(
             "BLOCKED: `gcloud config set ...` without "
             "`--configuration=<name>` writes to the active gcloud "

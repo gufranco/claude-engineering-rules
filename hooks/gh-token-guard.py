@@ -10,6 +10,8 @@ Receives Bash tool input as JSON on stdin.
 Exit 0 = allow, exit 2 = block.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import re
@@ -23,16 +25,6 @@ except Exception:  # pragma: no cover
     def _audit(**_fields):  # type: ignore
         return None
 
-
-GH_COMMAND = re.compile(r"(?:^|&&|\|\||;|\||\n)\s*gh\s+")
-
-GH_AUTH_EXEMPT = re.compile(r"(?:^|&&|\|\||;|\||\n)\s*gh\s+auth\s+")
-
-GH_NO_API_EXEMPT = re.compile(
-    r"(?:^|&&|\|\||;|\||\n)\s*gh\s+(?:--version|--help|-h|version|help|completion\b|config\b|alias\b|extension\s+list\b)"
-)
-
-GH_TOKEN_SET = re.compile(r"GH_TOKEN=|export\s+GH_TOKEN=")
 
 GH_AUTH_SWITCH = re.compile(r"\bgh\s+auth\s+switch\b")
 
@@ -50,7 +42,30 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.cli_invocations import Invocation, invocations  # noqa: E402
 from _lib.shell_segments import mask_literal_text  # noqa: E402
+
+EXEMPT_SUBCOMMANDS = frozenset(
+    {
+        "auth",
+        "--version",
+        "--help",
+        "-h",
+        "version",
+        "help",
+        "completion",
+        "config",
+        "alias",
+    }
+)
+
+
+def _needs_token(call: Invocation) -> bool:
+    if call.args[:1] and call.args[0] in EXEMPT_SUBCOMMANDS:
+        return False
+    if call.args[:2] == ("extension", "list"):
+        return False
+    return "GH_TOKEN" not in call.assigned
 
 
 def main():
@@ -89,15 +104,7 @@ def main():
         )
         sys.exit(2)
 
-    if not GH_COMMAND.search(scan):
-        sys.exit(0)
-
-    gh_calls = GH_COMMAND.findall(scan)
-    exempt_calls = GH_AUTH_EXEMPT.findall(scan) + GH_NO_API_EXEMPT.findall(scan)
-    if len(gh_calls) == len(exempt_calls):
-        sys.exit(0)
-
-    if GH_TOKEN_SET.search(scan):
+    if not any(_needs_token(call) for call in invocations(command, "gh")):
         sys.exit(0)
 
     print(
