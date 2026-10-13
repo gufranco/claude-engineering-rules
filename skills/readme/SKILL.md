@@ -2,14 +2,14 @@
 name: readme
 description: Generate a README and GitHub repo description from the actual codebase, in the marketing variant or the --variant assessment variant.
 disable-model-invocation: true
-argument-hint: "/readme | /readme --variant assessment | /readme --section quick-start | /readme --about-only | /readme --diff"
+argument-hint: "/readme | /readme --languages es,ja,zh-Hans,zh-HK | /readme --variant assessment | /readme --section quick-start | /readme --about-only | /readme --diff"
 allowed-tools: "Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion"
 sensitive: true
 ---
 
 ## Overview
 
-Generate a README and GitHub repository description grounded in the actual codebase. Two variants are supported: marketing (default) and assessment (`--variant assessment`). The marketing variant feels like a product landing page: eye-catching hero section, visual feature grids, architecture diagrams, concrete metrics, quick start that's impossible to miss. The assessment variant feels like an engineering memo: tables for every section, design decisions written as narrative paragraphs, no marketing language. Every claim in both variants must be grounded in the actual codebase. Never invent features.
+Generate a README and GitHub repository description grounded in the actual codebase, in English plus any translations the user selects. Two variants are supported: marketing (default) and assessment (`--variant assessment`). The marketing variant is for a public repository: what the project is, how to install it, how to use it, and where to get help, in that order. The assessment variant reads like an engineering memo: tables for every section and design decisions written as narrative paragraphs. Every claim in both variants is grounded in the actual codebase, and every file the skill writes passes the slop gate in Phase 5. Never invent features.
 
 ## When to use
 
@@ -33,12 +33,13 @@ This skill accepts optional arguments after `/readme`:
 
   | Variant | When to use | Template source |
   |---------|-------------|-----------------|
-  | `marketing` | Public release, portfolio, open source. Hero, highlights grid, badges, eye-catching visuals. Default | The structure documented inline in this file |
+  | `marketing` | Public release, portfolio, open source. Hero, usage example, quick start, badges. Default | The structure documented inline in this file |
   | `assessment` | Take-home assessments, interview submissions, pre-submission audits, architecture reviews. Technical and explanatory tone. Tables and concrete examples. Design decisions as narrative paragraphs | [`template-assessment.md`](template-assessment.md) in this directory. Also invoked by `/assessment` step 12 |
 
 - `--about-only`: generate only the GitHub repo description and topics, skip README.
 - `--section <name>`: regenerate a specific section (e.g., `--section quick-start`).
-- `--diff`: update the existing README based on what changed since it was last written.
+- `--diff`: update the existing README based on what changed since it was last written. Each translation is updated from the English diff since that translation file's own last commit.
+- `--languages <tags>`: the translations to write next to the English README, as a comma-separated list of the tags in section 7f: `es`, `ja`, `zh-Hans`, `zh-HK`. Without the flag, ask once with AskUserQuestion, `multiSelect: true`, one option per tag, before Phase 3. An empty answer means English only.
 
 When `--variant assessment` is passed, read [`template-assessment.md`](template-assessment.md) for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
 
@@ -72,7 +73,11 @@ From the scan results, build a project profile:
 
 ### Phase 3: Generate README
 
-Write the README following the structure and visual guide below. Every section must be grounded in what was found in Phase 1. If a section doesn't apply, skip it. The goal is a README that makes someone stop scrolling and star the repo.
+Write the English README following the structure and style guide below. Every section must be grounded in what was found in Phase 1. If a section doesn't apply, skip it. The goal is a README a developer can act on within a minute: what the project is, how to install it, how to use it, and where to get help, the four questions [GitHub](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes) names for a README.
+
+### Phase 3b: Translate
+
+Only when `--languages` or the language question selected at least one tag. Translate the finished English README into each selected language, following section 7f. Translate from the English file every time, never from another translation.
 
 ### Phase 4: Generate GitHub About
 
@@ -80,12 +85,20 @@ Generate a concise repo description, max 350 characters, and a list of topic tag
 
 ### Phase 5: Present and Apply
 
-1. Show the full README to the user for review.
+Before presenting, write the English draft to a scratch file and run the slop gate on it:
+
+```bash
+python3 ~/.claude/tools/slop-scan.py <draft-path>
+```
+
+Exit 0 is required, and the scan runs again on the written file after approval. The detectors read English only, so read each translation against the same shapes in [`standards/anti-slop.md`](../../standards/anti-slop.md) by hand. Then apply the deletion test from that standard to every paragraph of the English file: a paragraph whose removal changes nothing about what the reader does next is cut.
+
+1. Show the full README, and every translation, to the user for review.
 2. Show the GitHub About description and topics.
 3. Ask if they want changes before writing.
 4. **Resolve account** per [`standards/borrow-restore.md`](../../standards/borrow-restore.md) before applying GitHub About. Match the remote URL against authenticated accounts, switch if needed.
 5. After approval:
-   - Write the README.md file.
+   - Write the English README and each `README.<tag>.md`.
    - Apply the GitHub About using `gh repo edit --description "<desc>"` and `gh repo edit --add-topic <topic>` commands.
    - Restore the original account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
 
@@ -137,70 +150,25 @@ The **navigation pill row** under the badges is the pattern Bun, Zod, and Astro 
 
 When the project has only one logo, use a single `<img>` and skip the `<picture>` wrapper. Never use a placeholder. If no logo exists, omit the image entirely and lead with the bold tagline.
 
-After the centered hero, add a **metrics bar**: a single line or short paragraph with concrete numbers that make the scope tangible. Use bold for the numbers.
+After the hero, one plain sentence may state the project's scope in numbers that answer a reader's question, each counted from the source in this run:
 
-Example:
 ```markdown
-**12** modules · **30+** AWS services · **6** regions · **200+** tests · deploys in **~30 min**
+Nine Terraform modules deploy 31 AWS services across six regions, covered by 214 tests.
 ```
 
-For CLI tools or libraries, quantify differently:
-```markdown
-**45** commands · **3** platforms · **zero** dependencies · **<5ms** startup
-```
+Never a decorative bar of bolded figures separated by dots, never an approximate `30+` or `~30 min` that was not measured, and never a number that only sounds large. A project with no meaningful count skips the sentence.
 
 **Demo immediately.** The hero stack ends with one of three demo elements: an animated GIF for visual tools, an asciinema cast for CLI tools, or a 5-line code snippet for libraries. Place this within the first scroll. The "demo first" pattern is now baseline. Hyperfine opens with a GIF. Hono opens with a 4-line code example. Zod opens with a `z.object` schema definition.
 
-### 2. Highlights Grid
+### 2. Usage
 
-A visual feature showcase that reads like a product landing page. Use an HTML table to create a 2-column or 3-column grid. Each cell has a short title and a one-line description.
+A code block of the most common use, near the top and before the reference sections. [standard-readme](https://github.com/RichardLitt/standard-readme/blob/main/spec.md) requires a Usage section. A CLI shows its common commands with real output. A library shows the import and one call. The block is the feature list's evidence: a reader who sees the call does not need a sentence claiming it is easy.
 
-```html
-<table>
-<tr>
-<td width="50%" valign="top">
+Never a grid of feature squares. An HTML table of titled cells, each selling one feature, is the layout readers now name as a sign of a generated README, alongside emoji headings and ASCII diagrams, in [this Hacker News thread](https://hn.nuxt.dev/item/47528683). Capabilities that need listing go in the section 5 table, one row each, with the command or option that provides them.
 
-### Title A
-One-line description of what this feature does and why it matters.
+### 3. Comparison With Alternatives, Optional
 
-</td>
-<td width="50%" valign="top">
-
-### Title B
-One-line description of what this feature does and why it matters.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### Title C
-One-line description of what this feature does and why it matters.
-
-</td>
-<td width="50%" valign="top">
-
-### Title D
-One-line description of what this feature does and why it matters.
-
-</td>
-</tr>
-</table>
-```
-
-**Rules for the grid:**
-- 4 to 8 cells. Pick the most impressive or differentiating features.
-- Each title is 2-4 words. No fluff.
-- Each description is one sentence. Specific, not generic. "Deploys to 6 AWS regions with one command" not "Easy deployment".
-- Order by impact: most impressive first.
-
-### 3. The Problem and The Solution
-
-Two short sections that frame the project as a story. Why does this exist? What pain does it kill?
-
-**The Problem**: 2-3 sentences max. Describe the pain point that motivated the project. Be specific and relatable. Include a third-party endorsement quote when one exists; pnpm leads with a Microsoft Rush team quote about disk efficiency, which is the single strongest social-proof move available.
-
-**The Solution**: how does this project solve it? If alternatives exist, include a comparison table. Be fair to alternatives but highlight genuine advantages. The search query "Project X vs Y" is high-intent; the comparison table captures that traffic. Use plain `Yes` and `No` text instead of emoji to keep the table accessible to screen readers and consistent in fixed-width contexts:
+Include it only when a reader is likely choosing between this project and a named alternative, and only with facts checked against that alternative's current documentation in this run. Skip any "The Problem" or "The Solution" story. A README that argues why the reader should use it reads as a sales pitch, and readers in the same Hacker News thread said that is where they stop reading. One sentence on what the project does that the alternatives do not, followed by the table, is enough. Use plain `Yes` and `No` text instead of emoji to keep the table accessible to screen readers and consistent in fixed-width contexts:
 
 ```markdown
 | Capability | This Project | Alternative A | Alternative B |
@@ -255,7 +223,7 @@ Categories come from the project's actual domains: Infrastructure, Security, Dat
 
 ### 6. Demo / Screenshots
 
-If the project has visual output such as a web app, CLI with TUI, or desktop app, this section is mandatory. If no screenshots or demos exist yet, add the section with a placeholder structure and a comment telling the user to add them.
+If the project has visual output such as a web app, CLI with TUI, or desktop app, include the screenshots or recordings the repository already has. If none exist, skip the section and list the missing screenshot as a follow-up. A placeholder image or an empty section is never written.
 
 **For CLI tools**, show terminal output in a code block or reference an asciinema recording:
 
@@ -508,37 +476,40 @@ Generate `AGENTS.md` when the project will be touched by AI coding agents. Inclu
 
 ### 7f. Multilingual Variants
 
-For projects with an international audience, ship one README file per locale and a language switcher at the top of each.
+English is always the source and keeps the plain README file name. Each translation is a separate file named with its [BCP 47](https://www.rfc-editor.org/info/bcp47) tag, the convention [standard-readme](https://github.com/RichardLitt/standard-readme/blob/main/spec.md) specifies.
 
-**Filename convention** uses ISO 639-1 or BCP 47 suffixes. English stays as [`README.md`](../../README.md). Other locales get `README.<locale>.md`.
+| Language | Tag | File | Switcher label |
+|:---------|:----|:-----|:---------------|
+| English | `en` | README, unchanged | English |
+| Spanish | `es` | `README.es.md` | Español |
+| Japanese | `ja` | `README.ja.md` | 日本語 |
+| Chinese, Simplified | `zh-Hans` | `README.zh-Hans.md` | 简体中文 |
+| Chinese, Traditional, Hong Kong | `zh-HK` | `README.zh-HK.md` | 繁體中文（香港） |
 
-| Locale | Filename |
-|--------|----------|
-| Brazilian Portuguese | `README.pt-BR.md` |
-| Simplified Chinese | `README.zh-CN.md` |
-| Traditional Chinese | `README.zh-TW.md` |
-| Japanese | `README.ja.md` |
-| German | `README.de.md` |
-| Spanish | `README.es.md` |
-| French | `README.fr.md` |
+Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher at the top, before any content.** Format as a single line of pipe-separated links so the reader can jump without scrolling:
+**Language switcher.** The first line of every file, before the title, lists every language in its own name. The current language is plain text and every other one is a link:
 
 ```markdown
-**Read this in other languages:** [English](README.md) | [日本語](README.ja.md) | [Português](README.pt-BR.md) | [中文](README.zh-CN.md) | [Deutsch](README.de.md)
+[English](README.md) | Español | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 ```
 
-GitHub does not negotiate `Accept-Language`. Users always click the switcher. For projects with many translations like Supabase's 40-plus locales, a translation grid pattern, one column for flag icons and one for language names, scales further than the inline pipe list.
+GitHub does not negotiate `Accept-Language`, so the reader always picks from this line.
 
-When to localize:
+**What a translation keeps unchanged.** Code blocks, commands, flags, file paths, identifiers, environment variable names, URLs, badge images and Mermaid node identifiers. Mermaid labels are translated. Headings are translated, as standard-readme requires, and every file keeps the English section order, so the files can be compared section by section.
 
-- The project has demonstrated international adoption signals: issues in non-English languages, contributors from multiple regions.
-- A core maintainer or volunteer commits to keeping the translation current.
+**Per-language rules.**
 
-When to skip:
+| Tag | Rules |
+|:----|:------|
+| `es` | Neutral Spanish, which Microsoft publishes its own [style guide](https://aka.ms/spanish-neutral-styleguide) for, avoiding vocabulary specific to one country. One form of address throughout the file. Opening `¿` and `¡` on every question and exclamation |
+| `ja` | Polite `です・ます` style throughout, which the [JTF style guide](https://www.ospn.jp/osc2013-spring/pdf/osc2013spring_jtf_style_guide.pdf) says manuals for general readers use. Full-width `、` and `。`, never a period or comma as Japanese punctuation. Half-width letters and digits, full-width symbols, and no space between half-width and full-width characters, all per the same guide |
+| `zh-Hans` | Mainland vocabulary. A half-width space between Chinese and Latin characters, full-width punctuation, and no space between a Latin character and a full-width punctuation mark, per the [Chinese technical documentation style guide](https://github.com/ruanyf/document-style-guide) |
+| `zh-HK` | Traditional characters with Hong Kong vocabulary and standard written Chinese, never Cantonese colloquial forms. Translated from English, never converted from the Simplified file: automated conversion produces wrong characters and keeps mainland or Taiwan vocabulary, such as 軟體 where Hong Kong writes 軟件. Microsoft publishes one [Traditional Chinese style guide](https://aka.ms/chinese-traditional-styleguide), written for Taiwan, so Hong Kong vocabulary needs a reviewer who reads it natively |
 
-- New projects without international traction.
-- Solo projects where the maintainer cannot keep translations synchronized with the English version.
+**Keeping translations current.** A translation's last commit is its sync point. In `--diff` mode, `git log -1 --format=%H -- README.<tag>.md` gives that commit and `git diff <commit> -- README.md` gives the English changes to carry over. A section that cannot be translated yet keeps the new English text rather than stale translated text, because an outdated translation misleads where English only slows the reader down.
+
+**Before writing any translation, check parity with the English file:** the same number of headings at each level, the same number of code blocks, byte-identical code blocks, and the same link targets.
 
 ### 8. Project Structure
 
@@ -687,32 +658,31 @@ Short and simple. One line with the license name and a link to the full text.
 
 ### Voice and Tone
 
-- **Confident and direct.** No hedging, "might", "should", "could potentially". State what the project does.
-- **Technical but magnetic.** Assume the reader is a developer. Respect their intelligence but make them excited.
-- **Show, don't tell.** Instead of "easy to set up", show a 3-line setup. Instead of "fast", show a benchmark. Instead of "flexible", show 3 different config examples.
-- **Opinionated is good.** If the project made deliberate choices, state them proudly. "We use X because Y" is more compelling than "supports X and Y".
+- **Direct.** State what the project does. No hedging such as `might` or `could potentially`.
+- **Plain.** Assume the reader is a developer deciding whether to use the project. Every sentence passes the three tests in [`standards/anti-slop.md`](../../standards/anti-slop.md): it could not appear unchanged in another project's README, deleting it would change what the reader does, and the content chose its structure.
+- **Show, don't tell.** Instead of "easy to set up", show a 3-line setup. Instead of "fast", show a benchmark with its machine and command. Instead of "flexible", show the configuration options.
+- **State a decision with its reason.** "Uses SQLite because the data fits on one disk" tells the reader something; "carefully designed" does not.
+- **No self-validation.** Words like `validated`, `confirmed`, `production-grade`, `battle-tested` or `robust` assert quality instead of showing it, and readers read them as generated text. A test count, a coverage figure or a user list shows the same thing.
+- **No emoji in headings or bullets, no em dashes, no ASCII diagrams.** Diagrams are Mermaid.
 
 ### Visual Hierarchy
 
 The README should be scannable in 10 seconds. A developer scrolling fast should understand what the project does without reading a single paragraph.
 
-1. **Hero with logo/tagline** catches the eye.
-2. **Metrics bar** establishes credibility and scale.
-3. **Highlights grid** communicates top features visually.
-4. **Architecture diagram** shows the system at a glance.
-5. **Quick Start** lets them try it immediately.
-6. **Everything else** is reference material below the fold.
+1. **Hero**: the name, a one-line description, and the badges.
+2. **Usage**: the most common call or command, with real output.
+3. **Quick Start**: install, run, and verify.
+4. **Architecture diagram**, when the system has enough parts to need one.
+5. **Everything else** is reference material below the fold.
 
 ### Formatting Rules
 
 - **Centered hero section** using `<div align="center">`. This is the only centered section.
-- **HTML tables for feature grids** when you need multi-column layouts that Markdown tables can't achieve.
 - **Markdown tables for data** such as commands, env vars, endpoints, or prerequisites.
 - **Mermaid diagrams** for architecture. Keep them readable, max 20 nodes.
 - **Collapsible sections**, `<details>` for verbose content: project structure, FAQ, extended config.
 - **Code blocks** for every command. Always include the language identifier.
 - **Horizontal rules**, `---` to separate the hero from the content. Use sparingly elsewhere.
-- **Bold numbers** in the metrics bar to make them pop.
 - **Consistent alignment**: use `:--------` for left-align, `:--------:` for center-align in tables. Align columns purposefully: names left, statuses center, descriptions left.
 
 ### Badges
@@ -759,7 +729,7 @@ The badge requires the `scorecard-action:v2` GitHub Action with `publish_results
 
 ### Quantification
 
-Make the project's scope tangible with specific numbers. These are the most persuasive thing in a README because they can't be faked.
+Use specific numbers where they answer a reader's question, such as how many platforms, how large the binary is, or how long a deploy takes.
 
 - Number of modules, services, components, or packages.
 - Number of cloud services, regions, or resources managed.
@@ -781,7 +751,8 @@ Make the project's scope tangible with specific numbers. These are the most pers
 - **No "Built with" section** that just lists logos. The badges and stack description cover this.
 - **No placeholder text.** If information is unknown, skip the section entirely.
 - **No AI attribution.** Never add "Generated by AI" or similar markers.
-- **No marketing fluff words.** See [`../../CLAUDE.md`](../../CLAUDE.md) "Banned Phrases" for the full list. Let the numbers and features speak.
+- **No marketing fluff words.** See [`../../CLAUDE.md`](../../CLAUDE.md) "Banned Phrases" for the full list, and [`standards/anti-slop.md`](../../standards/anti-slop.md) for the sentence shapes. Let the numbers and features speak.
+- **No search narration.** Never which sources were checked, what was not found, or when something was verified. The README states what exists.
 
 ## GitHub About
 
@@ -790,6 +761,7 @@ The About description renders as the meta-description in Google SERP snippets. T
 ### Description
 
 - Max 350 characters.
+- Made from the README's one-line description, which also matches the package manifest's `description` field, as standard-readme requires. The README is the source and the About copies it; never write a separate sentence for the About.
 - Format: `[What it is] + [key differentiator] + [quantified scope]`.
 - Front-load the most-searched keyword. The first 70 characters get the heaviest SEO weight and appear unwrapped in most listing UIs.
 - No emojis. No trailing period.
@@ -873,6 +845,10 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 | 8 | Outdated screenshots showing prior major versions | Suggests the maintainer no longer touches the README. Auto-generate with Playwright in CI when possible |
 | 9 | No demo, no image, no GIF | Pure-text READMEs read as low-effort. The demo-first pattern is now baseline |
 | 10 | Overly personal tone like "just something I made real quick lol" | Undercuts the technical content. Match the project's category: technical for libraries, slightly warmer for end-user apps |
+| 11 | A grid of feature squares, emoji headings, or an ASCII diagram | Readers now name these as signs of a generated README and stop reading |
+| 12 | A Problem and Solution pitch, or self-validating words like `validated` and `production-grade` | The README argues for itself instead of showing the usage and the numbers |
+| 13 | A translation converted from another translation, or Traditional Chinese converted from Simplified | Wrong characters and the wrong region's vocabulary |
+| 14 | A translation older than the English README with no English fallback for the changed sections | The reader acts on instructions that no longer work |
 
 ## Common Rationalizations
 
@@ -897,21 +873,26 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - **5-second test.** A developer scrolling fast should know what the project does, that it works, and how to try it within 5 seconds of landing. If the hero stack does not pass this test, restructure.
 - **Cap the hero at 5-8 badges.** More than 8 dilutes signal. Pull the rest into a "Status" section below the fold if they earn the slot.
 - **Demo-first.** A GIF, asciinema cast, or 5-line code snippet within the first scroll. No exceptions.
+- **Slop gate.** [`tools/slop-scan.py`](../../tools/slop-scan.py) exits 0 on the English README, and every translation was read against the same shapes.
+- **Translations follow 7f.** One file per selected tag, translated from English, with the switcher on the first line and parity with the English file.
 
 ## Red Flags
 
 - Stop and remove the claim when a feature, metric, or path in the draft has no match in the Phase 1 scan.
 - Stop and drop the element when the logo, screenshot, or demo file it references does not exist, and list it as a follow-up.
 - Stop and cut the sentence when it narrates how the work went, describes an abandoned approach, or points at working notes.
+- Stop and translate from English when a translation is about to be produced from another translation or by converting Simplified Chinese to Traditional.
 - Stop and ask the user when the README write or `gh repo edit` is about to run before they approved the draft.
 - Stop and resolve the account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md) when a `gh` command is about to run against a remote whose account was not matched.
 
 ## Verification
 
-- The markdown-link validator reports zero findings on the generated README.
+- The markdown-link validator reports zero findings on the generated README and on every translation.
+- `python3 ~/.claude/tools/slop-scan.py README.md` exits 0.
+- Each selected language has its `README.<tag>.md`. Every file, English included, opens with the switcher line, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
 - Every Quick Start command maps to a script or Makefile target that exists, and the section ends with a verification command and its expected output.
 - Every path in the project structure tree and every referenced image exists on disk.
-- Every number in the metrics bar was counted from the source in this run.
+- Every number in the scope sentence was counted from the source in this run.
 - The hero carries at most 8 badges and a demo within the first scroll.
 - The About description is at most 350 characters with no trailing period, and the topics are at most 20, lowercase, and hyphenated.
 - The user approved the draft before the write, and the original `gh` account was restored after the About was applied.

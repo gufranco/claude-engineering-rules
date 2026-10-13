@@ -15,7 +15,7 @@ Scan the project in parallel: package manifest, infrastructure configs, source t
 ```
 # {Company} {Role}: Technical Assessment
 
-A production-grade [type of system] for [domain], built with [key technologies].
+A [type of system] for [domain], built with [key technologies].
 Submitted as a take-home assessment for the **{Role}** position at **{Company}**.
 
 If the company name or role is unknown, use a neutral title:
@@ -23,8 +23,7 @@ If the company name or role is unknown, use a neutral title:
 
 ## What This Assessment Covers
 
-This is not a minimal [type]. It is a fully operational system with
-production-level engineering across every layer:
+What was built, by area:
 
 | Area | What was built |
 |------|---------------|
@@ -269,6 +268,7 @@ Tests cover:
 ## README Generation Rules
 
 - Every claim must be grounded in the actual codebase. Never invent features. Read the code to verify before writing.
+- The voice, slop gate and language rules in [`SKILL.md`](SKILL.md) apply here too: `tools/slop-scan.py` exits 0 on the README, and no sentence argues that the work is good instead of showing what it does.
 - The "Design Decisions" section is the most important. This is where the engineer's thinking shows. Write each decision as a natural narrative paragraph, not as a structured template with labels. The reader should feel like a senior engineer is explaining their reasoning over coffee, not filling out a form.
 - The "What This Assessment Covers" table is the second most important. Each row must reference a specific, concrete implementation detail. "Clean architecture" is too vague. "Three-layer design with dependency inversion. Domain has zero framework imports. Use cases depend on repository interfaces, never on Sequelize or Express" is concrete.
 - Architecture diagrams use Mermaid with subgraphs for layers and labeled arrows for dependency direction. Max 15-20 nodes to keep diagrams readable. GitHub, GitLab, and most markdown renderers support Mermaid natively.

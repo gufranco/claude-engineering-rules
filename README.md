@@ -176,7 +176,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/onboard`](skills/onboard/SKILL.md) | Codebase onboarding: architecture map, "Start Here". Phase 0 prompts before running the trust scan. Flags `--trust` and `--verify` pre-decide non-interactively |
 | [`/gan`](skills/gan/SKILL.md) | Generator-Evaluator iteration loop for building features against a scored rubric. Iterates planner, generator, and evaluator subagents until the threshold is met |
 | [`/pr-summary`](skills/pr-summary/SKILL.md) | PR summary with reviewer suggestions |
-| [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis |
+| [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis. Every claim comes from the code, the English file must pass [`tools/slop-scan.py`](tools/slop-scan.py), and `--languages es,ja,zh-Hans,zh-HK` adds Spanish, Japanese, Simplified Chinese and Hong Kong Traditional Chinese translations with a language switcher |
 | [`/retro`](skills/retro/SKILL.md) | Session retrospective with pattern extraction |
 | [`/morning`](skills/morning/SKILL.md) | Cross-account work triage. Sweeps every authenticated git identity and its organizations, ranks by who is blocked, reports, then works the queue with per-item consent. Merging is blocked mechanically for the run |
 | [`/session-log`](skills/session-log/SKILL.md) | Session activity logger for handoff |
@@ -404,6 +404,7 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 | Scenario | Start with |
 |:---------|:-----------|
 | "Write or update a README" | `/readme` |
+| "Translate the README" | `/readme --languages <tags>` |
 | "Generate an assessment-style README" | `/readme --variant assessment` |
 | "What does the community say about X" | `/research X` |
 | "X vs Y, which is better" | `/research X vs Y` |
