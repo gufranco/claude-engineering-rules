@@ -991,21 +991,12 @@ def _handle_cli_flags() -> int | None:
     return None  # pragma: no cover
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(hook_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> int:
     if not should_run("mutation-method-blocker"):
-        _sys.exit(0)
+        sys.exit(0)
     start_ts = time.perf_counter()
 
     cli_exit = _handle_cli_flags()

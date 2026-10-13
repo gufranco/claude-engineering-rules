@@ -129,21 +129,12 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     return out
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> int:
     if not should_run("banned-prose-chars"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("BANNED_PROSE_CHARS_DISABLE") == "1":
         _audit(
             hook="banned-prose-chars",

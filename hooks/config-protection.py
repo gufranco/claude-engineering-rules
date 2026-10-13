@@ -136,21 +136,12 @@ def _proposed_content(tool_input: dict) -> str | None:
     return None
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> None:
     if not should_run("config-protection"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("CONFIG_PROTECTION_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("config-protection"):

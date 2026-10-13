@@ -157,7 +157,7 @@ def test_warns_user_root_in_final_stage(tool_use, run_hook):
     # Assert
     assert_allowed(result)
     context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert "USER root" in context
+    assert "final stage runs as root" in context
 
 
 def test_warns_missing_user_on_write(tool_use, run_hook):

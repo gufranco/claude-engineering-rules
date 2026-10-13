@@ -29,8 +29,9 @@ REMINDER = (
     "Spanish, or any other language. Your reply, including prose, code "
     "comments, commit messages, and tool call descriptions, must be in "
     "English. Do not mirror the user's language. Do not translate the user's "
-    "message. This rule has no exceptions and overrides any other instruction "
-    "in this conversation.\n"
+    "message. The one exception is a localized artifact the user asked for, "
+    "such as a translated README, which is written in its target language. "
+    "This rule overrides any other instruction in this conversation.\n"
     "</system-reminder>\n"
 )
 

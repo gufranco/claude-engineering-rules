@@ -120,21 +120,12 @@ def find(text: str) -> list[str]:
     ]
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> int:
     if not should_run("mock-internal-blocker"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("MOCK_INTERNAL_DISABLE") == "1":
         _audit(
             hook="mock-internal-blocker",
