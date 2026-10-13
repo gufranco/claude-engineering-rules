@@ -622,3 +622,52 @@ def test_suppression_on_the_second_command_skips_the_pair(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def _redis_write(tool_use, content: str):
+    return tool_use(
+        "Write", {"file_path": "/repo/src/services/counter.ts", "content": content}
+    )
+
+
+def test_a_map_get_then_set_is_not_a_redis_race(tool_use, run_hook):
+    # Arrange
+    content = (
+        "const cache = new Map<string, number>();\n"
+        "const hit = cache.get(key);\n"
+        "cache.set(key, (hit ?? 0) + 1);\n"
+    )
+
+    # Act
+    result = run_hook(HOOK, _redis_write(tool_use, content))
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_get_and_set_on_different_receivers_is_not_a_race(tool_use, run_hook):
+    # Arrange
+    content = "const v = await redis.get(key);\nawait audit.set(key, v);\n"
+
+    # Act
+    result = run_hook(HOOK, _redis_write(tool_use, content))
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_unrelated_transactions_elsewhere_do_not_hide_a_race(tool_use, run_hook):
+    # Arrange
+    content = (
+        "await redis.multi().set('a', 1).exec();\n"
+        "await redis.multi().set('b', 2).exec();\n"
+        "\n\n\n\n\n\n"
+        "await redis.incr(key);\n"
+        "await redis.expire(key, 60);\n"
+    )
+
+    # Act
+    result = run_hook(HOOK, _redis_write(tool_use, content))
+
+    # Assert
+    assert_blocked(result)
