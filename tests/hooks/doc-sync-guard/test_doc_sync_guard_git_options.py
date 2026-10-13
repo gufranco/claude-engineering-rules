@@ -4,8 +4,8 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from faker import Faker
 from _helpers.hook_assertions import assert_blocked
+from faker import Faker
 
 HOOK = "doc-sync-guard"
 

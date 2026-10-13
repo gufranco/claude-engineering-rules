@@ -114,32 +114,17 @@ def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
     return "", ""
 
 
-def main() -> int:
-    if os.environ.get("AI_DISCLOSURE_DISABLE") == "1":
-        return 0
-    if is_bypassed("ai-disclosure-checks"):
-        return 0
-    payload = read_hook_payload("ai-disclosure-checks")
-
+def _changed_content(payload: dict) -> tuple[str, str, str]:
     tool_name = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {})
     if tool_name not in {"Write", "Edit", "MultiEdit"}:
-        return 0
-
+        return tool_name, "", ""
     path, content = extract_content(tool_name, tool_input)
-    if not path or not content:
-        return 0
-    if is_skipped(path):
-        return 0
+    return tool_name, path, content
 
-    all_findings: list[tuple[int, str]] = []
-    for check in CHECKS:
-        all_findings.extend(check(content))
 
-    if not all_findings:
-        return 0
-
-    all_findings.sort(key=lambda f: f[0])
+def _report(tool_name: str, path: str, findings: list[tuple[int, str]]) -> int:
+    all_findings = sorted(findings, key=lambda f: f[0])
     bullet_lines = "\n".join(f"  - line {ln}: {msg}" for ln, msg in all_findings[:10])
     extra = "" if len(all_findings) <= 10 else f"\n  ... {len(all_findings) - 10} more"
 
@@ -160,6 +145,26 @@ def main() -> int:
         file=sys.stderr,
     )
     return 2
+
+
+def main() -> int:
+    if os.environ.get("AI_DISCLOSURE_DISABLE") == "1":
+        return 0
+    if is_bypassed("ai-disclosure-checks"):
+        return 0
+    payload = read_hook_payload("ai-disclosure-checks")
+
+    tool_name, path, content = _changed_content(payload)
+    if not path or not content:
+        return 0
+    if is_skipped(path):
+        return 0
+
+    all_findings = [finding for check in CHECKS for finding in check(content)]
+
+    if not all_findings:
+        return 0
+    return _report(tool_name, path, all_findings)
 
 
 if __name__ == "__main__":

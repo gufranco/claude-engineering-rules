@@ -22,38 +22,43 @@ ALLOW = 0
 BLOCK = 2
 
 
+def _write_git_stub(tmp: str, staged: list[str], diff_exit: int) -> None:
+    stub = Path(tmp) / "git"
+    stub.write_text(
+        "#!/bin/sh\n"
+        'case "$*" in *diff*)\n'
+        f"  printf '%s' \"{chr(10).join(staged)}\"\n"
+        '  [ -n "$STAGED_EMPTY" ] || echo\n'
+        f"  exit {diff_exit} ;;\n"
+        "esac\n"
+        "exit 0\n"
+    )
+    stub.chmod(0o755)
+
+
+def _hook_env(tmp: str, env_extra: dict[str, str] | None) -> dict[str, str]:
+    inherited = {
+        k: v for k, v in os.environ.items() if k != "FRONTEND_RENDER_GATE_DISABLE"
+    }
+    return {
+        **inherited,
+        "PATH": f"{tmp}:{os.environ.get('PATH', '')}",
+        "CLAUDE_BYPASS_STATE": os.devnull,
+        "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+        **(env_extra or {}),
+    }
+
+
 def run_hook(staged, command="git commit -m 'x'", env_extra=None, diff_exit=0):
     with tempfile.TemporaryDirectory() as tmp:
-        stub = Path(tmp) / "git"
-        stub.write_text(
-            "#!/bin/sh\n"
-            'case "$*" in *diff*)\n'
-            f"  printf '%s' \"{chr(10).join(staged)}\"\n"
-            '  [ -n "$STAGED_EMPTY" ] || echo\n'
-            f"  exit {diff_exit} ;;\n"
-            "esac\n"
-            "exit 0\n"
-        )
-        stub.chmod(0o755)
-
-        inherited = {
-            k: v for k, v in os.environ.items() if k != "FRONTEND_RENDER_GATE_DISABLE"
-        }
-        env = {
-            **inherited,
-            "PATH": f"{tmp}:{os.environ.get('PATH', '')}",
-            "CLAUDE_BYPASS_STATE": os.devnull,
-            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
-            **(env_extra or {}),
-        }
-
+        _write_git_stub(tmp, staged, diff_exit)
         payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
         result = subprocess.run(
             [sys.executable, str(HOOK)],
             input=payload,
             capture_output=True,
             text=True,
-            env=apply_coverage_env(env),
+            env=apply_coverage_env(_hook_env(tmp, env_extra)),
             timeout=30,
             check=False,
         )

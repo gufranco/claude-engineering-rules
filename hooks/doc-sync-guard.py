@@ -224,6 +224,67 @@ def _surviving_definitions(
     return _matches(patterns, out.splitlines())
 
 
+def _env_findings(
+    cwd: Path, tracked: set[str], staged: set[str], added: list[str], removed: list[str]
+) -> list[str]:
+    example_path, documented_env = _env_example_names(cwd, tracked)
+    if example_path is None or example_path in staged:
+        return []
+    introduced = _matches(ENV_READ_PATTERNS, added) - _matches(
+        ENV_READ_PATTERNS, removed
+    )
+    return [
+        f"environment variable {name} is read by the staged code but "
+        f"{example_path} does not name it and is not staged"
+        for name in sorted(introduced - documented_env)
+    ]
+
+
+def _export_findings(
+    cwd: Path, base: str, removed: list[str], unstaged_docs: list[str]
+) -> list[str]:
+    dropped_exports = _matches(EXPORT_PATTERNS, removed) - _surviving_definitions(
+        cwd, base, EXPORT_PATTERNS, EXPORT_ANCHORS
+    )
+    return [
+        f"export {name} was removed but {doc} still names it"
+        for name in sorted(dropped_exports)
+        for doc in _docs_naming(cwd, unstaged_docs, name)
+    ]
+
+
+def _flag_findings(
+    cwd: Path, base: str, removed: list[str], unstaged_docs: list[str]
+) -> list[str]:
+    dropped_flags = _matches(FLAG_PATTERNS, removed) - _surviving_definitions(
+        cwd, base, FLAG_PATTERNS, FLAG_ANCHORS
+    )
+    needles = [
+        flag if flag.startswith("--") else f"--{flag}" for flag in sorted(dropped_flags)
+    ]
+    return [
+        f"flag {needle} was removed but {doc} still names it"
+        for needle in needles
+        for doc in _docs_naming(cwd, unstaged_docs, needle)
+    ]
+
+
+def _script_findings(
+    cwd: Path, staged: set[str], unstaged_docs: list[str]
+) -> list[str]:
+    if "package.json" not in staged:
+        return []
+    before = _script_names(cwd, "HEAD")
+    after = _script_names(cwd, ":0")
+    if before is None or after is None:
+        return []
+    return [
+        f"package script {script} was removed but {doc} still names it"
+        for script in sorted(before - after)
+        for doc in _docs_naming(cwd, unstaged_docs, script)
+    ]
+
+
 def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
     tracked_all = _git(cwd, "ls-files")
     if tracked_all is None:
@@ -242,77 +303,37 @@ def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
     added = _added_lines(code_diff)
     removed = _removed_lines(code_diff)
     docs = _tracked_docs(cwd)
-    findings: list[str] = []
-
-    example_path, documented_env = _env_example_names(cwd, tracked)
-    if example_path is not None and example_path not in staged:
-        introduced = _matches(ENV_READ_PATTERNS, added) - _matches(
-            ENV_READ_PATTERNS, removed
-        )
-        for name in sorted(introduced - documented_env):
-            findings.append(
-                f"environment variable {name} is read by the staged code but "
-                f"{example_path} does not name it and is not staged"
-            )
-
+    env_findings = _env_findings(cwd, tracked, staged, added, removed)
     unstaged_docs = [doc for doc in docs if doc not in staged]
+    return [
+        *env_findings,
+        *_export_findings(cwd, base, removed, unstaged_docs),
+        *_flag_findings(cwd, base, removed, unstaged_docs),
+        *_script_findings(cwd, staged, unstaged_docs),
+    ]
 
-    dropped_exports = _matches(EXPORT_PATTERNS, removed) - _surviving_definitions(
-        cwd, base, EXPORT_PATTERNS, EXPORT_ANCHORS
+
+def _skip() -> bool:
+    return (
+        os.environ.get("DOC_SYNC_DISABLE") == "1"
+        or is_bypassed("doc-sync-guard")
+        or not should_run("doc-sync-guard")
     )
-    for name in sorted(dropped_exports):
-        for doc in _docs_naming(cwd, unstaged_docs, name):
-            findings.append(f"export {name} was removed but {doc} still names it")
-
-    dropped_flags = _matches(FLAG_PATTERNS, removed) - _surviving_definitions(
-        cwd, base, FLAG_PATTERNS, FLAG_ANCHORS
-    )
-    for flag in sorted(dropped_flags):
-        needle = flag if flag.startswith("--") else f"--{flag}"
-        for doc in _docs_naming(cwd, unstaged_docs, needle):
-            findings.append(f"flag {needle} was removed but {doc} still names it")
-
-    if "package.json" in staged:
-        before = _script_names(cwd, "HEAD")
-        after = _script_names(cwd, ":0")
-        if before is not None and after is not None:
-            for script in sorted(before - after):
-                for doc in _docs_naming(cwd, unstaged_docs, script):
-                    findings.append(
-                        f"package script {script} was removed but {doc} still names it"
-                    )
-
-    return findings
 
 
-def main() -> int:
-    if os.environ.get("DOC_SYNC_DISABLE") == "1":
-        return 0
-    if is_bypassed("doc-sync-guard"):
-        return 0
-    if not should_run("doc-sync-guard"):
-        return 0
-
-    data = read_hook_payload("doc-sync-guard")
-
+def _commit_command(data: dict) -> str:
     if data.get("tool_name", "Bash") != "Bash":
-        return 0
-
+        return ""
     tool_input = data.get("tool_input", data.get("input", {})) or {}
     command = tool_input.get("command", "")
     if not command or HELP_FLAG.search(command):
-        return 0
+        return ""
     if not COMMIT_COMMAND.search(strip_git_global_options(command)):
-        return 0
+        return ""
+    return command
 
-    cwd = Path(repo_dir(command, str(data.get("cwd") or os.getcwd())))
-    if not cwd.is_dir():
-        return 0
 
-    findings = _collect_findings(cwd, "HEAD" if commits_all(command) else "--cached")
-    if not findings:
-        return 0
-
+def _block(command: str, findings: list[str]) -> int:
     detail = "\n".join(f"  - {item}" for item in findings)
     sys.stderr.write(
         "BLOCKED: this commit makes existing documentation false.\n"
@@ -332,6 +353,25 @@ def main() -> int:
         command_excerpt=command[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _skip():
+        return 0
+
+    data = read_hook_payload("doc-sync-guard")
+    command = _commit_command(data)
+    if not command:
+        return 0
+
+    cwd = Path(repo_dir(command, str(data.get("cwd") or os.getcwd())))
+    if not cwd.is_dir():
+        return 0
+
+    findings = _collect_findings(cwd, "HEAD" if commits_all(command) else "--cached")
+    if not findings:
+        return 0
+    return _block(command, findings)
 
 
 if __name__ == "__main__":

@@ -2,36 +2,43 @@
 from __future__ import annotations
 
 import fnmatch
-import json
 import os
 import re
-import shlex
-import subprocess
 import sys
-from typing import NoReturn
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
 
-    def _audit(**_fields):  # type: ignore
-        return None
-
-
+from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.dangerous_command_input import read_command  # noqa: E402
+from _lib.dangerous_command_push import (  # noqa: E402
+    command_cwd as _command_cwd,  # noqa: F401
+    names_protected_ref as _names_protected_ref,  # noqa: F401
+    push_cwd as _push_cwd,  # noqa: F401
+    repo_root as _repo_root,
+)
+from _lib.dangerous_command_recoverable import RECOVERABLE  # noqa: E402
+from _lib.dangerous_command_verdicts import (  # noqa: E402
+    HOOK_NAME,
+    allow,
+    block_catastrophic,
+    block_critical,
+    check_protected_push,
+    first_notice,
+    refuse_unreadable,
+)
 from _lib.git_invocation import (  # noqa: E402
     FORCE_PUSH_LONG,
     FORCE_PUSH_SHORT,
-    OPTIONS_WITH_SEPARATE_VALUE,
     strip_git_global_options,
 )
-from _lib.hook_warning import emit_warning  # noqa: E402
+from _lib.hook_profile import should_run  # noqa: E402
 from _lib.shell_segments import (  # noqa: E402
     command_head,
     quoted_segments,
     strip_data_heredoc_bodies,
-    unquoted_segments,
 )
+
+CONFIRM_SUFFIX = "\nAsk the user to confirm before running this command."
 
 SAFE_CLEANUP: list[tuple[str, str]] = [
     ("node_modules", "remove node_modules"),
@@ -350,45 +357,6 @@ CRITICAL_PATHS = [
     ),
 ]
 
-RECOVERABLE = [
-    (
-        r"\bgit\s+reset\s+--hard\b",
-        "git reset --hard discards uncommitted work. Recovery: git reflog. Confirm with the user before running.",
-    ),
-    (
-        r"\bgit\s+clean\s+.*-f",
-        "git clean -f permanently deletes untracked files with no recovery. Confirm the path is correct.",
-    ),
-    (
-        r"\bgit\s+checkout\s+\.\s*$",
-        "git checkout . discards all unstaged changes. Recovery: only if changes were staged. Confirm with the user.",
-    ),
-    (
-        r"\bgit\s+stash\s+drop\s+--all",
-        "git stash drop --all removes all stashed changes. Confirm the user no longer needs them.",
-    ),
-    (
-        r"\bdocker\s+system\s+prune\b(?!.*-a)",
-        "docker system prune removes unused containers, networks, and images. Confirm before running.",
-    ),
-    (
-        r"\bkubectl\s+rollout\s+restart\b",
-        "kubectl rollout restart causes a rolling restart of the workload. Confirm this is intentional.",
-    ),
-    (
-        r"\bhelm\s+rollback\b",
-        "helm rollback changes the live deployment to a previous release. Confirm the target revision.",
-    ),
-    (
-        r"\bterraform\s+state\s+rm\b",
-        "terraform state rm removes a resource from state tracking without destroying it. Confirm the resource name.",
-    ),
-    (
-        r"\bpulumi\s+cancel\b",
-        "pulumi cancel aborts an in-progress update. Confirm the update should be cancelled.",
-    ),
-]
-
 SUSPICIOUS = [
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\*", "rm with wildcard, double-check the path"),
     (r"\bxargs\s+rm\b", "xargs rm can delete unexpected files"),
@@ -419,76 +387,7 @@ SUSPICIOUS = [
     (r"\bgit\s+tag\s+-d\b", "git tag -d deletes a local tag"),
 ]
 
-
-from _lib.hook_profile import should_run  # noqa: E402
-
-
-from _lib.bypass import is_bypassed  # noqa: E402
-
 SOLO_REPO_ALLOWLIST = os.path.expanduser("~/.claude/solo-repos.txt")
-REPOSITORY_REDIRECTS = ("--git-dir", "--work-tree")
-
-
-PROTECTED_REF = re.compile(
-    r"(?:^|[\s:+])(?:refs/heads/)?(?:main|master|develop)(?=$|[\s;&|'\")])"
-)
-
-
-def _names_protected_ref(text: str) -> bool:
-    return PROTECTED_REF.search(text) is not None
-
-
-def _command_cwd(command: str) -> str:
-    match = re.match(r"""\s*cd\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:&&|;)""", command)
-    if not match:
-        return ""
-    single_quoted, double_quoted, bare = match.groups()
-    if single_quoted is not None:
-        return single_quoted
-    path = double_quoted if double_quoted is not None else bare
-    return os.path.expandvars(os.path.expanduser(path))
-
-
-def _git_push_directory(args: list[str], directory: str) -> tuple[bool, str | None]:
-    resolved: str | None = directory
-    index = 1
-    while index < len(args) and args[index].startswith("-"):
-        option = args[index]
-        if option.split("=", 1)[0] in REPOSITORY_REDIRECTS:
-            resolved = None
-        elif option == "-C" and index + 1 < len(args) and resolved is not None:
-            target = os.path.expandvars(os.path.expanduser(args[index + 1]))
-            resolved = os.path.join(resolved or os.getcwd(), target)
-        index += 2 if option in OPTIONS_WITH_SEPARATE_VALUE else 1
-    return index < len(args) and args[index] == "push", resolved
-
-
-def _push_cwd(command: str) -> str | None:
-    base = _command_cwd(command)
-    for segment in unquoted_segments(command):
-        try:
-            tokens = shlex.split(segment)
-        except ValueError:
-            continue
-        head, args = command_head(tokens)
-        if head != "git":
-            continue
-        pushes, directory = _git_push_directory(args, base)
-        if pushes:
-            return directory
-    return None
-
-
-def _repo_root(cwd: str = "") -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--show-toplevel"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-            cwd=cwd or None,
-        ).strip()
-    except (subprocess.CalledProcessError, OSError):
-        return ""
 
 
 def _solo_repo_entries() -> list[str]:
@@ -528,164 +427,35 @@ def _is_solo_repo(root: str) -> bool:
     return False
 
 
-def _refuse_unreadable(problem: str) -> NoReturn:
-    _audit(
-        hook="dangerous-command-blocker",
-        decision="block",
-        level="unreadable-input",
-        reason=problem,
-    )
-    print(
-        f"BLOCKED: dangerous-command-blocker could not read its input: {problem}.\n"
-        "The command was not checked, so it does not run. The harness sends a "
-        'JSON object such as {"tool_name": "Bash", "tool_input": {"command": "..."}}.',
-        file=sys.stderr,
-    )
-    sys.exit(2)
+def _solo_push_root(push_cwd: str | None, command_cwd: str) -> str:
+    known = push_cwd is not None and _solo_repo_entries()
+    repo_root = _repo_root(command_cwd) if known else ""
+    return repo_root if repo_root and _is_solo_repo(repo_root) else ""
 
 
-def _read_command() -> str:
-    try:
-        data = json.loads(sys.stdin.read())
-    except ValueError as exc:
-        _refuse_unreadable(f"stdin is not UTF-8 JSON ({type(exc).__name__})")
-    if not isinstance(data, dict):
-        _refuse_unreadable("the payload is not a JSON object")
-    tool_input = data.get("tool_input", data.get("input", {}))
-    if not isinstance(tool_input, dict):
-        _refuse_unreadable("tool_input is not an object")
-    command = tool_input.get("command", "")
-    if not isinstance(command, str):
-        _refuse_unreadable("tool_input.command is not a string")
-    return command
-
-
-def main():
+def _skipped() -> bool:
     if os.environ.get("DANGEROUS_COMMAND_BLOCKER_DISABLE") == "1":
-        return 0
-    if is_bypassed("dangerous-command-blocker"):
-        return 0
-    if not should_run("dangerous-command-blocker"):
+        return True
+    if is_bypassed(HOOK_NAME):
+        return True
+    return not should_run(HOOK_NAME)
+
+
+def main() -> None:
+    if _skipped():
         sys.exit(0)
-    command = _read_command()
-    if not command:
+    command = read_command(refuse_unreadable)
+    if not command or _is_safe_cleanup(command):
         sys.exit(0)
     matched = strip_git_global_options(strip_data_heredoc_bodies(command))
-
-    if _is_safe_cleanup(command):
-        sys.exit(0)
-
-    for pattern, label in CATASTROPHIC:
-        if re.search(pattern, matched):
-            _audit(
-                hook="dangerous-command-blocker",
-                decision="block",
-                level="catastrophic",
-                reason=f"catastrophic: {label}",
-                pattern=pattern,
-                command=command[:300],
-            )
-            print(
-                f"BLOCKED: Catastrophic command detected: {label}.\nCommand: {command}",
-                file=sys.stderr,
-            )
-            sys.exit(2)
-
-    for pattern, reason in CRITICAL_PATHS:
-        if re.search(pattern, matched):
-            _audit(
-                hook="dangerous-command-blocker",
-                decision="block",
-                level="critical",
-                pattern=pattern,
-                reason=reason,
-                command=command[:300],
-            )
-            print(f"BLOCKED: {reason}\nCommand: {command}", file=sys.stderr)
-            sys.exit(2)
-
-    notices = [
-        f"CONFIRM REQUIRED: {guidance}\nCommand: {command}\n"
-        "Ask the user to confirm before running this command."
-        for pattern, guidance in RECOVERABLE
-        if re.search(pattern, matched)
-    ][:1]
-
+    block_catastrophic(command, matched, CATASTROPHIC)
+    block_critical(command, matched, CRITICAL_PATHS)
+    notices = first_notice(
+        command, matched, RECOVERABLE, "CONFIRM REQUIRED: ", CONFIRM_SUFFIX
+    )
     if re.search(r"\bgit\s+push\b", matched):
-        push_cwd = _push_cwd(command)
-        command_cwd = push_cwd or ""
-        try:
-            branch = subprocess.check_output(
-                ["git", "branch", "--show-current"],
-                stderr=subprocess.DEVNULL,
-                text=True,
-                cwd=command_cwd or None,
-            ).strip()
-        except Exception:
-            branch = ""
-
-        targets_protected = (
-            re.search(r"\borigin\s+", matched)
-            and _names_protected_ref(matched.split("origin", 1)[-1])
-        ) or (
-            branch in ("main", "master", "develop")
-            and not re.search(r"\borigin\s+\w", matched)
-        )
-        if targets_protected:
-            known = push_cwd is not None and _solo_repo_entries()
-            repo_root = _repo_root(command_cwd) if known else ""
-            if repo_root and _is_solo_repo(repo_root):
-                _audit(
-                    hook="dangerous-command-blocker",
-                    decision="allow",
-                    level="protected-branch",
-                    reason=f"solo repo allowlisted ({repo_root})",
-                    branch=branch,
-                    command=command[:300],
-                )
-                _allow(notices)
-            if os.environ.get("ALLOW_PROTECTED_BRANCH_PUSH") == "1":
-                _audit(
-                    hook="dangerous-command-blocker",
-                    decision="bypass",
-                    level="protected-branch",
-                    reason=f"protected branch push ({branch or 'main'})",
-                    bypass_env="ALLOW_PROTECTED_BRANCH_PUSH",
-                    branch=branch,
-                    command=command[:300],
-                )
-            else:
-                _audit(
-                    hook="dangerous-command-blocker",
-                    decision="block",
-                    level="protected-branch",
-                    reason=f"protected branch push ({branch or 'main'})",
-                    branch=branch,
-                    command=command[:300],
-                )
-                print(
-                    f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
-                    "Use a feature branch and create a PR instead.\n"
-                    "Solo repo with no PR workflow? Add it to ~/.claude/solo-repos.txt "
-                    "once instead of bypassing on every push.\n"
-                    "Bypass (one-off): export ALLOW_PROTECTED_BRANCH_PUSH=1 in the parent shell.\n"
-                    f"Command: {command}",
-                    file=sys.stderr,
-                )
-                sys.exit(2)
-
-    suspicious = [
-        f"WARNING: {reason}\nCommand: {command}"
-        for pattern, reason in SUSPICIOUS
-        if re.search(pattern, matched)
-    ][:1]
-    _allow([*notices, *suspicious])
-
-
-def _allow(notices: list[str]) -> NoReturn:
-    if notices:
-        emit_warning("\n\n".join(notices))
-    sys.exit(0)
+        check_protected_push(command, matched, notices, _solo_push_root)
+    allow([*notices, *first_notice(command, matched, SUSPICIOUS, "WARNING: ")])
 
 
 if __name__ == "__main__":

@@ -89,41 +89,33 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("drizzle-raw-sql-blocker"):
-        sys.exit(0)
+        return True
     if os.environ.get("DRIZZLE_RAW_SQL_DISABLE") == "1":
         _audit(
             hook="drizzle-raw-sql-blocker",
             decision="bypass",
             bypass_env="DRIZZLE_RAW_SQL_DISABLE",
         )
-        return 0
-    if is_bypassed("drizzle-raw-sql-blocker"):
-        return 0
+        return True
+    return is_bypassed("drizzle-raw-sql-blocker")
 
-    payload = read_hook_payload("drizzle-raw-sql-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _findings(items: list[tuple[str, str, str]]) -> list[str]:
+    scanned = [
+        (path, field, find(text))
+        for path, field, text in items
+        if not is_skipped_path(path)
+    ]
+    return [
+        f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
+        for path, field, hits in scanned
+        if hits
+    ]
 
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
 
-    findings: list[str] = []
-    for path, field, text in items:
-        if is_skipped_path(path):
-            continue
-        hits = find(text)
-        if hits:
-            findings.append(
-                f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
-            )
-
-    if not findings:
-        return 0
-
+def _report(tool: str, findings: list[str]) -> int:
     print(
         "Blocked: Drizzle raw SQL is banned in application code. "
         'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
@@ -144,6 +136,18 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+    payload = read_hook_payload("drizzle-raw-sql-blocker")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    findings = _findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+    return _report(tool, findings)
 
 
 if __name__ == "__main__":

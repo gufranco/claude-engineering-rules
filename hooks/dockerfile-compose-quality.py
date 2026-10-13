@@ -148,202 +148,214 @@ def extract_new_content(tool_name: str, tool_input: dict) -> tuple[str, bool]:
     return "", False
 
 
-def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
-    blocks: list[str] = []
-    warns: list[str] = []
-    lines = text.splitlines()
+USER_DIRECTIVE = re.compile(r"^\s*USER\s+(\S+)", re.IGNORECASE)
+COMPOSE_COMMENT = re.compile(r"#.*$")
+COMPOSE_ENVIRONMENT = re.compile(r"^(\s*)environment:\s*$")
+FLOATING_TAGS = frozenset({"latest", "lts"})
+PIN_ADVICE = "Pin by digest (FROM image:tag@sha256:...). "
 
-    user_directives: list[tuple[int, str]] = []
-    from_directives: list[int] = []
+CodeLine = tuple[int, str, str]
 
-    for i, raw in enumerate(lines, 1):
-        line = raw.split("#", 1)[0].rstrip()
-        if not line:
-            continue
 
-        if sensitive_sources(line):
-            instruction = line.split(maxsplit=1)[0].upper()
-            blocks.append(
-                f"line {i}: {instruction} of sensitive file. "
-                "Move it to .dockerignore and inject at runtime, or use "
-                "RUN --mount=type=secret for build-time access. "
-                f"Source: {raw.strip()}"
-            )
-            continue
+def _dockerfile_code_lines(text: str) -> list[CodeLine]:
+    stripped = [
+        (i, raw, raw.split("#", 1)[0].rstrip())
+        for i, raw in enumerate(text.splitlines(), 1)
+    ]
+    return [entry for entry in stripped if entry[2]]
 
-        m = SECRET_ENV_ARG.match(line)
-        if m:
-            blocks.append(
-                f"line {i}: {m.group('kw')} {m.group('name')} has a literal "
-                "value and persists in image history. Use "
-                "RUN --mount=type=secret,id=<name> for build-time secrets. "
-                f"Source: {raw.strip()}"
-            )
-            continue
 
-        from_match = FROM_BAD_TAG.match(line)
-        if from_match:
-            from_directives.append(i)
-            image = from_match.group("image")
-            tag = from_match.group("tag")
-            if tag and tag.lower() in {"latest", "lts"}:
-                warns.append(
-                    f"line {i}: FROM uses floating tag '{tag}'. "
-                    "Pin by digest (FROM image:tag@sha256:...). "
-                    f"Source: {raw.strip()}"
-                )
-            elif ":" not in image and "@" not in image:
-                warns.append(
-                    f"line {i}: FROM has no tag or digest. "
-                    "Pin by digest (FROM image:tag@sha256:...). "
-                    f"Source: {raw.strip()}"
-                )
-
-        user_match = re.match(r"^\s*USER\s+(\S+)", line, re.IGNORECASE)
-        if user_match:
-            user_directives.append((i, user_match.group(1)))
-
-    if full_file and from_directives:
-        last_from_line = from_directives[-1]
-        final_user = None
-        for line_num, user_value in user_directives:
-            if line_num > last_from_line:
-                final_user = user_value
-        if final_user is None:
-            warns.append(
-                "no USER directive in the final stage. "
-                "Add a non-root USER (numeric UID preferred)."
-            )
-        elif final_user.lower() in ROOT_USERS:
-            warns.append(
-                "the final stage runs as root. "
-                "Set a non-root USER (numeric UID preferred) after the last FROM."
-            )
-    if not full_file:
-        warns.extend(
-            f"line {line_num}: USER {value} switches to root; "
-            "the final stage must run as a non-root user."
-            for line_num, value in user_directives
-            if value.lower() in ROOT_USERS
+def _dockerfile_block(entry: CodeLine) -> str | None:
+    i, raw, line = entry
+    if sensitive_sources(line):
+        instruction = line.split(maxsplit=1)[0].upper()
+        return (
+            f"line {i}: {instruction} of sensitive file. "
+            "Move it to .dockerignore and inject at runtime, or use "
+            "RUN --mount=type=secret for build-time access. "
+            f"Source: {raw.strip()}"
         )
+    m = SECRET_ENV_ARG.match(line)
+    if not m:
+        return None
+    return (
+        f"line {i}: {m.group('kw')} {m.group('name')} has a literal "
+        "value and persists in image history. Use "
+        "RUN --mount=type=secret,id=<name> for build-time secrets. "
+        f"Source: {raw.strip()}"
+    )
 
-    return blocks, warns
+
+def _from_warning(i: int, raw: str, from_match: re.Match[str]) -> str | None:
+    image = from_match.group("image")
+    tag = from_match.group("tag")
+    if tag and tag.lower() in FLOATING_TAGS:
+        return (
+            f"line {i}: FROM uses floating tag '{tag}'. "
+            f"{PIN_ADVICE}Source: {raw.strip()}"
+        )
+    if ":" not in image and "@" not in image:
+        return f"line {i}: FROM has no tag or digest. {PIN_ADVICE}Source: {raw.strip()}"
+    return None
+
+
+def _final_stage_warnings(
+    user_directives: list[tuple[int, str]], last_from_line: int
+) -> list[str]:
+    final_users = [value for num, value in user_directives if num > last_from_line]
+    if not final_users:
+        return [
+            "no USER directive in the final stage. "
+            "Add a non-root USER (numeric UID preferred)."
+        ]
+    if final_users[-1].lower() in ROOT_USERS:
+        return [
+            "the final stage runs as root. "
+            "Set a non-root USER (numeric UID preferred) after the last FROM."
+        ]
+    return []
+
+
+def _user_warnings(
+    user_directives: list[tuple[int, str]], from_lines: list[int], full_file: bool
+) -> list[str]:
+    if full_file:
+        if not from_lines:
+            return []
+        return _final_stage_warnings(user_directives, from_lines[-1])
+    return [
+        f"line {line_num}: USER {value} switches to root; "
+        "the final stage must run as a non-root user."
+        for line_num, value in user_directives
+        if value.lower() in ROOT_USERS
+    ]
+
+
+def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
+    classified = [
+        (entry, _dockerfile_block(entry)) for entry in _dockerfile_code_lines(text)
+    ]
+    blocks = [block for _, block in classified if block]
+    rest = [entry for entry, block in classified if block is None]
+    froms = [(i, raw, m) for i, raw, line in rest if (m := FROM_BAD_TAG.match(line))]
+    users = [
+        (i, m.group(1)) for i, _, line in rest if (m := USER_DIRECTIVE.match(line))
+    ]
+    from_warns = [w for i, raw, m in froms if (w := _from_warning(i, raw, m))]
+    from_lines = [i for i, _, _ in froms]
+    return blocks, from_warns + _user_warnings(users, from_lines, full_file)
+
+
+def _compose_block(i: int, raw: str, no_comment: str) -> str | None:
+    if COMPOSE_PRIVILEGED.match(no_comment):
+        return (
+            f"line {i}: privileged: true. CIS Docker 5.4. "
+            "Use cap_add for the specific capability instead. "
+            f"Source: {raw.strip()}"
+        )
+    if COMPOSE_HOST_NS.match(no_comment):
+        return (
+            f"line {i}: host namespace toggle. "
+            "Defeats container isolation. "
+            f"Source: {raw.strip()}"
+        )
+    return None
+
+
+def _environment_warning(i: int, raw: str, no_comment: str) -> str | None:
+    m = COMPOSE_ENV_LITERAL_SECRET.match(no_comment)
+    if not m:
+        return None
+    return (
+        f"line {i}: environment block contains a literal "
+        f"value for {m.group('name')}. "
+        "Use top-level secrets: with file or environment "
+        "source and consume via *_FILE convention. "
+        f"Source: {raw.strip()}"
+    )
+
+
+def _version_warning(i: int) -> str:
+    return (
+        f"line {i}: top-level 'version:' key is deprecated under Compose v2. Remove it."
+    )
 
 
 def scan_compose(text: str, full_file: bool) -> tuple[list[str], list[str]]:
     blocks: list[str] = []
     warns: list[str] = []
-    lines = text.splitlines()
-    in_environment = False
     environment_indent = -1
-
-    for i, raw in enumerate(lines, 1):
-        no_comment = re.sub(r"#.*$", "", raw)
-        stripped = no_comment.strip()
-        if not stripped:
+    for i, raw in enumerate(text.splitlines(), 1):
+        no_comment = COMPOSE_COMMENT.sub("", raw)
+        block = _compose_block(i, raw, no_comment) if no_comment.strip() else None
+        if not no_comment.strip() or block:
+            blocks = [*blocks, block] if block else blocks
             continue
-
-        if COMPOSE_PRIVILEGED.match(no_comment):
-            blocks.append(
-                f"line {i}: privileged: true. CIS Docker 5.4. "
-                "Use cap_add for the specific capability instead. "
-                f"Source: {raw.strip()}"
-            )
-            continue
-
-        if COMPOSE_HOST_NS.match(no_comment):
-            blocks.append(
-                f"line {i}: host namespace toggle. "
-                "Defeats container isolation. "
-                f"Source: {raw.strip()}"
-            )
-            continue
-
         if COMPOSE_VERSION.match(no_comment):
-            warns.append(
-                f"line {i}: top-level 'version:' key is deprecated under Compose v2. "
-                "Remove it."
-            )
+            warns = [*warns, _version_warning(i)]
             continue
-
-        env_block_match = re.match(r"^(\s*)environment:\s*$", no_comment)
-        if env_block_match:
-            in_environment = True
-            environment_indent = len(env_block_match.group(1))
+        opened = COMPOSE_ENVIRONMENT.match(no_comment)
+        if opened or environment_indent < 0:
+            environment_indent = len(opened.group(1)) if opened else environment_indent
             continue
-        if in_environment:
-            current_indent = len(no_comment) - len(no_comment.lstrip())
-            if no_comment.strip() and current_indent <= environment_indent:
-                in_environment = False
-                environment_indent = -1
-            else:
-                m = COMPOSE_ENV_LITERAL_SECRET.match(no_comment)
-                if m:
-                    warns.append(
-                        f"line {i}: environment block contains a literal "
-                        f"value for {m.group('name')}. "
-                        "Use top-level secrets: with file or environment "
-                        "source and consume via *_FILE convention. "
-                        f"Source: {raw.strip()}"
-                    )
-
+        if len(no_comment) - len(no_comment.lstrip()) <= environment_indent:
+            environment_indent = -1
+            continue
+        warning = _environment_warning(i, raw, no_comment)
+        warns = [*warns, warning] if warning else warns
     _ = full_file
     return blocks, warns
 
 
+def _disabled() -> bool:
+    return (
+        os.environ.get(BYPASS_ENV) == "1"
+        or is_bypassed("dockerfile-compose-quality")
+        or not should_run("dockerfile-compose-quality")
+    )
+
+
+def _block(file_path: str, tool_name: str, blocks: list[str]) -> None:
+    print(
+        "BLOCKED: dockerfile-compose-quality on {0}:".format(file_path),
+        file=sys.stderr,
+    )
+    for b in blocks:
+        print(f"  {b}", file=sys.stderr)
+    print(
+        f"Bypass for emergencies: export {BYPASS_ENV}=1 in the parent shell.",
+        file=sys.stderr,
+    )
+    print("Reference: standards/container-security.md", file=sys.stderr)
+    _audit(
+        hook="dockerfile-compose-quality",
+        decision="block",
+        tool=tool_name,
+        reason="; ".join(b.split(":", 1)[0] for b in blocks),
+        command_excerpt=file_path[:240],
+    )
+    sys.exit(2)
+
+
 def main() -> None:
-    if os.environ.get(BYPASS_ENV) == "1":
+    if _disabled():
         sys.exit(0)
-    if is_bypassed("dockerfile-compose-quality"):
-        sys.exit(0)
-    if not should_run("dockerfile-compose-quality"):
-        sys.exit(0)
-
     data = read_hook_payload("dockerfile-compose-quality")
-
     tool_name = data.get("tool_name", "")
     tool_input = data.get("tool_input", data.get("input", {})) or {}
     if tool_name not in {"Write", "Edit", "MultiEdit"}:
         sys.exit(0)
-
     file_path = tool_input.get("file_path") or tool_input.get("path") or ""
     kind = detect_kind(file_path)
     if kind == "other":
         sys.exit(0)
-
     text, full_file = extract_new_content(tool_name, tool_input)
     if not text:
         sys.exit(0)
-
-    if kind == "dockerfile":
-        blocks, warns = scan_dockerfile(text, full_file)
-    else:
-        blocks, warns = scan_compose(text, full_file)
-
+    scanner = scan_dockerfile if kind == "dockerfile" else scan_compose
+    blocks, warns = scanner(text, full_file)
     if blocks:
-        print(
-            "BLOCKED: dockerfile-compose-quality on {0}:".format(file_path),
-            file=sys.stderr,
-        )
-        for b in blocks:
-            print(f"  {b}", file=sys.stderr)
-        print(
-            f"Bypass for emergencies: export {BYPASS_ENV}=1 in the parent shell.",
-            file=sys.stderr,
-        )
-        print(
-            "Reference: standards/container-security.md",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="dockerfile-compose-quality",
-            decision="block",
-            tool=tool_name,
-            reason="; ".join(b.split(":", 1)[0] for b in blocks),
-            command_excerpt=file_path[:240],
-        )
-        sys.exit(2)
-
+        _block(file_path, tool_name, blocks)
     if warns:
         emit_warning(
             f"WARN dockerfile-compose-quality on {file_path}:\n"

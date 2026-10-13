@@ -103,46 +103,41 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
-    if not should_run("banned-prose-chars"):
-        sys.exit(0)
+BLOCK_FIX = (
+    "\n\nFix:\n"
+    "  - Replace em dashes with a period, comma, colon, or rewrite.\n"
+    "  - Remove emojis and decorative unicode.\n"
+    "  - Use Mermaid in fenced code blocks instead of box-drawing diagrams.\n"
+    "\nBypass (one-off, when explicitly preserving existing content): "
+    "set BANNED_PROSE_CHARS_DISABLE=1 in the environment."
+)
+
+
+def _skipped() -> bool:
     if os.environ.get("BANNED_PROSE_CHARS_DISABLE") == "1":
         _audit(
             hook="banned-prose-chars",
             decision="bypass",
             bypass_env="BANNED_PROSE_CHARS_DISABLE",
         )
-        return 0
-    if is_bypassed("banned-prose-chars"):
-        return 0
+        return True
+    return is_bypassed("banned-prose-chars")
 
-    payload = read_hook_payload("banned-prose-chars")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _findings(texts: list[tuple[str, str]]) -> list[str]:
+    return [
+        f"  - {kind} in {field}: ...{snippet}..."
+        for field, text in texts
+        for kind, snippet in find_violations(text)
+    ]
 
-    texts = collect_texts(tool, tool_input)
-    if not texts:
-        return 0
 
-    all_findings: list[str] = []
-    for field, text in texts:
-        for kind, snippet in find_violations(text):
-            all_findings.append(f"  - {kind} in {field}: ...{snippet}...")
-
-    if not all_findings:
-        return 0
-
+def _block(tool: str, all_findings: list[str]) -> int:
     print(
         "Blocked: payload contains characters banned by "
         '~/.claude/standards/tone-and-writing.md "Writing Style".\n'
         + "\n".join(all_findings)
-        + "\n\nFix:\n"
-        "  - Replace em dashes with a period, comma, colon, or rewrite.\n"
-        "  - Remove emojis and decorative unicode.\n"
-        "  - Use Mermaid in fenced code blocks instead of box-drawing diagrams.\n"
-        "\nBypass (one-off, when explicitly preserving existing content): "
-        "set BANNED_PROSE_CHARS_DISABLE=1 in the environment.",
+        + BLOCK_FIX,
         file=sys.stderr,
     )
     _audit(
@@ -153,6 +148,23 @@ def main() -> int:
         command_excerpt=" | ".join(all_findings)[:240] if all_findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if not should_run("banned-prose-chars"):
+        sys.exit(0)
+    if _skipped():
+        return 0
+
+    payload = read_hook_payload("banned-prose-chars")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    all_findings = _findings(collect_texts(tool, tool_input))
+    if not all_findings:
+        return 0
+    return _block(tool, all_findings)
 
 
 if __name__ == "__main__":

@@ -157,47 +157,48 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     return items
 
 
+def _write_after(
+    lines: list[str], index: int, read_entity: str
+) -> tuple[int, str] | None:
+    end = min(index + 1 + WINDOW_LINES, len(lines))
+    for offset in range(index + 1, end):
+        window = "\n".join(lines[index : offset + 1])
+        if ATOMIC_MARKERS.search(window):
+            return None
+        if line_or_prev_has_suppression(lines, offset):
+            return None
+        write = WRITE_CALL.search(lines[offset])
+        if write and entity_of(write.group("receiver")) == read_entity:
+            return offset, write.group("method")
+    return None
+
+
+def _hit_at(lines: list[str], index: int) -> str | None:
+    line = lines[index]
+    read = READ_CALL.search(line)
+    if not read or line_or_prev_has_suppression(lines, index):
+        return None
+    read_entity = entity_of(read.group("receiver"))
+    if not read_entity:
+        return None
+    found = _write_after(lines, index, read_entity)
+    if found is None:
+        return None
+    offset, write_method = found
+    candidate = lines[offset]
+    return (
+        f"L{index + 1}->L{offset + 1}: {read.group('method')} decides, "
+        f"{write_method} writes, entity `{read_entity}`: "
+        f"{line.strip()[:70]} ... {candidate.strip()[:70]}"
+    )
+
+
 def find(text: str) -> list[str]:
     if UNIQUE_VIOLATION_MARKERS.search(text):
         return []
-
     lines = text.splitlines()
-    hits: list[str] = []
-
-    for index, line in enumerate(lines):
-        read = READ_CALL.search(line)
-        if not read:
-            continue
-        if line_or_prev_has_suppression(lines, index):
-            continue
-
-        read_entity = entity_of(read.group("receiver"))
-        if not read_entity:
-            continue
-
-        end = min(index + 1 + WINDOW_LINES, len(lines))
-        for offset in range(index + 1, end):
-            candidate = lines[offset]
-            window = "\n".join(lines[index : offset + 1])
-            if ATOMIC_MARKERS.search(window):
-                break
-            if line_or_prev_has_suppression(lines, offset):
-                break
-
-            write = WRITE_CALL.search(candidate)
-            if not write:
-                continue
-            if entity_of(write.group("receiver")) != read_entity:
-                continue
-
-            hits.append(
-                f"L{index + 1}->L{offset + 1}: {read.group('method')} decides, "
-                f"{write.group('method')} writes, entity `{read_entity}`: "
-                f"{line.strip()[:70]} ... {candidate.strip()[:70]}"
-            )
-            break
-
-    return hits
+    hits = (_hit_at(lines, index) for index in range(len(lines)))
+    return [hit for hit in hits if hit is not None]
 
 
 DETECTED_INTRO = "A read that decides a write, followed by that write:"
@@ -232,20 +233,16 @@ def render_findings(findings: list[tuple[str, list[str]]]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def _skip() -> bool:
     if not should_run(HOOK_ID):
-        return 0
+        return True
     if os.environ.get(ENV_DISABLE) == "1":
         _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_DISABLE)
-        return 0
-    if is_bypassed(HOOK_ID):
-        return 0
+        return True
+    return is_bypassed(HOOK_ID)
 
-    payload = read_hook_payload("check-then-act-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
+def _findings(tool: str, tool_input: dict) -> list[tuple[str, list[str]]]:
     findings: list[tuple[str, list[str]]] = []
     for path, text in collect(tool, tool_input):
         if is_skipped(path):
@@ -253,32 +250,31 @@ def main() -> int:
         hits = find(text)
         if hits:
             findings.append((path, hits))
+    return findings
 
-    if not findings:
-        return 0
 
-    detected = render_findings(findings)
-
-    if os.environ.get(ENV_ENFORCE) != "1":
-        emit_warning(
-            warn(
-                hook=HOOK_ID,
-                purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
-                next_action=(
-                    "Rewrite using an atomic alternative. Set "
-                    f"{ENV_ENFORCE}=1 to make this a blocking check."
-                ),
-            )
-        )
-        _audit(
+def _warn(tool: str, detected: str) -> int:
+    emit_warning(
+        warn(
             hook=HOOK_ID,
-            decision="warn",
-            tool=tool,
-            reason="check-then-act sequence",
-            command_excerpt=detected[:240],
+            purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
+            next_action=(
+                "Rewrite using an atomic alternative. Set "
+                f"{ENV_ENFORCE}=1 to make this a blocking check."
+            ),
         )
-        return 0
+    )
+    _audit(
+        hook=HOOK_ID,
+        decision="warn",
+        tool=tool,
+        reason="check-then-act sequence",
+        command_excerpt=detected[:240],
+    )
+    return 0
 
+
+def _block(tool: str, detected: str) -> int:
     print(
         block(
             hook=HOOK_ID,
@@ -301,6 +297,25 @@ def main() -> int:
         command_excerpt=detected[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _skip():
+        return 0
+
+    payload = read_hook_payload("check-then-act-blocker")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _findings(tool, tool_input)
+    if not findings:
+        return 0
+
+    detected = render_findings(findings)
+    if os.environ.get(ENV_ENFORCE) != "1":
+        return _warn(tool, detected)
+    return _block(tool, detected)
 
 
 if __name__ == "__main__":

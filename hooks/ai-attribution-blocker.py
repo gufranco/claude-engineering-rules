@@ -128,14 +128,22 @@ def main() -> int:
     if not texts:
         return 0
 
-    findings: list[str] = []
-    for field, text in texts:
-        for match, snippet in find_violations(text):
-            findings.append(f"  - {match!r} in {field}: ...{snippet}...")
+    findings = _findings(texts)
 
     if not findings:
         return 0
+    return _block(tool, findings)
 
+
+def _findings(texts: list[tuple[str, str]]) -> list[str]:
+    return [
+        f"  - {match!r} in {field}: ...{snippet}..."
+        for field, text in texts
+        for match, snippet in find_violations(text)
+    ]
+
+
+def _block(tool: str, findings: list[str]) -> int:
     print(
         "Blocked: AI attribution detected. "
         "Rule: ~/.claude/CLAUDE.md (No AI attribution) and ~/.claude/rules/git-workflow.md.\n"

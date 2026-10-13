@@ -249,49 +249,40 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
-    if not should_run("ai-process-leak-blocker"):
-        sys.exit(0)
+BLOCK_HEADER = (
+    "Blocked: AI process language detected in artifact that other engineers will read.\n"
+    "Rule: ~/.claude/CLAUDE.md and feedback memory 'no AI process leak in commits/PRs/code'.\n\n"
+)
+BLOCK_FOOTER = (
+    "\n\nFix: rewrite as if a human engineer wrote it. State what changed and why,\n"
+    "not which phase of which plan produced the change. Strip references to spec\n"
+    "folders, plan.md, canvas regions, ADR numbers, and hyperbole like 'state-of-the-art'.\n\n"
+    "Bypass (rare; only when editing the planning artifacts themselves):\n"
+    "  export AI_PROCESS_LEAK_DISABLE=1"
+)
+
+
+def _skipped() -> bool:
     if os.environ.get("AI_PROCESS_LEAK_DISABLE") == "1":
         _audit(
             hook="ai-process-leak-blocker",
             decision="bypass",
             bypass_env="AI_PROCESS_LEAK_DISABLE",
         )
-        return 0
-    if is_bypassed("ai-process-leak-blocker"):
-        return 0
+        return True
+    return is_bypassed("ai-process-leak-blocker")
 
-    payload = read_hook_payload("ai-process-leak-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _format_findings(texts: list[tuple[str, str]]) -> list[str]:
+    return [
+        f"  - {match!r} ({reason})\n    in {field}: ...{snippet}..."
+        for field, text in texts
+        for match, reason, snippet in find_violations(text)
+    ]
 
-    texts = collect_texts(tool, tool_input)
-    if not texts:
-        return 0
 
-    findings: list[str] = []
-    for field, text in texts:
-        for match, reason, snippet in find_violations(text):
-            findings.append(
-                f"  - {match!r} ({reason})\n    in {field}: ...{snippet}..."
-            )
-
-    if not findings:
-        return 0
-
-    print(
-        "Blocked: AI process language detected in artifact that other engineers will read.\n"
-        "Rule: ~/.claude/CLAUDE.md and feedback memory 'no AI process leak in commits/PRs/code'.\n\n"
-        + "\n".join(findings)
-        + "\n\nFix: rewrite as if a human engineer wrote it. State what changed and why,\n"
-        "not which phase of which plan produced the change. Strip references to spec\n"
-        "folders, plan.md, canvas regions, ADR numbers, and hyperbole like 'state-of-the-art'.\n\n"
-        "Bypass (rare; only when editing the planning artifacts themselves):\n"
-        "  export AI_PROCESS_LEAK_DISABLE=1",
-        file=sys.stderr,
-    )
+def _block(tool: str, findings: list[str]) -> int:
+    print(BLOCK_HEADER + "\n".join(findings) + BLOCK_FOOTER, file=sys.stderr)
     _audit(
         hook="ai-process-leak-blocker",
         decision="block",
@@ -302,6 +293,23 @@ def main() -> int:
         else None,
     )
     return 2
+
+
+def main() -> int:
+    if not should_run("ai-process-leak-blocker"):
+        sys.exit(0)
+    if _skipped():
+        return 0
+
+    payload = read_hook_payload("ai-process-leak-blocker")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _format_findings(collect_texts(tool, tool_input))
+    if not findings:
+        return 0
+    return _block(tool, findings)
 
 
 if __name__ == "__main__":

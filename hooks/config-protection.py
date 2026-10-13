@@ -115,20 +115,18 @@ def _proposed_content(tool_input: dict) -> str | None:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> None:
-    if not should_run("config-protection"):
-        sys.exit(0)
+HOOK_NAME = "config-protection"
+
+
+def _skipped() -> bool:
+    if not should_run(HOOK_NAME):
+        return True
     if os.environ.get("CONFIG_PROTECTION_DISABLE") == "1":
-        sys.exit(0)
-    if is_bypassed("config-protection"):
-        sys.exit(0)
-    data = read_hook_payload("config-protection")
+        return True
+    return is_bypassed(HOOK_NAME)
 
-    tool_input = data.get("tool_input", data.get("input", {}))
-    file_path = tool_input.get("file_path") or tool_input.get("path") or ""
-    if not file_path or not _guards(file_path, _proposed_content(tool_input) or ""):
-        sys.exit(0)
 
+def _block(data: dict, file_path: str) -> None:
     base = os.path.basename(file_path)
     print(
         f"BLOCKED: edits to `{base}` weaken type or lint strictness for the whole project.\n",
@@ -146,13 +144,25 @@ def main() -> None:
         file=sys.stderr,
     )
     _audit(
-        hook="config-protection",
+        hook=HOOK_NAME,
         decision="block",
         tool=data.get("tool_name", "Write"),
         reason=f"protected config file: {base}",
         file_path=file_path,
     )
     sys.exit(2)
+
+
+def main() -> None:
+    if _skipped():
+        sys.exit(0)
+    data = read_hook_payload(HOOK_NAME)
+
+    tool_input = data.get("tool_input", data.get("input", {}))
+    file_path = tool_input.get("file_path") or tool_input.get("path") or ""
+    if not file_path or not _guards(file_path, _proposed_content(tool_input) or ""):
+        sys.exit(0)
+    _block(data, file_path)
 
 
 if __name__ == "__main__":
