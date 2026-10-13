@@ -1,34 +1,14 @@
 #!/usr/bin/env python3
-"""Track MCP server health and short-circuit calls to unhealthy servers.
-
-Runs on PreToolUse and PostToolUse for any `mcp__*` tool. State lives at
-~/.claude/cache/mcp-health.json.
-
-On PreToolUse:
-  - If the server has reached `UNHEALTHY_THRESHOLD` consecutive failures
-    within the past `TTL_SECONDS`, block the call with a clear message.
-  - Otherwise allow.
-
-On PostToolUse:
-  - If the tool returned an error (exit code non-zero or `error` field
-    in tool_response), increment the consecutive failure count.
-  - On success, reset the failure count.
-
-The intent is to fail fast on a dead MCP server instead of waiting for
-each tool call to time out individually.
-
-Exit 0 = allow, exit 2 = block.
-
-Bypass:
-  - Set `MCP_HEALTH_DISABLE=1` to skip the check entirely.
-"""
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import sys
+import tempfile
 import time
+from collections.abc import Callable
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -53,6 +33,8 @@ except ImportError:
 
 CACHE_DIR = os.path.expanduser("~/.claude/cache")
 STATE_FILE = os.path.join(CACHE_DIR, "mcp-health.json")
+LOCK_FILE = os.path.join(CACHE_DIR, "mcp-health.lock")
+HOOK = "mcp-health-check"
 UNHEALTHY_THRESHOLD = 3
 TTL_SECONDS = 5 * 60
 
@@ -60,23 +42,40 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
-def _load_state() -> dict[str, dict]:
+State = dict[str, dict[str, float]]
+
+
+def _load_state() -> State:
     if not os.path.exists(STATE_FILE):
         return {}
     try:
         with open(STATE_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
+            loaded = json.load(f)
+    except (json.JSONDecodeError, OSError) as error:
+        _audit(hook=HOOK, decision="error", reason=f"state unreadable: {error}")
         return {}
+    return loaded if isinstance(loaded, dict) else {}
 
 
-def _save_state(state: dict[str, dict]) -> None:
-    os.makedirs(CACHE_DIR, exist_ok=True)
+def _save_state(state: State) -> None:
     try:
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
+        handle, temp = tempfile.mkstemp(dir=CACHE_DIR, prefix=".mcp-health.")
+        with os.fdopen(handle, "w", encoding="utf-8") as f:
             json.dump(state, f)
-    except OSError:
-        pass
+        os.replace(temp, STATE_FILE)
+    except OSError as error:
+        _audit(hook=HOOK, decision="error", reason=f"state not saved: {error}")
+
+
+def _update_state(update: Callable[[State], State]) -> State:
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    with open(LOCK_FILE, "a", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        state = _load_state()
+        updated = update(state)
+        if updated != state:
+            _save_state(updated)
+        return updated
 
 
 def _server_name(tool_name: str) -> str:
@@ -87,63 +86,63 @@ def _server_name(tool_name: str) -> str:
 
 
 def _is_failure(data: dict) -> bool:
-    """Decide whether a PostToolUse payload represents a failure."""
     tool_response = data.get("tool_response", {})
-    if isinstance(tool_response, dict):
-        if tool_response.get("error"):
-            return True
-        if tool_response.get("isError"):
-            return True
-    if data.get("exit_code") not in (None, 0):
-        return True
-    return False
+    return isinstance(tool_response, dict) and bool(
+        tool_response.get("error") or tool_response.get("isError")
+    )
 
 
-def _handle_pre(data: dict, state: dict[str, dict]) -> int:
+def _expire(server: str) -> Callable[[State], State]:
+    def update(state: State) -> State:
+        info = state.get(server, {})
+        stale = time.time() - info.get("last_failure", 0) > TTL_SECONDS
+        return (
+            {**state, server: {"failures": 0, "last_failure": 0}}
+            if stale and info
+            else state
+        )
+
+    return update
+
+
+def _record(server: str, failed: bool) -> Callable[[State], State]:
+    def update(state: State) -> State:
+        info = state.get(server, {"failures": 0, "last_failure": 0})
+        if not failed:
+            return {**state, server: {**info, "failures": 0}}
+        failures = info.get("failures", 0) + 1
+        return {**state, server: {"failures": failures, "last_failure": time.time()}}
+
+    return update
+
+
+def _handle_pre(data: dict) -> int:
     tool_name = data.get("tool_name", "")
     server = _server_name(tool_name)
     if not server:
         return 0
-    info = state.get(server, {})
-    failures = info.get("failures", 0)
-    last_failure = info.get("last_failure", 0)
+    failures = _update_state(_expire(server)).get(server, {}).get("failures", 0)
     if failures < UNHEALTHY_THRESHOLD:
         return 0
-    if time.time() - last_failure > TTL_SECONDS:
-        state[server] = {"failures": 0, "last_failure": 0}
-        _save_state(state)
-        return 0
     print(
-        f"BLOCKED: MCP server `{server}` is unhealthy ({failures} consecutive failures).\n",
-        file=sys.stderr,
-    )
-    print(
-        f"Wait at least {TTL_SECONDS // 60} minutes before retrying, or restart the\n"
-        f"MCP server. Set MCP_HEALTH_DISABLE=1 to bypass once.",
+        f"BLOCKED: MCP server `{server}` is unhealthy ({int(failures)} consecutive "
+        f"failures).\nWait at least {TTL_SECONDS // 60} minutes before retrying, or "
+        "restart the MCP server. To skip this check for one server outage, register "
+        "a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py set "
+        "mcp-health-check`; MCP_HEALTH_DISABLE=1 in the parent shell disables it "
+        "for the whole session.",
         file=sys.stderr,
     )
     _audit(
-        hook="mcp-health-check",
-        decision="block",
-        tool=tool_name,
-        reason=f"server {server} unhealthy",
+        hook=HOOK, decision="block", tool=tool_name, reason=f"server {server} unhealthy"
     )
     return 2
 
 
-def _handle_post(data: dict, state: dict[str, dict]) -> int:
-    tool_name = data.get("tool_name", "")
-    server = _server_name(tool_name)
-    if not server:
-        return 0
-    info = state.get(server, {"failures": 0, "last_failure": 0})
-    if _is_failure(data):
-        info["failures"] = info.get("failures", 0) + 1
-        info["last_failure"] = time.time()
-    else:
-        info["failures"] = 0
-    state[server] = info
-    _save_state(state)
+def _handle_post(data: dict) -> int:
+    server = _server_name(data.get("tool_name", ""))
+    if server:
+        _update_state(_record(server, _is_failure(data)))
     return 0
 
 
@@ -161,14 +160,11 @@ def main() -> None:
         sys.exit(0)
 
     event = data.get("hook_event_name", "")
-    state = _load_state()
-
     if event == "PreToolUse":
-        sys.exit(_handle_pre(data, state))
-    elif event == "PostToolUse":
-        sys.exit(_handle_post(data, state))
-    else:
-        sys.exit(0)
+        sys.exit(_handle_pre(data))
+    if event == "PostToolUse":
+        sys.exit(_handle_post(data))
+    sys.exit(0)
 
 
 if __name__ == "__main__":
