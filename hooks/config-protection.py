@@ -26,6 +26,7 @@ Bypass:
 from __future__ import annotations
 
 import json
+import re
 import os
 import sys
 
@@ -78,7 +79,22 @@ PROTECTED_BASENAMES = {
     ".rubocop.yml",
     "detekt.yml",
     "detekt-config.yml",
+    "eslint.config.mts",
+    "eslint.config.cts",
+    "prettier.config.ts",
+    "prettier.config.mts",
+    ".prettierrc.toml",
+    ".bypass-state.json",
 }
+
+MIXED_CONFIG_BASENAMES = {"pyproject.toml", "setup.cfg", ".flake8", "tox.ini"}
+
+STRICTNESS_SECTION = re.compile(
+    r"\[(?:tool\.(?:ruff|mypy|pyright|pylint|flake8|black)|mypy|flake8|pylint|pycodestyle)\b"
+    r"|^\s*(?:extend-)?(?:ignore|select|per-file-ignores|disable|disable_error_code"
+    r"|strict|max-line-length|line-length)\s*=",
+    re.MULTILINE,
+)
 
 PROTECTED_PREFIXES = ("tsconfig.",)
 
@@ -95,6 +111,14 @@ def _is_protected(path: str) -> bool:
         PROTECTED_TSCONFIG_SUFFIXES
     ):
         return True
+    return False
+
+
+def _guards(path: str, content: str) -> bool:
+    if _is_protected(path):
+        return True
+    if os.path.basename(path) in MIXED_CONFIG_BASENAMES:
+        return STRICTNESS_SECTION.search(content) is not None
     return False
 
 
@@ -138,7 +162,7 @@ def main() -> None:
 
     tool_input = data.get("tool_input", data.get("input", {}))
     file_path = tool_input.get("file_path") or tool_input.get("path") or ""
-    if not file_path or not _is_protected(file_path):
+    if not file_path or not _guards(file_path, _proposed_content(tool_input) or ""):
         sys.exit(0)
 
     base = os.path.basename(file_path)
