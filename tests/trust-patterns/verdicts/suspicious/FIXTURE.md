@@ -2,15 +2,16 @@
 
 ## Purpose
 
-A project with one MEDIUM finding: a single `eval()` call in a non-test file. Should be SUSPICIOUS, not blocking.
+A project with exactly one MEDIUM finding: `.npmrc` sets `unsafe-perm=true`, which Section A rates MEDIUM. Nothing else fires, so no cluster escalation applies.
 
 ## Files in this fixture
 
-- `package.json`: normal manifest, no lifecycle hooks.
-- `src/template.js`: contains one `eval()` call resembling a templating engine, no base64, no obfuscation.
+- `package.json`: a normal manifest with a `test` script. No lifecycle hooks.
+- `.npmrc`: a single `unsafe-perm=true` line.
+- `src/index.js`: a placeholder-substitution template function with no `eval`, `Function`, or process spawning.
 
 ## Expected outcome
 
 - Verdict: **SUSPICIOUS**.
-- Worst severity: MEDIUM. A single `eval` is HIGH per Section B, but appears in isolation without clustering signals; treated as MEDIUM in this fixture.
+- Worst severity: MEDIUM.
 - Action: scan asks the user to review the finding before continuing.

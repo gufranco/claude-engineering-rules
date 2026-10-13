@@ -21,8 +21,8 @@ Severity scale:
 | Level | Definition | Example |
 |-------|------------|---------|
 | CRITICAL | Definitive IOC. Match on sight forces MALICIOUS verdict | Hard-coded Discord webhook URL, known-malicious package name |
-| HIGH | Strong signal alone, or part of a likely-malicious cluster | `eval` of base64-decoded input, postinstall running `curl ... | bash` |
-| MEDIUM | Suspicious but possibly legitimate. Two or more in the same file escalate to HIGH | Single `eval`, single non-default registry override |
+| HIGH | Strong signal alone, or part of a likely-malicious cluster | `eval` with a dynamic argument, postinstall running `curl` with no pipe to a shell |
+| MEDIUM | Suspicious but possibly legitimate. Two or more in the same file escalate to HIGH | `.npmrc` with `unsafe-perm=true`, single non-default registry override |
 | LOW | Noise floor. Recorded for transparency, does not affect verdict | Single `child_process` import in a config file |
 
 Cluster rule: matches of the same row count once per file. When two or more MEDIUM signals from different rows fire in the same file, the file escalates to HIGH. When two or more HIGH signals from different rows fire in the same file, the file is reported as a HIGH cluster, which sets the verdict to HIGH-RISK and its confirmation phrase, never to MALICIOUS. A file escalates to CRITICAL only on a credential-path read from Section C plus an exfiltration endpoint from Section D. Clustering exists to surface files worth reading; on its own it cannot condemn a CLI that legitimately spawns processes and reads its own config. The verdict logic in `/audit trust` step 13 reads the per-file aggregate, not the raw line matches.
