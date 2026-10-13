@@ -311,8 +311,9 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
     """Return (code, explanation) for the first banned shape found."""
     tokens = _tokens(command)
     segments = _command_segments(command)
+    executed = strip_heredoc_bodies(command)
 
-    if PR_COMMENT.search(command):
+    if PR_COMMENT.search(executed):
         return (
             "PRC001",
             "`gh pr comment` publishes a conversation comment, which has no "
@@ -329,7 +330,7 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
             "review event on its own and put the findings in inline comments.",
         )
 
-    if GLAB_MR_NOTE.search(command):
+    if GLAB_MR_NOTE.search(executed):
         return (
             "PRC006",
             "A GitLab MR note is a merge-request-level comment. Reply inside a "
@@ -345,7 +346,7 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
         if violation is not None:
             return violation
 
-    if GLAB_API.search(command) and _writes(command, GLAB_API):
+    if GLAB_API.search(executed) and _writes(command, GLAB_API):
         if GLAB_DISCUSSION_NOTES.search(command):
             return None
         if GLAB_DISCUSSIONS.search(command):
@@ -355,7 +356,7 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
                 "discussion. Post into an existing one instead.",
             )
 
-    if CURL.search(command) and _writes(command, CURL):
+    if CURL.search(executed) and _writes(command, CURL):
         if BB_PR_COMMENTS.search(command):
             payload, _unreadable = _payload_chunks(tokens, command, cwd)
             if not _mentions_reply_parent(payload):

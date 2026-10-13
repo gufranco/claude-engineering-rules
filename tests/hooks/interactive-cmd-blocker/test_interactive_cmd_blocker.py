@@ -78,9 +78,32 @@ def test_blocks_after_or(tool_use, run_hook):
     assert_blocked(result)
 
 
-def test_blocks_via_command_builtin(tool_use, run_hook):
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "command rm file.txt",
+        "LC_ALL=C command mv a b",
+        "cat <<'EOF' > notes.txt\nstep one; mv a b\nEOF",
+        "echo 'rm file.txt'",
+        'git commit -m "rm the old cp helper"',
+    ],
+)
+def test_allows_commands_that_cannot_reach_an_interactive_alias(
+    tool_use, run_hook, cmd
+):
     # Arrange
-    payload = tool_use("Bash", {"command": "command rm file.txt"})
+    payload = tool_use("Bash", {"command": cmd})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_blocks_after_a_quoted_heredoc_marker(tool_use, run_hook):
+    # Arrange
+    payload = tool_use("Bash", {"command": 'echo "a <<EOF"\nrm file.txt'})
 
     # Act
     result = run_hook(HOOK, payload)

@@ -27,8 +27,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
-import shlex
 import sys
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
@@ -39,8 +37,6 @@ except Exception:  # pragma: no cover
     def _audit(**_fields):  # type: ignore
         return None
 
-
-COMMAND_BOUNDARY = r"(?:^|[;&|]\s*|&&\s*|\|\|\s*)"
 
 INTERACTIVE_PRONE = ("rm", "cp", "mv")
 MAKE_COMMANDS = ("make", "gmake")
@@ -63,12 +59,6 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
 
-def split_commands(command: str) -> list[str]:
-    """Split a bash command line by shell separators ; && || | &."""
-    parts = re.split(r"\s*(?:;|&&|\|\||\||&)\s*", command)
-    return [p.strip() for p in parts if p.strip()]
-
-
 def has_force_flag(tokens: list[str]) -> bool:
     """Check if any token expresses --force or -f (including combined like -rf)."""
     for tok in tokens[1:]:
@@ -83,18 +73,15 @@ def has_force_flag(tokens: list[str]) -> bool:
     return False
 
 
-def tokenize(sub: str) -> list[str]:
-    try:
-        return shlex.split(sub)
-    except ValueError:
-        return []
+def bypasses_alias(tokens: list[str]) -> bool:
+    words = [token for token in tokens if "=" not in token or token.startswith("-")]
+    return bool(words) and words[0] == "command"
 
 
 def is_blocked(command: str) -> tuple[bool, str]:
-    """Return (blocked, reason). Reason includes the command name."""
-    for sub in split_commands(command):
-        base, effective = command_head(tokenize(sub))
-        if base not in INTERACTIVE_PRONE:
+    for tokens in quoted_segments(command):
+        base, effective = command_head(tokens)
+        if base not in INTERACTIVE_PRONE or bypasses_alias(tokens):
             continue
         if not has_force_flag(effective):
             return True, base

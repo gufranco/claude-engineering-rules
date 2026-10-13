@@ -50,7 +50,11 @@ from _lib.git_invocation import (  # noqa: E402
     OPTIONS_WITH_SEPARATE_VALUE,
     strip_git_global_options,
 )
-from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
+from _lib.shell_segments import (  # noqa: E402
+    command_head,
+    quoted_segments,
+    strip_data_heredoc_bodies,
+)
 
 SAFE_CLEANUP: list[tuple[str, str]] = [
     ("node_modules", "remove node_modules"),
@@ -613,7 +617,7 @@ def main():
     command = _read_command()
     if not command:
         sys.exit(0)
-    matched = strip_git_global_options(command)
+    matched = strip_git_global_options(strip_data_heredoc_bodies(command))
 
     if _is_safe_cleanup(command):
         sys.exit(0)
