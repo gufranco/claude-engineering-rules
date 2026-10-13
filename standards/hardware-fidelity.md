@@ -233,7 +233,7 @@ The same gates as any other project, plus the ones this domain needs.
 | Exhaustive conformance | The full sweep runs on every push, not nightly |
 | Unbounded conformance | On a schedule, starting somewhere different each run |
 | Re-validation | Weekly, against unpinned tools and the newest runtime, since a part that stopped changing sits on an ecosystem that did not |
-| Artifact-dependent checks | Report as skipped, never as passed. Exit with a distinct code and have CI treat it as a notice |
+| Artifact-dependent checks | Report as skipped, never as passed. Exit with a distinct code and list the skip in the CI job summary, never as an annotation, since a clean run carries zero annotations |
 
 ## Forbidden patterns
 

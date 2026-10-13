@@ -83,13 +83,17 @@ interface OrderRecord {
 type AnyOrder = DraftOrder | SubmittedOrder | ApprovedOrder | RejectedOrder;
 
 class OrderRepository {
-  findById(id: OrderId): Promise<Result<AnyOrder, NotFoundError>> {
+  async findById(id: OrderId): Promise<Result<AnyOrder, NotFoundError>> {
     const record = await this.db.findOne(id);
+    if (record === null) {
+      return err(new NotFoundError(id));
+    }
     switch (record.status) {
       case 'draft':     return ok(DraftOrder.fromRecord(record));
       case 'submitted': return ok(SubmittedOrder.fromRecord(record));
       case 'approved':  return ok(ApprovedOrder.fromRecord(record));
       case 'rejected':  return ok(RejectedOrder.fromRecord(record));
+      default:          throw new UnknownOrderStatusError(record.status satisfies never);
     }
   }
 }
@@ -124,8 +128,15 @@ interface Transition {
   action?: (context: OrderContext, event: OrderEvent) => void;
 }
 
+function requireItems(context: OrderContext): Result<void, TransitionError> {
+  if (context.items.length === 0) {
+    return err(new TransitionError('Cannot submit an order with no items'));
+  }
+  return ok(undefined);
+}
+
 const transitions: readonly Transition[] = [
-  { from: OrderState.Draft,     event: 'submit',  to: OrderState.Submitted },
+  { from: OrderState.Draft,     event: 'submit',  to: OrderState.Submitted, guard: requireItems },
   { from: OrderState.Submitted, event: 'approve', to: OrderState.Approved },
   { from: OrderState.Submitted, event: 'cancel',  to: OrderState.Cancelled },
   { from: OrderState.Approved,  event: 'ship',    to: OrderState.Shipped },
@@ -255,7 +266,7 @@ it('should reject submit when order has no items', () => {
   const result = transition(state, { kind: 'submit' }, emptyContext);
 
   // Assert
-  expect(result).toEqual(err(expect.objectContaining({ kind: 'validation' })));
+  expect(result).toEqual(err(new TransitionError('Cannot submit an order with no items')));
 });
 ```
 
@@ -264,7 +275,7 @@ it('should reject submit when order has no items', () => {
 - Every state has at least one valid outgoing transition. Or is explicitly terminal
 - Every terminal state, Delivered, Cancelled rejects all events
 - Every guard condition has both a passing and failing test
-- The full happy-path lifecycle is tested end-to-end. Draft → Submitted → Approved → Shipped → Delivered
+- The full happy-path lifecycle is tested end-to-end: Draft, Submitted, Approved, Shipped, then Delivered
 
 ## Serialization and Deserialization
 
@@ -301,4 +312,4 @@ Entry/exit actions reduce duplication when multiple transitions lead to the same
 ## Related Standards
 
 - [`standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md): DDD Tactical Patterns
-- `standards/event-driven-architecture.md`: Event-Driven Architecture
+- [`standards/message-queues.md`](message-queues.md): event messaging, ordering, and idempotent consumers

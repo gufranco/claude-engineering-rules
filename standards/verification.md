@@ -54,12 +54,12 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17 during
 - Answering a time-dependent question from the date stamped into session context. That value is written once at session start and never updated, so it is wrong in any session that outlives a day boundary and in any resumed session. Run `date` and read the output before reasoning about today, a deadline, an age, or an elapsed interval
 - Publishing a specific that a subagent, a search snippet, or a summary reported, without opening the primary source at that coordinate. Relays garble the coordinate, not only the content, so the quoted text reads correctly while the line number, timestamp, or identifier points somewhere else. See [`relay-not-source.md`](../rules/relay-not-source.md)
 - Reading one run of a suite that randomizes test order as a stable verdict. A runner like `pytest-randomly` reshuffles every run, so a suite can pass, then fail in files the change never touched, then pass again. When failures land outside the diff, re-run with order fixed, `-p no:randomly` for pytest, before diagnosing anything. A deterministic pass plus a randomized failure is a flake with a real cause, so name the cause and report it; it is never a reason to re-run until green
-- Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. `tail -20` on a run with 50+ failures shows only the summary line, hiding every failure. Always use `grep -E "passed|failed"` to capture the full result counts, or read the exit code. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
+- Relying on `tail -N` for test results. Test runners print failures BEFORE the summary. `tail -20` on a run with 50+ failures shows only the summary line, hiding every failure. Gate on the runner's exit code, never on grepped text. To report the counts, read the full output; `grep -E "passed|failed"` may locate the summary line, but it never decides pass or fail. Never assume "X passed" means zero failures unless the failure count is explicitly shown as 0
 - Reading file content through `FETCH_HEAD` after any later `git fetch`. Every fetch overwrites `FETCH_HEAD`, so a `git show FETCH_HEAD:<path>` issued after a second fetch silently returns the newer fetch's branch. Nothing errors, and the content is plausible enough to reason about for several steps. Fetch into a named remote-tracking ref and read from that, `git show origin/<branch>:<path>`, rather than from `FETCH_HEAD`. Suspect this immediately when a file's content contradicts a diff already read in the same session, and re-verify every read taken after the last fetch, not only the one that surfaced the contradiction
 
 ## Verification by Task Type
 
-When reporting verification output to the user, lead with the symptom, then chronology, then hypothesis, per [`rules/smart-questions.md`](../rules/smart-questions.md) "Status and Error Reports". When the task is complete, close with a one-line `FIXED:`, `RESOLVED:`, or `DONE:` resolution that names what changed, where, and the evidence command.
+When reporting verification output to the user, lead with the symptom, then chronology, then hypothesis, per [`smart-questions.md`](smart-questions.md) "4. Status and Error Reports". When the task is complete, close with a one-line `FIXED:`, `RESOLVED:`, or `DONE:` resolution that names what changed, where, and the evidence command.
 
 **Code changes**: run formatter + tests + lint + build. All four.
 
@@ -107,7 +107,7 @@ This check applies to analytical output: reviews, assessments, incident analyses
 
 ## Cross-Platform Verification
 
-When code has platform-specific branches, architecture checks, OS detection, conditional package lists, never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
+When code has platform-specific branches, such as architecture checks, OS detection, or conditional package lists, never validate on a single platform and assume the others work. Each platform branch is independent code that needs independent verification. A test passing on x64 says nothing about arm64 if the code paths diverge.
 
 ## Pinned Toolchain Verification
 

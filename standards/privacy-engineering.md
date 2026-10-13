@@ -48,7 +48,10 @@ Define a retention period for every data category. Automate deletion. Manual del
 
 - Every table or collection that stores personal data must have a `retentionCategory` annotation in the schema.
 - A retention enforcement job runs daily, deletes records past their retention period, and logs the count.
-- Backups must also respect retention. A backup taken before deletion that is restored after deletion re-introduces deleted data. Set backup TTLs shorter than or equal to the shortest data retention period.
+- Backups must also respect retention. A backup taken before deletion that is restored after deletion re-introduces deleted data. Three controls close that gap:
+  - Every backup expires after 30 days, so an erased record leaves the last backup within 30 days of erasure.
+  - Data whose retention is shorter than 30 days, such as 24-hour session data, never enters a backup. Keep it in stores that are excluded from backups, such as the cache layer.
+  - Every restore replays the erasure log before the restored store serves traffic. The log holds the pseudonymous IDs of erased users, never their identity, and lives for 30 days, matching the backup lifetime.
 
 ## Right to Erasure
 
@@ -227,7 +230,7 @@ Effective 14 August 2018. Articles below verified against the Planalto official 
 | Art. 33 | International transfers permitted to: countries with adequate protection per ANPD, with guarantees (SCCs, BCRs), per international cooperation, to protect life, for legal obligation, by ANPD authorization, or specific consent |
 | Art. 41 | "O controlador deverá indicar encarregado pelo tratamento de dados pessoais"; § 1º identity + contact must be publicly disclosed; § 2º encarregado activities: receive complaints, receive ANPD communications, orient employees, other tasks; § 3º ANPD may dispense the indication requirement based on size or processing volume (ANPD Resolução CD/ANPD 2/2022 dispenses small processors) |
 | Art. 46 | Security measures: technical and administrative measures suitable to protect personal data from unauthorized access and accidental or unlawful destruction, loss, alteration, communication, or any form of inadequate or unlawful processing |
-| Art. 48 | "O controlador deverá comunicar à autoridade nacional e ao titular a ocorrência de incidente de segurança que possa acarretar risco ou dano relevante aos titulares"; § 1º notification "em prazo razoável, conforme definido pela autoridade nacional" with minimum: nature of affected data, info about titulares, technical measures, risks, reasons for delay, mitigation. **ANPD Resolução CD/ANPD 15/2024 sets the notification window at 3 business days from awareness.** |
+| Art. 48 | "O controlador deverá comunicar à autoridade nacional e ao titular a ocorrência de incidente de segurança que possa acarretar risco ou dano relevante aos titulares"; § 1º notification "em prazo razoável, conforme definido pela autoridade nacional" with minimum: nature of affected data, info about titulares, technical measures, risks, reasons for delay, mitigation. **ANPD Resolução CD/ANPD 15/2024 sets the notification window at 3 business days from awareness.** The project default of 72 hours from awareness meets it. |
 | Art. 50-51 | Best practices and governance, privacy program elements |
 | Art. 52-54 | Administrative sanctions: warning, fine up to 2% of revenue capped at R$ 50 million per infraction, daily fine, publicization, blocking, elimination, partial suspension up to 6 months extendable, suspension of processing activity, partial or total prohibition |
 
@@ -252,7 +255,7 @@ Common pattern with state-specific variations:
 - Universal opt-out (some states: CA, CO, CT, OR)
 - Data processing agreements
 
-Specifics vary per state. Reference `references.md` for the catalog.
+Specifics vary per state; check each state's statute before relying on this summary.
 
 ### PIPEDA + Quebec Law 25 (Canada)
 
@@ -267,7 +270,7 @@ Specifics vary per state. Reference `references.md` for the catalog.
 When two jurisdictions diverge, apply the strictest. Per [`../rules/privacy-defaults.md`](../rules/privacy-defaults.md):
 
 - Consent: opt-in everywhere (GDPR + LGPD + CASL standard)
-- Breach window: 72 hours (GDPR) plus 4 business days SEC for reporting entities
+- Breach window: 72 hours from awareness for every authority, which also meets the ANPD 3 business days and the SEC 4 business days
 - Children age: 18 for profiling, 16 for accounts, 13 minimum with verifiable parental consent
 - International transfers: SCCs or BCRs or adequacy by default
 - Sensitive data: union of all jurisdictional categories

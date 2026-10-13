@@ -17,7 +17,7 @@ Before using any external tool or CLI command:
 
 ## Shell Alias Safety
 
-Commands may be aliased (e.g., `du`→`dust` or `ls`→`eza`), changing flags and output. Always prefix with `command` to bypass: `command du -sh`, `command ls -la`. Applies to any command where you rely on standard flags or output format.
+Commands may be aliased (e.g., `du` aliased to `dust` or `ls` to `eza`), changing flags and output. Always prefix with `command` to bypass: `command du -sh`, `command ls -la`. Applies to any command where you rely on standard flags or output format.
 
 **`command` does not fix the implementation.** It bypasses aliases and functions, never PATH order. A bare tool name resolves to whichever implementation sits earliest on PATH, and that is often not the platform's stock one: GNU coreutils installed alongside a BSD userland, busybox applets on a minimal image, or a language shim ahead of the system binary. The silent case is a flag both implementations accept with different meanings, which yields wrong output instead of an error. `stat -f` selects a format string in the BSD implementation and filesystem mode in the GNU one; `sed -i` takes a mandatory suffix argument in one and an optional one in the other. Never infer flag semantics from the operating system. Resolve the name first with `command -v`, pin the absolute path when a specific implementation is required, or choose a form with no split at all, such as `wc -c <file` in place of either `stat`. This also bounds what a local run proves: a script exercised where PATH front-loads one implementation has not been tested against a host shipping the other, so cross-platform claims need a run per target.
 

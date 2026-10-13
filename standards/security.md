@@ -238,7 +238,7 @@ Environment variables are insufficient for production secrets. A single compromi
 - For Kubernetes: use External Secrets Operator to sync secrets from external stores into native Kubernetes Secrets
 - Never store static long-lived secrets in production environment variables
 - Automate rotation: define rotation schedules per secret type, trigger rotation on suspected compromise
-- Emergency revocation procedure: document how to revoke and rotate all secrets within 1 hour
+- Emergency revocation procedure: revoke a compromised secret within 15 minutes of detection and rotate every affected secret within 1 hour, per [`secrets-management.md`](secrets-management.md) "Emergency Revocation Procedure"
 - Environment isolation: separate secret stores for dev, staging, and production
 
 ## Supply Chain Security
@@ -253,7 +253,7 @@ Dependencies are attack surface. A compromised package runs with your code's per
 - **Audit regularly**: run `npm audit`, `pip audit`, or equivalent in CI. Block builds on critical/high vulnerabilities
 - **Minimize surface**: fewer dependencies = fewer attack vectors. Prefer native/stdlib when the alternative is a small package with deep transitive dependencies
 - **Monitor advisories**: subscribe to security advisories for your critical dependencies. Do not wait for a scheduled audit to learn about a zero-day
-- **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format. Per-file SPDX-License-Identifier headers improve SBOM accuracy. See `rules/licensing.md`
+- **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format. Per-file SPDX-License-Identifier headers improve SBOM accuracy. See [`licensing.md`](licensing.md)
 - **Artifact signing**: sign build artifacts with Sigstore via `cosign` for provenance verification
 - **SLSA compliance**: target SLSA Level 2 minimum for customer-facing services, which means hosted builds with signed provenance
 

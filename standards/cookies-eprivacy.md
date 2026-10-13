@@ -102,7 +102,7 @@ CNIL and ICO permit a narrow analytics exemption when: first-party only, aggrega
 
 ## CCPA Do Not Sell or Share Link
 
-Required in the footer of every page for sites in CCPA scope. Linked to a page that allows the user to opt out of "sale" and "sharing" of personal information. One-click opt-out, no account required. See `references.md` CCPA section for scope.
+Required in the footer of every page for sites in CCPA scope. Linked to a page that allows the user to opt out of "sale" and "sharing" of personal information. One-click opt-out, no account required. Scope follows the definition of a business in Cal. Civ. Code 1798.140(d).
 
 ## Forbidden Patterns
 

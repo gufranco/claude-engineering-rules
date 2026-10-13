@@ -28,7 +28,7 @@ function generatePKCE(): { verifier: string; challenge: string } {
 | Format | JWT signed with RS256 |
 | Lifetime | 15 minutes maximum |
 | Claims | `sub`, `iat`, `exp`, `iss`, `aud`, `jti`, `scope` |
-| Storage | Never in localStorage. Use httpOnly secure cookies or in-memory only |
+| Storage | Memory only. Never localStorage or sessionStorage. The refresh token travels in an httpOnly, Secure, SameSite cookie |
 | Validation | Verify signature, expiration, issuer, and audience on every request |
 
 Short-lived tokens limit the exposure window of a compromised token. Pair with refresh token rotation so the user experience stays uninterrupted.
@@ -44,23 +44,28 @@ Issue a new refresh token on every use. Invalidate the previous one immediately.
 
 ```typescript
 async function rotateRefreshToken(
-  currentToken: string,
+  presentedToken: string,
 ): Promise<TokenPair> {
-  const family = await tokenStore.findFamily(currentToken);
+  const outcome = await tokenStore.markUsedIfActive(hashToken(presentedToken));
 
-  if (family.isRevoked) {
-    await tokenStore.revokeEntireFamily(family.id);
+  if (outcome.status === MarkUsedStatus.Unknown) {
+    throw new AuthenticationError("unknown refresh token");
+  }
+
+  if (outcome.status !== MarkUsedStatus.Consumed) {
+    await tokenStore.revokeEntireFamily(outcome.familyId);
     throw new SecurityError("refresh token replay detected");
   }
 
-  await tokenStore.revokeToken(currentToken);
-  const newRefresh = generateRefreshToken(family.id);
-  const newAccess = generateAccessToken(family.userId);
+  const newRefresh = generateRefreshToken(outcome.familyId);
+  const newAccess = generateAccessToken(outcome.userId);
 
   await tokenStore.save(newRefresh);
   return { accessToken: newAccess, refreshToken: newRefresh };
 }
 ```
+
+`markUsedIfActive` is one conditional write: it sets `used_at` only where `used_at` is null and the family is not revoked, and reports which case matched. A token that was already rotated returns `AlreadyUsed`, so replay of a rotated token revokes the family. Two concurrent refreshes with the same token race on that single write: exactly one gets `Consumed`, and the loser gets `AlreadyUsed` and a replay error. Run the conditional write and `save` in one transaction.
 
 ## Passkeys and FIDO2
 
@@ -97,7 +102,7 @@ Follow NIST 800-63B guidelines. Traditional complexity rules do not improve secu
 
 ## Multi-Factor Authentication
 
-Offer MFA as opt-in for all users. Require it for admin roles.
+Require MFA for admin roles and for any account touching personal, payment, or health data. Offer it to every other user.
 
 | Method | Security level | UX impact |
 |--------|---------------|-----------|
@@ -114,8 +119,8 @@ Offer MFA as opt-in for all users. Require it for admin roles.
 
 - Generate session IDs with a cryptographically secure random generator. Minimum 128 bits of entropy.
 - Regenerate the session ID after authentication to prevent session fixation.
-- Set idle timeout: 30 minutes for standard apps, 5 minutes for sensitive operations.
-- Set absolute timeout: 12 hours regardless of activity.
+- Set idle timeout: 15 minutes for sensitive flows, 60 minutes otherwise.
+- Set absolute timeout: 12 hours for sensitive flows, 24 hours otherwise, regardless of activity.
 - Invalidate all sessions on password change.
 - Store sessions server-side. The session cookie contains only the session ID.
 

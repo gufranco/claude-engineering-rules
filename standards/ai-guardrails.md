@@ -2,7 +2,7 @@
 
 ## Core Principle
 
-Treat all AI-generated code as junior developer output. It compiles, it looks plausible, it often has subtle design flaws. 62% of AI-generated code contains design issues that pass syntax checks but fail under real-world conditions. Never trust, always verify.
+Treat all AI-generated code as junior developer output. It compiles, it looks plausible, it often has subtle design flaws that pass syntax checks and fail under real-world conditions. Never trust, always verify.
 
 ## Plan Before Generating
 

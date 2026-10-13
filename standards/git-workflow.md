@@ -31,7 +31,7 @@
 
 ## Decision Trailers (Optional)
 
-Commit messages may include trailers that record decision context. These are optional but must follow the correct format when present. The `conventional-commits.sh` hook validates format.
+Commit messages may include trailers that record decision context. These are optional but must follow the correct format when present. The `conventional-commits.py` hook validates format.
 
 ```
 refactor(auth): replace session store with JWT
@@ -138,7 +138,7 @@ After ANY push:
 
 **Batch fixes before pushing.** When CI fails with multiple issues, fix all of them locally before pushing again. One push with all fixes, not one push per fix. Each push triggers a full pipeline run across all platforms.
 
-**Rate limit awareness.** `gh run watch` polls every 3 seconds, around 1200 requests per hour. Never run multiple watchers concurrently. Before starting a watcher, check quota with `gh api rate_limit`. If remaining quota is below 500, use one-shot `gh run view <id>` checks instead of continuous polling.
+**Rate limit awareness.** `gh run watch` and `gh pr checks --watch` poll every 3 seconds, around 1200 requests per hour, and the watch blocker hook always blocks them. Check quota with `gh api rate_limit` first. Then poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`. Never run two polls concurrently. If remaining quota is below 500, stop polling and take a single `gh run view <id>` once the run should have finished.
 
 **Queued is not running.** A run reports `queued` while no runner has picked it up. That wait is bounded by runner availability rather than by the length of the build, so it can outlast any polling loop the tool layer permits. Read the per-job status before choosing an interval:
 
@@ -158,7 +158,7 @@ Before committing changes to CI workflow files, run the relevant linters locally
 | Any `.yml` / `.yaml` | yamllint | `yamllint -d "{extends: default, rules: {line-length: disable}}" <file>` |
 | Shell scripts referenced by CI | shellcheck | `shellcheck <file>` |
 
-If a tool is not installed locally, install it before proceeding. Do not skip the check and hope CI catches it.
+If a tool is not installed locally, ask before installing it. Do not skip the check and hope CI catches it.
 
 ## PR/MR Creation
 
@@ -317,8 +317,8 @@ When a project has a CHANGELOG.md:
 - Write for users, not contributors. Lead with what the user can now DO
 - Internal refactors and contributor-facing changes go in a separate "Internal" section
 - Each entry should make someone think "I want to try that"
-- Use past tense for completed work: "Added", "Fixed", "Removed"
-- Group by: Added, Changed, Fixed, Removed, Security
+- Start each entry with a present-tense verb naming what the user can now do: "Create", "Filter", "Export". Prefix fix entries with "Fixed:"
+- Group by the sections in [`changelog.md`](changelog.md): What's New, Improvements, Fixes, Breaking Changes, Deprecated, Internal
 - Never list commit hashes or PR numbers as the primary content
 
 ## Ignored Artifacts

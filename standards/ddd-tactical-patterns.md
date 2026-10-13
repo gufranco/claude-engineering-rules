@@ -68,26 +68,37 @@ Rules:
 Objects with a unique identity that persists across state changes. Two entities with the same attributes but different IDs are different objects.
 
 ```typescript
+interface OrderTransition {
+  readonly order: Order;
+  readonly events: readonly DomainEvent[];
+}
+
 class Order {
   constructor(
     readonly id: OrderId,
-    private _status: OrderStatus,
-    private _items: readonly OrderItem[],
-    private _placedAt: Date,
+    readonly status: OrderStatus,
+    readonly items: readonly OrderItem[],
+    readonly placedAt: Date,
   ) {}
 
-  get status(): OrderStatus { return this._status; }
-  get items(): readonly OrderItem[] { return this._items; }
-  get total(): Money { return this._items.reduce((sum, item) => sum.add(item.price), Money.zero()); }
+  total(): Result<Money, CurrencyMismatchError> {
+    return this.items.reduce<Result<Money, CurrencyMismatchError>>(
+      (sum, item) => sum.andThen((running) => running.add(item.price)),
+      ok(Money.zero()),
+    );
+  }
 
-  cancel(reason: CancellationReason): Result<DomainEvent[], OrderError> {
-    if (this._status !== OrderStatus.Placed) {
-      return err(new OrderError(`Cannot cancel order in ${this._status} status`));
+  cancel(reason: CancellationReason, occurredAt: Date): Result<OrderTransition, OrderError> {
+    if (this.status !== OrderStatus.Placed) {
+      return err(new OrderError(`Cannot cancel order in ${this.status} status`));
     }
-    this._status = OrderStatus.Cancelled;
-    return ok([new OrderCancelled(this.id, reason, new Date())]);
+    const cancelled = new Order(this.id, OrderStatus.Cancelled, this.items, this.placedAt);
+    return ok({ order: cancelled, events: [new OrderCancelled(this.id, reason, occurredAt)] });
   }
 }
+```
+
+A transition returns a new `Order` and never mutates the old one. The caller passes `occurredAt` from an injected clock, so the entity reads no wall-clock time and tests stay deterministic.
 ```
 
 Rules:
@@ -95,7 +106,7 @@ Rules:
 - Use branded types for entity IDs: `OrderId`, `UserId`, never raw strings
 - Entities enforce their own invariants. An entity in an invalid state is a bug
 - Equality by ID only. Two `Order` objects with the same `OrderId` are the same order regardless of other fields
-- Minimize public setters. State changes go through methods that enforce business rules and emit domain events
+- No setters. State changes go through methods that enforce business rules, return the new state, and emit domain events
 
 ## Aggregates
 
@@ -105,15 +116,14 @@ In this example `Order` is the aggregate root, `OrderItem` is an entity within i
 
 ```typescript
 class Order {
-  addItem(product: ProductId, quantity: Quantity, price: Money): Result<void, OrderError> {
-    if (this._status !== OrderStatus.Draft) {
+  addItem(item: OrderItem): Result<Order, OrderError> {
+    if (this.status !== OrderStatus.Draft) {
       return err(new OrderError('Cannot modify a placed order'));
     }
-    if (this._items.length >= Order.MAX_ITEMS) {
+    if (this.items.length >= Order.MAX_ITEMS) {
       return err(new OrderError(`Order cannot exceed ${Order.MAX_ITEMS} items`));
     }
-    this._items = [...this._items, new OrderItem(OrderItemId.generate(), product, quantity, price)];
-    return ok(undefined);
+    return ok(new Order(this.id, this.status, [...this.items, item], this.placedAt));
   }
 }
 ```
@@ -173,9 +183,11 @@ class PricingService {
     customer: CustomerTier,
     activeCoupons: readonly Coupon[],
   ): Result<Money, PricingError> {
-    const tierDiscount = discountForTier(customer, order.total);
     const couponDiscount = bestCouponDiscount(activeCoupons, order);
-    return tierDiscount.add(couponDiscount).mapErr(toPricingError);
+    return order
+      .total()
+      .andThen((total) => discountForTier(customer, total).add(couponDiscount))
+      .mapErr(toPricingError);
   }
 }
 ```

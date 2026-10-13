@@ -23,7 +23,7 @@ You own the cleanup of code you wrote in this change. You do not own pre-existin
 | Your change made a function unused | Remove it |
 | Pre-existing dead code in the file | Leave it. Mention if relevant |
 | Pre-existing style violation in the file | Leave it. Follow rule priority order |
-| Pre-existing bug adjacent to your change | Leave it. Surface as a separate task |
+| Pre-existing bug adjacent to your change | Leave it and report it to the user. If a verification surface flagged it, fix it in this change per [`found-fix.md`](found-fix.md) |
 
 ## Diff Self-Test
 
@@ -41,7 +41,7 @@ When a rule from `~/.claude/` would expand the diff into unchanged code:
 
 1. Apply the rule fully to lines the request requires changing.
 2. Do not retrofit lines you would otherwise leave alone.
-3. Surface the broader violation as a follow-up task or PR comment.
+3. Report the broader violation to the user in the change summary. Never park it in a tracker item, a later change, or a pull request comment; if a verification surface flagged it, it is in scope now per [`found-fix.md`](found-fix.md).
 
 Rules are not retroactive. They govern code you write or touch.
 

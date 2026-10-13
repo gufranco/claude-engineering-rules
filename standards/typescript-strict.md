@@ -4,7 +4,7 @@
 
 `"strict": true` plus every additional flag not covered by `strict`: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noPropertyAccessFromIndexSignature`, `noFallthroughCasesInSwitch`, `forceConsistentCasingInFileNames`, `verbatimModuleSyntax`. When a new strictness flag is added to TypeScript, enable it.
 
-The cross-language strictness principle and per-language requirements live in [`rules/code-style.md`](../rules/code-style.md) under "Maximum Compiler and Checker Strictness". This file covers TypeScript specifics.
+The cross-language strictness principle and per-language requirements live in [`code-style.md`](code-style.md) under "Maximum Compiler and Checker Strictness". This file covers TypeScript specifics.
 
 ## Target and Module Settings
 
@@ -21,7 +21,7 @@ Browser projects: target the lowest supported browser baseline. When using a bui
 
 ## TypeScript 5.8 Specifics
 
-TypeScript 5.8 is the current stable release as of 2026. Adopt these flags in new projects and consider them when upgrading existing ones.
+TypeScript 5.8 introduced the flags and features below. The latest stable release is 7.0.2 (as of 2026-10-13), so check each flag against the release notes of the version the project pins before adopting it.
 
 | Flag or Feature | Behavior |
 |----------------|----------|

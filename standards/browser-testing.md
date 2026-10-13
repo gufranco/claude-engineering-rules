@@ -23,7 +23,7 @@ export class LoginPage {
   }
 
   async getErrorMessage(): Promise<string> {
-    return this.page.getByRole('alert').textContent() ?? '';
+    return (await this.page.getByRole('alert').textContent()) ?? '';
   }
 }
 ```
@@ -153,10 +153,11 @@ await expect(card).toHaveScreenshot('profile-card.png');
 
 ## Responsive Testing
 
-Test all critical breakpoints. Define breakpoints from the project's Tailwind config or CSS custom properties.
+Test all critical breakpoints. Define breakpoints from the project's Tailwind config or CSS custom properties. The smallest width is always 320px, per [`../rules/testing.md`](../rules/testing.md).
 
 ```typescript
 const breakpoints = [
+  { name: 'mobile-min', width: 320, height: 568 },
   { name: 'mobile', width: 375, height: 812 },
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'desktop', width: 1440, height: 900 },
@@ -276,17 +277,17 @@ In `playwright.config.ts`:
 
 ```typescript
 export default defineConfig({
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   workers: process.env.CI ? 1 : undefined,
   use: {
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
 });
 ```
 
-- Retry flaky tests in CI but never locally. Flaky tests must be fixed, not retried indefinitely.
+- Never retry a test, in CI or locally. A retry hides the flake that a failure would have exposed. Fix or delete a flaky test, per [`../rules/testing.md`](../rules/testing.md).
 - Capture traces on failure for debugging. Traces include DOM snapshots, network requests, and console logs.
 - Run with a single worker in CI if tests share external resources, database, API. Parallel locally.
 

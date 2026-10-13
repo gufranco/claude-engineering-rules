@@ -44,13 +44,15 @@ await redis.expire(key, ttlSeconds);
 ```typescript
 const INCR_WITH_TTL =
   "local t = redis.call('INCRBY', KEYS[1], ARGV[1]) " +
-  "redis.call('EXPIRE', KEYS[1], ARGV[2]) " +
+  "if redis.call('TTL', KEYS[1]) == -1 then redis.call('EXPIRE', KEYS[1], ARGV[2]) end " +
   "return t";
 
 const newTotal = (await redis.eval(
   INCR_WITH_TTL, 1, key, amount, ttlSeconds,
 )) as number;
 ```
+
+The script sets the TTL only when the key has none, so the window starts at the first increment and the counter resets when it expires. An `EXPIRE` on every increment pushes the expiry forward on each write, and a counter that keeps receiving writes never resets.
 
 Rules for Lua scripts:
 
@@ -66,9 +68,11 @@ Use `MULTI/EXEC` when atomicity is needed but the commands are independent. No c
 ```typescript
 const results = await redis.multi()
   .incrby(key, amount)
-  .expire(key, ttlSeconds)
+  .expire(key, ttlSeconds, "NX")
   .exec();
 ```
+
+The `NX` option, available from Redis 7.0, sets the expiry only when the key has none, for the same reason as the Lua script above.
 
 Use Lua when a command depends on a previous result within the same atomic block.
 
@@ -91,13 +95,13 @@ Use Lua when a command depends on a previous result within the same atomic block
 
 - Use a connection pool. One connection per request exhausts Redis under load
 - Separate connections for pub/sub: a client in subscriber mode cannot issue regular commands. Create a dedicated subscriber connection and a dedicated publisher connection
-- Lazy-initialize connections that are not needed on every request. A module that exports pure functions must not create a Redis connection at import time. See [`rules/code-style.md`](../rules/code-style.md) "No side effects at module level"
+- Lazy-initialize connections that are not needed on every request. A module that exports pure functions must not create a Redis connection at import time. See the "No side effects at module level" item under "Fundamentals" in [`code-style.md`](code-style.md)
 - Set `connectTimeout` and `commandTimeout`. A hanging Redis connection blocks the caller indefinitely without a timeout
 - Handle `ECONNREFUSED` and `ETIMEDOUT` as transient errors. Retry with backoff, not immediate retry
 
 ## Non-Critical Redis Fallback
 
-When Redis is used for a non-critical feature, price enhancement, recommendation scoring, view counters, inside a critical path, serving API responses, processing payments, the critical path must survive Redis failure.
+When Redis serves a non-critical feature, such as price enhancement, recommendation scoring, or view counters, inside a critical path, such as serving API responses or processing payments, the critical path must survive Redis failure.
 
 **Rule: wrap non-critical Redis reads in a try/catch that returns a safe default.**
 
@@ -138,9 +142,9 @@ Log every fallback activation at `warn` level with the operation name and error.
 ## Testing
 
 - Integration tests for Redis operations must connect to a real Redis instance, not a mock. Add Redis to the test environment's docker-compose
-- Test TTL behavior with short TTLs, 1-2 seconds and `await` the expiration
+- Test TTL behavior without waiting on the clock. Right after the write, assert that `PTTL` returns a value inside the expected bound. To test the expired path, remove the key at once with `PEXPIRE key 0`, then assert the code treats it as missing. Never sleep in a test
 - Test atomic operations under concurrency: spawn multiple promises that race on the same key, verify the final state is consistent
-- Pure functions that compute values from Redis data, thresholds, steps, pricing can be unit tested without Redis
+- Pure functions that compute values from Redis data, such as thresholds, steps, or pricing, can be unit tested without Redis
 
 ## Related Standards
 

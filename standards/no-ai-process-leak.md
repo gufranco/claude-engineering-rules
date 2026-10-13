@@ -197,8 +197,8 @@ The bypass `AI_PROCESS_LEAK_DISABLE=1` is for editing planning artifacts that le
 ## Cross-References
 
 - `~/.claude/CLAUDE.md` "No AI attribution" covers the narrower explicit-attribution case.
-- `~/.claude/rules/git-workflow.md` "Commit Format" defines the subject and body envelope.
-- `~/.claude/rules/writing-precision.md` covers the broader precision floor.
+- [`git-workflow.md`](git-workflow.md) "Commit Format" defines the subject and body envelope.
+- [`writing-precision.md`](writing-precision.md) covers the broader precision floor.
 - `~/.claude/standards/code-review.md` "No Internal Config Leakage" covers the related class of `~/.claude/` path leaks, different hook.
 - `~/.claude/hooks/ai-process-leak-blocker.py` is the enforcement layer.
 

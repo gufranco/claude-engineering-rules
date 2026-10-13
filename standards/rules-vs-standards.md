@@ -25,7 +25,7 @@ CI enforces a 120,000-character budget on the always-loaded set, leaving headroo
 
 Use this matrix to decide where new content belongs.
 
-| Question | If yes → | If no → |
+| Question | If yes | If no |
 |----------|---------|---------|
 | Does this apply to every task regardless of domain? | rules/ | standards/ |
 | Would skipping this guidance cause harm in code I write today, even if the task is unrelated? | rules/ | standards/ |
@@ -70,7 +70,7 @@ Standards are loaded by matching task descriptions against the `triggers` field 
 | Single-word triggers like `db` | Match too broadly, load standard for unrelated tasks | Use compound terms: `database schema`, `query optimization` |
 | Triggers that overlap with another standard | Two standards load when one would suffice | Pick the more specific standard, narrow the broader one |
 | Triggers that mirror the filename | Only matches if the user names the file | Add domain language users actually type |
-| More than 25 triggers per standard | Suggests the standard covers too many concerns | Split into focused standards |
+| One trigger set spanning two unrelated domains | The standard loads for tasks that need only half of it | Split into focused standards. Trigger count alone is never the signal: a focused standard such as [`typescript-immutability.md`](typescript-immutability.md) lists every mutating API it covers |
 
 ## Splitting and Merging
 
@@ -141,11 +141,11 @@ When evaluating a new MCP server: would a periodic CLI fetch satisfy the same ne
 
 When unsure, walk this checklist:
 
-1. Is the content universal? → rules/
-2. Is the content domain-specific? → standards/
-3. Is the content a workflow? → skills/
-4. Is the content delegated work? → agents/
-5. Is the content runtime enforcement? → hooks/
-6. Is the content a verification list? → checklists/
+1. Is the content universal? Use rules/
+2. Is the content domain-specific? Use standards/
+3. Is the content a workflow? Use skills/
+4. Is the content delegated work? Use agents/
+5. Is the content runtime enforcement? Use hooks/
+6. Is the content a verification list? Use checklists/
 
 If two categories fit, choose the one with the smaller default load.

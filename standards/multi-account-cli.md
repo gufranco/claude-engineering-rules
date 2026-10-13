@@ -130,8 +130,10 @@ mise install
 mise current
 mise exec <tool>@<version> -- <command>
 mise x <tool>@<version> -- <command>
-mise use <tool>@<version>       # writes to .mise.toml in cwd, project-local
+mise use <tool>@<version>
 ```
+
+`mise use` without `--global` writes to `.mise.toml` in the current directory, so it stays project-local.
 
 mise resolves the active tool version from project config, `.mise.toml`, `.tool-versions`, `.nvmrc`, `.node-version`, `.python-version`, `.ruby-version`, `.terraform-version`, on every invocation. There is no shared "active version" that another terminal can change. `mise use --global` is the only command that writes to the shared `~/.config/mise/config.toml`; the hook blocks it. Pin runtimes per project with `.mise.toml` instead.
 
@@ -170,7 +172,7 @@ When the user starts running a new CLI multi-account, add coverage in five steps
 2. **Identify the anti-pattern command.** The one that mutates the active account or context globally.
 3. **Write `hooks/<cli>-<context>-guard.py`** following the gh-token-guard template. Stdin JSON parse, regex match, allow read-only and per-command forms, hard-block the anti-pattern, exit 2 with a pointer to this standard.
 4. **Add fixtures** under [`tests/fixtures/`](../tests/fixtures): at minimum one blocked scenario and one allowed scenario, ideally also a read-only and a no-op fixture.
-5. **Wire the hook** in [`settings.json`](../settings.json) under `PreToolUse > Bash`. Update the coverage table in this file. Update [`rules/security.md`](../rules/security.md) Hook Coverage table.
+5. **Wire the hook** in [`settings.json`](../settings.json) under `PreToolUse > Bash`. Update the coverage table in this file. The "Hook Coverage" section of [`security.md`](security.md) already names multi-account isolation, so it needs no edit.
 
 ## Rules summary
 
@@ -186,4 +188,3 @@ When the user starts running a new CLI multi-account, add coverage in five steps
 - [`standards/gitlab-accounts.md`](gitlab-accounts.md): detailed per-command rules for `glab`.
 - [`standards/borrow-restore.md`](borrow-restore.md): fallback pattern for tools without a per-command form.
 - [`standards/git-identity.md`](git-identity.md): author identity isolation for git, including the includeIf template and hook contract.
-- `standards/hook-authoring.md`: performance budget and exit-code semantics for new hooks.

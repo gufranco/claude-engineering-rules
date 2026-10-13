@@ -10,17 +10,17 @@ Schema definition code is the single source of truth. Every DDL statement in a m
 
 ### Schema Sync Strategy
 
-Every ORM ships at least one shortcut for skipping the migration log: `synchronize: true`, `sync()`, `db push`, `schema:sync`, `schema:fresh`. These are development conveniences. They become defects the moment they touch a database with data.
+Every ORM ships at least one shortcut for skipping the migration log: `synchronize: true`, `sync()`, `db push`, `schema:sync`, `schema:fresh`. These are development conveniences, allowed only on local dev databases and disposable test databases. Every other database receives schema changes through migrations alone. A shortcut becomes a defect the moment it touches a database whose data must survive.
 
 | Environment | Schema sync allowed? | Migrations |
 |-------------|---------------------|------------|
-| Greenfield local dev | Yes, only during prototyping | Switch to migrations once the schema stabilizes |
-| Mature local dev | No | Run migrations on startup or via CLI |
-| Test | No, except `force` mode against a dedicated test database | Run before the suite |
-| Staging | No | Run as a deployment step before the app boots |
+| Greenfield local dev | Yes | Switch to migrations once the schema stabilizes |
+| Mature local dev | Yes, for throwaway experiments | Run migrations on startup or via CLI before committing |
+| Disposable test database | Yes, including `force` mode, against a database the suite recreates | CI also applies every migration to a fresh database, so the migration files stay tested |
+| Shared dev, staging, preview | No | Run as a deployment step before the app boots |
 | Production | No, hard requirement | Run as a deployment step before the app boots |
 
-Configure the application bootstrap to refuse schema-sync calls when `NODE_ENV` is `production` or `staging`. CI must fail when a sync shortcut appears in deployment scripts.
+Configure the application bootstrap to refuse schema-sync calls unless an explicit config flag, such as `ALLOW_SCHEMA_SYNC=true`, is set. Only local dev and disposable test configs set it; never branch on `NODE_ENV`. CI must fail when a sync shortcut appears in deployment scripts.
 
 ### Parity Contract
 
@@ -234,7 +234,7 @@ Entity class decorators are the source. Every column, index, unique constraint, 
 - `dataSource.synchronize()` called from application code
 - `dataSource.dropDatabase()` followed by `dataSource.synchronize()`
 
-Never ship a build with any of these enabled outside local development.
+Never ship a build with any of these enabled outside local development and disposable test databases.
 
 ### Parity Syntax
 
@@ -343,7 +343,7 @@ Drizzle ships two distinct workflows. They are not interchangeable.
 |---------|--------|--------|
 | `drizzle-kit generate` | Reads the TypeScript schema, diffs against `drizzle/_meta/_journal.json`, writes a new SQL migration file | Every environment |
 | `drizzle-kit migrate` | Reads SQL files and applies any not yet in `__drizzle_migrations` | Every environment |
-| `drizzle-kit push` | Diffs the TypeScript schema against the live database and executes DDL directly, no file | Local development only |
+| `drizzle-kit push` | Diffs the TypeScript schema against the live database and executes DDL directly, no file | Local development and disposable test databases only |
 | `drizzle-kit pull` | Reads the live database, writes a TypeScript schema and a baseline migration | Onboarding only |
 
 `drizzle-kit push` bypasses the migration file system. It can silently skip ambiguous changes like column renames or type narrowing, and leaves no SQL record. A staging or production environment that has ever been pushed against has no reliable migration history. Configure CI to fail when `push` appears in deployment scripts.
@@ -439,11 +439,11 @@ The `sync` family of methods is the dangerous shortcut. Three modes, three blast
 
 | Mode | Effect | Use in |
 |------|--------|--------|
-| `sync()` no options | Creates missing tables. Does not alter existing tables | Local dev only |
-| `sync({ alter: true })` | Compares each model to the current table, runs `ALTER TABLE`. May drop columns | Local dev only, with care |
-| `sync({ force: true })` | Drops every table and recreates them. Wipes all data | Test suite setup only |
+| `sync()` no options | Creates missing tables. Does not alter existing tables | Local dev and disposable test databases only |
+| `sync({ alter: true })` | Compares each model to the current table, runs `ALTER TABLE`. May drop columns | Local dev and disposable test databases only |
+| `sync({ force: true })` | Drops every table and recreates them. Wipes all data | Local dev and disposable test databases only |
 
-Never call any form of `sync()` in staging or production. Configure the application bootstrap to refuse `sync()` calls when `NODE_ENV` is `production` or `staging`.
+Never call any form of `sync()` against any other database. Configure the application bootstrap to refuse `sync()` calls unless the explicit schema-sync config flag is set.
 
 ### Migration Tooling Choice
 
@@ -592,12 +592,12 @@ Both must be set when the project uses folder-based discovery. Missing `entities
 
 ### Schema Sync Strategy in MikroORM
 
-MikroORM ships several schema shortcuts. None of them belong outside local development:
+MikroORM ships several schema shortcuts. None of them belong outside local development and disposable test databases:
 
 | Command | Effect | Use in |
 |---------|--------|--------|
-| `mikro-orm schema:fresh` | Drops and recreates the entire schema from entities. Wipes all data | Local dev only |
-| `mikro-orm schema:update` | Diffs entities against the live database and runs DDL | Local dev only |
+| `mikro-orm schema:fresh` | Drops and recreates the entire schema from entities. Wipes all data | Local dev and disposable test databases only |
+| `mikro-orm schema:update` | Diffs entities against the live database and runs DDL | Local dev and disposable test databases only |
 | `mikro-orm schema:create` | Outputs the full schema as SQL | Inspection only |
 | `mikro-orm migration:create` | Generates a new migration file from the entity-vs-database diff | Every environment |
 | `mikro-orm migration:up` | Applies pending migrations | Every environment |
@@ -737,7 +737,7 @@ These patterns produce schema drift in any ORM project. Detect them in review.
 
 | Pattern | Why it drifts |
 |---------|--------------|
-| Schema-sync shortcut in staging or production | The schema mutates without writing a migration; the team loses the audit trail |
+| Schema-sync shortcut on any database other than local dev or a disposable test database | The schema mutates without writing a migration; the team loses the audit trail |
 | Adding a column to an entity or model without a matching migration | Local tests pass against the sync-mutated schema; production deployment fails when the column is missing |
 | Renaming a property without a `name:` argument on the decorator | The next generate produces `DROP COLUMN <old>; ADD COLUMN <new>;`, which drops data |
 | Index declared without an explicit name on one branch, with an explicit name on another | Two migrations create different index names for the same logical index. Both apply; one becomes orphaned |
@@ -750,10 +750,10 @@ These patterns produce schema drift in any ORM project. Detect them in review.
 
 ## Cross-References
 
-- [`rules/git-workflow.md`](../rules/git-workflow.md) "Migration Ordering" and "Migration Idempotency" cover timestamp ordering and `IF NOT EXISTS` requirements
-- [`rules/verification.md`](../rules/verification.md) "Database changes add" lists the verification gates
+- [`standards/git-workflow.md`](git-workflow.md) "Migration Ordering" and "Migration Idempotency" cover timestamp ordering and `IF NOT EXISTS` requirements
+- [`standards/completion-gates.md`](completion-gates.md) "Database changes add" lists the verification gates
 - [`checklists/checklist.md`](../checklists/checklist.md) category "Schema-Migration Sync" is the per-PR checklist
-- [`rules/code-style.md`](../rules/code-style.md) "No raw SQL" and "Service layer for data access" cover the cross-ORM boundary
+- [`standards/code-style.md`](code-style.md) "Fundamentals", under "No raw SQL" and "Service layer for data access", covers the cross-ORM boundary
 - [`standards/postgresql.md`](postgresql.md) covers PostgreSQL-specific concerns including PG 18 features and native `uuidv7()`
 - [`standards/identifiers.md`](identifiers.md) covers identifier choice for primary keys
 
@@ -769,4 +769,4 @@ Enforced by: [`hooks/sequelize-schema-sync.py`](../hooks/sequelize-schema-sync.p
 Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../hooks/typeorm-raw-sql-blocker.py).
 Enforced by: [`hooks/typeorm-schema-sync.py`](../hooks/typeorm-schema-sync.py).
 
-The Prisma schema-sync hook originated in PR #1325 of onyxodds/onyx_fullstack on 2026-04-17. Each hook blocks with a message that names this file and the fix; bypass a schema-sync hook only for the unmanaged objects listed under Unmanaged Objects, and record the reason in the pull request description or an ADR, never in a migration comment.
+The Prisma schema-sync hook originated in a production project's pull request on 2026-04-17. Each hook blocks with a message that names this file and the fix; bypass a schema-sync hook only for the unmanaged objects listed under Unmanaged Objects, and record the reason in the pull request description or an ADR, never in a migration comment.

@@ -20,7 +20,6 @@ Optional context fields:
 
 ```json
 {
-  "userId": "usr_456",
   "orderId": "ord_789",
   "durationMs": 42,
   "error": { "code": "DB_TIMEOUT", "message": "connection timed out after 5000ms" }
@@ -56,20 +55,23 @@ Never log:
 
 - Passwords, tokens, API keys, secrets
 - Full credit card numbers, SSNs, or government IDs
-- Request/response bodies containing PII without masking
+- Personal data of any kind: emails, names, phone numbers, IP addresses, and user IDs. Pseudonymous identifiers are personal data
+- Request/response bodies containing personal data without masking
+
+An event that must name the acting user goes to the access-controlled audit log described in [`security.md`](security.md) "Audit Logging", never to the application log.
 
 Mask patterns: `password`, `token`, `secret`, `authorization`, `credential`, `key`, `jwt`, `apikey`, `access_token`, `refresh_token`
 
-When logging request bodies, redact sensitive fields:
+When logging request bodies, redact sensitive and personal fields:
 ```json
-{ "email": "user@example.com", "password": "[REDACTED]" }
+{ "email": "[REDACTED]", "password": "[REDACTED]", "orderId": "ord_789" }
 ```
 
 ## Correlation IDs
 
 - Generate a unique `requestId` at the API gateway or first service
 - Propagate via `X-Request-Id` header across all service calls
-- Include `requestId` in every log entry, error response, and metric tag
+- Include `requestId` in every log entry and error response. Never use it as a metric label; see Labels and Tags below
 - For async workflows, also propagate a `correlationId` that links the entire chain
 
 ## Metrics
@@ -150,7 +152,7 @@ Define reliability targets before building monitoring. Without them, alerts are 
 | Term | What it is | Who defines it | Example |
 |------|-----------|----------------|---------|
 | SLI (Service Level Indicator) | A measurable signal of service health | Engineering | Request latency p99, error rate, availability percentage |
-| SLO (Service Level Objective) | A target value for an SLI | Engineering + Product | p99 latency < 200ms, availability > 99.9% per rolling 30 days |
+| SLO (Service Level Objective) | A target value for an SLI | Engineering + Product | p99 latency < 200ms, availability > 99.9% per rolling 28 days |
 | SLA (Service Level Agreement) | A contractual promise to customers with consequences | Business | 99.95% uptime or credits issued |
 
 **Rules:**
@@ -158,15 +160,15 @@ Define reliability targets before building monitoring. Without them, alerts are 
 - Define SLIs first. Common: availability, latency, p50, p95, p99, error rate, throughput
 - SLOs must be based on SLIs, not gut feeling. Measure first, then set targets
 - SLOs should be slightly stricter than SLAs. If the SLA is 99.95%, the SLO might be 99.97%
-- **Error budget** = 100% minus SLO. A 99.9% SLO means 0.1% error budget, roughly 43 minutes of downtime per month. When the budget is spent, prioritize reliability over features
-- **Feature-level SLOs**: define SLOs per critical feature, not only per service. A checkout endpoint and a background reporting endpoint have fundamentally different reliability requirements. Set targets where 100% is achievable within the infrastructure budget. A feature SLO tighter than the underlying service SLO is meaningless without independent capacity.
+- **Error budget** = 100% minus SLO. A 99.9% SLO means 0.1% error budget, roughly 40 minutes of downtime per 28-day window. When the budget is spent, prioritize reliability over features
+- **Feature-level SLOs**: define SLOs per critical feature, not only per service. A checkout endpoint and a background reporting endpoint have fundamentally different reliability requirements. Set every target below 100%, at a level the infrastructure budget can sustain; see [`sre-practices.md`](sre-practices.md) "Service Level Objectives". A feature SLO tighter than the underlying service SLO is meaningless without independent capacity.
 
 ## Alerting Conventions
 
 - Alert on symptoms, not causes. "Error rate > 1%" not "CPU > 80%"
 - Tie alerts to SLO violations: "error budget burn rate exceeds 10x" is more actionable than a static threshold
 - Every alert must have a runbook link
-- Use severity levels: `critical`, pages immediately, `warning`, notify channel, `info`. Dashboard only
+- Use three severity levels. `critical` pages immediately. `warning` notifies the team channel. `info` appears on the dashboard only
 - Include in alert: what is happening, which service, since when, link to dashboard
 - Review alert signal-to-noise ratio monthly. If an alert fires without requiring action, tune or remove it
 
@@ -179,7 +181,7 @@ When production breaks:
 3. **Mitigate**: restore service first. Rollback, feature flag, redirect traffic. Root cause analysis comes later
 4. **Communicate**: update status page and stakeholders. Set expectations for resolution
 5. **Resolve**: fix the underlying issue after service is restored
-6. **Postmortem**: blameless review within 48 hours. Document what happened, timeline, root cause, what went well, what didn't, and action items with owners
+6. **Postmortem**: blameless review within 5 business days, per [`sre-practices.md`](sre-practices.md) "Postmortems". Document what happened, timeline, root cause, what went well, what didn't, and action items with owners
 
 ### Postmortem Template
 
@@ -260,7 +262,7 @@ process.on('SIGTERM', shutDownGracefully)
 **Rules:**
 
 - Never import instrumented libraries at module level before the SDK starts. Move them inside functions, use lazy imports, or restructure entry points so the SDK file is the first import.
-- The Collector is the only valid telemetry destination from application code. Never send traces, metrics, or logs directly to a backend, Jaeger, Zipkin, Prometheus. Configure the SDK to export to `localhost:4317`, OTLP gRPC or `localhost:4318`, OTLP HTTP. The Collector handles routing, sampling, batching, and backend switching.
+- The Collector is the only valid telemetry destination from application code. Never send traces, metrics, or logs directly to a backend such as Jaeger, Zipkin, or Prometheus. Configure the SDK to export to `localhost:4317` for OTLP over gRPC or `localhost:4318` for OTLP over HTTP. The Collector handles routing, sampling, batching, and backend switching.
 - Use the OTLP exporter in all environments, including local development. Run a local Collector via Docker to replicate the production telemetry path.
 
 ## Related Standards

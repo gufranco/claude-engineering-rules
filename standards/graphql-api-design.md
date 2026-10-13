@@ -238,7 +238,7 @@ const resolvers = {
 | Scenario | Approach |
 |----------|---------|
 | Root query resolvers | Direct database query with filters |
-| Mutations | Direct database write, no batching needed |
+| Mutations | One service call that writes, no batching needed |
 | Fields derived from parent data | Compute in the resolver, no fetch needed |
 | Aggregations | Direct query, DataLoader adds no value |
 
@@ -262,10 +262,10 @@ type Mutation {
   createUser(input: CreateUserInput!): CreateUserResult!
 }
 
-union CreateUserResult = CreateUserSuccess | ValidationError | DuplicateEmailError
+union CreateUserResult = CreateUserAccepted | ValidationError
 
-type CreateUserSuccess {
-  user: User!
+type CreateUserAccepted {
+  message: String!
 }
 
 type ValidationError {
@@ -277,37 +277,23 @@ type FieldError {
   field: String!
   message: String!
 }
-
-type DuplicateEmailError {
-  message: String!
-  existingEmail: String!
-}
 ```
 
 ```typescript
 const resolvers = {
   Mutation: {
     createUser: async (_parent: unknown, { input }: { input: CreateUserInput }, ctx: Context): Promise<CreateUserResult> => {
-      const validation = validateCreateUser(input);
-      if (!validation.ok) {
+      const parsed = parseCreateUserInput(input);
+      if (!parsed.ok) {
         return {
           __typename: 'ValidationError',
           message: 'Invalid input',
-          fields: validation.errors,
+          fields: parsed.errors,
         };
       }
 
-      const existing = await ctx.db.user.findUnique({ where: { email: input.email } });
-      if (existing) {
-        return {
-          __typename: 'DuplicateEmailError',
-          message: 'Email already registered',
-          existingEmail: input.email,
-        };
-      }
-
-      const user = await ctx.db.user.create({ data: input });
-      return { __typename: 'CreateUserSuccess', user };
+      await ctx.services.registration.register(parsed.value);
+      return { __typename: 'CreateUserAccepted', message: 'Check your email to finish signing up' };
     },
   },
 
@@ -316,6 +302,8 @@ const resolvers = {
   },
 };
 ```
+
+The resolver never imports the ORM; `register` lives in a service. It inserts against the unique constraint on `email` in one statement, so two concurrent signups cannot both pass a lookup. When the insert hits the constraint, the service queues a sign-in notice to the existing account holder instead of creating a row. The response and its timing are identical whether or not the email exists, so the mutation cannot be used to enumerate accounts.
 
 ### System Error Extensions
 
@@ -469,15 +457,15 @@ Use WebSocket with the `graphql-ws` protocol. The older `subscriptions-transport
 
 ### Lifecycle
 
-```
-Client                    Server
-  |--- connection_init --->|
-  |<-- connection_ack -----|
-  |--- subscribe --------->|
-  |<-- next (data) --------|
-  |<-- next (data) --------|
-  |--- complete ---------->|
-  |<-- complete -----------|
+```mermaid
+sequenceDiagram
+  Client->>Server: connection_init
+  Server->>Client: connection_ack
+  Client->>Server: subscribe
+  Server->>Client: next, data
+  Server->>Client: next, data
+  Client->>Server: complete
+  Server->>Client: complete
 ```
 
 ### Rules
@@ -633,8 +621,8 @@ describe('createUser mutation', () => {
     const mutation = `
       mutation CreateUser($input: CreateUserInput!) {
         createUser(input: $input) {
-          ... on CreateUserSuccess {
-            user { id email name }
+          ... on CreateUserAccepted {
+            message
           }
           ... on ValidationError {
             message fields { field message }
@@ -657,10 +645,11 @@ describe('createUser mutation', () => {
     });
 
     // Assert
+    const stored = await db.user.findUnique({ where: { email: variables.input.email } });
     expect(result.body.kind).toBe('single');
     const data = result.body.singleResult.data?.createUser;
-    expect(data.__typename).toBe('CreateUserSuccess');
-    expect(data.user.email).toBe(variables.input.email);
+    expect(data.__typename).toBe('CreateUserAccepted');
+    expect(stored?.email).toBe(variables.input.email);
   });
 
   it('must return ValidationError for invalid email', async () => {
@@ -668,8 +657,8 @@ describe('createUser mutation', () => {
     const mutation = `
       mutation CreateUser($input: CreateUserInput!) {
         createUser(input: $input) {
-          ... on CreateUserSuccess {
-            user { id }
+          ... on CreateUserAccepted {
+            message
           }
           ... on ValidationError {
             message fields { field message }
@@ -700,7 +689,7 @@ describe('createUser mutation', () => {
 Snapshot the full SDL to detect unintended schema changes.
 
 ```typescript
-import { printSchema } from 'graphql';
+import { buildSchema, printSchema } from 'graphql';
 import { describe, it, expect } from 'vitest';
 
 describe('schema snapshots', () => {

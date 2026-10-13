@@ -71,13 +71,13 @@ Read-only commands, `git config --get user.email`, `git status`, `git log`, are 
 
 ## Bypass
 
-Set `GIT_AUTHOR_GUARD_DISABLE=1` in the environment to skip every check. Acceptable use cases:
+Export `GIT_AUTHOR_GUARD_DISABLE=1` in the parent shell before launching Claude Code, or engage the in-session registry with `python scripts/bypass.py set git-author-guard --ttl 600 --reason "<why>"`. Either skips every check. An inline prefix such as `GIT_AUTHOR_GUARD_DISABLE=1 git commit` never works: the hook runs in its own process before the shell parses the command, so the variable never reaches it. Acceptable use cases:
 
 - Anonymizing a fork before publishing.
 - Ghostwriting a commit attributed to another author with their consent.
 - Tests of the hook itself.
 
-Bypass is auditable: it requires an explicit env var visible on the command line. Never set it as a shell-wide export. Never use it for normal work.
+Bypass is auditable: the hook writes an audit-log entry naming `GIT_AUTHOR_GUARD_DISABLE` on every bypassed call. Unset the variable, or clear the registry entry, as soon as the task that justified it ends. Never put it in a shell profile. Never use it for normal work.
 
 ## Detection order
 
@@ -103,4 +103,4 @@ The hook does not pick the identity. The user's `~/.gitconfig` does, through git
 - [`standards/multi-account-cli.md`](multi-account-cli.md): umbrella standard for the multi-account isolation pattern.
 - [`standards/github-accounts.md`](github-accounts.md): per-command rules for `gh`.
 - [`standards/gitlab-accounts.md`](gitlab-accounts.md): per-command rules for `glab`.
-- `standards/hook-authoring.md`: performance budget and exit-code semantics.
+- [`README.md`](../README.md) "Hooks": bypass channels, the block-message schema, and the steps for adding a hook.

@@ -141,4 +141,4 @@ Do not create empty glossaries to satisfy a convention. Create on first use:
 - `~/.claude/skills/interview-me/SKILL.md` "When the project has a glossary" section.
 - `~/.claude/skills/tdd/SKILL.md` anti-pattern section, naming notes.
 - `~/.claude/skills/module-audit/SKILL.md` step 1.
-- `~/.claude/rules/design-philosophy.md` Vocabulary subsection.
+- [`design-philosophy.md`](design-philosophy.md) "Vocabulary" section.

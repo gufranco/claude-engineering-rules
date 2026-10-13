@@ -79,7 +79,7 @@ Use ISO 8601: `YYYY-MM-DD`. No other format.
 ## Writing Rules
 
 - One line per entry. No multi-line descriptions in the changelog.
-- Start with a verb: "Create", "Filter", "Export", "Fix", not "Added ability to" or "Users can now".
+- Start with a present-tense verb: "Create", "Filter", "Export", not "Added ability to" or "Users can now". Fix entries take the "Fixed:" prefix below.
 - No ticket IDs in the changelog. Link them in the PR description.
 - No author names or attribution.
 - Keep entries under 100 characters. If it needs more, the scope is too broad for one entry.

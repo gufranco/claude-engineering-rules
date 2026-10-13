@@ -22,7 +22,7 @@ A rule alone did not spread the convention, for the same timing reason described
 | End of a turn that changed the repository | [`hooks/project-workspace.py`](../hooks/project-workspace.py) blocks the stop once while `PROMPT.md` is older than the newest change |
 | Staging | [`hooks/project-workspace.py`](../hooks/project-workspace.py) refuses `git add --force` over the workspace |
 
-Work repositories often track their own `<repo>/docs/`. On 2026-09-30, `company-brain` tracked 85 files there, `eevee` 75, `onyx_fullstack` 20. The user's constraint: a workspace must never interfere with a project's own documentation.
+Work repositories often track their own `<repo>/docs/`. On 2026-09-30, three of the user's work repositories tracked 85, 75, and 20 files there. The user's constraint: a workspace must never interfere with a project's own documentation.
 
 ## Workspace Root
 

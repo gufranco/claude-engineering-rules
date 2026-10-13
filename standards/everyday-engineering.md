@@ -26,7 +26,7 @@ When you start a non-trivial code change, apply these. When you finish one, veri
 
 ### While debugging
 
-- Did you build a deterministic, fast feedback loop before you started hypothesizing? Phase 0 of `/investigate` exists for this reason. Without a loop, every hypothesis is a guess.
+- Did you build a deterministic, fast feedback loop before you started hypothesizing? Phase 1 of `/investigate`, "Build a feedback loop", exists for this reason. Without a loop, every hypothesis is a guess.
 - Are you proving every assumption against real evidence? Read the actual error. Read the actual config. "I remember it works like..." is not evidence.
 - Are you assuming your code is at fault before you blame the runtime, the OS, the compiler, the library? The platform is rarely broken.
 - When the bug is intermittent, are you raising the reproduction rate instead of waiting for a clean repro? 50% flake is debuggable, 1% is not.
@@ -36,7 +36,7 @@ When you start a non-trivial code change, apply these. When you finish one, veri
 
 - Did you add a regression test for the bug you just fixed? A bug found in production should never recur.
 - Did you ship a thin slice that the user can actually feel, or only an internal refactor? Communicate expectations through what they can touch.
-- Did you remove the broken windows you spotted along the way, or board them up with a tracking link? Decay accelerates once it starts.
+- Did you fix the broken windows you spotted along the way, in this change? A TODO or a tracking link is never a fix. Decay accelerates once it starts.
 - Did you sign your work? Commit identity is yours, not borrowed.
 
 ### Communication discipline

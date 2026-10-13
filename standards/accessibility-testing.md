@@ -2,12 +2,12 @@
 
 ## WCAG Compliance Levels
 
-WCAG AA is the baseline for all projects. AAA is optional unless the project serves users with disabilities as a primary audience.
+WCAG 2.2 AA is the floor for every project, plus every AAA criterion that does not conflict with AA, per [`../rules/accessibility-defaults.md`](../rules/accessibility-defaults.md).
 
 | Level | When it applies | What constitutes a pass |
 |-------|----------------|------------------------|
 | AA | Every project, no exceptions | All Level A and AA success criteria pass with zero violations in automated scans, plus manual testing confirms keyboard and screen reader functionality |
-| AAA | Government, healthcare, education, assistive technology products | All Level A, AA, and AAA success criteria pass. Enhanced contrast (7:1 body, 4.5:1 large), sign language for video, multiple navigation paths |
+| AAA | Every project, for each criterion that does not conflict with AA | Every applicable AAA success criterion passes. Enhanced contrast (7:1 body, 4.5:1 large), sign language for video, multiple navigation paths |
 
 AA pass criteria:
 
@@ -59,7 +59,7 @@ test("dashboard page passes axe audit", async ({ page }) => {
 
   // Act
   const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
 
   // Assert
@@ -73,7 +73,7 @@ Install with `pnpm add -D cypress-axe axe-core`, then register the commands with
 
 ```typescript
 const WCAG_AA_TAGS = {
-  runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] },
+  runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] },
 };
 
 describe("checkout flow", () => {
@@ -182,7 +182,7 @@ A focused element must not be entirely hidden by sticky headers, footers, overla
 
 ### Target Size Minimum (2.5.8, AA)
 
-Interactive targets must be at least 24x24 CSS pixels. Recommended comfortable size: 44x44px. Exceptions: inline text links, browser-controlled elements, targets whose 24px circle does not overlap another target's circle.
+WCAG 2.5.8 sets a 24x24 CSS pixel floor. The locked project target is 44x44 CSS pixels, 48x48 on Android; see 2.5.5 below. Exceptions: inline text links and browser-controlled elements.
 
 ### Dragging Movements (2.5.7, AA)
 
@@ -640,23 +640,15 @@ const pairs: readonly ColorPair[] = [
   },
 ] as const;
 
-let failures = 0;
+const failures = pairs
+  .map((pair) => ({ pair, ratio: oklchContrast(pair.foreground, pair.background) }))
+  .filter(({ pair, ratio }) => ratio < pair.minRatio);
 
-for (const pair of pairs) {
-  const ratio = oklchContrast(pair.foreground, pair.background);
-  const pass = ratio >= pair.minRatio;
+failures.forEach(({ pair, ratio }) => {
+  process.stderr.write(`FAIL: "${pair.name}" contrast ${ratio.toFixed(2)}:1 < ${pair.minRatio}:1\n`);
+});
 
-  if (!pass) {
-    console.error(
-      `FAIL: "${pair.name}" contrast ${ratio.toFixed(2)}:1 < ${pair.minRatio}:1`
-    );
-    failures++;
-  }
-}
-
-if (failures > 0) {
-  process.exit(1);
-}
+process.exitCode = failures.length > 0 ? 1 : 0;
 ```
 
 Add this as a build step: `pnpm check-contrast`. Zero failures to pass.
@@ -736,7 +728,7 @@ No cognitive function test of any kind, including object recognition or personal
 
 ## Accessibility Statement Template
 
-Required on every project per EAA, WAD, PSBAR. Recommended on every project per the strictest-wins policy.
+Required on every project per EAA, WAD, PSBAR, and the strictest-wins policy.
 
 ```markdown
 # Accessibility Statement

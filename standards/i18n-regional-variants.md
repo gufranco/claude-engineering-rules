@@ -2,7 +2,7 @@
 
 ## Core Problem
 
-Languages spoken in multiple countries have regional differences. "Colour" is British English, "color" is American English. "Autocarro" is Portuguese from Portugal, "onibus" is Brazilian Portuguese. "Ordenador" is Spanish from Spain, "computadora" is Mexican Spanish. Using the wrong regional variant is incorrect, not a style preference.
+Languages spoken in multiple countries have regional differences. "Colour" is British English, "color" is American English. "Autocarro" is Portuguese from Portugal, "ônibus" is Brazilian Portuguese. "Ordenador" is Spanish from Spain, "computadora" is Mexican Spanish. Using the wrong regional variant is incorrect, not a style preference.
 
 ## Rule
 
@@ -27,21 +27,21 @@ Every translation file must use the correct regional variant for its target loca
 | Category | pt-BR | pt-PT |
 |----------|-------|-------|
 | Gerund vs infinitive | "estou fazendo" | "estou a fazer" |
-| Vocabulary | onibus, celular, tela, arquivo | autocarro, telemovel, ecra, ficheiro |
+| Vocabulary | ônibus, celular, tela, arquivo | autocarro, telemóvel, ecrã, ficheiro |
 | Vocabulary | mouse, deletar, salvar | rato, apagar, guardar |
 | Pronoun placement | "me diga" (before verb) | "diga-me" (after verb) |
-| Address | "voce" (informal) | "voce" (formal) or "tu" |
-| Tech terms | computador, download, site | computador, transferencia, sitio |
+| Address | "você" (informal) | "você" (formal) or "tu" |
+| Tech terms | computador, download, site | computador, transferência, sítio |
 
 ### Spanish: es-MX/es-AR vs es-ES
 
 | Category | es-MX/Latin America | es-ES |
 |----------|---------------------|-------|
-| Vocabulary | computadora, celular, carro | ordenador, movil, coche |
+| Vocabulary | computadora, celular, carro | ordenador, móvil, coche |
 | Vocabulary | platicar, manejar, boleto | charlar, conducir, billete |
 | "You" informal | "ustedes" (always) | "vosotros" (plural informal) |
-| Past tense preference | preterite: "hable" | present perfect: "he hablado" |
-| Tech terms | aplicacion, correo, enlace | aplicacion, correo, enlace (mostly same) |
+| Past tense preference | preterite: "hablé" | present perfect: "he hablado" |
+| Tech terms | aplicación, correo, enlace | aplicación, correo, enlace (mostly same) |
 
 ## Verification Strategy
 
@@ -53,9 +53,11 @@ For a `pt-BR` project, flag pt-PT words:
 
 ```json
 {
-  "flagWords": ["autocarro", "telemovel", "ecra", "ficheiro", "guardar", "apagar", "sitio", "diga-me", "estou a fazer"]
+  "flagWords": ["autocarro", "telemóvel", "ecrã", "ficheiro", "sítio", "diga-me", "estou a fazer"]
 }
 ```
+
+Every entry carries its accents, because the matcher compares exact strings and an unaccented entry never matches the real word. Never flag `guardar` or `apagar`: both are everyday pt-BR verbs, meaning keep and erase, so flagging them fails correct copy. Catch them through native speaker review instead.
 
 For an `en-US` project, flag en-GB words:
 
@@ -69,7 +71,7 @@ For an `es` project targeting Latin America, flag es-ES words:
 
 ```json
 {
-  "flagWords": ["ordenador", "movil", "coche", "vosotros", "habeis", "conducir"]
+  "flagWords": ["ordenador", "móvil", "coche", "vosotros", "habéis", "conducir"]
 }
 ```
 
@@ -140,5 +142,5 @@ describe('i18n regional variants', () => {
 |---------|---------------|-------------|
 | Machine translation produces generic Portuguese | Translation tools default to the most common form | Flagged word list + human review |
 | British spelling in US-targeted app | Developer or AI is British English native | cspell with en-US dictionary + flagWords for en-GB |
-| Spain Spanish in Latin American app | Default Spanish resources tend to be es-ES | Flagged word list for vosotros, ordenador, movil |
+| Spain Spanish in Latin American app | Default Spanish resources tend to be es-ES | Flagged word list for vosotros, ordenador, móvil |
 | Missing accents on regional-specific words | Copy-paste from ASCII-only sources | Accent verification tests |
