@@ -215,21 +215,12 @@ def _check_structure(parsed: object) -> list[str]:
     return findings
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> None:
     if not should_run("settings-hygiene"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("SETTINGS_HYGIENE_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("settings-hygiene"):

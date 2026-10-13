@@ -444,21 +444,12 @@ SUSPICIOUS = [
 ]
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
-SOLO_REPO_ALLOWLIST = _os.path.expanduser("~/.claude/solo-repos.txt")
+SOLO_REPO_ALLOWLIST = os.path.expanduser("~/.claude/solo-repos.txt")
 REPOSITORY_REDIRECTS = ("--git-dir", "--work-tree")
 
 
@@ -491,7 +482,7 @@ def _command_cwd(command: str) -> str:
     if single_quoted is not None:
         return single_quoted
     path = double_quoted if double_quoted is not None else bare
-    return _os.path.expandvars(_os.path.expanduser(path))
+    return os.path.expandvars(os.path.expanduser(path))
 
 
 def _git_push_directory(args: list[str], directory: str) -> tuple[bool, str | None]:
@@ -502,8 +493,8 @@ def _git_push_directory(args: list[str], directory: str) -> tuple[bool, str | No
         if option.split("=", 1)[0] in REPOSITORY_REDIRECTS:
             resolved = None
         elif option == "-C" and index + 1 < len(args) and resolved is not None:
-            target = _os.path.expandvars(_os.path.expanduser(args[index + 1]))
-            resolved = _os.path.join(resolved or _os.getcwd(), target)
+            target = os.path.expandvars(os.path.expanduser(args[index + 1]))
+            resolved = os.path.join(resolved or os.getcwd(), target)
         index += 2 if option in OPTIONS_WITH_SEPARATE_VALUE else 1
     return index < len(args) and args[index] == "push", resolved
 
@@ -552,7 +543,7 @@ def _segment_is_safe_cleanup(tokens: list[str]) -> bool:
         return False
     safe = {target for target, _label in SAFE_CLEANUP}
     targets = [arg for arg in args[1:] if not arg.startswith("-")]
-    return bool(targets) and all(_os.path.normpath(t) in safe for t in targets)
+    return bool(targets) and all(os.path.normpath(t) in safe for t in targets)
 
 
 def _is_safe_cleanup(command: str) -> bool:
@@ -570,7 +561,7 @@ def _is_solo_repo(root: str) -> bool:
     if not root:
         return False
     for entry in _solo_repo_entries():
-        expanded = _os.path.expanduser(entry).rstrip("/")
+        expanded = os.path.expanduser(entry).rstrip("/")
         if root == expanded or fnmatch.fnmatch(root, expanded):
             return True
     return False

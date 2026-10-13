@@ -42,16 +42,7 @@ GCLOUD_CONFIG_ACTIVATE = re.compile(
 )
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -70,11 +61,11 @@ def _sets_without_configuration(call: Invocation) -> bool:
 
 def main() -> None:
     if os.environ.get("GCLOUD_CONFIG_GUARD_DISABLE") == "1":
-        _sys.exit(0)
+        sys.exit(0)
     if is_bypassed("gcloud-config-guard"):
-        _sys.exit(0)
+        sys.exit(0)
     if not should_run("gcloud-config-guard"):
-        _sys.exit(0)
+        sys.exit(0)
     data = read_hook_payload("gcloud-config-guard")
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")

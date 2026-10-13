@@ -28,6 +28,7 @@ Conforms to the hook conventions used by `docker-context-guard.py` and
 """
 
 import os
+import json
 import re
 import sys
 from pathlib import Path
@@ -63,20 +64,38 @@ COMPOSE_PATTERN = re.compile(
 )
 
 
-SENSITIVE_COPY = re.compile(
-    r"""
-    ^\s*COPY\s+                       # COPY keyword
-    (?:--[\w-]+(?:=[^\s]+)?\s+)*      # optional flags like --chown, --from, --link
-    (
-        \.env(?:\.[^\s]+)?            # .env or .env.<anything>
-        | \S*\.(?:pem|key|crt|p12|pfx) # cert/key extensions anywhere in the name
-        | id_rsa(?:\.[^\s]+)?         # SSH keys
-        | id_ed25519(?:\.[^\s]+)?
-    )
-    \b
-    """,
-    re.IGNORECASE | re.VERBOSE,
+COPY_OR_ADD = re.compile(r"^\s*(?:COPY|ADD)\s+(?P<rest>.+)$", re.IGNORECASE)
+SENSITIVE_SOURCE = re.compile(
+    r"(?:^|/)(?:\.env(?:\.[^/\s]+)?|[^/\s]*\.(?:pem|key|crt|p12|pfx)"
+    r"|id_rsa(?:\.[^/\s]+)?|id_ed25519(?:\.[^/\s]+)?)$",
+    re.IGNORECASE,
 )
+DOCUMENTATION_SUFFIXES = (".example", ".sample", ".template")
+
+
+def _copy_sources(line: str) -> list[str]:
+    match = COPY_OR_ADD.match(line)
+    if not match:
+        return []
+    rest = match.group("rest").strip()
+    if rest.startswith("["):
+        try:
+            operands = [str(item) for item in json.loads(rest)]
+        except ValueError:
+            return rest.split()
+    else:
+        operands = [token for token in rest.split() if not token.startswith("--")]
+    return operands[:-1]
+
+
+def sensitive_sources(line: str) -> list[str]:
+    return [
+        source
+        for source in _copy_sources(line)
+        if SENSITIVE_SOURCE.search(source)
+        and not source.lower().endswith(DOCUMENTATION_SUFFIXES)
+    ]
+
 
 SECRET_ENV_ARG = re.compile(
     r"""
@@ -103,7 +122,7 @@ FROM_BAD_TAG = re.compile(
     re.IGNORECASE,
 )
 
-USER_ROOT = re.compile(r"^\s*USER\s+(?:root|0)\s*$", re.IGNORECASE)
+ROOT_USERS = frozenset({"root", "0", "root:root", "0:0"})
 
 COMPOSE_VERSION = re.compile(r"^version:\s*['\"]?[\d.]+['\"]?\s*$")
 
@@ -177,9 +196,10 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
         if not line:
             continue
 
-        if SENSITIVE_COPY.match(line):
+        if sensitive_sources(line):
+            instruction = line.split(maxsplit=1)[0].upper()
             blocks.append(
-                f"line {i}: COPY of sensitive file. "
+                f"line {i}: {instruction} of sensitive file. "
                 "Move it to .dockerignore and inject at runtime, or use "
                 "RUN --mount=type=secret for build-time access. "
                 f"Source: {raw.strip()}"
@@ -195,13 +215,6 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
                 f"Source: {raw.strip()}"
             )
             continue
-
-        if USER_ROOT.match(line):
-            warns.append(
-                f"line {i}: USER root in the final stage. "
-                "Set a non-root UID (numeric preferred). "
-                f"Source: {raw.strip()}"
-            )
 
         from_match = FROM_BAD_TAG.match(line)
         if from_match:
@@ -236,8 +249,18 @@ def scan_dockerfile(text: str, full_file: bool) -> tuple[list[str], list[str]]:
                 "no USER directive in the final stage. "
                 "Add a non-root USER (numeric UID preferred)."
             )
-        elif final_user in {"root", "0"}:
-            pass
+        elif final_user.lower() in ROOT_USERS:
+            warns.append(
+                "the final stage runs as root. "
+                "Set a non-root USER (numeric UID preferred) after the last FROM."
+            )
+    if not full_file:
+        warns.extend(
+            f"line {line_num}: USER {value} switches to root; "
+            "the final stage must run as a non-root user."
+            for line_num, value in user_directives
+            if value.lower() in ROOT_USERS
+        )
 
     return blocks, warns
 

@@ -52,16 +52,7 @@ WHILE_LOOP_PATTERN = re.compile(r"\bwhile\s+")
 XARGS_PATTERN = re.compile(r"\|\s*xargs\b")
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
@@ -71,7 +62,7 @@ from _lib.shell_segments import strip_data_heredoc_bodies  # noqa: E402
 
 def main() -> None:
     if not should_run("bulk-resolve-blocker"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("BULK_RESOLVE_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("bulk-resolve-blocker"):

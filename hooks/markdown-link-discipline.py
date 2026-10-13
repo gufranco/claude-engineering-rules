@@ -81,21 +81,12 @@ def derive_post_text(tool: str, tool_input: dict, pre_text: str) -> str:
     return pre_text
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> None:
     if not should_run("markdown-link-discipline"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("MARKDOWN_LINKS_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("markdown-link-discipline"):

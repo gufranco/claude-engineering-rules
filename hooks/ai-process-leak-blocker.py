@@ -210,15 +210,6 @@ def bash_command_in_scope(command: str) -> bool:
     return any(pat.search(executed) for pat in GIT_AND_PR_PATTERNS)
 
 
-BODY_FILE_FLAGS = (
-    "--body-file",
-    "--description-file",
-    "--notes-file",
-    "--notes-from-tag",
-    "--input",
-    "-F",
-)
-
 _FLAG_VALUE_TOKEN = re.compile(
     r"""(?P<flag>--body-file|--description-file|--notes-file|--notes-from-tag|--input|-F)
         (?:\s*=\s*|\s+)
@@ -289,21 +280,12 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     return out
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> int:
     if not should_run("ai-process-leak-blocker"):
-        _sys.exit(0)
+        sys.exit(0)
     if os.environ.get("AI_PROCESS_LEAK_DISABLE") == "1":
         _audit(
             hook="ai-process-leak-blocker",

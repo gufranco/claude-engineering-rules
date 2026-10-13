@@ -300,21 +300,12 @@ def check_config_mutation(command: str) -> None:
     )
 
 
-import sys as _sys  # noqa: E402
-import os as _os  # noqa: E402
-
-_sys.path.insert(0, _os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # noqa: E402
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 def main() -> None:
     if not should_run("git-author-guard"):
-        _sys.exit(0)
+        sys.exit(0)
     if is_bypassed("git-author-guard"):
         sys.exit(0)
     if os.environ.get("GIT_AUTHOR_GUARD_DISABLE") == "1":
