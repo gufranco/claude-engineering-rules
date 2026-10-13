@@ -433,13 +433,10 @@ def detect_broken_link_targets(
 
             correct_path: str | None = None
             repo_root_target = (repo_root / cleaned).resolve()
-            try:
-                repo_root_target.relative_to(repo_root)
-            except ValueError:
-                pass
-            else:
-                if _target_exists(repo_root_target, repo_root, tracked):
-                    correct_path = file_relative_path(repo_root_target, doc_dir)
+            if repo_root_target.is_relative_to(repo_root) and _target_exists(
+                repo_root_target, repo_root, tracked
+            ):
+                correct_path = file_relative_path(repo_root_target, doc_dir)
             findings.append(
                 BrokenLinkFinding(
                     file=rel,

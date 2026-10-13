@@ -187,8 +187,8 @@ def main() -> int:
         try:
             data = json.load(sys.stdin)
             transcript_path = data.get("transcript_path", "")
-        except (ValueError, json.JSONDecodeError, OSError):
-            pass
+        except (ValueError, json.JSONDecodeError, OSError) as error:
+            sys.stderr.write(f"retro-pointer: unreadable payload: {error}\n")
         instinct_patterns = _transcript_patterns(transcript_path)
 
         if blocks == 0 and bypasses == 0 and not instinct_patterns:
@@ -224,7 +224,8 @@ def main() -> int:
 
         _mark_shown()
         return 0
-    except Exception:
+    except Exception as error:
+        sys.stderr.write(f"retro-pointer: summary failed: {error}\n")
         return 0
 
 

@@ -207,7 +207,7 @@ def test_bypass_env_var_silences_hook(tool_use, run_hook):
     assert stderr.strip() == ""
 
 
-def test_malformed_json_does_not_crash(hooks_dir):
+def test_malformed_json_is_reported_without_blocking(hooks_dir):
     # Arrange
     hook_path = hooks_dir / "normative-keyword-discipline.py"
 
@@ -223,8 +223,7 @@ def test_malformed_json_does_not_crash(hooks_dir):
     )
 
     # Assert
-    assert proc.returncode == 0
-    assert proc.stderr.strip() == ""
+    assert (proc.returncode, "unreadable payload" in proc.stderr) == (0, True)
 
 
 def test_missing_tool_input_is_handled(tool_use, run_hook):

@@ -34,7 +34,7 @@ def strip_heredoc_bodies(command: str) -> str:
     return "\n".join(kept)
 
 
-def strip_data_heredoc_bodies(command: str) -> str:
+def strip_data_heredoc_bodies(command: str, sinks: frozenset[str] = DATA_SINKS) -> str:
     kept: list[str] = []
     delimiter = ""
     state = ""
@@ -47,16 +47,16 @@ def strip_data_heredoc_bodies(command: str) -> str:
         elif not delimiter:
             match, state = _unquoted_match(HEREDOC_START, line, state)
             delimiter = match.group(1) if match else ""
-            drop = match is not None and _feeds_data_sink(line, match)
+            drop = match is not None and _feeds_data_sink(line, match, sinks)
         kept = [*kept, line]
     return "\n".join(kept)
 
 
-def _feeds_data_sink(line: str, match: re.Match[str]) -> bool:
+def _feeds_data_sink(line: str, match: re.Match[str], sinks: frozenset[str]) -> bool:
     if "|" in line[match.end() :]:
         return False
     segments = line_segments(line[: match.start()])
-    return bool(segments) and command_head(segments[-1])[0] in DATA_SINKS
+    return bool(segments) and command_head(segments[-1])[0] in sinks
 
 
 UNQUOTED_OPERATOR = re.compile(r"&&|\|\||[;|&\n]")

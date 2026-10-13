@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import stat
 import tempfile
 from datetime import datetime, timedelta, timezone
@@ -80,8 +81,8 @@ def _atomic_write(path: Path, payload: dict) -> None:
     except Exception:
         try:
             os.unlink(tmp)
-        except OSError:
-            pass
+        except OSError as cleanup_error:
+            sys.stderr.write(f"could not remove {tmp}: {cleanup_error}\n")
         raise
 
 

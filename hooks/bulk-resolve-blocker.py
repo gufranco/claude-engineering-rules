@@ -39,15 +39,14 @@ except Exception:  # pragma: no cover
         return None
 
 
-RESOLVE_MUTATION = re.compile(r"resolveReviewThread\b")
-GH_API_RESOLVE = re.compile(
-    r"(?:gh|glab)\s+api[^\n]*?resolveReviewThread",
-    re.IGNORECASE,
-)
+RESOLVE_MUTATION = re.compile(r"\bresolveReviewThread\b")
+FORGE_API = re.compile(r"\b(?:gh|glab)\s+api\b")
 GLAB_RESOLVE = re.compile(
     r"(?:gh|glab)\s+api[^\n]*?-X\s+PUT[^\n]*?resolved=true",
     re.IGNORECASE,
 )
+LINE_CONTINUATION = re.compile(r"\\\n")
+NON_FORGE_SINKS = frozenset({"cat", "tee", "git"})
 FOR_LOOP_PATTERN = re.compile(r"\bfor\s+\w+\s+in\b")
 WHILE_LOOP_PATTERN = re.compile(r"\bwhile\s+")
 XARGS_PATTERN = re.compile(r"\|\s*xargs\b")
@@ -67,6 +66,7 @@ except ImportError:
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.shell_segments import strip_data_heredoc_bodies  # noqa: E402
 
 
 def main() -> None:
@@ -84,8 +84,13 @@ def main() -> None:
     if not command:
         sys.exit(0)
 
-    github_calls = len(GH_API_RESOLVE.findall(command))
-    gitlab_calls = len(GLAB_RESOLVE.findall(command))
+    joined = LINE_CONTINUATION.sub(
+        " ", strip_data_heredoc_bodies(command, NON_FORGE_SINKS)
+    )
+    github_calls = (
+        len(RESOLVE_MUTATION.findall(joined)) if FORGE_API.search(joined) else 0
+    )
+    gitlab_calls = len(GLAB_RESOLVE.findall(joined))
     occurrences = github_calls + gitlab_calls
 
     if occurrences == 0:

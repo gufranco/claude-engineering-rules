@@ -146,8 +146,8 @@ def _audit(reason: str, command: str) -> None:
             tool="Bash",
             command_excerpt=command[:200],
         )
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as error:  # noqa: BLE001
+        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
 
 
 def _block(message: str, reason: str, command: str) -> int:
