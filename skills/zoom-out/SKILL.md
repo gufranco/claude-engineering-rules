@@ -76,7 +76,7 @@ If the target spans more than one role, that is itself a finding. Surface it.
 ### 6. Surface hidden coupling
 
 List anything that would surprise a new contributor:
-- Side effects at module load time. See [`rules/code-style.md`](../../rules/code-style.md) "No side effects at module level".
+- Side effects at module load time. See the "No side effects at module level" bullet under "Fundamentals" in [`standards/code-style.md`](../../standards/code-style.md).
 - Shared mutable state.
 - Implicit ordering requirements between callers.
 - Logic that depends on environment variables read deep in the call stack.

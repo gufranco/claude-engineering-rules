@@ -186,7 +186,6 @@ Flags can be combined with a path: `/profile src/api --db`.
 
 ## Related skills
 
-- `/benchmark` - Compare performance between implementations with statistical rigor.
 - `/test perf` - HTTP load testing with concurrent users and latency percentiles.
 - `/review` - General code review covering correctness, security, and quality.
 - `/benchmark` - Compare latency, bundle size, and query time against saved baselines once a fix lands.

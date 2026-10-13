@@ -21,12 +21,11 @@ const users = await prisma.$queryRawUnsafe(
 )
 ```
 
-**Safe:** parameterized tagged template.
+**Safe:** a validated value passed to the ORM query builder, which binds it as a parameter. No raw SQL outside migrations.
 
 ```typescript
-const users = await prisma.$queryRaw`
-  SELECT * FROM users WHERE email = ${req.body.email}
-`
+const { email } = EmailQuery.parse(req.body)
+const users = await prisma.user.findMany({ where: { email } })
 ```
 
 ### Second-Order Injection
@@ -43,12 +42,11 @@ const logs = await prisma.$queryRawUnsafe(
 )
 ```
 
-**Safe:**
+**Safe:** the stored value goes through the ORM query builder like any other input.
 
 ```typescript
-const logs = await prisma.$queryRaw`
-  SELECT * FROM audit_logs WHERE actor = ${user!.username}
-`
+const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } })
+const logs = await prisma.auditLog.findMany({ where: { actor: user.username } })
 ```
 
 ### ORM Operator Injection
@@ -67,9 +65,9 @@ const users = await prisma.user.findMany({
 **Safe:** explicit field extraction.
 
 ```typescript
-const users = await prisma.user.findMany({
-  where: { role: String(req.query.role ?? 'user') }
-})
+const RoleQuery = z.object({ role: z.nativeEnum(Role) })
+const { role } = RoleQuery.parse(req.query)
+const users = await prisma.user.findMany({ where: { role } })
 ```
 
 ### Command Injection via Library
@@ -88,7 +86,12 @@ exec(`convert ${req.body.filename} output.png`, (err, stdout) => {
 **Safe:** execFile with argument array, no shell.
 
 ```typescript
-execFile('convert', [safePath, 'output.png'], (err, stdout) => {
+execFile('convert', [safePath, 'output.png'], (error: Error | null, stdout: string) => {
+  if (error) {
+    logger.error({ err: error, safePath }, 'image conversion failed')
+    res.status(500).json({ error: { code: 'CONVERSION_FAILED' } })
+    return
+  }
   res.send(stdout)
 })
 ```
@@ -138,7 +141,7 @@ app.use(session({
 app.use(session({
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'strict',
     maxAge: 86400000
   }
@@ -333,19 +336,16 @@ await prisma.$transaction(async (tx) => {
 })
 ```
 
-**Safe:** SELECT FOR UPDATE serializes access.
+**Safe:** one conditional write, so the check and the decrement are a single atomic statement under any isolation level, with no raw SQL.
 
 ```typescript
-await prisma.$transaction(async (tx) => {
-  const [account] = await tx.$queryRaw<Account[]>`
-    SELECT * FROM accounts WHERE user_id = ${userId} FOR UPDATE
-  `
-  if (account.balance < amount) throw new Error('Insufficient funds')
-  await tx.account.update({
-    where: { id: account.id },
-    data: { balance: account.balance - amount }
-  })
+const result = await prisma.account.updateMany({
+  where: { userId, balance: { gte: amount } },
+  data: { balance: { decrement: amount } }
 })
+if (result.count === 0) {
+  throw new InsufficientFundsError({ userId, amount })
+}
 ```
 
 ### Lock Fail-Open
@@ -373,11 +373,17 @@ async function tryLock(key: string): Promise<boolean> {
   try {
     await prisma.lock.create({ data: { key } })
     return true
-  } catch {
-    return false
+  } catch (error: unknown) {
+    if (isUniqueViolation(error)) {
+      return false
+    }
+    logger.error({ err: error, key }, 'lock acquisition failed')
+    throw error
   }
 }
 ```
+
+A held lock answers `false`. Any other failure leaves the lock state unknown, so it is logged and rethrown, never read as either answer.
 
 ### Lock TTL Shorter Than Operation
 **CWE-362.** Lock expires before the protected operation completes under load. A concurrent request acquires the expired lock and runs simultaneously.
@@ -395,13 +401,11 @@ const lock = await prisma.lock.upsert({
 await runExpensiveBatchUpdate(userId)
 ```
 
-**Safe:** row-level lock held for the duration of the transaction.
+**Safe:** a TTL set above the operation's measured p99 with headroom, and a fencing token every protected write checks, so a holder whose lease expired cannot write.
 
 ```typescript
-await prisma.$transaction(async (tx) => {
-  await tx.$queryRaw`SELECT id FROM accounts WHERE user_id = ${userId} FOR UPDATE`
-  await runExpensiveBatchUpdate(userId)
-})
+const lock = await acquireLock({ key: `user-${userId}`, ttlMs: BATCH_UPDATE_P99_MS * LOCK_TTL_HEADROOM })
+await runExpensiveBatchUpdate({ userId, fencingToken: lock.fencingToken })
 ```
 
 ### Missing Idempotency on Jobs/Webhooks
@@ -449,7 +453,7 @@ await axios.post('/charge', { userId, amount })
 **Safe:** idempotency key reused across retries.
 
 ```typescript
-const key = uuidv4()
+const key = crypto.randomUUID()
 await axios.post('/charge', { userId, amount }, {
   headers: { 'Idempotency-Key': key }
 })
@@ -476,8 +480,11 @@ app.use(cors({ origin: true, credentials: true }))
 const ALLOWED_ORIGINS = new Set(['https://app.example.com'])
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.has(origin)) cb(null, true)
-    else cb(new Error('Not allowed'))
+    if (!origin || ALLOWED_ORIGINS.has(origin)) {
+      cb(null, true)
+      return
+    }
+    cb(new Error('Not allowed'))
   },
   credentials: true
 }))

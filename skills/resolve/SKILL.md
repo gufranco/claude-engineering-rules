@@ -29,9 +29,12 @@ Run `git status` to find all conflicted files. If no conflicts exist, check whet
 
 ```
 git status
-ls .git/MERGE_HEAD 2>/dev/null
-ls .git/rebase-merge 2>/dev/null
+git rev-parse -q --verify MERGE_HEAD
+git rev-parse -q --verify CHERRY_PICK_HEAD
+test -d "$(git rev-parse --git-path rebase-merge)" || test -d "$(git rev-parse --git-path rebase-apply)"
 ```
+
+Ask git for these paths instead of reading `.git/` directly. In a linked worktree `.git` is a file, not a directory, so `.git/MERGE_HEAD` never exists there and an in-progress merge reads as absent.
 
 If no conflicts and no in-progress operation, inform the user and exit.
 
@@ -119,10 +122,11 @@ If more conflicts appear after continuing a rebase, return to Step 1.
 
 After the operation completes with no remaining conflicts:
 
-1. Run the full test suite.
+1. Run the formatter check.
 2. Run the linter.
 3. Run the type checker.
-4. Verify the branch builds cleanly.
+4. Run the full test suite.
+5. Verify the branch builds cleanly.
 
 ## Rules
 
@@ -130,7 +134,7 @@ After the operation completes with no remaining conflicts:
 - Always explain what each side intended before resolving. A resolution without understanding is a guess.
 - Always test after resolution. A conflict that resolves cleanly at the text level can still break behavior.
 - Never use `git checkout --ours` or `git checkout --theirs` on an entire file without reading every conflict in that file first. Blanket ours/theirs discards changes without review.
-- When a conflict involves generated files like lockfiles, `package-lock.json`, or `pnpm-lock.yaml`, regenerate them instead of manually resolving: delete the file, run the package manager, and stage the result.
+- When a conflict involves a generated file such as a lockfile, `package-lock.json`, or `pnpm-lock.yaml`, regenerate it from the resolved manifest instead of hand-merging it: resolve the manifest first, then run the package manager's install, which rewrites a lockfile holding conflict markers from the resolved manifest while keeping every unchanged pin, and stage the result. When the tool refuses the conflicted file, restore the base side with `git checkout --ours -- <lockfile>` and install again. Never delete the lockfile: a fresh resolve moves every dependency to its newest allowed version, which is an unreviewed upgrade hidden inside a merge.
 - If a conflict is too complex to resolve confidently, present both versions to the user with your analysis and ask for a decision. Do not guess.
 
 ## Common Rationalizations
@@ -152,8 +156,8 @@ After the operation completes with no remaining conflicts:
 - `git diff --name-only --diff-filter=U` prints nothing.
 - `grep -rn '^<<<<<<<\|^>>>>>>>' <resolved files>` prints nothing.
 - Every resolved block has a one-line statement of what was kept from each side.
-- The full test suite, linter, type checker, and build pass after the operation completes.
-- No `git merge` or `git rebase` is still in progress: `.git/MERGE_HEAD` and `.git/rebase-merge` are absent.
+- The formatter check, linter, type checker, full test suite, and build pass after the operation completes.
+- No `git merge`, `git rebase`, or `git cherry-pick` is still in progress: `git rev-parse -q --verify MERGE_HEAD` and `git rev-parse -q --verify CHERRY_PICK_HEAD` exit non-zero, and neither `git rev-parse --git-path rebase-merge` nor `git rev-parse --git-path rebase-apply` names an existing directory.
 
 ## Related skills
 

@@ -17,11 +17,15 @@ Bitbucket support is light. The lack of a first-party CLI means all interactions
 
 Bitbucket Cloud uses app passwords or workspace access tokens. The skill expects either `BITBUCKET_TOKEN` or `BITBUCKET_APP_PASSWORD` plus `BITBUCKET_USERNAME` to be set in the environment.
 
-```bash
-# App-password form
-curl -u "$BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD" "https://api.bitbucket.org/2.0/..."
+App-password form:
 
-# Token form (preferred for fine-grained scopes)
+```bash
+curl -u "$BITBUCKET_USERNAME:$BITBUCKET_APP_PASSWORD" "https://api.bitbucket.org/2.0/..."
+```
+
+Token form, preferred for fine-grained scopes:
+
+```bash
 curl -H "Authorization: Bearer $BITBUCKET_TOKEN" "https://api.bitbucket.org/2.0/..."
 ```
 
@@ -65,18 +69,22 @@ Filter rules:
 
 ### AI Bot Detection on Bitbucket
 
-Bitbucket has no convention like GitHub's `[bot]` suffix. The skill maintains a per-workspace allowlist of bot account UUIDs in `~/.config/respond/bitbucket-bots.json`. If the file is absent, every comment is treated as human.
+Bitbucket has no convention like GitHub's `[bot]` suffix. The skill keeps two per-workspace lists of account UUIDs in `~/.config/respond/bitbucket-bots.json`: `bots` and `humans`. An author on `bots` is a bot and an author on `humans` is a person. Any other author, including every author when the file is absent, is classified `unknown`: the skill drafts no reply, lists the comment and the account to the user, and asks whether the account is a person or a bot before acting on it. The answer is added to the matching list.
 
 ## Resolve Concept
 
 Bitbucket Cloud supports comment resolution. The comment object carries a `resolution` field, non-null once resolved, and the API exposes a resolve and unresolve pair on the same path.
 
+Resolve:
+
 ```bash
-# Resolve
 curl -s -X POST -H "Authorization: Bearer $BITBUCKET_TOKEN" \
   "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
+```
 
-# Unresolve
+Unresolve:
+
+```bash
 curl -s -X DELETE -H "Authorization: Bearer $BITBUCKET_TOKEN" \
   "https://api.bitbucket.org/2.0/repositories/<workspace>/<repo>/pullrequests/<id>/comments/<cid>/resolve"
 ```

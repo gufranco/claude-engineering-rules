@@ -72,14 +72,14 @@ Match the project's test colocation pattern. Read 2 nearby tests to confirm:
 - Naming convention, `*.test.ts`, `*_test.go`, `test_*.py`.
 - Test runner imports.
 - Setup and teardown style.
-- Fake data approach. Apply [`rules/testing.md`](../../rules/testing.md) Test Data section.
+- Fake data approach. Apply the Test Data section of [`standards/testing.md`](../../standards/testing.md).
 
 Add the test file if missing. Match the existing folder layout exactly.
 
 ### 3. Red: write the failing test
 
-- Shape the body per [`rules/testing.md`](../../rules/testing.md) Test Structure: three blocks opened by the bare markers `Arrange`, `Act`, `Assert` in the language's comment syntax, one blank line between them, exactly one call to the unit under test with its result bound to a name. The markers are the only comments; the test name states the behavior. An expected throw binds the pending call in Act and asserts on it.
-- Use the most specific assertion available. No `toBeTruthy`. Apply the Assertion Specificity table.
+- Shape the body per the Test Structure section of [`standards/testing.md`](../../standards/testing.md): three blocks opened by the bare markers `Arrange`, `Act`, `Assert` in the language's comment syntax, one blank line between them, exactly one call to the unit under test with its result bound to a name. The markers are the only comments; the test name states the behavior. An expected throw binds the pending call in Act and asserts on it.
+- Use the most specific assertion available. No `toBeTruthy`. Apply the Assertion Specificity section of [`standards/testing.md`](../../standards/testing.md).
 - Seed any fake data generator deterministically.
 
 Run the single test. Confirm it fails.
@@ -116,8 +116,8 @@ Run the full test file after every refactor change. The bar is zero failing test
 
 ### 6. Verify gates
 
-- Format, lint, typecheck, full test suite. Apply [`rules/git-workflow.md`](../../rules/git-workflow.md) Local Quality Gate.
-- Coverage for the changed file at 95% or higher. Apply [`rules/testing.md`](../../rules/testing.md) Coverage section.
+- Format, lint, typecheck, full test suite, build. Apply the Local Quality Gate section of [`standards/git-workflow.md`](../../standards/git-workflow.md).
+- Coverage for the changed file at 95% or higher. Apply the Coverage section of [`standards/testing.md`](../../standards/testing.md).
 
 Report a one-line summary: behavior implemented, test name, files changed, coverage on changed file.
 
@@ -128,7 +128,7 @@ Report a one-line summary: behavior implemented, test name, files changed, cover
 - Writing a tautological assertion that recomputes the expected value the way the code does, such as `expect(add(a, b)).toBe(a + b)`. It passes by construction. Take the expected value from a known-good literal, a worked example, or the spec. Apply [`standards/testing.md`](../../standards/testing.md) Tautological Assertions.
 - Adding multiple assertions for unrelated behaviors in one test. Split into separate `/tdd` runs.
 - Skipping the refactor step on every cycle. The codebase decays without it.
-- Mocking internal infrastructure to make the test cheap. Apply [`rules/testing.md`](../../rules/testing.md) Mocks Policy.
+- Mocking internal infrastructure to make the test cheap. Apply the Mocks Policy section of [`standards/testing.md`](../../standards/testing.md).
 
 ## Rules
 
@@ -154,7 +154,7 @@ Report a one-line summary: behavior implemented, test name, files changed, cover
 - The red run output shows an assertion failure for the new test, captured before any production edit.
 - The green run output shows the new test passing and the full test file passing.
 - The test body has three blocks opened by the bare `Arrange`, `Act`, `Assert` markers, separated by single blank lines, and no other comment.
-- Format, lint, type check, and the full suite exit 0, with zero new warnings.
+- Format, lint, type check, the full suite, and the build exit 0, with zero new warnings.
 - Coverage on the changed file is 95% or higher.
 
 ## Related skills

@@ -146,10 +146,7 @@ Detect flaky tests by running the full suite multiple times and tracking which t
 1. Detect the test runner and build the test command with no watch mode.
 2. Run the suite 5 times in sequence, capturing pass/fail status for each test.
 3. Track per-test consistency: a test is flaky if it fails in at least 1 run and passes in at least 1 run.
-4. Classify by flake rate:
-   - Fail rate > 5%: quarantine candidate, flag immediately, never merge until fixed.
-   - Fail rate 1-5%: intermittent, investigate root cause before next release.
-   - Fail rate < 1%: monitor, log, watch in future runs.
+4. Rank by flake rate. Every flaky test is fixed or deleted in this change, per [`rules/testing.md`](../../rules/testing.md); the rate only orders the work, highest first. A skip, a quarantine, or a later pass is never the outcome.
 5. Report results:
 
 ```
@@ -166,11 +163,11 @@ Detect flaky tests by running the full suite multiple times and tracking which t
 
 | Test | Fail Rate | Category | Root Cause Hint |
 |------|----------|---------|-----------------|
-| <test name> | 2/5 (40%) | quarantine | timing dependency suspected |
+| <test name> | 2/5 = 40% | fix | timing dependency suspected |
 
-### Quarantine Candidates
+### Fix or Delete
 
-Skip these tests immediately by applying `.skip` or `xit`, they pollute CI signal.
+Each flaky test with its proposed action: a fix for the named root cause, or deletion when the test asserts nothing a user would notice. Never `.skip` or `xit`.
 ```
 
 1. For each flaky test, suggest likely root causes: shared mutable state, hardcoded ports, timing, unseeded random, missing database cleanup.
@@ -179,7 +176,7 @@ Skip these tests immediately by applying `.skip` or `xit`, they pollute CI signa
 
 - Never run this against production endpoints.
 - If the test suite takes more than 60 seconds per run, reduce to 3 runs and note the limitation.
-- Do not apply `.skip` automatically. Present the list and wait for approval.
+- Do not apply a fix or a deletion automatically. Present the list and wait for approval.
 
 ---
 
@@ -197,7 +194,7 @@ Generate test file stubs for code that lacks tests.
    - Follow [`rules/testing.md`](../../rules/testing.md): three blocks opened by the bare `Arrange`, `Act`, `Assert` markers and no other comment, faker for data, real database.
    - Include one happy-path test and one error-path test. Edge cases are listed in the approval message, never as a marker comment in the file.
 5. Present stubs for approval before writing.
-6. After writing, run the test suite to verify stubs compile, they may fail on TODO assertions, which is expected.
+6. After writing, run the test suite. Every stub carries a real assertion whose expected value comes from the spec or a worked example, never a `TODO` placeholder. A stub whose expected value is unknown is not written; it goes in the approval message as a question.
 
 ---
 
@@ -225,7 +222,7 @@ Generate test file stubs for code that lacks tests.
 - Stop and say no test configuration exists when detection finds no runner.
 - Stop and ask before installing a missing test dependency or tool.
 - Stop and confirm the target when a perf URL resolves to a production host.
-- Stop and present the quarantine list for approval before any `.skip` lands in a file.
+- Stop and present the fix-or-delete list for approval before any flaky test changes, and never add `.skip` or `xit`.
 
 ## Verification
 

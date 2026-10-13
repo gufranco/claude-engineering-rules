@@ -46,7 +46,7 @@ The default scope is the unpushed diff: `git log @{u}..HEAD --name-only` plus th
 ## Process
 
 1. Determine scope. Default: `git log @{u}..HEAD --name-only --pretty=format: | sort -u` plus uncommitted changes from `git status --short`. Use explicit scope when passed.
-2. Load the user's blocklist from `~/.claude/.settings-hygiene-blocklist` to seed internal-codename detection. Treat each line as a literal to grep for.
+2. Load the user's blocklist from `~/.claude/.settings-hygiene-blocklist` to seed internal-codename detection, parsed the way [`hooks/settings-hygiene.py`](../hooks/settings-hygiene.py) parses it: strip each line, then skip blank lines and lines starting with `#`. Treat each remaining entry as a fixed-string literal to grep for. A blank or comment line passed to grep matches every line and floods the report.
 3. For each pattern category, run a focused grep across the scope. Use the patterns table above.
 4. For each match, classify by severity and confirm by reading 3 lines of context.
 5. Aggregate findings. Truncate secret values to first 4 characters plus length.

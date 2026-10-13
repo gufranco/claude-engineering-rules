@@ -55,8 +55,8 @@ Run with an issue number when the issue itself holds the requirements. Pass `--d
 Run the pre-flight checks from [`../../rules/pre-flight.md`](../../rules/pre-flight.md):
 
 1. **Duplicate check.** Search for existing fixes:
-   - `gh pr list --search "<keywords you chose>"` for open PRs.
-   - `gh pr list --state closed --search "<keywords>"` for already-resolved PRs.
+   - `GH_TOKEN=$(gh auth token --user <account>) gh pr list --search "<keywords you chose>"` for open PRs.
+   - `GH_TOKEN=$(gh auth token --user <account>) gh pr list --state closed --search "<keywords>"` for already-resolved PRs.
    - `git branch -a --list "*<keyword>*"` for in-progress branches.
 
 2. **Codebase search.** Find relevant code:
@@ -139,7 +139,7 @@ Run the full completion gates from [`../../rules/verification.md`](../../rules/v
 
 ## Verification
 
-- `gh issue view <number>` was read in this session, with the account token from the remote.
+- `GH_TOKEN=$(gh auth token --user <account>) gh issue view <number>` was read in this session, with the account token from the remote.
 - For a bug, the new test failed on the unfixed code and passes with the fix.
 - Formatter, linter, type checker, test suite, and build each ran with exit code 0, and their output is shown.
 - `git log -1 --format=%B` shows a conventional subject and a `Fixes #<number>` footer.

@@ -40,7 +40,7 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
    - `docker-compose.yml` or `compose.yml`: containerized services.
    - If multiple manifest files exist, report all detected project types.
 
-2. **Check prerequisites.** For each detected project type, verify the required runtime is installed. If `mise` is available (`which mise`) and the project has a `.mise.toml`, `.tool-versions`, `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, or `.terraform-version` file, run `mise install` once to install every pinned runtime, then `mise current` to verify resolution. After that, the per-runtime checks below confirm the right version is active:
+2. **Check prerequisites.** For each detected project type, verify the required runtime is installed. If `which mise` finds `mise` and the project has a `.mise.toml`, `.tool-versions`, `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, or `.terraform-version` file, run `mise install` once to install every pinned runtime, then `mise current` to verify resolution. After that, the per-runtime checks below confirm the right version is active:
    - Node.js: `node --version`. Compare against `.node-version`, `.nvmrc`, `.tool-versions`, `.mise.toml`, or the `engines` field in `package.json`.
    - Go: `go version`. Compare against `.tool-versions` or `.mise.toml`.
    - Rust: `rustc --version` and `cargo --version`. Compare against `rust-toolchain.toml`.
@@ -54,7 +54,8 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
    - Node.js with npm: `npm ci`.
    - Go: `go mod download`.
    - Rust: `cargo build`.
-   - Python with pip: `pip install -r requirements.txt` or `pip install -e .`.
+   - Python with `uv.lock` or a `pyproject.toml`: `uv sync`, per [`rules/lang/python.md`](../../rules/lang/python.md). Never a bare `pip install`.
+   - Python with only `requirements.txt`: `uv venv` then `uv pip install -r requirements.txt`.
    - Python with poetry: `poetry install`.
    - Report the result: success or failure with the error output.
 
@@ -137,7 +138,7 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
      main "$@"
      ```
 
-   - Check the script with `bash -n` and `shellcheck`, then tell the user to run it from the project root with `! bash <path>` at the prompt, or in a separate terminal. Input is hidden with `read -rs`, a new `.env` is created under `umask 077`, a re-run offers each saved value as the Enter default without showing it, a closed input stream ends the loop instead of spinning, and no value is ever echoed.
+   - Check the script with `bash -n` and `shellcheck`, then tell the user to run `bash <path>` from the project root in their own terminal window. Never suggest the `!` prefix: a `!` command gets no terminal input, so `read -rs` hits end of file and every key is reported missing. Input is hidden with `read -rs`, a new `.env` is created under `umask 077`, a re-run offers each saved value as the Enter default without showing it, a closed input stream ends the loop instead of spinning, and no value is ever echoed.
    - After the user reports the script finished, rerun the key-name listing above to confirm every key now has a value. The script holds key names only, so it may stay in the workspace for a later re-run.
    - Never overwrite values the user has already set in `.env`.
 
@@ -245,4 +246,3 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
 - `/onboard` - Understand the codebase structure and architecture.
 - `/infra` - Manage infrastructure for local development.
 - `/test` - Run the suite, coverage, and lint once setup is complete.
-- `/test` - Run the test suite to verify everything works.

@@ -22,17 +22,17 @@ Run `trust` on any freshly received project before the first install or build co
 | `/audit deps` | Dependency vulnerability scan |
 | `/audit deps outdated` | List packages with newer versions |
 | `/audit deps update [pkg]` | Update packages with approval |
-| `/audit secrets` | Secret scanning across the full repo |
+| `/audit secrets` | Secret scanning across the full repo: Full Audit step 3 with the Extended Secret Detection Patterns under `deps` |
 | `/audit docker` | Dockerfile security checks |
-| `/audit code` | Code pattern analysis (injection, XSS, etc.) |
-| `/audit scan` | Deep scan with trivy/snyk/gitleaks |
-| `/audit image <name>` | Docker image vulnerability and layer analysis |
+| `/audit code` | Code pattern analysis for injection, XSS, and the rest of Full Audit step 5, run alone |
+| `/audit scan` | Deep scan with trivy, snyk, and gitleaks, per `scan (deep)` under `deps` |
+| `/audit image <name>` | Docker image vulnerability and layer analysis, per `image <name>` under `deps` |
 | `/audit threat` | STRIDE threat modeling for the project or a specific component |
 | `/audit daily` | High-confidence security gate: secrets archaeology, supply chain, CI/CD pipeline review |
 | `/audit comprehensive` | Deep scan: daily checks plus OWASP Top 10, STRIDE per component, LLM/AI review |
 | `/audit trust` | Untrusted-project safety scan. Run before `npm install`, `pip install`, or any build command on a freshly received project |
 
-If no subcommand is given, run all layers except threat modeling, daily, and full-scope, which require focused analysis.
+If no subcommand is given, run all layers except threat modeling, daily, and comprehensive, which require focused analysis.
 
 ## Process
 
@@ -363,7 +363,7 @@ Fast security gate for routine use. Three focused checks that catch the highest-
 
 ---
 
-## full-scope
+## comprehensive
 
 Deep scan that includes everything from daily mode plus OWASP Top 10, STRIDE threat modeling per component, and LLM/AI security review.
 
@@ -478,6 +478,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 - `--no-semgrep`, `--no-trivy`, `--no-gitleaks`: opt out of specific external tools even if installed.
 - `--strict`: upgrade MEDIUM findings to HIGH. Useful when the project is highly untrusted.
 - `--json`: emit machine-readable findings instead of the narrative report. Used by `/onboard` Phase 0.
+- `--no-npm-signatures`: skip `npm audit signatures` in step 12.
 
 ### Steps
 
@@ -485,7 +486,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 
 2. **Read manifest and lockfile.** For each detected ecosystem, read the manifest. Extract scripts/lifecycle hooks, dependency list with versions, declared maintainer. Read the lockfile if present.
 
-3. **Scan install hooks.** Apply Section A patterns from [`trust-patterns.md`](trust-patterns.md) to the manifest scripts. Each match is at minimum MEDIUM. Any match containing `curl`, `wget`, `node -e`, or `base64 -d` is HIGH. Patterns paired with `| bash` or `| sh` are CRITICAL.
+3. **Scan install hooks.** Apply Section A patterns from [`trust-patterns.md`](trust-patterns.md) to the manifest scripts, at the severity each row assigns. A lifecycle value that pipes to `bash` or `sh`, or decodes with `base64 -d` or `xxd -r`, is CRITICAL; one that calls `curl`, `wget`, `node -e`, or `python -c` without a pipe to a shell is HIGH.
 
 4. **Scan auxiliary install configs.** Read `.npmrc`, `.yarnrc`, `.yarnrc.yml`, `.pip.conf`, `setup.cfg` `[install]` section. Apply Section A patterns. Unusual registry is HIGH.
 
@@ -562,7 +563,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 - Never reveal actual secret values. Show file, line, pattern name. Mask the match.
 - Never call paid external APIs without explicit user opt-in.
 - Pattern list in [`trust-patterns.md`](trust-patterns.md) is the single source of truth. Updates land there.
-- Verdict MALICIOUS has no override. Verdict HIGH-RISK requires the user to type a confirmation phrase. SUSPICIOUS asks once and defaults to no.
+- Verdict MALICIOUS has no override, because it comes only from a definitive IOC: a row rated CRITICAL or a Section C read paired with a Section D endpoint, never from clustering alone. Verdict HIGH-RISK, including a HIGH cluster, requires the user to type a confirmation phrase. SUSPICIOUS asks once and defaults to no.
 - Skip scan directories: `node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `out`, `coverage`. Their contents are not analyzed.
 
 ---

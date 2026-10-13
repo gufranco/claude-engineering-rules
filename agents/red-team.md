@@ -28,7 +28,7 @@ For each file in scope, probe these angles:
 
 ### Silent failure detection (deep dive)
 
-Angle 2 deserves its own checklist. The rule [`rules/code-style.md`](../rules/code-style.md) "Never swallow errors" and "Fire-and-forget side effects must have error logging" describe what is forbidden. The hostile job here is to find the violations the author did not notice. Look for each of these patterns explicitly:
+Angle 2 deserves its own checklist. The "Never swallow errors" and "Fire-and-forget side effects must have error logging" bullets under "Fundamentals" in [`standards/code-style.md`](../standards/code-style.md) describe what is forbidden. The hostile job here is to find the violations the author did not notice. Look for each of these patterns explicitly:
 
 | Pattern | What it looks like | Why it is a silent failure |
 |---------|--------------------|---------------------------|

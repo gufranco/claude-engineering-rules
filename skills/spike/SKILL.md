@@ -26,15 +26,15 @@ Read the user prompt and the surrounding code, then pick.
 - **State route.** Use when the open question is about a state machine, a data shape, a workflow, or business rules that are hard to reason about on paper. Load [`STATE-BRANCH.md`](STATE-BRANCH.md). Build a tiny interactive terminal program that drives the state through hard cases and prints the full state after each step. The logic lives in a pure module the terminal shell calls, so the validated version lifts into production.
 - **View route.** Use when the open question is about presentation, layout, or visual style. Load [`VIEW-BRANCH.md`](VIEW-BRANCH.md). Generate several radically different variations inside an existing page, against its real data, switchable via a query string and a small dev-only selector.
 
-If the route is genuinely ambiguous and the user is not reachable, pick the route that matches the surrounding code, backend code chooses state, page code chooses view, and write the assumption in the banner comment.
+If the route is genuinely ambiguous and the user is not reachable, pick the route that matches the surrounding code, backend code chooses state, page code chooses view, and write the assumption into the startup banner.
 
 ### Rules for every spike
 
-1. **Throwaway from minute one, marked as such.** Place the spike next to the module or page it informs so context is obvious. Prefix the directory or filename with `spike-` per project convention. Add a banner at the top of the entry file: `// SPIKE: <question being answered>. Kept on spike/<slug> after the verdict.`
+1. **Throwaway from minute one, marked as such.** Place the spike next to the module or page it informs so context is obvious. Prefix the directory or filename with `spike-` per project convention. Make the entry point print a banner as its first output, or render it at the top of the view, from a string constant rather than a source comment, since comments are banned per [`rules/code-style.md`](../../rules/code-style.md): `SPIKE: <question being answered>. Kept on spike/<slug> after the verdict.`
 2. **One-command run.** Use the project package manager. The user must launch it without thinking.
 3. **State lives in memory.** Skip persistence unless persistence is the question. When persistence is the question, hit a scratch database or local file whose name announces it is disposable.
 4. **No polish.** No tests, no abstractions, no error handling beyond what the spike needs to remain runnable. Speed of learning over elegance.
-5. **Surface state on every step.** After each user action (state route) or variant switch (view route), print or render the full relevant state.
+5. **Surface state on every step.** After each user action on the state route, or each variant switch on the view route, print or render the full relevant state.
 6. **Capture the verdict, keep the evidence, clear the working branch.** Once the question is answered, record the verdict and the question it settled where the work continues: a commit message, an ADR, or the implementation issue. Then move the spike off the working branch onto its own branch, which is never merged:
 
    ```bash

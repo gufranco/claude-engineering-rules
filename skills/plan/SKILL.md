@@ -124,16 +124,16 @@ The steps below are enablers, not gates. Their order shows what becomes possible
 
    **When the complaint is about quality rather than a missing feature, diagnose the layer before proposing content.** A report that output is weak in some dimension reads as a request for more guidance, and writing more guidance is usually the wrong fix. Ask when each existing layer fires relative to the moment the work is produced: always-on rules fire before, on-demand standards fire only on a trigger match, review checklists fire after the artifact exists, and mechanical hooks fire at write time. Guidance that only fires after the code is written cannot change the code. Compare the dimension the user is unhappy about against a dimension they are happy about, and the difference in enforcement timing is usually the whole finding. Record the comparison in `plan.md` so the approach section follows from evidence rather than from the topic list.
 
-1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints?. Skip if discovery phase already covered this.
+1. **Clarify scope.** One question at a time. What is being built? Expected outcome? Constraints? Skip if discovery phase already covered this.
 
 2. **Search for existing work**. The tool ordering is mandatory; stop at first match:
    1. Local codebase: `rg -i "<keyword>"`, including file names. Cover [`skills/`](../../skills), [`agents/`](../../agents), [`rules/`](../../rules), [`standards/`](../../standards), [`hooks/`](../../hooks) when the new work could land in `~/.claude/`.
-   2. Open PRs: `gh pr list --search "<keywords>"`.
+   2. Open PRs: `GH_TOKEN=$(gh auth token --user <account>) gh pr list --search "<keywords>"`.
    3. Recent branches: `git branch -a --list "*<keyword>*"`.
-   4. Closed PRs: `gh pr list --state closed --search "<keywords>"`. A closed PR often names a dead-end or a postponed approach.
-   5. GitHub code search: `gh search code "<keywords>" --language=<lang>`.
+   4. Closed PRs: `GH_TOKEN=$(gh auth token --user <account>) gh pr list --state closed --search "<keywords>"`. A closed PR often names a dead-end or a postponed approach.
+   5. GitHub code search: `GH_TOKEN=$(gh auth token --user <account>) gh search code "<keywords>" --language=<lang>`.
    6. Library docs: `llms.txt` first, then official docs of the major library in the area.
-   7. Package registry: `npm search`, `pip search`, `cargo search`, `gem search`.
+   7. Package registry: `npm search`, `pip index versions <name>` or the PyPI page, since PyPI disabled `pip search`, `cargo search`, `gem search`.
    8. Web search: last resort, only if 1-7 turned up nothing.
 
    **Anti-duplication gate for skills, agents, hooks, standards, rules.** Before proposing a new file in `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/hooks/`, `~/.claude/standards/`, or `~/.claude/rules/`, run steps 1-2 against `~/.claude/` and the [`rules/index.yml`](../../rules/index.yml) on-demand entries first. Prefer extending an existing file, new subcommand, new section, new mode, over creating a new one. Justify the new file in writing when no extension fits. See [`rules/pre-flight.md`](../../rules/pre-flight.md) for the full rule.
@@ -215,7 +215,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
 
    **Gate 1: Test Coverage, 95%+.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8, Testing. Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
 
-   **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: `rules/clean-room.md`.
+   **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: [`standards/clean-room.md`](../../standards/clean-room.md).
 
 8. **Present plan.** Wait for approval.
 
@@ -301,7 +301,7 @@ Create and manage Architecture Decision Records. ADRs capture context, alternati
 
 ### Process
 
-1. Locate or create `docs/adr/`. Files: `NNN-<slug>.md`, zero-padded.
+1. Locate the ADR directory the project already tracks, found with `git ls-files | grep -i '/adr/'`. When the project tracks none, ask the user where committed ADRs live. Never create it inside the workspace root resolved per [`rules/project-workspace.md`](../../rules/project-workspace.md): when that root is `<repo>/docs/`, a `docs/adr/` there is excluded from git and the ADR is never committed. A draft the user has not decided to publish goes to `<root>/adr/`. Files: `NNN-<slug>.md`, zero-padded.
 2. For new ADRs, ask one question at a time: what decision? What problem? What alternatives?
 3. Draft:
 
@@ -363,10 +363,10 @@ This subcommand runs only when the user asks for it. It exports planned work the
 
 1. **Resolve spec folder.** Default to the latest folder under `<root>/plans/`, then the legacy `specs/` or `.claude/specs/`.
 2. **Read `plan.md`.** Parse the Task Breakdown section. Each numbered task becomes one issue, carrying its demo line, acceptance criteria, **Mode**, and **Blocked by** list.
-3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Resolve account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
+3. **Detect platform and account.** GitHub or GitLab from `git remote get-url origin`. Map the remote owner to an account per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md) and prefix every `gh` call with `GH_TOKEN=$(gh auth token --user <account>)`. Never switch the global active account.
 4. **Idempotency check.** For each task, search existing open and closed issues for the exact title. Skip if a match exists, and reuse its number for blocking edges.
 5. **Build issue body.** Include: the behavior the task delivers in the project's domain language, the demo line, the acceptance criteria, and the `HITL` or `AFK` mode. Describe behavior, never code locations: no file paths, line numbers, or function names, which go stale before the issue is picked up. Never name the plan, the workspace, or a planning path, since none of them exist in a clone.
-6. **Create issues in dependency order**, blockers first, so every blocking edge can name a real issue number at creation time. GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label> --blocked-by <n,n> --parent <n>`. `--blocked-by` sets native blocking links and `--parent` makes the issue a sub-issue when the plan came from an existing issue; both exist in `gh` 2.102.0, and `gh issue edit <n> --add-blocked-by <n>` repairs an edge after creation. Confirm both with `gh issue create --help`; when the installed `gh` lacks either flag, write `Blocked by #N` lines in the body instead and say so in the summary. GitLab: equivalent `glab issue create`, with `Blocked by #N` in the body.
+6. **Create issues in dependency order**, blockers first, so every blocking edge can name a real issue number at creation time. GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh issue create --title "<title>" --body-file <tmp> --label <label> --blocked-by <n,n> --parent <n>`. `--blocked-by` sets native blocking links and `--parent` makes the issue a sub-issue when the plan came from an existing issue; both exist in `gh` 2.102.0, and `GH_TOKEN=$(gh auth token --user <account>) gh issue edit <n> --add-blocked-by <n>` repairs an edge after creation. Confirm both with `gh issue create --help`; when the installed `gh` lacks either flag, write `Blocked by #N` lines in the body instead and say so in the summary. GitLab: equivalent `glab issue create`, with `Blocked by #N` in the body.
 7. **Print summary.** Table of the new issues with URLs and their blocking edges. Skipped, duplicate issues listed separately.
 
 ### Rules
@@ -398,9 +398,9 @@ Generate boilerplate by reading existing project patterns. No external generator
 1. Parse type and name. If missing, list available types and ask.
 2. **Detect framework and find examples**, parallel: read manifest, map directory structure, search for existing examples of the type.
 3. Analyze 2-3 examples: naming convention, export style, imports, code structure, test file location, TypeScript patterns.
-4. Generate: main file + test file following exact patterns. Placeholder `TODO` comments for business logic.
+4. Generate: main file + test file following exact patterns. Business logic the user has not specified stays out of the skeleton: the function signature, types, and a failing test name the missing behavior, with no `TODO` comment.
 5. Present for approval before writing.
-6. Write files. Update barrel exports if applicable.
+6. Write files. Import each new export from its own module path; never create or extend a barrel file.
 
 ### Rules
 
@@ -409,7 +409,7 @@ Generate boilerplate by reading existing project patterns. No external generator
 - Match exact naming, export style, imports.
 - Never generate without at least one example.
 - Never install dependencies.
-- Keep generated code minimal: skeleton with TODOs.
+- Keep generated code minimal: a skeleton with no comments, no `TODO` markers, and no barrel exports, per [`rules/code-style.md`](../../rules/code-style.md).
 
 ---
 

@@ -23,7 +23,7 @@ Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 4. **Environment variables.** Compare variables used in code via `process.env`, `os.environ`, or equivalent against `.env.example`. Find variables used in code but missing from `.env.example`. Find variables in `.env.example` that no code reads.
 5. **API documentation.** If API docs exist, compare documented endpoints against actual route definitions. Check that documented request and response shapes match the code.
 6. **Changelog accuracy.** If a changelog exists, verify that the most recent entry describes changes present in the code.
-7. **Comment quality.** Inline code comments and docstrings rot when the surrounding code changes. The patterns below name the common failures. The authoritative rule is [`rules/code-style.md`](../rules/code-style.md) "Comments Policy". The no-AI-process rule is [`rules/no-ai-process-leak.md`](../rules/no-ai-process-leak.md).
+7. **Comment quality.** Inline code comments and docstrings rot when the surrounding code changes. The patterns below name the common failures. The authoritative rule is the "Comments Policy" section of [`standards/code-style.md`](../standards/code-style.md). The no-AI-process rule is [`rules/no-ai-process-leak.md`](../rules/no-ai-process-leak.md).
 
 ### Comment rot patterns
 

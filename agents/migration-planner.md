@@ -27,7 +27,7 @@ Do not push to remote. The orchestrator pushes; agents must not. Do not spawn su
 - Do not execute any migration or database command.
 - Do not modify migration files. Return findings only.
 - Do not verify SQL syntax correctness. Focus on safety patterns.
-- Limit analysis to migration files. Do not review application code.
+- In `migration` mode, limit analysis to migration files and the schema file they must match. In `review` mode, read only the changed schema-adjacent application files named in the Modes table, never the wider codebase.
 
 ## Process
 

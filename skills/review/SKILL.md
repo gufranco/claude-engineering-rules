@@ -68,7 +68,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
 
 1. **Gather context**, parallel: remote URL, branch, CLI tool, account resolution. Parse flags.
 2. **Determine mode**: PR mode if PR exists, local mode otherwise. Check PR state, must be OPEN.
-3. **Get diff and context**: PR mode gets metadata and diff via `gh pr diff`/`glab mr diff`. Local mode detects base, fetches, diffs. Warn about uncommitted changes in local mode. Fail fast here, before any subagent is spawned: confirm the base ref resolves with `git rev-parse --verify <base>` and the diff is non-empty. A bad ref or an empty diff ends the review with one line naming the ref or the empty range.
+3. **Get diff and context**: PR mode gets metadata and diff via `GH_TOKEN=$(gh auth token --user <account>) gh pr diff`/`glab mr diff`. Local mode detects base, fetches, diffs. Warn about uncommitted changes in local mode. Fail fast here, before any subagent is spawned: confirm the base ref resolves with `git rev-parse --verify <base>` and the diff is non-empty. A bad ref or an empty diff ends the review with one line naming the ref or the empty range.
    - **Independent reviewer.** When this session authored the diff, meaning it made the commits under review or edited those files earlier in the conversation, run steps 5 through 10 and the [Spec Axis](#spec-axis) in a fresh subagent. Brief it with the diff command or PR number, the commit list, and the checklist path, never with this session's reasoning about the change. The authoring context holds every assumption that shaped the code, so reviewing from inside it confirms those assumptions instead of testing them.
 4. **Apply scope filter** if `--backend` or `--frontend` passed.
 5. **Read context**: PR description, commit messages, every changed file in full, imported modules, verify PR description matches diff. For existing feedback, sweep every channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md): inline threads, review bodies, PR-level conversation, and commit comments. Reading only inline threads means re-raising a point another reviewer already made in the conversation box, or contradicting a decision the author already explained there. Start the [Spec Axis](#spec-axis) subagent now, in parallel with the remaining steps.
@@ -85,8 +85,8 @@ Say in the terminal report which side got the line-by-line pass and which side w
    - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for review comments themselves
    - [`rules/code-style.md`](../../rules/code-style.md): completeness, immutability, error classification, type conventions, LLM trust boundary, TypeScript 5.x
    - [`rules/testing.md`](../../rules/testing.md): mock policy, test structure with the three bare AAA markers as the only comments, faker, deterministic tests, contract testing, performance regression
-   - `rules/performance.md`: Core Web Vitals budgets, API latency targets, bundle size limits
-   - `rules/privacy.md`: data minimization, retention, erasure when the diff touches personal data
+   - [`standards/performance.md`](../../standards/performance.md): Core Web Vitals budgets, API latency targets, bundle size limits
+   - [`rules/privacy-defaults.md`](../../rules/privacy-defaults.md): data minimization, retention, erasure when the diff touches personal data
    - [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md): when the diff processes, stores, or acts on LLM-generated output
 
    Before suggesting fixes that call library APIs, check [`standards/llm-docs.md`](../../standards/llm-docs.md) for the library's documentation URL. Verify the API exists.
@@ -141,7 +141,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
 
    Report the collision on both PRs, not one. Name which PR is the natural home for the fix, and say plainly that merge order decides whether the base branch breaks. When one PR's infrastructure already provisions what the other's code expects, say so: that turns a design argument into a missing line.
 
-9. **Behavioral Flow Analysis, MANDATORY, do not skip.** Per-file analysis catches syntax-level bugs. This step catches design-level bugs: broken idempotency, race conditions, data corruption under concurrency, and attack vectors. Skipping this step is the failure mode that caused PR #1449 to require a second review pass.
+9. **Behavioral Flow Analysis, MANDATORY, do not skip.** Per-file analysis catches syntax-level bugs. This step catches design-level bugs: broken idempotency, race conditions, data corruption under concurrency, and attack vectors. Skipping this step is the failure mode that sends a pull request back for a second review pass.
 
    **9a. Trace every request lifecycle end-to-end.** For each new handler, endpoint, consumer, or webhook in the diff, trace the complete request from HTTP entry through every service call to every database write and external side effect. Do not review files in isolation. Follow the data.
 
@@ -167,7 +167,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
 
    **9c. Read the database schema.** For every application-level uniqueness check, `findFirst` then `create`, `SELECT` then `INSERT`, read the actual schema file and verify a corresponding `UNIQUE` constraint, `@@unique`, or `UNIQUE INDEX` exists. An application check without a DB constraint is a TOCTOU race that produces duplicates under concurrency. Never assume a constraint exists because the code checks for it.
 
-   **9c-bis. Schema-migration parity. MANDATORY when SCOPE_MIGRATIONS detected.** This gate exists because PR #1325 in acme/webapp shipped a migration with 7 raw-SQL `CREATE INDEX` statements and zero matching `@@index` declarations in `schema.prisma`. The drift went undetected for 17 days. Reference rule: `~/.claude/rules/lang/orm-migrations.md` Prisma section. Reference checklist: category 69.
+   **9c-bis. Schema-migration parity. MANDATORY when SCOPE_MIGRATIONS detected.** This gate exists because a pull request in a production repository shipped a migration with 7 raw-SQL `CREATE INDEX` statements and zero matching `@@index` declarations in `schema.prisma`, and the drift went undetected for 17 days. Reference: the `## Prisma` section of [`standards/orm-migrations.md`](../../standards/orm-migrations.md). Reference checklist: category 69.
 
    For every changed migration file, perform these checks in order. Skipping any of them is a review failure.
 
@@ -190,7 +190,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
 
       Non-zero exit code is a P0 blocking finding. The exact diff output must appear in the review.
    4. **If a fresh DB is available, run end-to-end verification.** `prisma migrate deploy` followed by `prisma migrate dev`. If the second command generates a follow-up migration, drift exists. Paste the generated migration in the review and flag as P0.
-   5. **Verify every index name uses an explicit `map:`.** Auto-generated Prisma names collide with raw-SQL names and cause the exact drift PR #1325 introduced. Names must follow `<Model>_<col>(_<col>)*_<purpose>_idx`.
+   5. **Verify every index name uses an explicit `map:`.** Auto-generated Prisma names collide with raw-SQL names and cause the exact drift described above. Names must follow `<Model>_<col>(_<col>)*_<purpose>_idx`.
    6. **Verify any DDL without a schema counterpart is documented.** Extensions, materialized views, GIN/GiST trigram indexes, custom triggers, and RLS policies cannot be modeled in Prisma. The PR description or an ADR must name the unmanaged object class and why no schema entry exists; a comment in the migration file does not count, because comments are banned in every language. Missing documentation is a P1 finding.
 
    None of these steps can be skipped on the grounds that "the hook would have caught it." The hook is layer 2; the review skill is layer 4. Defense-in-depth means each layer runs every check independently.
@@ -207,7 +207,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
    **9e. Verify startup and configuration safety.** For every secret, API key, or credential read from environment variables at request time, verify there is a startup check that fails loudly if the value is missing or empty. A missing webhook signing secret that silently rejects all deliveries is a silent outage.
 
 10. **Three explicit passes**, applied to the diff AND to impacted files from step 8, informed by behavioral flow analysis from step 9:
-   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md`, 1-17, 18-58. This includes the extended categories: 53, LLM Trust Boundary when code processes AI output, 54, Performance Budget for frontend changes, 55, Zero-Downtime Deployment for migration and deploy changes, 56, Supply Chain for dependency changes, 57, Event-Driven for queue and event handler changes, and 58, Licensing for new or modified source files. Additionally, for each standard loaded in step 6, verify that changed code follows the patterns in that standard. When a finding originates from a loaded standard, note the standard internally for your own tracking, but never reference it in externally-posted comments. The posted comment must state the engineering reason directly. Apply to changed files first, then to impacted consumer files where the change alters behavior. Use scope signals from step 7 to prioritize depth. Findings from step 9, behavioral flow analysis feed directly into this pass: race conditions become category 4 findings, idempotency gaps become category 18 findings, missing constraints become category 5 findings.
+   - **Pass 1: Per-file analysis.** Every applicable category from `checklist.md`, 1 through 71. This includes the extended categories: 53, LLM Trust Boundary when code processes AI output, 54, Performance Budget for frontend changes, 55, Zero-Downtime Deployment for migration and deploy changes, 56, Supply Chain for dependency changes, 57, Event-Driven for queue and event handler changes, and 58, Licensing for new or modified source files. Additionally, for each standard loaded in step 6, verify that changed code follows the patterns in that standard. When a finding originates from a loaded standard, note the standard internally for your own tracking, but never reference it in externally-posted comments. The posted comment must state the engineering reason directly. Apply to changed files first, then to impacted consumer files where the change alters behavior. Use scope signals from step 7 to prioritize depth. Findings from step 9, behavioral flow analysis feed directly into this pass: race conditions become category 4 findings, idempotency gaps become category 18 findings, missing constraints become category 5 findings.
 
      **Security pattern analysis, when SCOPE_AUTH, SCOPE_API, SCOPE_WEBHOOK, or SCOPE_BACKEND is detected.** Read `~/.claude/skills/security-patterns.md` and apply it as an additional security lens. For each changed file that handles user input, perform source-to-sink tracing: map entry points to dangerous sinks, SQL, command, template, file, SSRF, redirect, XSS, deserialization, and verify sanitization at each transition. Check for vulnerability patterns matching the diff: race conditions on financial operations, IDOR, mass assignment, JWT weakness, CORS misconfiguration, missing idempotency. When a security finding is identified, run `git blame -L <start>,<end> <file>` on the vulnerable lines to determine when it was introduced and how long it has been exposed.
    - **Pass 2: Cross-file and project-wide consistency.** Category 15. Contradictions, import chain side effects, config completeness, contract alignment, error path consistency. Verify that every consumer identified in step 8 still compiles, passes type checks, and behaves correctly. Check for: stale type assertions, missing null checks on new optional returns, tests that assert old behavior, documentation that describes old behavior, and mocks that replicate old signatures.
@@ -287,7 +287,7 @@ When posting, always use the pending review API to batch all comments into a sin
 **Step 1: Get the latest commit SHA.**
 
 ```bash
-gh pr view <PR_NUMBER> --json commits --jq '.commits[-1].oid'
+GH_TOKEN=$(gh auth token --user <account>) gh pr view <PR_NUMBER> --json commits --jq '.commits[-1].oid'
 ```
 
 **Step 2: Write the review payload to a JSON file.**
@@ -317,7 +317,7 @@ Write the file with `cat <<'EOF' > /tmp/review-payload.json`, single-quoted deli
 **Step 3: Submit the review in a single API call.**
 
 ```bash
-gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews \
+GH_TOKEN=$(gh auth token --user <account>) gh api repos/:owner/:repo/pulls/<PR_NUMBER>/reviews \
   -X POST \
   --input /tmp/review-payload.json \
   --jq '{id: .id, state: .state}'
@@ -333,7 +333,7 @@ This creates and submits the review in one step. No separate "create PENDING the
 - For multi-line comments, add `start_line` alongside `line`
 - Always clean up the temp file after posting: `rm /tmp/review-payload.json`
 
-**Establish which lines are anchorable before writing any comment.** Fetch the per-file patch once with `gh api repos/:owner/:repo/pulls/<n>/files` and read the hunk headers from that. `gh pr diff --patch`, and a `--paginate` call piped through a `jq select`, both concatenate patches across commits or pages, so the same file comes back with several hunk sets whose line numbers do not describe head. A comment anchored from those lands on the wrong line or is rejected outright.
+**Establish which lines are anchorable before writing any comment.** Fetch the per-file patch once with `GH_TOKEN=$(gh auth token --user <account>) gh api repos/:owner/:repo/pulls/<n>/files` and read the hunk headers from that. `gh pr diff --patch`, and a `--paginate` call piped through a `jq select`, both concatenate patches across commits or pages, so the same file comes back with several hunk sets whose line numbers do not describe head. A comment anchored from those lands on the wrong line or is rejected outright.
 
 Files with status `added` are the safe case: every line is in the diff, so any line number is valid. For a `modified` file, only lines inside a hunk range are valid. A finding that falls outside every hunk cannot be anchored and therefore cannot be posted; report it in the terminal so the person running the skill can raise it directly.
 
@@ -413,13 +413,13 @@ Automated reviewers count here too, and they carry a failure mode humans do not:
 
 ### Regression-Test Pinning Recommendation
 
-For every blocking-severity bug finding, the suggested fix includes a named regression test like `it('rejects empty companyId per PR #4521')`. Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
+For every blocking-severity bug finding, the suggested fix includes a named regression test whose name states the behavior, like `it('rejects an empty companyId')`, never a ticket or PR number, per [`../../rules/testing.md`](../../rules/testing.md). Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
 
-This mirrors the policy in `/respond` and ensures both ends of the review conversation expect named regression tests where they matter.
+Both ends of the review conversation, this skill and `/respond`, expect named regression tests where they matter.
 
 ### PR-Author Anti-Pattern Detection
 
-Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](../../standards/code-review.md) "As Reviewee". These become findings in the terminal report, never inline comments and never a posted summary.
+Check the PR description for known author-side anti-patterns from [`standards/code-review.md`](../../standards/code-review.md) "Reviewee Anti-Patterns". These become findings in the terminal report, never inline comments and never a posted summary.
 
 | Anti-pattern in PR body | Finding |
 |------------------------|---------|
@@ -550,7 +550,7 @@ Audit frontend code for visual design, UX, accessibility, responsive behavior, a
 8. **Animation**: CSS-based, `prefers-reduced-motion` fallback, opacity: 1, transform: none, reasonable durations.
 9. **Dark mode**: all tokens have light/dark values, dark backgrounds L < 0.25, no hardcoded colors bypassing tokens.
 10. **Performance**, if `--focus performance`, `cwv`, or `all`: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 performance budgets. Check page weight, JS/CSS size, image optimization, font loading strategy, third-party script loading, code splitting. Reference: [`standards/frontend.md`](../../standards/frontend.md) Web Performance section.
-11. **Core Web Vitals**, if `--focus cwv` or `all`: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 CWV items. Verify LCP element is preloaded and prioritized. Check for main thread blocking tasks > 50ms, INP. Check for unsized images, font FOUT, and above-viewport content injection, CLS. Reference: [`standards/frontend.md`](../../standards/frontend.md) CWV Debugging section.
+11. **Core Web Vitals**, if `--focus cwv` or `all`: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 CWV items. Verify LCP element is preloaded and prioritized. Check for main thread blocking tasks > 50ms, INP. Check for unsized images, font FOUT, and above-viewport content injection, CLS. Reference: [`standards/frontend.md`](../../standards/frontend.md) Core Web Vitals Debugging section.
 12. **SEO**, if `--focus seo` or `all`, only for public-facing web apps: apply [`checklists/checklist.md`](../../checklists/checklist.md) category 7 SEO items. Verify title tags, meta descriptions, heading hierarchy, canonical URLs, structured data, robots.txt, and sitemap. Reference: [`standards/frontend.md`](../../standards/frontend.md) SEO section.
 13. **Dimension scoring.** Rate each dimension 0-10 based on the findings:
 
@@ -627,8 +627,8 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - The pull request receives inline findings on lines inside a diff hunk, plus a review event. Never a summary body, never a conversation comment, never a reply into a bot's thread. See [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md).
 - Nothing is posted on a pull request the running account authored. A finding in your own code is a commit.
 - Never approve a PR with failing tests, a stale branch, or missing test evidence. Stale means the base drift overlaps files the PR changes, per step 13; a commit count alone does not make a branch stale.
-- Always restore account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
-- Apply all 71 checklist categories, not just 1-52. Categories 53-58 cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
+- Prefix every `gh` call with `GH_TOKEN=$(gh auth token --user <account>)` for the account matched from the remote, per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md). Never switch the global active account.
+- Apply all 71 checklist categories, not just 1-52. Categories 53-58 among them cover LLM trust boundary, performance budget, zero-downtime deployment, supply chain security, event-driven architecture, and licensing compliance.
 - When the diff touches authentication, load [`standards/authentication.md`](../../standards/authentication.md) and verify OAuth 2.1, passkey, and NIST 800-63B compliance.
 - When the diff adds or modifies dependencies, apply category 56, Supply Chain: check for typosquatting, verify lockfile integrity, check for known vulnerabilities.
 - When the diff includes database migrations, apply category 55, Zero-Downtime Deployment: verify expand-contract pattern, backward compatibility with previous app version.
@@ -657,11 +657,11 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - A posted review has an empty top-level `body`, one `event`, and inline comments anchored inside hunk ranges.
 - `/review qa` reports a coverage ratio with PASS at 95% or higher, and every finding cites `file:line` and a QA rule number.
 - `/review design` reports the dimension scorecard, and every finding cites `file:line` and its rule.
-- The account active before the run is active again after it.
+- Every `gh` call in the run carried an inline `GH_TOKEN` for the account matched from the remote, and the global active account never changed.
 
 ## Related skills
 
 - `/ship` -- Create commits and PRs after fixing review issues.
-- `/respond` -- Counterpart skill for the receiving side. When the author of a PR you review uses `/respond` to address your comments, they classify, verify, and reply using the same Conventional Comments taxonomy this skill uses for posting.
+- `/respond` -- Counterpart skill for the receiving side. When the author of a PR you review uses `/respond` to address your comments, they classify, verify, and reply in the same plain-prose voice this skill uses for posting, with no label prefixes.
 - `/test` -- Run tests to verify review findings.
 - `/audit` -- Security-focused audit across the full project.

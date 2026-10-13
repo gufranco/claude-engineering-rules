@@ -58,7 +58,7 @@ Read the project thoroughly. Run these **in parallel**:
 7. **Visual assets**: check for logo files like `logo.png`, `logo.svg`, `banner.png`, `.github/assets/`, or `docs/images/`, and existing screenshots or demos.
 8. **License and metadata**: read `LICENSE`, `.github/FUNDING.yml`, badges in existing README.
 9. **Community health files**: check for `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `CITATION.cff`, `CODEOWNERS`, and `.github/ISSUE_TEMPLATE/`. GitHub scores the same list in its community profile. A public repo missing all of them reads as unmaintained to anyone evaluating it for adoption.
-10. **Release and versioning signals**: run `git tag --list --sort=-v:refname | head -5` and `gh release list --limit 5`. Read the version field from the manifest. Decide whether the tag history follows semantic versioning, calendar versioning, or no scheme at all.
+10. **Release and versioning signals**: run `git tag --list --sort=-v:refname | head -5` and `GH_TOKEN=$(gh auth token --user <account>) gh release list --limit 5`. Read the version field from the manifest. Decide whether the tag history follows semantic versioning, calendar versioning, or no scheme at all.
 
 ### Phase 2: Architecture and Identity Analysis
 
@@ -96,11 +96,10 @@ Exit 0 is required, and the scan runs again on the written file after approval. 
 1. Show the full README, and every translation, to the user for review.
 2. Show the GitHub About description and topics.
 3. Ask if they want changes before writing.
-4. **Resolve account** per [`standards/borrow-restore.md`](../../standards/borrow-restore.md) before applying GitHub About. Match the remote URL against authenticated accounts, switch if needed.
+4. **Resolve account** per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md) before applying GitHub About: map the owner in `git remote get-url origin` to an authenticated account. Every `gh` call carries `GH_TOKEN=$(gh auth token --user <account>)` inline, and the global active account is never switched.
 5. After approval:
    - Write the English README and each `README.<tag>.md`.
-   - Apply the GitHub About using `gh repo edit --description "<desc>"` and `gh repo edit --add-topic <topic>` commands.
-   - Restore the original account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
+   - Apply the GitHub About using `GH_TOKEN=$(gh auth token --user <account>) gh repo edit --description "<desc>"` and `GH_TOKEN=$(gh auth token --user <account>) gh repo edit --add-topic <topic>` commands.
 
 ## README Structure
 
@@ -369,7 +368,7 @@ Phase 1 Deep Scan gains these scans:
 1. **Detect commit format.** Read recent commits via `git log --oneline -20`. Match against Conventional Commits patterns or any other recognizable format. Record the result for the Project conventions table.
 2. **Detect lint and style configs.** Look for `.eslintrc.*`, `prettier.config.*`, `.editorconfig`, `pyproject.toml [tool.ruff]`, `clippy.toml`, `golangci.yml`. Cite the discovered files in the table.
 3. **Detect AI review bots.** Look for `.coderabbit.yml`, `.coderabbit.yaml`, `.greptile.yml`, `.cursorrules`, `.cursor/`, `.sourcery.yaml`, `korbit.yml`. List the discovered bots in the conventions table.
-4. **Detect issue tracker.** Read repo metadata via `gh repo view --json hasIssuesEnabled,url`. If issues are disabled, look for `ISSUE_TEMPLATE/` or `BUG_REPORT.md` template files. If neither, omit the section and leave a comment recommending the user add one.
+4. **Detect issue tracker.** Read repo metadata via `GH_TOKEN=$(gh auth token --user <account>) gh repo view --json hasIssuesEnabled,url`. If issues are disabled, look for `ISSUE_TEMPLATE/` or `BUG_REPORT.md` template files. If neither, omit the section and leave a comment recommending the user add one.
 5. **Detect testing instructions.** Look for `make test`, `npm run test`, `pytest`, `go test ./...`, or equivalent. Enumerate every test-related script or target, not only the aggregate one, so the Running the tests table can name each suite and what it covers. The reproducing-a-bug instructions reuse the same command.
 
 #### Skip conditions
@@ -734,9 +733,9 @@ Use specific numbers where they answer a reader's question, such as how many pla
 - Number of modules, services, components, or packages.
 - Number of cloud services, regions, or resources managed.
 - Lines of Terraform, tests, or endpoints.
-- Concrete metrics: "deploys in ~30 min", "0.5-128 ACU scaling range", "6 regions".
-- Performance: "cold start < 100ms", "handles 10k req/s", "< 5MB binary".
-- Reliability: "99.9% uptime SLO", "zero-downtime deploys", "100% test coverage".
+- Concrete metrics: "deploys in 27 minutes on the last 10 runs", "0.5-128 ACU scaling range", "6 regions".
+- Performance: "cold start of 84 ms measured with hyperfine", "4.2 MB binary".
+- Reliability: "99.9% uptime SLO", "96% line coverage", each read from its source in this run.
 
 **Never estimate. Count from the source.**
 
@@ -751,7 +750,7 @@ Use specific numbers where they answer a reader's question, such as how many pla
 - **No "Built with" section** that just lists logos. The badges and stack description cover this.
 - **No placeholder text.** If information is unknown, skip the section entirely.
 - **No AI attribution.** Never add "Generated by AI" or similar markers.
-- **No marketing fluff words.** See [`../../CLAUDE.md`](../../CLAUDE.md) "Banned Phrases" for the full list, and [`standards/anti-slop.md`](../../standards/anti-slop.md) for the sentence shapes. Let the numbers and features speak.
+- **No marketing fluff words.** See [`standards/tone-and-writing.md`](../../standards/tone-and-writing.md) "Banned Phrases" for the full list, and [`standards/anti-slop.md`](../../standards/anti-slop.md) for the sentence shapes. Let the numbers and features speak.
 - **No search narration.** Never which sources were checked, what was not found, or when something was verified. The README states what exists.
 
 ## GitHub About
@@ -765,7 +764,7 @@ The About description renders as the meta-description in Google SERP snippets. T
 - Format: `[What it is] + [key differentiator] + [quantified scope]`.
 - Front-load the most-searched keyword. The first 70 characters get the heaviest SEO weight and appear unwrapped in most listing UIs.
 - No emojis. No trailing period.
-- Example: `Production-grade multi-region AWS infrastructure as code. 9 Terraform modules, 30+ AWS services, 6 regions, one terraform apply`
+- Example: `Multi-region AWS infrastructure as code. 9 Terraform modules deploy 31 AWS services across 6 regions with one terraform apply`
 
 ### Topics
 
@@ -778,7 +777,7 @@ GitHub enforces a hard limit of **20 topics per repo**, each up to **50 characte
 - **No generic tags.** `code`, `project`, `awesome`, `app`. These hurt rather than help because they match millions of unrelated repos.
 - **Order by specificity, most distinctive first.** GitHub may truncate the list in some UIs; the leading topics get the most visibility.
 
-Apply via `gh repo edit --add-topic <topic>` per the account-safety pattern with `GH_TOKEN=$(gh auth token --user <account>)` prefix.
+Apply via `GH_TOKEN=$(gh auth token --user <account>) gh repo edit --add-topic <topic>`, with the account resolved in Phase 5.
 
 ### Social Preview Image
 
@@ -883,7 +882,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - Stop and cut the sentence when it narrates how the work went, describes an abandoned approach, or points at working notes.
 - Stop and translate from English when a translation is about to be produced from another translation or by converting Simplified Chinese to Traditional.
 - Stop and ask the user when the README write or `gh repo edit` is about to run before they approved the draft.
-- Stop and resolve the account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md) when a `gh` command is about to run against a remote whose account was not matched.
+- Stop and resolve the account per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md) when a `gh` command is about to run without an inline `GH_TOKEN` for the account matched from the remote.
 
 ## Verification
 
@@ -895,7 +894,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - Every number in the scope sentence was counted from the source in this run.
 - The hero carries at most 8 badges and a demo within the first scroll.
 - The About description is at most 350 characters with no trailing period, and the topics are at most 20, lowercase, and hyphenated.
-- The user approved the draft before the write, and the original `gh` account was restored after the About was applied.
+- The user approved the draft before the write, and every `gh` call that applied the About carried an inline `GH_TOKEN` for the account matched from the remote.
 
 ## Related skills
 

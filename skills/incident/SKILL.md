@@ -36,8 +36,8 @@ This skill accepts optional arguments after `/incident`:
 
 1. **Collect deployment history.** Run these **in parallel**:
    - `git log --oneline --since="24 hours ago" --all` to find recent commits.
-   - `gh release list --limit 5` to find recent releases, if `gh` is available.
-   - `gh pr list --state merged --limit 10 --json number,title,mergedAt` to find recently merged PRs.
+   - `GH_TOKEN=$(gh auth token --user <account>) gh release list --limit 5` to find recent releases, if `gh` is available.
+   - `GH_TOKEN=$(gh auth token --user <account>) gh pr list --state merged --limit 10 --json number,title,mergedAt` to find recently merged PRs.
 
 2. **Check service health.** Run these **in parallel**:
    - If the project has health check endpoints documented in the codebase, suggest curling them.

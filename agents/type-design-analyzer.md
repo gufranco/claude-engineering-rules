@@ -27,7 +27,7 @@ Do not spawn subagents. Complete this task using direct tool calls only.
 |-------|------------------|----------|
 | Missing branded types on identifiers | Function parameters typed as plain `string` for IDs (e.g., `userId: string` instead of `userId: UserId`). Two ID types that are structurally `string` invite swap bugs. | HIGH |
 | Missing branded types on validated strings | Validated values typed as plain `string` (e.g., `email: string` instead of `email: Email`). Loses the validation evidence at type level. | MEDIUM |
-| String literal union where enum is warranted | A union like `'pending' \| 'shipped' \| 'cancelled'` that recurs across files and has no iteration helper. Should be a `const` enum or `as const` object with derived type. | MEDIUM |
+| String literal union where enum is warranted | A union like `'pending' \| 'shipped' \| 'cancelled'` that recurs across files and has no iteration helper. Should be a string `enum`, per [`rules/lang/typescript-types.md`](../rules/lang/typescript-types.md), never a `const enum`. | MEDIUM |
 | Optional fields that imply state | Two optional fields where one being present implies the other should be (e.g., `cancellationReason?: string; cancelledAt?: Date`). Should be a discriminated union. | HIGH |
 | Boolean-blind APIs | Function returns `boolean` when the caller needs to know why (e.g., `canCheckout(): boolean` instead of `Result<true, CheckoutBlocker>`). | MEDIUM |
 | Boolean parameters at the boundary | Public API accepts a `boolean` flag the caller has to remember the meaning of (e.g., `save(force: boolean)`). Should be a tagged enum or two methods. | MEDIUM |
@@ -92,6 +92,6 @@ State "Only generated files changed. Skipping per agent policy." and exit.
 
 - [ ] Every TS file in scope was read
 - [ ] Findings cite the specific check from the table
-- [ ] Fix lines are concrete such as suggest a branded type name, name the discriminator, or etc.
+- [ ] Fix lines are concrete, such as a suggested branded type name or the named discriminator
 - [ ] Severity matches the table; no inflation
 - [ ] Output is bounded at 20 findings

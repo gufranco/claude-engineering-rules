@@ -66,10 +66,11 @@ Examples:
    a. Make the code changes for this step only.
    b. Run the formatter.
    c. Run the linter. Fix any new warnings.
-   d. Run the full test suite. If tests fail because of the migration, fix them as part of this step.
-   e. Run the build. Verify zero errors.
-   f. Commit with a descriptive message: `refactor(<scope>): migrate <component> from <source> to <target>`.
-   g. Report the step result before proceeding to the next.
+   d. Run the type checker. Fix any new errors.
+   e. Run the full test suite. If tests fail because of the migration, fix them as part of this step.
+   f. Run the build. Verify zero errors.
+   g. Commit with a descriptive message: `refactor(<scope>): migrate <component> from <source> to <target>`.
+   h. Report the step result before proceeding to the next.
 
 5. **Verify final state.** After all steps complete:
    - Confirm the source library is no longer in the dependency manifest.
@@ -126,7 +127,7 @@ Examples:
 - Preserve all existing test coverage. Migration must not reduce the test count or coverage percentage.
 - Do not add the target library without checking if it is already a dependency.
 - Follow [`../../rules/code-style.md`](../../rules/code-style.md) dependency evaluation criteria when the migration involves choosing between alternatives.
-- Prefix every `gh` or `glab` command with the appropriate token per `../../rules/github-accounts.md` or `../../rules/gitlab-accounts.md`.
+- Prefix every `gh` or `glab` command with the appropriate token per [`standards/github-accounts.md`](../../standards/github-accounts.md) or [`standards/gitlab-accounts.md`](../../standards/gitlab-accounts.md).
 
 ## Common Rationalizations
 
