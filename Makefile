@@ -107,7 +107,7 @@ test-fast:
 test-cov:
 	find . -maxdepth 1 -type f \( -name '.coverage' -o -name '.coverage.*' \) -delete
 	$(PYTEST) -n $(PYTEST_N) $(PYTEST_OPTS)
-	$(COVERAGE) combine 2>/dev/null || true
+	if find . -maxdepth 1 -name '.coverage.*' -print -quit | grep -q .; then $(COVERAGE) combine; fi
 	$(COVERAGE) report
 
 test-bats:

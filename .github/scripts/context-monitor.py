@@ -124,6 +124,12 @@ def get_level(percentage):
     return ""
 
 
+def _field(value, keys, default):
+    if isinstance(value, dict):
+        value = next((value[key] for key in keys if value.get(key)), None)
+    return str(value) if value else default
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -131,10 +137,12 @@ def main():
         print("")
         return
 
-    model = data.get("model", "sonnet")
-    workspace = data.get("workspace", os.getcwd())
-    transcript_path = data.get("transcript_path", "")
-    cost = data.get("cost", 0)
+    model = _field(data.get("model"), ("id", "display_name"), "sonnet")
+    workspace = _field(
+        data.get("workspace"), ("current_dir", "project_dir"), os.getcwd()
+    )
+    transcript_path = str(data.get("transcript_path") or "")
+    cost = _field(data.get("cost"), ("total_cost_usd",), "0")
 
     parts = []
 
