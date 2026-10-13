@@ -49,7 +49,7 @@ The two-phase flow exists because cleanup is destructive: read the report, decid
 
 4. **Find stale PRs.** Query the platform for open PRs in the current repo.
    - GitHub: `GH_TOKEN=$(gh auth token --user <account>) gh pr list --state open --json number,title,author,createdAt,updatedAt,isDraft,url`
-   - GitLab: `GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab mr list --state opened`
+   - GitLab: `GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab mr list -F json`, which lists open MRs by default
    - Flag PRs open for more than 14 days with no activity in the last 7 days as stale.
    - Flag draft PRs open for more than 7 days separately.
 

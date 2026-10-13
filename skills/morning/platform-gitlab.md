@@ -23,7 +23,7 @@ As of the last measurement on this machine, no GitLab instance is authenticated,
 Both variables are mandatory on every call, per [`multi-account-cli.md`](../../standards/multi-account-cli.md):
 
 ```bash
-GITLAB_TOKEN=$(glab auth token --hostname <host>) GITLAB_HOST=<host> glab mr list
+GITLAB_TOKEN=$(glab config get token --host <host>) GITLAB_HOST=<host> glab mr list
 ```
 
 `GITLAB_HOST` has no safe default here. A self-managed instance and gitlab.com are different accounts with different work.
@@ -32,9 +32,9 @@ GITLAB_TOKEN=$(glab auth token --hostname <host>) GITLAB_HOST=<host> glab mr lis
 
 | GitHub query | GitLab equivalent |
 |---|---|
-| `gh search prs --review-requested=@me` | `glab mr list --reviewer=@me --state=opened` |
-| `gh search prs --author=@me` | `glab mr list --author=@me --state=opened` |
-| `gh search issues --assignee=@me` | `glab issue list --assignee=@me --state=opened` |
+| `gh search prs --review-requested=@me` | `glab mr list --reviewer=@me`, open by default |
+| `gh search prs --author=@me` | `glab mr list --author=@me` |
+| `gh search issues --assignee=@me` | `glab issue list --assignee=@me` |
 | `gh search issues --mentions=@me` | `glab api "/issues?scope=all&search=@<username>&state=opened"` |
 | `gh api /notifications` | `glab api "/todos?state=pending"` |
 

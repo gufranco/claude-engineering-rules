@@ -19,7 +19,7 @@ Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 
 1. **Find the active spec.** Search for the most recent `plan.md` under `docs/plans/*/`, `.work/plans/*/`, `.work-local/plans/*/`, `specs/*/`, or `.claude/specs/*/`. If multiple exist, use the one with the latest modification time. If none exists, report "No plan.md found. Cannot detect scope drift without a plan."
 2. **Read the plan.** Extract the list of planned files, features, and tasks from `plan.md`.
-3. **Read the diff.** Run `git diff --name-only HEAD` to get the list of changed files.
+3. **Read the diff.** This agent has no shell, so it cannot run git. Use the changed-file list the orchestrator passes, the output of `git diff --name-only HEAD`.
 4. **Compare.** For each changed file, check if it appears in the plan or is a reasonable dependency of a planned change. For each changed function or feature, check if it maps to a planned task.
 5. **Flag drift.** Report files and changes that are not covered by the plan.
 
@@ -56,7 +56,7 @@ Do not return raw file contents or full function bodies. File paths and line num
 ## Scenarios
 
 **No scope provided:**
-Use the current git diff against HEAD.
+Ask the orchestrator for the output of `git diff --name-only HEAD`.
 
 **No plan.md found:**
 State "No plan.md found in the project workspace or specs/. Cannot detect scope drift. Create a plan folder with /plan first."

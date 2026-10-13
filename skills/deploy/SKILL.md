@@ -80,7 +80,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
 
    | Signal | Platform | How to monitor |
    |--------|---------|---------------|
-   | [`.github/workflows/`](../../.github/workflows) with deploy job | GitHub Actions | `gh run list --branch main --limit 1 --json databaseId,status` then `gh run watch` |
+   | [`.github/workflows/`](../../.github/workflows) with deploy job | GitHub Actions | `gh run list --branch main --limit 1 --json databaseId,status`, then poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule |
    | Vercel project | Vercel | Check Vercel MCP or `vercel ls --limit 1` |
    | Railway, Render, Fly | PaaS | Suggest user check the dashboard |
    | Manual deploy | Any | Ask user to trigger and confirm |
