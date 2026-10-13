@@ -154,7 +154,7 @@ def main() -> int:
     severity_label = "Warning" if ADVISORY_MODE else "Blocked"
     message = (
         f"{severity_label}: bullet items starting with 'Should ' detected. "
-        'Rules: ~/.claude/rules/writing-precision.md "Eliminate weasel words" '
+        'Rules: ~/.claude/standards/writing-precision.md "Eliminate weasel words" '
         "and ~/.claude/rules/normative-keywords.md.\n"
         + "\n".join(findings)
         + "\n\nFix: replace 'Should ' with 'Must ' for required behavior, "

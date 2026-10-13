@@ -118,7 +118,7 @@ def main() -> int:
 
     print(
         "Blocked: Sequelize raw .query() is banned in application code. "
-        'Rule: ~/.claude/rules/code-style.md "No raw SQL".\n'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
         + "\n\nFix: express the query using Sequelize's model methods "
         "(findAll, findOne, update, destroy, bulkCreate). Raw .query() is only "

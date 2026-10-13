@@ -370,14 +370,6 @@ def _concise_mode() -> bool:
     return (os.environ.get("MUTATION_METHOD_CONCISE") or "").strip() == "1"
 
 
-def _debug_mode() -> bool:
-    """Plan item 252: `MUTATION_METHOD_DEBUG=1` emits internal state to
-    stderr: detectors fired, suppressions applied, allowlist short-circuits,
-    AST availability. Off by default.
-    """
-    return (os.environ.get("MUTATION_METHOD_DEBUG") or "").strip() == "1"
-
-
 def _profile_mode() -> bool:
     """Plan item 247: `MUTATION_METHOD_PROFILE=1` writes a cProfile report
     to `~/.claude/logs/mutation_blocker_profile.txt` for the current

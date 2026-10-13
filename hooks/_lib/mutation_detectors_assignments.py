@@ -519,7 +519,7 @@ def detect_global_assignment(
     fix_hint = (
         "Mutating `globalThis`, `window`, `process.env`, or similar global objects is module-scope "
         "side effect. Use a typed module export or a configuration object passed by argument. "
-        'Rule: ~/.claude/rules/code-style.md "No side effects at module level".'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".'
     )
     for lineno, raw, masked in _iter_lines(text):
         for m in GLOBAL_ASSIGN_PATTERN.finditer(masked):
@@ -547,7 +547,7 @@ def detect_param_reassignment(
     fix_hint = (
         "Never mutate function arguments. Copy at function entry: "
         "`const localOpts = { ...opts };`. Or accept the parameter as `Readonly<T>` and "
-        'return a new object. Rule: ~/.claude/rules/code-style.md "Never mutate function arguments".'
+        'return a new object. Rule: ~/.claude/standards/code-style.md "Immutability".'
     )
     pattern = re.compile(
         r"\b(?P<name>" + "|".join(re.escape(p) for p in params) + r")\b"
@@ -610,7 +610,7 @@ def detect_let_could_be_const(
     results: list[Match] = []
     fix_hint = (
         "`let` that is never reassigned must be `const`. Rule: "
-        '~/.claude/rules/code-style.md "let that could be const is a code review failure".'
+        '~/.claude/standards/typescript-immutability.md "Behavioral Rules".'
     )
     lines = text.splitlines()
     masks = mask_lines(text)

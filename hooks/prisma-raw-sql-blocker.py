@@ -143,7 +143,7 @@ def main() -> int:
 
     print(
         "Blocked: Prisma raw SQL is banned in application code. "
-        'Rule: ~/.claude/rules/code-style.md "No raw SQL".\n'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
         + "\n\nFix: express the query using Prisma's typed methods "
         "(findMany, updateMany, createMany, etc.). Raw SQL is only allowed in migration files.\n"

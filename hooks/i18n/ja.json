@@ -4,10 +4,10 @@
   "fix_references_header": "修正リファレンス:",
   "fix_references": [
     "配列: arr.toSorted / toReversed / toSpliced / with (ES2023) またはスプレッド構文を使用してください。",
-    "イテラブル: イテレータヘルパー (.map / .filter / .take / .drop / .toArray, ES2024) を使用してください。",
+    "イテラブル: イテレータヘルパー (.map / .filter / .take / .drop / .toArray, ES2025) を使用してください。",
     "グルーピング: arr.reduce + push の代わりに Object.groupBy(iter, fn) / Map.groupBy(iter, fn) (ES2024) を使用してください。",
     "オブジェクト: { ...obj, prop: value } または分割代入の残余パターンを使用してください。",
-    "Map と Set: new Map([...m, [k, v]]) / new Set([...s, v]) を使用してください。Set のメソッド union / intersection / difference (ES2024) は非破壊的です。",
+    "Map と Set: new Map([...m, [k, v]]) / new Set([...s, v]) を使用してください。Set のメソッド union / intersection / difference (ES2025) は非破壊的です。",
     "Date: Temporal (ES2026, ネイティブまたは @js-temporal/polyfill) を推奨します。フォールバックとして date-fns (subMonths, addDays, setHours) を使用してください。",
     "TypedArray のホットパス (crypto, codec, image, audio, parser, wasm, canvas, encoder, decoder, simd, webgl, pixel, hash, cipher, dsp, signal, fft, ml, tensor) は自動許可されます。",
     "状態管理ライブラリ (Immer, Mutative, Redux Toolkit, Pinia, Vuex, MobX, Zustand+produce, Yjs, Valtio, Jotai, XState v5 assign, Solid stores, Nanostores, LegendApp, Tanstack Store, Effect-TS Data) は自動許可されます。",

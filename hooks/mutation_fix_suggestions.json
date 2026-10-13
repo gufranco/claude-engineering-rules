@@ -15,7 +15,7 @@
     },
     "collection": {
       "code": "MMB010",
-      "fix": "Map/Set/WeakMap/WeakSet mutation. Build a new collection with `new Map([...m, [k, v]])` / `new Set([...s, v])` and ES2024 set composition methods."
+      "fix": "Map/Set/WeakMap/WeakSet mutation. Build a new collection with `new Map([...m, [k, v]])` / `new Set([...s, v])` and ES2025 set composition methods."
     },
     "date": {
       "code": "MMB026",
@@ -54,8 +54,8 @@
       "fix": "Reflect mutation. Build a new object with spread or destructuring rest."
     },
     "typed-array": {
-      "code": "MMB020",
-      "fix": "TypedArray mutation outside a hot-path directory. Applies to Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float16Array (ES2024), Float32Array, Float64Array, BigInt64Array, and BigUint64Array. Move into crypto/codec/image/audio/parser/wasm/canvas/encoder/decoder/simd/webgl/pixel/hash/cipher, or rebuild the buffer through a fresh constructor (e.g., `new Float16Array(source).set(...)`)."
+      "code": "MMB021",
+      "fix": "TypedArray mutation outside a hot-path directory. Applies to Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float16Array (ES2025), Float32Array, Float64Array, BigInt64Array, and BigUint64Array. Move into crypto/codec/image/audio/parser/wasm/canvas/encoder/decoder/simd/webgl/pixel/hash/cipher, or rebuild the buffer through a fresh constructor (e.g., `new Float16Array(source).set(...)`)."
     },
     "web-api": {
       "code": "MMB046",
@@ -162,7 +162,7 @@
     "collection.set.add": {
       "category": "collection",
       "code": "MMB014",
-      "fix": "Replace `set.add(v)` with `new Set([...set, v])`. ES2024 `set.union(new Set([v]))` is also non-mutating."
+      "fix": "Replace `set.add(v)` with `new Set([...set, v])`. ES2025 `set.union(new Set([v]))` is also non-mutating."
     },
     "collection.set.clear": {
       "category": "collection",
@@ -172,7 +172,7 @@
     "collection.set.delete": {
       "category": "collection",
       "code": "MMB015",
-      "fix": "Replace `set.delete(v)` with `new Set([...set].filter(x => x !== v))` or `set.difference(new Set([v]))` (ES2024)."
+      "fix": "Replace `set.delete(v)` with `new Set([...set].filter(x => x !== v))` or `set.difference(new Set([v]))` (ES2025)."
     },
     "collection.weakmap.delete": {
       "category": "collection",
@@ -265,7 +265,7 @@
     "promise.try-replacement": {
       "category": "syntax",
       "code": "MMB091",
-      "fix": "`Promise.resolve().then(fn)` is the legacy way to wrap a sync-or-async function in a Promise. Prefer `Promise.try(fn)` (ES2024): it wraps both throws and returns into a Promise without mutating intermediate state.",
+      "fix": "`Promise.resolve().then(fn)` is the legacy way to wrap a sync-or-async function in a Promise. Prefer `Promise.try(fn)` (ES2025): it wraps both throws and returns into a Promise without mutating intermediate state.",
       "stage": 4
     },
     "property.assignment": {
@@ -311,7 +311,7 @@
     "proxy.trap.set": {
       "category": "proxy",
       "code": "MMB080",
-      "fix": "Mutating Proxy `set` trap exposes mutation to consumers. Prefer copy-on-write: the trap returns a new proxy wrapping the modified data. When the Proxy is genuinely a mutable facade, document the contract in JSDoc and suppress."
+      "fix": "Mutating Proxy `set` trap exposes mutation to consumers. Prefer copy-on-write: the trap returns a new proxy wrapping the modified data. When the Proxy is genuinely a mutable facade, name it as one and suppress with a third-party directive such as `// eslint-disable-next-line`."
     },
     "proxy.trap.setPrototypeOf": {
       "category": "proxy",
@@ -391,7 +391,7 @@
     "typed-array.reverse": {
       "category": "typed-array",
       "code": "MMB024",
-      "fix": "TypedArrays do not have `toReversed` yet. Same guidance as MMB023."
+      "fix": "Use `buffer.toReversed()` (ES2023), which returns a new TypedArray and leaves the receiver intact."
     },
     "typed-array.set": {
       "category": "typed-array",
@@ -401,7 +401,7 @@
     "typed-array.sort": {
       "category": "typed-array",
       "code": "MMB023",
-      "fix": "TypedArrays do not have a non-mutating `toSorted` yet. Either move into a hot-path directory or copy first: `const sorted = new Float32Array(buffer); sorted.sort();` is still a mutation but on a private copy."
+      "fix": "Use `buffer.toSorted(compare)` (ES2023), which returns a new sorted TypedArray and leaves the receiver intact."
     },
     "typed-array.uint8.set-with-offset": {
       "category": "typed-array",

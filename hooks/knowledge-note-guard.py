@@ -25,13 +25,13 @@ Bypass: set ``KNOWLEDGE_NOTE_DISABLE=1`` in a parent shell.
 from __future__ import annotations
 
 import os
-import shlex
 import sys
 from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
 try:
     from _lib import knowledge_notes as kn
@@ -211,23 +211,29 @@ def emit(findings: list[tuple[str, int, str]], rel: Path) -> None:
     sys.exit(2)
 
 
-def handle_bash(command: str, root: Path) -> None:
-    if not any(word in command.split() for word in REMOVAL_COMMANDS):
-        return
-    try:
-        tokens = shlex.split(command)
-    except ValueError:
-        return
-    for token in tokens:
-        if token.startswith("-"):
-            continue
-        candidate = Path(os.path.expanduser(os.path.expandvars(token)))
-        if not candidate.is_absolute():
-            candidate = Path.cwd() / candidate
-        rel = kn.relative(candidate, root)
-        if rel is None or kn.is_exempt(rel):
-            continue
-        emit([("KN006", 1, f"removal of {rel}")], rel)
+def _resolve(token: str, cwd: Path) -> Path:
+    candidate = Path(os.path.expanduser(os.path.expandvars(token)))
+    return candidate if candidate.is_absolute() else cwd / candidate
+
+
+def _removed_operands(tokens: list[str], root: Path, cwd: Path) -> list[str]:
+    base, args = command_head(tokens)
+    operands = [arg for arg in args[1:] if not arg.startswith("-")]
+    if base in REMOVAL_COMMANDS:
+        return operands
+    if base != "mv" or len(operands) < 2:
+        return []
+    staying = kn.relative(_resolve(operands[-1], cwd), root) is not None
+    return [] if staying else operands[:-1]
+
+
+def handle_bash(command: str, root: Path, cwd: Path) -> None:
+    for tokens in quoted_segments(command):
+        for token in _removed_operands(tokens, root, cwd):
+            rel = kn.relative(_resolve(token, cwd), root)
+            if rel is None or kn.is_exempt(rel):
+                continue
+            emit([("KN006", 1, f"removal of {rel}")], rel)
 
 
 def main() -> None:
@@ -240,7 +246,8 @@ def main() -> None:
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}
     if tool == "Bash":
-        handle_bash(tool_input.get("command", "") or "", root)
+        cwd = Path(str(payload.get("cwd") or Path.cwd()))
+        handle_bash(tool_input.get("command", "") or "", root, cwd)
         sys.exit(0)
     if tool not in ("Write", "Edit", "MultiEdit"):
         sys.exit(0)
@@ -254,7 +261,7 @@ def main() -> None:
     if (
         rel.parts
         and rel.parts[0] == kn.RAW_DIR
-        and tool in ("Edit", "MultiEdit")
+        and tool in ("Write", "Edit", "MultiEdit")
         and path.exists()
     ):
         emit([("KN005", 1, f"edit to immutable source {rel}")], rel)

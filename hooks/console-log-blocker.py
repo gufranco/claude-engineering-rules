@@ -191,7 +191,7 @@ def main() -> int:
 
     print(
         "Blocked: console.* calls in production code. "
-        'Rule: ~/.claude/rules/code-style.md "Use the project logger, never console".\n'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
         + "\n\nFix: use the project's structured logger (Pino, Winston, @repo/logger, etc.). "
         "console is allowed only in tests, scripts, and Next.js error boundaries.\n"
