@@ -59,6 +59,23 @@ def _feeds_data_sink(line: str, match: re.Match[str]) -> bool:
     return bool(segments) and command_head(segments[-1])[0] in DATA_SINKS
 
 
+UNQUOTED_OPERATOR = re.compile(r"&&|\|\||[;|&\n]")
+
+
+def unquoted_segments(command: str) -> list[str]:
+    parts: list[str] = []
+    state = ""
+    for index, line in enumerate(command.split("\n")):
+        separator = [" " if state else "\n"] if index else []
+        blanked, state = _blank_quoted(line, state)
+        parts = [*parts, *separator, blanked]
+    blanked_text = "".join(parts)
+    bounds = [(m.start(), m.end()) for m in UNQUOTED_OPERATOR.finditer(blanked_text)]
+    starts = [0, *(end for _, end in bounds)]
+    ends = [*(start for start, _ in bounds), len(command)]
+    return [command[a:b] for a, b in zip(starts, ends) if command[a:b].strip()]
+
+
 def _blank_quoted(line: str, state: str) -> tuple[str, str]:
     out: list[str] = []
     escaped = False

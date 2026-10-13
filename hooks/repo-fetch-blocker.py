@@ -50,6 +50,7 @@ GH_REPO_VIEW_FILE = re.compile(r"\bgh\s+repo\s+view\s+\S+/\S+\s+(?!-)\S+")
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 
 def find_offender(command: str) -> tuple[str, str] | None:
@@ -91,8 +92,11 @@ def emit_block(label: str, why: str, command: str) -> None:
         f"`gh pr diff <n>`, `gh search code`, single README probe via\n"
         f"`gh api repos/<o>/<r>/readme`, repo metadata `gh repo view <o>/<r>`.\n"
         f"\n"
-        f"Private repo auth:\n"
-        f"  git clone https://x-access-token:$(gh auth token --user <account>)@github.com/<owner>/<repo>.git\n"
+        f"Private repo auth, token read at call time and never stored in the URL:\n"
+        f'  git -c credential."https://github.com".helper= \\\n'
+        f'      -c credential."https://github.com".helper=\'!f(){{ echo username=x-access-token; '
+        f'echo "password=$(gh auth token --user <account>)"; }}; f\' \\\n'
+        f'      clone --depth=1 https://github.com/<owner>/<repo>.git "$WORKDIR/repo"\n'
         f"\n"
         f"Bypass (one-off, export in parent shell): REPO_FETCH_DISABLE=1"
     )
@@ -131,7 +135,7 @@ def main() -> int:
     if not command:
         return 0
 
-    offender = find_offender(command)
+    offender = find_offender(mask_literal_text(command))
     if offender is None:
         return 0
 

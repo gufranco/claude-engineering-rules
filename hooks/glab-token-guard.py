@@ -24,9 +24,11 @@ except Exception:  # pragma: no cover
         return None
 
 
-from _lib.cli_invocations import Invocation, invocations  # noqa: E402
+from _lib.cli_invocations import asks_for_help, Invocation, invocations  # noqa: E402
 
-EXEMPT_SUBCOMMANDS = frozenset({"auth", "version", "--version", "help", "--help", "-h"})
+EXEMPT_SUBCOMMANDS = frozenset(
+    {"auth", "config", "version", "--version", "help", "--help", "-h"}
+)
 
 
 def _logs_in(call: Invocation) -> bool:
@@ -35,6 +37,8 @@ def _logs_in(call: Invocation) -> bool:
 
 def _needs_token(call: Invocation) -> bool:
     if call.args[:1] and call.args[0] in EXEMPT_SUBCOMMANDS:
+        return False
+    if asks_for_help(call.args):
         return False
     return "GITLAB_TOKEN" not in call.assigned
 
