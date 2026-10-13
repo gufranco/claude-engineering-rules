@@ -30,7 +30,7 @@ Every frontend task. Loaded by default per [`compliance-defaults.md`](../rules/c
 | SEC Form 8-K Item 1.05 | 4 business days | Material cybersecurity incident |
 | HIPAA individual notice | 60 days | Discovery of breach affecting PHI |
 | US state breach laws | 30 to 90 days varies | Discovery of breach affecting state residents |
-| Brazil ANPD | Reasonable, ANPD treats as 2 business days | Discovery |
+| Brazil ANPD | 3 business days per Resolução CD/ANPD 15/2024, 6 for small processing agents | Awareness that the incident affected personal data |
 | NIS2 essential entities | Early warning 24h, incident notification 72h | Significant incident |
 
 ## Forbidden Patterns
