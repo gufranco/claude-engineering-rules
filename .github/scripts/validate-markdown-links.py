@@ -57,8 +57,8 @@ def collect_findings(
         path = path_rel if path_rel.is_absolute() else (repo_root / rel)
         try:
             text = path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
+        except (OSError, UnicodeDecodeError) as error:
+            raise SystemExit(f"FAILED: cannot read {rel}: {error}") from error
         bare.extend(detect_findings(text, rel, repo_root, tracked=tracked))
         broken.extend(detect_broken_link_targets(text, rel, repo_root, tracked=tracked))
     return bare, broken

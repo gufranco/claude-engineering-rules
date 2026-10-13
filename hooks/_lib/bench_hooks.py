@@ -28,6 +28,7 @@ import argparse
 import json
 import math
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -40,6 +41,7 @@ DEFAULT_HOOKS_DIR = os.path.expanduser("~/.claude/hooks")
 DEFAULT_ITERATIONS = 20
 DEFAULT_TIMEOUT_S = 10.0
 SUBPROCESS_KILL_GRACE_S = 1.0
+HOOK_COMMAND = re.compile(r"hooks/([\w.-]+\.py)\b")
 PAYLOADS: dict[str, dict[str, Any]] = {
     "bash": {
         "tool_name": "Bash",
@@ -96,6 +98,7 @@ class HookStats:
     max_ms: float
     timeouts: int = 0
     nonzero_exits: int = 0
+    worst_exit: int = 0
     payloads: list[str] = field(default_factory=list)
 
 
@@ -127,6 +130,32 @@ def discover_hooks(hooks_dir: str) -> list[str]:
         if os.path.isfile(path):
             out.append(path)
     return out
+
+
+def registered_hooks(settings_path: str, hooks_dir: str, event: str) -> list[str]:
+    with open(settings_path, encoding="utf-8") as handle:
+        settings = json.load(handle)
+    groups = settings.get("hooks", {}).get(event, [])
+    commands = [
+        hook.get("command", "") for group in groups for hook in group.get("hooks", [])
+    ]
+    names = sorted({m.group(1) for m in map(HOOK_COMMAND.search, commands) if m})
+    return [os.path.join(hooks_dir, name) for name in names]
+
+
+def gate_violations(
+    stats: list[HookStats], missing: list[str], threshold_ms: float
+) -> list[str]:
+    return [
+        *(f"{_hook_basename(path)}: missing" for path in missing),
+        *(
+            f"{s.hook}: p50 {s.p50_ms} ms over {threshold_ms:g} ms"
+            for s in stats
+            if s.p50_ms > threshold_ms
+        ),
+        *(f"{s.hook}: {s.timeouts} timeouts" for s in stats if s.timeouts),
+        *(f"{s.hook}: exited {s.worst_exit}" for s in stats if s.nonzero_exits),
+    ]
 
 
 def _hook_basename(path: str) -> str:
@@ -209,6 +238,7 @@ def aggregate(samples: Iterable[Sample]) -> list[HookStats]:
         durations = sorted(item.duration_ms for item in items)
         timeouts = sum(1 for item in items if item.timed_out)
         nonzero = sum(1 for item in items if item.exit_code not in (0, 2))
+        crashes = [item.exit_code for item in items if item.exit_code not in (0, 2)]
         mean = statistics.fmean(durations)
         out.append(
             HookStats(
@@ -221,6 +251,7 @@ def aggregate(samples: Iterable[Sample]) -> list[HookStats]:
                 max_ms=round(max(durations), 2),
                 timeouts=timeouts,
                 nonzero_exits=nonzero,
+                worst_exit=crashes[0] if crashes else 0,
                 payloads=sorted({item.payload for item in items}),
             )
         )
@@ -333,6 +364,18 @@ def _cli(argv: list[str]) -> int:
         help="Output format (default: table).",
     )
     parser.add_argument(
+        "--settings",
+        default=None,
+        help="Benchmark only the hooks this settings file registers for --event.",
+    )
+    parser.add_argument("--event", default="PreToolUse")
+    parser.add_argument(
+        "--threshold-ms",
+        type=float,
+        default=None,
+        help="Exit 1 on a p50 over this, a timeout, a crash, or a missing hook.",
+    )
+    parser.add_argument(
         "--write-baseline",
         default=None,
         help="Write markdown report to this path (e.g., notes/perf-baseline.md).",
@@ -340,11 +383,17 @@ def _cli(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     iterations = max(1, args.iterations)
     warmup = max(0, args.warmup)
-    paths = discover_hooks(args.hooks_dir)
-    paths = _filter_hooks(paths, args.hook)
-    if not paths:
+    selected = (
+        registered_hooks(args.settings, args.hooks_dir, args.event)
+        if args.settings
+        else discover_hooks(args.hooks_dir)
+    )
+    selected = _filter_hooks(selected, args.hook)
+    if not selected:
         sys.stderr.write("No hooks selected.\n")
         return 1
+    missing = [path for path in selected if not os.path.isfile(path)]
+    paths = [path for path in selected if os.path.isfile(path)]
     samples = list(
         iter_samples(
             paths,
@@ -372,7 +421,15 @@ def _cli(argv: list[str]) -> int:
         )
     else:
         sys.stdout.write(_format_table(stats))
-    return 0
+    if args.threshold_ms is None:
+        return 0
+    return _report_gate(gate_violations(stats, missing, args.threshold_ms))
+
+
+def _report_gate(violations: list[str]) -> int:
+    for violation in violations:
+        sys.stderr.write(f"FAIL {violation}\n")
+    return 1 if violations else 0
 
 
 if __name__ == "__main__":

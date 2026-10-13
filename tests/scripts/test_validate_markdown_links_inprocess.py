@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR_PATH = REPO_ROOT / ".github" / "scripts" / "validate-markdown-links.py"
 
@@ -40,16 +42,16 @@ def test_collect_findings_empty_for_no_files():
     assert broken == []
 
 
-def test_collect_findings_handles_missing_file():
+def test_collect_findings_fails_on_a_missing_file():
     # Arrange
     files = ["does-not-exist.md"]
 
     # Act
-    bare, broken = validate_module.collect_findings(files, REPO_ROOT)
+    with pytest.raises(SystemExit) as exit_info:
+        validate_module.collect_findings(files, REPO_ROOT)
 
     # Assert
-    assert bare == []
-    assert broken == []
+    assert "cannot read does-not-exist.md" in str(exit_info.value.code)
 
 
 def test_main_returns_zero_when_repo_clean(monkeypatch, capsys):
