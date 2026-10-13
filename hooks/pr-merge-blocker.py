@@ -69,11 +69,17 @@ GRAPHQL_MERGE_MUTATIONS = (
 MERGE_PATTERNS = CLI_MERGE_SUBCOMMANDS + REST_MERGE_ENDPOINTS + GRAPHQL_MERGE_MUTATIONS
 
 
-def is_merge_command(command: str) -> bool:
-    """True when the command would merge a pull request on a remote."""
-    if HELP_FLAG.search(command):
+SEGMENT_SEPARATOR = re.compile(r"&&|\|\||[;|\n]")
+
+
+def _merges(segment: str) -> bool:
+    if HELP_FLAG.search(f" {segment}"):
         return False
-    return any(pattern.search(command) for pattern in MERGE_PATTERNS)
+    return any(pattern.search(segment) for pattern in MERGE_PATTERNS)
+
+
+def is_merge_command(command: str) -> bool:
+    return any(_merges(segment) for segment in SEGMENT_SEPARATOR.split(command))
 
 
 def main() -> int:
