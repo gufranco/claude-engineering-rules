@@ -24,7 +24,7 @@ from _lib.audit_log import record as _audit  # noqa: E402
 
 HOOK = "test-aaa-markers"
 BYPASS_ENV = "TEST_AAA_MARKERS_DISABLE"
-RULE_ANCHOR = "rules/testing.md (Arrange, Act, Assert)"
+RULE_ANCHOR = "standards/testing.md (Test Structure)"
 WHY = (
     "Every test reads the same way: three blocks, each opened by its bare marker, "
     "so a reviewer finds the setup, the one call, and the checks without reading "

@@ -135,7 +135,7 @@ def main() -> int:
 
     print(
         "Blocked: Drizzle raw SQL is banned in application code. "
-        'Rule: ~/.claude/rules/code-style.md "No raw SQL".\n'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
         + "\n\nFix: express the query using Drizzle's query builder "
         "(db.select(), db.insert(), db.update(), db.delete()). The `sql` "

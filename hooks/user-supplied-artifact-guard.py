@@ -311,7 +311,7 @@ def main() -> int:
     )
     message = _block(
         hook=HOOK_NAME,
-        rule_anchor="rules/artifact-identity.md (Never Become a Distribution Channel)",
+        rule_anchor="standards/artifact-identity.md (Never Become a Distribution Channel)",
         detected=detected,
         why=(
             "The project requires this file but may not distribute it. The user "

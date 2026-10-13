@@ -45,28 +45,6 @@ def _open_failing_for(suffix: str, real_open):
     return _failing_open
 
 
-def test_debug_mode_returns_true_when_env_set(monkeypatch) -> None:
-    # Arrange
-    monkeypatch.setenv("MUTATION_METHOD_DEBUG", "1")
-
-    # Act
-    result = hook._debug_mode()
-
-    # Assert
-    assert result is True
-
-
-def test_debug_mode_returns_false_by_default(monkeypatch) -> None:
-    # Arrange
-    monkeypatch.delenv("MUTATION_METHOD_DEBUG", raising=False)
-
-    # Act
-    result = hook._debug_mode()
-
-    # Assert
-    assert result is False
-
-
 def test_concise_mode_returns_true_when_env_set(monkeypatch) -> None:
     # Arrange
     monkeypatch.setenv("MUTATION_METHOD_CONCISE", "1")

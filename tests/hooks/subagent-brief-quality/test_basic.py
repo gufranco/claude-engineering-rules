@@ -193,7 +193,7 @@ def test_block_message_includes_remediation_hint(tool_use, run_hook):
 
     # Assert
     _, stderr = assert_blocked(result)
-    assert "rules/smart-questions.md" in stderr
+    assert "standards/smart-questions.md" in stderr
     assert "Briefing Subagents" in stderr
     assert "Fix:" in stderr
     assert "SUBAGENT_BRIEF_DISABLE=1" in stderr

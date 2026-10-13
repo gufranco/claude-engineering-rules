@@ -4,10 +4,10 @@
   "fix_references_header": "Références pour correction :",
   "fix_references": [
     "Tableaux : arr.toSorted / toReversed / toSpliced / with (ES2023) ou spread.",
-    "Itérables : iterator helpers (.map / .filter / .take / .drop / .toArray, ES2024).",
+    "Itérables : iterator helpers (.map / .filter / .take / .drop / .toArray, ES2025).",
     "Regroupement : Object.groupBy(iter, fn), Map.groupBy(iter, fn) (ES2024) au lieu de arr.reduce + push.",
     "Objets : { ...obj, prop: value } ou patron de rest destructuring.",
-    "Maps et Sets : new Map([...m, [k, v]]) / new Set([...s, v]). Méthodes de Set union / intersection / difference (ES2024) ne mutent pas.",
+    "Maps et Sets : new Map([...m, [k, v]]) / new Set([...s, v]). Méthodes de Set union / intersection / difference (ES2025) ne mutent pas.",
     "Date : Temporal (ES2026, natif ou @js-temporal/polyfill) préféré, date-fns (subMonths, addDays, setHours) comme repli.",
     "Hot paths de TypedArray (crypto, codec, image, audio, parser, wasm, canvas, encoder, decoder, simd, webgl, pixel, hash, cipher, dsp, signal, fft, ml, tensor) auto-autorisés.",
     "Bibliothèques d'état (Immer, Mutative, Redux Toolkit, Pinia, Vuex, MobX, Zustand+produce, Yjs, Valtio, Jotai, XState v5 assign, Solid stores, Nanostores, LegendApp, Tanstack Store, Effect-TS Data) auto-autorisées.",
