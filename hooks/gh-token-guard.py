@@ -50,10 +50,45 @@ def _needs_token(call: Invocation) -> bool:
     return "GH_TOKEN" not in call.assigned
 
 
-def main():
+AUTH_SWITCH_MESSAGE = (
+    "BLOCKED: gh auth switch changes the global active account "
+    "and affects all terminals.\n"
+    "Use GH_TOKEN=$(gh auth token --user <account>) gh <command> instead.\n"
+    "Check the git remote to determine the correct account.\n"
+    "See: standards/multi-account-cli.md"
+)
+
+MISSING_TOKEN_MESSAGE = (
+    "BLOCKED: gh command without explicit GH_TOKEN.\n"
+    "Multiple GitHub accounts are configured. The global active account "
+    "can change from another terminal at any time.\n"
+    "Prefix with: GH_TOKEN=$(gh auth token --user <account>) gh ...\n"
+    "Or export it: export GH_TOKEN=$(gh auth token --user <account>)\n"
+    "Check git remote get-url origin to determine the correct account.\n"
+    "See: standards/multi-account-cli.md\n"
+)
+
+
+def _block(message: str, command: str) -> None:
+    print(message, file=sys.stderr)
+    _audit(
+        hook="gh-token-guard",
+        decision="block",
+        tool="Bash",
+        reason="gh CLI without explicit GH_TOKEN",
+        command_excerpt=command[:240],
+    )
+    sys.exit(2)
+
+
+def _disabled() -> bool:
     if os.environ.get("GH_TOKEN_GUARD_DISABLE") == "1":
-        return 0
-    if is_bypassed("gh-token-guard"):
+        return True
+    return is_bypassed("gh-token-guard")
+
+
+def main() -> int:
+    if _disabled():
         return 0
     if not should_run("gh-token-guard"):
         sys.exit(0)
@@ -63,48 +98,14 @@ def main():
     if not command:
         sys.exit(0)
 
-    scan = mask_literal_text(command)
-
-    if GH_AUTH_SWITCH.search(scan):
-        print(
-            "BLOCKED: gh auth switch changes the global active account "
-            "and affects all terminals.\n"
-            "Use GH_TOKEN=$(gh auth token --user <account>) gh <command> instead.\n"
-            "Check the git remote to determine the correct account.\n"
-            "See: standards/multi-account-cli.md",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="gh-token-guard",
-            decision="block",
-            tool="Bash",
-            reason="gh CLI without explicit GH_TOKEN",
-            command_excerpt=command[:240],
-        )
-        sys.exit(2)
+    if GH_AUTH_SWITCH.search(mask_literal_text(command)):
+        _block(AUTH_SWITCH_MESSAGE, command)
 
     if not any(_needs_token(call) for call in invocations(command, "gh")):
         sys.exit(0)
 
-    print(
-        "BLOCKED: gh command without explicit GH_TOKEN.\n"
-        "Multiple GitHub accounts are configured. The global active account "
-        "can change from another terminal at any time.\n"
-        "Prefix with: GH_TOKEN=$(gh auth token --user <account>) gh ...\n"
-        "Or export it: export GH_TOKEN=$(gh auth token --user <account>)\n"
-        "Check git remote get-url origin to determine the correct account.\n"
-        "See: standards/multi-account-cli.md\n"
-        f"Command: {command}",
-        file=sys.stderr,
-    )
-    _audit(
-        hook="gh-token-guard",
-        decision="block",
-        tool="Bash",
-        reason="gh CLI without explicit GH_TOKEN",
-        command_excerpt=command[:240],
-    )
-    sys.exit(2)
+    _block(f"{MISSING_TOKEN_MESSAGE}Command: {command}", command)
+    return 2
 
 
 if __name__ == "__main__":

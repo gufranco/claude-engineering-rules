@@ -104,7 +104,19 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+BLOCK_MESSAGE_HEAD = (
+    "Blocked: mocking internal infrastructure. "
+    'Rule: ~/.claude/standards/testing.md "Mocks Policy (STRICT)".\n'
+)
+BLOCK_MESSAGE_TAIL = (
+    "\n\nFix: use a real database, real Redis, real services. Add them to "
+    "docker-compose for the test environment. Mocks are only allowed for external APIs "
+    "you do not own (Stripe, SendGrid, third-party HTTP), Time, and Randomness.\n"
+    "Bypass (rare): set MOCK_INTERNAL_DISABLE=1."
+)
+
+
+def _skip_run() -> bool:
     if not should_run("mock-internal-blocker"):
         sys.exit(0)
     if os.environ.get("MOCK_INTERNAL_DISABLE") == "1":
@@ -113,19 +125,11 @@ def main() -> int:
             decision="bypass",
             bypass_env="MOCK_INTERNAL_DISABLE",
         )
-        return 0
-    if is_bypassed("mock-internal-blocker"):
-        return 0
+        return True
+    return is_bypassed("mock-internal-blocker")
 
-    payload = read_hook_payload("mock-internal-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
     for path, field, text in items:
         if not is_test_file(path):
@@ -133,20 +137,13 @@ def main() -> int:
         hits = find(text)
         if hits:
             findings.append(f"  - {field} ({path}):")
-            for h in hits:
-                findings.append(f"      {h}")
+            findings.extend(f"      {h}" for h in hits)
+    return findings
 
-    if not findings:
-        return 0
 
+def _block(tool: str, findings: list[str]) -> int:
     print(
-        "Blocked: mocking internal infrastructure. "
-        'Rule: ~/.claude/standards/testing.md "Mocks Policy (STRICT)".\n'
-        + "\n".join(findings)
-        + "\n\nFix: use a real database, real Redis, real services. Add them to "
-        "docker-compose for the test environment. Mocks are only allowed for external APIs "
-        "you do not own (Stripe, SendGrid, third-party HTTP), Time, and Randomness.\n"
-        "Bypass (rare): set MOCK_INTERNAL_DISABLE=1.",
+        BLOCK_MESSAGE_HEAD + "\n".join(findings) + BLOCK_MESSAGE_TAIL,
         file=sys.stderr,
     )
     _audit(
@@ -157,6 +154,21 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    payload = read_hook_payload("mock-internal-blocker")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    items = collect(tool, tool_input)
+    if not items:
+        return 0
+    findings = _findings(items)
+    if not findings:
+        return 0
+    return _block(tool, findings)
 
 
 if __name__ == "__main__":

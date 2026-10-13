@@ -103,40 +103,50 @@ FIELD_UNIQUE_RE = re.compile(
 )
 
 
+MODEL_RE = re.compile(r"^model\s+(\w+)\s*\{", re.MULTILINE)
+
+
+def _block_end(schema_text: str, start: int) -> int:
+    depth = 1
+    i = start
+    while i < len(schema_text) and depth > 0:
+        ch = schema_text[i]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+        i += 1
+    return i
+
+
+def _model_table(name: str, body: str) -> str:
+    m = re.search(r"@@map\s*\(\s*\"([^\"]+)\"", body)
+    return m.group(1) if m else name
+
+
+def _field_column(line: str) -> str | None:
+    stripped = line.strip()
+    if not stripped or stripped.startswith("//") or stripped.startswith("@@"):
+        return None
+    field_match = re.match(r"(\w+)\s+\S+", stripped)
+    if not field_match:
+        return None
+    map_match = re.search(r"@map\s*\(\s*\"([^\"]+)\"", line)
+    return map_match.group(1) if map_match else field_match.group(1)
+
+
+def _model_fields(body: str) -> set:
+    columns = (_field_column(line) for line in body.splitlines())
+    return {column for column in columns if column is not None}
+
+
 def parse_schema_models(schema_text: str) -> dict:
     out: dict = {}
-    model_re = re.compile(r"^model\s+(\w+)\s*\{", re.MULTILINE)
-    for match in model_re.finditer(schema_text):
+    for match in MODEL_RE.finditer(schema_text):
         name = match.group(1)
         start = match.end()
-        depth = 1
-        i = start
-        while i < len(schema_text) and depth > 0:
-            ch = schema_text[i]
-            if ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-            i += 1
-        body = schema_text[start : i - 1]
-
-        table = name
-        m = re.search(r"@@map\s*\(\s*\"([^\"]+)\"", body)
-        if m:
-            table = m.group(1)
-
-        fields: set = set()
-        for line in body.splitlines():
-            stripped = line.strip()
-            if not stripped or stripped.startswith("//") or stripped.startswith("@@"):
-                continue
-            field_match = re.match(r"(\w+)\s+\S+", stripped)
-            if not field_match:
-                continue
-            field_name = field_match.group(1)
-            map_match = re.search(r"@map\s*\(\s*\"([^\"]+)\"", line)
-            fields.add(map_match.group(1) if map_match else field_name)
-        out[name] = {"table": table, "fields": fields}
+        body = schema_text[start : _block_end(schema_text, start) - 1]
+        out[name] = {"table": _model_table(name, body), "fields": _model_fields(body)}
     return out
 
 
@@ -162,15 +172,8 @@ def find_table_to_model(models: dict) -> dict:
     return {info["table"]: name for name, info in models.items()}
 
 
-def analyze(sql: str, schema_text: str) -> list[str]:
-    sql = strip_comments(sql)
+def _create_index_findings(sql: str, schema_idx: set, schema_unq: set) -> list[str]:
     findings: list[str] = []
-
-    schema_idx, schema_unq = parse_schema_indexes(schema_text)
-    models = parse_schema_models(schema_text)
-    table_to_model = find_table_to_model(models)
-    schema_tables = set(table_to_model.keys())
-
     for m in CREATE_INDEX_RE.finditer(sql):
         name = m.group("name")
         is_unique = bool(m.group("unique"))
@@ -181,29 +184,41 @@ def analyze(sql: str, schema_text: str) -> list[str]:
                 f'CREATE {"UNIQUE " if is_unique else ""}INDEX "{name}" has no '
                 f'matching {kind}(map: "{name}") in schema.prisma'
             )
+    return findings
 
-    for m in DROP_INDEX_RE.finditer(sql):
-        name = m.group("name")
-        if name in schema_idx or name in schema_unq:
-            findings.append(
-                f'DROP INDEX "{name}" but schema.prisma still declares it; '
-                f"remove the matching @@index/@@unique entry"
-            )
 
-    for table, col in column_changes(sql, ADD_COLUMN_RE):
-        model_name = table_to_model.get(table)
-        if model_name is None:
-            findings.append(
-                f'ALTER TABLE "{table}" ADD COLUMN "{col}" but no model '
-                f'maps to table "{table}" in schema.prisma'
-            )
-            continue
-        if col not in models[model_name]["fields"]:
-            findings.append(
-                f'ALTER TABLE "{table}" ADD COLUMN "{col}" has no matching '
-                f"field on model {model_name}"
-            )
+def _drop_index_findings(sql: str, schema_idx: set, schema_unq: set) -> list[str]:
+    return [
+        f'DROP INDEX "{m.group("name")}" but schema.prisma still declares it; '
+        f"remove the matching @@index/@@unique entry"
+        for m in DROP_INDEX_RE.finditer(sql)
+        if m.group("name") in schema_idx or m.group("name") in schema_unq
+    ]
 
+
+def _add_column_finding(
+    table: str, col: str, models: dict, table_to_model: dict
+) -> str | None:
+    model_name = table_to_model.get(table)
+    if model_name is None:
+        return (
+            f'ALTER TABLE "{table}" ADD COLUMN "{col}" but no model '
+            f'maps to table "{table}" in schema.prisma'
+        )
+    if col not in models[model_name]["fields"]:
+        return (
+            f'ALTER TABLE "{table}" ADD COLUMN "{col}" has no matching '
+            f"field on model {model_name}"
+        )
+    return None
+
+
+def _column_findings(sql: str, models: dict, table_to_model: dict) -> list[str]:
+    added = (
+        _add_column_finding(table, col, models, table_to_model)
+        for table, col in column_changes(sql, ADD_COLUMN_RE)
+    )
+    findings = [finding for finding in added if finding is not None]
     for table, col in column_changes(sql, DROP_COLUMN_RE):
         model_name = table_to_model.get(table)
         if model_name and col in models[model_name]["fields"]:
@@ -211,23 +226,35 @@ def analyze(sql: str, schema_text: str) -> list[str]:
                 f'ALTER TABLE "{table}" DROP COLUMN "{col}" but field still '
                 f"present on model {model_name}; remove from schema.prisma"
             )
-
-    for m in CREATE_TABLE_RE.finditer(sql):
-        table = m.group("table")
-        if table not in schema_tables:
-            findings.append(
-                f'CREATE TABLE "{table}" but no model in schema.prisma maps to it'
-            )
-
-    for m in DROP_TABLE_RE.finditer(sql):
-        table = m.group("table")
-        if table in schema_tables:
-            findings.append(
-                f'DROP TABLE "{table}" but model {table_to_model[table]} still '
-                f"present in schema.prisma; remove the model block"
-            )
-
     return findings
+
+
+def _table_findings(sql: str, table_to_model: dict) -> list[str]:
+    created = [
+        f'CREATE TABLE "{m.group("table")}" but no model in schema.prisma maps to it'
+        for m in CREATE_TABLE_RE.finditer(sql)
+        if m.group("table") not in table_to_model
+    ]
+    dropped = [
+        f'DROP TABLE "{m.group("table")}" but model {table_to_model[m.group("table")]} '
+        f"still present in schema.prisma; remove the model block"
+        for m in DROP_TABLE_RE.finditer(sql)
+        if m.group("table") in table_to_model
+    ]
+    return [*created, *dropped]
+
+
+def analyze(sql: str, schema_text: str) -> list[str]:
+    sql = strip_comments(sql)
+    schema_idx, schema_unq = parse_schema_indexes(schema_text)
+    models = parse_schema_models(schema_text)
+    table_to_model = find_table_to_model(models)
+    return [
+        *_create_index_findings(sql, schema_idx, schema_unq),
+        *_drop_index_findings(sql, schema_idx, schema_unq),
+        *_column_findings(sql, models, table_to_model),
+        *_table_findings(sql, table_to_model),
+    ]
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
@@ -258,7 +285,22 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+BLOCK_MESSAGE_HEAD = (
+    "Blocked: Prisma migration is out of sync with schema.prisma. "
+    "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
+)
+BLOCK_MESSAGE_TAIL = (
+    '\n\nFix: every CREATE INDEX needs @@index(..., map: "<name>") on the model. '
+    "Every ADD COLUMN needs a model field. Every DROP must remove the schema entry too. "
+    "Verify with: prisma migrate diff --from-schema-datamodel <schema> "
+    "--to-migrations <dir> --exit-code\n"
+    "Bypass for unmanaged objects (extensions, materialized views, trgm indexes, "
+    "triggers, RLS): set PRISMA_SCHEMA_SYNC_DISABLE=1 and record the reason "
+    "in the pull request description or an ADR, never in a migration comment."
+)
+
+
+def _skip_run() -> bool:
     if not should_run("prisma-schema-sync"):
         sys.exit(0)
     if os.environ.get("PRISMA_SCHEMA_SYNC_DISABLE") == "1":
@@ -267,52 +309,27 @@ def main() -> int:
             decision="bypass",
             bypass_env="PRISMA_SCHEMA_SYNC_DISABLE",
         )
-        return 0
-    if is_bypassed("prisma-schema-sync"):
-        return 0
+        return True
+    return is_bypassed("prisma-schema-sync")
 
-    payload = read_hook_payload("prisma-schema-sync")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _item_findings(path: str, sql: str) -> list[str]:
+    schema = find_schema(path)
+    if schema is None:
+        return [f"  - {path}:\n      no schema.prisma found relative to migration path"]
+    try:
+        schema_text = schema.read_text(encoding="utf-8")
+    except Exception as exc:
+        return [f"  - {path}:\n      failed to read {schema}: {exc}"]
+    findings = analyze(sql, schema_text)
+    if not findings:
+        return []
+    return [f"  - {path}:", *(f"      {f}" for f in findings)]
 
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
 
-    all_findings: list[str] = []
-    for path, sql in items:
-        schema = find_schema(path)
-        if schema is None:
-            all_findings.append(
-                f"  - {path}:\n      no schema.prisma found relative to migration path"
-            )
-            continue
-        try:
-            schema_text = schema.read_text(encoding="utf-8")
-        except Exception as exc:
-            all_findings.append(f"  - {path}:\n      failed to read {schema}: {exc}")
-            continue
-        findings = analyze(sql, schema_text)
-        if findings:
-            all_findings.append(f"  - {path}:")
-            for f in findings:
-                all_findings.append(f"      {f}")
-
-    if not all_findings:
-        return 0
-
+def _block(tool: str, all_findings: list[str]) -> int:
     print(
-        "Blocked: Prisma migration is out of sync with schema.prisma. "
-        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
-        + "\n".join(all_findings)
-        + '\n\nFix: every CREATE INDEX needs @@index(..., map: "<name>") on the model. '
-        "Every ADD COLUMN needs a model field. Every DROP must remove the schema entry too. "
-        "Verify with: prisma migrate diff --from-schema-datamodel <schema> "
-        "--to-migrations <dir> --exit-code\n"
-        "Bypass for unmanaged objects (extensions, materialized views, trgm indexes, "
-        "triggers, RLS): set PRISMA_SCHEMA_SYNC_DISABLE=1 and record the reason "
-        "in the pull request description or an ADR, never in a migration comment.",
+        BLOCK_MESSAGE_HEAD + "\n".join(all_findings) + BLOCK_MESSAGE_TAIL,
         file=sys.stderr,
     )
     _audit(
@@ -323,6 +340,21 @@ def main() -> int:
         command_excerpt=" | ".join(all_findings)[:240] if all_findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    payload = read_hook_payload("prisma-schema-sync")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    items = collect(tool, tool_input)
+    if not items:
+        return 0
+    all_findings = [line for path, sql in items for line in _item_findings(path, sql)]
+    if not all_findings:
+        return 0
+    return _block(tool, all_findings)
 
 
 if __name__ == "__main__":

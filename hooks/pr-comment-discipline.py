@@ -207,6 +207,61 @@ def _mentions_reply_parent(chunks: list[str]) -> bool:
     )
 
 
+VIOLATIONS: dict[str, str] = {
+    "PRC001": "`gh pr comment` publishes a conversation comment, which has no "
+    "thread and no reader who asked for it.",
+    "PRC002": "`gh pr review` with a body publishes a review summary. Submit the "
+    "review event on its own and put the findings in inline comments.",
+    "PRC003": "The review payload carries a non-empty top-level `body`. "
+    'Set it to "" and keep the findings in the `comments` array.',
+    "PRC004": "A POST to `pulls/<n>/comments` without `in_reply_to` starts a "
+    "standalone thread. Reply with `in_reply_to`, or open inline "
+    "findings through the reviews endpoint.",
+    "PRC005": "`issues/<n>/comments` is the pull-request conversation channel. "
+    "Use `gh issue comment` when the target is a real issue.",
+    "PRC006": "A GitLab MR note is a merge-request-level comment. Reply inside a "
+    "discussion instead, or answer with a code change.",
+    "PRC007": "A commit comment cannot be replied to and must not be created. "
+    "Say it in the commit message instead.",
+    "PRC008": "A POST to the discussions endpoint opens a new merge-request "
+    "discussion. Post into an existing one instead.",
+    "PRC009": "A Bitbucket comment without `parent.id` is a "
+    "pull-request-level comment. Set `parent.id` to reply.",
+    "PRC010": "The review payload file could not be read, so its `body` cannot "
+    "be checked. Point --input at a readable file, or pass the "
+    "payload through a heredoc.",
+}
+
+BLOCK_GUIDANCE = (
+    "The only comment this configuration publishes on a pull request is a "
+    "reply inside a thread a person opened. A review body, a conversation "
+    "comment, and a commit comment are answered by changing the code and "
+    "naming the point in the commit. A bot thread is resolved in silence.\n\n"
+    "Reply into an inline thread with:\n"
+    "  gh api repos/<o>/<r>/pulls/<n>/comments/<comment-id>/replies "
+    "-X POST --input <file>\n\n"
+    "Close an unrepliable item with:\n"
+    "  gh api graphql -f query='mutation($id: ID!) { minimizeComment("
+    "input: {subjectId: $id, classifier: RESOLVED}) { minimizedComment "
+    "{ isMinimized } } }' -F id=<node-id>\n\n"
+    "Bypass, for the rare case the rule genuinely does not cover:\n"
+)
+
+
+def _violation(code: str) -> tuple[str, str]:
+    return (code, VIOLATIONS[code])
+
+
+def _review_violation(
+    unreadable: bool, extra: list[str], payload: list[str]
+) -> tuple[str, str] | None:
+    if unreadable and not extra:
+        return _violation("PRC010")
+    if _has_nonempty_body(payload):
+        return _violation("PRC003")
+    return None
+
+
 def _api_violation(
     segment: list[str], extra: list[str], cwd: str
 ) -> tuple[str, str] | None:
@@ -216,71 +271,32 @@ def _api_violation(
     chunks, unreadable = _payload_chunks(segment, text, cwd)
     payload = [*chunks, *extra]
     if REVIEWS_ENDPOINT.search(text):
-        if unreadable and not extra:
-            return (
-                "PRC010",
-                "The review payload file could not be read, so its `body` cannot "
-                "be checked. Point --input at a readable file, or pass the "
-                "payload through a heredoc.",
-            )
-        if _has_nonempty_body(payload):
-            return (
-                "PRC003",
-                "The review payload carries a non-empty top-level `body`. "
-                'Set it to "" and keep the findings in the `comments` array.',
-            )
-        return None
+        return _review_violation(unreadable, extra, payload)
     if REVIEW_COMMENTS_ENDPOINT.search(text) and not _mentions_reply_parent(payload):
-        return (
-            "PRC004",
-            "A POST to `pulls/<n>/comments` without `in_reply_to` starts a "
-            "standalone thread. Reply with `in_reply_to`, or open inline "
-            "findings through the reviews endpoint.",
-        )
+        return _violation("PRC004")
     if ISSUE_COMMENTS_ENDPOINT.search(text):
-        return (
-            "PRC005",
-            "`issues/<n>/comments` is the pull-request conversation channel. "
-            "Use `gh issue comment` when the target is a real issue.",
-        )
+        return _violation("PRC005")
     if COMMIT_COMMENTS_ENDPOINT.search(text):
-        return (
-            "PRC007",
-            "A commit comment cannot be replied to and must not be created. "
-            "Say it in the commit message instead.",
-        )
+        return _violation("PRC007")
     return None
 
 
-def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
-    tokens = _tokens(command)
-    segments = _command_segments(command)
-    executed = strip_heredoc_bodies(command)
-
+def _cli_violation(executed: str, segments: list[list[str]]) -> tuple[str, str] | None:
     if PR_COMMENT.search(executed):
-        return (
-            "PRC001",
-            "`gh pr comment` publishes a conversation comment, which has no "
-            "thread and no reader who asked for it.",
-        )
-
+        return _violation("PRC001")
     if any(
         PR_REVIEW.search(" ".join(segment)) and _review_has_body(segment)
         for segment in segments
     ):
-        return (
-            "PRC002",
-            "`gh pr review` with a body publishes a review summary. Submit the "
-            "review event on its own and put the findings in inline comments.",
-        )
-
+        return _violation("PRC002")
     if GLAB_MR_NOTE.search(executed):
-        return (
-            "PRC006",
-            "A GitLab MR note is a merge-request-level comment. Reply inside a "
-            "discussion instead, or answer with a code change.",
-        )
+        return _violation("PRC006")
+    return None
 
+
+def _gh_api_violation(
+    command: str, segments: list[list[str]], cwd: str
+) -> tuple[str, str] | None:
     heredoc = [command] if "<<" in command else []
     for segment in segments:
         text = " ".join(segment)
@@ -289,71 +305,52 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
         violation = _api_violation(segment, heredoc, cwd)
         if violation is not None:
             return violation
+    return None
 
+
+def _curl_violation(command: str, executed: str, cwd: str) -> tuple[str, str] | None:
+    if not (CURL.search(executed) and _writes(command, CURL)):
+        return None
+    if not BB_PR_COMMENTS.search(command):
+        return None
+    payload, _unreadable = _payload_chunks(_tokens(command), command, cwd)
+    if _mentions_reply_parent(payload):
+        return None
+    return _violation("PRC009")
+
+
+def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
+    segments = _command_segments(command)
+    executed = strip_heredoc_bodies(command)
+    violation = _cli_violation(executed, segments) or _gh_api_violation(
+        command, segments, cwd
+    )
+    if violation is not None:
+        return violation
     if GLAB_API.search(executed) and _writes(command, GLAB_API):
         if GLAB_DISCUSSION_NOTES.search(command):
             return None
         if GLAB_DISCUSSIONS.search(command):
-            return (
-                "PRC008",
-                "A POST to the discussions endpoint opens a new merge-request "
-                "discussion. Post into an existing one instead.",
-            )
-
-    if CURL.search(executed) and _writes(command, CURL):
-        if BB_PR_COMMENTS.search(command):
-            payload, _unreadable = _payload_chunks(tokens, command, cwd)
-            if not _mentions_reply_parent(payload):
-                return (
-                    "PRC009",
-                    "A Bitbucket comment without `parent.id` is a "
-                    "pull-request-level comment. Set `parent.id` to reply.",
-                )
-
-    return None
+            return _violation("PRC008")
+    return _curl_violation(command, executed, cwd)
 
 
-def main() -> int:
+def _skip_run() -> bool:
     if not should_run(HOOK_ID):
-        return 0
+        return True
     if os.environ.get(ENV_VAR) == "1":
         _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_VAR)
-        return 0
-    if is_bypassed(HOOK_ID):
-        return 0
+        return True
+    return is_bypassed(HOOK_ID)
 
-    payload = read_hook_payload("pr-comment-discipline")
 
-    if payload.get("tool_name", "") != "Bash":
-        return 0
-
-    command = (payload.get("tool_input", {}) or {}).get("command", "") or ""
-    if not command:
-        return 0
-
-    cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
-    violation = find_violation(command, cwd)
-    if violation is None:
-        return 0
-
-    code, explanation = violation
+def _block(code: str, explanation: str, command: str) -> int:
     print(
         f"Blocked [{code}]: this command publishes a pull-request comment "
         "outside a thread.\n"
         f"Rule: {RULE_ANCHOR}\n\n"
         f"{explanation}\n\n"
-        "The only comment this configuration publishes on a pull request is a "
-        "reply inside a thread a person opened. A review body, a conversation "
-        "comment, and a commit comment are answered by changing the code and "
-        "naming the point in the commit. A bot thread is resolved in silence.\n\n"
-        "Reply into an inline thread with:\n"
-        "  gh api repos/<o>/<r>/pulls/<n>/comments/<comment-id>/replies "
-        "-X POST --input <file>\n\n"
-        "Close an unrepliable item with:\n"
-        "  gh api graphql -f query='mutation($id: ID!) { minimizeComment("
-        "input: {subjectId: $id, classifier: RESOLVED}) { minimizedComment "
-        "{ isMinimized } } }' -F id=<node-id>\n\n"
-        "Bypass, for the rare case the rule genuinely does not cover:\n"
+        f"{BLOCK_GUIDANCE}"
         f"  export {ENV_VAR}=1",
         file=sys.stderr,
     )
@@ -365,6 +362,23 @@ def main() -> int:
         command_excerpt=command[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    payload = read_hook_payload("pr-comment-discipline")
+    if payload.get("tool_name", "") != "Bash":
+        return 0
+    command = (payload.get("tool_input", {}) or {}).get("command", "") or ""
+    if not command:
+        return 0
+    cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
+    violation = find_violation(command, cwd)
+    if violation is None:
+        return 0
+    code, explanation = violation
+    return _block(code, explanation, command)
 
 
 if __name__ == "__main__":
