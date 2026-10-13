@@ -1,29 +1,4 @@
 #!/usr/bin/env python3
-"""Inject a "Resume here" pointer on session start, clear, or compact.
-
-Triggers SessionStart. On every event (startup, clear, compact), the hook
-scans for the most recently modified spec plan and checkpoint artifacts in
-the current working directory and emits an `additionalContext` block
-naming them, so the model knows where the previous session left off
-without having to re-discover.
-
-Discovery (in priority order):
-  0. <workspace>/PROMPT.md, the continuation prompt in the local project
-     workspace (`docs/` or `.work/`, see _lib/project_workspace.py). No
-     freshness window: it is always the handoff. Up to 200 lines shown.
-  1. checkpoints/<date>.md or .claude/checkpoints/<date>.md (most recent,
-     within 7 days)
-  2. specs/<date>-<slug>/plan.md, .claude/specs/.../plan.md, or
-     <workspace>/plans/<date>-<slug>/plan.md (most recent, within 7 days)
-  3. sessions/<date>.md (legacy)
-
-Output: a single context block listing the file paths and the first ~30
-lines of the most relevant artifact.
-
-No bypass: this hook is read-only and emits non-blocking context. It can
-be disabled by removing the SessionStart entry from settings.json.
-"""
-
 from __future__ import annotations
 
 import json
@@ -66,7 +41,6 @@ from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def workspace_dir(cwd: Path) -> Path | None:
-    """Return the local workspace folder for the repo at `cwd`, or None."""
     try:
         top = pw.toplevel(cwd)
         return None if top is None else top / pw.resolve_root(top)
@@ -75,7 +49,6 @@ def workspace_dir(cwd: Path) -> Path | None:
 
 
 def find_recent(cwd: Path, patterns: tuple[str, ...]) -> list[Path]:
-    """Return matching paths within the freshness window, newest first."""
     found: list[tuple[float, Path]] = []
     now = time.time()
     for pattern in patterns:
@@ -103,7 +76,6 @@ def preview(path: Path, limit: int = MAX_PREVIEW_LINES) -> str:
 
 
 def prompt_file(workspace: Path | None) -> Path | None:
-    """Return the workspace continuation prompt when it exists."""
     if workspace is None:
         return None
     candidate = workspace / pw.PROMPT_NAME
@@ -111,7 +83,6 @@ def prompt_file(workspace: Path | None) -> Path | None:
 
 
 def recent_plans(cwd: Path, workspace: Path | None) -> list[Path]:
-    """Return project spec plans and workspace plans, newest first."""
     found = find_recent(cwd, SPEC_GLOBS)
     if workspace is not None:
         found = found + find_recent(workspace, WORKSPACE_PLAN_GLOBS)
@@ -119,7 +90,6 @@ def recent_plans(cwd: Path, workspace: Path | None) -> list[Path]:
 
 
 def workspace_note(workspace: Path | None) -> list[str]:
-    """Name the workspace folder so the session writes into the right one."""
     if workspace is None:
         return []
     return [
@@ -131,7 +101,6 @@ def workspace_note(workspace: Path | None) -> list[str]:
 
 
 def build_context(cwd: Path, source: str) -> str | None:
-    """Build the context block. Returns None when nothing to surface."""
     workspace = workspace_dir(cwd)
     prompt = prompt_file(workspace)
     checkpoints = find_recent(cwd, CHECKPOINT_GLOBS)

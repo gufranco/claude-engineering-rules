@@ -1,24 +1,3 @@
-"""Assignment-shaped mutation detectors.
-
-Covers in-place mutations expressed as assignments rather than method calls:
-
-  - Property assignment: `obj.prop = value`
-  - Computed property assignment: `obj['prop'] = value`
-  - Index assignment: `arr[i] = value`
-  - Compound assignment: `obj.prop += value` plus 14 other operators
-  - Increment / decrement: `obj.prop++`, `--obj.prop`
-  - Object utility mutations: Object.assign with non-empty target,
-    defineProperty, defineProperties, setPrototypeOf
-  - Reflect counterparts: Reflect.set / deleteProperty / defineProperty /
-    setPrototypeOf
-  - delete operator on member access
-  - Parameter reassignment and parameter-property reassignment
-  - Let-could-be-const (heuristic, only on full-file Write payloads)
-
-Each detector is pure and returns `Match` records. The orchestrator filters
-hits via the suppression module and the state-management allowlist.
-"""
-
 from __future__ import annotations
 
 import re
@@ -34,13 +13,6 @@ from .mutation_fix_lookup import tc39_stage_filter
 
 
 def _split_chain(chain: str) -> tuple[str, str]:
-    """Return `(parent_chain, last_segment)` for `a.b.c` -> `("a.b", "c")`.
-
-    Handles bare identifiers by returning `("", chain)`. Used to feed the
-    DOM allowlist helpers when a detector regex captures the full receiver
-    chain (e.g., `el.scrollTop` in compound assignments) but the DOM check
-    needs the property name in isolation.
-    """
     if "." not in chain:
         return "", chain
     parent, _, last = chain.rpartition(".")
@@ -97,13 +69,6 @@ OBJECT_ASSIGN_PATTERN = re.compile(r"\bObject\.assign\s*\(")
 
 
 def _extract_first_arg(masked: str, paren_idx: int) -> str | None:
-    """Walk forward from `(` at `paren_idx` and return the first argument text.
-
-    Tracks paren depth so nested calls like `new Object()` do not trip the
-    parser. Stops at the first comma or unmatched `)` at depth 1, returning
-    the text in between (stripped). Returns None if the parens are unbalanced
-    or the input runs out before closure.
-    """
     depth = 0
     start = paren_idx + 1
     end = -1
@@ -209,12 +174,6 @@ def _make_match(
 
 
 def _looks_like_declaration(line: str, masked: str) -> bool:
-    """True when the line is a declaration site, not a mutation.
-
-    Recognizes `const`, `let`, `var` declarations, class field initializers,
-    and function default-parameter values, all of which bind a value rather
-    than rewrite an existing reference.
-    """
     stripped = masked.strip()
     if stripped.startswith(
         ("const ", "let ", "var ", "export const ", "export let ", "export var ")
@@ -232,7 +191,6 @@ def _looks_like_declaration(line: str, masked: str) -> bool:
 def detect_property_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect direct property mutation via `obj.prop = value`."""
     results: list[Match] = []
     fix_hint = (
         "Replace `obj.prop = value` with `obj = { ...obj, prop: value }` or return a copy. "
@@ -265,7 +223,6 @@ def detect_property_assignment(
 def detect_computed_or_index_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `obj['prop'] = value` and `arr[i] = value`."""
     results: list[Match] = []
     fix_hint = (
         "For arrays use `arr.with(i, value)` (ES2023) or `arr.map((v, j) => j === i ? value : v)`. "
@@ -300,7 +257,6 @@ def detect_computed_or_index_assignment(
 def detect_compound_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect compound operators on member targets (`obj.prop += x`)."""
     results: list[Match] = []
     fix_hint = (
         "Compound assignments mutate the receiver. Replace `obj.prop += value` with "
@@ -343,7 +299,6 @@ def detect_compound_assignment(
 def detect_increment_decrement(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `obj.prop++`, `--obj.prop`, and bracket-target equivalents."""
     results: list[Match] = []
     fix_hint = (
         "Increment / decrement on a member mutates the receiver. Replace `obj.prop++` with "
@@ -386,7 +341,6 @@ def detect_increment_decrement(
 def detect_object_assign_target_mutation(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `Object.assign(target, ...sources)` with a non-fresh target."""
     results: list[Match] = []
     fix_hint = (
         "`Object.assign(target, source)` mutates `target`. Use `Object.assign({}, target, source)` "
@@ -419,7 +373,6 @@ def detect_object_assign_target_mutation(
 def detect_object_define_setprototype(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect Object.defineProperty / defineProperties / setPrototypeOf."""
     results: list[Match] = []
     define_fix = (
         "`Object.defineProperty` rewrites the descriptor. For static shapes declare the property "
@@ -450,7 +403,6 @@ def detect_object_define_setprototype(
 def detect_reflect_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect Reflect mutations (set / deleteProperty / defineProperty / setPrototypeOf)."""
     results: list[Match] = []
     set_fix = "Replace `Reflect.set(obj, key, value)` with `{ ...obj, [key]: value }`."
     delete_fix = (
@@ -488,7 +440,6 @@ def detect_reflect_mutations(
 
 
 def detect_delete_operator(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect `delete obj.prop`, `delete obj['prop']`, `delete arr[i]`."""
     results: list[Match] = []
     fix_hint = (
         "For objects use destructured rest to omit a key: "
@@ -514,7 +465,6 @@ def detect_delete_operator(text: str, lang: str | None, file_path: str) -> list[
 def detect_global_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect mutation on globalThis, window, self, process.env."""
     results: list[Match] = []
     fix_hint = (
         "Mutating `globalThis`, `window`, `process.env`, or similar global objects is module-scope "
@@ -532,14 +482,6 @@ def detect_global_assignment(
 def detect_param_reassignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect parameter reassignment patterns.
-
-    Two-pass heuristic: collect parameter names from function signatures
-    in the file, then flag any subsequent line that reassigns or compound-
-    assigns to one of them. Conventional names from
-    `KNOWN_PROP_REASSIGN_PARAM_NAMES` are exempt for property mutation per
-    the `no-param-reassign` `ignorePropertyModificationsFor` defaults.
-    """
     results: list[Match] = []
     params = _collect_param_names(text)
     if not params:
@@ -575,13 +517,6 @@ def detect_param_reassignment(
 
 
 def _collect_param_names(text: str) -> set[str]:
-    """Return parameter identifiers seen across function signatures.
-
-    Only handles simple parameter lists. Destructured and rest parameters
-    are intentionally skipped: they need an AST walk to extract every
-    bound name correctly, and over-flagging here would punish common
-    React-style props destructuring.
-    """
     found: set[str] = set()
     for masked in mask_lines(text):
         for m in PARAM_REASSIGN_FN_PATTERN.finditer(masked):
@@ -601,12 +536,6 @@ def _collect_param_names(text: str) -> set[str]:
 def detect_let_could_be_const(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `let` declarations that are never reassigned later in the file.
-
-    Runs only on full-file Write payloads so the analysis sees every line.
-    Skips `for` heads, destructured declarations, and `let` declared without
-    an initializer (handled as advisory in a future iteration).
-    """
     results: list[Match] = []
     fix_hint = (
         "`let` that is never reassigned must be `const`. Rule: "
@@ -653,17 +582,6 @@ OPTIONAL_CHAIN_ASSIGN_PATTERN = re.compile(
 def detect_optional_chain_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `obj?.prop = value` (experimental, plan items 291-292).
-
-    Optional-chain assignment is parsed by some toolchains but rejected at
-    runtime in strict mode and is illegal per the ECMAScript grammar's
-    short-circuit assignment rules. Flag it as an experimental detector
-    behind `MUTATION_METHOD_EXPERIMENTAL_OPTIONAL_CHAIN_ASSIGN=1`.
-
-    The orchestrator gates the detector via the experimental flag check;
-    this function performs the pattern match unconditionally so unit tests
-    can exercise it directly.
-    """
     results: list[Match] = []
     fix_hint = (
         "Optional-chain assignment is not allowed by the ECMAScript spec. "
@@ -709,13 +627,6 @@ PRIVATE_FIELD_UPDATE_PREFIX_PATTERN = re.compile(
 def detect_private_field_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect mutation of private class fields: `this.#field = v` and friends.
-
-    Private fields are TC39 stage 4 (shipped in all modern engines). They are
-    a JS-level mutation surface that pattern-based detectors must cover. The
-    state-management filename allowlist already exempts framework store files,
-    so this detector fires for genuine class-body mutations only.
-    """
     results: list[Match] = []
     fix_hint = (
         "Private fields are mutable by default. Prefer immutable patterns: "
@@ -787,12 +698,6 @@ SYMBOL_KEY_ASSIGN_PATTERN = re.compile(
 def detect_symbol_key_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `obj[Symbol.iterator] = fn` and similar Symbol-keyed mutations.
-
-    Well-known Symbol assignments (Symbol.iterator, Symbol.asyncIterator,
-    Symbol.toPrimitive, Symbol.toStringTag, etc.) and user-defined Symbols
-    are tracked. The fix hint shows the equivalent fresh-object construction.
-    """
     results: list[Match] = []
     fix_hint = (
         "Symbol-keyed property assignment mutates the receiver. Build a fresh object "
@@ -829,14 +734,6 @@ STATIC_BLOCK_OPEN_PATTERN = re.compile(r"\bstatic\s*\{")
 
 
 def canonical_static_block_line_ranges(text: str) -> list[tuple[int, int]]:
-    """Return inclusive 1-based line ranges for canonical class `static {}` blocks.
-
-    A canonical block is a single static block per class with no conditional
-    branching. Property mutation inside such a block is one-time class
-    initialization, equivalent to constructor body, and should be auto-allowed.
-    The static block detector still flags branching or multiple blocks; those
-    ranges are excluded from this list.
-    """
     ranges: list[tuple[int, int]] = []
     in_block = False
     depth = 0
@@ -879,12 +776,6 @@ def canonical_static_block_line_ranges(text: str) -> list[tuple[int, int]]:
 def filter_matches_in_canonical_static_blocks(
     matches: list[Match], text: str
 ) -> list[Match]:
-    """Drop property/compound/increment matches inside canonical static blocks.
-
-    The `static-block.mutation` detector itself is kept regardless; only the
-    line-scoped property/compound/increment/computed matches are filtered out,
-    because canonical static initializers are an auto-allowed scope.
-    """
     ranges = canonical_static_block_line_ranges(text)
     if not ranges:
         return matches
@@ -913,14 +804,6 @@ def filter_matches_in_canonical_static_blocks(
 def detect_static_block_mutation(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect mutation inside class `static { ... }` blocks beyond canonical init.
-
-    The canonical static block pattern is a single block with sequential
-    assignments and no conditional branching, used for one-time class
-    initialization. Multiple static blocks or branching inside a block are
-    flagged: those patterns suggest the static initializer is doing more
-    than declarative setup.
-    """
     results: list[Match] = []
     fix_hint = (
         "Class `static {}` blocks should perform one-time initialization in a single "
@@ -987,13 +870,6 @@ SVELTE_DERIVED_DECL_PATTERN = re.compile(
 def detect_svelte_derived_reassign(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect reassignment of a binding declared via Svelte 5 `$derived(...)`.
-
-    `$derived` returns a read-only reactive value. The runtime throws a
-    `state_unsafe_mutation` error when a derived binding is reassigned, but
-    the static signal here catches the bug at write-time. The declaration
-    site itself is excluded.
-    """
     derived_names = {
         m.group("name") for m in SVELTE_DERIVED_DECL_PATTERN.finditer(text)
     }
@@ -1043,16 +919,6 @@ XSTATE_ASSIGN_OPENER_PATTERN = re.compile(r"\bassign\s*\(")
 def detect_xstate_non_assign_context_write(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `context.x = v` writes outside an `assign(...)` callback.
-
-    XState v5 enforces `assign(...)` as the only context mutation
-    primitive. Writing directly to `context` from a non-assign action
-    callback silently no-ops because the action receives an immutable
-    snapshot. The detector scans lines containing `context.<x> =` and
-    walks back to verify the hit sits inside an unmatched `assign(`
-    brace scope. Plain `assign` opener lines are skipped because the
-    callback's parameter destructuring rebinds `context` to a draft.
-    """
     if "xstate" not in text:
         return []
     if not re.search(r"['\"]xstate(?:/[\w/-]+)?['\"]", text):
@@ -1113,15 +979,6 @@ EFFECT_TS_REF_DECL_PATTERN = re.compile(
 def detect_effect_ts_ref_value_assign(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect bare `ref.value = v` writes on Effect-TS Ref bindings.
-
-    Effect-TS Refs are opaque handles. They have no `.value` property.
-    Updates flow through `Ref.update`, `Ref.set`, `Ref.modify`, or their
-    SubscriptionRef / SynchronizedRef siblings, and must be `yield*`-ed
-    inside an `Effect.gen` generator. Writing `ref.value = v` is the
-    Vue/Preact-signals pattern leaking into an Effect-TS codebase. The
-    detector is import-gated on the Effect-TS package family.
-    """
     if "effect" not in text:
         return []
     if not re.search(
@@ -1169,13 +1026,6 @@ NANOSTORES_COMPUTED_DECL_PATTERN = re.compile(
 def detect_nanostores_computed_write(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect mutating calls against a Nanostores computed binding.
-
-    Nanostores computed stores expose only read methods (subscribe,
-    listen, plus the read accessor). Calling write methods on a computed
-    binding bypasses the recompute contract and silently desynchronizes
-    downstream subscribers.
-    """
     if "nanostores" not in text:
         return []
     if not re.search(r"['\"]nanostores(?:/[\w/-]+)?['\"]", text):
@@ -1227,14 +1077,6 @@ TANSTACK_STORE_DECL_PATTERN = re.compile(
 def detect_tanstack_store_state_write(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect direct writes against a TanStack `Store.state` property.
-
-    TanStack Store exposes `store.state` as a read-only snapshot. Updates
-    must go through `store.setState((prev) => next)`. Direct mutation like
-    `store.state.count = 1` silently bypasses subscribers and breaks
-    reactivity. The detector is import-gated to avoid false positives on
-    unrelated `store.state` shapes.
-    """
     if "@tanstack/" not in text:
         return []
     if not re.search(r"['\"]@tanstack/(?:store|react-store|solid-store)['\"]", text):
@@ -1285,13 +1127,6 @@ VUE_SHALLOW_READONLY_DECL_PATTERN = re.compile(
 def detect_vue_shallow_readonly_nested_write(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect nested property writes against a Vue `shallowReadonly(...)` binding.
-
-    `shallowReadonly(obj)` freezes only the top level. `x.foo = v` triggers a
-    runtime warning, but `x.foo.bar = v` silently mutates the underlying
-    reactive object, defeating the contract. This detector fires on chains
-    of two or more property accesses ending in an assignment.
-    """
     names = {m.group("name") for m in VUE_SHALLOW_READONLY_DECL_PATTERN.finditer(text)}
     if not names:
         return []
@@ -1356,16 +1191,6 @@ YJS_MUTATING_METHODS: tuple[str, ...] = (
 def detect_yjs_mutation_outside_transact(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect Yjs CRDT mutations that sit outside a `doc.transact(...)` scope.
-
-    Yjs bundles writes inside a transaction so observers receive a single
-    consolidated update. Mutating a Y.Map, Y.Array, or Y.Text outside a
-    transaction triggers one observer event per call and breaks the
-    atomic-update contract. The detector tracks bindings created via
-    `new Y.<Type>()` or `doc.get<Type>(...)` and flags mutating method
-    calls on those bindings when no unmatched `.transact(` opener
-    encloses the call.
-    """
     if "yjs" not in text and "Y." not in text:
         return []
     names = {m.group("name") for m in YJS_CRDT_DECL_PATTERN.finditer(text)}
@@ -1432,14 +1257,6 @@ RECOIL_IMPORT_LINE_PATTERN = re.compile(r"^\s*import\b[^;]*\bfrom\s+['\"]recoil[
 def detect_recoil_deprecation_pointer(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Emit an info-level pointer when a file imports from `recoil`.
-
-    Recoil's last release shipped in early 2024 and Meta confirmed the
-    project is unmaintained. New code should migrate to Jotai, Zustand,
-    or Nanostores. The detector fires once at the first `from 'recoil'`
-    import line and emits an info-severity finding so authors get a
-    migration nudge without blocking the write.
-    """
     if "recoil" not in text:
         return []
     fix_hint = (
@@ -1476,18 +1293,6 @@ MOBX_OBSERVABLE_DECL_PATTERN = re.compile(
 def detect_mobx_observable_outside_action(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect MobX observable property writes outside an action scope
-    when `enforceActions: 'always'` is configured.
-
-    MobX strict mode requires every observable mutation to happen inside
-    `runInAction`, `action`, or a `flow` generator. With strict mode
-    enabled, a plain `store.count = 1` throws at runtime instead of
-    updating state. The detector activates only when the file or its
-    config sets `enforceActions: 'always'`, collects observable bindings
-    declared via `observable`, `makeAutoObservable`, or `makeObservable`,
-    and flags property writes on those bindings that sit outside an
-    unmatched `runInAction(` / `action(` / `flow(` paren scope.
-    """
     if "mobx" not in text:
         return []
     if not re.search(r"['\"]mobx(?:-[\w/-]+)?['\"]", text):
@@ -1565,18 +1370,6 @@ AUTOMERGE_DOC_DECL_PATTERN = re.compile(
 def detect_automerge_direct_mutation(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect direct property writes on an Automerge document binding.
-
-    Automerge documents are deeply frozen. The only legal mutation surface
-    is the proxy passed to the `Automerge.change(doc, draft => { ... })`
-    callback. Writing `doc.foo = 1` outside that callback either throws in
-    strict mode or silently no-ops on the frozen document, producing a
-    desync between local state and the CRDT history. The detector tracks
-    bindings produced by `Automerge.init`, `Automerge.from`, `Automerge.load`,
-    `Automerge.clone`, `Automerge.change`, `Automerge.emptyChange`,
-    `Automerge.applyChanges`, and `Automerge.merge`, then flags property
-    assignments on those bindings.
-    """
     if "Automerge" not in text and "automerge" not in text:
         return []
     if not re.search(r"['\"]@?automerge(?:/[\w-]+)?['\"]", text):
@@ -1633,23 +1426,6 @@ ASYNC_ITERATOR_SYMBOL_DECL_PATTERN = re.compile(
 def detect_async_iterator_return_throw(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `.return(...)` / `.throw(...)` calls on async iterator bindings.
-
-    The Stage 3 AsyncIterator Helpers proposal adds `.return()` and
-    `.throw()` to the AsyncIterator prototype. Both calls early-terminate
-    the iterator and mutate its internal state; once invoked, every
-    subsequent `.next()` resolves to a done result. Reaching for these
-    methods outside a cleanup helper usually signals a missed `break` or
-    a forgotten try/finally pattern. The detector is Stage 3 filtered, so
-    suggestions surface only when `MUTATION_METHOD_TC39_STAGE_FILTER` is
-    set to `3` or lower.
-
-    Bindings are recognised through two narrow shapes that avoid false
-    positives against generator `.return(value)` or Promise `.throw()`:
-
-      - explicit `: AsyncIterator<T>` type annotation
-      - `= source[Symbol.asyncIterator]()` factory call
-    """
     if tc39_stage_filter() > 3:
         return []
     if "AsyncIterator" not in text and "Symbol.asyncIterator" not in text:

@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""Validate every SKILL.md file.
-
-Checks:
-  - SKILL.md exists in each skill directory, skipping dot-prefixed
-    directories such as the harness's untracked `.trash/` and the
-    harness-managed `synced/`
-  - YAML frontmatter is present (delimited by ---)
-  - Required fields: name, description
-  - When the body mentions irreversible actions (push, deploy, merge, delete,
-    drop, force, destroy, revoke, supersede, rm), the frontmatter declares
-    `sensitive: true`. Skills that touch sensitive operations must be opt-in.
-
-Exit 0 = all valid, exit 1 = errors found.
-"""
-
 import os
 import re
 import sys

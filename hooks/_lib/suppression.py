@@ -1,64 +1,3 @@
-"""Shared suppression helper for ~/.claude hooks.
-Centralizes the suppression-scan logic that was duplicated in
-`as-any-blocker.py`, `console-log-blocker.py`, and `mutation-method-blocker.py`.
-
-Only directives belonging to third-party tools are honored. A directive is a
-comment another tool parses and acts on, which is the one comment form
-`rules/code-style.md` exempts from the project-wide ban. This module never
-recognizes an allow marker of our own invention: to silence one of these
-hooks, use its `<NAME>_DISABLE=1` env var or the TTL-bound registry in
-`_lib/bypass.py`, both of which leave project source untouched.
-
-Honored markers:
-  Same-line:
-    // eslint-disable-line
-    // eslint-disable
-    // @ts-expect-error
-    // @ts-ignore
-    // @ts-nocheck
-    /* @ts-expect-error */
-    /* @ts-ignore */
-    /* eslint-disable-line */
-    // biome-ignore <rule>: <reason>
-    // biome-ignore-all <rule>: <reason>
-    /* biome-ignore <rule>: <reason> */
-    // rome-ignore <rule>: <reason>
-    # noqa
-    # noqa: E501
-    # type: ignore
-    # type: ignore[name-defined]
-    # pyright: ignore
-    # pyright: ignore[reportGeneralTypeIssues]
-    # pylint: disable=<rule>
-  Preceding-line:
-    // eslint-disable-next-line
-    /* eslint-disable-next-line */
-    // @ts-expect-error
-    // @ts-ignore
-    // biome-ignore <rule>: <reason>
-    // rome-ignore <rule>: <reason>
-  Block range:
-    /* eslint-disable */ ... /* eslint-enable */
-    // eslint-disable     ... // eslint-enable     (line-form not standard but accepted)
-  File-level:
-    // @ts-nocheck                 (top of file)
-    /* eslint-disable */            (single occurrence on its own line)
-    # mypy: ignore-errors          (top-of-file mypy file disable)
-    # type: ignore                 (top-of-file when sole content of header)
-    # ruff: noqa                   (top-of-file ruff file disable)
-Public API:
-    is_suppressed(lines, i, *, block_state=None, rules=None) -> bool
-    line_or_prev_has_suppression(lines, line_no) -> bool
-    compute_block_state(lines, *, rules=None) -> BlockState
-An eslint directive that names rules is honored only when one of them is in
-`rules`; a directive naming no rule is honored for every caller.
-    has_top_of_file_marker(lines, marker) -> bool
-    has_inline_marker(line, marker) -> bool
-    has_ts_nocheck_directive(lines) -> bool
-    has_python_file_disable(lines) -> bool
-The function never raises. Suppression is best-effort.
-"""
-
 from __future__ import annotations
 import re
 from dataclasses import dataclass, field
@@ -102,8 +41,6 @@ RESTRICTED_SYNTAX_RULES = frozenset({"no-restricted-syntax"})
 
 @dataclass
 class BlockState:
-    """Tracks `/* eslint-disable */`-style block ranges."""
-
     disabled_lines: frozenset[int] = field(default_factory=frozenset)
 
 
@@ -152,10 +89,6 @@ def _is_lone_block_disable(line: str) -> bool:
 
 
 def has_inline_marker(line: str, marker: str) -> bool:
-    """Detect an exact-token inline marker on `line`.
-    Marker must be preceded by `//` or `/*` to count as a real comment-form
-    annotation. Substring matches inside string literals are skipped.
-    """
     if not marker or marker not in line:
         return False
     sanitized = _strip_strings(line)
@@ -167,9 +100,6 @@ def has_inline_marker(line: str, marker: str) -> bool:
 
 
 def has_top_of_file_marker(lines: list[str], marker: str) -> bool:
-    """True when `marker` appears in the first non-blank lines of the file.
-    Scans up to TOP_OF_FILE_SCAN_LIMIT lines, skipping leading blanks.
-    """
     if not marker:
         return False
     seen = 0
@@ -185,10 +115,6 @@ def has_top_of_file_marker(lines: list[str], marker: str) -> bool:
 
 
 def has_python_file_disable(lines: list[str]) -> bool:
-    """True when the file opens with a Python file-wide disable directive.
-    Recognized markers: `# mypy: ignore-errors`, `# ruff: noqa`, `# flake8: noqa`.
-    Scans the first TOP_OF_FILE_SCAN_LIMIT non-blank lines.
-    """
     seen = 0
     for line in lines:
         if seen >= TOP_OF_FILE_SCAN_LIMIT:
@@ -208,12 +134,6 @@ def _has_python_inline_suppression(line: str) -> bool:
 
 
 def has_ts_nocheck_directive(lines: list[str]) -> bool:
-    """True when `@ts-nocheck` appears at the top of the file as a comment.
-    `@ts-nocheck` is the TypeScript directive that disables type checking for
-    the entire file. Per project policy, files marked `@ts-nocheck` have
-    been deliberately opted out of strict checks; the mutation hook follows
-    suit and treats the marker as a file-wide suppression.
-    """
     return has_top_of_file_marker(lines, "@ts-nocheck")
 
 
@@ -262,11 +182,6 @@ def line_or_prev_has_suppression(
 
 
 def _strip_strings(line: str) -> str:
-    """Mask string contents so substring matches do not pick up code samples.
-    Conservative: replaces single-quoted, double-quoted, and backtick-quoted
-    spans with whitespace of the same length. Comments stay intact so the
-    `//` / `/*` prefix detection still works.
-    """
     out: list[str] = []
     i = 0
     n = len(line)

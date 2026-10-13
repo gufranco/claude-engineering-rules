@@ -1,28 +1,4 @@
 #!/usr/bin/env python3
-"""Block commands that hang the agent: interactive cp/mv/rm and macOS kcov.
-
-On macOS, the default shell often aliases `rm` to `rm -i`, `cp` to `cp -i`,
-and `mv` to `mv -i`. When an agent runs one of these against an existing
-path, the shell prompts for confirmation, the agent has no stdin, and the
-command hangs until the harness timeout.
-
-The fix: require an explicit `-f` flag on cp/mv/rm. The user can still bypass
-for the rare legitimate interactive use with INTERACTIVE_CMD_DISABLE=1.
-
-On macOS, kcov 43 checks `/bin/bash`, which is bash 3.2, decides BASH_XTRACEFD
-is unsupported, and streams every trace line through stderr. A 636-line bats
-suite that takes 14 s alone grew past 1.5 GB in 180 s under it; larger suites
-held 44 GB and ran 74 minutes. A native macOS kcov number is also wrong:
-76.89% where Linux measures 98.74%. So on macOS, `kcov` and a `make coverage`
-whose Makefile calls kcov are blocked with the Linux-container recipe instead.
-
-Triggers PreToolUse on Bash. Exit 0 = allow, exit 2 = block.
-
-Bypass: INTERACTIVE_CMD_DISABLE=1 in the parent shell.
-
-Closes a gap left by dangerous-command-blocker.py.
-"""
-
 from __future__ import annotations
 
 import json
@@ -61,7 +37,6 @@ from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
 
 def has_force_flag(tokens: list[str]) -> bool:
-    """Check if any token expresses --force or -f (including combined like -rf)."""
     for tok in tokens[1:]:
         if not tok.startswith("-"):
             continue
@@ -90,7 +65,6 @@ def is_blocked(command: str) -> tuple[bool, str]:
 
 
 def make_dir_and_files(args: list[str], cwd: str) -> tuple[str, list[str]]:
-    """Resolve `-C dir` and `-f file` from make arguments."""
     directory = cwd
     files: list[str] = []
     for flag, value in zip(args, args[1:]):
@@ -122,7 +96,6 @@ def runs_kcov(base: str, args: list[str], cwd: str) -> bool:
 
 
 def kcov_blocked(command: str, cwd: str, platform: str) -> bool:
-    """True when this command would start kcov natively on macOS."""
     if platform != "darwin":
         return False
     current = cwd

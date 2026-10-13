@@ -1,12 +1,3 @@
-"""Shared primitives for reading and checking second brain vault notes.
-
-One source of truth for the note grammar. The write-time hook imports it to
-decide single-file questions; the vault linters import it to walk the whole
-graph. Anything both need lives here so the two can never drift.
-
-Rule source: ``rules/knowledge-notes.md``.
-"""
-
 from __future__ import annotations
 
 import os
@@ -99,7 +90,6 @@ DIGIT = re.compile(r"(?<![\w.-])\d+(?![\w-])")
 
 
 def vault_root(raw: str | None = None) -> Path | None:
-    """Return the vault root, or None when it does not exist on disk."""
     value = raw or os.environ.get("SECOND_BRAIN_VAULT") or DEFAULT_VAULT
     try:
         root = Path(value).expanduser()
@@ -109,7 +99,6 @@ def vault_root(raw: str | None = None) -> Path | None:
 
 
 def relative(path: Path, root: Path) -> Path | None:
-    """Return `path` relative to `root`, or None when it falls outside."""
     try:
         return path.resolve().relative_to(root.resolve())
     except (ValueError, OSError, RuntimeError):
@@ -117,12 +106,6 @@ def relative(path: Path, root: Path) -> Path | None:
 
 
 def in_vault(path: str) -> bool:
-    """Return True when `path` sits inside the second brain vault.
-
-    Hooks whose rule governs published output use this to stand down. The vault
-    is a private local store, so configuration paths and project vocabulary are
-    legitimate content there rather than a leak.
-    """
     if not path:
         return False
     root = vault_root()
@@ -132,12 +115,6 @@ def in_vault(path: str) -> bool:
 
 
 def is_exempt(rel: Path) -> bool:
-    """Return True for paths the specification does not govern.
-
-    Any hidden directory is skipped. Tooling writes markdown into caches and
-    metadata folders, and a linter that treated those as notes would report
-    defects nobody can fix.
-    """
     parts = rel.parts
     if any(part.startswith(".") for part in parts[:-1]):
         return True
@@ -147,14 +124,12 @@ def is_exempt(rel: Path) -> bool:
 
 
 def is_dated_container(rel: Path) -> bool:
-    """Return True when the note is itself a dated snapshot."""
     if rel.parts and rel.parts[0] in DATED_DIRS:
         return True
     return bool(DATE_PREFIX.match(rel.name))
 
 
 def parse_frontmatter(text: str) -> dict[str, str] | None:
-    """Return top-level frontmatter keys, or None when the block is absent."""
     match = FRONTMATTER.match(text)
     if not match:
         return None
@@ -172,18 +147,15 @@ def is_timeless(fields: dict[str, str]) -> bool:
 
 
 def body_after_frontmatter(text: str) -> str:
-    """Return the note body with any frontmatter block removed."""
     match = FRONTMATTER.match(text)
     return text[match.end() :] if match else text
 
 
 def wikilink_targets(text: str) -> list[str]:
-    """Return every wikilink target, aliases and anchors stripped."""
     return [target.strip() for target in WIKILINK.findall(text) if target.strip()]
 
 
 def iter_notes(root: Path) -> Iterator[tuple[Path, str]]:
-    """Yield every governed markdown note as a (relative path, text) pair."""
     try:
         candidates = sorted(root.rglob("*.md"))
     except OSError:  # pragma: no cover
@@ -199,17 +171,14 @@ def iter_notes(root: Path) -> Iterator[tuple[Path, str]]:
 
 
 def note_titles(root: Path) -> set[str]:
-    """Return the stem of every governed note, which is its wikilink target."""
     return {rel.stem for rel, _text in iter_notes(root)}
 
 
 def has_stamp(line: str) -> bool:
-    """Return True when the line carries an as-of recency stamp."""
     return bool(STAMP.search(line))
 
 
 def stamp_dates(line: str) -> list[date]:
-    """Return every parseable as-of date on the line."""
     found: list[date] = []
     for year, month, day in STAMP.findall(line):
         try:
@@ -220,7 +189,6 @@ def stamp_dates(line: str) -> list[date]:
 
 
 def is_volatile_claim(line: str) -> bool:
-    """Return True for an undated present-tense claim about a moving subject."""
     if has_stamp(line):
         return False
     if DATE_PREFIX.match(line.lstrip("-* ")):
@@ -230,11 +198,6 @@ def is_volatile_claim(line: str) -> bool:
 
 
 def walk_lines(body: str) -> Iterator[tuple[int, str, bool]]:
-    """Yield (line number, stripped text, under a dated heading) for prose lines.
-
-    Fenced blocks, blank lines, and headings are consumed rather than yielded,
-    so every caller sees the same view of what counts as a claim.
-    """
     in_fence = False
     under_dated_heading = False
     for number, raw_line in enumerate(body.splitlines(), start=1):
@@ -251,11 +214,6 @@ def walk_lines(body: str) -> Iterator[tuple[int, str, bool]]:
 
 
 def pointer_has_target(line: str) -> bool:
-    """Return True when a pointer line names somewhere the truth actually lives.
-
-    A pointer whose target is prose or a shell command is not resolvable later,
-    which is the whole reason the pointer form is allowed in place of a stamp.
-    """
     if URL.search(line):
         return True
     tail = line.split(":", 1)[1] if ":" in line else line

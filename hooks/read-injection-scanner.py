@@ -1,31 +1,4 @@
 #!/usr/bin/env python3
-"""Scan Read and WebFetch payloads for prompt-injection patterns.
-
-Triggers PostToolUse on Read, WebFetch, WebSearch. Inspects the
-fetched content for patterns that try to override the assistant's
-instructions, redirect tool use, or smuggle commands.
-
-When a pattern is detected, the hook emits a PostToolUse
-`additionalContext` warning that the model can see during its next
-turn. It does NOT block: the read already happened. The goal is to
-make the assistant aware that the content is hostile so it does not
-act on the injected instructions.
-
-Patterns covered:
-  - Instruction override ("ignore previous instructions",
-    "disregard your system prompt", "you are now")
-  - Tool redirection ("run this command:", "execute the following")
-  - Authority claims ("anthropic engineer", "system admin")
-  - Urgency / pressure language combined with action verbs
-  - Long base64 payloads embedded in the body (potential encoded
-    instructions)
-  - Unicode confusables / zero-width runs (potential homoglyph attacks)
-
-Bypass: READ_INJECTION_DISABLE=1 in the parent shell.
-
-Enforces: CLAUDE.md Prompt Defense Baseline points 4 and 5.
-"""
-
 from __future__ import annotations
 
 import json
@@ -82,11 +55,6 @@ from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def has_unicode_confusables(text: str) -> bool:
-    """Detect runs of non-ASCII characters in what looks like English prose.
-
-    Looks for Cyrillic/Greek letters used as Latin lookalikes, and
-    zero-width characters embedded in the text.
-    """
     suspicious_categories = {"Cf"}
     suspicious_count = 0
     confusable_scripts = ("CYRILLIC", "GREEK")
@@ -104,7 +72,6 @@ def has_unicode_confusables(text: str) -> bool:
 
 
 def scan(text: str) -> list[str]:
-    """Return a list of finding labels."""
     if not text:
         return []
     sample = text[:200_000]

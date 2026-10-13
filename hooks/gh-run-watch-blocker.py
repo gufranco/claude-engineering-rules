@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""Block `gh run watch` (polls every 3 seconds, burns GitHub API rate limit).
-
-`gh run watch` polls the workflow run status every 3 seconds. Over an hour
-that is ~1200 requests, a quarter of the unauthenticated rate budget. When
-combined with `gh pr checks --watch` (same cadence) the budget evaporates.
-
-This hook blocks `gh run watch` and `gh pr checks --watch`. The fix is one
-of:
-  - `gh run view <id>` for a one-shot snapshot
-  - polling loop with a longer interval (`sleep 30` between checks)
-  - a single `gh run view --log-failed` after the run completes naturally
-
-The same hook also covers `glab ci view --live` for the GitLab equivalent.
-
-Triggers PreToolUse on Bash. Exit 0 = allow, exit 2 = block.
-
-Bypass: GH_RUN_WATCH_DISABLE=1 in the parent shell.
-
-Enforces: rules/git-workflow.md CI/CD Monitoring section.
-"""
-
 from __future__ import annotations
 
 import json

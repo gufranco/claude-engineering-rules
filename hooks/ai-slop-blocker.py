@@ -364,14 +364,6 @@ COMMAND_MASKS = (FENCED_BLOCK, INLINE_CODE)
 
 
 def mask_code(text: str, patterns: tuple[re.Pattern[str], ...]) -> str:
-    """Blank out code spans while preserving offsets and line numbers.
-
-    A publishing command carries a Markdown body, so its fenced blocks and
-    inline code are masked too. The indent and link-target masks are not
-    applied there, since shell continuation lines are prose more often than
-    they are code.
-    """
-
     def blank(match: re.Match[str]) -> str:
         return "".join("\n" if ch == "\n" else " " for ch in match.group(0))
 
@@ -392,24 +384,10 @@ def is_skipped_path(path: str) -> bool:
 
 
 def is_comment_bash(cmd: str) -> bool:
-    """True when the command publishes a comment rather than a description.
-
-    Bold-label bullets and headings are correct in a pull-request
-    description and in repository Markdown, where they measured 331 and
-    3600 hits across this repository's own files. They are a template
-    tell only inside a reply, so the two detectors that catch them are
-    scoped here.
-    """
     return any(p.search(cmd) for p in COMMENT_BASH_PATTERNS)
 
 
 def comment_bodies(cmd: str, tokens: list[str]) -> list[str]:
-    """Return every comment body the command would send, decoded.
-
-    A reply body normally travels in a JSON file, where newlines are
-    escaped and a raw scan would see one long line. Parsing recovers the
-    text a reader will actually see.
-    """
     texts: list[str] = []
     for index, token in enumerate(tokens):
         lowered = token.lower()
@@ -438,7 +416,6 @@ def comment_bodies(cmd: str, tokens: list[str]) -> list[str]:
 
 
 def extract_bodies(raw: str) -> list[str]:
-    """Pull body strings out of a JSON payload, or fall back to the text."""
     stripped = raw.strip()
     if stripped.startswith("{"):
         try:
@@ -459,7 +436,6 @@ def extract_bodies(raw: str) -> list[str]:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, bool, bool]]:
-    """Return (label, text, is_markdown, is_comment) tuples worth scanning."""
     out: list[tuple[str, str, bool, bool]] = []
     fp = tool_input.get("file_path", "") or ""
     if tool == "Bash":
@@ -499,7 +475,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, bool, bool]]:
 def find(
     text: str, is_markdown: bool, is_comment: bool = False
 ) -> list[tuple[str, str, str, str]]:
-    """Return (code, label, located snippet, fix) for each detector that fires."""
     scanned = mask_code(text, MARKDOWN_MASKS if is_markdown else COMMAND_MASKS)
     findings: list[tuple[str, str, str, str]] = []
     for code, label, pattern, fix, min_hits in DETECTORS:

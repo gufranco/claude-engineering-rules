@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Detect stale memory files in ~/.claude/projects/*/memory/.
-A memory file is considered stale when it references a file path or function
-that no longer exists in the repository it was created in.
-"""
-
 import os
 import re
 import sys

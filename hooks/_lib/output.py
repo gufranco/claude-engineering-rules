@@ -1,35 +1,3 @@
-"""Canonical block / warn message schema for every hook.
-
-Every block path in `~/.claude/hooks/*.py` is expected to render its
-stderr output through `block(...)`. Every non-blocking informational path
-uses `warn(...)`. A shared format gives the assistant a stable contract:
-the same five sections in the same order, the same four decision verbs,
-both bypass channels named in every message.
-
-Schema, in order:
-
-    BLOCKED by <hook> (<rule_anchor>)
-
-    What was detected:
-      <one-line summary>
-      <file:line or offending snippet, capped>
-
-    Why this rule exists:
-      <reason; references the rule file>
-
-    How to fix:
-      <copy-pasteable remediation; bad -> good when applicable>
-
-    If the rule does not apply here:
-      <when the bypass is legitimate>
-      env: <NAME>_DISABLE=1
-      file: python scripts/bypass.py set <hook> --ttl 600 --reason "<why>"
-      safety: <what bypassing risks>
-
-    Decision guidance for Claude:
-      <one of: STOP-AND-ASK | FIX-AND-RETRY | BYPASS-ONCE | BYPASS-WITH-REASON>
-"""
-
 from __future__ import annotations
 
 from typing import Final
@@ -75,10 +43,6 @@ def block(
     env_var: str,
     safety: str | None = None,
 ) -> str:
-    """Render a canonical BLOCKED message. Use the return value with stderr.
-
-    Raises ValueError if `decision` is not one of the four canonical verbs.
-    """
     if decision not in DECISION_VERBS:
         raise ValueError(
             f"unknown decision verb {decision!r}; expected one of {sorted(DECISION_VERBS)}"
@@ -123,7 +87,6 @@ def warn(
     saved_to: str | None = None,
     next_action: str | None = None,
 ) -> str:
-    """Render a canonical INFO message for non-blocking hooks."""
     parts = [f"INFO from {hook}", "", "Purpose:", _indent(_cap(purpose))]
     if saved_to:
         parts.extend(["", "Saved to:", _indent(_cap(saved_to))])
@@ -134,7 +97,6 @@ def warn(
 
 
 def validate_block_message(message: str) -> list[str]:
-    """Return a list of schema issues for `message`. Empty when well-formed."""
     issues: list[str] = []
     if not message.lstrip().startswith("BLOCKED by "):
         issues.append("missing 'BLOCKED by <hook>' header on first line")

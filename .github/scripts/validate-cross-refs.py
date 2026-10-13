@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Validate cross-references between index.yml, standards, rules, and agents.
-
-Uses a minimal in-tree YAML parser tailored to the index.yml format so the
-validator runs on a clean machine without PyYAML.
-"""
-
 import glob
 import os
 import re
@@ -15,11 +9,6 @@ ERRORS = []
 
 
 def parse_index_yml(path: str) -> dict:
-    """Parse the constrained subset of YAML used by rules/index.yml.
-
-    Supports top-level mappings, two levels of nested mappings, scalar string
-    values, and inline list values. Comments and blank lines are skipped.
-    """
     with open(path) as f:
         lines = f.readlines()
 
@@ -64,7 +53,6 @@ def parse_index_yml(path: str) -> dict:
 
 
 def validate_index_paths(index_data: dict) -> None:
-    """Verify every path in index.yml references an existing file."""
     for section in ("always_loaded", "on_demand"):
         entries = index_data.get(section) or {}
         for name, entry in entries.items():
@@ -82,7 +70,6 @@ def validate_index_paths(index_data: dict) -> None:
 
 
 def parse_frontmatter(content: str) -> dict | None:
-    """Extract a flat key:value mapping from a markdown frontmatter block."""
     if not content.startswith("---"):
         return None
     parts = content.split("---", 2)
@@ -101,7 +88,6 @@ def parse_frontmatter(content: str) -> dict | None:
 
 
 def validate_agent_files() -> None:
-    """Verify all agent files have required frontmatter fields."""
     agents_dir = os.path.join(BASE_DIR, "agents")
     if not os.path.isdir(agents_dir):
         return
@@ -127,7 +113,6 @@ def validate_agent_files() -> None:
 
 
 def validate_standard_files() -> None:
-    """Verify all .md files in standards/ have a top-level heading."""
     standards_dir = os.path.join(BASE_DIR, "standards")
     if not os.path.isdir(standards_dir):
         return

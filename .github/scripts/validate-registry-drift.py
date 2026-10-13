@@ -1,22 +1,4 @@
 #!/usr/bin/env python3
-"""Detect registry drift: an artifact on disk that nothing points at.
-
-The existing validators walk from a registry to disk. `validate-cross-refs.py`
-confirms every path named in `rules/index.yml` exists, and `validate-counts.py`
-confirms the numbers written in prose match what is on disk. Both are
-one-directional, so a file added without being registered passes every check:
-the index still resolves, and the counts only compare totals somebody wrote
-down.
-
-This validator walks the other way, starting from the files that exist and
-asking what fails to reference them. That is the direction real drift arrives
-from: a new rule that never reaches a session because the index does not list
-it, a skill nobody can discover from the README, or a stray non-hook file in
-the hooks directory where a smoke test will try to execute it.
-
-Exit code 0 when clean, 1 with a per-finding report otherwise.
-"""
-
 from __future__ import annotations
 
 import importlib.util
@@ -32,7 +14,6 @@ TEST_SHAPED = re.compile(r"(^test_|_test\.py$|\.test\.py$|^conftest\.py$)")
 
 
 def load_index() -> dict:
-    """Reuse the in-tree index parser so this validator needs no PyYAML."""
     path = ROOT / ".github" / "scripts" / "validate-cross-refs.py"
     spec = importlib.util.spec_from_file_location("_cross_refs", path)
     if spec is None or spec.loader is None:
@@ -97,7 +78,6 @@ def check_no_stray_hook_files(findings: list[str]) -> None:
 
 
 def check_index_rule_paths(index: dict, findings: list[str]) -> None:
-    """An on_demand entry that names a path must name one that resolves."""
     for name, entry in (index.get("on_demand") or {}).items():
         if not isinstance(entry, dict):
             continue

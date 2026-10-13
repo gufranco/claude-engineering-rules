@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""Validate settings.json structure and references.
-
-Checks:
-  - Valid JSON
-  - All deny entries match pattern: (Read|Write|Edit)(<glob>)
-  - No duplicate deny entries
-  - All hook commands reference scripts that exist on disk
-  - All hook matchers are known tool names
-
-Exit 0 = all valid, exit 1 = errors found.
-"""
-
 import json
 import os
 import re
@@ -43,7 +31,6 @@ KNOWN_MATCHERS = {
 
 
 def validate_deny_rules(data):
-    """Validate permissions deny rules."""
     errors = []
     deny = data.get("permissions", {}).get("deny", [])
 
@@ -73,7 +60,6 @@ KNOWN_HOOK_PHASES = {
 
 
 def validate_mcpservers(data):
-    """Validate mcpServers entries have required fields."""
     errors = []
     servers = data.get("mcpServers", {})
     for name, cfg in servers.items():
@@ -92,7 +78,6 @@ def validate_mcpservers(data):
 
 
 def validate_hooks(data):
-    """Validate hook configurations."""
     errors = []
     hooks = data.get("hooks", {})
 

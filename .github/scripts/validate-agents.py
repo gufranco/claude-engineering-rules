@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""Validate agent definition files in agents/*.md.
-
-Checks:
-  - YAML frontmatter exists (delimited by ---)
-  - Required fields: name, description, tools, model
-  - model is one of: haiku, sonnet, opus
-  - tools is a non-empty list
-  - Body contains "Do not spawn subagents" constraint
-
-Skips TEMPLATE.md (reference template, not a real agent).
-
-Exit 0 = all valid, exit 1 = errors found.
-"""
-
 import glob
 import os
 import re
@@ -27,7 +13,6 @@ REQUIRED_FIELDS = {"name", "description", "tools", "model"}
 
 
 def parse_frontmatter(content):
-    """Extract YAML frontmatter as a dict of key-value pairs."""
     match = re.match(r"^---\s*\n(.*?)\n---\s*\n", content, re.DOTALL)
     if not match:
         return None
@@ -58,7 +43,6 @@ def parse_frontmatter(content):
 
 
 def validate_agent(filepath):
-    """Validate a single agent file. Returns list of error strings."""
     errors = []
     rel_path = os.path.relpath(filepath, CLAUDE_DIR)
 

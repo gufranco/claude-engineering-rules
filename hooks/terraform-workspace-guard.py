@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""Block global Terraform workspace switches.
-
-`terraform workspace select <name>` and `terraform workspace new <name>`
-both write the active workspace to `.terraform/environment` in the
-working directory. Any other shell or process running terraform in the
-same directory will silently target the new workspace.
-
-The fix is to set `TF_WORKSPACE=<name>` per command. With that env var
-set, terraform uses the named workspace without writing to
-`.terraform/environment`, so parallel shells stay isolated.
-
-This hook hard-blocks `terraform workspace select` and
-`terraform workspace new`. Read-only `terraform workspace list` and
-`terraform workspace show` are allowed.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import re
 import sys

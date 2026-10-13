@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""Block pull request merges while a `/morning` sweep is running.
-
-`/morning` walks a queue of pull requests across several accounts and works
-them on the user's behalf. The one thing it must never do is merge. Prose in
-a skill file is not a control, so the prohibition lives here.
-
-The block is session-scoped through `_lib/session_lock`. `/deploy land`
-merges legitimately, and a global merge block would break it. The lock is
-acquired when a `/morning` work loop starts and released when it ends, so
-outside a sweep this hook is silent.
-
-Deliberately out of scope, each for a reason:
-
-  git merge            conflict resolution needs it, and it touches no remote
-  gh pr update-branch  the branch-update lane is built on it
-  gh pr review         approval is governed by per-item consent, not by this hook
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import re
 import sys

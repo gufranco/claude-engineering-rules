@@ -1,11 +1,3 @@
-"""Split a Bash command string into the commands it would actually run.
-
-Quotes are respected, heredoc bodies are dropped as data, and every line is
-split at unquoted `;`, `&` and `|` operators. A line whose quoting does not
-balance yields nothing, so a fragment of a string is never mistaken for a
-command.
-"""
-
 from __future__ import annotations
 
 import os
@@ -110,7 +102,6 @@ def _unquoted_match(
 
 
 def line_segments(line: str) -> list[list[str]]:
-    """Split one line into commands at unquoted ; & | operators."""
     lexer = shlex.shlex(line, posix=True, punctuation_chars=OPERATOR_CHARS)
     lexer.whitespace_split = True
     try:
@@ -127,13 +118,11 @@ def line_segments(line: str) -> list[list[str]]:
 
 
 def quoted_segments(command: str) -> list[list[str]]:
-    """Every command in `command`, tokenized, in execution order."""
     lines = strip_heredoc_bodies(command).splitlines()
     return [segment for line in lines for segment in line_segments(line)]
 
 
 def _mask_line(line: str, state: str) -> tuple[str, str]:
-    """Blank single-quoted text on one line; `state` is the open quote."""
     out: list[str] = []
     escaped = False
     for char in line:
@@ -155,12 +144,6 @@ def _mask_line(line: str, state: str) -> tuple[str, str]:
 
 
 def mask_literal_text(command: str) -> str:
-    """Blank text the shell never executes, keeping offsets and line breaks.
-
-    Single-quoted strings and the bodies of heredocs with a quoted delimiter
-    are literal; double-quoted strings and unquoted heredocs still run `$(...)`
-    and are kept.
-    """
     out: list[str] = []
     state = ""
     quote = ""
@@ -181,7 +164,6 @@ def mask_literal_text(command: str) -> str:
 
 
 def command_head(tokens: list[str]) -> tuple[str, list[str]]:
-    """Return the base command name and its tokens, past env and `command`."""
     i = 0
     while i < len(tokens) and "=" in tokens[i] and not tokens[i].startswith("-"):
         i += 1

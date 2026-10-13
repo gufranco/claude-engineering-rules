@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""Warn when an edit lands outside the file list of the active spec plan.
-
-Triggers PreToolUse on Write, Edit, MultiEdit. Looks for the most recently
-modified `specs/<date>-<slug>/plan.md` (or `.claude/specs/...`) that has
-been touched within the last 60 minutes. If found, parses the plan body for
-a "Task breakdown" or "## Tasks" section and extracts every file path
-mentioned in backticks. If the current edit target is not in that list, the
-hook blocks the edit with permissionDecision=deny and exit 2. A file that
-legitimately must change, such as a companion test, is added to the plan
-first, which keeps the declared scope accurate.
-
-Bypass: SCOPE_GUARD_DISABLE=1 in the parent shell.
-
-Enforces: rules/surgical-edits.md and the /plan spec folder convention.
-"""
-
 from __future__ import annotations
 
 import json
@@ -110,7 +94,6 @@ from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def plan_is_closed(plan: Path) -> bool:
-    """True when the plan header carries an `Archived:` or `Superseded:` stamp."""
     try:
         with plan.open(encoding="utf-8", errors="replace") as handle:
             header = handle.read(PLAN_HEADER_BYTES)
@@ -120,17 +103,6 @@ def plan_is_closed(plan: Path) -> bool:
 
 
 def find_active_plan(cwd: Path) -> Path | None:
-    """Return the nearest recent plan.md that governs `cwd`.
-
-    The walk stops at the repository root. A plan outside the repository being
-    edited never governs it, and without that boundary the search reaches the
-    home directory, where one project's plan would govern every project on the
-    machine.
-
-    Proximity decides first, recency only breaks ties within one directory. The
-    nearest plan is the one that describes the work in hand; the newest plan is
-    merely whichever session last saved.
-    """
     now = time.time()
     for cursor in walk_up(cwd, limit=5):
         here: list[tuple[float, Path]] = []
@@ -149,7 +121,6 @@ def find_active_plan(cwd: Path) -> Path | None:
 
 
 def extract_declared_paths(plan_text: str) -> set[str]:
-    """Extract every backtick-quoted path from the plan body."""
     paths: set[str] = set()
     for match in BACKTICK_PATH.finditer(plan_text):
         token = match.group(1)
@@ -162,11 +133,6 @@ def extract_declared_paths(plan_text: str) -> set[str]:
 
 
 def governs(plan_path: Path, target: Path) -> bool:
-    """True when target lies inside the repository the plan belongs to.
-
-    A plan scopes the work in its own repository. A file elsewhere, such as a
-    knowledge vault a session also writes to, was never in that plan's scope.
-    """
     root = repo_root(plan_path.parent)
     if root is None:
         return True
@@ -178,7 +144,6 @@ def governs(plan_path: Path, target: Path) -> bool:
 
 
 def is_in_scope(target: Path, declared: set[str]) -> bool:
-    """True if target matches any declared path or lives under a declared dir."""
     target_str = str(target)
     for decl in declared:
         if decl in target_str:

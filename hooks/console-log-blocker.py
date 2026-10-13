@@ -1,30 +1,4 @@
 #!/usr/bin/env python3
-"""console-log-blocker
-
-PreToolUse hook that blocks console.log/warn/error/info/debug/trace in
-production code. Rule source: ~/.claude/rules/code-style.md "Use the
-project logger, never console".
-
-Skipped paths:
-  - Test files: *.test.*, *.spec.*, **/__tests__/**, **/__test__/**
-  - Next.js error boundaries: **/error.tsx, **/global-error.tsx
-  - Scripts and tools: **/scripts/**, **/bin/**, **/tools/**, **/cli/**
-  - Config files: **/*.config.{js,ts,mjs}
-  - Hooks themselves: ~/.claude/hooks/**
-
-Third-party tool directives are honored, since they are the one comment form
-the project ban exempts:
-  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
-
-There is no allow marker of our own. Legitimate console use lives in the
-skipped paths above; everything else uses the project logger.
-
-Bypass:
-  CONSOLE_LOG_DISABLE=1, or a TTL entry via scripts/bypass.py
-"""
-
 from __future__ import annotations
 
 import os
@@ -91,7 +65,6 @@ from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
-    """Skip non-JS/TS files, test directories, error boundaries, and configs."""
     if not path:
         return True
     p = path.lower()
@@ -108,7 +81,6 @@ def is_skipped(path: str) -> bool:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
-    """Return (file_path, field_name, text) tuples for Write/Edit/MultiEdit."""
     out: list[tuple[str, str, str]] = []
     fp = tool_input.get("file_path", "") or ""
     if tool == "Write":
@@ -129,7 +101,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
 
 
 def find(text: str) -> list[str]:
-    """Return console.* matches per line, honoring third-party tool directives."""
     lines = text.splitlines()
     block_state = compute_block_state(lines, rules=ESLINT_RULES)
     hits: list[str] = []

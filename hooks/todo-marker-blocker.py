@@ -1,39 +1,4 @@
 #!/usr/bin/env python3
-"""todo-marker-blocker
-
-PreToolUse hook that blocks tactical-debt marker comments in source code.
-Rule sources:
-  - ~/.claude/CLAUDE.md "Completeness" (no TODOs, no leave-for-later).
-  - ~/.claude/rules/code-style.md "Completeness" (full implementation, never half-measures).
-  - ~/.claude/rules/design-philosophy.md "Strategic vs Tactical Programming".
-
-Markers blocked (case-insensitive, word-boundary):
-  TODO, FIXME, HACK, XXX, WIP, and the literal phrase "leave for later".
-
-Allowlist (issue-linked form):
-  TODO(#123), FIXME(#456), TODO(#issue-789), FIXME(issue-42)
-  An explicit issue reference converts a bare marker into a tracked item.
-
-Skipped paths:
-  - Planning artifacts: **/specs/**, **/docs/adr/**, **/docs/plan*/**
-  - Templates: **/templates/**, *.tmpl, *.template
-  - Test files: *.test.*, *.spec.*, **/__tests__/**, **/__test__/**
-  - The ~/.claude/ tree itself (rules document the patterns, hooks self-test them)
-  - Markdown, YAML, TOML, JSON, ini, config files
-
-Third-party tool directives are honored, since they are the one comment form
-the project ban exempts:
-  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
-
-There is no allow marker of our own. A legitimate marker uses the
-issue-linked form `TODO(#123)`, which passes without any comment annotation.
-
-Bypass:
-  TODO_MARKER_DISABLE=1, or a TTL entry via scripts/bypass.py
-"""
-
 from __future__ import annotations
 
 import os
@@ -145,7 +110,6 @@ from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
-    """Skip non-source files, planning paths, templates, tests, the .claude tree."""
     if not path:
         return True
     p = path.lower()
@@ -159,7 +123,6 @@ def is_skipped(path: str) -> bool:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
-    """Return (file_path, field_name, text) tuples for Write/Edit/MultiEdit."""
     out: list[tuple[str, str, str]] = []
     fp = tool_input.get("file_path", "") or ""
     if tool == "Write":

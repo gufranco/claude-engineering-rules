@@ -1,34 +1,4 @@
 #!/usr/bin/env python3
-"""validate-normative-keywords.py
-
-Short, focused validator for normative-keyword and banned-phrase drift in
-rules, standards, checklists, and CLAUDE.md. Runs locally before commits or
-on demand. Complements the broader audit-writing-quality.py by surfacing
-only the findings authors should act on right away.
-
-Scope:
-  ~/.claude/rules/
-  ~/.claude/standards/
-  ~/.claude/checklists/
-  ~/.claude/CLAUDE.md
-
-Categories checked:
-  should-bullet       bullet items starting with "Should " or "should "
-  banned-opener       sycophantic openers outside quoted definitions
-  banned-closer       rhetorical closers
-  banned-hedge        hedge phrases
-  banned-transition   weak transitions
-
-Exit code:
-  0  no actionable findings
-  1  one or more findings printed to stdout
-
-Source rules:
-  ~/.claude/rules/normative-keywords.md
-  ~/.claude/rules/writing-precision.md
-  ~/.claude/CLAUDE.md Banned Phrases
-"""
-
 from __future__ import annotations
 
 import argparse

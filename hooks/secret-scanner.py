@@ -117,7 +117,6 @@ from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 
 def should_skip(filepath):
-    """Check if a file should be skipped."""
     if any(filepath.startswith(p) or f"/{p}" in filepath for p in SKIP_PATHS):
         return True
     basename = filepath.rsplit("/", 1)[-1] if "/" in filepath else filepath

@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Gate the release toolchain on `npm audit --json`, with named waivers.
-
-Reads the audit report on stdin. Fails on every high or critical advisory
-except a waived one, and fails on a waived one as soon as npm reports a
-non-breaking fix, so a waiver ends by itself when upstream ships a patch.
-
-Usage: npm audit --json | python3 .github/scripts/audit-release-toolchain.py
-"""
-
 from __future__ import annotations
 
 import json
@@ -25,7 +16,6 @@ def advisory_id(url: str) -> str:
 
 
 def direct_advisories(report: dict) -> list[tuple[str, dict, object]]:
-    """(package, advisory, fixAvailable) for every advisory naming a package."""
     vulnerabilities = report.get("vulnerabilities") or {}
     return [
         (package, via, entry.get("fixAvailable"))

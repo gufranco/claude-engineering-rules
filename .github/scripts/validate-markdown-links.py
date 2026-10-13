@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""Validate markdown link discipline across the repo.
-
-Scans every tracked ``.md`` file and reports bare file mentions whose path
-resolves to a real file in the repo. The rule is documented in
-``rules/markdown-links.md``.
-
-Exit code 0 when clean. Exit code 1 when any blocking finding is present.
-Advisory findings (paths under ``specs/``) print to stdout but do not fail.
-
-Usage:
-    python3 .github/scripts/validate-markdown-links.py
-    python3 .github/scripts/validate-markdown-links.py --include-advisory
-    python3 .github/scripts/validate-markdown-links.py path/to/file.md ...
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -36,7 +21,6 @@ from _lib.markdown_link_detector import (  # noqa: E402
 
 
 def tracked_markdown_files(repo_root: Path) -> list[str]:
-    """Return repo-relative paths of every tracked .md file."""
     result = subprocess.run(
         ["git", "-C", str(repo_root), "ls-files", "*.md"],
         capture_output=True,

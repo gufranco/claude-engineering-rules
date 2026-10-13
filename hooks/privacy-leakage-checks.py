@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""privacy-leakage-checks
-
-PreToolUse hook on Write, Edit, MultiEdit. Catches privacy-sensitive
-patterns that leak personal data or set cookies without consent gates.
-
-Rule source: ~/.claude/rules/privacy-defaults.md and
-~/.claude/rules/cookie-discipline.md.
-
-Detected patterns:
-  - document.cookie = ... or setCookie(...) without a consent check above
-  - console.log of email/phone/SSN/JWT patterns
-  - localStorage.setItem with PII keys (email, phone, ssn, token)
-  - Hardcoded Google Analytics / GTM / Facebook Pixel / LinkedIn / TikTok
-    Pixel IDs without surrounding consent guard
-
-Scope: .ts, .tsx, .js, .jsx, .mjs, .cjs, .vue, .svelte, .html files.
-
-Bypass:
-  PRIVACY_CHECKS_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os
