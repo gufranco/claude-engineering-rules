@@ -27,11 +27,11 @@ def run_hook(staged, command="git commit -m 'x'", env_extra=None, diff_exit=0):
         stub = Path(tmp) / "git"
         stub.write_text(
             "#!/bin/sh\n"
-            'if [ "$1" = "diff" ]; then\n'
+            'case "$*" in *diff*)\n'
             f"  printf '%s' \"{chr(10).join(staged)}\"\n"
             '  [ -n "$STAGED_EMPTY" ] || echo\n'
-            f"  exit {diff_exit}\n"
-            "fi\n"
+            f"  exit {diff_exit} ;;\n"
+            "esac\n"
             "exit 0\n"
         )
         stub.chmod(0o755)
@@ -288,3 +288,60 @@ class RenderGateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RenderEvidenceScopeTest(unittest.TestCase):
+    def test_a_spec_unit_test_is_not_render_evidence(self):
+        # Arrange
+        staged = ["src/Button.tsx", "src/Button.spec.tsx"]
+
+        # Act
+        result = run_hook(staged)
+
+        # Assert
+        self.assertEqual(result.returncode, BLOCK)
+
+    def test_an_e2e_spec_is_render_evidence(self):
+        # Arrange
+        staged = ["src/Button.tsx", "e2e/button.spec.ts"]
+
+        # Act
+        result = run_hook(staged)
+
+        # Assert
+        self.assertEqual(result.returncode, ALLOW)
+
+    def test_native_views_are_gated(self):
+        # Arrange
+        staged = ["ios/App/ProfileView.swift", "android/app/src/main/ProfileScreen.kt"]
+
+        # Act
+        result = run_hook(staged)
+
+        # Assert
+        self.assertEqual(result.returncode, BLOCK)
+
+    def test_native_ui_tests_are_render_evidence(self):
+        # Arrange
+        staged = [
+            "ios/App/ProfileView.swift",
+            "ios/AppUITests/ProfileUITests.swift",
+            "android/app/src/main/ProfileScreen.kt",
+            "android/app/src/androidTest/ProfileScreenTest.kt",
+        ]
+
+        # Act
+        result = run_hook(staged)
+
+        # Assert
+        self.assertEqual(result.returncode, ALLOW)
+
+    def test_native_non_ui_sources_are_not_gated(self):
+        # Arrange
+        staged = ["server/src/main/kotlin/OrderService.kt", "Sources/Api/Router.swift"]
+
+        # Act
+        result = run_hook(staged)
+
+        # Assert
+        self.assertEqual(result.returncode, ALLOW)
