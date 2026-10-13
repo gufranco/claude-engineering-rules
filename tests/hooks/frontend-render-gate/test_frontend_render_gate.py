@@ -268,7 +268,7 @@ class RenderGateTest(unittest.TestCase):
         # Assert
         self.assertEqual(result.returncode, ALLOW)
 
-    def test_malformed_payload_does_not_block(self):
+    def test_malformed_payload_blocks(self):
         # Arrange
         argv = [sys.executable, str(HOOK)]
 
@@ -283,7 +283,7 @@ class RenderGateTest(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(result.returncode, ALLOW)
+        self.assertEqual(result.returncode, BLOCK)
 
 
 if __name__ == "__main__":

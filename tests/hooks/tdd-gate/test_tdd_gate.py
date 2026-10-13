@@ -415,7 +415,7 @@ def test_blocks_index_that_declares_behavior(tool_use, run_hook, tmp_path, conte
     assert_blocked(result, "without a companion test")
 
 
-def test_handles_malformed_json():
+def test_blocks_malformed_json():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "tdd-gate.py"
 
@@ -430,7 +430,7 @@ def test_handles_malformed_json():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_allows_source_in_session_scratchpad(tool_use, run_hook, tmp_path):

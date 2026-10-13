@@ -27,7 +27,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -145,6 +144,7 @@ PATTERNS: list[tuple[re.Pattern[str], str]] = [
 ]
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def _snippet(text: str, idx: int) -> str:
@@ -314,10 +314,7 @@ def main() -> int:
     if is_bypassed("ai-process-leak-blocker"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("ai-process-leak-blocker")
 
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}

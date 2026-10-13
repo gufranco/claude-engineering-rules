@@ -115,8 +115,11 @@ Prose in this repository follows the same discipline the rules describe.
 A hook runs on someone's machine, on every matching tool call, with their
 privileges. It gets the strictest review in the repository.
 
-- Fail open on an internal error. A crashing hook must never block unrelated
-  work.
+- Fail closed on input a guard cannot read. Read the payload with
+  `read_hook_payload` from [`hooks/_lib/hook_input.py`](hooks/_lib/hook_input.py),
+  which blocks with exit 2 on stdin that is not a JSON object, a `tool_input`
+  that is not an object, or a text field that is not a string. A hook that
+  only informs, such as a PostToolUse or SessionStart hook, never blocks.
 - Stay fast. The benchmark gate in CI holds hooks under 500 ms.
 - Ship tests under [`tests/hooks/<hook-name>/`](tests) covering the block case,
   the allow case, and the bypass.

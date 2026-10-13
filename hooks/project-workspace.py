@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib import project_workspace as pw  # noqa: E402
 from _lib.audit_log import record as _audit  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 
 HOOK_NAME = "project-workspace"
@@ -374,12 +375,7 @@ def handle_stop(data: dict[str, object], cwd: Path) -> int:
 def main() -> int:
     if os.environ.get("PROJECT_WORKSPACE_DISABLE") == "1" or is_bypassed(HOOK_NAME):
         return 0
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
-    if not isinstance(data, dict):
-        return 0
+    data = read_hook_payload("project-workspace")
     cwd = Path(str(data.get("cwd") or os.getcwd()))
     event = data.get("hook_event_name")
     if event == "SessionStart":

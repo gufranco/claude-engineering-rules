@@ -124,7 +124,7 @@ def test_empty_edits_returns_zero(run_hook):
     assert code == 0
 
 
-def test_malformed_json_returns_zero():
+def test_malformed_json_blocks():
     # Arrange
     env = {"PATH": "/usr/bin:/bin", "CLAUDE_HOOK_AUDIT_DISABLE": "1", "HOME": "/tmp"}
 
@@ -140,10 +140,10 @@ def test_malformed_json_returns_zero():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
-def test_non_string_content_returns_zero(run_hook):
+def test_non_string_content_blocks(run_hook):
     # Arrange
     payload = {
         "tool_name": "Write",
@@ -154,7 +154,7 @@ def test_non_string_content_returns_zero(run_hook):
     code, _ = run_hook(payload)
 
     # Assert
-    assert code == 0
+    assert code == 2
 
 
 def test_skipped_extension_returns_zero(run_hook):
@@ -205,7 +205,7 @@ def test_skipped_migration_path_returns_zero(run_hook):
     assert code == 0
 
 
-def test_multi_edit_non_dict_edit_skipped(run_hook):
+def test_multi_edit_non_dict_edit_blocks(run_hook):
     # Arrange
     payload = {
         "tool_name": "MultiEdit",
@@ -222,8 +222,7 @@ def test_multi_edit_non_dict_edit_skipped(run_hook):
     code, stderr = run_hook(payload)
 
     # Assert
-    assert code == 2
-    assert "array.push" in stderr
+    assert (code, "could not read its input" in stderr) == (2, True)
 
 
 def test_records_and_tuples_syntax_does_not_crash(run_hook):

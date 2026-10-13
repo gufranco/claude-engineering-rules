@@ -49,6 +49,7 @@ RAW_FETCH = re.compile(
 GH_REPO_VIEW_FILE = re.compile(r"\bgh\s+repo\s+view\s+\S+/\S+\s+(?!-)\S+")
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def find_offender(command: str) -> tuple[str, str] | None:
@@ -121,10 +122,7 @@ def main() -> int:
     if is_bypassed("repo-fetch-blocker"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    data = read_hook_payload("repo-fetch-blocker")
 
     if data.get("tool_name") != "Bash":
         return 0

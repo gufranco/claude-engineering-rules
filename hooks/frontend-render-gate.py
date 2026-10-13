@@ -15,7 +15,6 @@ Bypass: FRONTEND_RENDER_GATE_DISABLE=1 in a parent shell, or a TTL-bound
 entry in the shared registry, matching doc-sync-guard and secret-scanner.
 """
 
-import json
 import os
 import re
 import subprocess
@@ -24,6 +23,7 @@ import sys
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 UI_SUFFIXES = (
@@ -133,10 +133,7 @@ def main() -> int:
     if is_bypassed("frontend-render-gate"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    payload = read_hook_payload("frontend-render-gate")
 
     if payload.get("tool_name") != "Bash":
         return 0

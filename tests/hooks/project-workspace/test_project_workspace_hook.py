@@ -385,7 +385,7 @@ def test_env_bypass_skips_every_event(run_hook, tool_use, tmp_path):
 
 
 @pytest.mark.parametrize("raw", ["not json", "[]"])
-def test_malformed_payload_is_ignored(raw):
+def test_malformed_payload_blocks(raw):
     # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
@@ -402,10 +402,10 @@ def test_malformed_payload_is_ignored(raw):
     )
 
     # Assert
-    assert (proc.returncode, proc.stdout) == (0, "")
+    assert proc.returncode == 2
 
 
-def test_non_dict_tool_input_is_ignored(run_hook, tmp_path):
+def test_non_dict_tool_input_blocks(run_hook, tmp_path):
     # Arrange
     repo = make_repo(tmp_path / "project")
     payload = {
@@ -419,7 +419,7 @@ def test_non_dict_tool_input_is_ignored(run_hook, tmp_path):
     code, _, _ = run_hook(HOOK, payload, env=GIT_ENV)
 
     # Assert
-    assert code == 0
+    assert code == 2
 
 
 def write(repo: Path, rel: str) -> None:

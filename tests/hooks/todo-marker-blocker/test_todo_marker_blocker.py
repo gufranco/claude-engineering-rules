@@ -493,7 +493,7 @@ def test_allows_marker_in_vendor(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_returns_zero():
+def test_invalid_json_blocks():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "todo-marker-blocker.py"
 
@@ -507,7 +507,7 @@ def test_invalid_json_returns_zero():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_suppression_without_justification_does_not_allow(tool_use, run_hook):

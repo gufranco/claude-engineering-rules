@@ -427,7 +427,7 @@ def test_skips_a_plan_that_cannot_be_read(tool_use, run_hook, tmp_path):
     assert_allowed(result)
 
 
-def test_malformed_payload_is_ignored():
+def test_malformed_payload_blocks():
     # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
@@ -442,7 +442,7 @@ def test_malformed_payload_is_ignored():
     )
 
     # Assert
-    assert (proc.returncode, proc.stdout) == (0, "")
+    assert proc.returncode == 2
 
 
 @pytest.mark.parametrize("root", ["docs", ".work", ".work-local"])

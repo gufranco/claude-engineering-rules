@@ -24,7 +24,6 @@ Receives Bash tool input as JSON on stdin.
 Exit 0 = allow, exit 2 = block.
 """
 
-import json
 import os
 import re
 import sys
@@ -56,6 +55,7 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.cli_invocations import Invocation, invocations  # noqa: E402
 
 
@@ -75,10 +75,7 @@ def main() -> None:
         _sys.exit(0)
     if not should_run("gcloud-config-guard"):
         _sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("gcloud-config-guard")
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:

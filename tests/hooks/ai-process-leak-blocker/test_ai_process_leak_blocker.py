@@ -484,7 +484,7 @@ def test_allows_clean_pr_body(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_returns_zero():
+def test_invalid_json_blocks():
     # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "ai-process-leak-blocker.py"
@@ -500,7 +500,7 @@ def test_invalid_json_returns_zero():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_allows_unknown_tool(tool_use, run_hook):
@@ -573,7 +573,7 @@ def test_write_with_no_path_still_checked(tool_use, run_hook):
     assert_blocked(result)
 
 
-def test_multiedit_with_non_dict_edit(tool_use, run_hook):
+def test_multiedit_with_non_dict_edit_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -587,7 +587,7 @@ def test_multiedit_with_non_dict_edit(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_blocks_gh_pr_body_file_with_leak(tmp_path, tool_use, run_hook):
@@ -704,7 +704,7 @@ def test_allows_when_body_file_missing(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_write_non_string_content_is_skipped(tool_use, run_hook):
+def test_write_non_string_content_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write",
@@ -715,7 +715,7 @@ def test_write_non_string_content_is_skipped(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 @pytest.mark.parametrize(
@@ -1129,7 +1129,7 @@ def test_allows_an_unreadable_body_file(tmp_path, tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_edit_non_string_new_string_is_skipped(tool_use, run_hook):
+def test_edit_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use("Edit", {"file_path": "/repo/src/app.ts", "new_string": 7})
 
@@ -1137,10 +1137,10 @@ def test_edit_non_string_new_string_is_skipped(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_non_string_new_string_is_skipped(tool_use, run_hook):
+def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     edits = [{"old_string": "a", "new_string": 7}, "not an edit"]
     payload = tool_use("MultiEdit", {"file_path": "/repo/src/app.ts", "edits": edits})
@@ -1149,10 +1149,10 @@ def test_multiedit_non_string_new_string_is_skipped(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_malformed_payload_is_ignored():
+def test_malformed_payload_blocks():
     # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
@@ -1167,4 +1167,4 @@ def test_malformed_payload_is_ignored():
     )
 
     # Assert
-    assert (proc.returncode, proc.stdout) == (0, "")
+    assert proc.returncode == 2

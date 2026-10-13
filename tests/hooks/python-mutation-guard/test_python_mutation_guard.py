@@ -295,7 +295,7 @@ def test_ignores_unrelated_tools(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_survives_malformed_payload(run_hook):
+def test_blocks_malformed_payload(run_hook):
     # Arrange
     command = "not-json"
 
@@ -303,7 +303,7 @@ def test_survives_malformed_payload(run_hook):
     code, _stdout, _stderr = run_hook(HOOK, command)
 
     # Assert
-    assert code == 0
+    assert code == 2
 
 
 OFFENDING = PARAM_MUTATION
@@ -335,7 +335,7 @@ def _run_raw(hook_name: str, stdin_text: str, env_extra=None):
     return proc.returncode, proc.stderr
 
 
-def test_raw_invalid_json_is_ignored():
+def test_raw_invalid_json_blocks():
     # Arrange
     stdin_text = "{not json at all"
 
@@ -343,7 +343,7 @@ def test_raw_invalid_json_is_ignored():
     code, _stderr = _run_raw(HOOK, stdin_text)
 
     # Assert
-    assert code == 0
+    assert code == 2
 
 
 def test_empty_file_path_is_ignored(tool_use, run_hook):
@@ -357,7 +357,7 @@ def test_empty_file_path_is_ignored(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_non_string_content_is_ignored(tool_use, run_hook):
+def test_non_string_content_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": 42})
 
@@ -365,10 +365,10 @@ def test_non_string_content_is_ignored(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_non_string_new_string_is_ignored(tool_use, run_hook):
+def test_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Edit", {"file_path": OFFENDING_PATH, "old_string": "a", "new_string": 42}
@@ -378,10 +378,10 @@ def test_non_string_new_string_is_ignored(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_non_dict_edits_are_ignored(tool_use, run_hook):
+def test_non_dict_edits_block(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit", {"file_path": OFFENDING_PATH, "edits": ["not-a-dict", None]}
@@ -391,10 +391,10 @@ def test_non_dict_edits_are_ignored(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_non_string_new_string_is_ignored(tool_use, run_hook):
+def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -405,7 +405,7 @@ def test_multiedit_non_string_new_string_is_ignored(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_profile_disable_short_circuits(tool_use, run_hook):

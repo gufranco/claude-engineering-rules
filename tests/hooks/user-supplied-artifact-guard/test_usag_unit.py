@@ -44,56 +44,60 @@ class VanishingPath(Path):
         raise OSError("file vanished between checks")
 
 
-def test_read_command_returns_empty_on_malformed_json(
+def test_read_command_blocks_on_malformed_json(
     hook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
 
     # Act
-    result = hook._read_command()
+    with pytest.raises(SystemExit) as exit_info:
+        hook._read_command()
 
     # Assert
-    assert result == ""
+    assert exit_info.value.code == 2
 
 
-def test_read_command_returns_empty_on_non_dict_root(
+def test_read_command_blocks_on_non_dict_root(
     hook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
     monkeypatch.setattr(sys, "stdin", io.StringIO("[1, 2, 3]"))
 
     # Act
-    result = hook._read_command()
+    with pytest.raises(SystemExit) as exit_info:
+        hook._read_command()
 
     # Assert
-    assert result == ""
+    assert exit_info.value.code == 2
 
 
-def test_read_command_returns_empty_on_non_dict_tool_input(
+def test_read_command_blocks_on_non_dict_tool_input(
     hook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": "scalar"}, monkeypatch)
 
     # Act
-    result = hook._read_command()
+    with pytest.raises(SystemExit) as exit_info:
+        hook._read_command()
 
     # Assert
-    assert result == ""
+    assert exit_info.value.code == 2
 
 
-def test_read_command_returns_empty_when_command_non_string(
+def test_read_command_blocks_when_command_non_string(
     hook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
     _stdin_with({"tool_input": {"command": 42}}, monkeypatch)
 
     # Act
-    result = hook._read_command()
+    with pytest.raises(SystemExit) as exit_info:
+        hook._read_command()
 
     # Assert
-    assert result == ""
+    assert exit_info.value.code == 2
 
 
 def test_read_command_returns_string(hook, monkeypatch: pytest.MonkeyPatch) -> None:

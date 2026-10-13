@@ -23,7 +23,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -128,6 +127,7 @@ META_LEADING_PATTERN = re.compile(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def evaluate(prompt: str) -> dict[str, bool]:
@@ -189,10 +189,7 @@ def main() -> int:
     if is_bypassed("subagent-brief-quality"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("subagent-brief-quality")
 
     tool = payload.get("tool_name", "")
     if tool not in AGENT_TOOL_NAMES:

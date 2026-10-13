@@ -321,6 +321,7 @@ __version__ = _MUTATION_VERSION
 PERF_BUDGET_MS = 200
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 
 
 def _receiver_known(match: Match) -> bool:
@@ -1036,12 +1037,9 @@ def main() -> int:
         items = _read_batch_items()
         tool = "Batch"
     else:
-        try:
-            payload = json.load(sys.stdin)
-        except Exception:
-            return 0
-        tool = payload.get("tool_name", "") or ""
-        tool_input = payload.get("tool_input", {}) or {}
+        payload = read_hook_payload("mutation-method-blocker")
+        tool = str(payload.get("tool_name") or "")
+        tool_input = tool_input_of(payload)
         items = _normalize_payload(tool, tool_input)
     if not items:
         return 0

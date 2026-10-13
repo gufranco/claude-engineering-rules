@@ -267,7 +267,7 @@ def test_disable_env_other_value_still_blocks(tmp_path, tool_use, run_hook):
     assert_blocked(result, "Game_missing_idx")
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "prisma-schema-sync.py"
     env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
@@ -284,7 +284,7 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_unknown_tool_is_ignored(tool_use, run_hook):
@@ -462,7 +462,7 @@ def test_schema_with_at_map_table_override(tmp_path, tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tmp_path, tool_use, run_hook):
+def test_write_non_string_content_blocks(tmp_path, tool_use, run_hook):
     # Arrange
     migration_sql = _write_schema(
         tmp_path,
@@ -477,10 +477,10 @@ def test_write_non_string_content_is_safe(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_edit_non_string_new_string_is_safe(tmp_path, tool_use, run_hook):
+def test_edit_non_string_new_string_blocks(tmp_path, tool_use, run_hook):
     # Arrange
     migration_sql = _write_schema(
         tmp_path,
@@ -499,10 +499,10 @@ def test_edit_non_string_new_string_is_safe(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_non_dict_edits_safe(tmp_path, tool_use, run_hook):
+def test_multiedit_non_dict_edits_blocks(tmp_path, tool_use, run_hook):
     # Arrange
     migration_sql = _write_schema(
         tmp_path,
@@ -520,7 +520,7 @@ def test_multiedit_non_dict_edits_safe(tmp_path, tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_drop_column_for_unknown_table_allowed(tmp_path, tool_use, run_hook):
@@ -692,7 +692,7 @@ def test_schema_via_parent_with_sibling_prisma(tmp_path, tool_use, run_hook):
     assert_blocked(result, "Game_x_idx")
 
 
-def test_multiedit_with_dict_non_string_new_string(tmp_path, tool_use, run_hook):
+def test_multiedit_with_dict_non_string_new_string_blocks(tmp_path, tool_use, run_hook):
     # Arrange
     migration_sql = _write_schema(
         tmp_path,
@@ -710,7 +710,7 @@ def test_multiedit_with_dict_non_string_new_string(tmp_path, tool_use, run_hook)
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 @pytest.fixture

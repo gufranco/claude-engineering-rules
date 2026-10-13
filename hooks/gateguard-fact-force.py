@@ -55,6 +55,7 @@ except Exception:  # pragma: no cover
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def _load_state() -> dict[str, Any]:
@@ -128,10 +129,7 @@ def main() -> None:
         sys.exit(0)
     if is_bypassed("gateguard-fact-force"):
         sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("gateguard-fact-force")
 
     tool_input = data.get("tool_input", data.get("input", {}))
     file_path = _proposed_path(tool_input)

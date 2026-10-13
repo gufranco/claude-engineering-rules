@@ -256,7 +256,7 @@ def test_a_live_bypass_entry_allows(tmp_path, tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_a_payload_that_is_not_json_allows():
+def test_a_payload_that_is_not_json_blocks():
     # Arrange
     env = apply_coverage_env(dict(os.environ))
     env["CLAUDE_BYPASS_STATE"] = os.devnull
@@ -273,7 +273,7 @@ def test_a_payload_that_is_not_json_allows():
     )
 
     # Assert
-    assert (proc.returncode, proc.stderr) == (0, "")
+    assert (proc.returncode, "could not read its input" in proc.stderr) == (2, True)
 
 
 def test_repo_dir_falls_back_to_the_working_directory(tmp_path, monkeypatch):

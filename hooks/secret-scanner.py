@@ -8,7 +8,6 @@ Receives Bash tool input as JSON on stdin.
 Exit 0 = allow, exit 2 = block.
 """
 
-import json
 import os
 import re
 import subprocess
@@ -120,6 +119,7 @@ SECRET_PATTERNS = [
 ]
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.cli_invocations import invocations  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
@@ -289,10 +289,7 @@ def main():
         return 0
     if not should_run("secret-scanner"):
         sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("secret-scanner")
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command or not COMMIT_PATTERN.search(strip_git_global_options(command)):

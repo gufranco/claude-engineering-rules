@@ -57,6 +57,7 @@ UNHEALTHY_THRESHOLD = 3
 TTL_SECONDS = 5 * 60
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def _load_state() -> dict[str, dict]:
@@ -153,10 +154,7 @@ def main() -> None:
         sys.exit(0)
     if is_bypassed("mcp-health-check"):
         sys.exit(0)
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("mcp-health-check")
 
     tool_name = data.get("tool_name", "")
     if not tool_name.startswith("mcp__"):

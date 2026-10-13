@@ -320,7 +320,7 @@ def test_empty_file_path_is_skipped(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_write_non_string_content_is_safe(tool_use, run_hook):
+def test_write_non_string_content_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write",
@@ -331,10 +331,10 @@ def test_write_non_string_content_is_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
+def test_multiedit_non_dict_edits_block(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "MultiEdit",
@@ -348,7 +348,7 @@ def test_multiedit_non_dict_edits_are_safe(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_allow_marker_above_call_does_not_suppress(tool_use, run_hook):
@@ -443,7 +443,7 @@ def test_eslint_directive_still_suppresses(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "console-log-blocker.py"
     env = {**os.environ, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
@@ -460,4 +460,4 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2

@@ -119,7 +119,7 @@ def test_missing_prompt_field_does_not_block(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_non_string_prompt_does_not_block(tool_use, run_hook):
+def test_non_string_prompt_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use("Agent", {"prompt": 12345})
 
@@ -127,7 +127,7 @@ def test_non_string_prompt_does_not_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_well_formed_agent_prompt_passes(tool_use, run_hook):

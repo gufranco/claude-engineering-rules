@@ -172,7 +172,7 @@ def test_a_live_bypass_entry_turns_the_scanner_off(
     assert_allowed(result)
 
 
-def test_a_payload_that_is_not_json_is_allowed():
+def test_a_payload_that_is_not_json_blocks():
     # Arrange
     env = apply_coverage_env(dict(os.environ))
 
@@ -188,4 +188,4 @@ def test_a_payload_that_is_not_json_is_allowed():
     )
 
     # Assert
-    assert (proc.returncode, proc.stderr) == (0, "")
+    assert (proc.returncode, "could not read its input" in proc.stderr) == (2, True)

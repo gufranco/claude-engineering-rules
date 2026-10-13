@@ -285,7 +285,7 @@ def test_file_bypass_short_circuits(tmp_path: Path) -> None:
     assert result.returncode == 0
 
 
-def test_handles_malformed_json() -> None:
+def test_blocks_malformed_json() -> None:
     # Arrange
     argv = [sys.executable, str(HOOK)]
 
@@ -300,10 +300,10 @@ def test_handles_malformed_json() -> None:
     )
 
     # Assert
-    assert result.returncode == 0
+    assert result.returncode == 2
 
 
-def test_handles_non_dict_root() -> None:
+def test_blocks_non_dict_root() -> None:
     # Arrange
     argv = [sys.executable, str(HOOK)]
 
@@ -318,10 +318,10 @@ def test_handles_non_dict_root() -> None:
     )
 
     # Assert
-    assert result.returncode == 0
+    assert result.returncode == 2
 
 
-def test_handles_non_dict_tool_input() -> None:
+def test_blocks_non_dict_tool_input() -> None:
     # Arrange
     argv = [sys.executable, str(HOOK)]
 
@@ -336,7 +336,7 @@ def test_handles_non_dict_tool_input() -> None:
     )
 
     # Assert
-    assert result.returncode == 0
+    assert result.returncode == 2
 
 
 def test_audit_swallows_exception(monkeypatch: pytest.MonkeyPatch) -> None:

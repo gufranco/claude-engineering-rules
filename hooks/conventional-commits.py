@@ -15,7 +15,6 @@ Bypass channels:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import shlex
@@ -23,6 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
@@ -57,15 +57,8 @@ SHORT_CLUSTER_RE = re.compile(r"-[a-zA-Z]+")
 
 
 def _read_payload() -> tuple[str, str]:
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return "", ""
-    if not isinstance(data, dict):
-        return "", ""
-    tool_input = data.get("tool_input") or data.get("input") or {}
-    if not isinstance(tool_input, dict):
-        return "", ""
+    data = read_hook_payload("conventional-commits")
+    tool_input = tool_input_of(data)
     value = tool_input.get("command", "")
     cwd = data.get("cwd", "")
     return (

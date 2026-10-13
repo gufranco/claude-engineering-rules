@@ -258,7 +258,14 @@ def test_a_leak_in_a_plain_payload_file_blocks(tmp_path, tool_use, run_hook):
         ("Edit", {"file_path": DOC, "new_string": LEAK}, "new_string"),
         (
             "MultiEdit",
-            {"file_path": DOC, "edits": ["x", {"new_string": 1}, {"new_string": LEAK}]},
+            {
+                "file_path": DOC,
+                "edits": [
+                    {"new_string": "one"},
+                    {"new_string": "two"},
+                    {"new_string": LEAK},
+                ],
+            },
             "edits[2].new_string",
         ),
         (
@@ -286,7 +293,6 @@ def test_a_leak_written_to_a_published_file_blocks(
     [
         ("Write", {"file_path": PAYLOAD_JSON, "content": json.dumps({"x": LEAK})}),
         ("Write", {"file_path": "/tmp/project/app.py", "content": LEAK}),
-        ("Write", {"file_path": DOC, "content": 3}),
         ("Edit", {"file_path": DOC, "new_string": None}),
         ("Read", {"file_path": DOC}),
     ],
@@ -369,7 +375,7 @@ def test_a_live_bypass_entry_allows(tmp_path, tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_a_payload_that_is_not_json_allows():
+def test_a_payload_that_is_not_json_blocks():
     # Arrange
     env = apply_coverage_env(dict(os.environ))
     env["CLAUDE_BYPASS_STATE"] = os.devnull
@@ -386,4 +392,22 @@ def test_a_payload_that_is_not_json_allows():
     )
 
     # Assert
-    assert (proc.returncode, proc.stderr) == (0, "")
+    assert (proc.returncode, "could not read its input" in proc.stderr) == (2, True)
+
+
+@pytest.mark.parametrize(
+    ("tool", "tool_input"),
+    [
+        ("Write", {"file_path": DOC, "content": 3}),
+        ("MultiEdit", {"file_path": DOC, "edits": ["x", {"new_string": 1}]}),
+    ],
+)
+def test_a_text_field_that_is_not_a_string_blocks(tool, tool_input, tool_use, run_hook):
+    # Arrange
+    payload = tool_use(tool, tool_input)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "could not read its input")

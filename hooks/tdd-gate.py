@@ -149,6 +149,7 @@ BARREL_STATEMENT = re.compile(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_test_file(path: Path) -> bool:
@@ -328,10 +329,7 @@ def main() -> int:
     if is_bypassed("tdd-gate"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    data = read_hook_payload("tdd-gate")
 
     tool_name = data.get("tool_name", "")
     if tool_name not in {"Write", "Edit", "MultiEdit"}:

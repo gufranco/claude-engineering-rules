@@ -285,7 +285,7 @@ def test_file_bypass_short_circuits(tmp_path: Path) -> None:
     assert result.returncode == 0
 
 
-def test_malformed_json_allows() -> None:
+def test_malformed_json_blocks() -> None:
     # Arrange
     argv = [sys.executable, str(HOOK)]
 
@@ -300,10 +300,10 @@ def test_malformed_json_allows() -> None:
     )
 
     # Assert
-    assert result.returncode == 0
+    assert result.returncode == 2
 
 
-def test_non_dict_root_allows() -> None:
+def test_non_dict_root_blocks() -> None:
     # Arrange
     argv = [sys.executable, str(HOOK)]
 
@@ -318,10 +318,10 @@ def test_non_dict_root_allows() -> None:
     )
 
     # Assert
-    assert result.returncode == 0
+    assert result.returncode == 2
 
 
-def test_non_dict_tool_input_allows() -> None:
+def test_non_dict_tool_input_blocks() -> None:
     # Arrange
     argv = [sys.executable, str(HOOK)]
 
@@ -336,7 +336,7 @@ def test_non_dict_tool_input_allows() -> None:
     )
 
     # Assert
-    assert result.returncode == 0
+    assert result.returncode == 2
 
 
 def test_blocks_malformed_constraint_trailer() -> None:

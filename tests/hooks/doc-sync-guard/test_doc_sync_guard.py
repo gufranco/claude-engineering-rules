@@ -613,7 +613,7 @@ class TestDegradedEnvironment:
         # Assert
         assert_allowed(result)
 
-    def test_allows_when_stdin_is_not_json(self, repo: Path) -> None:
+    def test_blocks_when_stdin_is_not_json(self, repo: Path) -> None:
         # Arrange
         hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
@@ -629,7 +629,7 @@ class TestDegradedEnvironment:
         )
 
         # Assert
-        assert proc.returncode == 0
+        assert proc.returncode == 2
 
     def test_allows_when_an_unreadable_doc_blocks_the_scan(
         self, repo: Path, tool_use, run_hook
