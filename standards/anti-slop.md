@@ -12,6 +12,8 @@ Slop is not a vocabulary problem. It is text whose shape was chosen before its c
 
 The catalogue below comes from the field guide maintained by WikiProject AI Cleanup at <https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing>, which is derived from thousands of reviewed instances rather than from intuition, cross-checked against <https://arxiv.org/abs/2509.19163> and <https://tomyandell.dev/blog/llm-voice>. Two properties make it usable here: the tells are structural, so they survive paraphrase, and each one has a stated mechanism, so a novel variant is recognizable.
 
+The guide groups its vocabulary by model generation and changes as models change. The word list in `SLOP009` follows its 2026-10-13 revision. Word frequency describes a corpus, never one text. Kobak and coauthors counted 379 style words in excess in 2024 PubMed abstracts, with "delves" at 28 times its expected rate, and state that their analysis cannot identify an individual abstract (<https://arxiv.org/abs/2406.07016>). `SLOP009` therefore fires only on two distinct words in one passage.
+
 ## The Three Deciding Tests
 
 Apply these to any passage before publishing it. They are ordered by how often they fire.
@@ -64,6 +66,22 @@ Legitimate uses of "ensuring", "enabling", and "allowing" exist in technical pro
 | Cutoff disclaimer | "as of my last update"; "maintains a low profile" | Chat-surface residue; in an artifact it reads as a fact about the subject |
 
 The third row is the dangerous one, because it survives a plausibility review. It concedes uncertainty, which reads as honesty, and then fills the gap anyway. [`../CLAUDE.md`](../CLAUDE.md) "Anti-Hallucination" governs the fabricated fact; this rule governs the sentence shape that smuggles it in. When something is unknown, the sentence says it is unknown and stops, per [`verification.md`](../rules/verification.md).
+
+## Search Narration
+
+A comment, README, or document describes what exists. It never records how the author got there.
+
+| Pattern | Example | Write instead |
+|---|---|---|
+| Sources that refused | "two vendor sites refused the request (HTTP 403)" | Nothing. The reader cannot use a failed fetch |
+| What was not found | "no public schematic could be located" | "The schematic is unpublished", or drop the line |
+| When a check ran | "verified on 2026-10-11 against the board" | "Matches the board." The commit date already records when |
+| The tool that checked | "confirmed with a logic analyzer trace" | The measured value, with its unit |
+| A paragraph explaining why a value is unknown | Three sentences of search history | `Unknown.` |
+
+This became a rule on 2026-10-12, after a restyle of 58 firmware sources and twelve READMEs filled their headers with research history. A reader of the finished project asks what the code does and why a value is what it is. The search that produced the answer belongs in the commit, the plan folder, or the vault.
+
+Records exist to hold that history, so `SLOP015` stays silent in three places: the vault under `SECOND_BRAIN_VAULT`, the project workspace resolved by [`../hooks/_lib/project_workspace.py`](../hooks/_lib/project_workspace.py), and any `PROMPT.md`. Every other tell still applies there.
 
 ## Marketing Verbs and Copulative Avoidance
 
@@ -136,7 +154,7 @@ Overcorrection is its own failure, and detection guidance is heavily contaminate
 - Restating a requirement in a spec, a rule, or a checklist, where repetition across documents is the point.
 - Deliberate parallel structure in a table column, where parallelism is what makes the column scannable.
 
-Third-party AI detectors are not evidence, and they misfire hardest on non-native English writers. Do not run one, cite one, or treat a score from one as a finding.
+Third-party AI detectors are not evidence. On the RAID benchmark, a RoBERTa detector reached 95 percent accuracy on GPT-2 text and rarely passed 60 percent on text from other models, and swapping a few words for synonyms cut metric-based detectors by up to 36.1 percent. The RAID authors oppose detector use in any disciplinary context (<https://arxiv.org/abs/2405.07940>). Seven detectors flagged 61.22 percent of TOEFL essays by non-native English writers as generated (<https://arxiv.org/abs/2304.02819>). Do not run one, cite one, or treat a score from one as a finding.
 
 ## Forbidden Patterns
 
@@ -154,9 +172,9 @@ Third-party AI detectors are not evidence, and they misfire hardest on non-nativ
 
 ## Mechanical Enforcement
 
-[`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py) runs at PreToolUse on Write, Edit, MultiEdit for Markdown, and on Bash commands that publish text. Codes are `SLOP001` through `SLOP014`. Code spans and fenced blocks are excluded before matching, so quoted examples and sample output never trip it.
+[`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py) runs at PreToolUse on Write, Edit, MultiEdit for Markdown, and on Bash commands that publish text. Codes are `SLOP001` through `SLOP015`. Code spans and fenced blocks are excluded before matching, so quoted examples and sample output never trip it.
 
-The detector set is deliberately narrower than this document. Every pattern was measured against the Markdown files under the rules, standards, checklists, skills, agents and docs directories before inclusion, 210 files as of 2026-09-17, and only patterns at or below three corpus hits were wired up for Markdown. Rule of three and structural symmetry are not mechanically decidable and are review-time obligations.
+The detector set is deliberately narrower than this document. Every pattern was measured against the Markdown files under the rules, standards, checklists, skills, agents and docs directories before inclusion, 210 files as of 2026-09-17 and 333 files, root documents included, as of 2026-10-13. Only patterns at or below three corpus hits were wired up for Markdown. `SLOP015` matched one sentence, in the frontend standard, and that sentence was deleted. The six words added to `SLOP009` made no file reach two distinct hits. Rule of three and structural symmetry are not mechanically decidable and are review-time obligations.
 
 `SLOP013` and `SLOP014` are the exception, and they carry their own scope. A bullet opening with a bold label measures 648 hits in that corpus and a Markdown heading measures 3600, so neither can be enforced on repository Markdown or on a pull-request description, where [`git-workflow.md`](../rules/git-workflow.md) prescribes exactly that shape. Both are a template tell in one place only: the body of a comment published on a pull request. The two detectors therefore fire only on a command posting into a review thread, a review payload, or a GitLab discussion note, and the hook parses the JSON payload so it reads the body a person will see rather than one escaped line.
 
