@@ -49,7 +49,7 @@ That expands to:
 | Target | What it does |
 |--------|--------------|
 | `make test-cov` | pytest with branch coverage, gated at 95% |
-| `make test-bats` | bats-core suites for the shell hooks |
+| `make test-bats` | bats-core suites for the shell scripts in [`.github/scripts/`](.github/scripts); fails when none exist |
 | `make test-smoke` | the hook smoke suite, [`tests/test-hooks.sh`](tests/test-hooks.sh) |
 | `make benchmark` | every registered PreToolUse hook under 500 ms |
 | `make lint` | ruff, shellcheck, actionlint, yamllint, zizmor, lint-skills |
