@@ -180,14 +180,15 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
 
 
 PHRASE_LABEL = "leave for later"
+ESLINT_RULES = frozenset({"no-warning-comments"})
 
 
 def find(text: str) -> list[str]:
     lines = text.splitlines()
-    block_state = compute_block_state(lines)
+    block_state = compute_block_state(lines, rules=ESLINT_RULES)
     hits: list[str] = []
     for i, line in enumerate(lines):
-        if is_suppressed(lines, i, block_state=block_state):
+        if is_suppressed(lines, i, block_state=block_state, rules=ESLINT_RULES):
             continue
         hits = [*hits, *(m.group(1).upper() for m in MARKER_PATTERN.finditer(line))]
         if PHRASE_PATTERN.search(line):

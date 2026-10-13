@@ -27,7 +27,7 @@ from .mutation_allowlists import is_dom_assignment, is_dom_receiver
 from .mutation_detectors_core import (
     Match,
     mask_lines,
-    strip_strings_comments,
+    mask_text,
     truncate_excerpt,
 )
 from .mutation_fix_lookup import tc39_stage_filter
@@ -1078,7 +1078,7 @@ def detect_xstate_non_assign_context_write(
         lookback_start = max(0, lineno - 61)
         between_lines = lines[lookback_start:lineno]
         between = "\n".join(between_lines)
-        between_masked = strip_strings_comments(between) if between else ""
+        between_masked = mask_text(between) if between else ""
         inside_assign = False
         if between_masked:
             last_assign = between_masked.rfind("assign(")
@@ -1395,7 +1395,7 @@ def detect_yjs_mutation_outside_transact(
             lookback_start = max(0, lineno - 61)
             between_lines = lines[lookback_start:lineno]
             between = "\n".join(between_lines)
-            between_masked = strip_strings_comments(between) if between else ""
+            between_masked = mask_text(between) if between else ""
             inside_transact = False
             if between_masked:
                 idx = between_masked.rfind(".transact(")
@@ -1522,7 +1522,7 @@ def detect_mobx_observable_outside_action(
             lookback_start = max(0, lineno - 61)
             between_lines = lines[lookback_start:lineno]
             between = "\n".join(between_lines)
-            between_masked = strip_strings_comments(between) if between else ""
+            between_masked = mask_text(between) if between else ""
             inside_action = False
             if between_masked:
                 for opener in ("runInAction(", "action(", "flow("):
