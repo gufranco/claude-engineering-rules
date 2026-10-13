@@ -17,7 +17,10 @@ def test_blocks_docker_context_use(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `docker context use` mutates the active Docker context for every shell on this",
+    )
 
 
 def test_allows_docker_context_use_help(tool_use, run_hook):
@@ -106,3 +109,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

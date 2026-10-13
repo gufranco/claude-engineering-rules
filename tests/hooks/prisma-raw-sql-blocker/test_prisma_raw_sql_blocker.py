@@ -186,7 +186,7 @@ def test_blocks_raw_sql_in_test_paths(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "Blocked: Prisma raw SQL is banned in application code.")
 
 
 def test_disable_env_bypasses(tool_use, run_hook):
@@ -243,6 +243,7 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_unknown_tool_is_ignored(tool_use, run_hook):
@@ -267,7 +268,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-raw-sql-blocker could not read its input: tool_input.content is not a",
+    )
 
 
 def test_multiedit_non_dict_edits_block(tool_use, run_hook):
@@ -284,7 +288,10 @@ def test_multiedit_non_dict_edits_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-raw-sql-blocker could not read its input: tool_input.edits is not a",
+    )
 
 
 def test_empty_file_path_with_clean_content(tool_use, run_hook):
@@ -332,7 +339,10 @@ def test_multiedit_with_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: prisma-raw-sql-blocker could not read its input: tool_input.edits is not a",
+    )
 
 
 def test_allows_the_anti_pattern_inside_documentation(tool_use, run_hook):
@@ -364,4 +374,4 @@ def test_still_blocks_the_same_call_in_application_code(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "Blocked: Prisma raw SQL is banned in application code.")

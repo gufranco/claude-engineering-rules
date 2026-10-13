@@ -17,7 +17,10 @@ def test_blocks_configure_set_without_profile(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `aws configure set ...` without `--profile <name>` writes to the default AWS",
+    )
 
 
 def test_allows_configure_set_with_profile_flag(tool_use, run_hook):
@@ -100,6 +103,7 @@ def test_invalid_json_stdin_blocks():
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "aws-profile-guard.py"
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -114,3 +118,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

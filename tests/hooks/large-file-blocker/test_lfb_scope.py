@@ -16,6 +16,7 @@ def _git(repo: Path, *args: str) -> None:
         cwd=repo,
         check=True,
         capture_output=True,
+        timeout=30,
     )
 
 

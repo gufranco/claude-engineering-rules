@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import json
 import subprocess
 import sys
@@ -10,9 +12,6 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOK = REPO_ROOT / "hooks" / "vault-recall.py"
 
-_TESTS_DIR = REPO_ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 
@@ -93,6 +92,7 @@ def run(hook_input: dict, vault: Path | None, env_extra: dict | None = None) -> 
         capture_output=True,
         text=True,
         env=env,
+        timeout=30,
     )
     assert result.returncode == 0, result.stderr
     return result.stdout
@@ -163,7 +163,18 @@ def test_survives_malformed_input():
     argv = [sys.executable, str(HOOK)]
 
     # Act
-    result = subprocess.run(argv, input="not json", capture_output=True, text=True)
+    result = subprocess.run(
+        argv,
+        input="not json",
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
+    )
 
     # Assert
     assert result.returncode == 0

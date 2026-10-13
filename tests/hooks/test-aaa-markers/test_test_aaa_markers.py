@@ -55,8 +55,7 @@ def test_allows_a_well_formed_written_test(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_an_edit_that_leaves_legacy_tests_untouched(
@@ -75,8 +74,7 @@ def test_allows_an_edit_that_leaves_legacy_tests_untouched(
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_blocks_a_multiedit_that_changes_a_legacy_test(tool_use, run_hook, tmp_path):
@@ -146,8 +144,7 @@ def test_allows_a_payload_it_does_not_enforce(tool_use, run_hook, tool, tool_inp
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_blocks_a_malformed_test_staged_through_bash(tool_use, run_hook, repo):
@@ -172,8 +169,7 @@ def test_allows_a_well_formed_test_staged_through_bash(tool_use, run_hook, repo)
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_fails_closed_when_the_index_cannot_be_read(tool_use, run_hook, repo):
@@ -205,8 +201,7 @@ def test_allows_a_payload_with_nothing_to_check(run_hook, payload):
     result = run_hook(HOOK, candidate)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_everything_when_bypassed(tool_use, run_hook):
@@ -219,8 +214,7 @@ def test_allows_everything_when_bypassed(tool_use, run_hook):
     result = run_hook(HOOK, payload, env={"TEST_AAA_MARKERS_DISABLE": "1"})
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize(
@@ -241,8 +235,7 @@ def test_allows_when_the_profile_skips_the_hook(tool_use, run_hook, env):
     result = run_hook(HOOK, payload, env=env)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 def test_allows_a_bash_command_without_a_commit(tool_use, run_hook):
@@ -253,8 +246,7 @@ def test_allows_a_bash_command_without_a_commit(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    code, _ = assert_allowed(result)
-    assert code == 0
+    assert_allowed(result)
 
 
 @pytest.mark.parametrize("raw", ["not json", '["not", "an", "object"]', ""])
@@ -270,6 +262,7 @@ def test_blocks_input_it_cannot_read(raw, hooks_dir):
         text=True,
         env={**os.environ, "CLAUDE_BYPASS_STATE": os.devnull},
         check=False,
+        timeout=30,
     )
 
     # Assert

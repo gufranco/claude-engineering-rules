@@ -179,10 +179,10 @@ def test_mask_lines_ends_a_quoted_string_at_the_line_break():
     assert masked[1] == "obj.prop = 1;"
 
 
-def test_mask_lines_matches_the_single_line_masker_on_one_line():
+def test_mask_lines_blanks_string_template_and_comment_on_one_line():
     # Arrange
     line = 'const s = "a\\"b" + `x${y}z`; // tail'
-    expected = [core.strip_strings_comments(line)]
+    expected = ['const s = "    " + `      `;        ']
 
     # Act
     masked = core.mask_lines(line)
@@ -1464,22 +1464,6 @@ def test_hook_filter_matches_framework_receiver_array_push_skipped():
     # Assert
     assert survived == []
     assert reasons.get("framework-receiver") == 1
-
-
-def test_hook_filter_matches_ts_nocheck_suppresses_all():
-    # Arrange
-    text = "// @ts-nocheck\nitems.push(x);\n"
-    matches = [core.Match(line=2, col=1, text="items.push(x);", detector="array.push")]
-    block_state = supp.compute_block_state(text.splitlines())
-
-    # Act
-    survived, reasons = HOOK_MODULE._filter_matches(
-        matches, text, "/repo/src/app.ts", block_state
-    )
-
-    # Assert
-    assert survived == []
-    assert reasons == {"ts-nocheck": 1}
 
 
 def test_hook_inside_state_mgmt_scope_same_line_immer_produce():

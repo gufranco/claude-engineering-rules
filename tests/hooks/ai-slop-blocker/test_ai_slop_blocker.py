@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import json
 import subprocess
 import sys
@@ -68,7 +70,9 @@ def test_detector_blocks_its_tell(tool_use, run_hook, code, text):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert code in stderr
 
 
@@ -150,7 +154,9 @@ def test_line_number_survives_masking(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "line 7" in stderr
 
 
@@ -220,7 +226,9 @@ def test_publishing_bash_is_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP002" in stderr
 
 
@@ -252,7 +260,9 @@ def test_edit_scans_new_string_only(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP003" in stderr
 
 
@@ -273,7 +283,9 @@ def test_multiedit_reports_the_offending_index(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP004" in stderr
     assert "[1]" in stderr
 
@@ -314,7 +326,9 @@ def test_block_message_matches_canonical_schema(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert validate_block_message(stderr) == []
 
 
@@ -411,7 +425,9 @@ def test_repeated_code_reports_its_fix_once(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert stderr.count("SLOP004: Name the source") == 1
 
 
@@ -471,10 +487,17 @@ def test_malformed_stdin_blocks():
         input="not json at all",
         capture_output=True,
         text=True,
+        timeout=30,
+        env={
+            **os.environ,
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            "CLAUDE_BYPASS_STATE": os.devnull,
+        },
     )
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_nested_list_prose_is_still_scanned(tool_use, run_hook):
@@ -490,7 +513,9 @@ def test_nested_list_prose_is_still_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP002" in stderr
 
 
@@ -539,7 +564,9 @@ def test_prose_in_a_published_body_is_still_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP006" in stderr
 
 
@@ -566,7 +593,9 @@ def test_unnamed_source_is_still_evasive_attribution(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP004" in stderr
 
 
@@ -590,7 +619,9 @@ def test_bold_label_bullet_blocked_in_a_reply(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP013" in stderr
 
 
@@ -610,7 +641,9 @@ def test_heading_blocked_in_a_reply(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP014" in stderr
 
 
@@ -686,7 +719,9 @@ def test_inline_reply_body_is_scanned(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP014" in stderr
 
 
@@ -711,7 +746,9 @@ def test_review_payload_inline_comment_bodies_are_scanned(tool_use, run_hook, tm
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP013" in stderr
 
 
@@ -744,7 +781,9 @@ def test_unparseable_reply_command_still_scans(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP014" in stderr
 
 
@@ -763,7 +802,9 @@ def test_malformed_json_payload_falls_back_to_the_raw_text(
     result = run_hook(HOOK, payload)
 
     # Assert
-    _exit, stderr = assert_blocked(result)
+    _exit, stderr = assert_blocked(
+        result, "BLOCKED by ai-slop-blocker (~/.claude/rules/anti-slop.md)"
+    )
     assert "SLOP014" in stderr
 
 
@@ -791,7 +832,10 @@ def test_non_string_command_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: ai-slop-blocker could not read its input: tool_input.command is not a string.",
+    )
 
 
 @pytest.mark.parametrize(
@@ -885,7 +929,7 @@ def test_search_narration_is_allowed_in_the_project_workspace(
     # Arrange
     repo = tmp_path / "repo"
     repo.mkdir()
-    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True, timeout=30)
     research = repo / "docs" / "research" / "pinout.md"
     research.parent.mkdir(parents=True)
     (repo / "docs" / "PROMPT.md").write_text("# Prompt\n", encoding="utf-8")

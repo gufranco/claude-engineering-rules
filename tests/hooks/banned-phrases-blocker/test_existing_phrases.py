@@ -312,6 +312,7 @@ def test_invalid_json_stdin_blocks():
     )
     env = dict(os.environ)
     env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    env["CLAUDE_BYPASS_STATE"] = os.devnull
 
     # Act
     proc = subprocess.run(
@@ -326,3 +327,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

@@ -24,7 +24,10 @@ def test_a_waiting_pipeline_status_blocks(tool_use, run_hook, command):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `glab ci status --wait` polls every 3 seconds and burns the GitHub API rate",
+    )
 
 
 @pytest.mark.parametrize(

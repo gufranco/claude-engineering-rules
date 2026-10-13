@@ -40,7 +40,10 @@ def test_blocks_in_compound_command(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: `gh run watch` polls every 3 seconds and burns the GitHub API rate budget",
+    )
 
 
 @pytest.mark.parametrize(

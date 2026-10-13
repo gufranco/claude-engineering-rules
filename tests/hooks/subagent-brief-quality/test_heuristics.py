@@ -29,7 +29,7 @@ SPECIFIC_REFERENCE_SAMPLES = [
 @pytest.mark.parametrize("ref", SPECIFIC_REFERENCE_SAMPLES)
 def test_specific_reference_pattern_matches(tool_use, run_hook, ref):
     # Arrange
-    prompt = f"Investigate {ref}. Return a short report. Under 100 words."
+    prompt = f"Investigate {ref}. Return a list."
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act
@@ -37,6 +37,7 @@ def test_specific_reference_pattern_matches(tool_use, run_hook, ref):
 
     # Assert
     assert_allowed(result)
+    assert result.stderr == ""
 
 
 LENGTH_CAP_SAMPLES = [
@@ -73,7 +74,7 @@ LENGTH_CAP_SAMPLES = [
 @pytest.mark.parametrize("cap", LENGTH_CAP_SAMPLES)
 def test_length_cap_pattern_matches(tool_use, run_hook, cap):
     # Arrange
-    prompt = f"Investigate path/to/file.ts. Return a list. {cap}."
+    prompt = f"Return a list. {cap}."
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act
@@ -81,6 +82,7 @@ def test_length_cap_pattern_matches(tool_use, run_hook, cap):
 
     # Assert
     assert_allowed(result)
+    assert result.stderr == ""
 
 
 OUTPUT_SHAPE_KEYWORDS = [
@@ -105,7 +107,7 @@ OUTPUT_SHAPE_KEYWORDS = [
 @pytest.mark.parametrize("kw", OUTPUT_SHAPE_KEYWORDS)
 def test_output_shape_keyword_matches(tool_use, run_hook, kw):
     # Arrange
-    prompt = f"Look at services/x.ts:10. Produce a {kw}. Under 100 words."
+    prompt = f"Look at services/x.ts:10 and give a {kw}."
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act
@@ -113,6 +115,7 @@ def test_output_shape_keyword_matches(tool_use, run_hook, kw):
 
     # Assert
     assert_allowed(result)
+    assert result.stderr == ""
 
 
 META_LEADING_SAMPLES = [
@@ -276,7 +279,7 @@ def test_meta_with_complete_brief_is_advisory(tool_use, run_hook):
 
 def test_function_with_parens_counts_as_specific_reference(tool_use, run_hook):
     # Arrange
-    prompt = "Look at createUser() in the auth module. Return a list. Briefly."
+    prompt = "Look at createUser() in the auth module. Return a list."
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act
@@ -288,7 +291,7 @@ def test_function_with_parens_counts_as_specific_reference(tool_use, run_hook):
 
 def test_directory_slash_path_counts_as_specific_reference(tool_use, run_hook):
     # Arrange
-    prompt = "Audit services/auth/handlers. Return a summary. Under 50 words."
+    prompt = "Audit services/auth/handlers. Return a summary."
     payload = tool_use("Agent", {"prompt": prompt})
 
     # Act

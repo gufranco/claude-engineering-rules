@@ -17,7 +17,7 @@ def test_blocks_gh_pr_without_token(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: gh command without explicit GH_TOKEN.")
 
 
 def test_allows_gh_version(tool_use, run_hook):
@@ -61,7 +61,7 @@ def test_blocks_no_api_call_chained_with_api_call(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: gh command without explicit GH_TOKEN.")
 
 
 def test_blocks_gh_auth_switch(tool_use, run_hook):
@@ -72,7 +72,10 @@ def test_blocks_gh_auth_switch(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "BLOCKED: gh auth switch changes the global active account and affects all terminals.",
+    )
 
 
 def test_allows_gh_with_inline_token(tool_use, run_hook):
@@ -164,6 +167,7 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr
 
 
 def test_allows_gh_text_inside_a_single_quoted_pattern(tool_use, run_hook):

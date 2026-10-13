@@ -95,6 +95,7 @@ def test_the_cli_reports_the_ttl_it_applied(tmp_path):
             "PATH": "/usr/bin:/bin",
         },
         check=False,
+        timeout=30,
     )
 
     # Assert

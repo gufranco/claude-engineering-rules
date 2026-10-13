@@ -27,4 +27,7 @@ def test_a_comment_command_after_a_heredoc_is_still_blocked(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked [PRC001]: this command publishes a pull-request comment outside a thread.",
+    )

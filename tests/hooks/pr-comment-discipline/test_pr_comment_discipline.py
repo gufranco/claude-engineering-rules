@@ -381,15 +381,15 @@ def test_bypass_env_allows(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_malformed_payload_is_ignored(run_hook):
+def test_payload_without_tool_input_is_allowed_silently(run_hook):
     # Arrange
     payload = {"tool_name": "Bash"}
 
     # Act
-    code, _stdout, _stderr = run_hook(HOOK, payload)
+    result = run_hook(HOOK, payload)
 
     # Assert
-    assert code == 0
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
 
 
 def test_inline_heredoc_body_is_read(tool_use, run_hook):

@@ -14,9 +14,6 @@ sys.path.insert(0, str(ROOT / "hooks"))
 from _lib.bypass_writer import set_bypass  # noqa: E402
 from _lib.session_lock import acquire  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
 
 HOOK = "pr-merge-blocker"
@@ -101,7 +98,10 @@ class TestBlocksWhileLocked:
         result = run_hook(HOOK, payload, env=locked)
 
         # Assert
-        _code, stderr = assert_blocked(result)
+        _code, stderr = assert_blocked(
+            result,
+            "BLOCKED: merging a pull request is not permitted while a morning sweep is running.",
+        )
         assert "morning" in stderr
 
     def test_blocks_a_merge_chained_behind_a_safe_command(
@@ -114,7 +114,10 @@ class TestBlocksWhileLocked:
         result = run_hook(HOOK, payload, env=locked)
 
         # Assert
-        assert_blocked(result)
+        assert_blocked(
+            result,
+            "BLOCKED: merging a pull request is not permitted while a morning sweep is running.",
+        )
 
     def test_blocks_when_the_lock_file_is_corrupt(
         self, tool_use, run_hook, tmp_path: Path
@@ -128,7 +131,10 @@ class TestBlocksWhileLocked:
         result = run_hook(HOOK, payload, env={"CLAUDE_SESSION_LOCK_STATE": str(state)})
 
         # Assert
-        assert_blocked(result)
+        assert_blocked(
+            result,
+            "BLOCKED: merging a pull request is not permitted while a morning sweep is running.",
+        )
 
 
 class TestAllowsWhileLocked:
@@ -266,3 +272,4 @@ class TestMalformedInput:
 
         # Assert
         assert proc.returncode == 2
+        assert "could not read its input" in proc.stderr

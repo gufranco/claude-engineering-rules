@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util as _util
 import json
 import os
 import subprocess
@@ -7,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.cov_env import apply_coverage_env
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "env-file-guard.py"
@@ -14,28 +16,36 @@ sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
 
-_TESTS_DIR = ROOT / "tests"
-if str(_TESTS_DIR) not in sys.path:
-    sys.path.insert(0, str(_TESTS_DIR))
-from _helpers.cov_env import apply_coverage_env  # noqa: E402
-import importlib.util as _util  # noqa: E402
+TIMEOUT_S = 30
+ISOLATION = {"CLAUDE_BYPASS_STATE": os.devnull, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
+
+
+def _run_raw(stdin: str, env: dict | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(HOOK)],
+        input=stdin,
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env({**os.environ, **ISOLATION, **(env or {})}),
+        timeout=TIMEOUT_S,
+        check=False,
+    )
 
 
 def _run(
     tool: str, file_path: str, env: dict | None = None
 ) -> subprocess.CompletedProcess[str]:
-    merged = os.environ.copy()
-    if env:
-        merged.update(env)
     payload = json.dumps({"tool_name": tool, "tool_input": {"file_path": file_path}})
-    return subprocess.run(
-        [sys.executable, str(HOOK)],
-        input=payload,
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(merged),
-        timeout=5,
-    )
+    return _run_raw(payload, env)
+
+
+def _load(name: str):
+    spec = _util.spec_from_file_location(name, str(HOOK))
+    assert spec is not None
+    assert spec.loader is not None
+    module = _util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def boom(**_kwargs: object) -> None:
@@ -288,81 +298,65 @@ def test_file_bypass_short_circuits(tmp_path: Path) -> None:
 
 def test_blocks_malformed_json() -> None:
     # Arrange
-    argv = [sys.executable, str(HOOK)]
+    stdin = "not json"
 
     # Act
-    result = subprocess.run(
-        argv,
-        input="not json",
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(os.environ.copy()),
-        timeout=5,
-    )
+    result = _run_raw(stdin)
 
     # Assert
     assert result.returncode == 2
+    assert "could not read its input" in result.stderr
 
 
 def test_blocks_non_dict_root() -> None:
     # Arrange
-    argv = [sys.executable, str(HOOK)]
+    stdin = "[1, 2, 3]"
 
     # Act
-    result = subprocess.run(
-        argv,
-        input="[1, 2, 3]",
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(os.environ.copy()),
-        timeout=5,
-    )
+    result = _run_raw(stdin)
 
     # Assert
     assert result.returncode == 2
+    assert "could not read its input" in result.stderr
 
 
 def test_blocks_non_dict_tool_input() -> None:
     # Arrange
-    argv = [sys.executable, str(HOOK)]
+    stdin = '{"tool_name": "Write", "tool_input": "not a dict"}'
 
     # Act
-    result = subprocess.run(
-        argv,
-        input='{"tool_name": "Write", "tool_input": "not a dict"}',
-        capture_output=True,
-        text=True,
-        env=apply_coverage_env(os.environ.copy()),
-        timeout=5,
-    )
+    result = _run_raw(stdin)
 
     # Assert
     assert result.returncode == 2
+    assert "could not read its input" in result.stderr
 
 
-def test_audit_swallows_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_reports_a_record_failure_on_stderr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Arrange
-    spec = _util.spec_from_file_location("_efg_mod1", str(HOOK))
-    module = _util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load("_efg_mod1")
     monkeypatch.setattr(module, "_audit_record", boom)
 
     # Act
-    result = module._audit("reason", "Write", "/path")
+    module._audit("reason", "Write", "/path")
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == (
+        "env-file-guard: audit log write failed: audit explosion\n"
+    )
 
 
-def test_audit_noop_when_record_none(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_noop_when_record_none(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Arrange
-    spec = _util.spec_from_file_location("_efg_mod2", str(HOOK))
-    module = _util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load("_efg_mod2")
     monkeypatch.setattr(module, "_audit_record", None)
 
     # Act
-    result = module._audit("reason", "Write", "/path")
+    module._audit("reason", "Write", "/path")
 
     # Assert
-    assert result is None
+    assert capsys.readouterr().err == ""

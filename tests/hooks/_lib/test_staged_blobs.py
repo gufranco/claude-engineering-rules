@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import sys
 from pathlib import Path
 
@@ -196,6 +198,9 @@ def test_skips_a_staged_file_past_the_size_ceiling(repo: GitRepo) -> None:
     assert documents == []
 
 
+@pytest.mark.skipif(
+    os.geteuid() == 0, reason="root reads files without permission bits"
+)
 def test_skips_an_unreadable_worktree_file(repo: GitRepo) -> None:
     # Arrange
     repo.stage("a.py", "x = 1\n")

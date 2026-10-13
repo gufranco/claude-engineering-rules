@@ -11,7 +11,9 @@ HOOK = "doc-sync-guard"
 
 
 def _git(repo: Path, *args: str) -> None:
-    subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", *args], cwd=repo, check=True, capture_output=True, timeout=30
+    )
 
 
 @pytest.fixture()

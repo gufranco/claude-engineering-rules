@@ -31,6 +31,7 @@ def git_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ["git", "init", "-q", str(tmp_path)],
         check=True,
         env={**os.environ, **GIT_ENV},
+        timeout=30,
     )
     monkeypatch.chdir(tmp_path)
     return tmp_path
@@ -45,7 +46,7 @@ def _write(repo: Path, name: str, payload: bytes) -> Path:
 
 def _stage(repo: Path, name: str, payload: bytes) -> Path:
     target = _write(repo, name, payload)
-    subprocess.run(["git", "add", "--", name], check=True, cwd=str(repo))
+    subprocess.run(["git", "add", "--", name], check=True, cwd=str(repo), timeout=30)
     return target
 
 
@@ -205,7 +206,10 @@ def test_block_message_follows_canonical_schema(
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_blocked(result)
+    _code, stderr = assert_blocked(
+        result,
+        "BLOCKED by user-supplied-artifact-guard (standards/artifact-identity.md (Never Become a",
+    )
     assert validate_block_message(stderr) == []
 
 

@@ -24,7 +24,9 @@ def git_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         "GIT_COMMITTER_NAME": "t",
         "GIT_COMMITTER_EMAIL": "t@t",
     }
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, env=env)
+    subprocess.run(
+        ["git", "init", "-q", str(tmp_path)], check=True, env=env, timeout=30
+    )
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -32,7 +34,7 @@ def git_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _stage(repo: Path, name: str, size_bytes: int) -> Path:
     target = repo / name
     target.write_bytes(b"x" * size_bytes)
-    subprocess.run(["git", "add", name], check=True, cwd=str(repo))
+    subprocess.run(["git", "add", name], check=True, cwd=str(repo), timeout=30)
     return target
 
 
@@ -104,15 +106,17 @@ def test_file_bypass_short_circuits(
     assert_allowed(result)
 
 
-def test_handles_malformed_json(git_repo: Path, run_hook) -> None:
+def test_payload_without_tool_input_is_allowed_silently(
+    git_repo: Path, run_hook
+) -> None:
     # Arrange
     payload = {"_raw": "not json"}
 
     # Act
-    code, _stdout, _stderr = run_hook(HOOK, payload)
+    result = run_hook(HOOK, payload)
 
     # Assert
-    assert code == 0
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
 
 
 def test_ignores_when_outside_git_repo(

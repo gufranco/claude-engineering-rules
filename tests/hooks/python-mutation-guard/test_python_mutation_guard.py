@@ -298,15 +298,15 @@ def test_ignores_unrelated_tools(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_blocks_malformed_payload(run_hook):
+def test_blocks_a_payload_that_is_not_an_object(run_hook):
     # Arrange
     command = "not-json"
 
     # Act
-    code, _stdout, _stderr = run_hook(HOOK, command)
+    result = run_hook(HOOK, command)
 
     # Assert
-    assert code == 2
+    assert_blocked(result, "could not read its input")
 
 
 OFFENDING = PARAM_MUTATION
@@ -368,7 +368,10 @@ def test_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: python-mutation-guard could not read its input: tool_input.content is not a",
+    )
 
 
 def test_non_string_new_string_blocks(tool_use, run_hook):
@@ -381,7 +384,10 @@ def test_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: python-mutation-guard could not read its input: tool_input.new_string is not a",
+    )
 
 
 def test_non_dict_edits_block(tool_use, run_hook):
@@ -394,7 +400,10 @@ def test_non_dict_edits_block(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: python-mutation-guard could not read its input: tool_input.edits is not a list",
+    )
 
 
 def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
@@ -408,7 +417,10 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload, env=ENFORCE)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: python-mutation-guard could not read its input: tool_input.edits is not a list",
+    )
 
 
 def test_profile_disable_short_circuits(tool_use, run_hook):

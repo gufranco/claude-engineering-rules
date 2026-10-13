@@ -331,7 +331,10 @@ def test_write_non_string_content_blocks(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: console-log-blocker could not read its input: tool_input.content is not a",
+    )
 
 
 def test_multiedit_non_dict_edits_block(tool_use, run_hook):
@@ -348,7 +351,10 @@ def test_multiedit_non_dict_edits_block(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(
+        result,
+        "Blocked: console-log-blocker could not read its input: tool_input.edits is not a list",
+    )
 
 
 def test_allow_marker_above_call_does_not_suppress(tool_use, run_hook):
@@ -461,3 +467,4 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

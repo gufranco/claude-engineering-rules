@@ -23,7 +23,7 @@ def test_always_protected_files_block(tool_use, run_hook, path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: edits to")
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,7 @@ def test_lint_and_type_sections_in_mixed_files_block(tool_use, run_hook, path, c
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result)
+    assert_blocked(result, "BLOCKED: edits to")
 
 
 def test_a_dependency_change_in_pyproject_passes(tool_use, run_hook):

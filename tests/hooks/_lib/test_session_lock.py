@@ -32,11 +32,13 @@ def state_path(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def custom_lock_state(tmp_path: Path) -> Iterator[Path]:
+def custom_lock_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Path]:
     target = tmp_path / "custom-locks.json"
-    os.environ["CLAUDE_SESSION_LOCK_STATE"] = str(target)
+    monkeypatch.setenv("CLAUDE_SESSION_LOCK_STATE", str(target))
     yield target
-    del os.environ["CLAUDE_SESSION_LOCK_STATE"]
+    monkeypatch.undo()
     importlib.reload(module)
 
 
@@ -299,7 +301,7 @@ class TestAcquire:
             acquire(lock_name, state_path=state_path)
 
         # Assert
-        assert raised.type is ValueError
+        assert str(raised.value) == "lock_name is required"
 
     def test_writes_owner_only_permissions(self, state_path: Path) -> None:
         # Arrange
@@ -363,7 +365,10 @@ class TestAcquire:
         self, state_path: Path
     ) -> None:
         # Arrange
-        acquire("morning", state_path=state_path, ttl_seconds=DEFAULT_TTL_SECONDS)
+        _write_raw(
+            state_path,
+            {"version": 1, "locks": [{"lock": "morning", "expires_at": _future()}]},
+        )
 
         # Act
         acquire("morning", state_path=state_path, ttl_seconds=DEFAULT_TTL_SECONDS)
@@ -374,7 +379,10 @@ class TestAcquire:
 
     def test_preserves_a_different_live_lock(self, state_path: Path) -> None:
         # Arrange
-        acquire("morning", state_path=state_path)
+        _write_raw(
+            state_path,
+            {"version": 1, "locks": [{"lock": "morning", "expires_at": _future()}]},
+        )
 
         # Act
         acquire("other", state_path=state_path)

@@ -13,7 +13,9 @@ COMMIT_ALL = "git commit -a -m 'chore: drop a script'"
 
 
 def _git(repo: Path, *args: str) -> None:
-    subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True)
+    subprocess.run(
+        ["git", *args], cwd=repo, check=True, capture_output=True, text=True, timeout=30
+    )
 
 
 @pytest.fixture()

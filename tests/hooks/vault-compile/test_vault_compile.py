@@ -30,6 +30,7 @@ def run(
         text=True,
         env=env,
         check=False,
+        timeout=30,
     )
 
 
