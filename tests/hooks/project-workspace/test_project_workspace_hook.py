@@ -454,6 +454,9 @@ def repo_with_tracked_prompt(tmp_path: Path) -> Path:
         "git stage notes",
         "git add 'notes/*.md'",
         "npm test && git add . && git commit -m wip",
+        "command git add -f notes/PROMPT.md",
+        "(git add -f notes/PROMPT.md)",
+        "cd notes && git add -f PROMPT.md",
     ],
 )
 def test_prompt_blocks_an_add_that_would_stage_it(
@@ -630,3 +633,15 @@ def test_non_bash_tool_is_ignored(run_hook, tool_use, tmp_path):
 
     # Assert
     assert (code, stdout) == (0, "")
+
+
+def test_prompt_ignores_an_add_named_inside_script_text(run_hook, tool_use, tmp_path):
+    # Arrange
+    repo = repo_with_untracked_prompt(tmp_path)
+    command = "python3 - <<'EOF'\nprint('git add -f notes/PROMPT.md')\nEOF"
+
+    # Act
+    code, _, _ = bash(run_hook, tool_use, repo, command)
+
+    # Assert
+    assert code == 0

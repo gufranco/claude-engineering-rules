@@ -550,3 +550,31 @@ def test_a_precisely_named_test_is_a_companion(tool_use, run_hook, tmp_path):
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_sibling_test_for_another_module_does_not_count(tool_use, run_hook, tmp_path):
+    # Arrange
+    (tmp_path / "src" / "tests").mkdir(parents=True)
+    (tmp_path / "src" / "tests" / "test_user_supplied_artifact.py").write_text("x")
+    target = tmp_path / "src" / "user.py"
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "BLOCKED")
+
+
+def test_a_sibling_test_named_for_the_module_counts(tool_use, run_hook, tmp_path):
+    # Arrange
+    (tmp_path / "src" / "tests").mkdir(parents=True)
+    (tmp_path / "src" / "tests" / "test_user.py").write_text("x")
+    target = tmp_path / "src" / "user.py"
+    payload = tool_use("Write", {"file_path": str(target), "content": "x = 1\n"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

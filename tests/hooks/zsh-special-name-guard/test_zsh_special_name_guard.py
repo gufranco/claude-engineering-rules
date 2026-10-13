@@ -138,3 +138,41 @@ def test_blocks_unreadable_input_with_a_message(hooks_dir):
     # Assert
     assert proc.returncode == 2
     assert "could not read its input" in proc.stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh api repos/o/r/pulls/1/comments -f path=src/a.ts -f body=x",
+        "curl -d status=ok https://example.test",
+    ],
+)
+def test_a_name_equals_value_argument_is_not_an_assignment(tool_use, run_hook, command):
+    # Arrange
+    payload = bash_payload(tool_use, command)
+
+    # Act
+    exit_code, _, _ = run_hook(HOOK, payload, env=ZSH)
+
+    # Assert
+    assert exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "path=/tmp/x; ls",
+        "x=1 path=/tmp/x ls",
+        "if true; then status=1; fi",
+        "ls && path=/tmp",
+    ],
+)
+def test_an_assignment_at_a_command_start_blocks(tool_use, run_hook, command):
+    # Arrange
+    payload = bash_payload(tool_use, command)
+
+    # Act
+    exit_code, _, stderr = run_hook(HOOK, payload, env=ZSH)
+
+    # Assert
+    assert (exit_code, "zsh special name" in stderr) == (2, True)
