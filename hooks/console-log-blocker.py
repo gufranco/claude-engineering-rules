@@ -47,6 +47,7 @@ from _lib.suppression import (
     is_suppressed,
 )
 
+ESLINT_RULES = frozenset({"no-console"})
 PATTERN = re.compile(r"\bconsole\.(log|warn|error|info|debug|trace)\s*\(")
 
 JS_EXTS: tuple[str, ...] = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
@@ -130,13 +131,13 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
 def find(text: str) -> list[str]:
     """Return console.* matches per line, honoring third-party tool directives."""
     lines = text.splitlines()
-    block_state = compute_block_state(lines)
+    block_state = compute_block_state(lines, rules=ESLINT_RULES)
     hits: list[str] = []
     for i, line in enumerate(lines):
         stripped = line.strip()
         if stripped.startswith("//") or stripped.startswith("*"):
             continue
-        if is_suppressed(lines, i, block_state=block_state):
+        if is_suppressed(lines, i, block_state=block_state, rules=ESLINT_RULES):
             continue
         for m in PATTERN.finditer(line):
             hits.append(m.group(0))
@@ -197,7 +198,8 @@ def main() -> int:
         + "\n".join(findings)
         + "\n\nFix: use the project's structured logger (Pino, Winston, @repo/logger, etc.). "
         "console is allowed only in tests, scripts, and Next.js error boundaries.\n"
-        "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
+        "Third-party tool directives are honored: @ts-expect-error, and an "
+        "eslint-disable that names no rule or names no-console.\n"
         "Bypass (one-off, rare): set CONSOLE_LOG_DISABLE=1, or register a TTL-bound "
         "pass with `python3 ~/.claude/scripts/bypass.py set console-log-blocker`.",
         file=sys.stderr,

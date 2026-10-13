@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
@@ -72,20 +71,6 @@ def test_angular_signals_negative_without_import_receivers() -> None:
 
     # Assert
     assert "angular-signals" not in receivers
-
-
-@pytest.mark.parametrize(
-    "file_path", ["src/app/counter.component.ts", "src/app/data.service.ts"]
-)
-def test_angular_component_filename_allowlisted(file_path) -> None:
-    # Arrange
-    path = file_path
-
-    # Act
-    result = is_state_mgmt_filename(path)
-
-    # Assert
-    assert result is True
 
 
 def test_qwik_signals_positive() -> None:

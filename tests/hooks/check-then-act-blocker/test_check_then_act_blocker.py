@@ -339,7 +339,7 @@ def test_survives_malformed_payload(run_hook):
 def test_honors_third_party_suppression_directive(tool_use, run_hook):
     # Arrange
     content = (
-        "// eslint-disable-next-line no-await-in-loop\n"
+        "// eslint-disable-next-line no-restricted-syntax\n"
         "const existing = await db.seat.findFirst({ where: { showId } });\n"
         "await db.seat.create({ data: { showId } });\n"
     )

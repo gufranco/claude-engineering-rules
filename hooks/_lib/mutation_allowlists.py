@@ -33,7 +33,16 @@ from __future__ import annotations
 
 import re
 
-JS_EXTS: tuple[str, ...] = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs")
+JS_EXTS: tuple[str, ...] = (
+    ".ts",
+    ".tsx",
+    ".mts",
+    ".cts",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+)
 TS_EXTS: tuple[str, ...] = (".ts", ".tsx", ".mts", ".cts")
 
 SKIP_SEGMENTS: tuple[str, ...] = (
@@ -155,16 +164,6 @@ PUSH_FRAMEWORK_RECEIVERS: frozenset[str] = frozenset(
         "ws",
         "socket",
         "client",
-        "stack",
-        "queue",
-        "outputs",
-        "output",
-        "errors",
-        "warnings",
-        "messages",
-        "logs",
-        "results",
-        "chunks",
     }
     | THIRD_PARTY_COMMAND_QUEUES
 )
@@ -172,8 +171,10 @@ PUSH_FRAMEWORK_RECEIVERS: frozenset[str] = frozenset(
 PUSH_FRAMEWORK_PATTERN = re.compile(
     r"\b(?:"
     + "|".join(re.escape(name) for name in PUSH_FRAMEWORK_RECEIVERS)
-    + r")\.push\b"
+    + r")(?:\.current)?\.push\b"
 )
+
+PUSH_CALL_PATTERN = re.compile(r"\.push\b")
 
 DOM_RECEIVER_NAMES: frozenset[str] = frozenset(
     {
@@ -308,11 +309,9 @@ def is_dom_assignment(receiver: str | None, prop: str | None) -> bool:
 
 
 STATE_MGMT_FILENAME_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"\.slice\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
-    re.compile(r"slice\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
-    re.compile(r"store\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
-    re.compile(r"reducer\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
-    re.compile(r"reducers\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
+    re.compile(r"(?:(?:^|[/._-])[Ss]|(?<=[a-z0-9])S)lice\.(?:ts|tsx|js|jsx)$"),
+    re.compile(r"(?:(?:^|[/._-])[Ss]|(?<=[a-z0-9])S)tore\.(?:ts|tsx|js|jsx)$"),
+    re.compile(r"(?:(?:^|[/._-])[Rr]|(?<=[a-z0-9])R)educers?\.(?:ts|tsx|js|jsx)$"),
     re.compile(r"\.pinia\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
     re.compile(r"\.mobx\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
     re.compile(r"\.valtio\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
@@ -324,8 +323,6 @@ STATE_MGMT_FILENAME_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\.svelte\.(?:ts|js)$", re.IGNORECASE),
     re.compile(r"\.signal\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
     re.compile(r"\.qwik\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
-    re.compile(r"\.component\.ts$", re.IGNORECASE),
-    re.compile(r"\.service\.ts$", re.IGNORECASE),
     re.compile(r"\.effect\.(?:ts|tsx|js|jsx)$", re.IGNORECASE),
 )
 
@@ -862,9 +859,8 @@ def is_framework_receiver(line: str, owner: str | None) -> bool:
     """
     if owner and owner in PUSH_FRAMEWORK_RECEIVERS:
         return True
-    if PUSH_FRAMEWORK_PATTERN.search(line):
-        return True
-    return False
+    framework = PUSH_FRAMEWORK_PATTERN.findall(line)
+    return bool(framework) and len(framework) == len(PUSH_CALL_PATTERN.findall(line))
 
 
 def collect_svelte_state_raw_receivers(full_text: str) -> frozenset[str]:

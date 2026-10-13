@@ -592,3 +592,40 @@ def test_invalid_json_stdin_does_not_crash():
 
     # Assert
     assert proc.returncode == 0
+
+
+def test_a_directive_for_another_rule_does_not_hide_any(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/user.ts",
+            "content": "// eslint-disable-next-line no-console\nconst x = value as any;\n",
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "any` type detected")
+
+
+def test_a_directive_naming_no_explicit_any_is_honored(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/user.ts",
+            "content": (
+                "// eslint-disable-next-line @typescript-eslint/no-explicit-any\n"
+                "const x = value as any;\n"
+            ),
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
