@@ -152,7 +152,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/ship`](skills/ship/SKILL.md) | Delivery pipeline: commit, PR, release, CI checks, worktrees |
 | [`/review`](skills/review/SKILL.md) | Three-pass code review, QA analysis, visual audit |
 | [`/respond`](skills/respond/SKILL.md) | Handle incoming review comments: classify, verify, draft replies, validate locally, post, resolve, monitor CI |
-| [`/assessment`](skills/assessment/SKILL.md) | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Outputs a machine-readable findings table that `/respond` can consume |
+| [`/assessment`](skills/assessment/SKILL.md) | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Grades AI slop with [`tools/slop-scan.py`](tools/slop-scan.py), which runs the `ai-slop-blocker` detectors over every Markdown file and a commit range, and removes it by deletion. Outputs a machine-readable findings table that `/respond` can consume |
 | [`/plan`](skills/plan/SKILL.md) | Spec folders with discovery, scope review, ADRs, scaffolding |
 | [`/audit`](skills/audit/SKILL.md) | Security audit, threat modeling, supply chain checks. `/audit trust` adds untrusted-project safety scanning with IOC catalog at [`trust-patterns.md`](skills/audit/trust-patterns.md) |
 | [`/test`](skills/test/SKILL.md) | Test execution, perf, lint, CI smoke, stub generation |
@@ -359,6 +359,7 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 | "Reviewer left comments on my PR" | `/respond` |
 | "Pre-submission audit or take-home check" | `/assessment` |
 | "Find what is missing the way an interviewer would" | `/assessment --focus <area>` |
+| "Remove AI slop from a project" | `/assessment --focus slop` |
 | "Summarize this PR for reviewers" | `/pr-summary` |
 | "Are we secure" | `/audit` |
 | "Threat model or STRIDE analysis" | `/audit threat` |
