@@ -131,7 +131,7 @@ def test_scan_clean_file_produces_no_findings(validator_mod, tmp_path):
     assert findings == []
 
 
-def test_scan_handles_unreadable(validator_mod, tmp_path):
+def test_scan_reports_an_unreadable_file(validator_mod, tmp_path):
     # Arrange
     f = tmp_path / "bad.md"
     f.write_bytes(b"\xff\xfe\xfd")
@@ -140,7 +140,7 @@ def test_scan_handles_unreadable(validator_mod, tmp_path):
     findings = validator_mod.scan(f, "rules/bad.md")
 
     # Assert
-    assert findings == []
+    assert [finding[:2] for finding in findings] == [(0, "unreadable")]
 
 
 def test_walk_in_scope_includes_in_scope_dirs(validator_mod, tmp_path):

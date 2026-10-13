@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-CLAUDE_ROOT = Path.home() / ".claude"
+CLAUDE_ROOT = Path(__file__).resolve().parents[2]
 
 SKIP_DIR_NAMES = {
     "specs",
@@ -529,7 +529,8 @@ def main() -> int:
         rel = str(path.relative_to(root))
         try:
             text = path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, OSError):
+        except (UnicodeDecodeError, OSError) as error:
+            findings.append(Finding(rel, 0, "unreadable", f"cannot read: {error}", ""))
             continue
         findings.extend(scan_text(rel, text))
         findings.extend(scan_links(rel, path, text, root))

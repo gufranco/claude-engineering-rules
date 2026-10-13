@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-CLAUDE_ROOT = Path.home() / ".claude"
+CLAUDE_ROOT = Path(__file__).resolve().parents[2]
 
 IN_SCOPE_DIRS = ("rules", "standards", "checklists")
 EXTRA_FILES = ("CLAUDE.md",)
@@ -126,8 +126,8 @@ def scan(path: Path, rel: str) -> list[tuple[int, str, str]]:
     findings: list[tuple[int, str, str]] = []
     try:
         text = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError):
-        return findings
+    except (UnicodeDecodeError, OSError) as error:
+        return [(0, "unreadable", f"cannot read: {error}")]
 
     if is_self_reference(rel):
         skip_phrases = True

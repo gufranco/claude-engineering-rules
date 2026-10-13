@@ -10,7 +10,7 @@
     "url": "git+https://github.com/gufranco/claude-engineering-rules.git"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "release": "semantic-release",

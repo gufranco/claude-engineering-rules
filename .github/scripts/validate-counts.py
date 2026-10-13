@@ -113,10 +113,10 @@ def scan_file(filepath, counts):
     mismatches = []
     matched_labels = set()
     try:
-        with open(filepath) as f:
+        with open(filepath, encoding="utf-8") as f:
             content = f.read()
-    except (FileNotFoundError, UnicodeDecodeError):
-        return mismatches, matched_labels
+    except (OSError, UnicodeDecodeError) as error:
+        return [f"  {filepath}: unreadable: {error}"], matched_labels
 
     rel_path = os.path.relpath(filepath, CLAUDE_DIR)
 

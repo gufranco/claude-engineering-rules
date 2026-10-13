@@ -453,7 +453,7 @@ Pick the skill by what you are trying to do, not by what the skill is called. Sc
 |:-----|:--------|:--------|
 | Claude Code | Latest | [docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code) |
 | Git | >= 2.0 | Pre-installed on macOS |
-| Python 3 | >= 3.8 | Pre-installed on macOS |
+| Python | 3.14, pinned in [`.mise.toml`](.mise.toml) and the only version CI tests | `mise install` |
 | jq | >= 1.6 | `brew install jq` |
 | RTK | >= 0.23.0 | `cargo install rtk` |
 

@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-CLAUDE_ROOT = Path.home() / ".claude"
+CLAUDE_ROOT = Path(__file__).resolve().parents[2]
 
 IN_SCOPE_DIRS = ("rules", "standards", "checklists")
 EXTRA_FILES = ("CLAUDE.md",)
@@ -112,8 +112,8 @@ def scan(path: Path) -> list[tuple[int, str, str]]:
     findings: list[tuple[int, str, str]] = []
     try:
         text = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError):
-        return findings
+    except (UnicodeDecodeError, OSError) as error:
+        return [(0, "unreadable", f"cannot read: {error}")]
 
     lines = text.splitlines()
     in_code_fence = False
@@ -153,6 +153,7 @@ def main() -> int:
 
     root = Path(args.root).resolve()
     total = 0
+    unreadable = 0
 
     for path in walk_in_scope(root):
         rel = str(path.relative_to(root))
@@ -163,7 +164,11 @@ def main() -> int:
         for line_no, category, snippet in findings:
             print(f"  {line_no:4d}  [{category}]  {snippet}")
         total += len(findings)
+        unreadable += sum(1 for _, category, _ in findings if category == "unreadable")
 
+    if unreadable:
+        print(f"\nFAILED: {unreadable} file(s) could not be read.")
+        return 1
     if total == 0:
         print("Clean: no clarity findings.")
     else:

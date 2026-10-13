@@ -286,3 +286,35 @@ def test_the_script_runs_as_a_command(tmp_path):
 
     # Assert
     assert (proc.returncode, proc.stderr) == (1, "")
+
+
+def test_a_file_target_scans_commits_of_its_repository(
+    scanner, tmp_path, faker, capsys
+):
+    # Arrange
+    repo = repo_with_commits(
+        tmp_path, faker, ["chore: start", "feat: add retries, highlighting the design"]
+    )
+    doc = repo / "README.md"
+    doc.write_text(CLEAN, encoding="utf-8")
+
+    # Act
+    exit_code = scanner.main([str(doc), "--commits", "HEAD~1..HEAD"])
+
+    # Assert
+    assert (exit_code, "SLOP003" in capsys.readouterr().out) == (1, True)
+
+
+def test_a_gitignored_markdown_file_is_not_scanned(scanner, tmp_path, faker):
+    # Arrange
+    repo = repo_with_commits(tmp_path, faker, ["chore: start"])
+    (repo / ".gitignore").write_text("scratch/\n", encoding="utf-8")
+    (repo / "scratch").mkdir()
+    (repo / "scratch" / "notes.md").write_text(SLOP, encoding="utf-8")
+    (repo / "README.md").write_text(CLEAN, encoding="utf-8")
+
+    # Act
+    exit_code = scanner.main([str(repo)])
+
+    # Assert
+    assert exit_code == 0
