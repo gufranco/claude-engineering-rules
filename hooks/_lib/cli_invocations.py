@@ -53,3 +53,13 @@ def invocations(command: str, binary: str) -> list[Invocation]:
         if rest and os.path.basename(rest[0]) == binary:
             found = [*found, Invocation(binary, assigned | exported, tuple(rest[1:]))]
     return found
+
+
+HELP_FLAGS = frozenset({"--help", "-h"})
+
+
+def asks_for_help(args: tuple[str, ...]) -> bool:
+    return any(
+        arg in HELP_FLAGS and (index == 0 or not args[index - 1].startswith("-"))
+        for index, arg in enumerate(args)
+    )

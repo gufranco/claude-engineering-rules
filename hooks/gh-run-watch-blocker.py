@@ -44,8 +44,13 @@ GH_WORKFLOW_WATCH = re.compile(r"\bgh\s+workflow\s+run\b[^\n;&|]*?--watch")
 
 GLAB_CI_LIVE = re.compile(r"\bglab\s+ci\s+view\b[^\n;&|]*?(?:--live|\s-l\b)")
 
+GLAB_CI_STATUS_WAIT = re.compile(
+    r"\bglab\s+ci\s+status\b[^\n;&|]*?(?:--live|--wait|\s-[lw]\b)"
+)
+
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 
 def find_offender(command: str) -> str | None:
@@ -57,6 +62,8 @@ def find_offender(command: str) -> str | None:
         return "gh workflow run --watch"
     if GLAB_CI_LIVE.search(command):
         return "glab ci view --live"
+    if GLAB_CI_STATUS_WAIT.search(command):
+        return "glab ci status --wait"
     return None
 
 
@@ -96,7 +103,7 @@ def main() -> int:
     if not command:
         return 0
 
-    offender = find_offender(command)
+    offender = find_offender(mask_literal_text(command))
     if offender is None:
         return 0
 
@@ -107,6 +114,7 @@ def main() -> int:
         f"Fix one of:\n"
         f"  - One-shot snapshot: `gh run view <run-id>`\n"
         f"  - One-shot failure logs: `gh run view <run-id> --log-failed`\n"
+        f"  - GitLab one-shot: `glab ci status -F json`\n"
         f"  - Bounded poll loop with `sleep 30` between checks\n"
         f"  - Wait for the run, then read it once.\n"
         f"Before polling, check quota: `gh api rate_limit`. Quota under 500 "

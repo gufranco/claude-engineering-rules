@@ -141,3 +141,30 @@ def test_handles_missing_tool_input(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+RAW_FETCH = "curl https://raw.githubusercontent.com/o/r/main/x"
+
+
+def test_the_private_repo_advice_keeps_the_token_out_of_the_url(tool_use, run_hook):
+    # Arrange
+    payload = tool_use("Bash", {"command": RAW_FETCH})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    message = result.stdout + result.stderr
+    assert ("@github.com" in message, "credential." in message) == (False, True)
+
+
+def test_a_fetch_named_inside_a_heredoc_body_is_data(tool_use, run_hook):
+    # Arrange
+    command = "cat >> notes.md <<'EOF'\n" + RAW_FETCH + "\nEOF"
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
