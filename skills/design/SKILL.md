@@ -81,7 +81,7 @@ Research design patterns in the ecosystem, propose a component hierarchy, and pr
    | Animation | Transitions, duration, easing. Respect `prefers-reduced-motion` |
    | Responsiveness | Mobile-first breakpoints and layout changes |
 
-5. **Write DESIGN.md using the canonical 8-section schema.** Save to the project root or spec folder. Sections must appear in this order. Missing a section is a defect.
+5. **Write the per-feature DESIGN.md using the canonical 8-section schema.** Save it in the active plan folder, `<root>/plans/<YYYY-MM-DD>-<slug>/DESIGN.md` per [`rules/project-workspace.md`](../../rules/project-workspace.md), or at `docs/design/<feature-slug>.md` when the project already tracks design docs there. Never write it to the project root: the root `DESIGN.md` is the project-level document `system` owns, and a feature file written there overwrites it. Sections must appear in this order. Missing a section is a defect.
 
    ```markdown
    # Design: <feature name>
@@ -158,13 +158,13 @@ Generate multiple design approaches for the same requirement and present them fo
 
 ### Arguments
 
-- No arguments: use the most recent DESIGN.md for context.
+- No arguments: use the most recent per-feature DESIGN.md from step 5 of `consult` for context.
 - `<description>`: generate variants for the described feature.
 - `--count <N>`: number of variants (default: 3, max: 5).
 
 ### Steps
 
-1. **Read context.** Load DESIGN.md if it exists, or ask for the requirement.
+1. **Read context.** Load the per-feature DESIGN.md if it exists, plus the project root `DESIGN.md` for tokens and rules, or ask for the requirement.
 
 2. **Generate N distinct approaches.** Each variant must differ meaningfully in at least one major dimension:
    - Layout strategy. Cards vs list vs table vs timeline
@@ -183,7 +183,7 @@ Generate multiple design approaches for the same requirement and present them fo
    | Performance | ... | ... | ... |
    | Mobile behavior | ... | ... | ... |
 
-4. **User picks.** Update DESIGN.md with the chosen direction and rationale for the choice.
+4. **User picks.** Update the per-feature DESIGN.md with the chosen direction and rationale for the choice.
 
 ---
 
@@ -200,7 +200,7 @@ Scaffold a design system or extend an existing component library with new tokens
 ### Arguments
 
 - No arguments: audit existing design tokens and suggest improvements.
-- `<component-type>`: scaffold a new component type, button, card, dialog, table, form, etc..
+- `<component-type>`: scaffold a new component type, such as button, card, dialog, table, or form.
 
 ### Steps
 
@@ -252,7 +252,7 @@ Scaffold a design system or extend an existing component library with new tokens
 
 ## Verification
 
-- DESIGN.md exists with all 8 sections in schema order, and Options Considered has at least two rows.
+- The per-feature DESIGN.md exists outside the project root with all 8 sections in schema order, Options Considered has at least two rows, and the project root `DESIGN.md`, when present, is unchanged by `consult` and `variants`.
 - The States table covers empty, loading, error, and success, and Accessibility names ARIA roles, keyboard behavior, and screen reader announcements.
 - The self-critique scores for all five lenses appear in the presented output.
 - `git status` lists no new source files besides DESIGN.md and, for `system`, proposed config changes.

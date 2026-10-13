@@ -46,7 +46,7 @@ This skill accepts optional arguments after `/assessment`:
 - `--scope <description>`: provide a description of what was implemented so the assessment can focus on relevant patterns.
 - `--focus <area>`: narrow the assessment to a specific concern: `security`, `resilience`, `api`, `data`, `ops`, `quality`, `tenancy`, `infra`, `slop`, or `all` (default).
 - `--rationale`: when fixing gaps, collect the reasoning behind each change into a `DECISIONS.md` at the repo root. Useful for interview take-homes where reviewers need to follow your decision-making. The reasoning goes in that file, never in a source comment. This is the default way to explain a change.
-- `--comments`: same reasoning, written as inline comments above each change instead. Only for an external take-home whose reviewer expects annotated source. This deliberately violates [`../../rules/code-style.md`](../../rules/code-style.md) "Comments Policy", so it requires `COMMENT_BLOCKER_DISABLE=1` exported in the parent shell before the session starts. Without that export, [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks every write and the flag cannot work.
+- `--comments`: same reasoning, written as inline comments above each change instead. Only for an external take-home whose reviewer expects annotated source. This deliberately violates [`../../standards/code-style.md`](../../standards/code-style.md) "Comments Policy", so it requires `COMMENT_BLOCKER_DISABLE=1` exported in the parent shell before the session starts. Without that export, [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks every write and the flag cannot work.
 
 ## Steps
 
@@ -73,7 +73,7 @@ This skill accepts optional arguments after `/assessment`:
    Record which standards and rules were loaded. These become additional audit criteria in step 8, beyond the 71-category checklist. A project using PostgreSQL loads [`standards/database.md`](../../standards/database.md). A project with GraphQL loads [`standards/graphql-api-design.md`](../../standards/graphql-api-design.md). A project with Terraform loads [`standards/terraform-testing.md`](../../standards/terraform-testing.md). Every applicable standard is loaded, no exceptions.
 
    Additionally, load these references for use during fix and convergence phases:
-   - [`rules/architecture-defaults.md`](../../rules/architecture-defaults.md): universal principles, five-question architecture gate, hard rules, domain layer contract, idempotency and deduplication specifics. Always-loaded baseline that drives the DDD/hexagonal/state-machine decisions in step 7
+   - [`rules/architecture-defaults.md`](../../rules/architecture-defaults.md): universal principles, six-question architecture gate, hard rules, domain layer contract, idempotency and deduplication specifics. Always-loaded baseline that drives the DDD/hexagonal/state-machine decisions in step 7
    - [`rules/pre-flight.md`](../../rules/pre-flight.md): verify interfaces before implementing fixes
    - [`rules/verification.md`](../../rules/verification.md): evidence-based verification for every claim, zero warnings
    - [`rules/writing-precision.md`](../../rules/writing-precision.md): quality gate for generated README and comments
@@ -102,10 +102,10 @@ This skill accepts optional arguments after `/assessment`:
 
 5. **Verify the project works.** Before analyzing architecture, confirm the project actually builds and passes its own tests. A project that doesn't compile is worse than any missing pattern. Run these **in parallel** where possible:
 
-   - **Build**: detect the build system and run it, `pnpm build`, `npm run build`, `make`, `go build`, `cargo build`, etc.. Record success or failure with output.
-   - **Lint**: run the project's linter, `pnpm lint`, `eslint`, `golangci-lint`, `ruff`, etc.. Record warnings and errors.
-   - **Typecheck**: if applicable, run the type checker, `pnpm typecheck`, `tsc --noEmit`, `mypy`, etc.. Record any type errors.
-   - **Tests**: run the test suite with coverage, `pnpm test -- --coverage`, `pytest --cov`, `go test -cover`, etc.. Record pass/fail count and coverage percentage.
+   - **Build**: detect the build system and run it, `pnpm build`, `npm run build`, `make`, `go build`, `cargo build`, etc. Record success or failure with output.
+   - **Lint**: run the project's linter, `pnpm lint`, `eslint`, `golangci-lint`, `ruff`, etc. Record warnings and errors.
+   - **Typecheck**: if applicable, run the type checker, `pnpm typecheck`, `tsc --noEmit`, `mypy`, etc. Record any type errors.
+   - **Tests**: run the test suite with coverage, `pnpm test -- --coverage`, `pytest --cov`, `go test -cover`, etc. Record pass/fail count and coverage percentage.
    - **Runtime and language version**: check the language and runtime version the project uses. **Always upgrade to the latest stable LTS version.** If the project runs on a managed platform with version constraints, AWS Lambda, Google Cloud Functions, Azure Functions, Vercel, Heroku, etc., use the latest stable version available on that platform. Check the platform's documentation to confirm which versions are supported. Update **all** version references: config files, CI pipelines, Dockerfiles, IaC templates like `Runtime` in SAM, CloudFormation, or Terraform, and README. Verify the project builds and passes tests after the upgrade.
 
      **Runtime version pinning is mandatory.** The project must use a version manager config file so every developer and CI environment uses the same version. Prefer `mise`, single tool for every ecosystem, reads legacy files for compatibility. Add the appropriate file if missing:
@@ -124,7 +124,7 @@ This skill accepts optional arguments after `/assessment`:
      Also set `engines` in `package.json`, Node.js, `requires-python` in `pyproject.toml`, Python, or the equivalent for other ecosystems. This enforces the version constraint in the package manager, not just the version manager.
 
      An outdated runtime is a MEDIUM finding. A runtime past end-of-life is HIGH. Missing version manager config is MEDIUM.
-   - **Dependency audit and update**: run the package manager's audit command, `pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc.. Record any known vulnerabilities by severity. Then check for outdated dependencies, `pnpm outdated`, `npm outdated`, `pip list --outdated`, etc.. **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest`, or equivalent and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
+   - **Dependency audit and update**: run the package manager's audit command, `pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc. Record any known vulnerabilities by severity. Then check for outdated dependencies, `pnpm outdated`, `npm outdated`, `pip list --outdated`, etc. **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest`, or equivalent and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
    - **AI slop scan**: run `python3 ~/.claude/tools/slop-scan.py <repo> --commits origin/<base>..HEAD`. It reuses the detectors of [`../../hooks/ai-slop-blocker.py`](../../hooks/ai-slop-blocker.py) over every Markdown file, skipping dependency and build directories, and over each commit message in the range. Exit 0 is clean, 1 lists findings, 2 is a scan error and counts as a failed check. Add `--json` to parse the rows. Record each finding by code.
    - **Output verification**: if the requirements include example inputs, expected outputs, or acceptance criteria, actually run the code with those inputs and verify the results match. Reading the code and believing it works is not proof.
 
@@ -138,17 +138,18 @@ This skill accepts optional arguments after `/assessment`:
 
 7. **Classify the implementation.** Determine what type of system this is, informed by both the code and the requirements gathered in step 1.
 
-   **Architecture gate, run first.** Before walking the trait table, answer the five questions from [`../../rules/architecture-defaults.md`](../../rules/architecture-defaults.md) Architecture Gate. Each "yes" forces the matching standard to load regardless of `--focus`:
+   **Architecture gate, run first.** Before walking the trait table, answer the six questions from [`../../rules/architecture-defaults.md`](../../rules/architecture-defaults.md) Architecture Gate. Each "yes" forces the matching standard to load regardless of `--focus`:
 
    | Question | If yes, force-load |
    |----------|-------------------|
    | Does this involve business rules, state transitions, or invariants beyond CRUD? | [`../../standards/ddd-tactical-patterns.md`](../../standards/ddd-tactical-patterns.md) |
    | Are there two or more infrastructure dependencies (DB + queue, DB + external API)? | [`../../standards/hexagonal-architecture.md`](../../standards/hexagonal-architecture.md) |
    | Is the operation mutating shared state, persisting data, or producing side effects? | [`../../standards/resilience.md`](../../standards/resilience.md) for idempotency and dedup |
-   | Does the operation cross trust boundaries: HTTP, queue, external API, LLM output? | [`../../rules/code-style.md`](../../rules/code-style.md) Validation section |
+   | Does the operation cross trust boundaries: HTTP, queue, external API, LLM output? | [`../../standards/code-style.md`](../../standards/code-style.md) Validation section |
    | Are there multiple states or transitions for a domain object? | [`../../standards/state-machines.md`](../../standards/state-machines.md) |
+   | Can two actors run it at once? Defaults to yes with more than one entry point, a user who can trigger it twice, or a network retry | [`../../standards/concurrency.md`](../../standards/concurrency.md) |
 
-   If two or more questions answer yes, this is non-trivial work. Findings for missing DDD aggregates, missing port/adapter separation, missing idempotency keys, missing dedup windows, or boolean-blind state representations are at least HIGH severity.
+   If two or more questions answer yes, this is non-trivial work. Findings for missing DDD aggregates, missing port/adapter separation, missing idempotency keys, missing dedup windows, boolean-blind state representations, or an unguarded race between two actors are at least HIGH severity.
 
    **Trait table.** Each trait maps to a set of applicable categories:
 
@@ -205,7 +206,7 @@ This skill accepts optional arguments after `/assessment`:
    - `supply-chain`: category 56. Standards: `container-security.md`, `secrets-management.md`, `licensing.md` for SBOM and SPDX
    - `observability`: categories 32, 37. Standards: `observability.md`, `opentelemetry.md`, `sre-practices.md`, `dashboard-design.md`
    - `privacy`: category 33. Standards: `privacy-engineering.md`, `privacy.md`
-   - `llm`: category 53. Standards: `llm-docs.md` for library documentation, `mcp-security.md` when MCP is involved. Use [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md) and [`rules/code-style.md`](../../rules/code-style.md) LLM Trust Boundary sections
+   - `llm`: category 53. Standards: `llm-docs.md` for library documentation, `mcp-security.md` when MCP is involved. Use [`rules/ai-guardrails.md`](../../rules/ai-guardrails.md) and the LLM Output Trust Boundary section of [`standards/code-style.md`](../../standards/code-style.md)
    - `monorepo`: categories 13, 15. Standard: `monorepo.md`
    - `typescript`: category 1. Standards: `typescript-5x.md` plus the per-area files [`rules/lang/typescript-types.md`](../../rules/lang/typescript-types.md), [`rules/lang/typescript-immutability.md`](../../rules/lang/typescript-immutability.md), [`rules/lang/typescript-strict.md`](../../rules/lang/typescript-strict.md)
    - `all` (default): all applicable categories and all matched standards from step 4
@@ -220,7 +221,7 @@ This skill accepts optional arguments after `/assessment`:
 
    Ask: **"The project uses [language]. Would you like me to convert it to [superset]? This adds type safety and is generally viewed favorably in assessments."** Only ask once per language detected. If the user declines, proceed without converting. If the user accepts, add the conversion as a task in the fix step, before other fixes. Do not ask about superset conversion when the requirements explicitly specify the base language.
 
-   **Strictest configuration possible.** When converting to a superset or when any tool, linter, compiler, or framework supports strictness levels, always configure the **maximum strictness**. TypeScript gets `strict: true` with all additional strict flags enabled, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, etc.. ESLint gets the strictest recommended config. tsconfig gets `noEmit`, `isolatedModules`, `verbatimModuleSyntax`. This applies to everything: compilers, linters, formatters, test runners, security scanners, CI checks. If there is a stricter option, enable it. No exceptions.
+   **Strictest configuration possible.** When converting to a superset or when any tool, linter, compiler, or framework supports strictness levels, always configure the **maximum strictness**. TypeScript gets `strict: true` with all additional strict flags enabled, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, etc. ESLint gets the strictest recommended config. tsconfig gets `noEmit`, `isolatedModules`, `verbatimModuleSyntax`. This applies to everything: compilers, linters, formatters, test runners, security scanners, CI checks. If there is a stricter option, enable it. No exceptions.
 
    **Package compatibility with superset.** When converting to a superset, review every dependency for type support. For each package, follow this decision tree:
 
@@ -238,7 +239,7 @@ This skill accepts optional arguments after `/assessment`:
 
    This logic is language-agnostic. The principle is: every dependency must have full type support in the target superset. If it doesn't, either find types, find an alternative that has types, or write the types yourself.
 
-8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against [`../../checklists/checklist.md`](../../checklists/checklist.md). The checklist groups break down as: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, category 58 for licensing compliance, category 59 for time zone and calendar correctness, category 60 for numerical precision, category 61 for internationalization edge cases, category 62 for browser and device diversity, category 63 for backups and recovery, category 64 for disaster recovery, category 65 for capacity planning, category 66 for multi-region, category 67 for compliance and audit trail, category 68 for vendor and third-party risk, category 69 for schema-migration sync, and category 70 for question and communication quality. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
+8. **Audit against each applicable category and loaded standard.** For every category that applies based on step 7, evaluate the implementation against [`../../checklists/checklist.md`](../../checklists/checklist.md). The checklist groups break down as: categories 1-17 for code-level quality, categories 18-49 for architecture and infrastructure, category 50 for clean room verification, category 51 for deployment verification, category 52 for design quality, category 53 for LLM trust boundary, category 54 for performance budget, category 55 for zero-downtime deployment, category 56 for supply chain security, category 57 for event-driven architecture, category 58 for licensing compliance, category 59 for time zone and calendar correctness, category 60 for numerical precision, category 61 for internationalization edge cases, category 62 for browser and device diversity, category 63 for backups and recovery, category 64 for disaster recovery, category 65 for capacity planning, category 66 for multi-region, category 67 for compliance and audit trail, category 68 for vendor and third-party risk, category 69 for schema-migration sync, category 70 for question and communication quality, and category 71 for frontend compliance defaults. Cross-reference with the requirements gathered in step 1. Include any defects found in step 6 and verification failures from step 5 as findings under the most relevant category.
 
    **Standard-based audit.** For every standard loaded in step 4, check whether the project follows the patterns described in that standard. Each standard contains specific, actionable rules. A project that uses a database but ignores [`standards/database.md`](../../standards/database.md) connection pooling guidance is a finding. A REST API that ignores [`standards/api-design.md`](../../standards/api-design.md) pagination conventions is a finding. Treat standard violations the same as checklist violations: assign a status of PRESENT, PARTIAL, or MISSING, plus severity and effort. Reference the specific standard file in each finding.
 
@@ -326,11 +327,11 @@ This skill accepts optional arguments after `/assessment`:
 
    The pipeline must execute every quality gate the project has, in order of feedback speed:
 
-   1. **Install dependencies**: use the lockfile-based install command, `npm ci`, `pnpm install --frozen-lockfile`, `pip install -r requirements.txt`, etc.. Never use `npm install` in CI as it can modify the lockfile.
-   2. **Lint**: run the project's linter such as `npm run lint`, `pnpm lint`, `ruff check`, `golangci-lint run`, or etc..
-   3. **Type check**: if applicable, run the type checker, `npm run typecheck`, `tsc --noEmit`, `mypy .`, etc..
-   4. **Build**: compile the project such as `npm run build`, `pnpm build`, `go build`, `cargo build`, or etc..
-   5. **Test with coverage**: run the full test suite with coverage reporting such as `npm test -- --coverage`, `pytest --cov`, `go test -cover`, or etc..
+   1. **Install dependencies**: use the lockfile-based install command, `npm ci`, `pnpm install --frozen-lockfile`, `pip install -r requirements.txt`, etc. Never use `npm install` in CI as it can modify the lockfile.
+   2. **Lint**: run the project's linter such as `npm run lint`, `pnpm lint`, `ruff check`, `golangci-lint run`.
+   3. **Type check**: if applicable, run the type checker, `npm run typecheck`, `tsc --noEmit`, `mypy .`, etc.
+   4. **Build**: compile the project such as `npm run build`, `pnpm build`, `go build`, `cargo build`.
+   5. **Test with coverage**: run the full test suite with coverage reporting such as `npm test -- --coverage`, `pytest --cov`, `go test -cover`.
 
    Pin the runtime version in the pipeline to match the project's version manager config. Prefer `.mise.toml` or `.tool-versions` so a single `mise install` step pins every runtime. Legacy file fallbacks: `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, `.terraform-version`, `rust-toolchain.toml`. Use caching for dependencies to speed up runs. Set `fail-fast: true` so the pipeline stops at the first failure.
 
@@ -340,7 +341,7 @@ This skill accepts optional arguments after `/assessment`:
 
    **Then, reorganize the project** applying all relevant software engineering patterns: DDD, bounded contexts, aggregates, domain events, SOLID, DRY, KISS, YAGNI, clean architecture, domain core without framework imports, infrastructure adapters at boundaries, composition over inheritance, CQS, repository pattern, and functional core/imperative shell. Rename files to `name.type.extension` (e.g., `user.service.ts`, `order.repository.ts`). Group by domain, not by technical layer. This reorganization is a single commit before the pattern fixes.
 
-   **Test data must use a faker library, not hardcoded literals.** Every test that generates input data, whether for names, emails, amounts, dates, or IDs, must use a faker library for the language ecosystem like `@faker-js/faker` for JS and TS, `Faker` for Python, or `faker` for Ruby. Install the library as a dev dependency if not already present. Hardcoded test data like `"John"`, `"test@example.com"`, or `42` makes tests brittle and hides assumptions about valid input ranges. Faker generates realistic, randomized values that exercise more code paths and make tests more expressive. The exception is when a specific value is part of the test assertion, like verifying a known seed data record exists.
+   **Test data must use a faker library, not hardcoded literals.** Every test that generates input data, whether for names, emails, amounts, dates, or IDs, must use a faker library for the language ecosystem like `@faker-js/faker` for JS and TS, `Faker` for Python, or `faker` for Ruby. Install the library as a dev dependency if not already present. Hardcoded test data like `"John"`, `"test@example.com"`, or `42` makes tests brittle and hides assumptions about valid input ranges. Seed the faker once per suite with a fixed value, such as `faker.seed(1234)`, so a failing run reproduces, per [`../../rules/testing.md`](../../rules/testing.md); the seeded values still exercise realistic input shapes. The exception is when a specific value is part of the test assertion, like verifying a known seed data record exists.
 
    Faker values that need to be deterministic across runs, like IDs referencing seed data, should remain as literals. Use faker for values where the specific value does not matter: deposit amounts, invalid input strings, non-existent IDs, future dates, random names. This is a MEDIUM finding if tests use hardcoded data where faker would be appropriate.
 
@@ -369,7 +370,7 @@ Rationale guidelines:
 - Focus on the "why". The reader can already see the "what" in the diff.
 - Sound like a human engineer, not a generated template. Vary phrasing. No labels like "Pattern:" or "Reason:".
 - `DECISIONS.md` passes [`tools/slop-scan.py`](../../tools/slop-scan.py) with exit 0 before it is committed.
-- Never write this reasoning as a source comment unless `--comments` was passed. [`../../rules/code-style.md`](../../rules/code-style.md) "Comments Policy" bans prose comments, and [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks them.
+- Never write this reasoning as a source comment unless `--comments` was passed. [`../../standards/code-style.md`](../../standards/code-style.md) "Comments Policy" bans prose comments, and [`../../hooks/comment-blocker.py`](../../hooks/comment-blocker.py) blocks them.
 
    Example entry:
 
@@ -418,9 +419,9 @@ State in the assessment output that the branch carries explanatory comments and 
     2. **Re-read.** Read every file that was modified in the previous fix pass, plus any new files created.
     3. **Re-audit.** Evaluate the modified files against all applicable categories from step 6. Also check:
        - Did any fix violate [`../../checklists/checklist.md`](../../checklists/checklist.md)? Run all 71 categories against the modified files. This is the single checklist shared by completion gates, `/review`, and `/assessment`.
-       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`? such as comments in source, code style, naming, immutability, or etc.
+       - Did any fix violate a rule from `~/.claude/CLAUDE.md` or `~/.claude/rules/`, such as comments in source, code style, naming, or immutability?
        - Did any fix introduce a new dependency, pattern, or code path that itself needs assessment?
-       - Did any fix create a cross-file contradiction?. One module now assumes behavior that another module does not support
+       - Did any fix create a cross-file contradiction, where one module now assumes behavior another module does not support?
        - Did any fix introduce a new startup dependency or configuration requirement without updating all relevant config files such as .env.example, Docker, or CI?
        - Did any fix change a public interface without updating all callers and consumers?
        - Did any fix leave dead code behind? Check for unused imports, orphaned functions, unreferenced variables, and stale exports after extractions or refactors.
@@ -446,7 +447,7 @@ State in the assessment output that the branch carries explanatory comments and 
 
     **Description format**: one sentence describing what the project is and its key technologies, followed by a second sentence listing comma-separated architectural highlights and a quantified test claim. Keep it under 350 characters.
 
-    **Topics**: add 10-12 specific technology topics as lowercase kebab-case tags. Include the primary language, runtime version, framework, database, ORM, validation library, test framework, and 3-5 distinguishing architectural or domain terms. Do not use generic tags like "backend" or "api".
+    **Topics**: fill all 20 topic slots GitHub allows, per the Topics section of [`../readme/SKILL.md`](../readme/SKILL.md), as lowercase kebab-case tags. Include the primary language, runtime version, framework, database, ORM, validation library, test framework, and 3-5 distinguishing architectural or domain terms. Do not use generic tags like "backend" or "api".
 
     **Commands**:
     ```bash
@@ -460,7 +461,7 @@ State in the assessment output that the branch carries explanatory comments and 
 
 ## Assessment Checklist Categories
 
-The full 71-category checklist lives in [`../../checklists/checklist.md`](../../checklists/checklist.md), shared with completion gates, `/review`, and `/respond`. Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Clean Room is category 50, Deployment Verification 51, Design Quality 52, LLM Trust Boundary 53, Performance Budget 54, Zero-Downtime Deployment 55, Supply Chain 56, Event-Driven 57, Licensing 58, Time Zone and Calendar 59, Numerical Precision 60, i18n Edge Cases 61, Browser and Device Diversity 62, Backups and Recovery 63, Disaster Recovery 64, Capacity Planning 65, Multi-Region 66, Compliance and Audit Trail 67, Vendor and Third-Party Risk 68, Schema-Migration Sync 69, and Question and Communication Quality 70.
+The full 71-category checklist lives in [`../../checklists/checklist.md`](../../checklists/checklist.md), shared with completion gates, `/review`, and `/respond`. Read it directly for the complete criteria. The trait table in step 7 maps system traits to category numbers. Clean Room is category 50, Deployment Verification 51, Design Quality 52, LLM Trust Boundary 53, Performance Budget 54, Zero-Downtime Deployment 55, Supply Chain 56, Event-Driven 57, Licensing 58, Time Zone and Calendar 59, Numerical Precision 60, i18n Edge Cases 61, Browser and Device Diversity 62, Backups and Recovery 63, Disaster Recovery 64, Capacity Planning 65, Multi-Region 66, Compliance and Audit Trail 67, Vendor and Third-Party Risk 68, Schema-Migration Sync 69, Question and Communication Quality 70, and Frontend Compliance Defaults 71.
 
 ## Output Format
 
@@ -532,7 +533,7 @@ When the assessment runs against a PR rather than a working tree, the verdict ad
 | PR opened more than 1 business day ago with no prior review | `Cycle time: above target. The first-review target is 1 business day.` |
 | PR opened more than 7 days ago with no activity | `PR is stale. Author should push a status update or close.` |
 
-The lines are observational, not blocking. They surface the timing pressure to the human running `/assessment`. Mirrors `/review` improvement R3.
+The lines are observational, not blocking. They surface the timing pressure to the human running `/assessment`, the same lines `/review` adds in its Service Level Awareness section.
 
 ## Standards Applied
 
@@ -562,7 +563,7 @@ The lines are observational, not blocking. They surface the timing pressure to t
 **Example fix** when applicable:
 [Code example showing how to add the missing pattern]
 
-**Suggested regression test**: For `issue (blocking)` findings where the fix is a one-line guard, propose a test named after the guarded behavior, such as `rejects empty companyId per audit finding`. Skip when the regression would be loud, like a compile or type error. Mirrors the policy in `/respond` and `/review`.
+**Suggested regression test**: For `issue (blocking)` findings where the fix is a one-line guard, propose a test named after the guarded behavior, such as `rejects an empty companyId`, never after the finding or a ticket. Skip when the regression would be loud, like a compile or type error. Mirrors the policy in `/respond` and `/review`.
 
 **Effort**: [S | M | L | XL]. Brief justification follows.
 
@@ -710,7 +711,7 @@ Audits the user's skill portfolio. Returns a per-skill verdict with one of:
 - **STALE**: no edits in the last 12 months and no session-log mention in the last 90 days. Candidate for archival.
 - **OVERLAPPING**: two or more skills cover the same workflow. Candidate for merge.
 - **THIN**: SKILL.md under 50 lines without a When-to-use, Steps, and Related-skills section. Candidate for expansion or deletion.
-- **MISSING-LINKS**: no Related-skills section, no borrow-restore reference, no cross-link to a relevant rule or standard.
+- **MISSING-LINKS**: no Related-skills section, no per-command `GH_TOKEN` account handling per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md) in a skill that calls `gh`, no cross-link to a relevant rule or standard.
 
 ### Checks per skill
 
@@ -736,8 +737,8 @@ Read every `~/.claude/skills/*/SKILL.md`. Cross-reference with `git log` and rec
 
 ## Related skills
 
-- `/review`. Diff-based code review for correctness. Catches bugs in what's written. Use `/review` for diff-level findings on the changes that close the audit gaps. Both skills now use the Conventional Comments taxonomy, so audit findings and review comments speak the same language.
-- `/respond`. Address incoming review comments on a PR you authored. After applying fixes for audit gaps and opening a PR, run `/respond` when reviewers comment. The intent classifier in `/respond` consumes the same Conventional Comments labels this skill produces. Reuses include the Feedback Equation for pushback drafting, AI Bot Triage Tactics for noisy bot reviewers, Multi-Reviewer Conflict Resolution when reviewers contradict, the Ticket Tracker Integration for auto-filing deferred audit findings, and the per-platform references `platform-gitlab.md` and `platform-bitbucket.md` for GitLab MRs and Bitbucket PRs respectively.
+- `/review`. Diff-based code review for correctness. Catches bugs in what's written. Use `/review` for diff-level findings on the changes that close the audit gaps. Both skills classify findings with the Conventional Comments taxonomy internally; `/review` strips the labels before anything is posted.
+- `/respond`. Address incoming review comments on a PR you authored. After applying fixes for audit gaps and opening a PR, run `/respond` when reviewers comment. The intent classifier in `/respond` consumes the same Conventional Comments labels this skill produces. Reuses include the Feedback Equation for pushback drafting, AI Bot Triage Tactics for noisy bot reviewers, Multi-Reviewer Conflict Resolution when reviewers contradict, and the per-platform references `platform-gitlab.md` and `platform-bitbucket.md` for GitLab MRs and Bitbucket PRs respectively.
 - `/test`. Run tests to verify the implementation works.
 - `/ship commit`. Commit fixes after addressing assessment gaps.
 - `/ship --pipeline`. Monitor CI and AI-bot threads after the fix PR opens. When `RESPOND_DRIVES_PIPELINE=1` is set, the AI-bot sweep delegates to `/respond` for unified vocabulary.

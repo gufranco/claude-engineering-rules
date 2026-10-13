@@ -25,7 +25,7 @@ Severity scale:
 | MEDIUM | Suspicious but possibly legitimate. Two or more in the same file escalate to HIGH | Single `eval`, single non-default registry override |
 | LOW | Noise floor. Recorded for transparency, does not affect verdict | Single `child_process` import in a config file |
 
-Cluster rule: when two or more MEDIUM signals fire in the same file, the file escalates to HIGH. When two or more HIGH signals fire in the same file, the file escalates to CRITICAL. The verdict logic in `/audit trust` step 13 reads the per-file aggregate, not the raw line matches.
+Cluster rule: matches of the same row count once per file. When two or more MEDIUM signals from different rows fire in the same file, the file escalates to HIGH. When two or more HIGH signals from different rows fire in the same file, the file is reported as a HIGH cluster, which sets the verdict to HIGH-RISK and its confirmation phrase, never to MALICIOUS. A file escalates to CRITICAL only on a credential-path read from Section C plus an exfiltration endpoint from Section D. Clustering exists to surface files worth reading; on its own it cannot condemn a CLI that legitimately spawns processes and reads its own config. The verdict logic in `/audit trust` step 13 reads the per-file aggregate, not the raw line matches.
 
 ## Section A: Install-time hooks
 
@@ -33,7 +33,8 @@ Lifecycle scripts and install configs that run automatically before any applicat
 
 | Pattern | Severity | Target | Rationale | Known false positives |
 |---------|----------|--------|-----------|----------------------|
-| Lifecycle field (`preinstall`, `install`, `postinstall`, `prepare`, `prepublish`, `prepublishOnly`) value containing `curl`, `wget`, `\| bash`, `\| sh`, `node -e`, `python -c`, `base64 -d`, `xxd -r` | CRITICAL | `package.json` scripts block | These are the install-time RCE primitives | None. Legitimate packages do not pipe network downloads to a shell |
+| Lifecycle field (`preinstall`, `install`, `postinstall`, `prepare`, `prepublish`, `prepublishOnly`) value containing `\| bash`, `\| sh`, `base64 -d`, or `xxd -r` | CRITICAL | `package.json` scripts block | Piping a download to a shell or decoding a payload at install time is the RCE primitive | None. Legitimate packages do not pipe network downloads to a shell |
+| Lifecycle field value containing `curl`, `wget`, `node -e`, or `python -c` with no pipe to a shell | HIGH | `package.json` scripts block | Install-time network access or inline code | core-js and similar packages run `node -e` to print a notice; prebuilt-binary packages listed in the next rows download with `curl` |
 | Lifecycle field value running a script file the package itself ships, where that script invokes `eval`, `Function`, or `child_process` with dynamic input | HIGH | `package.json` scripts + the referenced script | Indirect form of the above | esbuild downloads its binary via `install` script; verify the destination domain is `esbuild.dev` or the official mirror |
 | Lifecycle field with a network call to a domain not listed in the project README | HIGH | `package.json` scripts | Out-of-band binary download | bcrypt, sharp, sqlite3, canvas, node-sass, prebuild-install, esbuild |
 | `.npmrc` containing `registry=` set to anything other than `https://registry.npmjs.org/` or a documented company registry | HIGH | `.npmrc` (project + user) | Dependency confusion or malicious mirror | Company internal registries |
@@ -185,9 +186,9 @@ Compiled artifacts in places that suggest they were added as payloads, not as bu
 
 ## Verdict Logic
 
-1. Per-file aggregate: sum severities. Two MEDIUM in the same file equal one HIGH. Two HIGH in the same file equal one CRITICAL.
+1. Per-file aggregate per the cluster rule above: two MEDIUM from different rows equal one HIGH, two HIGH from different rows form a HIGH cluster, and only a Section C read plus a Section D endpoint in the same file equals one CRITICAL.
 2. Project aggregate:
-   - Any CRITICAL anywhere: **MALICIOUS**.
+   - Any CRITICAL anywhere, meaning a row rated CRITICAL or the Section C plus Section D pairing: **MALICIOUS**.
    - Any HIGH anywhere: **HIGH-RISK**.
    - Any MEDIUM anywhere: **SUSPICIOUS**.
    - Only LOW or no findings: **SAFE**.

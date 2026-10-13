@@ -40,7 +40,7 @@ Run before and after a change that can move latency, bundle size, or query time,
    - `which wrk`
    - `which hey`
    - `which ab`
-   - Fall back to `curl` with timing if none are installed.
+   - If none is installed, name the supported tools and ask whether to install one, per Rules. Never fall back to `curl` timing, which yields no p95 or p99.
 
 2. **Identify endpoints.** Read route files or API documentation to find endpoints. Ask the user which endpoints to benchmark if the project has more than 10.
 
@@ -139,7 +139,7 @@ When `--save` is passed:
 ## Rules
 
 - Benchmarks must run against a local or staging environment, never production.
-- Report median, not mean. See [`../../rules/testing.md`](../../rules/testing.md) benchmark methodology section.
+- Report median, not mean. See the Benchmark Methodology section of [`../../standards/testing.md`](../../standards/testing.md).
 - When no load testing tool is installed, state which tools are supported and ask whether to install one. Do not silently fall back to inaccurate methods.
 - Bundle size measurements require a fresh build. Do not measure stale build artifacts.
 - All timestamps in GMT.

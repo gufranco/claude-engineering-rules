@@ -4,11 +4,11 @@
 
 Apply the checklist to every review. Go through every applicable category. Do not skip sections because the change "looks small" or "is just a refactor."
 
-**Checklist** ([`../../checklists/checklist.md`](../../checklists/checklist.md)): 71 categories covering code-level quality , 1 to 17, architecture, resilience, and infrastructure , 18 to 49, clean room verification, 50, deployment verification, 51, design quality, 52, LLM trust boundary, 53, performance budget, 54, zero-downtime deployment, 55, supply chain security, 56, event-driven architecture, 57, and licensing compliance, 58. This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15, cross-file consistency, applies after all per-file checks. Category 16, cascading fix analysis, applies to every issue found. Categories 18-58 apply when relevant to the system type and scope signals.
+**Checklist** ([`../../checklists/checklist.md`](../../checklists/checklist.md)): 71 categories covering code-level quality , 1 to 17, architecture, resilience, and infrastructure , 18 to 49, clean room verification, 50, deployment verification, 51, design quality, 52, LLM trust boundary, 53, performance budget, 54, zero-downtime deployment, 55, supply chain security, 56, event-driven architecture, 57, licensing compliance, 58, and the operational, correctness, and compliance categories 59 to 71. This is the single source of truth shared by completion gates, `/review`, and `/assessment`. Categories 1-14 and 17 apply per file. Category 15, cross-file consistency, applies after all per-file checks. Category 16, cascading fix analysis, applies to every issue found. Categories 18-71 apply when relevant to the system type and scope signals.
 
 In addition to the checklist, the review dynamically loads on-demand standards from `~/.claude/rules/index.yml` that match the project's technology stack. When a standard is loaded, review code against its specific patterns.
 
-**Internal references stay internal.** The checklist, rules, and standards inform what to check. Review comments must never reference these files. State the engineering reason directly. See `rules/code-review.md` "No Internal Config Leakage" section.
+**Internal references stay internal.** The checklist, rules, and standards inform what to check. Review comments must never reference these files. State the engineering reason directly. See [`standards/code-review.md`](../../standards/code-review.md) "No Internal Config Leakage" section.
 
 For every issue found, explain why it matters and provide a code example showing the fix.
 
@@ -189,13 +189,7 @@ only send valid IDs, so without a new test case, the validation could
 regress silently.
 ````
 
-Brief positive note when something is genuinely well done:
-
-```
-Clean use of the strategy pattern here. Each payment processor
-is independently testable and adding a new one doesn't touch
-existing code.
-```
+Praise is never posted. A new inline thread on someone else's pull request names a defect at its line, per [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md); a well-built section gets no comment.
 
 ## Schema-Migration Parity (when migration files are in scope)
 

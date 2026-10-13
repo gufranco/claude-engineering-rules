@@ -54,7 +54,7 @@ Manage Docker containers, compose services, and the runtime. Colima-aware, runti
    - Colima: check `colima status`, suggest `colima-start`.
    - Docker Desktop: suggest opening `/Applications/Docker.app`.
    - Linux: suggest `sudo systemctl start docker`.
-2. **Detect runtime, compose, containers**, parallel: `docker context show`, resolve Docker context per [`standards/borrow-restore.md`](../../standards/borrow-restore.md), find compose files, `docker ps -a`.
+2. **Detect runtime, compose, containers**, parallel: `docker context show`, resolve the Docker context per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md) and pass it per command, find compose files, `docker ps -a`.
 3. Execute the requested operation:
    - **status**: runtime info, compose services, all containers. Mention `lazydocker` if available.
    - **build**: `<compose> build [service]`. Mention `dive` for layer analysis.
@@ -137,7 +137,7 @@ Manage database migrations, containers, and data operations. Detects ORM and pac
 1. **Detect setup**, parallel: check Docker containers, resolve Docker context, detect ORM, detect package manager.
 2. Execute:
    - **status**: container status, suggest shell functions if not running, migration status per ORM.
-   - **start/stop**: suggest user shell functions, `postgres-start`, `mongo-start`, etc..
+   - **start/stop**: suggest user shell functions such as `postgres-start` or `mongo-start`.
    - **terminal**: suggest shell functions or direct exec (`docker exec -it postgres psql -U postgres`).
    - **migrate**: check container running, show pending, run ORM-specific migrate command, verify.
    - **migrate against production**: never run it. Send the person who applies production migrations one message with the migration identifier and one exact command, per [`standards/database.md`](../../standards/database.md) Human-Gated Production Migrations, then stop and wait for their confirmation without polling.

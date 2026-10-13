@@ -45,7 +45,7 @@ Scan the target files for refactoring candidates. Check each category:
 | Long functions | >30 lines | Extract function |
 | Deep nesting | >3 levels | Guard clauses, early returns |
 | Duplicated blocks | >5 lines appearing 2+ times | Extract shared function |
-| Large files | >300 lines | Split by responsibility |
+| Large files | >500 lines, per [`rules/code-style.md`](../../rules/code-style.md) | Split by responsibility |
 | God classes | >7 public methods | Split into focused classes |
 | Long parameter lists | >4 parameters | Extract options object |
 | Circular imports | Any cycle | Restructure module boundaries |
@@ -76,7 +76,7 @@ For each approved candidate, in priority order:
    - Analyze why the refactoring broke tests. If the tests were testing implementation details rather than behavior, note this as a separate finding.
    - Try an alternative approach.
    - If the alternative also fails, skip this candidate and move to the next.
-5. **Run linter and type checker.** Fix any new warnings introduced by the refactoring.
+5. **Run formatter, linter, type checker, and build.** Fix any new warnings introduced by the refactoring before the commit.
 6. **Commit.** One commit per refactoring step:
    - `refactor(scope): extract validateInput from processOrder`
    - `refactor(scope): flatten nested conditionals in AuthService`
@@ -84,12 +84,13 @@ For each approved candidate, in priority order:
 
 ### Phase 5: Final Verification
 
-1. Run the full test suite. All tests pass.
-2. Run the linter. Zero warnings.
-3. Run the type checker. Zero errors.
-4. Run the build. Clean build.
-5. Compare coverage. Coverage is equal to or higher than the baseline.
-6. Review the full diff. Confirm no behavior changes leaked in.
+1. Run the formatter check. No changes.
+2. Run the full test suite. All tests pass.
+3. Run the linter. Zero warnings.
+4. Run the type checker. Zero errors.
+5. Run the build. Clean build.
+6. Compare coverage. Coverage is equal to or higher than the baseline.
+7. Review the full diff. Confirm no behavior changes leaked in.
 
 ## Rules
 

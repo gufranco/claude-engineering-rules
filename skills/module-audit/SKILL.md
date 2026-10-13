@@ -65,7 +65,7 @@ A candidate rejected before with a stated reason is not proposed again unless th
 
 ### 3. Walk the code
 
-Use the `Explore` agent with `subagent_type=Explore` for breadth. Note where the model experiences friction:
+Read every file in scope in full with the Read tool. For breadth, delegate slices to a `general-purpose` subagent whose brief requires full reads with the Read tool and `file:line` evidence; never send this analysis to `Explore`, which reads excerpts, per [`rules/verification.md`](../../rules/verification.md). Note where the model experiences friction:
 
 - Understanding one concept requires bouncing between many tiny modules.
 - A module's interface is almost as large as its implementation.
@@ -82,8 +82,8 @@ For each candidate, apply the deletion test silently. If deletion concentrates c
 For every candidate, classify the dependencies the consolidated module would need to talk to. See [`REFACTOR-STRATEGY.md`](REFACTOR-STRATEGY.md):
 
 - **In-process.** Pure computation, in-memory state, no I/O. Always consolidatable.
-- **Local-substitutable.** A local stand-in exists, like an in-memory database or a filesystem fake. Test through the stand-in.
-- **Remote but owned.** Your own service across a network. Define a port, write two adapters (in-memory for tests, real transport for production).
+- **Local-substitutable.** A real local instance can run in the test suite, like the database in docker-compose or a temp directory. Test against that instance, never an in-memory substitute, per [`rules/testing.md`](../../rules/testing.md).
+- **Remote but owned.** Your own service across a network. Tests run the real service locally in docker-compose, since your own services are never mocked. Define a port only when two production adapters are real.
 - **External and not owned.** A third-party API. Inject a port, mock the adapter in tests.
 
 The classification chooses the testing strategy and the seam shape.
@@ -149,7 +149,7 @@ When the user rejects a candidate for a load-bearing reason, one a future audit 
 - Every finding passes the deletion test.
 - Every port introduced has two adapters justified.
 - No candidate repeats a prior rejection whose reason still holds, and the report ranks candidates on leverage, locality, test surface, and cost to value.
-- The report uses Mermaid for diagrams (no ASCII art).
+- The report uses Mermaid for diagrams, never ASCII art.
 - Output path is announced to the user.
 
 ## Related skills

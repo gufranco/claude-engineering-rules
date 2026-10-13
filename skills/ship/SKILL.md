@@ -63,7 +63,7 @@ Analyze all uncommitted changes and create semantic commits following the conven
    - No flags: ask "Want me to push to remote?"
    - Check upstream: `git rev-parse --abbrev-ref @{upstream}`. Use `-u origin <branch>` if none.
 6. If `--pipeline`:
-   - Check if a PR exists for the current branch via `gh pr view` or `glab mr view`.
+   - Check if a PR exists for the current branch via `GH_TOKEN=$(gh auth token --user <account>) gh pr view` or `glab mr view`.
    - If none exists, invoke the `pr` flow with `--no-pipeline` to create the PR, skipping its own monitoring loop, then continue.
    - Enter the Pipeline Monitoring loop (see below).
 
@@ -97,17 +97,17 @@ Create or update a pull request with a structured description. Supports GitHub a
 
 ### Steps
 
-1. **Gather context** in parallel: `git status --porcelain`, `git remote get-url origin`, `git branch --show-current`. Stop if uncommitted changes or on main. Detect CLI tool, either `gh` or `glab`. **Resolve account** per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
+1. **Gather context** in parallel: `git status --porcelain`, `git remote get-url origin`, `git branch --show-current`. Stop if uncommitted changes or on main. Detect CLI tool, either `gh` or `glab`. **Resolve account** per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md): map the owner in the remote URL to an account and prefix every `gh` call with `GH_TOKEN=$(gh auth token --user <account>)`, never switching the global active account.
 2. **Check existing PR and base branch**, parallel: look up existing PR, detect base branch, unless `--base`. If PR exists and no `update` flag, show URL and ask.
 3. `git fetch origin`, `git log --oneline origin/<base>..HEAD`. Stop if no commits.
-4. **Run quality gate**: detect and run test, lint, build. Stop if they fail.
+4. **Run quality gate** per [`rules/git-workflow.md`](../../rules/git-workflow.md), in order: format check, lint, type check, full test suite, build. Stop if any fails.
 5. **Update from base**: when the branch has never been pushed, `git rebase origin/<base>`; if it conflicts, `git rebase --abort` and stop. When the branch is already on the remote, never rewrite it: merge `origin/<base>` only if it conflicts, per Conflict Resolution in [`standards/git-workflow.md`](../../standards/git-workflow.md).
 6. **Check PR size**, parallel: `git diff origin/<base>...HEAD --stat` and full diff. Warn at 400+ lines, confirm at 1000+.
 7. **Self-review**: scan for debug statements, TODO/FIXME, accidentally committed files, binaries.
 8. **Extract context**: check branch/commits for ticket patterns, check if frontend files changed, suggest screenshots.
 9. **Push**: use `-u` if no upstream. Never force push; a pushed branch was never rewritten, so a plain push always applies.
 10. **Build title and description**: detect PR template at `.github/PULL_REQUEST_TEMPLATE.md` or the GitLab equivalent. Use the What, How, Evidence, and Merge Danger structure in [PR Description](#pr-description). Scale to PR size.
-11. **Create/update**: write body to temp file. `gh pr create --body-file` or `glab mr create --description-file`. Self-assign by default. Clean up temp file. AI reviews are requested by [`hooks/ai-review-request.py`](../../hooks/ai-review-request.py) after `gh pr create`, `gh pr ready` and `git push`; read its `ai-review:` line and report it with the PR URL.
+11. **Create/update**: write body to temp file. `GH_TOKEN=$(gh auth token --user <account>) gh pr create --body-file` or `glab mr create --description-file`. Self-assign by default. Clean up temp file. AI reviews are requested by [`hooks/ai-review-request.py`](../../hooks/ai-review-request.py) after `gh pr create`, `gh pr ready` and `git push`; read its `ai-review:` line and report it with the PR URL.
 12. Show PR URL.
 13. **Documentation staleness check.** Read project documentation files such as README.md, CONTRIBUTING.md, and the docs/ directory, then cross-reference against the diff:
     - New features without corresponding documentation.
@@ -117,8 +117,7 @@ Create or update a pull request with a structured description. Supports GitHub a
     - New CLI commands or scripts not documented.
     - A `specs/current/` living spec that no longer matches the change. If the plan folder carries a spec delta, remind the user to run `/plan archive` once the PR merges, to fold the delta into the living spec. See [`rules/living-specs.md`](../../rules/living-specs.md).
     If stale documentation is found, list the gaps and offer to update. If `--docs` flag is passed, update automatically without asking.
-14. **Restore account** per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
-15. Enter Pipeline Monitoring loop unless `--no-pipeline`. The loop monitors both CI checks AND AI-tool review threads, and only exits when both are clean.
+14. Enter Pipeline Monitoring loop unless `--no-pipeline`. The loop monitors both CI checks AND AI-tool review threads, and only exits when both are clean.
 
 ### PR Title
 
@@ -131,7 +130,7 @@ Conventional commit style when it fits. Max 70 chars. Prefix ticket ID if availa
 - **Evidence** is a before and after: the exact test that failed and now passes, or the output that changed. "Tests are green" alone is a claim, not evidence. A visible UI change carries before and after screenshots.
 - **Merge Danger** states the **Door** and the **Blast Radius**. A two-way door is cheap to reverse; a one-way door is not. Always one-way: a migration that drops or rewrites data, an outbound send to users or partners, a deletion, and a public API removal. Blast radius names what breaks if the change is wrong, such as API consumers, layout on mobile, or a scheduled job. Be most suspicious of your own "two-way, small" call: a revert does not unsend an email, and a flagged rollout stays two-way only until the first write lands in the new format.
 - Concise, direct. No filler. Open questions go to the chat, never the PR body.
-- Do not hard-wrap the body. The platform renders single newlines as line breaks, so write each paragraph as one long line. The 72-column wrap is for commit bodies only. See [`rules/git-workflow.md`](../../rules/git-workflow.md) "PR/MR Creation".
+- Do not hard-wrap the body. The platform renders single newlines as line breaks, so write each paragraph as one long line. The 72-column wrap is for commit bodies only. See [`standards/git-workflow.md`](../../standards/git-workflow.md) "PR/MR Creation".
 
 ---
 
@@ -152,7 +151,7 @@ Create a tagged release whose notes are written for users per [`standards/change
 
 ### Steps
 
-1. **Gather context**, parallel: `git remote get-url origin`, `git describe --tags --abbrev=0`, `git status --porcelain`. Detect CLI tool. **Resolve account**. Stop if dirty.
+1. **Gather context**, parallel: `git remote get-url origin`, `git describe --tags --abbrev=0`, `git status --porcelain`. Detect CLI tool. **Resolve account** as in `pr` step 1. Stop if dirty.
 2. `git log --oneline <last-tag>..HEAD`. Stop if no commits.
 3. Determine version: parse last tag as semver. `BREAKING CHANGE`/`!` = major, `feat` = minor, `fix`/`perf`/`refactor` = patch. Only `chore`/`docs`/`style`/`test`/`build`/`ci` = no bump.
 4. Build the release notes per [`standards/changelog.md`](../../standards/changelog.md) Release Notes:
@@ -160,11 +159,10 @@ Create a tagged release whose notes are written for users per [`standards/change
    - Never regenerate or rewrite existing entries in a hand-written changelog; only move its Unreleased entries.
    - Otherwise draft from the commits in the range: one user-facing entry per change a user would notice, related commits grouped into a single entry, sections What's New, Improvements, Fixes, Breaking Changes, Deprecated, and Internal. A list of commit subjects is never release notes.
 5. If `--dry-run`, show and stop.
-6. **Run quality gate**: test, lint, build. Stop if they fail.
+6. **Run quality gate**, in order: format check, lint, type check, full test suite, build. Stop if any fails.
 7. Present the version and the release notes for approval.
-8. After approval: `git tag -a v<version> -m "v<version>"`, `git push origin v<version>`, `gh release create` or `glab release create` with notes-file. Clean up temp file.
+8. After approval: `git tag -a v<version> -m "v<version>"`, `git push origin v<version>`, `GH_TOKEN=$(gh auth token --user <account>) gh release create` or `glab release create` with notes-file. Clean up temp file.
 9. Show release URL.
-10. **Restore account**.
 
 ---
 
@@ -184,15 +182,14 @@ Monitor CI/CD pipeline checks and diagnose failures. Diagnosis only, no auto-fix
 
 ### Steps
 
-1. **Gather context**, parallel: `git remote get-url origin`, `git branch --show-current`. Detect CLI tool. **Resolve account**.
+1. **Gather context**, parallel: `git remote get-url origin`, `git branch --show-current`. Detect CLI tool. **Resolve account** as in `pr` step 1.
 2. Check for PR, or use provided number. Fall back to branch pipelines.
-3. Check status: `gh pr checks` or `glab ci status`.
+3. Check status: `GH_TOKEN=$(gh auth token --user <account>) gh pr checks` or `glab ci status`.
 4. If passing, report and stop.
-5. If running, poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule. Report and stop when the poll budget runs out.
-6. If failed: fetch logs, parallel with `gh run view <id> --log-failed` or `glab ci trace <job-id>`. Search for existing fixes first.
+5. If running, poll a one-shot `GH_TOKEN=$(gh auth token --user <account>) gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule. Report and stop when the poll budget runs out.
+6. If failed: fetch logs, parallel with `GH_TOKEN=$(gh auth token --user <account>) gh run view <id> --log-failed` or `glab ci trace <job-id>`. Search for existing fixes first.
 7. Present diagnosis per failure: check name, URL, error, log excerpt.
 8. Suggest next steps but do not auto-fix.
-9. **Restore account**.
 
 ---
 
@@ -219,11 +216,11 @@ Manage git worktrees for parallel development.
 ### deliver
 
 1. Verify inside a worktree.
-2. Gather state, parallel: status, commits, task file, remote, branch. **Resolve account**.
+2. Gather state, parallel: status, commits, task file, remote, branch. **Resolve account** as in `pr` step 1.
 3. Stage and commit, worktrees are task-scoped. Remove `.worktree-task.md` from staging.
 4. Push with `-u`.
 5. Create PR using task description. Follow PR conventions.
-6. **Restore account**. Show PR URL.
+6. Show PR URL.
 
 ### check
 
@@ -237,7 +234,7 @@ Manage git worktrees for parallel development.
 - `--all`: all `wt/*` worktrees, warn about unmerged work.
 - `--branch <name>`: specific worktree.
 - `--dry-run`: show what would be removed.
-- Remove worktree, delete local branch, optionally delete remote branch, ask first. Run `git worktree prune`.
+- Remove the worktree with `git worktree remove <path>`, delete the local branch with `git branch -d <branch>`, and, after asking, delete the remote branch with `git push origin --delete <branch>`. Run `git worktree prune`.
 
 ---
 
@@ -246,7 +243,7 @@ Manage git worktrees for parallel development.
 The monitoring loop has **two parallel exit conditions that must BOTH hold on the latest pushed SHA**:
 
 1. Every functional CI check is green, manual gates like `lead-approval` are excluded.
-2. Every actionable AI-tool comment is closed, across all four comment channels, such as CodeRabbit, GitHub Copilot, Greptile, Sourcery, Korbit, Bito, Codium, Qodo, or etc..
+2. Every actionable AI-tool comment is closed, across all four comment channels, for every bot in the 6a list.
 
 Condition 2 spans every channel in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md), not just inline review threads. A bot summary posted as a review body or a PR-level comment holds the loop open exactly like an inline thread does.
 
@@ -256,14 +253,14 @@ Do not declare the loop complete while either condition is open. If a fix is pus
 
 ### Step 1: Detect platform and locate checks
 
-Run **in parallel**: `git remote get-url origin`, `git branch --show-current`. Detect CLI tool. **Resolve account**. Check if PR exists.
+Run **in parallel**: `git remote get-url origin`, `git branch --show-current`. Detect CLI tool. **Resolve account** as in `pr` step 1. Check if PR exists.
 
-If no PR exists and the caller invoked `--pipeline`, fall through to the `pr` flow with `--no-pipeline`, steps 1-14, to open one, then re-evaluate. Many CI configs only fire on `pull_request` events; without a PR there is nothing to monitor.
+If no PR exists and the caller invoked `--pipeline`, fall through to the `pr` flow with `--no-pipeline`, steps 1-13, to open one, then re-evaluate. Many CI configs only fire on `pull_request` events; without a PR there is nothing to monitor.
 
 ### Step 2: Wait for CI checks
 
-- With PR: read the run IDs from `gh pr checks`, then poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule.
-- Without PR, only when CI fires on push, e.g. branch protections or scheduled workflows: the same bounded poll on the run ID from `gh run list --branch <branch> --limit 1`.
+- With PR: read the run IDs from `GH_TOKEN=$(gh auth token --user <account>) gh pr checks`, then poll a one-shot `GH_TOKEN=$(gh auth token --user <account>) gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule.
+- Without PR, only when CI fires on push, e.g. branch protections or scheduled workflows: the same bounded poll on the run ID from `GH_TOKEN=$(gh auth token --user <account>) gh run list --branch <branch> --limit 1`.
 - When the poll budget runs out, report and stop. Schedule a wakeup and re-poll if the loop is still active.
 
 ### Step 3: Evaluate CI
@@ -295,13 +292,13 @@ Read [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-chann
 
 The four GitHub channels are `reviewThreads`, `reviews`, `comments`, and `timelineItems` filtered to `PULL_REQUEST_COMMIT_COMMENT_THREAD`. The standard carries the exact query. Do not hand-roll a narrower one.
 
-Filter the result to comments that are non-terminal per the standard's Terminal States table, then keep those whose author login matches the AI-bot list. The match is case-insensitive on the login and includes, non-exhaustive: `coderabbit`, `copilot`, `greptile`, `sourcery`, `korbit`, `bito`, `qodo`, `codium`, `cursor`, `tabnine`, `gemini-code-assist`, `claude`.
+Filter the result to comments that are non-terminal per the standard's Terminal States table, then keep those whose author login matches the AI-bot list. The match is a case-insensitive substring match on the login, with or without a `[bot]` suffix, since the GraphQL API omits it, and includes, non-exhaustive: `coderabbit`, `copilot`, `greptile`, `sourcery`, `korbit`, `bito`, `qodo`, `codium`, `cursor`, `tabnine`, `gemini-code-assist`, `chatgpt-codex-connector`, `claude`. A login outside the list that still looks automated is reported, never treated as human by default.
 
 Two filters that look right and are not: `isResolved == false` alone misses the three channels that have no `isResolved` field, and `isOutdated == true` is not a terminal state.
 
 #### 6b: Triage each finding
 
-For every open item, read the full comment body for the unabridged text, then classify. Inline thread comments come from `gh api repos/<owner>/<repo>/pulls/comments/<databaseId> --jq '.body'`. Review bodies, PR-level comments, and commit comments already arrive in full from the canonical fetch.
+For every open item, read the full comment body for the unabridged text, then classify. Inline thread comments come from `GH_TOKEN=$(gh auth token --user <account>) gh api repos/<owner>/<repo>/pulls/comments/<databaseId> --jq '.body'`. Review bodies, PR-level comments, and commit comments already arrive in full from the canonical fetch.
 
 | Classification | Action |
 |---------------|--------|
@@ -352,7 +349,7 @@ After every push triggered by Step 6, return to Step 2. New AI tools often re-re
 
 Only when **both** conditions hold on the latest SHA:
 
-- `gh pr checks <pr>` shows every functional check as `pass`, manual gates excluded.
+- `GH_TOKEN=$(gh auth token --user <account>) gh pr checks <pr>` shows every functional check as `pass`, manual gates excluded.
 - The canonical four-channel fetch returns zero non-terminal AI-bot comments, across `reviewThreads`, `reviews`, `comments`, and commit-comment threads.
 
 Run the Completeness Cross-Check from [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) before exiting.
@@ -376,7 +373,6 @@ Human comments open: inline 0 | review bodies 0 | PR-level 1 | commit 0  -> run 
 - Never close comments authored by humans automatically, Step 6 covers AI bots only.
 - Never scope the sweep to inline review threads. All four channels in [`../../standards/pr-comment-channels.md`](../../standards/pr-comment-channels.md) are in scope every pass.
 - Use `ScheduleWakeup`, or equivalent when waiting on CI or AI re-review to avoid burning context on tight polling loops.
-- **Restore account** on exit.
 
 ---
 
@@ -392,7 +388,7 @@ Human comments open: inline 0 | review bodies 0 | PR-level 1 | commit 0  -> run 
 - Never force push. Rebase only a branch that has never been pushed; resolve conflicts on a pushed branch with a merge.
 - Never merge PRs. Only create or update.
 - Never auto-approve Terraform applies or releases without user approval.
-- Always restore account per [`standards/borrow-restore.md`](../../standards/borrow-restore.md).
+- Prefix every `gh` call with an inline `GH_TOKEN` for the account matched from the remote, per [`standards/multi-account-cli.md`](../../standards/multi-account-cli.md). Never switch the global active account.
 - `--pipeline` and any `pr` flow that opens a PR must run the full Pipeline Monitoring loop. The loop only exits when CI is 100% green AND every AI-tool comment across all four channels is closed on the latest pushed SHA. Resolving partial state, CI green but comments open, or comments closed but CI red is not "done".
 
 ## Common Rationalizations
@@ -415,8 +411,8 @@ Human comments open: inline 0 | review bodies 0 | PR-level 1 | commit 0  -> run 
 
 - `git status` shows no staged leftovers, and each commit subject matches `<type>(<scope>): <subject>` within 50 characters.
 - The final report prints per-channel counts for AI and human comments on the latest SHA, never a single total.
-- `gh pr checks <pr>` shows every functional check as `pass` on that same SHA.
-- The account active before the run is active again after it.
+- `GH_TOKEN=$(gh auth token --user <account>) gh pr checks <pr>` shows every functional check as `pass` on that same SHA.
+- Every `gh` call in the run carried an inline `GH_TOKEN`, and the global active account never changed.
 - Temp files for PR bodies and release notes are deleted.
 
 ## Related skills

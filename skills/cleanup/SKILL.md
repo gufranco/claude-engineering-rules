@@ -4,6 +4,7 @@ description: List stale branches, long-open PRs, merged branches, and orphaned w
 disable-model-invocation: true
 argument-hint: "/cleanup [branches|prs|worktrees] [--dry-run|--apply]"
 allowed-tools: "Bash, Read, AskUserQuestion"
+sensitive: true
 ---
 
 ## Overview
@@ -127,7 +128,7 @@ The two-phase flow exists because cleanup is destructive: read the report, decid
 - Always prefix `glab` commands with `GITLAB_TOKEN` and `GITLAB_HOST` per the gitlab-accounts rule.
 - Close a PR with no comment. The reason goes in the terminal report, where the user decides how to tell the author.
 - In `--dry-run` mode, do not modify any state. Report only.
-- When a branch exists both locally and on the remote, delete both if approved. Delete local first, then remote.
+- When a branch exists both locally and on the remote, delete both if approved. Delete local first with `git branch -d <branch>`, or `-D` after the force-delete warning, then remote with `git push origin --delete <branch>`.
 - Show age and last activity in relative format.
 
 ## Common Rationalizations
@@ -150,7 +151,7 @@ The two-phase flow exists because cleanup is destructive: read the report, decid
 - The report lists every category the invocation scanned, with relative ages.
 - In dry-run mode, `git branch -a`, `git worktree list`, and the open PR list are unchanged after the run.
 - With `--apply`, each approved branch is absent from `git branch -a` and each approved worktree from `git worktree list`.
-- Each closed PR shows the state `CLOSED` in `gh pr view <number> --json state`, or `glab mr view` on GitLab.
+- Each closed PR shows the state `CLOSED` in `GH_TOKEN=$(gh auth token --user <account>) gh pr view <number> --json state`, or `glab mr view` on GitLab.
 - The summary counts match the items the user approved.
 
 ## Related skills

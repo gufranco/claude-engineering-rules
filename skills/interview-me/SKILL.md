@@ -2,7 +2,7 @@
 name: interview-me
 description: One-question-at-a-time intent clarification for underspecified or ambiguous asks. Drives toward 95%+ intent confidence before any implementation. Use when user says "interview me", "grill me", "are we sure?", "stress-test my thinking", or when the request is too vague to act on without guessing. Use only while the request is underspecified; a concretely specified task proceeds straight to the work.
 argument-hint: "/interview-me [topic]"
-allowed-tools: "Read, Grep, Glob, AskUserQuestion, Skill"
+allowed-tools: "Read, Grep, Glob, Write, Edit, AskUserQuestion, Skill"
 sensitive: false
 ---
 
@@ -44,7 +44,7 @@ When a glossary exists:
 - Load every term and its `Avoid` clause before asking anything.
 - Phrase every question using the glossary's canonical terms.
 - When the user uses a word listed under `Avoid`, call it out: "the glossary lists `<canonical>` for that concept and `<word-the-user-said>` under `Avoid`. Are we talking about the same thing, or has the meaning shifted?".
-- When the user introduces a new term that has no entry, propose adding it inline. Update `GLOSSARY.md` before continuing.
+- When the user introduces a new term that has no entry, propose adding it inline. Update `GLOSSARY.md` with the Edit tool before continuing, creating it with Write on the first real term. Glossary edits are the only writes this skill makes before the task statement is approved.
 - When the user's intent contradicts what the code does, surface it: "the glossary and the code both treat X as Y. You described it as Z. Which is the truth now?".
 
 ## When to offer an ADR

@@ -60,10 +60,10 @@ The file is overwritten in place on every save. Outside a git repository, checkp
    - Any blockers or open questions.
    - Next steps remaining.
 
-3. **Write the checkpoint file.** Inside a repository, write `<root>/PROMPT.md` with the required sections and template from [`standards/project-workspace.md`](../../standards/project-workspace.md): identity with a README pointer, read first, hard constraints, dated state, numbered next steps, decided against. Carry the decisions, modified files, blockers, and suggested skills gathered above into those sections. When a purpose was given, state it at the top and order the next steps around it. Outside a repository, create `~/.claude/checkpoints/<session-id>.md` with this structure:
+3. **Write the checkpoint file.** Inside a repository, write `<root>/PROMPT.md` with the required sections and template from [`standards/project-workspace.md`](../../standards/project-workspace.md): identity with a README pointer, read first, hard constraints, dated state, numbered next steps, decided against. Carry the decisions, modified files, blockers, and suggested skills gathered above into those sections. When a purpose was given, state it at the top and order the next steps around it. Outside a repository, create `~/.claude/checkpoints/<YYYYMMDD-HHmmss>.md`, named by the GMT save time so a filename sort is a time sort, with this structure:
 
    ```markdown
-   # Checkpoint: <session-id>
+   # Checkpoint: <YYYYMMDD-HHmmss>
 
    **Saved:** <GMT timestamp>
    **Branch:** <branch name>
@@ -113,7 +113,7 @@ The file is overwritten in place on every save. Outside a git repository, checkp
    - API keys, tokens, bearer credentials. Heuristics: high-entropy strings 32 chars or more, strings prefixed with `sk_`, `pk_`, `ghp_`, `Bearer `, `AKIA`.
    - Passwords, private keys, certificates. Patterns: `-----BEGIN`, `password=`, `pwd=`, `secret=`.
    - PII: email addresses, phone numbers, national identifiers, full names tied to non-public records.
-   - Internal hostnames, internal URLs (`*.internal`, `*.corp`, `*.lan`), IP addresses in RFC 1918 ranges when paired with a service name.
+   - Internal hostnames, internal URLs such as `*.internal`, `*.corp`, or `*.lan`, and IP addresses in RFC 1918 ranges when paired with a service name.
    The token must name the reason so a human reading the checkpoint can decide whether to fetch the real value: `[REDACTED:api-key]`, `[REDACTED:email]`.
 
 5. **Pick suggested skills.** Choose 2 to 5 skills the resuming agent should consider, ranked by likely value. Examples: `/plan` if there is an open spec, `/test` if there are unrun tests, `/ship pr` if the work is ready to land, `/investigate` if a blocker is a bug.
@@ -178,7 +178,7 @@ The file is overwritten in place on every save. Outside a git repository, checkp
 
 ## Verification
 
-- The file exists at the confirmed path: `<root>/PROMPT.md` inside a repository, `~/.claude/checkpoints/<id>.md` outside one.
+- The file exists at the confirmed path: `<root>/PROMPT.md` inside a repository, `~/.claude/checkpoints/<YYYYMMDD-HHmmss>.md` outside one.
 - The file carries a GMT timestamp, the branch, numbered next steps, and 2 to 5 suggested skills.
 - A scan of the file for `sk_`, `ghp_`, `AKIA`, `Bearer `, and `-----BEGIN` finds nothing outside `[REDACTED:...]` tokens.
 - `git status --short` lists the same files before and after the save, and `PROMPT.md` is absent from it.

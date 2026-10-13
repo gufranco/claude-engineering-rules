@@ -54,7 +54,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
 
 1. **Identify the PR.** If no argument, find the PR for the current branch:
    ```
-   gh pr view --json number,state,reviewDecision,statusCheckRollup
+   GH_TOKEN=$(gh auth token --user <account>) gh pr view --json number,state,reviewDecision,statusCheckRollup
    ```
    If no `gh` is available, try `glab`. Prefix with the appropriate token per [`standards/github-accounts.md`](../../standards/github-accounts.md) or [`standards/gitlab-accounts.md`](../../standards/gitlab-accounts.md).
 
@@ -71,7 +71,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
 
 3. **Merge the PR.** Default to squash merge:
    ```
-   gh pr merge <number> --squash --delete-branch
+   GH_TOKEN=$(gh auth token --user <account>) gh pr merge <number> --squash --delete-branch
    ```
    If `--no-delete` is passed, omit `--delete-branch`.
    If this is a dual-base PR, same change targeting two branches, omit `--delete-branch` per [`../../rules/git-workflow.md`](../../rules/git-workflow.md).
@@ -80,7 +80,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
 
    | Signal | Platform | How to monitor |
    |--------|---------|---------------|
-   | [`.github/workflows/`](../../.github/workflows) with deploy job | GitHub Actions | `gh run list --branch main --limit 1 --json databaseId,status`, then poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule |
+   | [`.github/workflows/`](../../.github/workflows) with deploy job | GitHub Actions | `GH_TOKEN=$(gh auth token --user <account>) gh run list --branch main --limit 1 --json databaseId,status`, then poll a one-shot `GH_TOKEN=$(gh auth token --user <account>) gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule |
    | Vercel project | Vercel | Check Vercel MCP or `vercel ls --limit 1` |
    | Railway, Render, Fly | PaaS | Suggest user check the dashboard |
    | Manual deploy | Any | Ask user to trigger and confirm |
@@ -90,7 +90,7 @@ Merge a PR, wait for the deployment pipeline, and verify production health.
 5. **Verify production health.** After deployment completes:
    - If a health endpoint is known, from project docs or user input, `curl` it and verify 200.
    - If the project has a public URL, verify it loads.
-   - Check for new error reports if monitoring is configured, Sentry MCP, etc..
+   - Check for new error reports if monitoring is configured, such as through the Sentry MCP.
    - Report the deployment result.
 
 6. **Switch to local main.** After successful deployment:
@@ -198,7 +198,7 @@ Monitor a recently deployed change for errors, performance regressions, and unex
 
 ## Common Rationalizations
 
-- "`statusCheckRollup` is green, so CI passed": the rollup reads success when only an unrelated check ran. Confirm the CI workflows ran on the head commit with `gh run list --commit <full-sha>`.
+- "`statusCheckRollup` is green, so CI passed": the rollup reads success when only an unrelated check ran. Confirm the CI workflows ran on the head commit with `GH_TOKEN=$(gh auth token --user <account>) gh run list --commit <full-sha>`.
 - "The reviewer is away and the change is small": merging without approval needs the user's explicit request. Ask.
 - "The canary showed errors, revert now to be safe": canary is non-blocking. Report the findings and the rollback steps, then wait for confirmation.
 - "The dashboard is faster than the health endpoint": production databases and infrastructure stay off limits. Use health endpoints and monitoring APIs.
@@ -209,11 +209,11 @@ Monitor a recently deployed change for errors, performance regressions, and unex
 - Stop and report when any pre-merge blocker row fails, and leave the PR unmerged.
 - Stop and ask how deployments work when no row of the deployment detection table matches.
 - Stop and present the rollback steps when the health endpoint returns anything other than 200 after the deploy.
-- Stop and switch to one-shot `gh run view` checks when `gh api rate_limit` shows fewer than 500 remaining.
+- Stop and switch to one-shot `GH_TOKEN=$(gh auth token --user <account>) gh run view` checks when `GH_TOKEN=$(gh auth token --user <account>) gh api rate_limit` shows fewer than 500 remaining.
 
 ## Verification
 
-- `gh pr view <number> --json state` returns `MERGED` after `land`.
+- `GH_TOKEN=$(gh auth token --user <account>) gh pr view <number> --json state` returns `MERGED` after `land`.
 - The deploy run for the merge commit shows `completed` with conclusion `success`, or the user confirmed a manual deploy.
 - The health endpoint returned 200, with the URL and status in the Deployment Summary.
 - `git branch --show-current` prints `main` and `git status` reports the branch up to date with `origin/main`.
