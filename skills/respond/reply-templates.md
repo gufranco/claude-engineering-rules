@@ -25,16 +25,16 @@ Every reply must pass these gates before posting.
 - No em dashes. Use periods, commas, colons, or restructure.
 - No parentheses in prose. Use commas or separate sentences. Parens are allowed inside fenced code blocks and inline code spans because GitHub renders those as code.
 - No AI-attribution markers. No co-author trailers naming AI tools.
-- No banned phrases. See [`CLAUDE.md`](../../CLAUDE.md) "Banned Phrases" for the full list of fluff adjectives, openers, closers, hedges, and transitions.
+- No banned phrases. See [`standards/tone-and-writing.md`](../../standards/tone-and-writing.md) "Banned Phrases" for the full list of fluff adjectives, openers, closers, hedges, and transitions.
 - Plain ASCII. No emojis or decorative Unicode.
 
 ## Cell 1: issue:blocking-bug x implement
 
 ### Good
 
-1. "You're right. Pushed `c8e2f1a`. The handler was missing the null check on `order.shippingAddress`. Added a regression test in `tests/orders.spec.ts:142`."
-2. "Good catch on the race. The lock release was not atomic with the queue insert. Fix in `a3f2c1d` uses the queue's built-in dedup key. Added a test that replays two concurrent deliveries."
-3. "Confirmed. The branch in `parseAmount` returned `undefined` for empty strings instead of zero. Fixed in `9af2b1c` with `it('treats empty amount as zero per PR #4521')`."
+1. "Pushed `c8e2f1a` with the null check on `order.shippingAddress` the handler was missing. Added a regression test in `tests/orders.spec.ts:142`."
+2. "Fixed in `a3f2c1d`, good catch: the lock release was not atomic with the queue insert, so the fix uses the queue's built-in dedup key. Added a test that replays two concurrent deliveries."
+3. "Fixed in `9af2b1c`: the branch in `parseAmount` returned `undefined` for empty strings instead of zero. The regression test is `it('treats an empty amount as zero')`."
 
 ### Bad
 
@@ -60,9 +60,9 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "You're right. Pushed `b412a09` with input validation at the API boundary. The WebSocket handler was missing the same check, so that path is in there too."
-2. "Confirmed. The query was vulnerable to ordering attacks. Fix in `4ce0c3d` switches to parameterized binding via the ORM. Added a fuzz test that runs 1000 generated inputs through the endpoint."
-3. "Good catch. The token leaked in the error response on the failure path. Fix in `7d8e2c1` scrubs the token before returning the error envelope. Added a redaction test that asserts the response body cannot contain a substring matching the token pattern."
+1. "Pushed `b412a09` with input validation at the API boundary. The WebSocket handler was missing the same check, so that path is in there too."
+2. "Fixed in `4ce0c3d`, which switches the query to parameterized binding through the ORM. Added a fuzz test that runs 1000 generated inputs through the endpoint."
+3. "Fixed in `7d8e2c1`, which scrubs the token from the error envelope on the failure path. Added a redaction test asserting the response body holds no substring matching the token pattern."
 
 ### Bad
 
@@ -74,7 +74,7 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "Want to make sure I am understanding. You are saying that `processBatch` should return early when `items.length === 0`, instead of returning the empty result envelope. Is that right? If yes, I plan to add a guard at line 42. If not, can you point me at the case I am missing?"
+1. "My reading is an early return from `processBatch` when `items.length === 0`, instead of the empty result envelope. If that is it, the guard goes at line 42; if not, which case am I missing?"
 2. "I want to be specific. Two readings. First: the comparator is wrong because it returns negative for equal values. Second: the input should be sorted before reaching the comparator. Which is the concern?"
 3. "Reading it again. Do you mean the cache should be invalidated on every update, or only on updates that change the indexed fields? The two paths have different cost shapes and I want to pick the right one."
 
@@ -88,9 +88,9 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "Want to land this PR with the current approach. The redesign you are sketching is worth a separate thread because it touches the cache layer too. Happy to draft an ADR if you want to drive the larger change."
-2. "I went with the synchronous variant because the cold-start budget is 50ms and the async path adds 15ms minimum on the test fixture. Open to revisiting if we relax the budget or change the runtime. ADR-0042 captures the constraint."
-3. "Considered the event-sourced shape. Reason for the current state-based approach: the downstream consumer needs the latest value, not the event log, and a projection rebuild would take roughly 4 minutes against the current data volume. We can revisit when we add the second consumer."
+1. "Keeping the current approach here, because the redesign also rewrites the cache layer that the billing service reads directly, so it has to ship with their release. The reasoning is in the PR description."
+2. "The synchronous variant stays because the cold-start budget is 50ms and the async path adds at least 15ms on the test fixture. The budget and its measurement are in the PR description."
+3. "The state-based approach stays because the only consumer needs the latest value rather than the event log. A projection rebuild takes 4 minutes against the current data volume."
 
 ### Bad
 
@@ -102,8 +102,8 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "Good call. Applied in `c8e2f1a`."
-2. "Yes, that reads better. Renamed in `a3f2c1d`. Suggested-by: Alice <alice@example.com>"
+1. "Applied in `c8e2f1a`."
+2. "Renamed in `a3f2c1d`, with a `Suggested-by: Alice <alice@example.com>` trailer."
 3. "Took the suggestion. The new helper at `utils/parseAmount.ts:12` deduplicates three call sites. Suggested-by: Bob <bob@example.com>"
 
 ### Bad
@@ -130,8 +130,8 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "Considered that. Went with the current approach because the suggested helper would add a dependency on `@aws-sdk/client-s3` to a module that otherwise has no AWS coupling. Open to changing if the boundary is acceptable to you."
-2. "I think the current shape is right. Observation: the API surface exposes one method per entity. Impact: collapsing into a generic `query<T>(filter)` would lose the typed return values that callers rely on. Trade-off you may be optimizing for differently: ease of extension. WDYT?"
+1. "Keeping the current approach, because the suggested helper would add a dependency on `@aws-sdk/client-s3` to a module that otherwise has no AWS coupling."
+2. "Keeping one method per entity, because collapsing them into a generic `query<T>(filter)` loses the typed return values callers rely on. Is ease of extension the trade-off you are after?"
 3. "Looked at the alternative. The suggested pattern works at lower scales but the cache lookup is on the hot path and the alternative adds a hash operation per request, around 0.4 microseconds in the benchmark. Sticking with the array scan because the keyset is bounded to under 20 entries."
 
 ### Bad
@@ -146,7 +146,7 @@ Every reply must pass these gates before posting.
 
 1. "The retry happens in the queue consumer, not in the handler. The handler enqueues and returns 202. The consumer retries with exponential backoff up to 5 attempts."
 2. "It is intentional. The constraint comes from the third-party API, which returns a 429 on any concurrent request. We serialize at the consumer."
-3. "No special reason. I copied the pattern from `src/services/orderService.ts`. Happy to align if that file should change too."
+3. "No special reason. I copied the pattern from `src/services/orderService.ts`."
 
 ### Bad
 
@@ -186,9 +186,9 @@ Every reply must pass these gates before posting.
 
 ### Good
 
-1. "Sticking with the current name for consistency with `OrderService.findById`. Happy to change both if we want the new convention."
+1. "Keeping the current name for consistency with `OrderService.findById`."
 2. "Project convention is camelCase for module-private helpers per the lint config. The suggested name would trigger the lint rule."
-3. "Could go either way. Leaving as is to avoid blowing up the diff. Will pick up the rename in the next pass through this file."
+3. "Keeping it, since the rename touches 40 call sites outside this diff and the current name is not wrong."
 
 ### Bad
 
@@ -203,7 +203,7 @@ The default for this cell. A change a reviewer calls out of scope is usually sma
 ### Good
 
 1. "Fixed in `c8e2f1a`. It was two lines next to the change anyway."
-2. "Good catch, done in `a3f2c1d`. The same shape was wrong at `src/orders.ts:78`, so that one is in there too."
+2. "Done in `a3f2c1d`. The same shape was wrong at `src/orders.ts:78`, so that one is in there too."
 3. "Applied in `9af2b1c`."
 
 ### Bad
@@ -249,12 +249,12 @@ A reviewer asking for a marker is asking for the work. Do the work. Markers reco
 ### Good
 
 1. No reply. Silent resolve. Optionally add a thumbs-up reaction on GitHub.
-2. "Thanks for noticing the cleanup. The factoring took longer than expected because the call sites had subtle differences."
-3. "Took me three tries to get the shape right. Glad it landed."
+2. Resolve the thread with no reply when the praise asks nothing.
+3. When the praise carries a question, answer the question alone: "The retry cap is 3, set in `config/queue.ts:12`."
 
 ### Bad
 
-1. "Thanks!" on every praise comment. Microsoft research shows praise replies add work without value; default to no reply.
+1. "Thanks!" on every praise comment. Each one adds a notification and no information; default to no reply.
 2. "Thank you for the kind words, this was indeed a tricky refactor I spent considerable effort on." Overlong, reads as fishing for more praise.
 3. "Glad you like it." Technically fine but adds noise when a silent resolve would do.
 
@@ -266,7 +266,7 @@ There is no exemplar for a reply to a bot, because no reply is published to a bo
 
 ### Good
 
-1. "@alice and @bob: you are asking for opposite things on this line. Alice wants the helper extracted; Bob wants the inline form. I have a slight preference for the helper because the same shape appears at `src/orders.ts:78`. Can you two align? Happy with either."
+1. "@alice and @bob, you are asking for opposite things on this line: the helper extracted, or the inline form. I lean toward the helper because the same shape appears at `src/orders.ts:78`. Can you two align on one?"
 2. "@alice: you flagged this as a blocking issue. @bob approved with the current shape. Want to make sure I understand the conflict. Is the disagreement on the API shape or on the implementation?"
 3. "@tech-lead: alice and bob disagree on the migration approach. Both options are sketched in `docs/migration-options.md`. We have gone two rounds with no movement. Picking a direction?"
 

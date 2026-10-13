@@ -23,7 +23,7 @@ Do not spawn subagents. Complete this task using direct tool calls only.
 
 ## Process
 
-1. Locate the transcript. The orchestrator passes the path. If absent, read the most recent file under `~/.claude/projects/*/sessions/`.
+1. Locate the transcript. The orchestrator passes the path. If absent, read the most recently modified `~/.claude/projects/<project-key>/<session-uuid>.jsonl`, where `<project-key>` is the working directory path with every `/` and `.` replaced by `-`. The file is JSON Lines, one event per line.
 2. Scan the transcript for the signals below.
 3. For each signal, build a candidate: name the pattern in one sentence, cite at least one transcript turn, score confidence and generality 1-10.
 4. Cross-check against existing rules / standards / memory. Drop duplicates.

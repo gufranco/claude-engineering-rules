@@ -71,13 +71,13 @@ Implement the minimal change. Rules for hotfix code:
 
 ### Step 6: Run critical tests
 
-Run only the test files that cover the affected code, not the full suite. Speed matters.
+Run the test files that cover the affected code first, for the fastest signal:
 
 ```
 <test-runner> <affected-test-files>
 ```
 
-If critical tests pass, proceed. If the full suite is fast, less than 2 minutes, run it. Otherwise, trust CI for the full suite.
+Then run the full local gate per [`../../rules/git-workflow.md`](../../rules/git-workflow.md) before committing, in order: format check, lint, type check, full test suite, build. Urgency shortens the review, never the gate; CI runs the same gate again after the push.
 
 ### Step 7: Commit
 
@@ -120,7 +120,7 @@ When no release branch exists and the PR targeted `main`, tag that PR's merge co
 ## Rules
 
 - Minimal change only. The hotfix branch exists to fix one thing and nothing else.
-- No scope creep. If you notice other issues while fixing, note them for later. Do not fix them now.
+- No scope creep on the hotfix branch. Another issue noticed while fixing gets its own change on main, in the same session.
 - Speed is the priority. Skip steps that do not contribute to getting the fix deployed safely.
 - Backport must happen the same day. A fix that lives only on the release branch will be lost on the next release from main.
 - Never skip the reproduction test. A hotfix without a test is a hotfix that can regress silently.
@@ -130,7 +130,7 @@ When no release branch exists and the PR targeted `main`, tag that PR's merge co
 
 - "The fix is obvious, the reproduction test only slows us down": a hotfix without a failing test can regress silently. Write the test from Step 4 first, or document the reproduction steps when the infrastructure is not available locally.
 - "A cleaner refactor would remove the whole class of bug": the hotfix branch carries the smallest change that resolves the production issue. Pick the approach that touches fewer lines.
-- "The full suite takes too long, so skip tests": run the test files covering the affected code, and let CI run the full suite.
+- "The full suite takes too long, so skip tests": run the affected test files first for speed, then the full local gate of format, lint, type check, full suite, and build before the commit.
 - "The backport can happen with the next release": the next release is cut from main, so a fix that lives only on the release branch ships the bug again. Cherry-pick to main the same day.
 - "One more hour and I will have it": past 30 minutes without an obvious fix, bring in another engineer. A wrong hotfix costs more than a slow one.
 
@@ -147,7 +147,7 @@ When no release branch exists and the PR targeted `main`, tag that PR's merge co
 - The hotfix branch starts at the tag `git describe --tags --abbrev=0` returned, or at main when the repository has no tags.
 - A test fails on the branch without the fix and passes with it, or the reproduction steps are written down because the infrastructure was not available locally.
 - The diff holds only the fix and its test.
-- The affected test files pass locally, and the PR title starts with `[HOTFIX]` and targets the release branch, or main when no release branch exists.
+- Format check, lint, type check, the full test suite, and the build each exit 0 locally before the commit, and the PR title starts with `[HOTFIX]` and targets the release branch, or main when no release branch exists.
 - The fix commit is cherry-picked onto main and the tests on main pass.
 - The patch tag `v<major>.<minor>.<patch+1>` exists on the remote.
 

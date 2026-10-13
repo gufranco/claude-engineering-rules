@@ -28,7 +28,7 @@ For saving resumable task state, use `/checkpoint save`; for a handoff summary, 
 | `/retro --curate` | Review and clean up memory files |
 | `/retro --promote` | Graduate memory entries to rules/CLAUDE.md |
 | `/retro --hooks` | Mine `~/.claude/logs/hooks.log` for block patterns and propose upstream fixes |
-| `/retro instinct` | Extract atomic instincts from the session with confidence scores; save to `memory/instincts/<project>/` |
+| `/retro instinct` | Extract atomic instincts from the session with confidence scores; record them per [Where instincts live](#where-instincts-live) |
 | `/retro promote <instinct-id>` | Move a project-scoped instinct to global (`memory/instincts/global.md`) |
 | `/retro prune` | Delete stale or low-confidence instincts after explicit user approval |
 
@@ -162,7 +162,7 @@ Review and clean up memory files. Part of the self-improving agent lifecycle.
    - **Redundant?** Covered by a rule or CLAUDE.md?
    - **Promotable?** Should it graduate to a rule? See `--promote`
 3. Present findings: keep, update, delete, promote.
-4. Apply approved changes.
+4. Apply approved changes through [Memory Writes](#memory-writes), never by editing a compiled memory file when a vault is configured.
 
 ---
 
@@ -196,7 +196,7 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
 
 1. **Locate the audit log.** Default: `~/.claude/logs/hooks.log`, JSONL, one event per line. Read the cursor file `~/.claude/logs/.retro-cursor` if it exists; resume from that byte offset. If absent, start from the beginning of the current file. Also consider rotated `hooks.log.1` for the previous window.
 
-2. **Parse and filter.** Each line is JSON with shape: `{ts, session_id, cwd, hook, decision, level, tool, command_excerpt, reason, bypass_env}`. Filter to `decision in {"block", "bypass"}`. Skip malformed lines silently.
+2. **Parse and filter.** Each line is JSON with shape: `{ts, session_id, cwd, hook, decision, level, tool, command_excerpt, reason, bypass_env}`. Filter to `decision in {"block", "bypass"}`. Count every line that fails to parse as JSON or lacks `hook` or `decision`, and report the count with the first five line numbers; a malformed line is never dropped silently, since a logger bug that corrupts every line would otherwise read as a quiet week.
 
 3. **Cluster.** Group events by `(hook, reason)`. For each cluster record: count, distinct sessions, distinct cwds, sample `command_excerpt`, first 3 unique.
 
@@ -229,7 +229,13 @@ Mine the structured audit log written by every blocking hook in `~/.claude/hooks
 
 ## instinct (atomic learnings with promote/prune lifecycle)
 
-A third memory lane on top of the existing `user`, `feedback`, `project`, `reference` types in the auto-memory tree. Instincts are smaller, more granular, and confidence-scored. They live in a separate tree so they do not collide with the other lanes:
+A third memory lane on top of the existing `user`, `feedback`, `project`, `reference` types in the auto-memory tree. Instincts are smaller, more granular, and confidence-scored.
+
+### Where instincts live
+
+When `SECOND_BRAIN_VAULT` resolves to a directory, the memory directory is compiled output and is never hand-written, per the Knowledge Single Source of Truth section of [`CLAUDE.md`](../../CLAUDE.md). Each instinct is then a vault note: call the Skill tool with `brain` and the argument `capture`, carrying the frontmatter fields below and `status: probationary`, without `memory: true`. Promotion, pruning, and archiving become `timeline:` entries and field changes on that note, and a graduated instinct gains `memory: true` and a `memory-scope`, followed by `brain compile`. Nothing under `memory/instincts/` is written.
+
+Only when no vault is configured do instincts live in a separate tree, so they do not collide with the other lanes:
 
 ```
 memory/
@@ -259,7 +265,7 @@ An instinct that hits confidence 8+ on the next promotion review graduates to a 
     - Score generality 1-10, does it apply broadly or only to this project?.
     - Identify the project slug from the current working directory's repo name, or `global` when the pattern is harness-only.
 3. Show the user the proposed instinct list. Ask once: "approve all / pick / skip."
-4. On approve, write each instinct to `memory/instincts/<project-slug>/<YYYY-MM-DD>-<slug>.md` with this frontmatter:
+4. On approve, record each instinct per [Where instincts live](#where-instincts-live): a vault capture when a vault is configured, otherwise `memory/instincts/<project-slug>/<YYYY-MM-DD>-<slug>.md`. Either form carries this frontmatter:
 
 ```markdown
 ---
@@ -283,21 +289,21 @@ source-session: <session id or transcript path>
 
 ### `/retro promote <instinct-id>` steps
 
-1. Resolve `<instinct-id>` to a path under `memory/instincts/`.
+1. Resolve `<instinct-id>` to its vault note when a vault is configured, otherwise to a path under `memory/instincts/`.
 2. Read the instinct. Confirm with the user that the pattern has held up.
-3. If the instinct is project-scoped but the user wants it global: move the file to `memory/instincts/global.md`, append or rewrite. Update status to `global`.
-4. If the instinct is durable enough to leave the lane entirely: record it as a `feedback` or `project` memory as [Memory Writes](#memory-writes) describes, then archive the original instinct under `memory/instincts/archive/`.
+3. If the instinct is project-scoped but the user wants it global: with a vault, set `project: global` and `status: global` on the note and append a `timeline:` entry; without one, move the file to `memory/instincts/global.md`, append or rewrite, and update status to `global`.
+4. If the instinct is durable enough to leave the lane entirely: record it as a `feedback` or `project` memory as [Memory Writes](#memory-writes) describes, then archive the original, as a `timeline:` entry with `status: promoted` on the vault note, or under `memory/instincts/archive/` without a vault.
 5. Always record the promotion date.
 
 ### `/retro prune` steps
 
-1. List instincts under `memory/instincts/` that meet at least one of:
+1. List instincts, from the vault when one is configured or under `memory/instincts/` otherwise, that meet at least one of:
     - `created` more than 60 days ago AND `confidence < 5`.
     - `created` more than 180 days ago regardless of confidence, unless `status: promoted`.
     - `status: superseded`, set manually when a newer instinct replaces an older one.
 2. Show the list to the user. For each, show: slug, created, confidence, the first sentence of the body.
 3. Ask once: "delete all / pick / skip."
-4. Move approved deletions to `memory/instincts/archive/`, do not delete outright. Archive is purged on the next prune older than 90 days.
+4. Archive approved deletions, never delete outright: with a vault, set `status: archived` and append a `timeline:` entry, since vault notes are never hard-deleted; without one, move the file to `memory/instincts/archive/`, which is purged on the next prune older than 90 days.
 
 ### Rules for instincts
 

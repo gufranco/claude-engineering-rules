@@ -27,7 +27,7 @@ Generates a reviewer-friendly summary of a pull request and suggests reviewers b
 
 ### 1. Fetch PR Data
 
-Determine the GitHub account from the git remote using `../../rules/github-accounts.md`.
+Determine the GitHub account from the git remote using [`standards/github-accounts.md`](../../standards/github-accounts.md).
 
 ```bash
 GH_TOKEN=$(gh auth token --user <account>) gh pr view <number> --json title,body,files,additions,deletions,commits,labels,baseRefName,headRefName,author,reviewRequests
@@ -115,14 +115,16 @@ Present the full summary:
 
 5. **Suggested reviewers.** Top 3 with coverage percentages.
 
-6. **Generated description.** If the existing description was thin, provide the generated one and offer to update the PR:
+6. **Generated description.** If the existing description was thin, provide the generated one and offer to update the PR. Bots such as CodeRabbit append their own blocks to the body, delimited by HTML comment markers, and `--body-file` replaces the whole body, so fetch the live body right before the edit and carry every bot block over unchanged:
    ```bash
-   GH_TOKEN=$(gh auth token --user <account>) gh pr edit <number> --body-file /tmp/pr-body.md
+   GH_TOKEN=$(gh auth token --user <account>) gh pr view <number> --json body --jq .body > "$live_body"
+   GH_TOKEN=$(gh auth token --user <account>) gh pr edit <number> --body-file "$new_body"
    ```
+   `$new_body` holds the generated text followed by every bot-appended block copied from `$live_body`. Both are files from `mktemp`, deleted after the edit.
 
 ## Rules
 
-- Account token prefixing is mandatory for all `gh` commands per `../../rules/github-accounts.md`.
+- Account token prefixing is mandatory for all `gh` commands per [`standards/github-accounts.md`](../../standards/github-accounts.md).
 - Never auto-update the PR description without asking. Always present the generated text and let the user decide.
 - Reviewer suggestions are based on git history, not organizational hierarchy. State this in the output.
 - When the PR has fewer than 3 potential reviewers from git history, show however many are available. Do not pad with guesses.
@@ -152,7 +154,7 @@ Present the full summary:
 - The reviewer table excludes the author, lists at most three people, and states that it comes from git history.
 - The Merge Danger call names the Door and the Blast Radius, plus the one-way trigger when one applies.
 - A generated body carries What, How, Evidence, Merge Danger, and Breaking changes, with one line per paragraph.
-- The PR description on GitHub is unchanged unless the user approved the edit.
+- The PR description on GitHub is unchanged unless the user approved the edit, and after an edit every bot-appended block from the live body is still present.
 
 ## Related Skills
 

@@ -43,7 +43,7 @@ Guard mode enables three protections simultaneously:
 
 3. **Write the freeze scope.** Create `~/.claude/.freeze-scope` with the absolute path.
 
-4. **Confirm activation.** State the frozen directory path and that edits outside it will be rejected.
+4. **Confirm activation.** State the frozen directory path and that edits outside it will be refused. No hook reads the freeze file, so the refusal comes from the agent checking it before every edit.
 
 5. **Check for plan.md.** Search for a spec folder with a `plan.md`:
    - Check `<root>/plans/*/plan.md` in the project workspace, per [`rules/project-workspace.md`](../../rules/project-workspace.md), then the legacy `specs/*/plan.md` and `.claude/specs/*/plan.md`.
@@ -88,11 +88,11 @@ When guard mode is active, every file edit and destructive command follows these
 
 ## Rules
 
-- Guard mode is advisory for careful and scope protections. Freeze is enforced by the hook when configured.
+- All three protections are advisory. No hook in [`hooks/`](../../hooks) reads `.freeze-scope`, so freeze holds only because the agent reads the file before every edit and refuses one outside it.
 - The `.freeze-scope` file contains exactly one line: the absolute directory path.
 - Activating guard a second time with a different directory overwrites the previous freeze scope.
-- Guard mode does not persist across sessions. It must be reactivated in each new session.
-- Never auto-deactivate guard mode. Only `/guard off` or session end removes it.
+- The freeze file stays on disk across sessions, and a new session does not read it on its own. Run `/guard status` at the start of a session that should honor it.
+- Never auto-deactivate guard mode. Only `/guard off` removes the freeze file.
 - All paths must be absolute, never relative.
 
 ## Common Rationalizations
@@ -100,7 +100,7 @@ When guard mode is active, every file edit and destructive command follows these
 - "This file sits just outside the frozen directory, and the fix needs it": refuse the edit, state why, and let the user widen the scope with a new `/guard <directory>`.
 - "`rm` on a build directory is harmless": guard mode confirms every destructive command. State the command and its impact, then ask.
 - "The plan missed this file, but it obviously belongs": an unplanned file gets a warning and a confirmation.
-- "Guard was on last session, so it still is": guard mode ends with the session. Run `/guard status` and reactivate.
+- "Guard was on last session, so it still is": the file may remain, but nothing enforces it until this session reads it. Run `/guard status` first.
 - "A relative path is fine here": the freeze file holds one absolute path. Resolve it before writing.
 
 ## Red Flags
