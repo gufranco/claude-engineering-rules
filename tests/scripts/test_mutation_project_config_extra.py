@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
@@ -11,10 +12,6 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from _lib import mutation_project_config as mpc  # noqa: E402
-
-
-def deny(*_args: object, **_kwargs: object) -> None:
-    raise OSError("permission denied")
 
 
 def test_discover_config_path_returns_none_when_claude_dir_missing(
@@ -41,9 +38,9 @@ def test_parse_yaml_minimal_skips_blank_and_comment_lines() -> None:
     assert data == {"version": 1}
 
 
-def test_parse_yaml_minimal_raises_on_orphan_list_item() -> None:
+def test_parse_yaml_minimal_raises_on_orphan_list_item(faker: Faker) -> None:
     # Arrange
-    text = "  - bareItem"
+    text = f"  - {faker.word()}"
 
     # Act
     with pytest.raises(ValueError) as raised:
@@ -53,9 +50,9 @@ def test_parse_yaml_minimal_raises_on_orphan_list_item() -> None:
     assert "unexpected list item" in str(raised.value)
 
 
-def test_parse_yaml_minimal_raises_on_missing_colon() -> None:
+def test_parse_yaml_minimal_raises_on_missing_colon(faker: Faker) -> None:
     # Arrange
-    text = "noColonHere"
+    text = faker.word()
 
     # Act
     with pytest.raises(ValueError) as raised:
@@ -65,25 +62,27 @@ def test_parse_yaml_minimal_raises_on_missing_colon() -> None:
     assert "missing colon" in str(raised.value)
 
 
-def test_parse_yaml_minimal_strips_quotes_from_scalar_string() -> None:
+def test_parse_yaml_minimal_strips_quotes_from_scalar_string(faker: Faker) -> None:
     # Arrange
-    text = 'name: "value"'
+    value = faker.word()
+    text = f'name: "{value}"'
 
     # Act
     data = mpc._parse_yaml_minimal(text)
 
     # Assert
-    assert data == {"name": "value"}
+    assert data == {"name": value}
 
 
 def test_load_text_returns_none_on_os_error(
-    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
-    monkeypatch.setattr("builtins.open", deny)
+    unreadable = tmp_path / f"{faker.word()}.json"
+    unreadable.mkdir()
 
     # Act
-    result = mpc._load_text("/some/path.json")
+    result = mpc._load_text(str(unreadable))
 
     # Assert
     captured = capsys.readouterr()
@@ -107,7 +106,7 @@ def test_load_text_returns_none_for_non_dict_top_level(
     assert "is not a mapping" in captured.err
 
 
-def _install_fake_jsonschema(monkeypatch) -> type:
+def _install_fake_jsonschema(monkeypatch: pytest.MonkeyPatch) -> type[Exception]:
     import types
 
     fake = types.ModuleType("jsonschema")
@@ -117,7 +116,7 @@ def _install_fake_jsonschema(monkeypatch) -> type:
             super().__init__(message)
             self.message = message
 
-    def validate(data, schema):  # noqa: ARG001
+    def validate(data: object, schema: object) -> None:  # noqa: ARG001
         if isinstance(data, dict) and data.get("__force_invalid__"):
             raise ValidationError("forced invalid")
 
@@ -128,11 +127,11 @@ def _install_fake_jsonschema(monkeypatch) -> type:
 
 
 def test_validate_with_jsonschema_falls_back_when_schema_file_missing(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
     _install_fake_jsonschema(monkeypatch)
-    monkeypatch.setattr(mpc, "SCHEMA_PATH", "/nonexistent/schema.json")
+    monkeypatch.setattr(mpc, "SCHEMA_PATH", str(tmp_path / f"{faker.word()}.json"))
 
     # Act
     result = mpc._validate_with_jsonschema({"version": 1})
@@ -142,7 +141,7 @@ def test_validate_with_jsonschema_falls_back_when_schema_file_missing(
 
 
 def test_validate_with_jsonschema_falls_back_on_schema_decode_error(
-    monkeypatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # Arrange
     _install_fake_jsonschema(monkeypatch)
@@ -160,7 +159,7 @@ def test_validate_with_jsonschema_falls_back_on_schema_decode_error(
 
 
 def test_validate_with_jsonschema_returns_false_on_validation_error(
-    monkeypatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     # Arrange
     _install_fake_jsonschema(monkeypatch)
@@ -178,7 +177,7 @@ def test_validate_with_jsonschema_returns_false_on_validation_error(
 
 
 def test_validate_with_jsonschema_returns_true_on_valid_schema(
-    monkeypatch, tmp_path: Path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # Arrange
     _install_fake_jsonschema(monkeypatch)
@@ -194,7 +193,7 @@ def test_validate_with_jsonschema_returns_true_on_valid_schema(
 
 
 def test_validate_with_jsonschema_falls_back_when_jsonschema_missing(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Arrange
     monkeypatch.setitem(sys.modules, "jsonschema", None)
@@ -222,10 +221,10 @@ def test_validate_inline_rejects_empty_string_item(
 
 
 def test_validate_inline_rejects_non_string_item(
-    capsys: pytest.CaptureFixture[str],
+    capsys: pytest.CaptureFixture[str], faker: Faker
 ) -> None:
     # Arrange
-    data = {"version": 1, "framework_receivers": [123]}
+    data = {"version": 1, "framework_receivers": [faker.random_int()]}
 
     # Act
     result = mpc._validate_inline(data)

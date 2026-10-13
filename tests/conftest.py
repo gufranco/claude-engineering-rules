@@ -3,21 +3,26 @@ import json
 import os
 import subprocess
 import sys
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 import pytest
 
 pytest.register_assert_rewrite("_helpers.hook_assertions")
 
+from _helpers.cov_env import (  # noqa: E402
+    AUDIT_DISABLE_VAR,
+    BYPASS_STATE_VAR,
+    apply_coverage_env,
+)
 from _helpers.hook_assertions import HookResult  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HOOKS_DIR = REPO_ROOT / "hooks"
 SUBPROCESS_TIMEOUT_S = 6.0
-SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
-EMPTY_BYPASS_REGISTRY = os.devnull
-COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
+SCRATCH_REPO_DIRNAME = "repo"
+SCRATCH_README_TEXT = "# Scratch\n"
+
+Payload = dict[str, object]
 
 
 def _hook_path(name: str) -> Path:
@@ -28,43 +33,21 @@ def _hook_path(name: str) -> Path:
     return path
 
 
-def _coverage_active() -> bool:
-    if "COVERAGE_PROCESS_START" in os.environ or "COVERAGE_RUN" in os.environ:
-        return True
-    if "pytest_cov" in sys.modules or "pytest_cov.plugin" in sys.modules:
-        return True
-    cov_module = sys.modules.get("coverage")
-    if cov_module is None:
-        return False
-    current = getattr(cov_module, "Coverage", None)
-    if current is None:
-        return False
-    return getattr(current, "current", lambda: None)() is not None
+AMBIENT_ISOLATION_VARS = frozenset({AUDIT_DISABLE_VAR, BYPASS_STATE_VAR})
 
 
 def _build_env(extra: dict[str, str] | None = None) -> dict[str, str]:
-    env = dict(os.environ)
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    env["CLAUDE_BYPASS_STATE"] = EMPTY_BYPASS_REGISTRY
-    if _coverage_active():
-        env["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
-        env["CLAUDE_COVERAGE_ROOT"] = str(REPO_ROOT)
-        existing_pp = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = (
-            f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing_pp}"
-            if existing_pp
-            else str(SUBPROCESS_COV_DIR)
-        )
-        env.setdefault("COVERAGE_FILE", str(REPO_ROOT / ".coverage"))
-        env.setdefault("COVERAGE_CORE", "ctrace")
-    if extra:
-        env.update(extra)
-    return env
+    ambient = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in AMBIENT_ISOLATION_VARS
+    }
+    return apply_coverage_env({**ambient, **(extra or {})})
 
 
 def _run_hook(
     hook: str | Path,
-    payload: dict[str, Any],
+    payload: Payload,
     env: dict[str, str] | None = None,
 ) -> HookResult:
     path = hook if isinstance(hook, Path) else _hook_path(hook)
@@ -81,34 +64,31 @@ def _run_hook(
 
 
 @pytest.fixture
-def tool_use() -> Callable[..., dict[str, Any]]:
+def tool_use() -> Callable[..., Payload]:
     def _build(
         tool_name: str,
-        tool_input: dict[str, Any] | None = None,
+        tool_input: Payload | None = None,
         *,
         hook_event_name: str = "PreToolUse",
         cwd: str | None = None,
         session_id: str | None = None,
         transcript_path: str | None = None,
         permission_mode: str | None = None,
-        **extra: Any,
-    ) -> dict[str, Any]:
-        payload: dict[str, Any] = {
+        **extra: object,
+    ) -> Payload:
+        optional = {
+            "cwd": cwd,
+            "session_id": session_id,
+            "transcript_path": transcript_path,
+            "permission_mode": permission_mode,
+        }
+        return {
             "tool_name": tool_name,
             "tool_input": dict(tool_input or {}),
             "hook_event_name": hook_event_name,
+            **{key: value for key, value in optional.items() if value is not None},
+            **extra,
         }
-        if cwd is not None:
-            payload["cwd"] = cwd
-        if session_id is not None:
-            payload["session_id"] = session_id
-        if transcript_path is not None:
-            payload["transcript_path"] = transcript_path
-        if permission_mode is not None:
-            payload["permission_mode"] = permission_mode
-        for k, v in extra.items():
-            payload[k] = v
-        return payload
 
     return _build
 
@@ -117,7 +97,7 @@ def tool_use() -> Callable[..., dict[str, Any]]:
 def run_hook() -> Callable[..., HookResult]:
     def _runner(
         hook: str | Path,
-        payload: dict[str, Any],
+        payload: Payload,
         *,
         env: dict[str, str] | None = None,
     ) -> HookResult:
@@ -136,25 +116,24 @@ def repo_root() -> Path:
     return REPO_ROOT
 
 
-def _missing_ancestors(path: Path) -> list[Path]:
-    return [parent for parent in path.parents if not parent.exists()]
+@pytest.fixture
+def scratch_repo_root(tmp_path: Path) -> Path:
+    root = tmp_path / SCRATCH_REPO_DIRNAME
+    root.mkdir()
+    (root / "README.md").write_text(SCRATCH_README_TEXT, encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(root)], check=True, timeout=30.0)
+    subprocess.run(
+        ["git", "-C", str(root), "add", "README.md"], check=True, timeout=30.0
+    )
+    return root
 
 
 @pytest.fixture
-def repo_scratch() -> Iterator[Callable[[str, str], Path]]:
-    created_files: list[Path] = []
-    created_dirs: list[Path] = []
-
+def repo_scratch(scratch_repo_root: Path) -> Callable[[str, str], Path]:
     def _write(relative: str, text: str) -> Path:
-        path = REPO_ROOT / relative
-        created_dirs.extend(_missing_ancestors(path))
+        path = scratch_repo_root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
-        created_files.append(path)
+        path.write_text(text, encoding="utf-8")
         return path
 
-    yield _write
-    for path in created_files:
-        path.unlink(missing_ok=True)
-    for directory in created_dirs:
-        directory.rmdir()
+    return _write

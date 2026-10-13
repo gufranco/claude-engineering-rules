@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
@@ -139,7 +140,7 @@ def test_find_code_block_ranges_front_matter():
     ranges = find_code_block_ranges(text)
 
     # Assert
-    assert (1, 3) in ranges
+    assert ranges == [(1, 3)]
 
 
 @pytest.mark.parametrize(
@@ -164,9 +165,7 @@ def test_find_link_url_ranges():
     ranges = find_link_url_ranges(line)
 
     # Assert
-    assert len(ranges) == 1
-    start, end = ranges[0]
-    assert line[start:end] == "README.md"
+    assert ranges == [(18, 27)]
 
 
 @pytest.mark.parametrize(("column", "expected"), [(7, True), (11, False)])
@@ -215,8 +214,7 @@ def test_resolve_path_existing_relative():
     resolved = resolve_path("README.md", doc_dir, REPO_ROOT)
 
     # Assert
-    assert resolved is not None
-    assert resolved.name == "README.md"
+    assert resolved == REPO_ROOT / "README.md"
 
 
 def test_resolve_path_non_existing():
@@ -260,8 +258,7 @@ def test_detect_findings_bare_reference():
     findings = detect_findings(text, "tmp.md", REPO_ROOT)
 
     # Assert
-    assert len(findings) == 1
-    assert findings[0].token == "README.md"
+    assert findings == [Finding("tmp.md", 1, 9, "README.md", "README.md")]
 
 
 def test_detect_findings_skips_fenced_block():
@@ -306,8 +303,9 @@ def test_detect_findings_still_flags_repo_owned_path():
     findings = detect_findings(text, "tmp.md", REPO_ROOT)
 
     # Assert
-    assert len(findings) == 1
-    assert findings[0].token == "rules/markdown-links.md"
+    assert findings == [
+        Finding("tmp.md", 1, 9, "rules/markdown-links.md", "rules/markdown-links.md")
+    ]
 
 
 def test_detect_findings_skips_skip_dir():
@@ -340,9 +338,9 @@ def test_finding_render():
     rendered = f.render()
 
     # Assert
-    assert "docs/foo.md" in rendered
-    assert ":10:5" in rendered
-    assert "README.md" in rendered
+    assert rendered == (
+        "docs/foo.md:10:5: `README.md` -> existing file at README.md, not linked"
+    )
 
 
 @pytest.mark.parametrize(
@@ -428,8 +426,9 @@ def test_broken_link_finding_render_with_correction():
     rendered = f.render()
 
     # Assert
-    assert "rules/foo.md:5:12" in rendered
-    assert "rewrite as (bar.md)" in rendered
+    assert rendered == (
+        "rules/foo.md:5:12: [`bar.md`](rules/bar.md) -> rewrite as (bar.md)"
+    )
 
 
 def test_broken_link_finding_render_without_correction():
@@ -447,13 +446,13 @@ def test_broken_link_finding_render_without_correction():
     rendered = f.render()
 
     # Assert
-    assert "target not found" in rendered
+    assert rendered == "docs/foo.md:1:1: [missing](ghost.md) (target not found in repo)"
 
 
-def test_detect_broken_link_targets_wrong_relative_path(tmp_path):
+def test_detect_broken_link_targets_wrong_relative_path(tmp_path, faker: Faker):
     # Arrange
     (tmp_path / "subdir").mkdir()
-    (tmp_path / "subdir" / "neighbor.md").write_text("# Neighbor\n")
+    (tmp_path / "subdir" / "neighbor.md").write_text(f"# {faker.sentence()}\n")
     target_file = tmp_path / "subdir" / "doc.md"
     target_file.write_text("See [`neighbor.md`](subdir/neighbor.md).\n")
 
@@ -465,10 +464,9 @@ def test_detect_broken_link_targets_wrong_relative_path(tmp_path):
     )
 
     # Assert
-    assert len(findings) == 1
-    f = findings[0]
-    assert f.link_target == "subdir/neighbor.md"
-    assert f.correct_path == "neighbor.md"
+    assert [(f.link_target, f.correct_path) for f in findings] == [
+        ("subdir/neighbor.md", "neighbor.md")
+    ]
 
 
 def test_detect_broken_link_targets_truly_missing(tmp_path):
@@ -484,13 +482,12 @@ def test_detect_broken_link_targets_truly_missing(tmp_path):
     )
 
     # Assert
-    assert len(findings) == 1
-    assert findings[0].correct_path is None
+    assert [(f.link_target, f.correct_path) for f in findings] == [("ghost.md", None)]
 
 
-def test_detect_broken_link_targets_skips_valid_link(tmp_path):
+def test_detect_broken_link_targets_skips_valid_link(tmp_path, faker: Faker):
     # Arrange
-    (tmp_path / "ok.md").write_text("# OK\n")
+    (tmp_path / "ok.md").write_text(f"# {faker.sentence()}\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("See [`ok.md`](ok.md).\n")
 
@@ -563,7 +560,7 @@ def test_find_code_block_ranges_nested_fences():
     ranges = find_code_block_ranges(text)
 
     # Assert
-    assert (2, 6) in ranges
+    assert ranges == [(2, 6)]
 
 
 def test_find_code_block_ranges_tilde_fences():
@@ -604,9 +601,9 @@ def test_tracked_paths_returns_empty_for_non_git_dir(tmp_path):
     assert paths == set()
 
 
-def test_detect_broken_link_targets_flags_gitignored_target(tmp_path):
+def test_detect_broken_link_targets_flags_gitignored_target(tmp_path, faker: Faker):
     # Arrange
-    (tmp_path / "untracked.md").write_text("# Not tracked\n")
+    (tmp_path / "untracked.md").write_text(f"# {faker.sentence()}\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("See [untracked](untracked.md).\n")
 
@@ -619,13 +616,14 @@ def test_detect_broken_link_targets_flags_gitignored_target(tmp_path):
     )
 
     # Assert
-    assert len(findings) == 1
-    assert findings[0].correct_path is None
+    assert [(f.link_target, f.correct_path) for f in findings] == [
+        ("untracked.md", None)
+    ]
 
 
-def test_detect_findings_skips_bare_ref_to_untracked_file(tmp_path):
+def test_detect_findings_skips_bare_ref_to_untracked_file(tmp_path, faker: Faker):
     # Arrange
-    (tmp_path / "untracked.md").write_text("# Not tracked\n")
+    (tmp_path / "untracked.md").write_text(f"# {faker.sentence()}\n")
     target_file = tmp_path / "doc.md"
     target_file.write_text("Mention `untracked.md` here.\n")
 

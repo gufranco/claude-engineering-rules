@@ -52,6 +52,10 @@ def _bench(
     )
 
 
+PASSING_THRESHOLD_MS = 600_000
+TIGHT_THRESHOLD_MS = 100
+
+
 @pytest.fixture
 def hooks_dir(tmp_path: Path) -> Path:
     target = tmp_path / "hooks"
@@ -61,35 +65,61 @@ def hooks_dir(tmp_path: Path) -> Path:
     return target
 
 
-def test_registered_hooks_under_the_threshold_pass(hooks_dir, tmp_path):
+def _row_names(stdout: str) -> list[str]:
+    return [line.split()[0] for line in stdout.splitlines()[2:]]
+
+
+def test_registered_hooks_under_the_threshold_pass(
+    hooks_dir: Path, tmp_path: Path
+) -> None:
     # Arrange
     settings = _settings(tmp_path / "settings.json", ["fast"])
 
     # Act
-    proc = _bench(hooks_dir, settings, 5000)
+    proc = _bench(hooks_dir, settings, PASSING_THRESHOLD_MS)
 
     # Assert
-    assert (proc.returncode, "unregistered" in proc.stdout) == (0, False)
+    assert (proc.returncode, _row_names(proc.stdout), proc.stderr) == (0, ["fast"], "")
 
 
-@pytest.mark.parametrize(
-    ("hooks", "source", "reason"),
-    [
-        (["slow"], "import time, sys\ntime.sleep(0.4)\nsys.exit(0)\n", "over 100 ms"),
-        (["crash"], "import sys\nsys.exit(1)\n", "exited 1"),
-        (["absent"], None, "missing"),
-    ],
-)
-def test_a_slow_crashing_or_missing_hook_fails_the_gate(
-    hooks_dir, tmp_path, hooks, source, reason
-):
+def test_a_hook_whose_p50_exceeds_the_threshold_fails_the_gate(
+    hooks_dir: Path, tmp_path: Path
+) -> None:
     # Arrange
-    if source is not None:
-        _hook(hooks_dir, hooks[0], source)
-    settings = _settings(tmp_path / "settings.json", hooks)
+    _hook(hooks_dir, "slow", "import time, sys\ntime.sleep(0.4)\nsys.exit(0)\n")
+    settings = _settings(tmp_path / "settings.json", ["slow"])
 
     # Act
-    proc = _bench(hooks_dir, settings, 100)
+    proc = _bench(hooks_dir, settings, TIGHT_THRESHOLD_MS)
 
     # Assert
-    assert (proc.returncode, reason in proc.stderr) == (1, True)
+    lines = proc.stderr.splitlines()
+    assert proc.returncode == 1
+    assert len(lines) == 1
+    assert lines[0].startswith("FAIL slow: p50 ") is True
+    assert lines[0].endswith(" ms over 100 ms") is True
+
+
+def test_a_crashing_hook_fails_the_gate(hooks_dir: Path, tmp_path: Path) -> None:
+    # Arrange
+    _hook(hooks_dir, "crash", "import sys\nsys.exit(1)\n")
+    settings = _settings(tmp_path / "settings.json", ["crash"])
+
+    # Act
+    proc = _bench(hooks_dir, settings, PASSING_THRESHOLD_MS)
+
+    # Assert
+    assert (proc.returncode, proc.stderr) == (1, "FAIL crash: exited 1\n")
+
+
+def test_a_registered_hook_missing_from_disk_fails_the_gate(
+    hooks_dir: Path, tmp_path: Path
+) -> None:
+    # Arrange
+    settings = _settings(tmp_path / "settings.json", ["absent"])
+
+    # Act
+    proc = _bench(hooks_dir, settings, PASSING_THRESHOLD_MS)
+
+    # Assert
+    assert (proc.returncode, proc.stderr) == (1, "FAIL absent: missing\n")

@@ -4,8 +4,10 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "session-mine.py"
@@ -16,32 +18,37 @@ from _lib import knowledge_notes as kn  # noqa: E402
 VAULT_HEALTH = Path.home() / "second-brain" / ".ci" / "vault-health.py"
 
 
-def load():
-    spec = importlib.util.spec_from_file_location("session_mine", SCRIPT)
+def load_path(name: str, path: Path) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
-    sys.modules["session_mine"] = module
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
 
-def record(**fields) -> str:
+def load() -> ModuleType:
+    return load_path("session_mine", SCRIPT)
+
+
+def record(**fields: object) -> str:
     return json.dumps(fields)
 
 
-def load_vault_health():
-    spec = importlib.util.spec_from_file_location("vh_mine", VAULT_HEALTH)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["vh_mine"] = module
-    spec.loader.exec_module(module)
-    return module
+def load_vault_health() -> ModuleType:
+    return load_path("vh_mine", VAULT_HEALTH)
 
 
-def write_titled_transcripts_sharing_a_basename(root: Path, count: int) -> None:
+def write_titled_transcripts_sharing_a_basename(
+    root: Path, count: int, faker: Faker
+) -> None:
     for index in range(count):
         d = root / f"-x-{index}-shared"
         d.mkdir(parents=True)
         (d / "s.jsonl").write_text(
-            record(type="ai-title", aiTitle="t", sessionId="s") + "\n"
+            record(type="ai-title", aiTitle=faker.sentence(), sessionId=faker.uuid4())
+            + "\n"
         )
 
 
@@ -249,22 +256,24 @@ def test_dry_run_writes_nothing(projects, vault):
     assert (vault / "wiki" / "projects" / "widget.md").exists() is False
 
 
-def test_apply_never_overwrites_an_existing_note(projects, vault):
+def test_apply_never_overwrites_an_existing_note(projects, vault, faker: Faker):
     # Arrange
     module = load()
     target = vault / "wiki" / "projects" / "widget.md"
-    target.write_text("hand written\n")
+    hand_written = f"{faker.paragraph()}\n"
+    target.write_text(hand_written)
 
     # Act
     written = module.apply(module.scan(projects), vault, dry_run=False)
 
     # Assert
     assert written == []
-    assert target.read_text() == "hand written\n"
+    assert target.read_text() == hand_written
 
 
 @pytest.mark.skipif(
-    not VAULT_HEALTH.exists(), reason="vault linters not present on this machine"
+    not VAULT_HEALTH.exists(),
+    reason=f"external vault linter {VAULT_HEALTH} is not installed on this machine",
 )
 def test_generated_notes_pass_the_structural_linter(projects, vault):
     # Arrange
@@ -344,7 +353,7 @@ def test_main_errors_without_a_projects_directory(vault, tmp_path, capsys):
 
 
 def test_a_project_without_a_recorded_cwd_falls_back_to_the_directory_name(
-    tmp_path, vault
+    tmp_path, faker: Faker
 ):
     # Arrange
     module = load()
@@ -352,7 +361,8 @@ def test_a_project_without_a_recorded_cwd_falls_back_to_the_directory_name(
     d = root / "-Users-someone-orphan"
     d.mkdir(parents=True)
     (d / "s.jsonl").write_text(
-        record(type="ai-title", aiTitle="Something", sessionId="s") + "\n"
+        record(type="ai-title", aiTitle=faker.sentence(), sessionId=faker.uuid4())
+        + "\n"
     )
 
     # Act
@@ -363,7 +373,7 @@ def test_a_project_without_a_recorded_cwd_falls_back_to_the_directory_name(
     assert summary.first == ""
 
 
-def test_a_project_without_titles_says_so(tmp_path, vault):
+def test_a_project_without_titles_says_so(tmp_path):
     # Arrange
     module = load()
     root = tmp_path / "projects"
@@ -384,19 +394,20 @@ def test_a_project_without_titles_says_so(tmp_path, vault):
     assert "No session titles" in text
 
 
-def test_a_long_title_list_is_capped(tmp_path):
+def test_a_long_title_list_is_capped(tmp_path, faker: Faker):
     # Arrange
     module = load()
     root = tmp_path / "projects"
     d = root / "-Users-someone-busy"
     d.mkdir(parents=True)
-    lines = [
+    header = [
         record(type="user", cwd="/Users/someone/busy", timestamp="2026-05-01T10:00:00Z")
     ]
-    lines += [
-        record(type="ai-title", aiTitle=f"Task number {i}", sessionId=f"s{i}")
+    titles = [
+        record(type="ai-title", aiTitle=f"{faker.sentence()} {i}", sessionId=f"s{i}")
         for i in range(60)
     ]
+    lines = [*header, *titles]
     (d / "s.jsonl").write_text("\n".join(lines) + "\n")
 
     # Act
@@ -428,8 +439,7 @@ def test_two_projects_with_the_same_basename_get_distinct_notes(tmp_path, vault)
     written = module.apply(module.scan(root), vault, dry_run=False)
 
     # Assert
-    assert len(written) == 2
-    assert len(set(written)) == 2
+    assert written == ["wiki/projects/claude.md", "wiki/projects/work .claude.md"]
 
 
 def test_a_leading_dot_is_stripped_from_the_note_name(tmp_path, vault):
@@ -444,11 +454,13 @@ def test_a_leading_dot_is_stripped_from_the_note_name(tmp_path, vault):
     assert written == ["wiki/projects/dotfiles.md", "wiki/projects/other.md"]
 
 
-def test_collision_falls_back_to_a_numeric_suffix_without_a_cwd(tmp_path, vault):
+def test_collision_falls_back_to_a_numeric_suffix_without_a_cwd(
+    tmp_path, vault, faker: Faker
+):
     # Arrange
     module = load()
     root = tmp_path / "projects"
-    write_titled_transcripts_sharing_a_basename(root, 2)
+    write_titled_transcripts_sharing_a_basename(root, 2, faker)
 
     # Act
     written = module.apply(module.scan(root), vault, dry_run=False)

@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
 COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
+EMPTY_BYPASS_REGISTRY = os.devnull
+BYPASS_STATE_VAR = "CLAUDE_BYPASS_STATE"
+AUDIT_DISABLE_VAR = "CLAUDE_HOOK_AUDIT_DISABLE"
 
 
-def _coverage_active() -> bool:
+def coverage_active() -> bool:
     if "COVERAGE_PROCESS_START" in os.environ or "COVERAGE_RUN" in os.environ:
         return True
     if "pytest_cov" in sys.modules or "pytest_cov.plugin" in sys.modules:
@@ -24,20 +28,32 @@ def _coverage_active() -> bool:
     return current() is not None
 
 
-def apply_coverage_env(env: dict, *, force_active: bool | None = None) -> dict:
-    active = _coverage_active() if force_active is None else force_active
-    out = dict(env)
-    out["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    if not active:
-        return out
-    out["COVERAGE_PROCESS_START"] = str(COVERAGERC_PATH)
-    out["CLAUDE_COVERAGE_ROOT"] = str(REPO_ROOT)
-    existing = out.get("PYTHONPATH", "")
-    out["PYTHONPATH"] = (
+def _with_subprocess_coverage(env: dict[str, str]) -> dict[str, str]:
+    existing = env.get("PYTHONPATH", "")
+    pythonpath = (
         f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing}"
         if existing
         else str(SUBPROCESS_COV_DIR)
     )
-    out["COVERAGE_FILE"] = str(REPO_ROOT / ".coverage")
-    out.setdefault("COVERAGE_CORE", "ctrace")
-    return out
+    return {
+        "COVERAGE_FILE": str(REPO_ROOT / ".coverage"),
+        "COVERAGE_CORE": "ctrace",
+        **env,
+        "COVERAGE_PROCESS_START": str(COVERAGERC_PATH),
+        "CLAUDE_COVERAGE_ROOT": str(REPO_ROOT),
+        "PYTHONPATH": pythonpath,
+    }
+
+
+def apply_coverage_env(
+    env: Mapping[str, str], *, force_active: bool | None = None
+) -> dict[str, str]:
+    active = coverage_active() if force_active is None else force_active
+    isolated = {
+        AUDIT_DISABLE_VAR: "1",
+        BYPASS_STATE_VAR: EMPTY_BYPASS_REGISTRY,
+        **env,
+    }
+    if not active:
+        return isolated
+    return _with_subprocess_coverage(isolated)

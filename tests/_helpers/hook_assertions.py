@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, NamedTuple
+from typing import NamedTuple
 
 BLOCK_EXIT_CODE = 2
 ALLOW_EXIT_CODE = 0
@@ -32,8 +32,8 @@ def assert_allowed(result: HookResult) -> tuple[int, str]:
 
 
 def assert_modified(
-    result: HookResult, expected_diff: dict[str, Any]
-) -> dict[str, Any]:
+    result: HookResult, expected_diff: dict[str, object]
+) -> dict[str, object]:
     assert result.code == ALLOW_EXIT_CODE, (
         f"expected hook to allow with modified input (exit 0) "
         f"but got exit {result.code}.\nstderr:\n{result.stderr}"
@@ -41,8 +41,14 @@ def assert_modified(
     assert result.stdout.strip(), (
         "expected hook to print a v2 envelope on stdout but stdout was empty"
     )
-    parsed = json.loads(result.stdout)
-    spec = parsed.get("hookSpecificOutput") or {}
+    parsed: object = json.loads(result.stdout)
+    assert isinstance(parsed, dict), (
+        f"expected a JSON object on stdout, got {type(parsed).__name__}"
+    )
+    spec: object = parsed.get("hookSpecificOutput") or {}
+    assert isinstance(spec, dict), (
+        f"expected hookSpecificOutput to be a dict, got {type(spec).__name__}"
+    )
     assert spec.get("permissionDecision") == "allow", (
         f"expected permissionDecision=allow, got {spec.get('permissionDecision')!r}"
     )

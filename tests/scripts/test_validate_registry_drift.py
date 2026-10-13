@@ -3,8 +3,10 @@ from __future__ import annotations
 import importlib.util
 import shutil
 from pathlib import Path
+from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "validate-registry-drift.py"
@@ -26,6 +28,11 @@ on_demand:
     triggers: [gamma]
 """
 
+ORPHAN_RULE_FINDING = (
+    "rules/orphan.md exists but has no entry in rules/index.yml. "
+    "An unregistered rule never loads, so it silently does nothing."
+)
+
 README_TEMPLATE = """\
 # Config
 
@@ -39,7 +46,7 @@ README_TEMPLATE = """\
 """
 
 
-def load_validator(root: Path):
+def load_validator(root: Path) -> ModuleType:
     spec = importlib.util.spec_from_file_location(f"vrd_{root.name}", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -59,7 +66,10 @@ def vendor_the_index_parser_the_validator_imports(root: Path) -> None:
 
 @pytest.fixture
 def tree(tmp_path: Path) -> Path:
-    root = tmp_path / "config"
+    return build_tree(tmp_path / "config")
+
+
+def build_tree(root: Path) -> Path:
     for sub in ("rules", "standards", "hooks", "agents", "skills"):
         (root / sub).mkdir(parents=True)
 
@@ -103,26 +113,29 @@ def test_clean_tree_reports_nothing(tree: Path) -> None:
     assert findings == []
 
 
-def test_unregistered_rule_is_reported(tree: Path) -> None:
+def test_unregistered_rule_is_reported(tree: Path, faker: Faker) -> None:
     # Arrange
-    (tree / "rules" / "orphan.md").write_text("# Orphan\n")
+    (tree / "rules" / "orphan.md").write_text(f"# {faker.word()}\n")
 
     # Act
     findings = run(tree)
 
     # Assert
-    assert [f.split()[0] for f in findings] == ["rules/orphan.md"]
+    assert findings == [ORPHAN_RULE_FINDING]
 
 
-def test_unregistered_standard_is_reported(tree: Path) -> None:
+def test_unregistered_standard_is_reported(tree: Path, faker: Faker) -> None:
     # Arrange
-    (tree / "standards" / "orphan.md").write_text("# Orphan\n")
+    (tree / "standards" / "orphan.md").write_text(f"# {faker.word()}\n")
 
     # Act
     findings = run(tree)
 
     # Assert
-    assert [f.split()[0] for f in findings] == ["standards/orphan.md"]
+    assert findings == [
+        "standards/orphan.md exists but has no on_demand entry in "
+        "rules/index.yml, so no trigger can ever load it."
+    ]
 
 
 def test_undocumented_skill_is_reported(tree: Path) -> None:
@@ -134,7 +147,7 @@ def test_undocumented_skill_is_reported(tree: Path) -> None:
     findings = run(tree)
 
     # Assert
-    assert [f.split()[0] for f in findings] == ["skills/two/"]
+    assert findings == ["skills/two/ has no row in the README skills table."]
 
 
 def test_documented_skill_that_does_not_exist_is_reported(tree: Path) -> None:
@@ -159,13 +172,13 @@ def test_undocumented_agent_is_reported(tree: Path) -> None:
     findings = run(tree)
 
     # Assert
-    assert [f.split()[0] for f in findings] == ["agents/reviewer.md"]
+    assert findings == ["agents/reviewer.md has no row in the README agents table."]
 
 
-def test_agent_template_is_not_treated_as_an_agent(tree: Path) -> None:
+def test_agent_template_is_not_treated_as_an_agent(tree: Path, faker: Faker) -> None:
     # Arrange
-    (tree / "agents" / "TEMPLATE.md").write_text("# Template\n")
-    (tree / "agents" / "_shared-principles.md").write_text("# Shared\n")
+    (tree / "agents" / "TEMPLATE.md").write_text(f"# {faker.word()}\n")
+    (tree / "agents" / "_shared-principles.md").write_text(f"# {faker.word()}\n")
 
     # Act
     findings = run(tree)
@@ -185,7 +198,12 @@ def test_test_shaped_file_in_hooks_is_reported(tree: Path, name: str) -> None:
     findings = run(tree)
 
     # Assert
-    assert [f.split()[0] for f in findings] == [f"hooks/{name}"]
+    assert findings == [
+        f"hooks/{name} is test-shaped but sits in hooks/. The file-bypass smoke "
+        "test executes every hooks/*.py, so this runs a test runner as a "
+        "subprocess and hangs until the harness times out. Move it under "
+        "tests/hooks/."
+    ]
 
 
 def test_index_entry_naming_a_missing_path_is_reported(tree: Path) -> None:
@@ -201,7 +219,9 @@ def test_index_entry_naming_a_missing_path_is_reported(tree: Path) -> None:
     ]
 
 
-def test_main_exits_zero_on_a_clean_tree(tree: Path, capsys) -> None:
+def test_main_exits_zero_on_a_clean_tree(
+    tree: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Arrange
     module = load_validator(tree)
 
@@ -210,19 +230,27 @@ def test_main_exits_zero_on_a_clean_tree(tree: Path, capsys) -> None:
 
     # Assert
     assert code == 0
-    assert "PASSED" in capsys.readouterr().out
+    assert capsys.readouterr().out == (
+        "PASSED: no registry drift. Rules and standards are registered,\n"
+        "skills and agents are documented, hooks/ holds only hooks.\n"
+    )
 
 
-def test_main_exits_one_and_names_each_finding(tree: Path, capsys) -> None:
+def test_main_exits_one_and_names_each_finding(
+    tree: Path, capsys: pytest.CaptureFixture[str], faker: Faker
+) -> None:
     # Arrange
-    (tree / "rules" / "orphan.md").write_text("# Orphan\n")
+    (tree / "rules" / "orphan.md").write_text(f"# {faker.word()}\n")
     module = load_validator(tree)
 
     # Act
     code = module.main()
 
     # Assert
-    out = capsys.readouterr().out
     assert code == 1
-    assert "FAILED" in out
-    assert "rules/orphan.md" in out
+    assert capsys.readouterr().out == (
+        "FAILED: 1 registry drift finding(s)\n\n"
+        f"  {ORPHAN_RULE_FINDING}\n\n"
+        "Every artifact on disk must be reachable from the registry\n"
+        "that is supposed to load or document it.\n"
+    )

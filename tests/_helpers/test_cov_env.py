@@ -1,43 +1,39 @@
 from __future__ import annotations
 
-import sys
+import os
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "tests"))
+import pytest
+from faker import Faker
 
-from _helpers.cov_env import apply_coverage_env  # noqa: E402
+from _helpers.cov_env import apply_coverage_env
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
 
 
-def test_adds_no_coverage_vars_when_inactive(monkeypatch) -> None:
+def test_adds_no_coverage_vars_when_inactive(
+    monkeypatch: pytest.MonkeyPatch, faker: Faker
+) -> None:
     # Arrange
     monkeypatch.delenv("COVERAGE_PROCESS_START", raising=False)
     monkeypatch.delenv("COVERAGE_RUN", raising=False)
-    base = {"FOO": "bar"}
+    value = faker.word()
 
     # Act
-    result = apply_coverage_env(base, force_active=False)
+    result = apply_coverage_env({"FOO": value}, force_active=False)
 
     # Assert
-    assert result["FOO"] == "bar"
-    assert "COVERAGE_PROCESS_START" not in result
+    assert result == {
+        "FOO": value,
+        "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+        "CLAUDE_BYPASS_STATE": os.devnull,
+    }
 
 
-def test_suppresses_audit_writes_when_inactive(monkeypatch) -> None:
+def test_suppresses_audit_writes_when_active(faker: Faker) -> None:
     # Arrange
-    monkeypatch.delenv("COVERAGE_PROCESS_START", raising=False)
-    monkeypatch.delenv("COVERAGE_RUN", raising=False)
-
-    # Act
-    result = apply_coverage_env({"FOO": "bar"}, force_active=False)
-
-    # Assert
-    assert result["CLAUDE_HOOK_AUDIT_DISABLE"] == "1"
-
-
-def test_suppresses_audit_writes_when_active() -> None:
-    # Arrange
-    env = {"FOO": "bar"}
+    env = {"FOO": faker.word()}
 
     # Act
     result = apply_coverage_env(env, force_active=True)
@@ -46,38 +42,82 @@ def test_suppresses_audit_writes_when_active() -> None:
     assert result["CLAUDE_HOOK_AUDIT_DISABLE"] == "1"
 
 
-def test_does_not_mutate_caller_env() -> None:
+def test_keeps_an_audit_setting_the_caller_chose() -> None:
     # Arrange
-    base = {"FOO": "bar"}
+    env = {"CLAUDE_HOOK_AUDIT_DISABLE": "0"}
+
+    # Act
+    result = apply_coverage_env(env, force_active=False)
+
+    # Assert
+    assert result["CLAUDE_HOOK_AUDIT_DISABLE"] == "0"
+
+
+def test_points_the_bypass_registry_at_an_empty_source_by_default() -> None:
+    # Arrange
+    env: dict[str, str] = {}
+
+    # Act
+    result = apply_coverage_env(env, force_active=True)
+
+    # Assert
+    assert result["CLAUDE_BYPASS_STATE"] == os.devnull
+
+
+def test_keeps_a_bypass_registry_the_caller_chose(tmp_path: Path) -> None:
+    # Arrange
+    state = str(tmp_path / "bypass.json")
+
+    # Act
+    result = apply_coverage_env({"CLAUDE_BYPASS_STATE": state}, force_active=False)
+
+    # Assert
+    assert result["CLAUDE_BYPASS_STATE"] == state
+
+
+def test_does_not_mutate_caller_env(faker: Faker) -> None:
+    # Arrange
+    value = faker.word()
+    base = {"FOO": value}
 
     # Act
     apply_coverage_env(base, force_active=True)
 
     # Assert
-    assert base == {"FOO": "bar"}
+    assert base == {"FOO": value}
 
 
-def test_adds_coverage_env_when_active() -> None:
+def test_adds_coverage_env_when_active(faker: Faker) -> None:
     # Arrange
-    base = {"FOO": "bar"}
+    value = faker.word()
 
     # Act
-    result = apply_coverage_env(base, force_active=True)
+    result = apply_coverage_env({"FOO": value}, force_active=True)
 
     # Assert
-    assert "COVERAGE_PROCESS_START" in result
-    assert "PYTHONPATH" in result
-    assert "FOO" in result
-    assert "_subprocess_cov" in result["PYTHONPATH"]
+    assert result["FOO"] == value
+    assert result["COVERAGE_PROCESS_START"] == str(REPO_ROOT / ".coveragerc")
+    assert result["PYTHONPATH"] == str(SUBPROCESS_COV_DIR)
+    assert result["COVERAGE_FILE"] == str(REPO_ROOT / ".coverage")
 
 
-def test_preserves_existing_pythonpath() -> None:
+def test_keeps_a_coverage_file_the_caller_chose(tmp_path: Path) -> None:
     # Arrange
-    base = {"PYTHONPATH": "/existing/path"}
+    data_file = str(tmp_path / ".coverage")
 
     # Act
-    result = apply_coverage_env(base, force_active=True)
+    result = apply_coverage_env({"COVERAGE_FILE": data_file}, force_active=True)
 
     # Assert
-    assert "/existing/path" in result["PYTHONPATH"]
-    assert "_subprocess_cov" in result["PYTHONPATH"]
+    assert result["COVERAGE_FILE"] == data_file
+
+
+def test_prepends_the_hook_dir_to_an_existing_pythonpath(faker: Faker) -> None:
+    # Arrange
+    existing = f"/{faker.word()}/{faker.word()}"
+
+    # Act
+    result = apply_coverage_env({"PYTHONPATH": existing}, force_active=True)
+
+    # Assert
+    assert result["PYTHONPATH"] == f"{SUBPROCESS_COV_DIR}{os.pathsep}{existing}"

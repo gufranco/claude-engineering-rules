@@ -3,15 +3,17 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_PATH = REPO_ROOT / ".github" / "scripts" / "validate-clarity.py"
 
 
 @pytest.fixture(scope="module")
-def clarity_mod():
+def clarity_mod() -> ModuleType:
     spec = importlib.util.spec_from_file_location("validate_clarity", SCRIPT_PATH)
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
@@ -20,7 +22,9 @@ def clarity_mod():
     return mod
 
 
-def test_pronoun_it_flagged_with_multi_noun_prev(clarity_mod, tmp_path):
+def test_pronoun_it_flagged_with_multi_noun_prev(
+    clarity_mod: ModuleType, tmp_path: Path
+) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text(
@@ -32,10 +36,10 @@ def test_pronoun_it_flagged_with_multi_noun_prev(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert any(c == "pronoun-leading" for _, c, _ in findings)
+    assert findings == [(2, "pronoun-leading", "- It must catch invalid data.")]
 
 
-def test_pronoun_this_flagged(clarity_mod, tmp_path):
+def test_pronoun_this_flagged(clarity_mod: ModuleType, tmp_path: Path) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text(
@@ -47,10 +51,12 @@ def test_pronoun_this_flagged(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert any(c == "pronoun-leading" for _, c, _ in findings)
+    assert findings == [(2, "pronoun-leading", "- This must succeed every time.")]
 
 
-def test_pronoun_unflagged_when_no_prev_nouns(clarity_mod, tmp_path):
+def test_pronoun_unflagged_when_no_prev_nouns(
+    clarity_mod: ModuleType, tmp_path: Path
+) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text("- It validates input.\n")
@@ -59,10 +65,12 @@ def test_pronoun_unflagged_when_no_prev_nouns(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert all(c != "pronoun-leading" for _, c, _ in findings)
+    assert findings == []
 
 
-def test_pronoun_unflagged_when_prev_is_short(clarity_mod, tmp_path):
+def test_pronoun_unflagged_when_prev_is_short(
+    clarity_mod: ModuleType, tmp_path: Path
+) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text("- ok.\n- It must run.\n")
@@ -71,10 +79,10 @@ def test_pronoun_unflagged_when_prev_is_short(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert all(c != "pronoun-leading" for _, c, _ in findings)
+    assert findings == []
 
 
-def test_passive_bullet_flagged(clarity_mod, tmp_path):
+def test_passive_bullet_flagged(clarity_mod: ModuleType, tmp_path: Path) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text("- The input is validated before processing.\n")
@@ -83,10 +91,14 @@ def test_passive_bullet_flagged(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert any(c == "passive-bullet" for _, c, _ in findings)
+    assert findings == [
+        (1, "passive-bullet", "- The input is validated before processing.")
+    ]
 
 
-def test_passive_with_actor_hint_not_flagged(clarity_mod, tmp_path):
+def test_passive_with_actor_hint_not_flagged(
+    clarity_mod: ModuleType, tmp_path: Path
+) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text("- The input is validated by the handler before processing.\n")
@@ -95,10 +107,10 @@ def test_passive_with_actor_hint_not_flagged(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert all(c != "passive-bullet" for _, c, _ in findings)
+    assert findings == []
 
 
-def test_active_voice_not_flagged(clarity_mod, tmp_path):
+def test_active_voice_not_flagged(clarity_mod: ModuleType, tmp_path: Path) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text("- The handler validates the input before processing.\n")
@@ -107,10 +119,10 @@ def test_active_voice_not_flagged(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert all(c != "passive-bullet" for _, c, _ in findings)
+    assert findings == []
 
 
-def test_irregular_participle_detected(clarity_mod, tmp_path):
+def test_irregular_participle_detected(clarity_mod: ModuleType, tmp_path: Path) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text("- The record is set during init.\n")
@@ -119,10 +131,10 @@ def test_irregular_participle_detected(clarity_mod, tmp_path):
     findings = clarity_mod.scan(f)
 
     # Assert
-    assert any(c == "passive-bullet" for _, c, _ in findings)
+    assert findings == [(1, "passive-bullet", "- The record is set during init.")]
 
 
-def test_skips_code_fences(clarity_mod, tmp_path):
+def test_skips_code_fences(clarity_mod: ModuleType, tmp_path: Path) -> None:
     # Arrange
     f = tmp_path / "rule.md"
     f.write_text(
@@ -140,32 +152,35 @@ def test_skips_code_fences(clarity_mod, tmp_path):
     assert findings == []
 
 
-def test_walk_includes_in_scope_dirs(clarity_mod, tmp_path):
+def test_walk_includes_in_scope_dirs(
+    clarity_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
-    (tmp_path / "rules").mkdir()
-    (tmp_path / "rules" / "a.md").write_text("a")
-    (tmp_path / "standards").mkdir()
-    (tmp_path / "standards" / "b.md").write_text("b")
-    (tmp_path / "checklists").mkdir()
-    (tmp_path / "checklists" / "c.md").write_text("c")
-    (tmp_path / "CLAUDE.md").write_text("d")
-    (tmp_path / "skills").mkdir()
-    (tmp_path / "skills" / "e.md").write_text("e")
+    for directory, name in [
+        ("rules", "a.md"),
+        ("standards", "b.md"),
+        ("checklists", "c.md"),
+        ("skills", "e.md"),
+    ]:
+        (tmp_path / directory).mkdir()
+        (tmp_path / directory / name).write_text(faker.sentence())
+    (tmp_path / "CLAUDE.md").write_text(faker.sentence())
 
     # Act
     files = list(clarity_mod.walk_in_scope(tmp_path))
 
     # Assert
-    names = {p.name for p in files}
-    assert names == {"a.md", "b.md", "c.md", "CLAUDE.md"}
+    assert {p.name for p in files} == {"a.md", "b.md", "c.md", "CLAUDE.md"}
 
 
-def test_walk_skips_dotdirs(clarity_mod, tmp_path):
+def test_walk_skips_dotdirs(
+    clarity_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / ".hidden").mkdir()
-    (tmp_path / "rules" / ".hidden" / "x.md").write_text("x")
-    (tmp_path / "rules" / "ok.md").write_text("ok")
+    (tmp_path / "rules" / ".hidden" / "x.md").write_text(faker.sentence())
+    (tmp_path / "rules" / "ok.md").write_text(faker.sentence())
 
     # Act
     files = list(clarity_mod.walk_in_scope(tmp_path))
@@ -174,7 +189,7 @@ def test_walk_skips_dotdirs(clarity_mod, tmp_path):
     assert {p.name for p in files} == {"ok.md"}
 
 
-def test_walk_handles_missing_dirs(clarity_mod, tmp_path):
+def test_walk_handles_missing_dirs(clarity_mod: ModuleType, tmp_path: Path) -> None:
     # Arrange
     root = tmp_path
 
@@ -185,7 +200,9 @@ def test_walk_handles_missing_dirs(clarity_mod, tmp_path):
     assert files == []
 
 
-def test_scan_reports_an_unreadable_file(clarity_mod, tmp_path):
+def test_scan_reports_an_unreadable_file(
+    clarity_mod: ModuleType, tmp_path: Path
+) -> None:
     # Arrange
     f = tmp_path / "bad.md"
     f.write_bytes(b"\xff\xfe\xfd")
@@ -198,7 +215,7 @@ def test_scan_reports_an_unreadable_file(clarity_mod, tmp_path):
 
 
 @pytest.mark.parametrize("line", ["", "   "])
-def test_has_multiple_nouns_empty_line(clarity_mod, line):
+def test_has_multiple_nouns_empty_line(clarity_mod: ModuleType, line: str) -> None:
     # Arrange
     text = line
 
@@ -209,7 +226,7 @@ def test_has_multiple_nouns_empty_line(clarity_mod, line):
     assert result is False
 
 
-def test_has_multiple_nouns_short_words_ignored(clarity_mod):
+def test_has_multiple_nouns_short_words_ignored(clarity_mod: ModuleType) -> None:
     # Arrange
     prev_line = "a b c"
 
@@ -224,7 +241,9 @@ def test_has_multiple_nouns_short_words_ignored(clarity_mod):
     ("line", "expected"),
     [("validator validator", False), ("validator handler", True)],
 )
-def test_has_multiple_nouns_counts_distinct(clarity_mod, line, expected):
+def test_has_multiple_nouns_counts_distinct(
+    clarity_mod: ModuleType, line: str, expected: bool
+) -> None:
     # Arrange
     text = line
 
@@ -235,7 +254,12 @@ def test_has_multiple_nouns_counts_distinct(clarity_mod, line, expected):
     assert result is expected
 
 
-def test_main_clean_exits_zero(clarity_mod, tmp_path, monkeypatch, capsys):
+def test_main_clean_exits_zero(
+    clarity_mod: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / "ok.md").write_text("- The handler validates input.\n")
@@ -248,14 +272,16 @@ def test_main_clean_exits_zero(clarity_mod, tmp_path, monkeypatch, capsys):
     code = clarity_mod.main()
 
     # Assert
-    out = capsys.readouterr().out
     assert code == 0
-    assert "Clean" in out
+    assert capsys.readouterr().out == "Clean: no clarity findings.\n"
 
 
 def test_main_with_findings_still_exits_zero(
-    clarity_mod, tmp_path, monkeypatch, capsys
-):
+    clarity_mod: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / "bad.md").write_text(
@@ -270,7 +296,9 @@ def test_main_with_findings_still_exits_zero(
     code = clarity_mod.main()
 
     # Assert
-    out = capsys.readouterr().out
     assert code == 0
-    assert "passive-bullet" in out
-    assert "Total" in out
+    assert capsys.readouterr().out == (
+        "rules/bad.md: 1 finding(s)\n"
+        "     1  [passive-bullet]  - The input is validated before processing.\n"
+        "\nTotal: 1 finding(s). Advisory only; review and rewrite where appropriate.\n"
+    )
