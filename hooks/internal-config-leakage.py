@@ -227,25 +227,64 @@ NON_PUBLISHING_PREFIXES = (
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
-from _lib.shell_segments import strip_heredoc_bodies  # noqa: E402
+from _lib.cli_invocations import asks_for_help  # noqa: E402
+from _lib.shell_segments import (  # noqa: E402
+    command_head,
+    strip_heredoc_bodies,
+    unquoted_segments,
+)
 
 
-SEGMENT_SEPARATOR = re.compile(r"&&|\|\||[;|\n]")
+FORGE_CLIS = frozenset({"gh", "glab"})
+READ_ONLY_ACTIONS = frozenset({"view", "list", "diff", "checks", "status", "search"})
+API_BODY_FLAGS = frozenset({"-f", "-F", "--field", "--raw-field", "--input", "--form"})
+API_METHOD_FLAGS = frozenset({"-X", "--method"})
 
 
 def _segment_publishes(segment: str) -> bool:
     stripped = segment.lstrip()
     if not stripped or stripped.startswith(NON_PUBLISHING_PREFIXES):
         return False
+    if _forge_read_only(segment):
+        return False
     matched = strip_git_global_options(segment)
     return any(p.search(matched) for p in PUBLISHING_BASH_PATTERNS)
+
+
+def _forge_read_only(segment: str) -> bool:
+    try:
+        tokens = shlex.split(segment)
+    except ValueError:
+        return False
+    base, effective = command_head(tokens)
+    args = tuple(effective[1:])
+    if base not in FORGE_CLIS or not args:
+        return False
+    if asks_for_help(args):
+        return True
+    if args[0] == "api":
+        return not _api_writes(args[1:])
+    return len(args) > 1 and args[1] in READ_ONLY_ACTIONS
+
+
+def _api_writes(args: tuple[str, ...]) -> bool:
+    for index, arg in enumerate(args):
+        flag, _, inline = arg.partition("=")
+        if flag in API_BODY_FLAGS:
+            return True
+        method = inline or (args[index + 1] if index + 1 < len(args) else "")
+        if flag in API_METHOD_FLAGS and method.upper() != "GET":
+            return True
+        if arg.startswith("-X") and len(arg) > 2 and arg[2:].upper() != "GET":
+            return True
+    return False
 
 
 def is_publishing_bash(cmd: str) -> bool:
     if not cmd:
         return False
     command_lines = strip_heredoc_bodies(cmd)
-    return any(_segment_publishes(s) for s in SEGMENT_SEPARATOR.split(command_lines))
+    return any(_segment_publishes(s) for s in unquoted_segments(command_lines))
 
 
 def is_git_message_bash(cmd: str) -> bool:

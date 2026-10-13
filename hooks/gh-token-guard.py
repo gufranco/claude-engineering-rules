@@ -42,7 +42,7 @@ except ImportError:
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
-from _lib.cli_invocations import Invocation, invocations  # noqa: E402
+from _lib.cli_invocations import asks_for_help, Invocation, invocations  # noqa: E402
 from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 EXEMPT_SUBCOMMANDS = frozenset(
@@ -62,6 +62,8 @@ EXEMPT_SUBCOMMANDS = frozenset(
 
 def _needs_token(call: Invocation) -> bool:
     if call.args[:1] and call.args[0] in EXEMPT_SUBCOMMANDS:
+        return False
+    if asks_for_help(call.args):
         return False
     if call.args[:2] == ("extension", "list"):
         return False
