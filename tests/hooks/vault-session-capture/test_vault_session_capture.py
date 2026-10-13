@@ -420,3 +420,32 @@ def test_an_untracked_path_keeps_its_first_character(repo_with_an_unstaged_edit)
     # Assert
     assert "notes.md" in names
     assert "hooks/recall.py" in names
+
+
+def test_parallel_captures_all_land_in_the_daily_note(vault, project):
+    # Arrange
+    from concurrent.futures import ThreadPoolExecutor
+    from datetime import datetime, timezone
+
+    module = load()
+    (project / "changed.txt").write_text("change\n")
+    now = datetime(2026, 10, 13, 12, 0, tzinfo=timezone.utc)
+    calls = 12
+
+    # Act
+    with ThreadPoolExecutor(max_workers=calls) as pool:
+        written = list(
+            pool.map(lambda _: module.capture(vault, project, now), range(calls))
+        )
+
+    # Assert
+    text = daily_note(vault).read_text(encoding="utf-8")
+    assert (
+        written.count(True),
+        text.count("## Session "),
+        text.count(kn.PREAMBLE),
+    ) == (
+        calls,
+        calls,
+        1,
+    )

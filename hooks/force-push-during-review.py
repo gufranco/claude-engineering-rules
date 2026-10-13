@@ -64,61 +64,50 @@ def is_force_push(raw_command: str) -> bool:
     return False
 
 
-def current_branch() -> str | None:
+LOOKUP_TIMEOUT_SECONDS = 10
+NO_PULL_REQUEST = "no pull requests found"
+
+
+class LookupFailed(Exception):
+    pass
+
+
+def _git(repo: str, *args: str) -> str | None:
     try:
         result = subprocess.run(
-            ["git", "branch", "--show-current"],
-            capture_output=True,
-            text=True,
-            timeout=5,
+            ["git", "-C", repo, *args], capture_output=True, text=True, timeout=5
         )
-    except (subprocess.SubprocessError, FileNotFoundError):
+    except (subprocess.SubprocessError, OSError):
         return None
-    if result.returncode != 0:
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
+def changes_requested_reviewer(repo: str) -> str | None:
+    branch = _git(repo, "branch", "--show-current")
+    remote = _git(repo, "remote", "get-url", "origin") or ""
+    if not branch or "github.com" not in remote:
         return None
-    branch = result.stdout.strip()
-    return branch or None
-
-
-def changes_requested_reviewer() -> str | None:
-    """Returns the login of a reviewer who has CHANGES_REQUESTED open.
-
-    Returns None if no such reviewer exists, or if the lookup fails.
-    The hook fail-opens on lookup failure to avoid blocking on infrastructure
-    problems.
-    """
-    branch = current_branch()
-    if not branch:
-        return None
-
+    query = '.latestReviews[] | select(.state == "CHANGES_REQUESTED") | .author.login'
     try:
         result = subprocess.run(
-            [
-                "gh",
-                "pr",
-                "view",
-                "--json",
-                "reviews",
-                "--jq",
-                '.reviews[] | select(.state == "CHANGES_REQUESTED") | .author.login',
-            ],
+            ["gh", "pr", "view", "--json", "latestReviews", "--jq", query],
             capture_output=True,
             text=True,
-            timeout=3,
+            timeout=LOOKUP_TIMEOUT_SECONDS,
+            cwd=repo,
             env={**os.environ, "NO_COLOR": "1"},
         )
-    except (subprocess.SubprocessError, FileNotFoundError):
-        return None
-
+    except (subprocess.SubprocessError, OSError) as error:
+        raise LookupFailed(str(error)) from error
     if result.returncode != 0:
-        return None
-
+        if NO_PULL_REQUEST in result.stderr.lower():
+            return None
+        raise LookupFailed(result.stderr.strip() or f"gh exited {result.returncode}")
     logins = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    if not logins:
-        return None
-    return logins[0]
+    return logins[0] if logins else None
 
 
+from _lib.commit_scope import repo_dir  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 
 
@@ -140,7 +129,18 @@ def main() -> None:
     if not is_force_push(command):
         sys.exit(0)
 
-    blocker = changes_requested_reviewer()
+    cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else ""
+    try:
+        blocker = changes_requested_reviewer(repo_dir(command, cwd))
+    except LookupFailed as error:
+        print(
+            "BLOCKED: force-push, and the open review state could not be read: "
+            f"{error}.\nCheck `gh auth status`, or set "
+            "FORCE_PUSH_DURING_REVIEW_DISABLE=1 in the parent shell if the force-push "
+            "is intended.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     if blocker is None:
         sys.exit(0)
 

@@ -27,6 +27,7 @@ Bypass: unset ``VAULT_AUTO_CAPTURE``, or set ``VAULT_CAPTURE_DISABLE=1``.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import subprocess
@@ -144,32 +145,46 @@ def render_header(day: str) -> str:
     )
 
 
+RUNS_DIR = ".claude-runs"
+
+
 def capture(root: Path, cwd: Path, now: datetime) -> bool:
     repo = repo_root(cwd)
     if repo is None:
         return False
     day = now.date().isoformat()
     target = root / DAILY_DIR / f"{day}.md"
-    existing = ""
-    if target.exists():
-        try:
-            existing = target.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):  # pragma: no cover
-            return False
-    files = changed_files(repo)
-    commits = [
-        line for line in recent_commits(repo) if line.split(" ", 1)[0] not in existing
-    ]
-    if not files and not commits:
-        return False
-    branch = git(["rev-parse", "--abbrev-ref", "HEAD"], repo) or "unknown"
     target.parent.mkdir(parents=True, exist_ok=True)
-    block = render_block(now.strftime("%H:%M GMT"), repo.name, branch, files, commits)
-    if existing:
-        target.write_text(existing.rstrip("\n") + "\n\n" + block, encoding="utf-8")
-    else:
-        target.write_text(render_header(day) + block, encoding="utf-8")
+    files = changed_files(repo)
+    branch = git(["rev-parse", "--abbrev-ref", "HEAD"], repo) or "unknown"
+    lock_path = root / RUNS_DIR / "capture.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "a", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        existing = target.read_text(encoding="utf-8") if target.exists() else ""
+        commits = [
+            line
+            for line in recent_commits(repo)
+            if line.split(" ", 1)[0] not in existing
+        ]
+        if not files and not commits:
+            return False
+        block = render_block(
+            now.strftime("%H:%M GMT"), repo.name, branch, files, commits
+        )
+        with open(target, "a", encoding="utf-8") as handle:
+            handle.write(
+                _separator(existing) + block if existing else render_header(day) + block
+            )
     return True
+
+
+def _separator(existing: str) -> str:
+    return (
+        "\n"
+        if existing.endswith("\n\n")
+        else ("\n" if existing.endswith("\n") else "\n\n")
+    )
 
 
 def main() -> int:

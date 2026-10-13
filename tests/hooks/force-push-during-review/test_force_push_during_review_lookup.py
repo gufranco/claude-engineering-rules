@@ -20,7 +20,13 @@ from _lib.bypass_writer import set_bypass  # noqa: E402
 
 FORCE_PUSH = "git push " + "--" + "force origin feat"
 SYSTEM_PATH = "/usr/bin:/bin"
-BRANCH_OK = "echo feat\n"
+BRANCH_OK = (
+    'case "$*" in *remote*) echo git@github.com:o/r.git ;; *) echo feat ;; esac\n'
+)
+GITLAB_BRANCH = (
+    'case "$*" in *remote*) echo git@gitlab.com:o/r.git ;; *) echo feat ;; esac\n'
+)
+NO_PR = 'echo "no pull requests found for branch feat" >&2\nexit 1\n'
 REVIEWER = "rev-" + "alpha"
 
 
@@ -51,12 +57,13 @@ def test_an_open_changes_requested_review_blocks(tmp_path, tool_use, run_hook):
     [
         {"git": "exit 1\n", "gh": f"echo {REVIEWER}\n"},
         {"git": "echo\n", "gh": f"echo {REVIEWER}\n"},
-        {"git": BRANCH_OK, "gh": "exit 1\n"},
+        {"git": BRANCH_OK, "gh": NO_PR},
         {"git": BRANCH_OK, "gh": "echo\n"},
-        {"git": BRANCH_OK},
+        {"git": GITLAB_BRANCH, "gh": f"echo {REVIEWER}\n"},
     ],
+    ids=["no-repo", "no-branch", "no-pull-request", "no-blocking-review", "not-github"],
 )
-def test_a_lookup_that_cannot_answer_allows(scripts, tmp_path, tool_use, run_hook):
+def test_a_branch_with_nothing_to_protect_allows(scripts, tmp_path, tool_use, run_hook):
     # Arrange
     path = _bin(tmp_path / "bin", scripts)
     payload = tool_use("Bash", {"command": FORCE_PUSH})
@@ -143,3 +150,33 @@ def test_a_push_spelled_with_extra_spacing_and_no_force_is_not_forced():
 
     # Assert
     assert detected is False
+
+
+@pytest.mark.parametrize(
+    "scripts",
+    [{"git": BRANCH_OK, "gh": "echo boom >&2\nexit 1\n"}, {"git": BRANCH_OK}],
+    ids=["gh-error", "gh-missing"],
+)
+def test_a_lookup_that_cannot_answer_blocks(scripts, tmp_path, tool_use, run_hook):
+    # Arrange
+    path = _bin(tmp_path / "bin", scripts)
+    payload = tool_use("Bash", {"command": FORCE_PUSH})
+
+    # Act
+    result = run_hook(HOOK, payload, env={"PATH": path})
+
+    # Assert
+    assert_blocked(result, "could not be read")
+
+
+def test_only_each_reviewers_latest_review_counts(tmp_path, tool_use, run_hook):
+    # Arrange
+    gh = f'case "$*" in *latestReviews*) echo ;; *) echo {REVIEWER} ;; esac\n'
+    path = _bin(tmp_path / "bin", {"git": BRANCH_OK, "gh": gh})
+    payload = tool_use("Bash", {"command": FORCE_PUSH})
+
+    # Act
+    result = run_hook(HOOK, payload, env={"PATH": path})
+
+    # Assert
+    assert_allowed(result)
