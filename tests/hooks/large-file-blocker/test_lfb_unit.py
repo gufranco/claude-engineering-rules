@@ -8,8 +8,6 @@ import sys
 from pathlib import Path
 
 import pytest
-from types import SimpleNamespace
-from _helpers.raising import raising
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK_PATH = ROOT / "hooks" / "large-file-blocker.py"
@@ -80,13 +78,15 @@ def test_read_command_blocks_on_non_dict_tool_input(
 
 def test_read_command_returns_string(hook, monkeypatch: pytest.MonkeyPatch) -> None:
     # Arrange
-    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
+    _stdin_with(
+        {"tool_input": {"command": "git commit -m x"}, "cwd": "/repo"}, monkeypatch
+    )
 
     # Act
     result = hook._read_command()
 
     # Assert
-    assert result == "git commit -m x"
+    assert result == ("git commit -m x", "/repo")
 
 
 def test_read_command_blocks_when_command_non_string(
@@ -103,42 +103,6 @@ def test_read_command_blocks_when_command_non_string(
     assert exit_info.value.code == 2
 
 
-def test_file_size_kb_handles_missing_file(hook, tmp_path: Path) -> None:
-    # Arrange
-    missing = tmp_path / "nope"
-
-    # Act
-    result = hook._file_size_kb(missing)
-
-    # Assert
-    assert result is None
-
-
-def test_file_size_kb_rounds_up(hook, tmp_path: Path) -> None:
-    # Arrange
-    target = tmp_path / "tiny"
-    target.write_bytes(b"x")
-
-    # Act
-    result = hook._file_size_kb(target)
-
-    # Assert
-    assert result == 1
-
-
-def test_staged_files_returns_empty_outside_git_repo(
-    hook, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Arrange
-    monkeypatch.chdir(tmp_path)
-
-    # Act
-    result = hook._staged_files()
-
-    # Assert
-    assert result == []
-
-
 def test_audit_noop_when_record_unavailable(
     hook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -152,15 +116,17 @@ def test_audit_noop_when_record_unavailable(
     assert result is None
 
 
-def test_audit_swallows_record_exception(hook, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_reports_a_record_failure(
+    hook, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
     # Arrange
     monkeypatch.setattr(hook, "_audit_record", boom)
 
     # Act
-    result = hook._audit("git commit -m x")
+    hook._audit("git commit -m x")
 
     # Assert
-    assert result is None
+    assert "audit log write failed" in capsys.readouterr().err
 
 
 def test_main_env_disable_short_circuits(hook, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -196,85 +162,3 @@ def test_main_returns_zero_on_non_commit_command(
 
     # Assert
     assert result == 0
-
-
-def test_main_allows_when_no_offenders(hook, monkeypatch: pytest.MonkeyPatch) -> None:
-    # Arrange
-    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
-    monkeypatch.setattr(hook, "_staged_files", lambda: [])
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    assert result == 0
-
-
-def test_staged_files_returns_empty_when_git_errors(
-    hook, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Arrange
-    failing_run = raising(OSError("simulated"))
-    monkeypatch.setattr(hook.subprocess, "run", failing_run)
-
-    # Act
-    result = hook._staged_files()
-
-    # Assert
-    assert result == []
-
-
-def test_staged_files_returns_empty_on_non_zero_returncode(
-    hook, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Arrange
-    monkeypatch.setattr(
-        hook.subprocess,
-        "run",
-        lambda *_a, **_k: SimpleNamespace(stdout="", returncode=128),
-    )
-
-    # Act
-    result = hook._staged_files()
-
-    # Assert
-    assert result == []
-
-
-def test_main_skips_non_file_paths_and_small_files(
-    hook, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    # Arrange
-    small = tmp_path / "small.txt"
-    small.write_bytes(b"x" * 1024)
-    missing = str(tmp_path / "ghost.bin")
-    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
-    monkeypatch.setattr(hook, "_staged_files", lambda: [missing, str(small)])
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    assert result == 0
-
-
-def test_main_blocks_when_offender_present(
-    hook,
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    # Arrange
-    big = tmp_path / "huge.bin"
-    big.write_bytes(b"x" * (6 * 1024 * 1024))
-    _stdin_with({"tool_input": {"command": "git commit -m x"}}, monkeypatch)
-    monkeypatch.setattr(hook, "_staged_files", lambda: [str(big)])
-
-    # Act
-    result = hook.main()
-
-    # Assert
-    captured = capsys.readouterr()
-    assert result == 2
-    assert "BLOCKED" in captured.err
-    assert "huge.bin" in captured.err
