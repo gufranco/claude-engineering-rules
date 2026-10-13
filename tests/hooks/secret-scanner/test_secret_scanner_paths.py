@@ -72,7 +72,7 @@ def test_a_secret_after_clean_lines_is_found(tmp_path, monkeypatch, tool_use, ru
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_blocked(result, "settings.py: AWS Access Key")
+    assert_blocked(result, "settings.py:3: AWS Access Key")
 
 
 def test_clean_staged_files_are_allowed(tmp_path, monkeypatch, tool_use, run_hook):
@@ -96,7 +96,7 @@ def test_clean_staged_files_are_allowed(tmp_path, monkeypatch, tool_use, run_hoo
         'case "$*" in *name-only*) /bin/rm -f "$0"; echo app.py; exit 0;; esac\n',
     ],
 )
-def test_a_git_that_fails_reads_as_nothing_to_scan(
+def test_a_directory_git_does_not_recognize_as_a_repository_passes(
     script, tmp_path, tool_use, run_hook
 ):
     # Arrange
@@ -108,6 +108,19 @@ def test_a_git_that_fails_reads_as_nothing_to_scan(
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_diff_that_fails_inside_a_repository_blocks(tmp_path, tool_use, run_hook):
+    # Arrange
+    script = 'case "$*" in *rev-parse*) echo .git; exit 0;; esac\nexit 1\n'
+    env = _stub_git(tmp_path / "bin", script)
+    payload = tool_use("Bash", {"command": COMMIT})
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_blocked(result, "could not read what this commit would record")
 
 
 def test_a_missing_git_reads_as_nothing_to_scan(tmp_path, tool_use, run_hook):

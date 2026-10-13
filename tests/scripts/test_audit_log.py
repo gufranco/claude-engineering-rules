@@ -278,6 +278,26 @@ def test_redact_replaces_known_patterns(raw, expected_in_output):
     assert expected_in_output in out
 
 
+@pytest.mark.parametrize(
+    "secret",
+    [
+        "sk-proj-" + "A1b2C3d4" * 6,
+        "sk-svcacct-" + "Z9y8X7w6" * 5,
+        "sk_live_" + "4eC39HqLyjWDarjtT1zdp7dc",
+        "rk_test_" + "51H9xQ2LkzOjVb7nMp4Tq8Rs",
+    ],
+)
+def test_redact_removes_current_key_shapes(secret):
+    # Arrange
+    line = f"key={secret} used"
+
+    # Act
+    out = audit_log.redact(line)
+
+    # Assert
+    assert out == "key=[REDACTED] used"
+
+
 def test_redact_is_idempotent():
     # Arrange
     once = audit_log.redact("AKIAABCDEFGHIJKLMNOP")
