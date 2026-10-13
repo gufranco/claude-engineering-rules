@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
-"""PostToolUse Edit/Write/MultiEdit hook: append edited path to batch file.
-
-The companion `stop-format-typecheck.py` consumes the batch on Stop, dedupes,
-formats every file once, runs the type checker once, then clears the batch.
-
-Batch file path: `$CLAUDE_FORMATTER_BATCH` if set, else
-`~/.claude/cache/edit-batch.txt`.
-
-Bypass channels:
-    1. Env var `SMART_FORMATTER_DISABLE=1` (parent shell).
-    2. File registry entry for hook `smart-formatter`.
-    3. Profile gate via `hook_profile.should_run`.
-"""
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -35,7 +23,7 @@ except Exception:  # noqa: BLE001
 HOOK_NAME = "smart-formatter"
 ENV_DISABLE = "SMART_FORMATTER_DISABLE"
 ENV_BATCH = "CLAUDE_FORMATTER_BATCH"
-DEFAULT_BATCH = Path.home() / ".claude" / "cache" / "edit-batch.txt"
+BATCH_DIR = Path.home() / ".claude" / "cache"
 EXCLUDED_FRAGMENTS = (
     "/.claude/cache/",
     "/node_modules/",
@@ -45,23 +33,26 @@ EXCLUDED_FRAGMENTS = (
 )
 
 
-def _batch_path() -> Path:
+def _batch_path(session_id: str) -> Path:
     override = os.environ.get(ENV_BATCH)
-    return Path(override) if override else DEFAULT_BATCH
+    if override:
+        return Path(override)
+    safe = re.sub(r"[^A-Za-z0-9_-]", "", session_id) or "default"
+    return BATCH_DIR / f"edit-batch-{safe}.txt"
 
 
-def _read_file_path() -> str:
+def _read_payload() -> tuple[str, str]:
     try:
         data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return ""
+    except (json.JSONDecodeError, ValueError) as error:
+        sys.stderr.write(f"{HOOK_NAME}: unreadable payload: {error}\n")
+        return "", ""
     if not isinstance(data, dict):
-        return ""
+        return "", ""
     tool_input = data.get("tool_input") or data.get("input") or {}
-    if not isinstance(tool_input, dict):
-        return ""
-    value = tool_input.get("file_path", "")
-    return value if isinstance(value, str) else ""
+    value = tool_input.get("file_path", "") if isinstance(tool_input, dict) else ""
+    session = data.get("session_id") or ""
+    return (value if isinstance(value, str) else ""), str(session)
 
 
 def main() -> int:
@@ -71,7 +62,7 @@ def main() -> int:
         return 0
     if not should_run(HOOK_NAME):
         return 0
-    file_path = _read_file_path()
+    file_path, session_id = _read_payload()
     if not file_path:
         return 0
     path = Path(file_path)
@@ -81,7 +72,7 @@ def main() -> int:
     for fragment in EXCLUDED_FRAGMENTS:
         if fragment in normalized:
             return 0
-    batch = _batch_path()
+    batch = _batch_path(session_id)
     batch.parent.mkdir(parents=True, exist_ok=True)
     with batch.open("a", encoding="utf-8") as fh:
         fh.write(file_path + "\n")

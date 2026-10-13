@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
@@ -89,6 +90,7 @@ def test_missing_batch_file_noop(tmp_path: Path) -> None:
 
 def test_calls_prettier_once_for_js_files(tmp_path: Path) -> None:
     # Arrange
+    (tmp_path / ".prettierrc").write_text("{}", encoding="utf-8")
     a = tmp_path / "a.ts"
     a.write_text("x\n", encoding="utf-8")
     b = tmp_path / "b.tsx"
@@ -128,8 +130,7 @@ def test_clears_batch_file_after_run(tmp_path: Path) -> None:
     result = _run(batch, bin_dir=bin_dir)
 
     # Assert
-    assert result.returncode == 0
-    assert batch.read_text(encoding="utf-8") == ""
+    assert (result.returncode, batch.exists()) == (0, False)
 
 
 def test_skips_missing_files(tmp_path: Path) -> None:
@@ -172,7 +173,7 @@ def test_python_uses_ruff_when_black_missing(tmp_path: Path) -> None:
     assert "format" in ruff_calls[0]["args"]
 
 
-def test_python_prefers_black_when_available(tmp_path: Path) -> None:
+def test_python_prefers_ruff_when_both_are_available(tmp_path: Path) -> None:
     # Arrange
     py = tmp_path / "f.py"
     py.write_text("x\n", encoding="utf-8")
@@ -189,10 +190,8 @@ def test_python_prefers_black_when_available(tmp_path: Path) -> None:
     result = _run(batch, bin_dir=bin_dir, env={"PATH": f"{bin_dir}:{python_dir}"})
 
     # Assert
-    assert result.returncode == 0
-    calls = json.loads(log.read_text())
-    assert any(c["tool"] == "black" for c in calls)
-    assert not any(c["tool"] == "ruff" for c in calls)
+    tools = [c["tool"] for c in json.loads(log.read_text())]
+    assert (result.returncode, tools) == (0, ["ruff"])
 
 
 def test_typescript_workspace_runs_tsc(tmp_path: Path) -> None:
@@ -333,6 +332,7 @@ def test_rust_files_invoke_rustfmt(tmp_path: Path) -> None:
 
 def test_ruby_files_invoke_rubocop(tmp_path: Path) -> None:
     # Arrange
+    (tmp_path / ".rubocop.yml").write_text("", encoding="utf-8")
     target = tmp_path / "main.rb"
     target.write_text("puts 'hi'\n", encoding="utf-8")
     batch = tmp_path / "batch.txt"
@@ -354,6 +354,7 @@ def test_ruby_files_invoke_rubocop(tmp_path: Path) -> None:
 
 def test_shell_files_invoke_shfmt(tmp_path: Path) -> None:
     # Arrange
+    (tmp_path / ".editorconfig").write_text("", encoding="utf-8")
     target = tmp_path / "x.sh"
     target.write_text("#!/bin/sh\necho hi\n", encoding="utf-8")
     batch = tmp_path / "batch.txt"
@@ -392,9 +393,8 @@ def test_workspace_skipped_when_dir_removed_between_discovery_and_run(
     result = _run(batch, bin_dir=bin_dir, env={"PATH": f"{bin_dir}:{python_dir}"})
 
     # Assert
-    assert result.returncode == 0
-    calls = json.loads(log.read_text())
-    assert not any(c["tool"] == "npx" for c in calls)
+    calls = json.loads(log.read_text()) if log.exists() else []
+    assert (result.returncode, [c for c in calls if c["tool"] == "npx"]) == (0, [])
 
 
 def test_run_quietly_swallows_subprocess_errors(
@@ -445,6 +445,7 @@ def test_main_skips_workspace_that_no_longer_exists(
     module = _util.module_from_spec(spec)
     spec.loader.exec_module(module)
     monkeypatch.setenv("CLAUDE_FORMATTER_BATCH", str(batch))
+    monkeypatch.setattr(module.sys, "stdin", io.StringIO(""))
     monkeypatch.setattr(module, "_find_ts_workspace", lambda _p: tmp_path / "gone")
     monkeypatch.setattr(module, "_format_with", lambda *_a, **_k: None)
     calls: list[tuple[object, ...]] = []
@@ -499,3 +500,68 @@ def test_tsc_failure_swallowed(tmp_path: Path) -> None:
 
     # Assert
     assert result.returncode == 0
+
+
+@pytest.mark.parametrize(
+    ("tool", "name"), [("prettier", "notes.md"), ("shfmt", "run.sh")]
+)
+def test_a_formatter_the_project_does_not_configure_is_not_run(
+    tmp_path: Path, tool: str, name: str
+) -> None:
+    # Arrange
+    target = tmp_path / name
+    target.write_text("x\n", encoding="utf-8")
+    batch = tmp_path / "batch.txt"
+    batch.write_text(f"{target}\n", encoding="utf-8")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log = tmp_path / "calls.json"
+    _make_recording_stub(bin_dir, tool, log)
+
+    # Act
+    result = _run(batch, bin_dir=bin_dir)
+
+    # Assert
+    assert (result.returncode, log.exists()) == (0, False)
+
+
+def test_a_tsc_failure_is_reported_back(tmp_path: Path) -> None:
+    # Arrange
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    (ws / "package.json").write_text("{}", encoding="utf-8")
+    (ws / "tsconfig.json").write_text("{}", encoding="utf-8")
+    target = ws / "main.ts"
+    target.write_text("x\n", encoding="utf-8")
+    batch = tmp_path / "batch.txt"
+    batch.write_text(f"{target}\n", encoding="utf-8")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    npx = bin_dir / "npx"
+    npx.write_text(
+        "#!/bin/sh\necho 'main.ts(1,1): error TS2304'\nexit 2\n", encoding="utf-8"
+    )
+    npx.chmod(0o755)
+
+    # Act
+    result = _run(batch, bin_dir=bin_dir)
+
+    # Assert
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "error TS2304" in context
+
+
+def test_each_session_has_its_own_batch_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Arrange
+    spec = _util.spec_from_file_location("_sft_mod5", str(HOOK))
+    module = _util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.delenv("CLAUDE_FORMATTER_BATCH", raising=False)
+
+    # Act
+    paths = {module.batch_path("session-a"), module.batch_path("session-b")}
+
+    # Assert
+    assert len(paths) == 2
