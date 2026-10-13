@@ -33,9 +33,11 @@ KUBECTL_USE_CONTEXT = re.compile(
 )
 
 KUBECTX_SWITCH = re.compile(
-    r"(?:^|&&|\|\||;|\|)\s*kubectx\s+(?!--help\b|-h\b|--?$)[\w\.\-]+"
+    r"(?:^|&&|\|\||;|\||\n)\s*kubectx\s+(?!--help\b|-h\b|--?$)[\w\.\-]+"
 )
-KUBECTX_PREVIOUS = re.compile(r"(?:^|&&|\|\||;|\|)\s*kubectx\s+-\s*(?:&&|\|\||;|\||$)")
+KUBECTX_PREVIOUS = re.compile(
+    r"(?:^|&&|\|\||;|\||\n)\s*kubectx\s+-\s*(?:&&|\|\||;|\||\n|$)"
+)
 
 
 import sys as _sys  # noqa: E402

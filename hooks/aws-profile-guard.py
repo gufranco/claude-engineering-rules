@@ -18,7 +18,6 @@ Exit 0 = allow, exit 2 = block.
 
 import json
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
@@ -28,11 +27,6 @@ except Exception:  # pragma: no cover
 
     def _audit(**_fields):  # type: ignore
         return None
-
-
-AWS_CONFIGURE_SET = re.compile(r"\baws\s+configure\s+set\b")
-
-AWS_PROFILE_PRESENT = re.compile(r"--profile[\s=]\S+|AWS_PROFILE=\S+")
 
 
 import sys as _sys  # noqa: E402
@@ -48,6 +42,16 @@ except ImportError:
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.cli_invocations import Invocation, invocations  # noqa: E402
+
+
+def _configures_without_profile(call: Invocation) -> bool:
+    args = list(call.args)
+    sets = any(args[i : i + 2] == ["configure", "set"] for i in range(len(args)))
+    scoped = "AWS_PROFILE" in call.assigned or any(
+        arg == "--profile" or arg.startswith("--profile=") for arg in args
+    )
+    return sets and not scoped
 
 
 def main() -> None:
@@ -66,7 +70,7 @@ def main() -> None:
     if not command:
         sys.exit(0)
 
-    if AWS_CONFIGURE_SET.search(command) and not AWS_PROFILE_PRESENT.search(command):
+    if any(_configures_without_profile(c) for c in invocations(command, "aws")):
         print(
             "BLOCKED: `aws configure set ...` without `--profile <name>` "
             "writes to the default AWS profile and affects every shell.\n"
