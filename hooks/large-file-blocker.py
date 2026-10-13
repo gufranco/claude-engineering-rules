@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.commit_scope import add_scope, commits_all, repo_dir, within  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.output import block as _block  # noqa: E402
 
@@ -36,34 +37,90 @@ GIT_TIMEOUT_SECONDS = 5
 COMMIT_PATTERN = re.compile(r"\bgit\s+commit\b")
 
 
-def _read_command() -> str:
+def _read_command() -> tuple[str, str]:
     data = read_hook_payload("large-file-blocker")
-    tool_input = tool_input_of(data)
-    cmd = tool_input.get("command", "")
-    return cmd if isinstance(cmd, str) else ""
+    cmd = tool_input_of(data).get("command", "")
+    cwd = data.get("cwd")
+    return (cmd if isinstance(cmd, str) else ""), (cwd if isinstance(cwd, str) else "")
 
 
-def _staged_files() -> list[str]:
+def _git(repo: str, *args: str) -> str | None:
     try:
         result = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
+            ["git", "-C", repo, *args],
             capture_output=True,
             text=True,
             timeout=GIT_TIMEOUT_SECONDS,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        return []
-    if result.returncode != 0:
-        return []
-    return [line for line in result.stdout.splitlines() if line]
-
-
-def _file_size_kb(path: Path) -> int | None:
-    try:
-        size_bytes = path.stat().st_size
-    except OSError:
         return None
-    return max(1, (size_bytes + 1023) // 1024)
+    return result.stdout if result.returncode == 0 else None
+
+
+def _names(output: str | None) -> list[str]:
+    return [name for name in (output or "").split("\0") if name]
+
+
+def _staged_sizes(repo: str) -> dict[str, int]:
+    names = _names(_git(repo, "diff", "--cached", "--name-only", "-z"))
+    sizes = [_git(repo, "cat-file", "-s", f":{name}") for name in names]
+    return {
+        name: int(size)
+        for name, size in zip(names, sizes)
+        if size is not None and size.strip().isdigit()
+    }
+
+
+def _working_sizes(base: str, names: list[str]) -> dict[str, int]:
+    paths = {name: os.path.join(base, name) for name in names}
+    return {
+        name: os.path.getsize(path)
+        for name, path in paths.items()
+        if os.path.isfile(path)
+    }
+
+
+def _pending_sizes(command: str, repo: str, top: str) -> dict[str, int]:
+    whole, paths = add_scope(command)
+    everything = whole or commits_all(command)
+    if not (everything or paths):
+        return {}
+    tracked = [
+        name
+        for name in _names(_git(repo, "diff", "--name-only", "-z"))
+        if everything or within(name, paths)
+    ]
+    untracked = (
+        [
+            name
+            for name in _names(
+                _git(repo, "ls-files", "--others", "--exclude-standard", "-z")
+            )
+            if whole or within(name, paths)
+        ]
+        if (whole or paths)
+        else []
+    )
+    return {**_working_sizes(top, tracked), **_working_sizes(repo, untracked)}
+
+
+def _offenders(command: str, cwd: str) -> list[tuple[str, int]]:
+    repo = repo_dir(command, cwd)
+    top = (_git(repo, "rev-parse", "--show-toplevel") or "").strip()
+    if not top:
+        return []
+    staged = _staged_sizes(repo)
+    pending = _pending_sizes(command, repo, top)
+    merged = {
+        name: max(staged.get(name, 0), pending.get(name, 0))
+        for name in {*staged, *pending}
+    }
+    limit = MAX_SIZE_KB * 1024
+    return sorted(
+        (name, max(1, (size + 1023) // 1024))
+        for name, size in merged.items()
+        if size > limit
+    )
 
 
 def _audit(command: str) -> None:
@@ -78,8 +135,8 @@ def _audit(command: str) -> None:
             tool="Bash",
             command_excerpt=command[:200],
         )
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as error:  # noqa: BLE001
+        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
 
 
 def main() -> int:
@@ -87,18 +144,10 @@ def main() -> int:
         return 0
     if is_bypassed(HOOK_NAME):
         return 0
-    command = _read_command()
+    command, cwd = _read_command()
     if not COMMIT_PATTERN.search(strip_git_global_options(command)):
         return 0
-    offenders: list[tuple[str, int]] = []
-    for name in _staged_files():
-        path = Path(name)
-        if not path.is_file():
-            continue
-        size_kb = _file_size_kb(path)
-        if size_kb is None or size_kb <= MAX_SIZE_KB:
-            continue
-        offenders.append((name, size_kb))
+    offenders = _offenders(command, cwd)
     if not offenders:
         return 0
     detected = "\n".join(

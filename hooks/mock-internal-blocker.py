@@ -44,38 +44,29 @@ JS_TEST = (
     ".spec.jsx",
 )
 PY_TEST_DIR = ("/tests/", "/test/", "_test.py", "/__tests__/")
+PY_TEST_NAME = re.compile(r"(?:^|/)(?:test_[^/]*|conftest)\.py$")
 
 INTERNAL_TARGETS = re.compile(
     r"""(?ix)
-    ^(?:                              # the import path / dotted name
-      \./[^'"]*services
-      |\.\./[^'"]*services
-      |\./[^'"]*repositor(?:y|ies)
-      |\.\./[^'"]*repositor(?:y|ies)
-      |\./[^'"]*controllers?
-      |\.\./[^'"]*controllers?
-      |\./[^'"]*domain
-      |\.\./[^'"]*domain
+    ^(?:
+      \.{1,2}/[^'"]*(?:services|repositor(?:y|ies)|controllers?|domain)
       |@repo/[^'"]*
       |@org/[^'"]*
-      |@/[^'"]*services
-      |@/[^'"]*db
+      |@/[^'"]*(?:services|db)
       |~/[^'"]*services
-      |\.\./db
-      |\./db
-      |prisma
-      |@prisma/client
-      |mongoose
-      |knex
-      |ioredis
-      |redis(?:/[a-z\-]*)?
-      |valkey
-      |bull(?:mq)?
-      |@aws-sdk/client-sqs
-      |kafkajs
+      |\.{1,2}/db
+      |(?:prisma|@prisma/client|mongoose|knex|ioredis|redis(?:/[a-z\-]+)?
+        |valkey|bull(?:mq)?|@aws-sdk/client-sqs|kafkajs)$
     )
     """
 )
+PY_INTERNAL_TARGETS = re.compile(
+    r"(?:^|\.)(?:services?|repositor(?:y|ies)|controllers?|domain|db|database)(?:\.|$)"
+    r"|^(?:redis|sqlalchemy|psycopg2?|pymongo|celery|kombu|aioredis)(?:\.|$)",
+    re.IGNORECASE,
+)
+
+PY_TARGETS = (PY_INTERNAL_TARGETS, INTERNAL_TARGETS)
 
 JS_MOCK_CALL = re.compile(
     r"""(?:jest|vi|vitest|test\.mock|sinon|td|testdouble)\s*\.\s*mock\s*\(\s*['"]([^'"]+)['"]"""
@@ -96,7 +87,7 @@ def is_test_file(path: str) -> bool:
         return True
     if any(seg in p for seg in PY_TEST_DIR):
         return True
-    return False
+    return PY_TEST_NAME.search(p) is not None
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
@@ -120,13 +111,13 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
 
 
 def find(text: str) -> list[str]:
-    hits: list[str] = []
-    for pat in (JS_MOCK_CALL, PY_MOCK_CALL):
-        for m in pat.finditer(text):
-            target = m.group(1)
-            if INTERNAL_TARGETS.match(target):
-                hits.append(f"{m.group(0)} -> '{target}'")
-    return hits
+    checks = ((JS_MOCK_CALL, (INTERNAL_TARGETS,)), (PY_MOCK_CALL, PY_TARGETS))
+    return [
+        f"{m.group(0)} -> '{m.group(1)}'"
+        for call, patterns in checks
+        for m in call.finditer(text)
+        if any(pattern.search(m.group(1)) for pattern in patterns)
+    ]
 
 
 import sys as _sys  # noqa: E402
