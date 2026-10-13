@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT / "hooks"))
 from _lib.bypass import STATE_PATH  # noqa: E402
 from _lib.bypass_writer import (  # noqa: E402
     DEFAULT_TTL_SECONDS,
+    applied_ttl,
     clear_bypass,
     set_bypass,
 )
@@ -34,7 +35,8 @@ from _lib.bypass_writer import (  # noqa: E402
 
 def _cmd_set(args: argparse.Namespace) -> int:
     path = set_bypass(args.hook, ttl_seconds=args.ttl, reason=args.reason)
-    print(f"bypass engaged: hook={args.hook!r} ttl={args.ttl}s file={path}")
+    ttl = applied_ttl(args.hook, args.ttl)
+    print(f"bypass engaged: hook={args.hook!r} ttl={ttl}s file={path}")
     return 0
 
 
@@ -80,8 +82,8 @@ def build_parser() -> argparse.ArgumentParser:
     set_p.add_argument(
         "--ttl",
         type=int,
-        default=DEFAULT_TTL_SECONDS,
-        help=f"seconds until expiry (clamped to [60, 3600]; default {DEFAULT_TTL_SECONDS})",
+        default=None,
+        help=f"seconds until expiry, clamped to [60, 3600], or 1200 for *; default {DEFAULT_TTL_SECONDS}, or 300 for *",
     )
     set_p.add_argument(
         "--reason",

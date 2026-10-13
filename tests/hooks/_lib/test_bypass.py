@@ -15,9 +15,7 @@ sys.path.insert(0, str(ROOT / "hooks"))
 from _lib.bypass import WILDCARD, is_bypassed  # noqa: E402
 from _lib.bypass_writer import (  # noqa: E402
     DEFAULT_TTL_SECONDS,
-    MAX_TTL_SECONDS,
     MIN_TTL_SECONDS,
-    WILDCARD_DEFAULT_TTL_SECONDS,
     clear_bypass,
     set_bypass,
 )
@@ -319,7 +317,7 @@ class TestSetBypass:
         # Assert
         data = json.loads(state_path.read_text(encoding="utf-8"))
         expires = datetime.fromisoformat(data["bypasses"][0]["expires_at"])
-        assert (expires - fixed).total_seconds() == MAX_TTL_SECONDS
+        assert (expires - fixed).total_seconds() == 3600
 
     def test_default_ttl_used_when_unspecified(self, state_path: Path) -> None:
         # Arrange
@@ -336,7 +334,7 @@ class TestSetBypass:
     def test_wildcard_ttl_capped_lower(self, state_path: Path) -> None:
         # Arrange
         fixed = datetime(2026, 1, 1, tzinfo=timezone.utc)
-        cap = min(MAX_TTL_SECONDS, WILDCARD_DEFAULT_TTL_SECONDS * 4)
+        cap = 1200
 
         # Act
         set_bypass(WILDCARD, ttl_seconds=99999, state_path=state_path, now=fixed)
