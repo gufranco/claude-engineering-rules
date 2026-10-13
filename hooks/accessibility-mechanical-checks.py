@@ -124,9 +124,8 @@ def _line(content: str, tag: Tag) -> int:
     return content[: tag.start].count("\n") + 1
 
 
-def _tag_findings(content: str, tag: Tag) -> list[tuple[int, str]]:
-    line = _line(content, tag)
-    checks = (
+def _structure_checks(tag: Tag) -> tuple[tuple[bool, str], ...]:
+    return (
         (
             is_element(tag, "img") and not has_attr(tag, "alt"),
             "AMC001: <img> without alt attribute (WCAG 1.1.1 A)",
@@ -147,6 +146,11 @@ def _tag_findings(content: str, tag: Tag) -> list[tuple[int, str]]:
             is_element(tag, "html") and not has_attr(tag, "lang"),
             "AMC005: <html> without lang attribute (WCAG 3.1.1 A)",
         ),
+    )
+
+
+def _interaction_checks(tag: Tag) -> tuple[tuple[bool, str], ...]:
+    return (
         (
             is_element(tag, "a") and not has_attr(tag, "href"),
             "AMC006: <a> without href attribute. Use <button> or add href",
@@ -164,6 +168,11 @@ def _tag_findings(content: str, tag: Tag) -> list[tuple[int, str]]:
             'AMC008: <input type="password"> without autocomplete attribute (current-password or new-password)',
         ),
     )
+
+
+def _tag_findings(content: str, tag: Tag) -> list[tuple[int, str]]:
+    line = _line(content, tag)
+    checks = (*_structure_checks(tag), *_interaction_checks(tag))
     return [(line, message) for failed, message in checks if failed]
 
 
@@ -253,30 +262,17 @@ def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
     return "", ""
 
 
-def main() -> int:
-    if os.environ.get("ACCESSIBILITY_CHECKS_DISABLE") == "1":
-        return 0
-    if is_bypassed("accessibility-mechanical-checks"):
-        return 0
-    payload = read_hook_payload("accessibility-mechanical-checks")
-
+def _changed_content(payload: dict) -> tuple[str, str, str]:
     tool_name = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {})
     if tool_name not in {"Write", "Edit", "MultiEdit"}:
-        return 0
-
+        return tool_name, "", ""
     path, content = extract_content(tool_name, tool_input)
-    if not path or not content:
-        return 0
-    if is_skipped(path):
-        return 0
+    return tool_name, path, content
 
-    all_findings = find_all(content)
 
-    if not all_findings:
-        return 0
-
-    all_findings.sort(key=lambda f: f[0])
+def _report(tool_name: str, path: str, findings: list[tuple[int, str]]) -> int:
+    all_findings = sorted(findings, key=lambda f: f[0])
     bullet_lines = "\n".join(f"  - line {ln}: {msg}" for ln, msg in all_findings[:10])
     extra = "" if len(all_findings) <= 10 else f"\n  ... {len(all_findings) - 10} more"
 
@@ -296,6 +292,26 @@ def main() -> int:
         file=sys.stderr,
     )
     return 2
+
+
+def main() -> int:
+    if os.environ.get("ACCESSIBILITY_CHECKS_DISABLE") == "1":
+        return 0
+    if is_bypassed("accessibility-mechanical-checks"):
+        return 0
+    payload = read_hook_payload("accessibility-mechanical-checks")
+
+    tool_name, path, content = _changed_content(payload)
+    if not path or not content:
+        return 0
+    if is_skipped(path):
+        return 0
+
+    all_findings = find_all(content)
+
+    if not all_findings:
+        return 0
+    return _report(tool_name, path, all_findings)
 
 
 if __name__ == "__main__":

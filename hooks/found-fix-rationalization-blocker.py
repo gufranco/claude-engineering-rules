@@ -158,32 +158,38 @@ def bash_command_publishes(command: str) -> bool:
     return any(pat.search(matched) for pat in PUBLISHING_BASH_PATTERNS)
 
 
+EDIT_TOOLS = ("Write", "Edit", "MultiEdit")
+
+
+def _multiedit_fields(tool_input: dict) -> list[tuple[str, str]]:
+    edits = [
+        (i, edit.get("new_string", ""))
+        for i, edit in enumerate(tool_input.get("edits", []) or [])
+        if isinstance(edit, dict)
+    ]
+    return [(f"edits[{i}].new_string", c) for i, c in edits if isinstance(c, str)]
+
+
+def _edit_fields(tool: str, tool_input: dict) -> list[tuple[str, str]]:
+    if tool == "MultiEdit":
+        return _multiedit_fields(tool_input)
+    field = "content" if tool == "Write" else "new_string"
+    c = tool_input.get(field, "")
+    return [(field, c)] if isinstance(c, str) else []
+
+
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
     fp = tool_input.get("file_path", "") or ""
-    if tool in ("Write", "Edit", "MultiEdit") and (
-        is_skipped_path(fp) or is_scratch_path(fp)
-    ):
-        return out
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append(("content", published_text(fp, c)))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append(("new_string", published_text(fp, c)))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((f"edits[{i}].new_string", published_text(fp, c)))
-    elif tool == "Bash":
+    if tool == "Bash":
         c = tool_input.get("command", "")
-        if isinstance(c, str) and bash_command_publishes(c):
-            out.append(("command", c))
-    return out
+        return (
+            [("command", c)] if isinstance(c, str) and bash_command_publishes(c) else []
+        )
+    if tool not in EDIT_TOOLS or is_skipped_path(fp) or is_scratch_path(fp):
+        return []
+    return [
+        (field, published_text(fp, c)) for field, c in _edit_fields(tool, tool_input)
+    ]
 
 
 def find_violations(text: str) -> list[tuple[str, str, str]]:
@@ -200,38 +206,28 @@ def find_violations(text: str) -> list[tuple[str, str, str]]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("found-fix-rationalization-blocker"):
-        sys.exit(0)
+        return True
     if os.environ.get("FOUND_FIX_RATIONALIZATION_DISABLE") == "1":
         _audit(
             hook="found-fix-rationalization-blocker",
             decision="bypass",
             bypass_env="FOUND_FIX_RATIONALIZATION_DISABLE",
         )
-        return 0
-    if is_bypassed("found-fix-rationalization-blocker"):
-        return 0
+        return True
+    return is_bypassed("found-fix-rationalization-blocker")
 
-    payload = read_hook_payload("found-fix-rationalization-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _findings(texts: list[tuple[str, str]]) -> list[str]:
+    return [
+        f"  - {match!r} ({reason})\n    in {field}: ...{snippet}..."
+        for field, text in texts
+        for match, reason, snippet in find_violations(text)
+    ]
 
-    texts = collect_texts(tool, tool_input)
-    if not texts:
-        return 0
 
-    findings: list[str] = []
-    for field, text in texts:
-        for match, reason, snippet in find_violations(text):
-            findings.append(
-                f"  - {match!r} ({reason})\n    in {field}: ...{snippet}..."
-            )
-
-    if not findings:
-        return 0
-
+def _report(tool: str, findings: list[str]) -> int:
     print(
         "Blocked: 'found, did not fix' rationalization detected in artifact.\n"
         "Rule: ~/.claude/rules/found-fix.md.\n"
@@ -257,6 +253,18 @@ def main() -> int:
         else None,
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+    payload = read_hook_payload("found-fix-rationalization-blocker")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    findings = _findings(collect_texts(tool, tool_input))
+    if not findings:
+        return 0
+    return _report(tool, findings)
 
 
 if __name__ == "__main__":

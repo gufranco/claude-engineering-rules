@@ -24,38 +24,50 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
-def main() -> None:
+HOOK_NAME = "docker-context-guard"
+COMMAND_EXCERPT_LIMIT = 240
+
+
+def _skipped() -> bool:
     if os.environ.get("DOCKER_CONTEXT_GUARD_DISABLE") == "1":
+        return True
+    if is_bypassed(HOOK_NAME):
+        return True
+    return not should_run(HOOK_NAME)
+
+
+def _block(command: str) -> None:
+    print(
+        "BLOCKED: `docker context use` mutates the active Docker context "
+        "for every shell on this machine.\n"
+        "Use the per-command flag instead: `docker --context <name> ...`\n"
+        "Or set the env var for the script: "
+        "`export DOCKER_CONTEXT=<name>` then run docker commands.\n"
+        "See: standards/multi-account-cli.md\n"
+        f"Command: {command}",
+        file=sys.stderr,
+    )
+    _audit(
+        hook=HOOK_NAME,
+        decision="block",
+        tool="Bash",
+        reason="docker context use without scope",
+        command_excerpt=command[:COMMAND_EXCERPT_LIMIT],
+    )
+    sys.exit(2)
+
+
+def main() -> None:
+    if _skipped():
         sys.exit(0)
-    if is_bypassed("docker-context-guard"):
-        sys.exit(0)
-    if not should_run("docker-context-guard"):
-        sys.exit(0)
-    data = read_hook_payload("docker-context-guard")
+    data = read_hook_payload(HOOK_NAME)
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:
         sys.exit(0)
 
     if DOCKER_CONTEXT_USE.search(command):
-        print(
-            "BLOCKED: `docker context use` mutates the active Docker context "
-            "for every shell on this machine.\n"
-            "Use the per-command flag instead: `docker --context <name> ...`\n"
-            "Or set the env var for the script: "
-            "`export DOCKER_CONTEXT=<name>` then run docker commands.\n"
-            "See: standards/multi-account-cli.md\n"
-            f"Command: {command}",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="docker-context-guard",
-            decision="block",
-            tool="Bash",
-            reason="docker context use without scope",
-            command_excerpt=command[:240],
-        )
-        sys.exit(2)
+        _block(command)
 
     sys.exit(0)
 

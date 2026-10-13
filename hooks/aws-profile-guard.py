@@ -19,6 +19,9 @@ from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.cli_invocations import Invocation, invocations  # noqa: E402
 
 
+HOOK_NAME = "aws-profile-guard"
+
+
 def _configures_without_profile(call: Invocation) -> bool:
     args = list(call.args)
     sets = any(args[i : i + 2] == ["configure", "set"] for i in range(len(args)))
@@ -28,38 +31,46 @@ def _configures_without_profile(call: Invocation) -> bool:
     return sets and not scoped
 
 
-def main() -> None:
+def _skipped() -> bool:
     if os.environ.get("AWS_PROFILE_GUARD_DISABLE") == "1":
+        return True
+    if is_bypassed(HOOK_NAME):
+        return True
+    return not should_run(HOOK_NAME)
+
+
+def _block(command: str) -> None:
+    print(
+        "BLOCKED: `aws configure set ...` without `--profile <name>` "
+        "writes to the default AWS profile and affects every shell.\n"
+        "Scope the write: `aws configure set --profile <name> ...`\n"
+        "Or use the per-command form on actual aws calls: "
+        "`aws --profile <name> ...` or `AWS_PROFILE=<name> aws ...`\n"
+        "See: standards/multi-account-cli.md\n"
+        f"Command: {command}",
+        file=sys.stderr,
+    )
+    _audit(
+        hook=HOOK_NAME,
+        decision="block",
+        tool="Bash",
+        reason="aws configure set without --profile",
+        command_excerpt=command,
+    )
+    sys.exit(2)
+
+
+def main() -> None:
+    if _skipped():
         sys.exit(0)
-    if is_bypassed("aws-profile-guard"):
-        sys.exit(0)
-    if not should_run("aws-profile-guard"):
-        sys.exit(0)
-    data = read_hook_payload("aws-profile-guard")
+    data = read_hook_payload(HOOK_NAME)
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:
         sys.exit(0)
 
     if any(_configures_without_profile(c) for c in invocations(command, "aws")):
-        print(
-            "BLOCKED: `aws configure set ...` without `--profile <name>` "
-            "writes to the default AWS profile and affects every shell.\n"
-            "Scope the write: `aws configure set --profile <name> ...`\n"
-            "Or use the per-command form on actual aws calls: "
-            "`aws --profile <name> ...` or `AWS_PROFILE=<name> aws ...`\n"
-            "See: standards/multi-account-cli.md\n"
-            f"Command: {command}",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="aws-profile-guard",
-            decision="block",
-            tool="Bash",
-            reason="aws configure set without --profile",
-            command_excerpt=command,
-        )
-        sys.exit(2)
+        _block(command)
 
     sys.exit(0)
 

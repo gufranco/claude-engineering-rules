@@ -90,27 +90,17 @@ from _lib.commit_scope import repo_dir  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> None:
-    if not should_run("force-push-during-review"):
-        sys.exit(0)
-    if os.environ.get("FORCE_PUSH_DURING_REVIEW_DISABLE") == "1":
-        sys.exit(0)
-    if is_bypassed("force-push-during-review"):
-        sys.exit(0)
+def _disabled() -> bool:
+    return (
+        not should_run("force-push-during-review")
+        or os.environ.get("FORCE_PUSH_DURING_REVIEW_DISABLE") == "1"
+        or is_bypassed("force-push-during-review")
+    )
 
-    data = read_hook_payload("force-push-during-review")
 
-    tool_input = data.get("tool_input", data.get("input", {}))
-    command = tool_input.get("command", "")
-    if not command:
-        sys.exit(0)
-
-    if not is_force_push(command):
-        sys.exit(0)
-
-    cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else ""
+def _blocking_reviewer(command: str, cwd: str) -> str | None:
     try:
-        blocker = changes_requested_reviewer(repo_dir(command, cwd))
+        return changes_requested_reviewer(repo_dir(command, cwd))
     except LookupFailed as error:
         print(
             "BLOCKED: force-push, and the open review state could not be read: "
@@ -120,9 +110,9 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.exit(2)
-    if blocker is None:
-        sys.exit(0)
 
+
+def _block(command: str, blocker: str) -> None:
     print(
         "BLOCKED: force-push during open CHANGES_REQUESTED review.\n"
         f"Reviewer `{blocker}` has an open blocking review on the current "
@@ -143,6 +133,21 @@ def main() -> None:
         command_excerpt=command[:240],
     )
     sys.exit(2)
+
+
+def main() -> None:
+    if _disabled():
+        sys.exit(0)
+    data = read_hook_payload("force-push-during-review")
+    tool_input = data.get("tool_input", data.get("input", {}))
+    command = tool_input.get("command", "")
+    if not command or not is_force_push(command):
+        sys.exit(0)
+    cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else ""
+    blocker = _blocking_reviewer(command, cwd)
+    if blocker is None:
+        sys.exit(0)
+    _block(command, blocker)
 
 
 if __name__ == "__main__":

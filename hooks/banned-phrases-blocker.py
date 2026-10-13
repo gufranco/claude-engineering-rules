@@ -208,73 +208,73 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
-    if not should_run("banned-phrases-blocker"):
-        sys.exit(0)
+META_QUESTION_FIX = (
+    'Rule: ~/.claude/standards/smart-questions.md "Briefing Subagents" '
+    'and "Ship the Question".\n'
+    "Fix: replace the meta-prompt with the actual instruction. "
+    "Include scope, file:line refs from prior investigation, prior "
+    "attempts, expected output shape, and a response-length cap.\n"
+    "Bypass (rare; only when quoting another message): "
+    "BANNED_PHRASES_DISABLE=1."
+)
+BANNED_PHRASE_FIX = (
+    "\n\nFix: rewrite without openers ('Great question!'), closers ('Let me know if'), "
+    "hedges ('It's worth noting'), transitions ('That said,'), fluff adjectives "
+    "('robust', 'comprehensive', 'seamless'), or tactical hyperbole "
+    "('quick fix', 'temporary workaround', 'cleanup later'). State the point directly. "
+    "Tactical hyperbole signals weak engineering and is permanent once published.\n"
+    "Bypass (when quoting someone else's text): set BANNED_PHRASES_DISABLE=1."
+)
+
+
+def _skipped() -> bool:
     if os.environ.get("BANNED_PHRASES_DISABLE") == "1":
         _audit(
             hook="banned-phrases-blocker",
             decision="bypass",
             bypass_env="BANNED_PHRASES_DISABLE",
         )
-        return 0
-    if is_bypassed("banned-phrases-blocker"):
-        return 0
+        return True
+    return is_bypassed("banned-phrases-blocker")
 
-    payload = read_hook_payload("banned-phrases-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _meta_question_hit(tool: str, tool_input: dict) -> str | None:
+    if tool not in AGENT_TOOL_NAMES:
+        return None
+    return find_agent_meta_question(tool_input.get("prompt", ""))
 
-    if tool in AGENT_TOOL_NAMES:
-        prompt = tool_input.get("prompt", "")
-        hit = find_agent_meta_question(prompt)
-        if hit:
-            print(
-                "Blocked: subagent prompt starts with a meta-question. "
-                f"Leading phrase: {hit!r}. "
-                'Rule: ~/.claude/standards/smart-questions.md "Briefing Subagents" '
-                'and "Ship the Question".\n'
-                "Fix: replace the meta-prompt with the actual instruction. "
-                "Include scope, file:line refs from prior investigation, prior "
-                "attempts, expected output shape, and a response-length cap.\n"
-                "Bypass (rare; only when quoting another message): "
-                "BANNED_PHRASES_DISABLE=1.",
-                file=sys.stderr,
-            )
-            _audit(
-                hook="banned-phrases-blocker",
-                decision="block",
-                tool=tool,
-                reason="agent meta-question",
-                command_excerpt=hit[:240],
-            )
-            return 2
 
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
+def _block_meta_question(tool: str, hit: str) -> int:
+    print(
+        "Blocked: subagent prompt starts with a meta-question. "
+        f"Leading phrase: {hit!r}. " + META_QUESTION_FIX,
+        file=sys.stderr,
+    )
+    _audit(
+        hook="banned-phrases-blocker",
+        decision="block",
+        tool=tool,
+        reason="agent meta-question",
+        command_excerpt=hit[:240],
+    )
+    return 2
 
+
+def _findings(items: list[tuple[str, str]]) -> list[str]:
     findings: list[str] = []
     for label, text in items:
         hits = find(text)
         if hits:
-            findings.append(f"  - {label}:")
-            findings.extend(f"      {h}" for h in hits[:5])
+            findings = [*findings, f"  - {label}:", *(f"      {h}" for h in hits[:5])]
+    return findings
 
-    if not findings:
-        return 0
 
+def _block_phrases(tool: str, findings: list[str]) -> int:
     print(
         "Blocked: banned phrase detected in external output. "
         'Rule: ~/.claude/CLAUDE.md "Banned Phrases".\n'
         + "\n".join(findings)
-        + "\n\nFix: rewrite without openers ('Great question!'), closers ('Let me know if'), "
-        "hedges ('It's worth noting'), transitions ('That said,'), fluff adjectives "
-        "('robust', 'comprehensive', 'seamless'), or tactical hyperbole "
-        "('quick fix', 'temporary workaround', 'cleanup later'). State the point directly. "
-        "Tactical hyperbole signals weak engineering and is permanent once published.\n"
-        "Bypass (when quoting someone else's text): set BANNED_PHRASES_DISABLE=1.",
+        + BANNED_PHRASE_FIX,
         file=sys.stderr,
     )
     _audit(
@@ -285,6 +285,27 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if not should_run("banned-phrases-blocker"):
+        sys.exit(0)
+    if _skipped():
+        return 0
+
+    payload = read_hook_payload("banned-phrases-blocker")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    hit = _meta_question_hit(tool, tool_input)
+    if hit:
+        return _block_meta_question(tool, hit)
+
+    findings = _findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+    return _block_phrases(tool, findings)
 
 
 if __name__ == "__main__":

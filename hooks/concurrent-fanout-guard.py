@@ -144,40 +144,34 @@ def line_of(text: str, index: int) -> int:
     return text.count("\n", 0, index) + 1
 
 
+def _hit_for(text: str, lines: list[str], match: re.Match[str]) -> str | None:
+    open_paren = text.index("(", match.start())
+    span = span_of_call(text, open_paren)
+    if span is None:
+        return None
+    start, end = span
+    body = text[start + 1 : end]
+    mapped = MAP_OVER_IDENTIFIER.search(body)
+    if not mapped or not CALLBACK_INVOKES_WORK.search(body):
+        return None
+    if RESOLVED_ONLY.search(body):
+        return None
+    line_no = line_of(text, match.start())
+    if line_or_prev_has_suppression(lines, line_no - 1):
+        return None
+    collection = mapped.group("collection")
+    return (
+        f"L{line_no}: unbounded fan-out over `{collection}`: "
+        f"{lines[line_no - 1].strip()[:80] if line_no - 1 < len(lines) else ''}"
+    )
+
+
 def find(text: str) -> list[str]:
     if LIMITER_MARKERS.search(text):
         return []
-
     lines = text.splitlines()
-    hits: list[str] = []
-
-    for match in FANOUT_OPEN.finditer(text):
-        open_paren = text.index("(", match.start())
-        span = span_of_call(text, open_paren)
-        if span is None:
-            continue
-        start, end = span
-        body = text[start + 1 : end]
-
-        mapped = MAP_OVER_IDENTIFIER.search(body)
-        if not mapped:
-            continue
-        if not CALLBACK_INVOKES_WORK.search(body):
-            continue
-        if RESOLVED_ONLY.search(body):
-            continue
-
-        line_no = line_of(text, match.start())
-        if line_or_prev_has_suppression(lines, line_no - 1):
-            continue
-
-        collection = mapped.group("collection")
-        hits.append(
-            f"L{line_no}: unbounded fan-out over `{collection}`: "
-            f"{lines[line_no - 1].strip()[:80] if line_no - 1 < len(lines) else ''}"
-        )
-
-    return hits[:MAX_FINDINGS]
+    hits = (_hit_for(text, lines, match) for match in FANOUT_OPEN.finditer(text))
+    return [hit for hit in hits if hit is not None][:MAX_FINDINGS]
 
 
 DETECTED_INTRO = "Concurrent fan-out with no bound:"
@@ -213,20 +207,16 @@ def render_findings(findings: list[tuple[str, list[str]]]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def _skip() -> bool:
     if not should_run(HOOK_ID):
-        return 0
+        return True
     if os.environ.get(ENV_DISABLE) == "1":
         _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_DISABLE)
-        return 0
-    if is_bypassed(HOOK_ID):
-        return 0
+        return True
+    return is_bypassed(HOOK_ID)
 
-    payload = read_hook_payload("concurrent-fanout-guard")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
+def _findings(tool: str, tool_input: dict) -> list[tuple[str, list[str]]]:
     findings: list[tuple[str, list[str]]] = []
     for path, text in collect(tool, tool_input):
         if is_skipped(path):
@@ -234,32 +224,31 @@ def main() -> int:
         hits = find(text)
         if hits:
             findings.append((path, hits))
+    return findings
 
-    if not findings:
-        return 0
 
-    detected = render_findings(findings)
-
-    if os.environ.get(ENV_ENFORCE) != "1":
-        emit_warning(
-            warn(
-                hook=HOOK_ID,
-                purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
-                next_action=(
-                    "Bound the concurrency. Set "
-                    f"{ENV_ENFORCE}=1 to make this a blocking check."
-                ),
-            )
-        )
-        _audit(
+def _warn(tool: str, detected: str) -> int:
+    emit_warning(
+        warn(
             hook=HOOK_ID,
-            decision="warn",
-            tool=tool,
-            reason="unbounded fan-out",
-            command_excerpt=detected[:240],
+            purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
+            next_action=(
+                "Bound the concurrency. Set "
+                f"{ENV_ENFORCE}=1 to make this a blocking check."
+            ),
         )
-        return 0
+    )
+    _audit(
+        hook=HOOK_ID,
+        decision="warn",
+        tool=tool,
+        reason="unbounded fan-out",
+        command_excerpt=detected[:240],
+    )
+    return 0
 
+
+def _block(tool: str, detected: str) -> int:
     print(
         block(
             hook=HOOK_ID,
@@ -282,6 +271,25 @@ def main() -> int:
         command_excerpt=detected[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _skip():
+        return 0
+
+    payload = read_hook_payload("concurrent-fanout-guard")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _findings(tool, tool_input)
+    if not findings:
+        return 0
+
+    detected = render_findings(findings)
+    if os.environ.get(ENV_ENFORCE) != "1":
+        return _warn(tool, detected)
+    return _block(tool, detected)
 
 
 if __name__ == "__main__":
