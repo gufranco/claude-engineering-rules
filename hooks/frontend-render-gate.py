@@ -137,21 +137,30 @@ def format_file_list(paths: list[str]) -> str:
     return listed
 
 
+def _commit_command(payload: dict) -> str | None:
+    if payload.get("tool_name") != "Bash":
+        return None
+    command = payload.get("tool_input", {}).get("command", "")
+    if not GIT_COMMIT_INVOCATION.search(strip_git_global_options(command)):
+        return None
+    return command
+
+
+def _block_message(ui_files: list[str]) -> str:
+    targets_mobile = any(path.endswith(MOBILE_SUFFIXES) for path in ui_files)
+    guidance = MOBILE_GUIDANCE if targets_mobile else WEB_GUIDANCE
+    return BLOCK_MESSAGE.format(files=format_file_list(ui_files), guidance=guidance)
+
+
 def main() -> int:
     if os.environ.get("FRONTEND_RENDER_GATE_DISABLE") == "1":
         return 0
     if is_bypassed("frontend-render-gate"):
         return 0
-
     payload = read_hook_payload("frontend-render-gate")
-
-    if payload.get("tool_name") != "Bash":
+    command = _commit_command(payload)
+    if command is None:
         return 0
-
-    command = payload.get("tool_input", {}).get("command", "")
-    if not GIT_COMMIT_INVOCATION.search(strip_git_global_options(command)):
-        return 0
-
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
     paths = staged_files(repo_dir(command, cwd))
     if paths is None:
@@ -162,17 +171,9 @@ def main() -> int:
         )
         return 2
     ui_files = [path for path in paths if renders_to_a_screen(path)]
-
     if not ui_files or any_render_level_check(paths):
         return 0
-
-    targets_mobile = any(path.endswith(MOBILE_SUFFIXES) for path in ui_files)
-    guidance = MOBILE_GUIDANCE if targets_mobile else WEB_GUIDANCE
-
-    print(
-        BLOCK_MESSAGE.format(files=format_file_list(ui_files), guidance=guidance),
-        file=sys.stderr,
-    )
+    print(_block_message(ui_files), file=sys.stderr)
     return 2
 
 

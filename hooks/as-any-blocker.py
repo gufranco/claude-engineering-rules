@@ -95,50 +95,49 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
-    if not should_run("as-any-blocker"):
-        sys.exit(0)
+BLOCK_FOOTER = (
+    "\n\nFix: replace `any` with `unknown` and narrow at the boundary, or define a "
+    "proper type. For ORM queries use the generated types (Prisma.WhereInput, etc.). "
+    "For payloads use Zod parsing.\n"
+    "Third-party tool directives are honored: @ts-expect-error, and an "
+    "eslint-disable that names no rule or names @typescript-eslint/no-explicit-any.\n"
+    "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1, "
+    "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
+    "set as-any-blocker`."
+)
+
+
+def _skipped() -> bool:
     if os.environ.get("AS_ANY_DISABLE") == "1":
         _audit(hook="as-any-blocker", decision="bypass", bypass_env="AS_ANY_DISABLE")
-        return 0
-    if is_bypassed("as-any-blocker"):
-        return 0
+        return True
+    return is_bypassed("as-any-blocker")
 
-    payload = read_hook_payload("as-any-blocker")
 
-    tool = payload.get("tool_name", "") or ""
-    tool_input = payload.get("tool_input", {}) or {}
+def _file_findings(path: str, hits: list[str]) -> list[str]:
+    lines = [f"  - {path}:", *(f"      {h}" for h in hits[:MAX_HITS_PER_FILE])]
+    if len(hits) > MAX_HITS_PER_FILE:
+        return [*lines, f"      ... and {len(hits) - MAX_HITS_PER_FILE} more"]
+    return lines
 
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
 
+def _findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
     for path, _field, text in items:
         if is_skipped_path(path):
             continue
         hits = find(text)
         if hits:
-            findings.append(f"  - {path}:")
-            findings.extend(f"      {h}" for h in hits[:MAX_HITS_PER_FILE])
-            if len(hits) > MAX_HITS_PER_FILE:
-                findings.append(f"      ... and {len(hits) - MAX_HITS_PER_FILE} more")
+            findings = [*findings, *_file_findings(path, hits)]
+    return findings
 
-    if not findings:
-        return 0
 
+def _block(tool: str, findings: list[str]) -> int:
     print(
         "Blocked: `any` type detected. "
         'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
-        + "\n\nFix: replace `any` with `unknown` and narrow at the boundary, or define a "
-        "proper type. For ORM queries use the generated types (Prisma.WhereInput, etc.). "
-        "For payloads use Zod parsing.\n"
-        "Third-party tool directives are honored: @ts-expect-error, and an "
-        "eslint-disable that names no rule or names @typescript-eslint/no-explicit-any.\n"
-        "Bypass (genuine third-party gap with no alternative): set AS_ANY_DISABLE=1, "
-        "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
-        "set as-any-blocker`.",
+        + BLOCK_FOOTER,
         file=sys.stderr,
     )
     _audit(
@@ -149,6 +148,23 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if not should_run("as-any-blocker"):
+        sys.exit(0)
+    if _skipped():
+        return 0
+
+    payload = read_hook_payload("as-any-blocker")
+
+    tool = payload.get("tool_name", "") or ""
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+    return _block(tool, findings)
 
 
 if __name__ == "__main__":

@@ -103,43 +103,44 @@ def find_in_script(text: str) -> list[str]:
     return findings
 
 
-def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
-    out: list[tuple[str, str, str, str]] = []
-    fp = tool_input.get("file_path", "") or ""
-    cmd = tool_input.get("command", "") or ""
-
-    if tool == "Bash":
-        if isinstance(cmd, str) and cmd:
-            out.append(("bash", "command", "", cmd))
-        return out
-
-    if not fp:
-        return out
-
+def _path_kind(fp: str) -> str | None:
     is_schema = bool(SCHEMA_EXT_RE.search(fp))
     is_script = bool(SCRIPT_PATH_HINTS_RE.search(fp))
     if not is_schema and not is_script:
-        return out
+        return None
     if is_schema and is_skipped_test_path(fp):
-        return out
+        return None
+    return "script" if is_script else "schema"
 
-    kind = "script" if is_script else "schema"
 
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((kind, "content", fp, c))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((kind, "new_string", fp, c))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((kind, f"edits[{i}].new_string", fp, c))
-    return out
+def _multiedit_texts(tool_input: dict) -> list[tuple[str, str]]:
+    edits = [
+        (i, edit.get("new_string", ""))
+        for i, edit in enumerate(tool_input.get("edits", []) or [])
+        if isinstance(edit, dict)
+    ]
+    return [(f"edits[{i}].new_string", c) for i, c in edits if isinstance(c, str)]
+
+
+def _edited_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
+    if tool == "MultiEdit":
+        return _multiedit_texts(tool_input)
+    field = {"Write": "content", "Edit": "new_string"}.get(tool)
+    if field is None:
+        return []
+    c = tool_input.get(field, "")
+    return [(field, c)] if isinstance(c, str) else []
+
+
+def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
+    fp = tool_input.get("file_path", "") or ""
+    cmd = tool_input.get("command", "") or ""
+    if tool == "Bash":
+        return [("bash", "command", "", cmd)] if isinstance(cmd, str) and cmd else []
+    kind = _path_kind(fp) if fp else None
+    if kind is None:
+        return []
+    return [(kind, field, fp, c) for field, c in _edited_texts(tool, tool_input)]
 
 
 def analyze(kind: str, text: str) -> list[str]:
@@ -155,40 +156,35 @@ def analyze(kind: str, text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("drizzle-schema-sync"):
-        sys.exit(0)
+        return True
     if os.environ.get("DRIZZLE_SCHEMA_SYNC_DISABLE") == "1":
         _audit(
             hook="drizzle-schema-sync",
             decision="bypass",
             bypass_env="DRIZZLE_SCHEMA_SYNC_DISABLE",
         )
-        return 0
-    if is_bypassed("drizzle-schema-sync"):
-        return 0
+        return True
+    return is_bypassed("drizzle-schema-sync")
 
-    payload = read_hook_payload("drizzle-schema-sync")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _item_findings(field: str, path: str, hits: list[str]) -> list[str]:
+    label = path or "(bash command)"
+    return [f"  - {field} ({label}):", *(f"      {h}" for h in hits)]
 
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
 
-    all_findings: list[str] = []
-    for kind, field, path, text in items:
-        hits = analyze(kind, text)
-        if hits:
-            label = path or "(bash command)"
-            all_findings.append(f"  - {field} ({label}):")
-            for h in hits:
-                all_findings.append(f"      {h}")
+def _all_findings(items: list[tuple[str, str, str, str]]) -> list[str]:
+    analyzed = [(field, path, analyze(kind, text)) for kind, field, path, text in items]
+    return [
+        line
+        for field, path, hits in analyzed
+        if hits
+        for line in _item_findings(field, path, hits)
+    ]
 
-    if not all_findings:
-        return 0
 
+def _report(tool: str, all_findings: list[str]) -> int:
     print(
         "Blocked: Drizzle schema-sync defect. "
         "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
@@ -207,6 +203,18 @@ def main() -> int:
         command_excerpt=" | ".join(all_findings)[:240] if all_findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+    payload = read_hook_payload("drizzle-schema-sync")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    all_findings = _all_findings(collect(tool, tool_input))
+    if not all_findings:
+        return 0
+    return _report(tool, all_findings)
 
 
 if __name__ == "__main__":

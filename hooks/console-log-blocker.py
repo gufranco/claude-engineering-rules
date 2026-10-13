@@ -118,28 +118,24 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
-    if not should_run("console-log-blocker"):
-        sys.exit(0)
+HOOK_NAME = "console-log-blocker"
+EXCERPT_LIMIT = 240
+
+
+def _skipped() -> bool:
+    if not should_run(HOOK_NAME):
+        return True
     if os.environ.get("CONSOLE_LOG_DISABLE") == "1":
         _audit(
-            hook="console-log-blocker",
+            hook=HOOK_NAME,
             decision="bypass",
             bypass_env="CONSOLE_LOG_DISABLE",
         )
-        return 0
-    if is_bypassed("console-log-blocker"):
-        return 0
+        return True
+    return is_bypassed(HOOK_NAME)
 
-    payload = read_hook_payload("console-log-blocker")
 
-    tool = payload.get("tool_name", "") or ""
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
     for path, field, text in items:
         if is_skipped(path):
@@ -147,10 +143,10 @@ def main() -> int:
         hits = find(text)
         if hits:
             findings.append(f"  - {field} ({path}): {', '.join(sorted(set(hits)))}")
+    return findings
 
-    if not findings:
-        return 0
 
+def _report(tool: str, findings: list[str]) -> int:
     print(
         "Blocked: console.* calls in production code. "
         'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
@@ -164,13 +160,28 @@ def main() -> int:
         file=sys.stderr,
     )
     _audit(
-        hook="console-log-blocker",
+        hook=HOOK_NAME,
         decision="block",
         tool=tool,
         reason="console.log in production",
-        command_excerpt=" | ".join(findings)[:240] if findings else None,
+        command_excerpt=" | ".join(findings)[:EXCERPT_LIMIT] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _skipped():
+        return 0
+
+    payload = read_hook_payload(HOOK_NAME)
+
+    tool = payload.get("tool_name", "") or ""
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+    return _report(tool, findings)
 
 
 if __name__ == "__main__":

@@ -206,53 +206,46 @@ def render_findings(findings: list[tuple[str, list[str]]]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run(HOOK_ID):
-        return 0
+        return True
     if os.environ.get(ENV_DISABLE) == "1":
         _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_DISABLE)
-        return 0
-    if is_bypassed(HOOK_ID):
-        return 0
+        return True
+    return is_bypassed(HOOK_ID)
 
-    payload = read_hook_payload("dedup-store-guard")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
+def _collect_findings(tool: str, tool_input: dict) -> list[tuple[str, list[str]]]:
+    scanned = [
+        (path, find(text))
+        for path, text in collect(tool, tool_input)
+        if not is_skipped(path)
+    ]
+    return [(path, hits) for path, hits in scanned if hits]
 
-    findings: list[tuple[str, list[str]]] = []
-    for path, text in collect(tool, tool_input):
-        if is_skipped(path):
-            continue
-        hits = find(text)
-        if hits:
-            findings.append((path, hits))
 
-    if not findings:
-        return 0
-
-    detected = render_findings(findings)
-
-    if os.environ.get(ENV_ENFORCE) != "1":
-        emit_warning(
-            warn(
-                hook=HOOK_ID,
-                purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
-                next_action=(
-                    "Move the dedup record to a durable store. Set "
-                    f"{ENV_ENFORCE}=1 to make this a blocking check."
-                ),
-            )
-        )
-        _audit(
+def _warn(tool: str, detected: str) -> int:
+    emit_warning(
+        warn(
             hook=HOOK_ID,
-            decision="warn",
-            tool=tool,
-            reason="in-memory dedup store",
-            command_excerpt=detected[:240],
+            purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
+            next_action=(
+                "Move the dedup record to a durable store. Set "
+                f"{ENV_ENFORCE}=1 to make this a blocking check."
+            ),
         )
-        return 0
+    )
+    _audit(
+        hook=HOOK_ID,
+        decision="warn",
+        tool=tool,
+        reason="in-memory dedup store",
+        command_excerpt=detected[:240],
+    )
+    return 0
 
+
+def _block(tool: str, detected: str) -> int:
     print(
         block(
             hook=HOOK_ID,
@@ -275,6 +268,21 @@ def main() -> int:
         command_excerpt=detected[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+    payload = read_hook_payload("dedup-store-guard")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    findings = _collect_findings(tool, tool_input)
+    if not findings:
+        return 0
+    detected = render_findings(findings)
+    if os.environ.get(ENV_ENFORCE) != "1":
+        return _warn(tool, detected)
+    return _block(tool, detected)
 
 
 if __name__ == "__main__":
