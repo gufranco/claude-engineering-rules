@@ -191,10 +191,10 @@ def record(**fields: Any) -> None:
             finally:
                 try:
                     fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
-                except OSError:
-                    pass
-    except Exception:
-        return
+                except OSError as unlock_error:
+                    sys.stderr.write(f"audit log: unlock failed: {unlock_error}\n")
+    except Exception as error:
+        sys.stderr.write(f"audit log: write failed: {error}\n")
 
 
 def _cli(argv: list[str]) -> int:

@@ -80,8 +80,8 @@ def _run_quietly(argv: list[str]) -> None:
             stderr=subprocess.DEVNULL,
             timeout=FORMATTER_TIMEOUT_SECONDS,
         )
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        pass
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as error:
+        sys.stderr.write(f"stop-format-typecheck: {argv[0]} failed: {error}\n")
 
 
 def _format_with(tool: str, *args: str) -> None:
@@ -195,8 +195,8 @@ def main() -> int:
                 stderr=subprocess.DEVNULL,
                 timeout=TSC_TIMEOUT_SECONDS,
             )
-        except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-            pass
+        except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as error:
+            sys.stderr.write(f"stop-format-typecheck: tsc failed: {error}\n")
 
     batch.write_text("", encoding="utf-8")
     return 0
