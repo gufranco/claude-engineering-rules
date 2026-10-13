@@ -19,6 +19,7 @@ from _lib.shell_segments import unquoted_segments  # noqa: E402
         ('git commit -m "one\ntwo"\nls', ['git commit -m "one\ntwo"', "ls"]),
         ("sleep 1 & ls", ["sleep 1 ", " ls"]),
         ("\nls; pwd", ["ls", " pwd"]),
+        ("cat <<'EOF' > f\nit's\nEOF\nls", ["cat <<'EOF' > f\nit's\nEOF", "ls"]),
     ],
 )
 def test_operators_inside_quotes_do_not_split(command, expected):

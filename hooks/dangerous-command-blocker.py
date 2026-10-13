@@ -31,6 +31,7 @@ import fnmatch
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from typing import NoReturn
@@ -55,6 +56,7 @@ from _lib.shell_segments import (  # noqa: E402
     command_head,
     quoted_segments,
     strip_data_heredoc_bodies,
+    unquoted_segments,
 )
 
 SAFE_CLEANUP: list[tuple[str, str]] = [
@@ -501,7 +503,11 @@ def _git_push_directory(args: list[str], directory: str) -> tuple[bool, str | No
 
 def _push_cwd(command: str) -> str | None:
     base = _command_cwd(command)
-    for tokens in quoted_segments(command):
+    for segment in unquoted_segments(command):
+        try:
+            tokens = shlex.split(segment)
+        except ValueError:
+            continue
         head, args = command_head(tokens)
         if head != "git":
             continue

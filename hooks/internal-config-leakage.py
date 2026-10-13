@@ -283,8 +283,10 @@ def _api_writes(args: tuple[str, ...]) -> bool:
 def is_publishing_bash(cmd: str) -> bool:
     if not cmd:
         return False
-    command_lines = strip_heredoc_bodies(cmd)
-    return any(_segment_publishes(s) for s in unquoted_segments(command_lines))
+    return any(
+        _segment_publishes(strip_heredoc_bodies(segment))
+        for segment in unquoted_segments(cmd)
+    )
 
 
 def is_git_message_bash(cmd: str) -> bool:
