@@ -7,3 +7,7 @@ Applies when a project needs a file it cannot ship: a ROM, BIOS, firmware, licen
 - Never commit, cache, link to, or auto-download the artifact; CI passes with it absent.
 
 Full rule, examples, and rationale: [`standards/artifact-identity.md`](../standards/artifact-identity.md). Read it before handling any user-supplied artifact.
+
+## Provenance
+
+Added 2026-08-17, recurrence not recorded. Origin: not recorded at creation.

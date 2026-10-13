@@ -13,3 +13,7 @@ Every limit on an agent run states the measurement that set it, or states that n
 - Know which identity you act as, supersede your own prior output instead of stacking, and write each summary fresh.
 
 Full rule, examples, and rationale: [`standards/agent-operating-limits.md`](../standards/agent-operating-limits.md). Read it before setting a turn ceiling, timeout, or per-run cap, or before adding an always-on injection.
+
+## Provenance
+
+Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition. Origin: an audit of an external agent review pipeline whose turn ceiling carried its sampled distribution inline, and whose prompt hook instructed toward an absent capability and cost a denied turn on every run. Full account in [`standards/agent-operating-limits.md`](../standards/agent-operating-limits.md).

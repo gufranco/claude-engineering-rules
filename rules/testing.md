@@ -23,3 +23,7 @@ Full rule, examples, and rationale: [`standards/testing.md`](../standards/testin
 
 Enforced by: [`hooks/mock-internal-blocker.py`](../hooks/mock-internal-blocker.py).
 Enforced by: [`hooks/tdd-gate.py`](../hooks/tdd-gate.py).
+
+## Provenance
+
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.

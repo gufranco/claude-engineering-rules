@@ -88,12 +88,26 @@ This repository publishes nothing to any registry. `@semantic-release/npm` is
 not listed in [`.releaserc.json`](.releaserc.json), so the plugin never loads
 and the vendored CLI never runs. Rather than carry unreachable vulnerable code
 in the tree, the override aliases the unused plugin to one already present.
-The result is 283 packages instead of 462 and a clean `npm audit`.
+In [`package-lock.json`](package-lock.json) the `@semantic-release/npm` slot
+resolves to `@semantic-release/exec`, so the vendored CLI and its bundled tree
+are absent.
 
-The release pipeline verifies this arrangement rather than assuming it: the
-`release-config` job in CI runs `npm audit --audit-level=high` and a full
-`semantic-release --dry-run` on every pull request, so a future version that
-genuinely needs the real plugin fails in review instead of on `main`.
+The release pipeline verifies this arrangement rather than assuming it. The
+`release-config` job in [`ci.yml`](.github/workflows/ci.yml) runs on every pull
+request and every push to `main`:
+
+- `npm audit --json` piped into
+  [`audit-release-toolchain.py`](.github/scripts/audit-release-toolchain.py),
+  which fails on any high or critical advisory except the named waivers in that
+  script, and fails on a waived one once npm reports a fix.
+- [`verify-release-notes.mjs`](scripts/verify-release-notes.mjs), which renders release notes through the
+  configured plugin with no token.
+- `semantic-release --dry-run --no-ci`, on push events only, because pull
+  requests from forks and Dependabot get a read-only token and semantic-release
+  checks push access first.
+
+A future version that genuinely needs the real plugin fails in CI instead of
+during a release.
 
 Revisit the override when `semantic-release` stops depending on
 `@semantic-release/npm`, or when the bundled advisories are resolved upstream.

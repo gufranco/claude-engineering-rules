@@ -8,3 +8,7 @@ Applies to any cookie, localStorage, sessionStorage, IndexedDB, or tracker.
 - Never hardcode a tracker ID or fire a marketing pixel without a consent guard.
 
 Full rule, examples, and rationale: [`standards/cookie-discipline.md`](../standards/cookie-discipline.md). Read it before setting client-side storage or building a consent banner.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

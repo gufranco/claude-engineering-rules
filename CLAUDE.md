@@ -172,6 +172,6 @@ Applies only when `SECOND_BRAIN_VAULT` resolves to a directory; otherwise inert.
 
 ## Claude Configuration Documentation
 
-`claude/README.md` documents the full setup. When modifying any file inside `claude/`, update [`README.md`](README.md) in the same task.
+[`README.md`](README.md) at the repository root documents the full setup. When modifying any file in this repository, update it in the same task.
 
 @RTK.md

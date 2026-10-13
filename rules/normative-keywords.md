@@ -17,3 +17,7 @@ Full rule: [`standards/normative-keywords.md`](../standards/normative-keywords.m
 ## Enforcement
 
 Enforced by: [`hooks/normative-keyword-discipline.py`](../hooks/normative-keyword-discipline.py).
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

@@ -8,3 +8,7 @@ Applies when a frontend feature uses an LLM, recommender, generative output, or 
 - Photorealistic generated media of a real person carries a permanent watermark.
 
 Full rule, examples, and rationale: [`standards/ai-compliance-defaults.md`](../standards/ai-compliance-defaults.md). Read it before building any AI-facing feature.
+
+## Provenance
+
+Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

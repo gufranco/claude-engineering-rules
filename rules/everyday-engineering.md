@@ -8,3 +8,7 @@ A daily checklist for non-trivial code changes; skip it for one-line fixes and e
 - Status reports lead with the symptom; a blocked message carries a path forward.
 
 Full checklist and rationale: [`standards/everyday-engineering.md`](../standards/everyday-engineering.md). Read it before starting a feature or a debugging session.
+
+## Provenance
+
+Added 2026-05-31, recurrence not recorded. Origin: not recorded at creation.

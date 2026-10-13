@@ -16,3 +16,7 @@ Full rule, PROMPT.md template, and rationale: [`standards/project-workspace.md`]
 ## Enforcement
 
 Enforced by: [`hooks/project-workspace.py`](../hooks/project-workspace.py).
+
+## Provenance
+
+Promoted 2026-09-30, `single-incident`, by direct user instruction. Origin: continuation prompts were scattered across repositories, and the README-as-source preference had been stated twice with no rule carrying it. Full account in [`standards/project-workspace.md`](../standards/project-workspace.md).

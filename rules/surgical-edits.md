@@ -12,3 +12,7 @@ Every changed line must trace directly to the user's request. If a line cannot b
 - Exceptions: an explicit refactor or sweep request, a planned migration, a named anti-pattern removal, and any verification-surface finding, which is always in scope.
 
 Full rule, examples, and rationale: [`standards/surgical-edits.md`](../standards/surgical-edits.md). Read it before a change that tempts you into neighbouring code.
+
+## Provenance
+
+Added 2026-04-29, recurrence not recorded. Origin: not recorded at creation.
