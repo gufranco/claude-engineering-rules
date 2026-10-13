@@ -164,11 +164,7 @@ lint-sh:
 ifndef SHELLCHECK
 	@echo "shellcheck not installed; skipping"
 else
-	@if compgen -G "hooks/*.sh" > /dev/null; then \
-		$(SHELLCHECK) hooks/*.sh; \
-	else \
-		echo "no shell hooks; skipping"; \
-	fi
+	$(SHELLCHECK) $$(git ls-files '*.sh' '*.bash')
 endif
 
 lint-yaml:

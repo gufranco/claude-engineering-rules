@@ -64,7 +64,8 @@ def _load_state() -> dict[str, Any]:
     try:
         with open(STATE_FILE, encoding="utf-8") as f:
             return json.load(f)
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as error:
+        _audit(hook="gateguard-fact-force", decision="error", reason=str(error))
         return {}
 
 
@@ -73,8 +74,8 @@ def _save_state(state: dict[str, Any]) -> None:
     try:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f)
-    except OSError:
-        pass
+    except OSError as error:
+        _audit(hook="gateguard-fact-force", decision="error", reason=str(error))
 
 
 def _prune(state: dict[str, Any]) -> dict[str, Any]:
@@ -86,23 +87,65 @@ def _prune(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+READ_TOOLS = frozenset({"Read"})
+SEARCH_TOOLS = frozenset({"Grep", "Glob"})
+
+
 def _transcript_evidence(transcript_path: str, file_path: str) -> bool:
-    """Walk the transcript JSONL and look for evidence the file was read
-    or named in a user message."""
     if not transcript_path or not os.path.exists(transcript_path):
         return False
-    abs_path = os.path.abspath(file_path)
-    base = os.path.basename(file_path)
+    target = os.path.abspath(file_path)
     try:
-        with open(transcript_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                if file_path in line or abs_path in line or base in line:
-                    return True
-    except OSError:
+        with open(transcript_path, encoding="utf-8") as handle:
+            return any(_entry_evidence(_parse(line), target) for line in handle)
+    except OSError as error:
+        _audit(hook="gateguard-fact-force", decision="error", reason=str(error))
         return False
+
+
+def _parse(line: str) -> dict[str, Any]:
+    try:
+        entry = json.loads(line)
+    except ValueError:
+        return {}
+    return entry if isinstance(entry, dict) else {}
+
+
+def _entry_evidence(entry: dict[str, Any], target: str) -> bool:
+    message = entry.get("message", entry)
+    if not isinstance(message, dict):
+        return False
+    content = message.get("content")
+    if message.get("role") == "user":
+        return target in _user_text(content)
+    if message.get("role") == "assistant" and isinstance(content, list):
+        return any(_call_reads(block, target) for block in content)
+    return False
+
+
+def _user_text(content: object) -> str:
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+    return "\n".join(
+        str(block.get("text", ""))
+        for block in content
+        if isinstance(block, dict) and block.get("type") == "text"
+    )
+
+
+def _call_reads(block: object, target: str) -> bool:
+    if not isinstance(block, dict) or block.get("type") != "tool_use":
+        return False
+    tool_input = block.get("input")
+    if not isinstance(tool_input, dict):
+        return False
+    if block.get("name") in READ_TOOLS:
+        return os.path.abspath(str(tool_input.get("file_path", ""))) == target
+    if block.get("name") in SEARCH_TOOLS:
+        scope = os.path.abspath(str(tool_input.get("path") or "."))
+        return target == scope or target.startswith(scope + os.sep)
     return False
 
 

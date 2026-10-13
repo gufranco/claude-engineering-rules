@@ -49,3 +49,18 @@ def test_a_write_call_is_still_scanned(tool_use, run_hook, command):
 
     # Assert
     assert_blocked(result)
+
+
+@pytest.mark.parametrize("prefix", ["cd /repo && ", "echo start; "])
+def test_a_publishing_call_after_a_harmless_prefix_is_scanned(
+    tool_use, run_hook, prefix
+):
+    # Arrange
+    command = f"{prefix}{GH} pr create --title t --body 'see {LEAK_PATH}'"
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
