@@ -43,9 +43,12 @@ def test_warns_without_blocking_by_default(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_allowed(result)
-    assert "INFO from concurrent-fanout-guard" in stderr
-    assert "CONCURRENT_FANOUT_ENFORCE=1" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert (
+        "INFO from concurrent-fanout-guard" in context,
+        "CONCURRENT_FANOUT_ENFORCE=1" in context,
+    ) == (True, True)
 
 
 def test_blocks_all_settled_too(tool_use, run_hook):

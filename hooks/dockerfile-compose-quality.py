@@ -35,6 +35,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.hook_warning import emit_warning  # noqa: E402
 
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -332,14 +333,6 @@ def main() -> None:
     else:
         blocks, warns = scan_compose(text, full_file)
 
-    if warns:
-        print(
-            "WARN dockerfile-compose-quality on {0}:".format(file_path),
-            file=sys.stderr,
-        )
-        for w in warns:
-            print(f"  {w}", file=sys.stderr)
-
     if blocks:
         print(
             "BLOCKED: dockerfile-compose-quality on {0}:".format(file_path),
@@ -364,6 +357,11 @@ def main() -> None:
         )
         sys.exit(2)
 
+    if warns:
+        emit_warning(
+            f"WARN dockerfile-compose-quality on {file_path}:\n"
+            + "\n".join(f"  {w}" for w in warns)
+        )
     sys.exit(0)
 
 

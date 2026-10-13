@@ -6,12 +6,9 @@ modified `specs/<date>-<slug>/plan.md` (or `.claude/specs/...`) that has
 been touched within the last 60 minutes. If found, parses the plan body for
 a "Task breakdown" or "## Tasks" section and extracts every file path
 mentioned in backticks. If the current edit target is not in that list, the
-hook emits an advisory (exit 2 with permissionDecision=ask, which the
-harness treats as an interrupt the model must explicitly acknowledge).
-
-This is NOT a hard block. Files that legitimately must be edited outside
-the declared scope (companion test files, config side-effects) can be
-acknowledged.
+hook blocks the edit with permissionDecision=deny and exit 2. A file that
+legitimately must change, such as a companion test, is added to the plan
+first, which keeps the declared scope accurate.
 
 Bypass: SCOPE_GUARD_DISABLE=1 in the parent shell.
 
@@ -191,11 +188,11 @@ def is_in_scope(target: Path, declared: set[str]) -> bool:
     return False
 
 
-def emit_advisory(reason: str, file_path: str) -> NoReturn:
+def emit_block(reason: str, file_path: str) -> NoReturn:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
+            "permissionDecision": "deny",
             "permissionDecisionReason": reason,
         }
     }
@@ -203,8 +200,8 @@ def emit_advisory(reason: str, file_path: str) -> NoReturn:
     sys.stderr.write(reason)
     _audit(
         hook="scope-guard",
-        decision="ask",
-        decision_class="warn",
+        decision="block",
+        decision_class="block",
         reason=reason[:200],
         file_path=file_path,
         tool="Edit",
@@ -257,14 +254,14 @@ def main() -> int:
         return 0
 
     reason = (
-        f"ASK: editing `{target.name}` which is not listed in the active "
+        f"BLOCKED: editing `{target.name}` which is not listed in the active "
         f"plan `{plan_path}`.\n"
         f"Rule: ~/.claude/rules/surgical-edits.md.\n"
         f"If this edit is necessary, add its path to the plan in backticks, "
-        f"then retry; a retry alone asks again. To suppress this gate: set "
+        f"then retry; a retry alone is blocked again. To suppress this gate: set "
         f"SCOPE_GUARD_DISABLE=1."
     )
-    emit_advisory(reason, str(target))
+    emit_block(reason, str(target))
 
 
 if __name__ == "__main__":

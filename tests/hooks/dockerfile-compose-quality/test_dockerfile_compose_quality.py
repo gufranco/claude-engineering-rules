@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import json
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "dockerfile-compose-quality"
@@ -111,8 +113,9 @@ def test_warns_floating_latest_tag(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "floating tag 'latest'" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "floating tag 'latest'" in context
 
 
 def test_warns_lts_tag(tool_use, run_hook):
@@ -124,8 +127,9 @@ def test_warns_lts_tag(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "floating tag 'lts'" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "floating tag 'lts'" in context
 
 
 def test_warns_no_tag(tool_use, run_hook):
@@ -137,8 +141,9 @@ def test_warns_no_tag(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "no tag or digest" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "no tag or digest" in context
 
 
 def test_warns_user_root_in_final_stage(tool_use, run_hook):
@@ -150,8 +155,9 @@ def test_warns_user_root_in_final_stage(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "USER root" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "USER root" in context
 
 
 def test_warns_missing_user_on_write(tool_use, run_hook):
@@ -163,8 +169,9 @@ def test_warns_missing_user_on_write(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "no USER directive in the final stage" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "no USER directive in the final stage" in context
 
 
 def test_no_warn_when_non_root_user(tool_use, run_hook):
@@ -252,8 +259,9 @@ def test_warns_top_level_version(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "version:" in stderr and "deprecated" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "version:" in context and "deprecated" in context
 
 
 def test_warns_environment_literal_secret(tool_use, run_hook):
@@ -271,8 +279,9 @@ def test_warns_environment_literal_secret(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "DB_PASSWORD" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "DB_PASSWORD" in context
 
 
 def test_no_warn_when_environment_uses_var(tool_use, run_hook):
@@ -520,8 +529,9 @@ def test_multistage_user_before_final_from_warns(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _, stderr = assert_allowed(result)
-    assert "no USER directive in the final stage" in stderr
+    assert_allowed(result)
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "no USER directive in the final stage" in context
 
 
 def test_environment_block_exit_does_not_warn(tool_use, run_hook):

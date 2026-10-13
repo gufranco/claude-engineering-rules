@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import os
 import subprocess
 import sys
@@ -120,11 +122,14 @@ def test_reset_hard_behind_global_option_asks_for_confirmation(tool_use, run_hoo
     payload = tool_use("Bash", {"command": "git -C /tmp/x reset --hard HEAD~1"})
 
     # Act
-    code, _stdout, stderr = run_hook(HOOK, payload)
+    code, stdout, _stderr = run_hook(HOOK, payload)
 
     # Assert
     assert code == 0
-    assert "CONFIRM REQUIRED: git reset --hard" in stderr
+    assert (
+        "CONFIRM REQUIRED: git reset --hard"
+        in json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    )
 
 
 def test_filter_branch_behind_global_option_is_blocked(tool_use, run_hook):

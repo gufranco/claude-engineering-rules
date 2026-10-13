@@ -45,6 +45,7 @@ import sys
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.hook_warning import emit_warning  # noqa: E402
 
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -271,7 +272,7 @@ def main() -> int:
     detected = render_findings(findings)
 
     if os.environ.get(ENV_ENFORCE) != "1":
-        print(
+        emit_warning(
             warn(
                 hook=HOOK_ID,
                 purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
@@ -279,8 +280,7 @@ def main() -> int:
                     "Move the dedup record to a durable store. Set "
                     f"{ENV_ENFORCE}=1 to make this a blocking check."
                 ),
-            ),
-            file=sys.stderr,
+            )
         )
         _audit(
             hook=HOOK_ID,

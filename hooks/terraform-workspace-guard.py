@@ -31,11 +31,15 @@ except Exception:  # pragma: no cover
         return None
 
 
+TF_GLOBAL_OPTIONS = r"(?:\s+-[\w-]+(?:=\S+)?)*"
+
 TF_WORKSPACE_SELECT = re.compile(
-    r"\bterraform\s+workspace\s+select\s+(?!--help\b|-h\b)\S+"
+    r"\bterraform" + TF_GLOBAL_OPTIONS + r"\s+workspace\s+select\s+(?!--help\b|-h\b)\S+"
 )
 
-TF_WORKSPACE_NEW = re.compile(r"\bterraform\s+workspace\s+new\s+(?!--help\b|-h\b)\S+")
+TF_WORKSPACE_NEW = re.compile(
+    r"\bterraform" + TF_GLOBAL_OPTIONS + r"\s+workspace\s+new\s+(?!--help\b|-h\b)\S+"
+)
 
 
 import sys as _sys  # noqa: E402

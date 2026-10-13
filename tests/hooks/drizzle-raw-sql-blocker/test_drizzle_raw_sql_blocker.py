@@ -206,7 +206,7 @@ def test_skips_schema_files(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_skips_test_paths(tool_use, run_hook):
+def test_blocks_raw_sql_in_test_paths(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write",
@@ -223,7 +223,7 @@ def test_skips_test_paths(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_disable_env_bypasses(tool_use, run_hook):
@@ -392,6 +392,27 @@ def test_still_blocks_the_same_call_in_application_code(tool_use, run_hook):
         {
             "file_path": "/repo/src/services/account.service.ts",
             "content": "await db.execute(sql`SELECT 1`);\n",
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)
+
+
+@pytest.mark.parametrize("receiver", ["tx", "trx", "transaction"])
+def test_blocks_raw_sql_on_a_transaction_receiver(tool_use, run_hook, receiver):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/src/services/user.service.ts",
+            "content": (
+                "import { sql } from 'drizzle-orm';\n"
+                f"await {receiver}.execute(sql`DELETE FROM users`);\n"
+            ),
         },
     )
 

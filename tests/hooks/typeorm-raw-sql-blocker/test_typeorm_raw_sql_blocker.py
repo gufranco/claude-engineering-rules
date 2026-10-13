@@ -158,7 +158,7 @@ def test_skips_sql_files(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_skips_test_paths(tool_use, run_hook):
+def test_blocks_raw_sql_in_test_paths(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write",
@@ -172,10 +172,10 @@ def test_skips_test_paths(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
-def test_skips_spec_paths(tool_use, run_hook):
+def test_blocks_raw_sql_in_spec_paths(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Edit",
@@ -190,7 +190,7 @@ def test_skips_spec_paths(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result)
 
 
 def test_disable_env_bypasses(tool_use, run_hook):

@@ -74,14 +74,14 @@ def test_prints_nudge_when_blocks_present(tmp_path):
     )
 
     # Act
-    code, _stdout, stderr = _run(env)
+    code, stdout, _stderr = _run(env)
 
     # Assert
     assert code == 0
-    assert stderr == (
-        "[retro] 2 block(s) this session (top: alpha, beta). "
-        "Run /retro to propose upstream fixes.\n"
-    )
+    assert json.loads(stdout) == {
+        "systemMessage": "[retro] 2 block(s) this session (top: alpha, beta). "
+        "Run /retro to propose upstream fixes."
+    }
 
 
 def test_invalid_json_log_lines_do_not_crash(tmp_path):

@@ -4,6 +4,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "terraform-workspace-guard"
@@ -106,3 +108,21 @@ def test_invalid_json_stdin_blocks():
 
     # Assert
     assert proc.returncode == 2
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "terraform -chdir=infra workspace select prod",
+        "terraform -chdir=infra -no-color workspace new staging",
+    ],
+)
+def test_blocks_a_workspace_switch_after_global_options(tool_use, run_hook, command):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)

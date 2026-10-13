@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import os
 import subprocess
 import sys
@@ -516,3 +518,20 @@ def test_a_note_inside_the_never_committed_workspace_is_not_gated(
 
     # Assert
     assert (exit_code, stdout) == (0, "")
+
+
+def test_the_block_is_reported_as_a_deny_decision(tool_use, run_hook, tmp_path):
+    # Arrange
+    make_plan(tmp_path, ["hooks/foo.py"])
+    payload = tool_use(
+        "Write",
+        {"file_path": str(tmp_path / "hooks/unrelated.py"), "content": "x"},
+        cwd=str(tmp_path),
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    decision = json.loads(result.stdout)["hookSpecificOutput"]["permissionDecision"]
+    assert (result.code, decision) == (2, "deny")

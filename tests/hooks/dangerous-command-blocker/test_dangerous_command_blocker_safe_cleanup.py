@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import importlib.util
 import sys
 from pathlib import Path
@@ -110,11 +112,14 @@ def test_hard_reset_chained_with_cleanup_asks_for_confirmation(tool_use, run_hoo
     payload = tool_use("Bash", {"command": "git reset --hard && rm -rf node_modules"})
 
     # Act
-    code, _stdout, stderr = run_hook(HOOK, payload)
+    code, stdout, _stderr = run_hook(HOOK, payload)
 
     # Assert
     assert code == 0
-    assert "CONFIRM REQUIRED: git reset --hard" in stderr
+    assert (
+        "CONFIRM REQUIRED: git reset --hard"
+        in json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    )
 
 
 def test_sudo_chained_with_cleanup_warns(tool_use, run_hook):
@@ -122,11 +127,14 @@ def test_sudo_chained_with_cleanup_warns(tool_use, run_hook):
     payload = tool_use("Bash", {"command": "sudo ls && rm -rf dist"})
 
     # Act
-    code, _stdout, stderr = run_hook(HOOK, payload)
+    code, stdout, _stderr = run_hook(HOOK, payload)
 
     # Assert
     assert code == 0
-    assert "WARNING: sudo elevates privileges" in stderr
+    assert (
+        "WARNING: sudo elevates privileges"
+        in json.loads(stdout)["hookSpecificOutput"]["additionalContext"]
+    )
 
 
 @pytest.mark.parametrize(
