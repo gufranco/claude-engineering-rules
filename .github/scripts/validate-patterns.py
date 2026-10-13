@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""Validate regex patterns in dangerous-command-blocker.py.
-
-Checks:
-  - All regex patterns compile without errors
-  - Every uppercase string constant in hooks/_lib/git_invocation.py compiles,
-    since the blocker's tables reference those constants by name
-  - A table entry that names a constant the lib does not define fails
-  - No exact duplicate patterns within or across severity levels
-  - Reports total pattern count
-
-Exit 0 = all valid, exit 1 = errors found.
-"""
-
 import ast
 import importlib.util
 import os
@@ -29,12 +16,6 @@ KNOWN_LISTS = {"CATASTROPHIC", "CRITICAL_PATHS", "SUSPICIOUS", "SAFE_CLEANUP"}
 
 
 def assignment_targets(node):
-    """Yield (target, value) for plain and annotated assignments alike.
-
-    `NAME = [...]` and `NAME: list[tuple[str, str]] = [...]` describe the same
-    table. Reading only `ast.Assign` silently skipped the annotated form, which
-    reported the list as missing rather than as changed.
-    """
     if isinstance(node, ast.Assign):
         for target in node.targets:
             yield target, node.value

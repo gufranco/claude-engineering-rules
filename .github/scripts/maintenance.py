@@ -1,29 +1,4 @@
 #!/usr/bin/env python3
-"""Long-horizon maintenance reminders for the mutation-method-blocker hook.
-
-Plan items 282-283. The script keeps two long-running concerns alive across
-sessions:
-
-  1. A TC39 watch list of immutability-relevant proposals that the hook does
-     NOT yet recognize. When a proposal advances to Stage 2, the hook should
-     evaluate adding recognition. The watch list is the canonical source for
-     `~/.claude/docs/guides/mutation-method-blocker-add-detector.md` reviewers.
-
-  2. A quarterly review reminder. On the first Monday of each quarter (Jan,
-     Apr, Jul, Oct) the script prints a reminder to stdout when run with the
-     `quarterly-check` subcommand. The user wires this into a launchd plist
-     or a cron entry; the script itself does not schedule anything.
-
-Usage:
-
-    python3 .github/scripts/maintenance.py watch-list
-    python3 .github/scripts/maintenance.py quarterly-check
-    python3 .github/scripts/maintenance.py quarterly-check --force
-
-The script never modifies hook state and never produces a non-zero exit code
-for routine output. A non-zero exit indicates a CLI usage error.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -34,14 +9,6 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class WatchListEntry:
-    """One TC39 (or equivalent) proposal under observation.
-
-    `stage` follows the TC39 process: 0 (strawperson), 1 (proposal),
-    2 (draft), 3 (candidate), 4 (finished). Recognition becomes
-    appropriate at Stage 2 because the syntax stabilizes; before that
-    the proposal can be reshaped beyond recognition.
-    """
-
     name: str
     stage: int
     last_seen: str
@@ -140,11 +107,6 @@ def _format_watch_list(entries: tuple[WatchListEntry, ...]) -> str:
 
 
 def _quarter_first_monday(today: _dt.date) -> _dt.date:
-    """Return the first Monday of the current quarter.
-
-    Quarter boundaries: Jan 1, Apr 1, Jul 1, Oct 1. The first Monday is the
-    earliest date >= the quarter start whose `weekday()` equals 0.
-    """
     quarter_start_month = ((today.month - 1) // 3) * 3 + 1
     start = _dt.date(today.year, quarter_start_month, 1)
     offset = (7 - start.weekday()) % 7
@@ -152,7 +114,6 @@ def _quarter_first_monday(today: _dt.date) -> _dt.date:
 
 
 def is_quarterly_review_day(today: _dt.date | None = None) -> bool:
-    """True when today is the first Monday of a quarter."""
     today = today or _dt.date.today()
     return today == _quarter_first_monday(today)
 

@@ -1,29 +1,4 @@
 #!/usr/bin/env python3
-"""Block global gcloud config mutations.
-
-`gcloud config set account ...`, `gcloud config set project ...`, and
-`gcloud config configurations activate <name>` all mutate the active
-gcloud configuration in `~/.config/gcloud/`. Every other shell on the
-machine immediately sees the change, breaking parallel sessions that
-were targeting a different account or project.
-
-The fix is to use per-command flags on every call:
-- `gcloud --account=<email> ...`
-- `gcloud --project=<id> ...`
-- `gcloud --configuration=<name> ...`
-
-Or scope a `config set` write with `--configuration=<name>` so it
-writes to a named configuration instead of the active one.
-
-This hook hard-blocks `gcloud config set ...` and `gcloud config
-configurations activate ...` when no `--configuration=<name>` flag
-is present. Read-only `gcloud config list`, `gcloud config get`,
-and `gcloud config configurations list` are allowed.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import re
 import sys

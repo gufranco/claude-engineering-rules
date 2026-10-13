@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""Block a commit that changes rendered output without touching render-level checks.
-
-Rationale lives in rules/frontend-render-gate.md. A diff that alters markup,
-styles, or theme tokens cannot be verified by reading it: cascade outcome,
-paint order, accessibility tree, focus order, and third-party frames are all
-invisible in source and absent from jsdom.
-
-The check is deliberately coarse. It asks whether the commit touches any
-render-level check at all, not whether that check is the right one. Judging
-adequacy is a review question; the hook only refuses the case where nothing
-render-level was touched, which is the case that produced the shipped defects.
-
-Bypass: FRONTEND_RENDER_GATE_DISABLE=1 in a parent shell, or a TTL-bound
-entry in the shared registry, matching doc-sync-guard and secret-scanner.
-"""
-
 import os
 import re
 import subprocess

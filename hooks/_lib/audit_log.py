@@ -1,47 +1,3 @@
-"""Structured audit log shared by hooks.
-
-Writes JSON Lines to ~/.claude/logs/hooks.log. Rotates the file when it grows
-past 5 MiB by renaming to hooks.log.1, dropping the previous .1 if any. Keeps
-one backup so the on-disk footprint stays bounded.
-
-Usage from a Python hook:
-
-    sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-    from _lib.audit_log import record, redact
-    record(hook="dangerous-command-blocker", decision="block",
-           reason="rm -rf /", tool="Bash",
-           command_excerpt=redact(cmd)[:200])
-
-Usage from a shell hook:
-
-    python3 ~/.claude/hooks/_lib/audit_log.py \
-        --hook large-file-blocker --decision block --tool Bash \
-        --reason "file > 5MB" --command "$cmd"
-
-The function never raises. Logging is best-effort.
-
-Schema (spec 1.3.1):
-
-    hook                basename of the hook module emitting the record
-    decision            legacy decision label (block, allow, ...)
-    decision_class      normalized decision label, validated against
-                        `ALLOWED_DECISION_CLASSES`. When the caller passes an
-                        unknown class, the value is preserved under
-                        `original_decision_class` and the class is downgraded
-                        to "warn" so summarizers never see invalid values.
-    detector            legacy per-detector tag (free-form string)
-    detector_tag        normalized per-detector tag, truncated to
-                        `MAX_DETECTOR_TAG` characters
-    defect_pattern_tag  AI-defect taxonomy tag from rules/ai-guardrails.md,
-                        truncated to `MAX_DEFECT_PATTERN_TAG` characters
-    confidence_score    1-10 inclusive integer, clamped on write
-    reason              short human-readable reason
-    file_path           target file path when relevant
-    latency_ms          measured hook latency in milliseconds
-    suppressed          True when a suppression marker silenced a finding
-    command_excerpt     redacted, truncated command tail
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -99,7 +55,6 @@ _REDACT_PATTERNS = [
 
 
 def redact(text: str) -> str:
-    """Return text with high-confidence secrets replaced by [REDACTED]."""
     if not text:
         return text
     out = text
@@ -124,12 +79,6 @@ def _rotate_if_needed() -> None:
 
 
 def _normalize_schema(fields: dict[str, Any]) -> dict[str, Any]:
-    """Apply the structured-schema constraints from spec 1.3.1.
-
-    Caller-provided values that violate the schema are repaired in place
-    rather than dropped, so summarizers never see invalid records but
-    hooks still see their data round-trip when they read the log later.
-    """
     out = dict(fields)
 
     if "decision_class" in out:
@@ -165,7 +114,6 @@ def _normalize_schema(fields: dict[str, Any]) -> dict[str, Any]:
 
 
 def record(**fields: Any) -> None:
-    """Append a JSON line to the audit log. Never raises."""
     if os.environ.get("CLAUDE_HOOK_AUDIT_DISABLE") == "1":
         return
     try:

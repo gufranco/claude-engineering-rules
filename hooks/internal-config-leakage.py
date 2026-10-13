@@ -1,51 +1,4 @@
 #!/usr/bin/env python3
-"""
-internal-config-leakage.py
-
-PreToolUse hook that blocks references to internal Claude config in external output.
-Rule source: ~/.claude/standards/code-review.md "No Internal Config Leakage".
-
-External output channels covered:
-  - Bash commands that publish text: gh pr/issue/api, glab mr/issue/api, git commit -m,
-    git tag, git notes, slack-cli send.
-  - For a git commit, tag, or notes command, only the message is scanned: the -m
-    value, a --message= value, and any heredoc body. Other arguments, such as the
-    paths handed to `git add` in the same command, never reach a reader. The whole
-    command is scanned when the message cannot be isolated, or when a non-git
-    publishing command appears alongside it.
-  - Bash commands that publish via a payload file referenced with --input,
-    --body-file, -F file=@..., or @file shorthand. The hook reads the referenced
-    file and scans its content.
-  - Write/Edit/MultiEdit on Markdown files (.md) and JSON payload files (.json)
-    that look like a publishing payload (top-level "body", "comments", "title",
-    or "commit_id" + "event").
-
-Patterns flagged:
-  - Internal path tokens: ~/.claude/, .claude/<dir>/, rules/<name>.md,
-    standards/<name>.md, checklists/checklist.md, rules/index.yml
-  - Bare internal file names: CLAUDE.md when cited as authority
-  - Conventional Comments labels at line start (issue (blocking):, nitpick:, ...).
-    `chore:` is exempt in a git commit, tag, or notes message, where it is a
-    Conventional Commits type rather than a review label.
-  - Internal severity tokens: P0, P1, P2, P3 as standalone scaffolding labels
-  - Skill invocation flags: --backend, --frontend, --local, --post, --focus,
-    --severity (when treated as authoritative scaffolding rather than legitimate
-    code-review subject matter)
-  - Internal section headings: "Behavioral Flow Analysis", "Blast Radius Summary",
-    "Standards Applied"
-  - Category number references and "category N" / "cat N" shorthand
-
-Skipped:
-  - Bash commands that do not publish (cat, grep, find, ls, sed, awk, less, head,
-    tail, wc, cd, source, python, node, etc.)
-  - .md files inside the personal config tree (this directory)
-
-Bypass:
-  CONFIG_LEAKAGE_DISABLE=1 (export it in a parent shell; inline assignment does
-  not work because the hook reads the command string before assignments take
-  effect).
-"""
-
 from __future__ import annotations
 
 import json
@@ -290,7 +243,6 @@ def is_publishing_bash(cmd: str) -> bool:
 
 
 def is_git_message_bash(cmd: str) -> bool:
-    """True if the Bash command authors a git commit, tag, or notes message."""
     if not cmd:
         return False
     if any(p.search(cmd) for p in NON_GIT_PUBLISHING_BASH_PATTERNS):
@@ -376,7 +328,6 @@ def is_skipped_md_path(path: str) -> bool:
 
 
 def looks_like_publishing_json(content: str) -> bool:
-    """True if the JSON content looks like a GitHub/GitLab API publishing payload."""
     if not content or not content.strip().startswith("{"):
         return False
     try:
@@ -397,13 +348,6 @@ def looks_like_publishing_json(content: str) -> bool:
 
 
 def extract_publishing_text_blocks(content: str) -> list[tuple[str, str]]:
-    """Pull human-prose fields from a publishing JSON payload.
-
-    Returns list of (field_label, text) tuples for each body/title/message
-    discovered. Scanning these as separate text blocks lets line-anchored
-    patterns (Conventional Comments labels, severity tier headings) hit on
-    the actual prose rather than the surrounding JSON syntax.
-    """
     out: list[tuple[str, str]] = []
     try:
         obj = json.loads(content)
@@ -444,7 +388,6 @@ PAYLOAD_FILE_FLAGS = (
 
 
 def extract_referenced_files(cmd: str) -> list[str]:
-    """Best-effort extraction of payload file paths referenced by the command."""
     paths: list[str] = []
     try:
         tokens = shlex.split(cmd, comments=False, posix=True)
@@ -483,7 +426,6 @@ def extract_referenced_files(cmd: str) -> list[str]:
 
 
 def read_payload_file(path: str) -> str | None:
-    """Read a payload file if it exists and is reasonably small."""
     try:
         if not os.path.isfile(path):
             return None
@@ -497,7 +439,6 @@ def read_payload_file(path: str) -> str | None:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
-    """Return a list of (source_label, path_or_field, content_kind, content) tuples."""
     out: list[tuple[str, str, str, str]] = []
     fp = tool_input.get("file_path", "") or ""
 
@@ -579,7 +520,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
 
 
 def find_leaks(text: str, content_kind: str) -> list[str]:
-    """Return list of human-readable leak descriptions found in the text."""
     hits: list[str] = []
 
     def add(label: str, m: re.Match[str]) -> None:

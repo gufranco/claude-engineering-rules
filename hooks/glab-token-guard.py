@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Block glab CLI commands that don't have GITLAB_TOKEN set inline.
-
-Prevents accidental use of the wrong GitLab account when multiple
-instances or accounts are configured. The global config can change
-at any time from another terminal, so every glab command must
-explicitly set GITLAB_TOKEN and GITLAB_HOST.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 from __future__ import annotations
 
 import os

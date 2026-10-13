@@ -1,45 +1,3 @@
-"""Session lock registry for `~/.claude/hooks/*.py`.
-
-The inverse of `bypass.py`. A bypass says "stand down for a while"; a lock
-says "clamp down for a while". Both are TTL-bound entries in a JSON file so
-the state survives across `Bash` calls, which shell environment variables
-cannot do.
-
-The motivating case is `/morning`. That skill walks a queue of pull requests
-and must never merge one, while `/deploy land` legitimately merges. A global
-merge block would break `/deploy`. A lock acquired for the duration of a
-`/morning` run blocks merges during that run and stays silent otherwise.
-
-Public API:
-
-    is_locked(lock_name: str) -> bool
-        True when `lock_name` (or the wildcard `*`) has a live entry.
-
-    acquire(lock_name, *, ttl_seconds, reason) -> Path
-    release(lock_name=None) -> int
-
-Failure direction is the opposite of `bypass.py`, and deliberately so. A
-bypass fails open because a corrupt registry must never disable a guard. A
-lock fails closed when the file exists but cannot be parsed, because a
-corrupt lock during a live session would otherwise silently permit the exact
-action the lock was acquired to prevent. An absent file is the normal
-unlocked state and reads as unlocked, so a machine that has never run
-`/morning` is never affected.
-
-File schema (version 1):
-
-    {
-      "version": 1,
-      "locks": [
-        {
-          "lock": "<lock-name-or-*>",
-          "expires_at": "<ISO-8601 UTC>",
-          "reason": "<free text, optional>"
-        }
-      ]
-    }
-"""
-
 from __future__ import annotations
 
 import json
@@ -65,7 +23,7 @@ DEFAULT_TTL_SECONDS = 3600
 
 
 class CorruptLockFile(Exception):
-    """Raised when the registry exists but cannot be read as v1 JSON."""
+    pass
 
 
 def _now() -> datetime:
@@ -107,12 +65,6 @@ def _load_entries(path: Path) -> list[dict[str, object]]:
 def is_locked(
     lock_name: str, *, state_path: Path | None = None, now: datetime | None = None
 ) -> bool:
-    """Return True when `lock_name` has a live lock entry.
-
-    Wildcard entries (`"lock": "*"`) match any lock name. Expired entries are
-    ignored. A missing file reads as unlocked. A present but unreadable file
-    reads as locked, so corruption cannot silently lift the clamp.
-    """
     if not lock_name:
         return False
     path = state_path if state_path is not None else STATE_PATH
@@ -170,7 +122,6 @@ def acquire(
     reason: str | None = None,
     state_path: Path | None = None,
 ) -> Path:
-    """Add or replace a lock entry. TTL is clamped to [60, 14400] seconds."""
     if not lock_name:
         raise ValueError("lock_name is required")
     path = state_path if state_path is not None else STATE_PATH
@@ -193,7 +144,6 @@ def acquire(
 
 
 def release(lock_name: str | None = None, *, state_path: Path | None = None) -> int:
-    """Remove the entry for `lock_name`, or every entry when it is None."""
     path = state_path if state_path is not None else STATE_PATH
     now = _now()
     survivors = _surviving_entries(path, now)

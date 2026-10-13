@@ -1,37 +1,4 @@
 #!/usr/bin/env python3
-"""PreToolUse Bash hook: keep user-supplied artifacts out of git history.
-
-Some projects require a file the project may not distribute: a game ROM,
-a console BIOS, vendor firmware, licensed model weights. The user supplies
-their own copy. Committing that copy turns the repository into a
-redistribution channel for someone else's work.
-
-Two independent signals:
-
-1. Manifest digest. When the repository ships an artifacts manifest, any
-   staged file whose SHA-256 matches a declared digest is exactly the file
-   the manifest says the user must supply. Zero false positives. File size
-   acts as a cheap pre-filter so hashing runs only on exact-size matches.
-2. Extension. A staged path carrying an unambiguous ROM, disc-image,
-   firmware, or model-weight extension. Ambiguous extensions such as
-   ``.bin``, ``.img``, and ``.md`` are deliberately absent; the manifest
-   signal covers those.
-
-Scope: ``git commit`` reads the staged set, which is exactly what enters
-history. ``git add`` is checked only for explicit path arguments, because
-bulk forms such as ``git add -A`` cannot be resolved before git runs.
-Commit remains the authoritative gate.
-
-Every manifest found is read and merged rather than stopping at the first,
-so a project that splits declarations across locations stays covered.
-
-Rule source: ``rules/artifact-identity.md``.
-
-Bypass channels:
-    1. Env var `USER_SUPPLIED_ARTIFACT_DISABLE=1` (parent shell).
-    2. File registry entry for hook `user-supplied-artifact-guard`.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -139,11 +106,6 @@ def _staged_files() -> list[str]:
 
 
 def _split_args(raw: str) -> list[str]:
-    """Split an argument string, honoring quotes when the string is balanced.
-
-    A path containing spaces survives as one token. Unbalanced quotes fall
-    back to whitespace splitting so a partial command still gets checked.
-    """
     try:
         return shlex.split(raw)
     except ValueError:
@@ -151,11 +113,6 @@ def _split_args(raw: str) -> list[str]:
 
 
 def _explicit_add_paths(command: str) -> list[str]:
-    """Return path-like arguments of every `git add` in `command`.
-
-    Flags and bulk selectors are dropped: they name no single path, so the
-    commit gate handles them instead.
-    """
     paths: list[str] = []
     for match in ADD_PATTERN.finditer(strip_git_global_options(command)):
         for token in _split_args(match.group("args")):
@@ -173,11 +130,6 @@ def _repo_root() -> Path:
 
 
 def _collect_manifest_claims(node: object, digests: set[str], sizes: set[int]) -> None:
-    """Walk a decoded manifest and gather every sha256 and size it declares.
-
-    Shape-tolerant on purpose. A project may extend the schema, and a
-    stricter reader would silently stop protecting the new entries.
-    """
     if isinstance(node, dict):
         for key, value in node.items():
             if key == "sha256" and isinstance(value, str) and len(value) == 64:
@@ -218,12 +170,6 @@ def _sha256(path: Path) -> str | None:
 
 
 def _resolve(name: str, root: Path) -> Path | None:
-    """Return the first existing file `name` can refer to.
-
-    Staged paths from git are repo-root-relative. Paths typed into a
-    `git add` are relative to the working directory, which is not the repo
-    root whenever the command runs from a subdirectory.
-    """
     candidate = Path(name)
     if candidate.is_absolute():
         return candidate if candidate.is_file() else None
@@ -240,7 +186,6 @@ def _classify(
     digests: set[str],
     sizes: set[int],
 ) -> str | None:
-    """Return a reason string when `name` is a user-supplied artifact."""
     path = _resolve(name, root)
     if path is None:
         return None

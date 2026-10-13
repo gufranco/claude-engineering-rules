@@ -1,22 +1,3 @@
-"""Project-local config loader for the mutation-method-blocker hook.
-
-Plan items 284-287. Reads `<project-root>/.claude/mutation-allowlist.yml`
-(or `.json`) and merges entries into the in-memory allowlists. The loader
-is intentionally lenient: invalid configs produce a warning to stderr and
-the hook continues with built-in defaults. The hook never crashes on
-malformed user input.
-
-The project root is discovered by walking parents of the file under analysis
-until a `.git` directory or a `package.json` is found. If neither is found,
-the config search yields nothing and the hook uses its built-ins.
-
-Schema validation is best-effort: when `jsonschema` is importable, the
-config is validated against `~/.claude/schemas/mutation-allowlist.schema.json`.
-When `jsonschema` is unavailable (clean machine, restricted environment),
-a minimal in-tree validator runs the structural checks the hook depends on
-(version is the integer 1, every field is the expected type).
-"""
-
 from __future__ import annotations
 
 import json
@@ -38,13 +19,6 @@ SCHEMA_PATH = os.path.expanduser("~/.claude/schemas/mutation-allowlist.schema.js
 
 @dataclass(frozen=True)
 class ProjectConfig:
-    """Resolved project-local overrides.
-
-    Each field is empty by default so the merged allowlist equals the
-    built-in defaults when no config is present. Frozen so the loaded
-    config cannot be mutated by mistake at the call site.
-    """
-
     framework_receivers: frozenset[str] = field(default_factory=frozenset)
     hot_path_segments: tuple[str, ...] = ()
     skip_segments: tuple[str, ...] = ()
@@ -62,12 +36,6 @@ def _warn(msg: str) -> None:
 
 
 def discover_project_root(start_path: str) -> str | None:
-    """Walk parents of `start_path` until a project marker is found.
-
-    Returns the directory containing the marker or None if no marker is
-    encountered before the filesystem root. The marker set is fixed: a
-    `.git` directory, a `package.json`, or a `pnpm-workspace.yaml`.
-    """
     current = os.path.abspath(start_path)
     if os.path.isfile(current):
         current = os.path.dirname(current)
@@ -96,17 +64,6 @@ def discover_config_path(project_root: str) -> str | None:
 
 
 def _parse_yaml_minimal(text: str) -> dict[str, Any]:
-    """Parse the constrained YAML subset we accept for the allowlist.
-
-    Supports:
-      - top-level scalar: `version: 1`
-      - top-level list: `framework_receivers:` followed by `  - name`
-      - top-level integer / string scalars
-      - line comments starting with `#`
-
-    Anything outside this subset raises ValueError. Users who need richer
-    YAML can use the `.json` extension instead, parsed by `json.loads`.
-    """
     data: dict[str, Any] = {}
     current_list: list[str] | None = None
     for raw_line in text.splitlines():
@@ -185,7 +142,6 @@ def _validate_with_jsonschema(data: dict[str, Any]) -> bool:
 
 
 def _validate_inline(data: dict[str, Any]) -> bool:
-    """Minimal structural validation when jsonschema is unavailable."""
     if data.get("version") != 1:
         _warn("config field 'version' must be 1")
         return False
@@ -224,12 +180,6 @@ def _coerce_list(data: dict[str, Any], key: str) -> list[str]:
 
 
 def load_project_config(start_path: str) -> ProjectConfig:
-    """Load the project-local config for the file at `start_path`.
-
-    Returns `EMPTY_CONFIG` when no project root is found, no config file
-    exists, the file fails to parse, or the file fails schema validation.
-    The hook continues with built-in defaults in every failure mode.
-    """
     if not start_path:
         return EMPTY_CONFIG
     root = discover_project_root(start_path)

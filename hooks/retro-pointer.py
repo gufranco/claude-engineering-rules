@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Stop hook that nudges the user to run /retro when blocks piled up.
-
-Reads ~/.claude/logs/hooks.log, counts block/bypass entries for the current
-session, and prints a one-line cue to stderr the first time it sees any.
-Tracks "already shown" via a session-scoped sentinel in /tmp.
-
-Performance budget: under 50 ms. Reads only the tail of the log.
-Never raises into the hook exit path.
-"""
-
 from __future__ import annotations
 
 import json
@@ -102,11 +92,6 @@ def _summarise() -> tuple[int, int, list[str]]:
 
 
 def _transcript_patterns(transcript_path: str) -> list[str]:
-    """Scan the session transcript for instinct-worthy patterns.
-
-    Returns a list of one-line pattern names. Empty list when none found.
-    Bounded scan: at most 200 lines of transcript tail.
-    """
     if not transcript_path or not os.path.exists(transcript_path):
         return []
     try:

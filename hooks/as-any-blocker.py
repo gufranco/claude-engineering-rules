@@ -1,37 +1,4 @@
 #!/usr/bin/env python3
-"""as-any-blocker
-
-PreToolUse hook that blocks the `any` type in TypeScript code.
-Rule source: ~/.claude/rules/code-style.md "Strong typing" + "Maximum
-Compiler and Checker Strictness".
-
-  - Never `any`, use `unknown` and narrow.
-  - When modifying a file that already uses `any`, replace it with proper types.
-
-Patterns blocked:
-  - `as any`           (type assertion)
-  - `: any`            (annotation)
-  - `<any>`            (generic argument)
-  - `any[]`            (array of any)
-  - `Promise<any>`, `Array<any>`, `Record<string, any>`, etc.
-
-Skipped:
-  - Type declaration files where `any` is unavoidable: *.d.ts (still warned).
-  - Hooks directory itself (~/.claude/).
-
-Third-party tool directives are honored, since they are the one comment form
-the project ban exempts:
-  `eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`,
-  `@ts-expect-error`, `@ts-ignore`, `@ts-nocheck`,
-  block ranges `/* eslint-disable */ ... /* eslint-enable */`.
-
-There is no allow marker of our own. The fix for an unavoidable `any` is
-`unknown` plus a narrowing guard, which the type system checks.
-
-Bypass:
-  AS_ANY_DISABLE=1, or a TTL entry via scripts/bypass.py
-"""
-
 from __future__ import annotations
 
 import os
@@ -71,7 +38,6 @@ from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped_path(path: str) -> bool:
-    """Skip non-TypeScript paths and the hooks directory."""
     if not path:
         return True
     p = path.lower()
@@ -85,7 +51,6 @@ def is_skipped_path(path: str) -> bool:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
-    """Return (file_path, field_name, text) tuples for Write/Edit/MultiEdit."""
     out: list[tuple[str, str, str]] = []
     fp = tool_input.get("file_path", "") or ""
     if tool == "Write":
@@ -106,12 +71,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
 
 
 def find(text: str) -> list[str]:
-    """Return formatted hits for every line carrying an `any` pattern.
-
-    Honors block-level eslint-disable plus line-level eslint and TypeScript
-    directives. There is no allow marker of our own: narrow the type, or
-    disable the hook out-of-band.
-    """
     lines = text.splitlines()
     block_state = compute_block_state(lines, rules=ESLINT_RULES)
     hits: list[str] = []

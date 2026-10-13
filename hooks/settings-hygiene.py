@@ -1,34 +1,4 @@
 #!/usr/bin/env python3
-"""Keep ~/.claude/settings.json project-agnostic and well-formed.
-
-Runs on PreToolUse for Write/Edit/MultiEdit when the target file is named
-`settings.json`. Parses the proposed content as JSON and runs two passes:
-
-Pass A: portability.
-  1. Inline credentials in URLs, e.g. `postgresql://user:password@host/db`
-     where the password is a literal, not `${VAR}` or empty.
-  2. Absolute home paths (`/Users/<name>/...`, `/home/<name>/...`,
-     `C:\\Users\\<name>\\...`). These tie the global config to one machine.
-  3. Identifiers from a user-maintained blocklist at
-     `~/.claude/.settings-hygiene-blocklist`. One entry per line. Comments
-     start with `#`. Useful for project names, internal hostnames, database
-     names, and anything else the user wants to keep out of the global
-     config but the regex above does not catch.
-
-Pass B: structural validation.
-  4. The `hooks` block, if present, uses known Claude Code event names
-     (PreToolUse, PostToolUse, Stop, SessionStart, etc.) and each hook entry
-     has the expected fields (type, command, matcher).
-  5. The `mcpServers` block, if present, has well-formed entries (either
-     command+args style or http url style, not both).
-  6. Top-level keys that exist are spelled the way Claude Code expects.
-
-Exit 0 = allow, exit 2 = block.
-
-Bypass:
-  - Set `SETTINGS_HYGIENE_DISABLE=1` in the environment for one-off overrides.
-"""
-
 from __future__ import annotations
 
 import json
@@ -150,7 +120,6 @@ KNOWN_HOOK_EVENTS = {
 
 
 def _check_structure(parsed: object) -> list[str]:
-    """Return a list of structural findings. Empty list means OK."""
     findings: list[str] = []
     if not isinstance(parsed, dict):
         return findings

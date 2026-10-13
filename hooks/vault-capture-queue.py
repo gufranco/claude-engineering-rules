@@ -1,31 +1,4 @@
 #!/usr/bin/env python3
-"""Stop hook that queues durable facts for the next session to file.
-
-A turn that corrected a belief or uncovered a cause usually produces knowledge
-no repository owns, and today that knowledge survives only if someone
-remembers to file it. This closes the gap without asking anyone to remember:
-at the end of a turn it decides whether something worth keeping happened and,
-when it did, appends one line to a queue the next session drains.
-
-What it deliberately does not do is write the note. A hook is a process, not a
-model: it can see that a correction-shaped sentence appeared and it cannot tell
-a durable lesson from an aside. Writing on that basis would file inference as
-fact, which is the failure the note specification exists to prevent. The
-judgement stays with a model that has the session in front of it, and the only
-thing automated here is remembering.
-
-Safety properties, all load-bearing:
-
-  - starts no process and holds no tool surface
-  - writes exactly one file, inside the vault run directory, append only
-  - never touches a note, so a false positive costs a queue line and nothing else
-  - one entry per session per cooldown window, tracked in a sentinel file
-  - a session spent editing the vault is skipped, having no outside work to file
-  - every failure path returns zero, because a capture must never fail a turn
-
-Opt-out: VAULT_CAPTURE_QUEUE_DISABLE=1, or the bypass registry.
-"""
-
 from __future__ import annotations
 
 import json

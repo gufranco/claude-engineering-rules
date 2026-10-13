@@ -1,21 +1,3 @@
-"""Method-call mutation detectors.
-
-Covers in-place mutations expressed as method calls on a receiver:
-
-  - Array prototype: push, pop, shift, unshift, splice, sort, reverse,
-    fill, copyWithin.
-  - Map and Set prototypes: set, delete, clear, add.
-  - WeakMap and WeakSet: set, delete, add.
-  - TypedArray prototypes: set, fill, sort, reverse, copyWithin (with
-    hot-path skip for crypto, codec, image, and similar domains).
-  - Date prototype setters: 15 mutating methods covering year, month,
-    date, hours, minutes, seconds, milliseconds, plus their UTC variants.
-
-Each detector is a pure function over a text payload. It returns a list
-of `Match` objects with line, column, detector tag, and a fix hint that
-references the ES2023 non-mutating equivalent or the relevant rule.
-"""
-
 from __future__ import annotations
 
 import re
@@ -166,11 +148,6 @@ FORMDATA_METHOD_PATTERN = re.compile(
 
 
 def _iter_lines(text: str) -> list[tuple[int, str, str]]:
-    """Yield (lineno, raw, masked) tuples for each non-empty line.
-
-    Masked content has string literals and comments replaced with whitespace
-    so regex matches against `masked` cannot fire from inside strings.
-    """
     out: list[tuple[int, str, str]] = []
     for idx, line in enumerate(text.splitlines(), start=1):
         if not line.strip():
@@ -239,13 +216,6 @@ _ARRAY_DETECTORS: tuple[tuple[str, re.Pattern[str], str], ...] = (
 def detect_array_pop_shift_unshift_splice_reverse_fill_copywithin(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect array prototype mutations other than push and sort.
-
-    Skips owners that are tracked Web API receivers (URLSearchParams,
-    Headers, FormData) so the dedicated web-api detector emits the
-    correct, more specific fix suggestion instead of the generic array
-    advice.
-    """
     results: list[Match] = []
     web_api_receivers = collect_web_api_receivers(text)
     for lineno, raw, masked in _iter_lines(text):
@@ -268,14 +238,6 @@ def detect_array_pop_shift_unshift_splice_reverse_fill_copywithin(
 
 
 def detect_array_push(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect `.push()` on a non-framework receiver.
-
-    Framework navigation receivers and stream APIs are not flagged here;
-    the orchestrator filters them via `mutation_allowlists.is_framework_receiver`.
-    Web API receivers (URLSearchParams, Headers, FormData) cannot host
-    `.push()`, but the dedup is included for symmetry with the other
-    array detectors.
-    """
     results: list[Match] = []
     fix_hint = (
         "Replace `arr.push(item)` with `arr = [...arr, item]` or include the new item directly: "
@@ -302,12 +264,6 @@ def detect_array_push(text: str, lang: str | None, file_path: str) -> list[Match
 
 
 def detect_array_sort(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect `.sort()` calls.
-
-    Skips owners that are tracked URLSearchParams receivers because
-    `params.sort()` is flagged separately by the web-api detector with
-    a more specific fix suggestion.
-    """
     results: list[Match] = []
     fix_hint = (
         "Replace `arr.sort(fn)` with `arr.toSorted(fn)` (ES2023) or `[...arr].sort(fn)`. "
@@ -333,7 +289,6 @@ def detect_array_sort(text: str, lang: str | None, file_path: str) -> list[Match
 
 
 def detect_bracket_dispatch(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect bracket-access dispatch like `arr['push'](x)`."""
     results: list[Match] = []
     fix_hint = (
         "Bracket-string dispatch (`arr['push'](x)`) bypasses static analysis and the spread-based "
@@ -583,11 +538,6 @@ def _emit_set_mutations(
 def detect_typed_array_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect TypedArray mutations on receivers that look like binary buffers.
-
-    The orchestrator skips this detector when `is_hot_path(file_path)` is
-    True, so crypto, codec, and image directories never trip it.
-    """
     if not TYPED_ARRAY_DECL_PATTERN.search(
         text
     ) and not TYPED_ARRAY_NAME_HINT_PATTERN.search(text):
@@ -618,18 +568,6 @@ def detect_typed_array_mutations(
 
 
 def detect_date_setters(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect Date prototype setter calls.
-
-    Receiver name heuristic: the receiver identifier looks like a Date
-    (`*Date`, `*time`, `*timestamp`, `*moment`, `*now`, etc.) or the file
-    contains a `new Date(...)` initializer for the receiver. Conservative
-    when no signal is present so custom calendar objects with a `setMonth`
-    method are not flagged.
-
-    Fix suggestions depend on whether the file uses the Temporal API.
-    Files importing or referencing `Temporal.*` get a Temporal-first hint;
-    other files get the date-fns fallback.
-    """
     if not DATE_RECEIVER_HINT.search(text):
         return []
     results: list[Match] = []
@@ -684,12 +622,6 @@ def detect_date_setters(text: str, lang: str | None, file_path: str) -> list[Mat
 
 
 def _collect_typed_receivers(text: str, type_name: str) -> frozenset[str]:
-    """Collect identifiers explicitly typed as `type_name` via `: TypeName` annotation.
-
-    Captures `const x: URLSearchParams = ...`, `function f(p: Headers)`,
-    `let h: FormData | null`, etc. Used to anchor mutation detection to
-    receivers whose type is provable from the source.
-    """
     pattern = re.compile(
         r"(?:const|let|var|function\s+\w+\s*\(|,|\()\s*"
         r"(?P<name>[a-zA-Z_$][\w$]*)\s*:\s*" + re.escape(type_name) + r"\b"
@@ -698,12 +630,6 @@ def _collect_typed_receivers(text: str, type_name: str) -> frozenset[str]:
 
 
 def _collect_constructed_receivers(text: str, type_name: str) -> frozenset[str]:
-    """Collect identifiers initialized from `new TypeName(...)`.
-
-    Captures `const x = new URLSearchParams(...)`, `let h = new Headers(...)`,
-    `var fd = new FormData(...)`. Conservative: only matches direct `new`
-    construction, not factory functions.
-    """
     pattern = re.compile(
         r"(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
         r"(?::\s*[^=]+)?\s*=\s*new\s+" + re.escape(type_name) + r"\s*\("
@@ -712,13 +638,6 @@ def _collect_constructed_receivers(text: str, type_name: str) -> frozenset[str]:
 
 
 def _collect_fresh_reducer_accumulators(text: str, type_name: str) -> frozenset[str]:
-    """Collect reducer accumulator names seeded with a fresh `new TypeName(...)`.
-
-    `arr.reduce((fd, x) => { fd.append(...); return fd }, new FormData())` builds
-    a brand-new instance inside the expression, so the accumulator is not shared
-    state and mutating it is contained. This is the very pattern the fix hints
-    recommend, so the detector must not flag it.
-    """
     pattern = re.compile(
         r"\.reduce\s*\(\s*(?:async\s*)?\(\s*(?P<acc>[a-zA-Z_$][\w$]*)"
         r"[^)]*\)\s*=>.*?,\s*new\s+" + re.escape(type_name) + r"\s*\(",
@@ -737,15 +656,6 @@ def _detect_web_api_collection(
     fix_hint: str,
     confidence: str = "5",
 ) -> list[Match]:
-    """Generic detector for Web API receiver-typed mutations.
-
-    Triggers on a line-by-line scan when the text contains either a
-    `new TypeName(...)` declaration, a typed annotation (`: TypeName`),
-    or a name hint pattern. The receiver of the method call must match
-    one of the typed or constructed receivers, OR the file must show
-    enough usage signal to anchor the detector. Conservative: when no
-    signal is present, the detector emits nothing.
-    """
     if not decl_pattern.search(text) and not hint_pattern.search(text):
         return []
     typed = _collect_typed_receivers(text, type_name)
@@ -784,12 +694,6 @@ def _detect_web_api_collection(
 def detect_url_search_params_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect URLSearchParams mutations.
-
-    `URLSearchParams` is a Web API value with `append`, `set`, `delete`,
-    and `sort` methods that mutate the instance. Non-mutating fix:
-    construct a fresh instance from the existing entries plus the change.
-    """
     fix_hint = (
         "URLSearchParams mutations: build a fresh instance instead of mutating in place. "
         "`new URLSearchParams([...params, [k, v]])` for append/set, "
@@ -812,11 +716,6 @@ def detect_url_search_params_mutations(
 def detect_headers_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect Headers (Fetch API) mutations.
-
-    `Headers` instances expose `append`, `set`, and `delete`. Construct a
-    fresh `Headers` from the existing entries instead of mutating.
-    """
     fix_hint = (
         "Headers mutations: build a fresh instance. "
         "`new Headers([...headers, [name, value]])` for append/set, "
@@ -838,14 +737,6 @@ def detect_headers_mutations(
 def detect_form_data_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect FormData mutations.
-
-    `FormData` is a Web API value with `append`, `set`, `delete`. Some Web
-    APIs (XHR.send, fetch body) require the same FormData instance, so the
-    detector emits at confidence 3 (low). The fix hint covers both the
-    fresh-instance pattern and the suppression marker for cases where
-    instance identity is required.
-    """
     fix_hint = (
         "FormData mutations: prefer a fresh instance via "
         "`Array.from(formData.entries()).reduce((fd, [k, v]) => { fd.append(k, v); return fd; }, new FormData())` "
@@ -892,19 +783,6 @@ DATAVIEW_NAME_HINT_PATTERN = re.compile(
 
 
 def detect_dataview_setters(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect DataView mutating setters.
-
-    `DataView` write methods (`setInt8`, `setUint8`, etc.) mutate the
-    underlying `ArrayBuffer`. The buffer-backed nature makes this a
-    legitimate operation in binary codecs, but other call sites should
-    prefer constructing a fresh buffer or using typed-array slicing.
-
-    Hot-path directories (crypto, codec, image, audio, wasm, parser,
-    encoder, decoder, simd, fft, ml, tensor, signal, dsp) are skipped
-    by the orchestrator. Outside those, the detector emits at
-    confidence 4 (moderate, frequent legitimate exception via
-    binary protocol authors).
-    """
     fix_hint = (
         "DataView setters mutate the backing ArrayBuffer in place. When the operation is "
         "not inherently buffer-pointer-stable (codec, wire protocol, WASM linear memory), "
@@ -957,17 +835,6 @@ ATOMICS_PATTERN = re.compile(
 def detect_atomics_mutations(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `Atomics.*` mutating operations on SharedArrayBuffer views.
-
-    `Atomics.store`, `exchange`, `compareExchange`, `add`, `sub`, `and`,
-    `or`, `xor` write to shared memory and synchronize across workers.
-    They are the correct primitive for SAB writes; the detector fires at
-    info severity (confidence 2) so authors get an awareness ping without
-    a block. Hot paths (wasm, simd, codec) are silent.
-
-    `Atomics.load`, `Atomics.wait`, `Atomics.notify`, `Atomics.pause`
-    are non-mutating and not flagged.
-    """
     fix_hint = (
         "Atomics mutating ops write to shared memory. Confirm the write is intentional and "
         "ordered against the rest of the protocol. Prefer a single-writer pattern with a "
@@ -1002,14 +869,6 @@ WASM_MEMORY_HINT_PATTERN = re.compile(
 
 
 def detect_wasm_memory_grow(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect `WebAssembly.Memory.prototype.grow` calls.
-
-    `memory.grow(n)` extends linear memory by `n` pages and may
-    invalidate existing typed-array views over the buffer. Detection
-    runs only when the file references `WebAssembly.Memory` or has an
-    identifier hint suggesting a WASM memory. Confidence 5: this is a
-    legitimate operation, but every call site must reattach views.
-    """
     fix_hint = (
         "WebAssembly.Memory.grow extends the buffer and invalidates existing typed-array "
         "views. After grow, recreate every Int8Array/Uint8Array/etc. view from "
@@ -1057,17 +916,6 @@ UINT8_NAME_HINT_PATTERN = re.compile(
 def detect_uint8array_set_buffer_offset(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect the two-argument form of `Uint8Array.prototype.set`.
-
-    `view.set(source, byteOffset)` copies into the receiver at a given
-    offset and is a frequent source of bugs when the offset is computed.
-    The one-arg form `view.set(source)` is also mutating but is handled
-    by `detect_typed_array_mutations`; this detector adds a stricter
-    advisory for the two-arg variant because the offset is the dominant
-    failure mode (off-by-one, wrong base).
-
-    Hot-path directories suppress; otherwise confidence 5.
-    """
     fix_hint = (
         "`view.set(source, offset)` mutates the receiver. Common errors: byte vs element "
         "offset confusion, source length exceeding remaining space, source aliasing the "
@@ -1122,14 +970,6 @@ PROXY_HANDLER_CONTEXT_PATTERN = re.compile(
 def detect_proxy_mutating_traps(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect mutating Proxy traps.
-
-    A handler implementing `set`, `deleteProperty`, `defineProperty`, or
-    `setPrototypeOf` exposes a mutating interface even when the proxy is
-    documented as read-only. The detector requires the file to construct
-    a Proxy or define a handler object so unrelated `set(...)` method
-    calls do not trigger false positives.
-    """
     fix_hint = (
         "Mutating Proxy traps (`set`, `deleteProperty`, `defineProperty`, `setPrototypeOf`) "
         "expose mutation to consumers. Prefer a copy-on-write strategy: the trap returns a "
@@ -1176,13 +1016,6 @@ WEAKREF_DECL_PATTERN = re.compile(r"new\s+WeakRef\s*\(")
 def detect_weakref_then_mutate(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `weakRef.deref().<mutating-method>()` chains.
-
-    `WeakRef.deref()` returns the target if still alive. Mutating the
-    target through the dereferenced handle is risky because the GC may
-    collect the target between the check and the call. The detector
-    fires when the method name matches a known mutating method.
-    """
     mutating_methods = {
         "push",
         "pop",
@@ -1280,14 +1113,6 @@ GROUPBY_BUCKET_PUSH_PATTERN = re.compile(
 def detect_finalization_registry(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `FinalizationRegistry` construction.
-
-    `FinalizationRegistry` callbacks run at GC time with no ordering or
-    timing guarantees. Mutating shared state from inside the callback
-    creates non-deterministic state transitions. The detector is
-    informational (confidence 1, info severity) and aims to flag the
-    construction so the reviewer can audit the callback body.
-    """
     fix_hint = (
         "FinalizationRegistry callbacks run at unpredictable GC moments. Keep the callback "
         "side-effect-minimal: log, close a file handle, or release a connection. Never mutate "
@@ -1316,17 +1141,6 @@ def detect_finalization_registry(
 def detect_for_await_push_pattern(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `for await (const x of asyncIter) { result.push(x) }`.
-
-    The legacy pattern materializes an async iterable by mutating an
-    array. ES2024 `Array.fromAsync(asyncIter)` does this without
-    mutation. The detector pairs a `for await` header with a `.push`
-    call inside the same brace block.
-
-    The detector is conservative: it fires only when both a `for await`
-    header and a `.push` body exist in the same file. A more precise
-    AST-based check is left to the type bridge.
-    """
     fix_hint = (
         "Replace `for await (const x of asyncIter) { result.push(x) }` with "
         "`const result = await Array.fromAsync(asyncIter)` (ES2024). For a transformation, "
@@ -1372,12 +1186,6 @@ def detect_for_await_push_pattern(
 def detect_uint8_base64_setter(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `Uint8Array.prototype.setFromBase64` and `setFromHex`.
-
-    These Stage 3 methods mutate the receiver in place. The static forms
-    `Uint8Array.fromBase64(str)` and `Uint8Array.fromHex(str)` return
-    fresh instances and should be preferred outside hot paths.
-    """
     fix_hint = (
         "Stage 3 `Uint8Array.prototype.setFromBase64` and `setFromHex` mutate the receiver "
         "in place. Use the static forms `Uint8Array.fromBase64(str)` and `Uint8Array.fromHex(str)` "
@@ -1411,15 +1219,6 @@ def detect_uint8_base64_setter(
 
 
 def detect_map_upsert(text: str, lang: str | None, file_path: str) -> list[Match]:
-    """Detect `Map.prototype.getOrInsert` and `getOrInsertComputed` (Stage 4 Upsert).
-
-    The Upsert proposal adds two methods to `Map.prototype` that look like
-    queries but mutate the receiver: when the key is absent they insert
-    the default (or the result of the factory) before returning it.
-    Outside reducer or cache scopes this is an in-place mutation that
-    should be expressed as `new Map([...m, [k, v]])` to keep the original
-    untouched.
-    """
     fix_hint = (
         "Stage 4 `Map.prototype.getOrInsert(key, default)` and "
         "`getOrInsertComputed(key, factory)` mutate the receiver when the key "
@@ -1460,13 +1259,6 @@ def detect_map_upsert(text: str, lang: str | None, file_path: str) -> list[Match
 def detect_arraybuffer_transfer(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `ArrayBuffer.prototype.transfer` / `transferToFixedLength`.
-
-    Both methods return a new buffer AND detach the receiver: after the
-    call `source.byteLength === 0` and every existing view over `source`
-    raises `TypeError` on access. This is a mutation of the receiver's
-    observable state even though the return value is fresh.
-    """
     fix_hint = (
         "`ArrayBuffer.prototype.transfer()` and `transferToFixedLength()` "
         "detach the source buffer: `source.byteLength` becomes 0 and every "
@@ -1507,13 +1299,6 @@ def detect_arraybuffer_transfer(
 def detect_object_groupby_push(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    """Detect `Object.groupBy(...)` followed by `.push` on a bucket.
-
-    `Object.groupBy` returns a fresh record where each value is a fresh
-    array, but downstream code that calls `.push` on a bucket value
-    reverts to in-place mutation. Either materialize via spread or use
-    `Map.groupBy` plus an immutable reducer.
-    """
     fix_hint = (
         "`Object.groupBy(items, key)` returns a record whose buckets are "
         "arrays. Pushing into a bucket mutates that array and breaks the "

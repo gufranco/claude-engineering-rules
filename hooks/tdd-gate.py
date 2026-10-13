@@ -1,38 +1,4 @@
 #!/usr/bin/env python3
-"""Block production-code writes that have no companion test file.
-
-Triggers PreToolUse on Write, Edit, MultiEdit. The hook returns exit 2
-(block) with a fix hint when a target file looks like production code and
-no test sibling can be located.
-
-Definition of "production code":
-  - source file (.py .js .ts .jsx .tsx .go .rs .rb .java .kt .swift .cs .php ...)
-  - NOT under tests/, __tests__/, spec/, e2e/
-  - NOT itself a test file (.test. .spec. _test.go etc.)
-  - NOT a config, doc, fixture, migration, or generated file
-  - NOT under a `scratchpad/` directory or the shared `/tmp` root. The
-    harness directs throwaway analysis scripts to the session scratchpad,
-    so gating them contradicts the instruction that put them there. The
-    per-user TMPDIR stays gated, which on macOS is where pytest's
-    `tmp_path` lives. On Linux `tmp_path` sits under `/tmp` instead, so
-    this suite's own tests pin their temp base outside both shared roots
-    rather than relying on the platform default.
-
-Test discovery strategy (first match wins):
-  1. sibling `<name>.test.<ext>` / `<name>.spec.<ext>` / `<name>_test.<ext>`
-  2. `__tests__/` or `tests/` next to the source
-  3. project test root scan for filenames matching the source basename
-  4. Python: `tests/test_<name>.py` mirror
-  5. Go: `<name>_test.go` sibling
-
-Edits to files that already exist on disk pass without checking; the gate
-fires only when a production source file is being CREATED.
-
-Bypass: TDD_GATE_DISABLE=1 in the parent shell.
-
-Enforces: rules/testing.md.
-"""
-
 from __future__ import annotations
 
 import glob
@@ -161,11 +127,6 @@ def is_test_file(path: Path) -> bool:
 
 
 def is_barrel(content: str) -> bool:
-    """True when `content` only imports and re-exports.
-
-    A barrel forwards names defined elsewhere, so it carries no behavior of
-    its own to test. An `index` file that declares anything is not a barrel.
-    """
     if not content.strip():
         return True
     pos = 0
@@ -178,16 +139,6 @@ def is_barrel(content: str) -> bool:
 
 
 def _shared_temp_roots() -> tuple[Path, ...]:
-    """Shared temp roots whose contents are throwaway by construction.
-
-    Deliberately excludes the per-user TMPDIR, `/var/folders/...` on
-    macOS: pytest's `tmp_path` lives there, and exempting it would switch
-    off this hook's own test suite along with every other hook's.
-
-    The per-user TMPDIR is macOS-specific. On Linux pytest writes under
-    `/tmp/pytest-of-<user>`, inside a root this function returns, so the
-    tdd-gate suite pins its own temp base instead of inheriting one.
-    """
     resolved = []
     for candidate in ("/tmp", "/private/tmp"):
         try:
@@ -201,7 +152,6 @@ SHARED_TEMP_ROOTS = _shared_temp_roots()
 
 
 def is_ephemeral_path(path: Path) -> bool:
-    """True for scratch files under a shared temp root, never production."""
     try:
         resolved = path.resolve()
     except OSError:
@@ -227,7 +177,6 @@ def is_production_source(path: Path) -> bool:
 
 
 def stem_variants(stem: str) -> set[str]:
-    """Return name variants used to match a test against a source file."""
     variants = {stem}
     variants.add(stem.replace("-", "_"))
     variants.add(stem.replace("_", "-"))
@@ -238,13 +187,6 @@ TEST_AFFIXES = ("test_", "spec_", "_test", "_spec", ".test", ".spec")
 
 
 def names_the_source(candidate: Path, variants: set[str]) -> bool:
-    """True when a test file is named after the source, not merely containing it.
-
-    Substring matching is too loose to be trustworthy: searching for `user`
-    across a large test tree matches `test_user_supplied_artifact_guard.py`,
-    which tests something else entirely. A companion test has to be named for
-    the source file, so the affixes come off and the remainder must match.
-    """
     stem = candidate.stem
     for affix in TEST_AFFIXES:
         if stem.startswith(affix):
@@ -258,7 +200,6 @@ def names_the_source(candidate: Path, variants: set[str]) -> bool:
 
 
 def find_companion_test(path: Path) -> Path | None:
-    """Locate a test that names this source file. None if missing."""
     stem = path.stem
     suffix = path.suffix
     parent = path.parent

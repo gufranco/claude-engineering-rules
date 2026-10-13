@@ -1,28 +1,4 @@
 #!/usr/bin/env python3
-"""Keep a local, never-committed workspace and its continuation prompt.
-
-One hook, three events, dispatched on `hook_event_name`:
-
-  SessionStart  Claim the workspace folder in `.git/info/exclude` and release
-                any folder the project has since started tracking. Silent.
-  Stop          Block once when `<root>/PROMPT.md` is older than the newest
-                change, so the turn ends with a prompt a new session can use.
-  PreToolUse    On Bash, refuse `git add --force` that would stage the
-                workspace, and refuse any add or commit that would put a file
-                named PROMPT.md, at any depth and in any case, under version
-                control. SessionStart also excludes PROMPT.md locally.
-
-The workspace root is `docs/` unless the project owns it, then `.work/`.
-Resolution lives in `_lib/project_workspace.py`.
-
-Fail closed: when git cannot answer, a forced add is blocked, SessionStart
-writes nothing, and Stop allows the stop and logs the error.
-
-Bypass: PROJECT_WORKSPACE_DISABLE=1 in the parent shell, or the bypass
-registry entry `project-workspace`.
-Enforces: rules/project-workspace.md.
-"""
-
 from __future__ import annotations
 
 import json

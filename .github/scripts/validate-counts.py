@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Validate that hardcoded counts across ~/.claude match actual source values.
-
-Derives counts from source files, then scans all markdown and config files
-for references to those counts. Reports mismatches so stale references
-are caught before they reach the remote.
-
-Exit 0 = all counts match, exit 1 = mismatches found.
-"""
-
 import glob
 import json
 import os
@@ -20,12 +11,10 @@ CLAUDE_DIR = os.path.dirname(
 
 
 def count_files(pattern):
-    """Count files matching a glob pattern."""
     return len(glob.glob(os.path.join(CLAUDE_DIR, pattern)))
 
 
 def count_lines_matching(filepath, pattern):
-    """Count lines matching a regex in a file."""
     try:
         with open(os.path.join(CLAUDE_DIR, filepath)) as f:
             return sum(1 for line in f if re.search(pattern, line))
@@ -34,7 +23,6 @@ def count_lines_matching(filepath, pattern):
 
 
 def count_index_entries(section):
-    """Count entries in a section of rules/index.yml."""
     try:
         with open(os.path.join(CLAUDE_DIR, "rules/index.yml")) as f:
             content = f.read()
@@ -58,7 +46,6 @@ def count_index_entries(section):
 
 
 def count_mcp_servers():
-    """Count MCP servers in settings.json."""
     try:
         with open(os.path.join(CLAUDE_DIR, "settings.json")) as f:
             data = json.load(f)
@@ -68,7 +55,6 @@ def count_mcp_servers():
 
 
 def count_run_tests():
-    """Count run_test calls in test-hooks.sh (excluding function definition)."""
     try:
         with open(os.path.join(CLAUDE_DIR, "tests/test-hooks.sh")) as f:
             content = f.read()
@@ -89,7 +75,6 @@ def count_lang_rules():
 
 
 def derive_counts():
-    """Derive all counts from source files."""
     return {
         "rules": count_files("rules/*.md"),
         "lang_rules": count_lang_rules(),
@@ -109,7 +94,6 @@ def derive_counts():
 
 
 def scan_file(filepath, counts):
-    """Scan a file, returning (mismatches, labels that matched at least once)."""
     mismatches = []
     matched_labels = set()
     try:
@@ -233,13 +217,6 @@ REQUIRED_LABELS = (
 
 
 def dead_patterns(matched_labels):
-    """Report every required check that matched nothing anywhere.
-
-    A check that never fires cannot fail, so it reports success while
-    verifying nothing. That is how a stale number survives a passing run:
-    the prose gains a word, the pattern stops matching, and the gate keeps
-    printing PASSED.
-    """
     return [
         f"  check '{label}' matched nothing in any scanned file. Either the "
         f"prose that carried it changed shape, or the check is dead. A check "
@@ -250,7 +227,6 @@ def dead_patterns(matched_labels):
 
 
 def files_to_scan():
-    """Every file whose prose may carry a count reference."""
     paths = []
     for pattern in [
         "*.md",

@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Block gh CLI commands that don't have GH_TOKEN set inline.
-
-Prevents accidental use of the wrong GitHub account when multiple
-accounts are configured. The global active account can change at
-any time from another terminal, so every gh command must explicitly
-set GH_TOKEN.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 from __future__ import annotations
 
 import os

@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""PreToolUse Write/Edit/MultiEdit guard for secrets-bearing files.
-
-Blocks edits on:
-    - `.env` and every variant except `.env.example`, `.env.template`,
-      `.env.sample`, `.env.defaults`.
-    - Files under any `secrets/` or `credentials/` directory.
-    - Private key files (`*.pem`, `*.key`, `id_rsa`, `id_ed25519`, `id_ecdsa`, `id_dsa`).
-    - Cloud and tool credential files (`~/.aws/credentials`, `~/.docker/config.json`,
-      `.npmrc`, `.pypirc`, `.netrc`, `.pgpass`, `.mysql_history`).
-    - Kubernetes config (`~/.kube/config`).
-    - Terraform state and variable files (`*.tfstate*`, `*.tfvars*`).
-    - Credential JSON (`*-credentials.json`, `*_credentials.json`, `service-account*.json`).
-    - SSH and GPG directories.
-
-Bypass channels:
-    1. Env var `ENV_FILE_GUARD_DISABLE=1` (parent shell).
-    2. File registry entry for hook `env-file-guard`.
-"""
-
 from __future__ import annotations
 
 import fnmatch

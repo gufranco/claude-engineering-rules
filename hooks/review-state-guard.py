@@ -1,30 +1,4 @@
 #!/usr/bin/env python3
-"""Block accidental mutations to PR review state.
-
-Platform coverage: GitHub via `gh pr review` and `gh api ... reviews/...`
-patterns. GitLab and Bitbucket Cloud are out of scope because their
-review-state mutation APIs use different verbs and endpoints; the
-`/respond` skill handles them separately via the platform-* reference
-files.
-
-Three patterns are blocked on GitHub:
-
-  1. The PR author requesting changes on their own PR. Common confusion;
-     authors should not block their own PR.
-  2. Dismissing a review the running user did not author.
-  3. Deleting a review the running user did not author.
-
-The hook does not need to determine the actual reviewer identity at
-runtime. The hook blocks the *form* of these actions, requiring an
-explicit env-var acknowledgment for the rare case where the action is
-intended. Defense in depth: the skill should never need this fallback.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-
-Bypass: set REVIEW_STATE_GUARD_DISABLE=1 in the environment.
-"""
-
 from __future__ import annotations
 
 import os

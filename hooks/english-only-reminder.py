@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""UserPromptSubmit hook: inject a hard system-reminder forcing English output.
-
-Spec: `~/.claude/rules/language.md`. Runs on every user turn.
-
-Bypass channels:
-    1. Env var `ENGLISH_REMINDER_DISABLE=1` (parent shell).
-    2. File registry entry for hook `english-only-reminder`.
-
-Either channel suppresses the reminder for the current session.
-"""
-
 from __future__ import annotations
 
 import os

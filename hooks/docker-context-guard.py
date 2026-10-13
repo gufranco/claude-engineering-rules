@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""Block `docker context use` to prevent global Docker context mutation.
-
-Multiple Docker contexts may be configured (Colima profiles, remote hosts,
-Docker Desktop). The active context is shared across every shell, so a
-`docker context use <name>` in one terminal silently breaks parallel
-sessions targeting a different context.
-
-The fix is to use the per-command `--context <name>` flag, or set
-`DOCKER_CONTEXT=<name>` / `DOCKER_HOST=<socket>` for the duration of a
-script. This hook hard-blocks the global mutation command and points to
-`standards/multi-account-cli.md` for the per-command form.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 import os
 import re
 import sys

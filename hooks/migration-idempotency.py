@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-migration-idempotency.py
-
-PreToolUse hook that requires idempotent DDL in migration files.
-Rule source: ~/.claude/rules/git-workflow.md "Migration Idempotency".
-
-  - CREATE TABLE/INDEX/EXTENSION/MATERIALIZED VIEW/TYPE/FUNCTION must use IF NOT EXISTS
-  - DROP TABLE/INDEX/EXTENSION/VIEW must use IF EXISTS
-
-Scope: Write/Edit/MultiEdit on files under */migrations/* or *prisma/migrations*
-       or files matching V<num>__*.sql (Flyway).
-
-Bypass:
-  MIGRATION_IDEMPOTENCY_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

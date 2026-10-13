@@ -1,13 +1,3 @@
-"""Ask every AI reviewer a repository supports to review my pull request.
-
-The repository profile comes from its 20 most recent pull requests: a
-`claude` review carrying the manual-mode notice means the Claude GitHub App
-waits for `@claude review always`, a `claude-review` label means a
-label-gated review workflow, and CodeRabbit or Codex reviews mean those run
-on their own. Only an open pull request authored by the acting account is
-touched, and every action is skipped when it is already in place.
-"""
-
 from __future__ import annotations
 
 import json
@@ -66,7 +56,7 @@ Runner = Callable[[Sequence[str], str], str]
 
 
 class GhError(RuntimeError):
-    """A GitHub CLI call failed or returned something unreadable."""
+    pass
 
 
 class ActionKind(str, Enum):
@@ -109,7 +99,6 @@ class Action:
 
 
 def run_gh(args: Sequence[str], token: str) -> str:
-    """Run the GitHub CLI as the account `token` belongs to."""
     env = {**os.environ, "GH_TOKEN": token}
     try:
         proc = subprocess.run(
@@ -141,7 +130,6 @@ def _is_notice(login: str, body: str) -> bool:
 
 
 def build_profile(payload: dict) -> Profile:
-    """Read the reviewer setup out of the recent pull requests of a repo."""
     repo = payload["data"]["repository"]
     authored = [
         pair
@@ -181,7 +169,6 @@ def subscribed(pull: PullState, account: str) -> bool:
 
 
 def plan_actions(profile: Profile, pull: PullState, account: str) -> tuple[Action, ...]:
-    """The requests still missing on this pull request."""
     comment = (profile.claude_manual or pull.claude_notice) and not subscribed(
         pull, account
     )
@@ -229,7 +216,6 @@ def _write_cache(path: Path, data: dict) -> None:
 def load_profile(
     runner: Runner, token: str, target: Target, cache_path: Path, now: float
 ) -> Profile:
-    """The repository profile, from a cache younger than the TTL or from GitHub."""
     cache = _read_cache(cache_path)
     entry = cache.get(target.slug)
     if isinstance(entry, dict) and now - entry.get("at", 0) < PROFILE_TTL_SECONDS:
@@ -260,7 +246,6 @@ def apply_action(runner: Runner, token: str, target: Target, action: Action) -> 
 def describe(
     target: Target, profile: Profile, actions: tuple[Action, ...], dry_run: bool
 ) -> str:
-    """One line naming what was requested and what needs nothing."""
     kinds = {a.kind for a in actions}
     verb = ("would post", "would add label") if dry_run else ("posted", "added label")
     parts = [
@@ -289,7 +274,6 @@ def request_reviews(
     now: float,
     dry_run: bool = False,
 ) -> str:
-    """Request every missing review; empty when the PR is not my open PR."""
     pull = fetch_pull(runner, token, target)
     if not pull.open or pull.author != account:
         return ""
@@ -309,7 +293,6 @@ def request_reviews(
 def parse_remote(
     url: str, resolve_host: Callable[[str], str] = str
 ) -> tuple[str, str] | None:
-    """Owner and name of a GitHub remote; SSH aliases resolve through `resolve_host`."""
     match = REMOTE.search(url.strip())
     if not match or resolve_host(match.group(1)) != GITHUB_HOST:
         return None

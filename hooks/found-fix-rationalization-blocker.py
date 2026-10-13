@@ -1,40 +1,4 @@
 #!/usr/bin/env python3
-"""
-found-fix-rationalization-blocker.py
-
-PreToolUse hook that blocks the "found, did not fix" rationalization
-pattern in artifacts other engineers will read: git commit messages,
-PR/MR descriptions, release notes, issue bodies, code comments.
-
-The trigger pattern: a verification surface (CI annotation, linter
-warning, deprecation, security advisory) surfaces a problem; the
-assistant declines to fix it and writes the decision into the commit
-body, PR description, or release note. The dodge usually uses one
-of a small set of phrases ("not introduced by this PR",
-"pre-existing", "orthogonal to this task", "out of scope",
-"leave for later"). When the phrase ends up in a published artifact,
-the next reviewer treats it as established practice.
-
-This hook does not catch the rationalization in the assistant's
-in-conversation reply. That layer is handled by `rules/found-fix.md`
-and the user's auto-memory. The hook handles the artifact layer.
-
-Scans:
-  - Write.content
-  - Edit.new_string
-  - MultiEdit.edits[].new_string
-  - Bash.command  (only in scope when the command publishes text:
-                   `git commit`, `git tag -m`, `gh pr/release/issue
-                   create|edit|comment`, `glab mr/release create|update`)
-
-Bypass:
-  FOUND_FIX_RATIONALIZATION_DISABLE=1  (rare: when editing the rule
-  file itself or writing a postmortem that legitimately discusses
-  these phrases)
-
-Source rule: ~/.claude/rules/found-fix.md
-"""
-
 from __future__ import annotations
 
 import os
@@ -223,7 +187,6 @@ def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 
 def find_violations(text: str) -> list[tuple[str, str, str]]:
-    """Return a list of (matched_text, reason, snippet) tuples."""
     violations: list[tuple[str, str, str]] = []
     for pat, reason in PATTERNS:
         for m in pat.finditer(text):

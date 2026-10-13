@@ -1,21 +1,4 @@
 #!/usr/bin/env python3
-"""Custom statusline for Claude Code.
-
-Reads the JSON payload from stdin (cwd, model, session_id, transcript_path),
-parses the transcript JSONL, aggregates token usage, and emits a single line
-to stdout containing:
-
-  - Project basename
-  - Model short name (opus, sonnet, haiku)
-  - Cache hit ratio (cache_read / total input)
-  - Approximate session cost in USD
-  - Latest context-window fill percentage
-
-Designed to run in under 50ms on typical transcripts (under 1000 turns).
-Robust against missing fields, malformed JSON, and transcript reads that
-fail mid-stream.
-"""
-
 from __future__ import annotations
 
 import json
@@ -53,11 +36,6 @@ CONTEXT_WINDOW = {
 
 
 def short_model_name(model_id) -> str:
-    """Reduce a full model id like `claude-opus-4-7[1m]` to `opus`.
-
-    Claude Code passes `model` as a dict like `{"id": ..., "display_name": ...}`,
-    but older payloads sent a bare string. Handle both.
-    """
     if isinstance(model_id, dict):
         model_id = model_id.get("id") or model_id.get("display_name") or ""
     if not model_id:
@@ -83,7 +61,6 @@ def parse_payload(text: str) -> dict:
 
 
 def iter_usages(transcript_path: str) -> list[dict]:
-    """Read every assistant turn's usage record. Tolerates malformed lines."""
     out: list[dict] = []
     p = Path(transcript_path) if transcript_path else None
     if p is None or not p.is_file():

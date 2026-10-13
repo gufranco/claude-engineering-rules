@@ -1,31 +1,4 @@
 #!/usr/bin/env python3
-"""Block bulk resolution of review threads.
-
-The /respond skill requires each review thread to be resolved
-individually, after its own action. Bulk-resolving via a loop or a
-multi-threadId payload is a documented anti-pattern: it erases the
-reviewer's ability to verify which concerns were addressed.
-
-Platform coverage: GitHub via `gh api graphql resolveReviewThread`,
-plus GitLab via `gh/glab api -X PUT ... resolved=true` patterns.
-Bitbucket Cloud is out of scope because Bitbucket has no native
-thread-resolution concept.
-
-Detection:
-  - Require an actual gh/glab API call invoking resolveReviewThread
-    (GitHub) or PUT ... resolved=true (GitLab). Bare mentions in
-    echo, comments, or test fixtures are ignored.
-  - Count occurrences of resolveReviewThread in the command string.
-  - Block when count > 1 (multi-call payload) or when the command
-    runs inside a for/while/xargs loop.
-  - Allow single resolve calls outside loops.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-
-Bypass: set BULK_RESOLVE_DISABLE=1 in the environment.
-"""
-
 import os
 import re
 import sys

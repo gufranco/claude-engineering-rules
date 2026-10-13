@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""validate-clarity.py
-
-Advisory on-demand validator for the pronoun-discipline and active-voice
-sections of `rules/writing-precision.md`. Surfaces lines that likely contain
-ambiguous pronouns or bullet-level passive voice. Conservative heuristics by
-design: false positives are tolerated, false negatives are not catastrophic.
-
-Scope:
-  ~/.claude/rules/
-  ~/.claude/standards/
-  ~/.claude/checklists/
-  ~/.claude/CLAUDE.md
-
-Categories:
-  pronoun-leading    Bullet or sentence starts with It/This/They/That and the
-                     prior line has two or more noun-shaped tokens.
-  passive-bullet     Bullet item that uses `is/are/was/were/be/been X-ed`
-                     without naming an actor.
-
-Exit code:
-  0 always. The script is advisory.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -79,12 +56,6 @@ def _phrase_has_actor(line: str) -> bool:
 
 
 def _has_multiple_nouns(prev_line: str) -> bool:
-    """Heuristic: does the previous line contain at least two noun-shaped
-    tokens? We approximate with: count of words starting with a capital
-    letter (proper nouns) plus distinct lowercase words longer than 3
-    characters. Catches enough cases to make the pronoun-leading flag
-    useful without flooding the report.
-    """
     if not prev_line.strip():
         return False
     words = re.findall(r"[A-Za-z][A-Za-z0-9_-]*", prev_line)

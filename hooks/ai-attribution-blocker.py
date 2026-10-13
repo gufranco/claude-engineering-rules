@@ -1,20 +1,4 @@
 #!/usr/bin/env python3
-"""
-ai-attribution-blocker.py
-
-PreToolUse hook that blocks AI attribution lines in commits, PRs, and code.
-Rule source: ~/.claude/CLAUDE.md "No AI attribution" and ~/.claude/rules/git-workflow.md.
-
-Scans:
-  - Write.content
-  - Edit.new_string
-  - MultiEdit.edits[].new_string
-  - Bash.command  (catches `git commit -m`, `gh pr create --body`, heredocs)
-
-Bypass:
-  AI_ATTRIBUTION_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

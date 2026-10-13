@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""Compile this project's memory from the vault at session start.
-
-The vault is the source of truth and the memory directory is a generated
-artifact, so a memory directory is only as current as the last time somebody
-remembered to run the compile. Nobody should have to remember: the point of the
-vault integration is that capture and retrieval both happen without a command.
-
-Quiet by design. It prints only when the compile changed something, because a
-line at every session start is noise that trains the reader to skip the whole
-block, including the times it matters.
-
-A worktree is its own project to Claude Code, with its own directory under
-``projects`` and no memory inside it until something creates one. The gate is
-therefore whether Claude Code opened the directory, never whether a memory
-directory already exists, and the compile creates the memory on first use.
-
-Never fails a session. Every failure path exits zero, because a session that
-cannot start is a far worse outcome than a memory directory one compile behind.
-
-Bypass: set ``VAULT_COMPILE_DISABLE=1`` in a parent shell.
-"""
-
 from __future__ import annotations
 
 import json
@@ -36,7 +14,6 @@ TIMEOUT_SECONDS = 20
 
 
 def memory_dir_for(cwd: Path) -> Path:
-    """Where Claude Code keeps this working directory's memory."""
     slug = re.sub(r"[^A-Za-z0-9]", "-", str(cwd))
     return Path.home() / ".claude" / "projects" / slug / "memory"
 

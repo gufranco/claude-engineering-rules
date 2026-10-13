@@ -1,33 +1,4 @@
 #!/usr/bin/env python3
-"""
-transaction-scope-guard.py
-
-PreToolUse hook that keeps transaction scope tight.
-Rule source: ~/.claude/standards/database.md "Transactions and Atomic Writes",
-~/.claude/standards/concurrency.md, ~/.claude/checklists/checklist.md category 19.
-
-Two detections:
-
-  1. Network, email, queue, or sleep calls inside a transaction callback.
-     A transaction holds row locks and a pooled connection for its whole life.
-     An HTTP call inside one turns a third-party timeout into a database
-     incident, and a retry of that call into a lock held for minutes.
-
-  2. Array-mode transactions spanning more than one model. The array form runs
-     independent statements; when statement B depends on statement A having
-     succeeded, a failure in A still executes B in some drivers, which leaves
-     partial state. Interactive mode is required for dependent writes.
-
-Skipped: test files, migrations, seeds, fixtures, and this repo's own hooks.
-
-Modes:
-  default                      warn only, exit 0
-  TRANSACTION_SCOPE_ENFORCE=1  block, exit 2
-
-Bypass:
-  TRANSACTION_SCOPE_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os
@@ -158,11 +129,6 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
 
 
 def span_of_call(text: str, open_paren_index: int) -> tuple[int, int] | None:
-    """Return the character span of a call whose opening paren is at the index.
-
-    Returns None when the call never closes, which happens on a partial Edit
-    payload. Callers treat that as "nothing to analyze" rather than guessing.
-    """
     depth = 0
     for index in range(open_paren_index, len(text)):
         char = text[index]

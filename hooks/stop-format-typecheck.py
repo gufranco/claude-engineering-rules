@@ -133,11 +133,6 @@ def _format_with(tool: str, *args: str) -> None:
 
 
 def _find_ts_workspace(path: Path) -> Path | None:
-    """Return the nearest TypeScript workspace, bounded by the repository.
-
-    Without the boundary the walk reaches the home directory and can adopt an
-    unrelated workspace as the one to type-check.
-    """
     for current in walk_up(path.parent, limit=20):
         if (current / "tsconfig.json").is_file() and (
             current / "package.json"

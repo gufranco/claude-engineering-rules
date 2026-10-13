@@ -1,28 +1,4 @@
 #!/usr/bin/env python3
-"""accessibility-mechanical-checks
-
-PreToolUse hook on Write, Edit, MultiEdit for UI files. Catches the
-highest-signal accessibility patterns that automated regex can detect.
-
-Rule source: ~/.claude/rules/accessibility-defaults.md "Forbidden Patterns".
-
-Detected patterns:
-  - <img> without alt attribute
-  - <input> (type != hidden) without label/aria-label/aria-labelledby
-  - role="button" on <div> or <span> without keyboard handler
-  - tabIndex > 0
-  - Missing lang on <html> root
-  - <a> tag without href (other than placeholder anchors)
-  - Click handler on <div>/<span> without role+tabIndex+onKeyDown
-  - Missing aria-label on icon-only button
-  - <input type="password"> without autocomplete
-
-Scope: .tsx, .jsx, .vue, .svelte, .html, .htm files. Skips test files.
-
-Bypass:
-  ACCESSIBILITY_CHECKS_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

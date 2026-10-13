@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""Claude Code statusline: context usage, git branch, cost, and duration.
-
-Reads JSON from stdin with: model, workspace, transcript_path, cost.
-Outputs a single statusline string.
-
-Context estimation is based on transcript file size as a rough proxy
-for token usage. Color thresholds:
-  green  (< 50%): plenty of room
-  yellow (50-70%): moderate usage
-  orange (70-85%): getting tight
-  red    (85-95%): consider compacting
-  critical (> 95%): compaction imminent
-"""
-
 import json
 import os
 import subprocess
@@ -33,7 +19,6 @@ BAR_WIDTH = 10
 
 
 def get_context_percentage(transcript_path, model):
-    """Estimate context usage from transcript file size."""
     if not transcript_path or not os.path.exists(transcript_path):
         return 0
 
@@ -50,7 +35,6 @@ def get_context_percentage(transcript_path, model):
 
 
 def get_git_info(workspace):
-    """Get current branch and dirty status."""
     try:
         branch = subprocess.run(
             ["git", "-C", workspace, "branch", "--show-current"],
@@ -74,7 +58,6 @@ def get_git_info(workspace):
 
 
 def format_cost(cost):
-    """Format session cost."""
     if not cost:
         return ""
     try:
@@ -87,7 +70,6 @@ def format_cost(cost):
 
 
 def format_duration(transcript_path):
-    """Calculate session duration from transcript file creation time."""
     if not transcript_path or not os.path.exists(transcript_path):
         return ""
     try:
@@ -105,14 +87,12 @@ def format_duration(transcript_path):
 
 
 def build_bar(percentage):
-    """Build a text progress bar."""
     filled = int(BAR_WIDTH * percentage / 100)
     empty = BAR_WIDTH - filled
     return f"[{BAR_FULL * filled}{BAR_EMPTY * empty}]"
 
 
 def get_level(percentage):
-    """Get severity label for context usage."""
     if percentage >= 95:
         return "CRITICAL"
     if percentage >= 85:

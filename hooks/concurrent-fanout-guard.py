@@ -1,41 +1,4 @@
 #!/usr/bin/env python3
-"""
-concurrent-fanout-guard.py
-
-PreToolUse hook that flags unbounded concurrent fan-out.
-Rule source: ~/.claude/standards/concurrency.md "Bounded fan-out" and
-~/.claude/rules/architecture-defaults.md "Hard Rules".
-
-    const results = await Promise.all(
-      records.map((record) => pushToVendor(record)),
-    );
-
-`records` has no compile-time bound. Ten thousand rows become ten thousand
-simultaneous requests, which exhausts the connection pool, trips the vendor's
-rate limit, and puts the whole batch at risk from one overload.
-
-Detected: Promise.all or Promise.allSettled over `.map(...)` on an identifier,
-where the callback performs asynchronous work and the file names no concurrency
-limiter.
-
-Silent for fixed literal arrays, for callbacks with no asynchronous work, and
-for files that use a limiter such as p-limit, p-map with a concurrency option,
-or an explicit chunked loop.
-
-Shared mutable accumulation inside concurrent callbacks belongs to
-mutation-method-blocker, which already covers push, compound assignment, and
-index assignment across every receiver.
-
-Skipped: test files, migrations, seeds, fixtures, and this repo's own hooks.
-
-Modes:
-  default                       warn only, exit 0
-  CONCURRENT_FANOUT_ENFORCE=1   block, exit 2
-
-Bypass:
-  CONCURRENT_FANOUT_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

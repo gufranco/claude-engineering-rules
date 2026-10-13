@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""Enforce the knowledge-note specification on writes into the second brain vault.
-
-Scoped to paths under ``SECOND_BRAIN_VAULT``. Silent everywhere else.
-
-Blocks what is decidable from a single file:
-
-    KN001  a required frontmatter key is missing
-    KN002  the fixed "## For future agent" preamble is missing
-    KN003  an undated present-tense claim about a volatile subject
-    FRESH-3  a pointer with no resolvable target
-    KN004  a wikilink to a note that does not exist and is not marked TBD
-    KN005  an edit to an existing file under the immutable raw folder
-    KN006  a removal of a vault path outside the trash folder
-
-Whole-graph checks belong to the vault linters, never here. The note grammar
-itself lives in ``_lib/knowledge_notes.py`` so the hook and the linters share
-one definition.
-
-Rule source: ``rules/knowledge-notes.md``.
-
-Bypass: set ``KNOWLEDGE_NOTE_DISABLE=1`` in a parent shell.
-"""
-
 from __future__ import annotations
 
 import os

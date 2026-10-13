@@ -1,41 +1,4 @@
 #!/usr/bin/env python3
-"""
-check-then-act-blocker.py
-
-PreToolUse hook that flags a read which decides a write, followed by that write.
-Rule source: ~/.claude/standards/concurrency.md "Race Taxonomy" and
-~/.claude/rules/architecture-defaults.md "Hard Rules".
-
-    const existing = await db.seat.findFirst({ where: { showId, row } });
-    if (!existing) {
-      await db.seat.create({ data: { showId, row, userId } });
-    }
-
-The await on the read yields. A second actor enters, sees no row, and both
-create. The window between the two statements is the bug, and nothing in the
-code makes it visible.
-
-Detected: an existence-deciding read followed within WINDOW_LINES by a create
-on the same entity, when no atomic alternative appears nearby.
-
-Silent when the payload carries an atomic marker: upsert, ON CONFLICT, a unique
-violation handled by code, a row lock, or an advisory lock.
-
-Skipped: test files, migrations, seeds, fixtures, and this repo's own hooks.
-
-Known blind spots, accepted deliberately. Entity matching is textual, so a read
-and a write separated by an intermediate variable assignment are matched only
-when the receiver names agree. Static detection of check-then-act is undecidable
-in general; this hook targets the ORM call shapes that appear in practice.
-
-Modes:
-  default                   warn only, exit 0
-  CHECK_THEN_ACT_ENFORCE=1  block, exit 2
-
-Bypass:
-  CHECK_THEN_ACT_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os
@@ -163,12 +126,6 @@ def is_skipped(path: str) -> bool:
 
 
 def entity_of(receiver: str) -> str:
-    """Reduce a call receiver to a comparable entity name.
-
-    `db.user`, `tx.user`, `userRepository`, and `this.userRepo` all reduce to
-    `user`, so a read and a write on the same entity match without a parser.
-    Returns an empty string when the receiver carries no entity information.
-    """
     parts = [part for part in receiver.split(".") if part]
     for candidate in reversed(parts):
         if candidate.lower() in GENERIC_RECEIVERS:

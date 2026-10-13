@@ -1,26 +1,3 @@
-"""Hook profile gating.
-
-Every hook in ~/.claude/hooks/ should import `should_run` and short-circuit
-at the top of `main()`:
-
-    from _lib.hook_profile import should_run
-    if not should_run("dangerous-command-blocker"):
-        sys.exit(0)
-
-The profile is read from `CLAUDE_HOOK_PROFILE` (default `standard`).
-Profiles are additive supersets:
-
-  - minimal:  always-on safety hooks only
-  - standard: minimal + quality hooks (formatters, linters, banned phrases)
-  - strict:   standard + experimental hooks (gateguard-fact-force, mcp-health-check)
-
-Per-ID disable via `CLAUDE_DISABLED_HOOKS=<csv>` overrides the profile.
-Per-ID enable via `CLAUDE_ENABLED_HOOKS=<csv>` also overrides.
-
-The hook ID matches the filename without extension by default. Hooks can
-pass an explicit ID when their filename does not match.
-"""
-
 from __future__ import annotations
 
 import os
@@ -123,7 +100,6 @@ def _csv_set(env_var: str) -> frozenset[str]:
 
 
 def should_run(hook_id: str) -> bool:
-    """Return True when this hook should execute under the current profile."""
     profile = os.environ.get("CLAUDE_HOOK_PROFILE", "standard").lower()
     if profile not in PROFILES:
         return True

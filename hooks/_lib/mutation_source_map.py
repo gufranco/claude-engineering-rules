@@ -1,27 +1,3 @@
-"""Source-map awareness for mutation-method-blocker (plan item 389).
-
-When the hook analyzes transpiled output (`dist/`, `build/`, `out/`, or
-any file with a `.map` sibling), it parses the source map and reports
-findings against the original source location. Without source-map
-support, transpiled findings are unactionable because the reviewer
-sees minified or compiled output, not the source they wrote.
-
-Public API:
-
-    is_transpiled_path(file_path) -> bool
-    load_source_map(file_path) -> dict | None
-    map_to_original(source_map, line, col) -> tuple[str, int, int] | None
-
-Design notes:
-
-  - VLQ decoding is implemented inline to avoid an external dep. The
-    source-map format uses base64 VLQ for compact line/column data.
-  - Fail open: any parse error returns `None` and the original location
-    is used. A broken source map never blocks a finding.
-  - Caching: maps are read once per file path and cached for the
-    process lifetime.
-"""
-
 from __future__ import annotations
 
 import json
@@ -38,7 +14,6 @@ _SOURCE_MAP_CACHE: dict[str, dict[str, Any] | None] = {}
 
 
 def is_transpiled_path(file_path: str) -> bool:
-    """Return True when the file looks like transpiled output."""
     if not file_path:
         return False
     parts = file_path.replace("\\", "/").split("/")
@@ -46,7 +21,6 @@ def is_transpiled_path(file_path: str) -> bool:
 
 
 def _decode_vlq(segment: str) -> list[int]:
-    """Decode a base64 VLQ segment into a list of integers."""
     values: list[int] = []
     value = 0
     shift = 0
@@ -70,11 +44,6 @@ def _decode_vlq(segment: str) -> list[int]:
 
 
 def _parse_mappings(mappings: str) -> list[list[list[int]]]:
-    """Decode the `mappings` field into a 2D structure of segments.
-
-    Returns lines, each containing a list of segments. Each segment is
-    a list of 1, 4, or 5 integers per the source-map spec.
-    """
     lines: list[list[list[int]]] = []
     prev = [0, 0, 0, 0, 0]
     prev_gen_col = 0
@@ -103,7 +72,6 @@ def _parse_mappings(mappings: str) -> list[list[list[int]]]:
 
 
 def load_source_map(file_path: str) -> dict[str, Any] | None:
-    """Read and parse a `.map` sibling. Returns None when absent or invalid."""
     if file_path in _SOURCE_MAP_CACHE:
         return _SOURCE_MAP_CACHE[file_path]
     map_path = file_path + ".map"
@@ -136,11 +104,6 @@ def load_source_map(file_path: str) -> dict[str, Any] | None:
 def map_to_original(
     source_map: dict[str, Any], line: int, col: int
 ) -> tuple[str, int, int] | None:
-    """Map a generated (line, col) to the original (file, line, col).
-
-    Lines are 1-based; columns are 0-based. Returns None when no mapping
-    is found.
-    """
     decoded = source_map.get("decoded") or []
     if line < 1 or line > len(decoded):
         return None

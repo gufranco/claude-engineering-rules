@@ -1,27 +1,4 @@
 #!/usr/bin/env python3
-"""Turn Claude Code transcript metadata into vault project notes.
-
-A record of what was worked on, when, and on which branches, recovered from
-transcripts that would otherwise be read by nobody.
-
-What it uses, and the limit that follows. Every field here is observed from the
-transcript record: the working directory, the git branch, the timestamps, the
-session count, and the per-session title the CLI already generated. It does not
-read conversation bodies, so it recovers what a session was about and never what
-the session concluded. A note claiming otherwise would be inference dressed as
-history, which the specification exists to prevent.
-
-Streams the files rather than loading them, because the corpus runs to hundreds
-of megabytes.
-
-Usage:
-
-    python3 .github/scripts/session-mine.py [--projects DIR] [--path VAULT]
-        [--apply] [--json]
-
-Never overwrites an existing note.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -63,12 +40,6 @@ class Summary:
 
 
 def note_name(summary: Summary, taken: set[str] | None = None) -> str:
-    """Return a filesystem-safe, unique note title for a project.
-
-    Two checkouts can share a basename, and a name collision would silently
-    collapse them into one note. Disambiguation walks up the recorded working
-    directory until the name is distinct.
-    """
     base = " ".join(summary.name.translate(UNSAFE).split()).lstrip(".").strip()
     base = base or "Unknown project"
     if taken is None or base not in taken:
@@ -89,7 +60,6 @@ def note_name(summary: Summary, taken: set[str] | None = None) -> str:
 
 
 def scan(projects: Path) -> dict[str, Summary]:
-    """Walk every transcript and collect observable facts per project."""
     found: dict[str, Summary] = {}
     for directory in sorted(p for p in projects.iterdir() if p.is_dir()):
         transcripts = sorted(directory.glob("*.jsonl"))
@@ -135,7 +105,6 @@ def scan(projects: Path) -> dict[str, Summary]:
 
 
 def render(summary: Summary) -> str:
-    """Render one project note. Every claim is stamped or timeless."""
     today = date.today().isoformat()
     span = (
         f"{summary.first} to {summary.last}"
@@ -192,7 +161,6 @@ def render(summary: Summary) -> str:
 
 
 def apply(found: dict[str, Summary], root: Path, dry_run: bool) -> list[str]:
-    """Write one note per project. Never overwrites an existing note."""
     written: list[str] = []
     taken: set[str] = set()
     for summary in found.values():

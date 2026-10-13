@@ -1,42 +1,4 @@
 #!/usr/bin/env python3
-"""
-dedup-store-guard.py
-
-PreToolUse hook that rejects in-memory deduplication stores.
-Rule source: ~/.claude/standards/idempotency.md "Storage",
-~/.claude/rules/architecture-defaults.md "Deduplication Specifics",
-~/.claude/checklists/checklist.md category 18.
-
-    const processedEvents = new Set<string>();
-
-    export async function handleWebhook(event: StripeEvent) {
-      if (processedEvents.has(event.id)) return;
-      processedEvents.add(event.id);
-      await applyEffect(event);
-    }
-
-The set is empty after every deploy, every crash, and every scale-out. The
-second replica has never seen any of the IDs the first replica processed, so
-the duplicate the code appears to prevent is delivered anyway.
-
-Detected: a module-level Set, Map, array, or dict whose name reads as a
-deduplication ledger, such as `processedEvents`, `seenMessageIds`, or
-`handledDeliveryIds`.
-
-Silent for function-local collections, for single-flight promise maps, which
-are process-local coordination rather than a dedup ledger, and for durable
-stores.
-
-Skipped: test files, migrations, seeds, fixtures, and this repo's own hooks.
-
-Modes:
-  default              warn only, exit 0
-  DEDUP_STORE_ENFORCE=1  block, exit 2
-
-Bypass:
-  DEDUP_STORE_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

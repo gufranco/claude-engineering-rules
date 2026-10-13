@@ -1,19 +1,4 @@
 #!/usr/bin/env python3
-"""Auto-wrap bare file mentions in markdown.
-
-Uses the shared detector from ``markdown_link_detector.py`` to find
-findings, then rewrites each file in place, wrapping every flagged span as
-``[`token`](resolved_path)``.
-
-Idempotent: re-running on a clean file produces no changes.
-
-Usage:
-    python3 .github/scripts/fix-markdown-links.py
-    python3 .github/scripts/fix-markdown-links.py --include-advisory
-    python3 .github/scripts/fix-markdown-links.py path/to/file.md ...
-    python3 .github/scripts/fix-markdown-links.py --dry-run
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -47,10 +32,6 @@ def tracked_markdown_files(repo_root: Path) -> list[str]:
 
 
 def apply_fixes(file_path: Path, findings: list[Finding]) -> int:
-    """Rewrite the file, wrapping each bare reference as a link.
-
-    Returns the number of replacements applied.
-    """
     if not findings:
         return 0
 
@@ -87,11 +68,6 @@ def apply_fixes(file_path: Path, findings: list[Finding]) -> int:
 def apply_broken_target_fixes(
     file_path: Path, findings: list[BrokenLinkFinding]
 ) -> int:
-    """Rewrite each fixable broken-target link to its file-relative form.
-
-    Findings whose ``correct_path`` is None are skipped: the target does not
-    exist in the repo and needs manual review.
-    """
     fixable = [f for f in findings if f.correct_path is not None]
     if not fixable:
         return 0

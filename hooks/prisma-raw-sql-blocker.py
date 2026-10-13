@@ -1,22 +1,4 @@
 #!/usr/bin/env python3
-"""
-prisma-raw-sql-blocker.py
-
-PreToolUse hook that blocks Prisma raw SQL methods in application code.
-Rule source: ~/.claude/rules/code-style.md "No raw SQL" + standards/database.md.
-
-Blocks: $queryRaw, $executeRaw, $queryRawUnsafe, $executeRawUnsafe.
-
-Allowed paths (skipped):
-  - Documentation: *.md, *.mdx, *.markdown, *.rst, *.txt. A standard or README
-    that shows the anti-pattern in order to forbid it is teaching, not shipping.
-  - Anything under */migrations/* or *prisma/migrations*
-  - *.sql files
-
-Bypass:
-  PRISMA_RAW_SQL_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import os

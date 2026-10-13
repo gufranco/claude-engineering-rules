@@ -1,34 +1,3 @@
-"""Allowlist registry for the mutation-method-blocker hook.
-
-Centralizes the allowance logic that decides whether a given detector hit
-should be suppressed. Three signal categories drive allowance:
-
-  1. Framework receivers: `router.push`, `history.push`, stream APIs, queues.
-     A finite, hand-curated set of identifiers that the codebase legitimately
-     calls `.push` on without violating the immutability rule.
-
-  2. Hot-path directories: cryptographic, codec, image, audio, parser, WASM
-     paths where mutation through TypedArray and ArrayBuffer views is the
-     domain norm. Path-based skip avoids per-call allowlist hassle.
-
-  3. State-management scopes: Immer `produce`, Mutative `create`, Redux
-     Toolkit `createSlice` reducers and `extraReducers`, Pinia stores,
-     Vuex mutations, MobX actions, Zustand `set(produce(...))`, Yjs CRDT
-     operations. Inside these scopes, mutation is the canonical pattern.
-
-Public API:
-
-    is_framework_receiver(line, owner) -> bool
-    is_hot_path(file_path) -> bool
-    is_in_state_mgmt_scope(window, file_path) -> tuple[bool, str | None]
-    is_state_mgmt_filename(file_path) -> bool
-    skip_path(file_path) -> bool
-    skip_extension(file_path) -> bool
-
-The module is pure. It performs no I/O and is safe to import from any
-hook, test fixture, or detector module.
-"""
-
 from __future__ import annotations
 
 import re
@@ -134,12 +103,6 @@ THIRD_PARTY_COMMAND_QUEUES: frozenset[str] = frozenset(
         "uetq",
     }
 )
-"""Vendor queues whose documented call convention is `.push`.
-
-The tag manager or consent processor replaces the array with a live object
-once its script loads, so pushing is the integration API rather than an array
-mutation. Flagging them produced repeated bypasses rather than rewrites.
-"""
 
 
 PUSH_FRAMEWORK_RECEIVERS: frozenset[str] = frozenset(
@@ -249,16 +212,6 @@ DOM_PROPERTY_NAMES: frozenset[str] = frozenset(
 
 
 def is_dom_receiver(receiver: str | None) -> bool:
-    """Return True when `receiver` is a known DOM identifier.
-
-    Matches three signals:
-      1. Exact match in `DOM_RECEIVER_NAMES`
-      2. Suffix match in `DOM_TYPED_RECEIVER_PATTERN` (e.g., `myElement`,
-         `submitBtn`, `inputRef`)
-      3. Receiver chain ending in a known DOM accessor: `event.target`,
-         `e.currentTarget`, `*.parentNode`, `*.firstChild`, `*.style`,
-         `*.classList`, `*.dataset`
-    """
     if not receiver:
         return False
     short = receiver.strip()
@@ -292,15 +245,6 @@ def is_dom_receiver(receiver: str | None) -> bool:
 
 
 def is_dom_assignment(receiver: str | None, prop: str | None) -> bool:
-    """Return True when `receiver.prop = value` is a DOM mutation.
-
-    Two-tier check:
-      1. If the receiver is a known DOM identifier, the property assignment
-         is DOM regardless of property name.
-      2. Even when the receiver is unknown, a property name in
-         `DOM_PROPERTY_NAMES` is strong evidence the assignment is DOM
-         (`anyVar.innerHTML = '...'` is almost always a DOM mutation).
-    """
     if is_dom_receiver(receiver):
         return True
     if prop and prop in DOM_PROPERTY_NAMES:
@@ -561,13 +505,6 @@ TEMPORAL_IMMUTABLE_METHODS: frozenset[str] = frozenset(
 
 
 def has_temporal_usage(full_text: str) -> bool:
-    """Return True when the file imports or uses the Temporal API.
-
-    Recognizes both polyfill imports (`@js-temporal/polyfill`,
-    `temporal-polyfill`) and native `Temporal.*` references. Native usage
-    counts because Temporal reached Stage 4 on 2026-03-11 and ships with
-    Chrome 144+, Firefox 139+, and Edge 144+ without the polyfill.
-    """
     if not full_text:
         return False
     if TEMPORAL_IMPORT_PATTERN.search(full_text):
@@ -576,20 +513,6 @@ def has_temporal_usage(full_text: str) -> bool:
 
 
 def collect_temporal_receivers(full_text: str) -> frozenset[str]:
-    """Collect variable names produced by Temporal factory calls.
-
-    Tracks the receiver names so chained calls like
-    `t.add({ hours: 1 })` on a Temporal value do not collide with the
-    Map/Set `.add()` detector. Temporal returns are immutable; chained
-    methods always produce a new value.
-
-    Two extraction sources:
-      1. `const x = Temporal.X.from(...)` and `Temporal.Now.*()` factories.
-      2. Typed parameters and declarations: `function f(t: Temporal.Instant)`
-         and `const x: Temporal.PlainDate = ...`. Type-driven extraction is
-         essential for helper functions that accept a Temporal value but
-         do not call the factory themselves.
-    """
     if not full_text:
         return frozenset()
     names: set[str] = set()
@@ -603,15 +526,6 @@ def collect_temporal_receivers(full_text: str) -> frozenset[str]:
 def is_temporal_chain_call(
     line: str, owner: str | None, receivers: frozenset[str]
 ) -> bool:
-    """Return True when the matched call is a Temporal immutable chain.
-
-    Checks two signals:
-      1. `owner` is in the tracked Temporal receivers set
-      2. The line shows a chained call like `Temporal.Now.instant().add(...)`
-         even when no variable was extracted
-
-    Either signal is enough to allowlist the call.
-    """
     if owner and owner in receivers:
         return True
     if not line:
@@ -666,20 +580,6 @@ _WEB_API_RECEIVER_PATTERNS: tuple[tuple[str, re.Pattern[str], re.Pattern[str]], 
 
 
 def collect_web_api_receivers(full_text: str) -> frozenset[str]:
-    """Collect variable names typed as URLSearchParams, Headers, or FormData.
-
-    Used by the array and collection detectors to skip owners that the
-    web-api detectors will already flag. Without this dedup, a call like
-    `params.set('q', t)` triggers both `web-api.url-search-params.set`
-    (correct) and `collection.set.set` (wrong: the file's `.set(` calls
-    cause the lowercase `\\bset\\b` receiver hint to misfire).
-
-    Two extraction sources:
-      1. Typed annotations: `const params: URLSearchParams`,
-         `function f(headers: Headers)`, `let fd: FormData`.
-      2. Construction: `const params = new URLSearchParams(...)`,
-         `const headers = new Headers(...)`, `const fd = new FormData(...)`.
-    """
     if not full_text:
         return frozenset()
     names: set[str] = set()
@@ -692,21 +592,12 @@ def collect_web_api_receivers(full_text: str) -> frozenset[str]:
 
 
 def is_web_api_receiver(owner: str | None, receivers: frozenset[str]) -> bool:
-    """Return True when owner is a tracked Web API receiver."""
     if not owner:
         return False
     return owner in receivers
 
 
 def is_es2024_static_factory(line: str) -> bool:
-    """Return True when the line invokes a known no-mutation ES2024+ factory.
-
-    Used by detectors that look for `name.method(` patterns to avoid
-    accidentally flagging static methods that always return new values.
-    `Promise.withResolvers()` returns a fresh `{ promise, resolve, reject }`,
-    `Array.fromAsync(iter)` returns a new array, `Object.groupBy(items, fn)`
-    returns a new null-prototype object. None mutate a receiver.
-    """
     if not line:
         return False
     return any(
@@ -717,17 +608,6 @@ def is_es2024_static_factory(line: str) -> bool:
 def collect_state_mgmt_receivers(
     full_text: str, file_path: str
 ) -> dict[str, frozenset[str]]:
-    """Collect state-management library receiver names from a full file.
-
-    Returns a mapping `{library_label: frozenset_of_receiver_names}`. The
-    detector uses these names to allow mutations on tracked objects produced
-    by state-mgmt factories (Valtio proxy, Solid stores, LegendApp observable,
-    Vue reactive/ref, Nanostores atoms/maps, Svelte 5 runes).
-
-    Each library's import is verified before its receiver names are collected
-    so a function literally named `proxy` in a non-Valtio file does not
-    accidentally enable allowlisting.
-    """
     receivers: dict[str, frozenset[str]] = {}
     if not full_text:
         return receivers
@@ -792,12 +672,6 @@ def collect_state_mgmt_receivers(
 
 
 def hit_uses_receiver(hit_line: str, receivers: frozenset[str]) -> bool:
-    """Return True when `hit_line` references one of the given receiver names.
-
-    Matches both `name.` access (chained property/method) and bare `name`
-    (compound assignment, increment) at word boundaries so the check covers
-    `state.items.push(...)`, `state.count = ...`, and `total += 1`.
-    """
     if not hit_line or not receivers:
         return False
     for name in receivers:
@@ -818,14 +692,12 @@ def hit_uses_receiver(hit_line: str, receivers: frozenset[str]) -> bool:
 
 
 def skip_extension(file_path: str) -> bool:
-    """Return True when the file extension is outside JS/TS coverage."""
     if not file_path:
         return True
     return not file_path.lower().endswith(JS_EXTS)
 
 
 def skip_path(file_path: str) -> bool:
-    """Return True when the path matches a skip segment or suffix."""
     if not file_path:
         return True
     p = file_path.lower()
@@ -837,12 +709,6 @@ def skip_path(file_path: str) -> bool:
 
 
 def is_hot_path(file_path: str) -> bool:
-    """Return True when the path lives in a performance hot-path directory.
-
-    Hot paths are exempt from TypedArray and ArrayBuffer mutation detection
-    because crypto, codec, image, and similar domains rely on in-place writes
-    by design.
-    """
     if not file_path:
         return False
     p = file_path.lower()
@@ -850,13 +716,6 @@ def is_hot_path(file_path: str) -> bool:
 
 
 def is_framework_receiver(line: str, owner: str | None) -> bool:
-    """Return True when the receiver is a known framework or stream API.
-
-    Two-tier check: the captured `owner` identifier (when the regex parsed
-    one) plus a pattern match across the surrounding line so chained
-    accessors like `routerRef.current.push` or `app.router.push` are still
-    recognized.
-    """
     if owner and owner in PUSH_FRAMEWORK_RECEIVERS:
         return True
     framework = PUSH_FRAMEWORK_PATTERN.findall(line)
@@ -864,40 +723,18 @@ def is_framework_receiver(line: str, owner: str | None) -> bool:
 
 
 def collect_svelte_state_raw_receivers(full_text: str) -> frozenset[str]:
-    """Return variable names declared via `$state.raw(...)`.
-
-    `$state.raw` returns a non-proxied value: mutations on the receiver bypass
-    Svelte's reactivity and are surprising. Receivers listed here must NOT be
-    auto-allowed by the state-management scope, even inside a `.svelte` file.
-    """
     return frozenset(
         m.group(1) for m in SVELTE_STATE_RAW_VAR_DECL_PATTERN.finditer(full_text)
     )
 
 
 def is_state_mgmt_filename(file_path: str) -> bool:
-    """Return True when the filename matches a known state-management pattern.
-
-    A backup signal used when AST or window-based scope detection is
-    inconclusive. A file named `userSlice.ts` is treated as a Redux Toolkit
-    slice and mutation is allowed inside its body.
-    """
     if not file_path:
         return False
     return any(pat.search(file_path) for pat in STATE_MGMT_FILENAME_PATTERNS)
 
 
 def is_in_state_mgmt_scope(window: str, file_path: str) -> tuple[bool, str | None]:
-    """Detect whether the surrounding source window sits inside a state-mgmt scope.
-
-    The window is a multi-line slice covering N lines before and after the
-    detector hit. Returns the matched scope label so the audit log can record
-    which library suppressed the block.
-
-    Detection order matters: more specific patterns (Zustand inside produce)
-    are tested before broader patterns (Immer produce alone) to avoid
-    over-attribution.
-    """
     if not window:
         return False, None
 
@@ -1022,11 +859,4 @@ PARAM_REASSIGN_ALLOWLIST: frozenset[str] = frozenset(
 
 
 def is_param_reassign_allowed_name(name: str) -> bool:
-    """Return True when a parameter name is conventionally mutated.
-
-    Mirrors the `ignorePropertyModificationsFor` defaults of the popular
-    `no-param-reassign` ESLint rule: reduce accumulators, Express request
-    and response objects, and a small set of conventional names where
-    mutation is expected.
-    """
     return name in PARAM_REASSIGN_ALLOWLIST

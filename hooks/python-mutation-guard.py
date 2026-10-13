@@ -1,41 +1,4 @@
 #!/usr/bin/env python3
-"""
-python-mutation-guard.py
-
-PreToolUse hook that enforces the immutability baseline in Python.
-Rule source: ~/.claude/standards/immutability.md "Per-Language Expression",
-~/.claude/rules/lang/python.md, ~/.claude/rules/code-style.md "Immutability".
-
-mutation-method-blocker.py covers TypeScript and is built around TypeScript
-semantics: the ES2024 replacement tables, framework allowlists such as Immer and
-Zustand, the TS project service, and source-map remapping. None of that transfers
-to Python, so Python gets its own detector set here and shares the same
-infrastructure through `_lib`: bypass channels, audit trail, block schema,
-suppression, and profile gating.
-
-Two detections, both parsed with `ast` rather than matched with regex:
-
-  1. Mutable default argument. `def f(items=[])` shares one list across every
-     call, so the second caller sees what the first appended.
-
-  2. Parameter mutation. A function that mutates its argument changes a value the
-     caller still holds, and the change is invisible at the call site. The message
-     names the read-only annotation when one is present, since mutating a value
-     typed `Sequence` or `Mapping` is also a type error the checker should catch.
-
-`self` and `cls` are exempt: mutating instance state is what methods are for.
-Local accumulators are exempt: the value never leaves the function.
-
-Skipped: test files, migrations, and this repo's own hooks.
-
-Modes:
-  default                    warn only, exit 0
-  PYTHON_MUTATION_ENFORCE=1  block, exit 2
-
-Bypass:
-  PYTHON_MUTATION_DISABLE=1
-"""
-
 from __future__ import annotations
 
 import ast
@@ -298,7 +261,6 @@ def find(text: str) -> list[str]:
 
 
 def find_with_regex(text: str, lines: list[str]) -> list[str]:
-    """Fallback for Edit fragments that do not parse on their own."""
     hits: list[str] = []
     for match in MUTABLE_DEFAULT_REGEX.finditer(text):
         line_no = text.count("\n", 0, match.start()) + 1

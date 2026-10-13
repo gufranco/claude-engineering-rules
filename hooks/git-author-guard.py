@@ -1,38 +1,4 @@
 #!/usr/bin/env python3
-"""Block git operations that would use the wrong author identity.
-
-Identity resolution itself is delegated to the user's private
-`~/.gitconfig` via `includeIf "hasconfig:remote.*.url:..."`. This hook
-does not know any real email. It only verifies consistency:
-
-- Commit creation (`git commit`, `--amend`, `cherry-pick`, `rebase`,
-  `revert`, `merge` with custom message): effective `user.email` is
-  non-empty, no `[user]` block exists in the repository's `.git/config`,
-  no inline `GIT_AUTHOR_EMAIL=`/`GIT_COMMITTER_EMAIL=` env override is
-  set, and no inline `-c user.email=`/`-c user.name=`/
-  `-c commit.gpgsign=`/`-c tag.gpgsign=` override is set on the same
-  command line.
-
-- Push (`git push`, `--force`, `--force-with-lease`): walks
-  `git log --format=%ae @{push}..HEAD` (capped at 200 commits) and
-  blocks if any author email is empty or matches a placeholder pattern
-  like `*@example.com`, `*@example.org`, `*@example.net`, or
-  `noreply.example.*`.
-
-- Config mutation (`git config user.email <value>`, `git config
-  user.name <value>`, `git config --local user.*`): blocks any local
-  write to `user.*`. Allows `--global` writes; those edit
-  `~/.gitconfig`, the source of truth.
-
-Read-only commands (`git config --get`, `git status`, `git log`) are
-not gated.
-
-Bypass: GIT_AUTHOR_GUARD_DISABLE=1 in the hook's environment.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
-
 from __future__ import annotations
 
 import os
@@ -96,7 +62,6 @@ GIT_C_FLAG = re.compile(r"\bgit\s+-C\s+(?P<dir>\S+)")
 
 
 def repo_dir(command: str) -> Path:
-    """Best-effort resolution of the working directory the command targets."""
     cd_match = CD_PREFIX.search(command)
     if cd_match:
         candidate = Path(os.path.expanduser(cd_match.group("dir")))
@@ -126,7 +91,6 @@ def run_git(cwd: Path, *args: str) -> tuple[int, str]:
 
 
 def has_local_user_block(cwd: Path) -> bool:
-    """True if .git/config contains a [user] block with name or email."""
     code, top = run_git(cwd, "rev-parse", "--show-toplevel")
     if code != 0 or not top:
         return False

@@ -1,15 +1,3 @@
-"""Local project workspace: where the user's working material lives in a repo.
-
-Every repository gets one folder for research, requirements, plans, and a
-continuation prompt. The folder is ignored through `.git/info/exclude`, never
-the committed `.gitignore`, and it never lives inside a directory the project
-owns. `docs/` is preferred; a project that owns `docs/` gets `.work/`.
-
-Ownership is sticky: the exclude file carries a marker line above each entry
-this module wrote, so a workspace that later gains files still resolves to
-the same folder. A folder the project starts tracking loses that claim.
-"""
-
 from __future__ import annotations
 
 import subprocess
@@ -24,7 +12,7 @@ RENAME_CODES = frozenset("RC")
 
 
 class WorkspaceError(Exception):
-    """Git could not answer, or no workspace folder is free."""
+    pass
 
 
 def _run(cwd: Path, args: tuple[str, ...]) -> subprocess.CompletedProcess[str]:

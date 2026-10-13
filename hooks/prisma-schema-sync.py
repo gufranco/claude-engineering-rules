@@ -104,10 +104,6 @@ FIELD_UNIQUE_RE = re.compile(
 
 
 def parse_schema_models(schema_text: str) -> dict:
-    """Return {model_name: {"table": str, "fields": set[str]}}.
-
-    Honors @@map for table-name override and @map for column-name override.
-    """
     out: dict = {}
     model_re = re.compile(r"^model\s+(\w+)\s*\{", re.MULTILINE)
     for match in model_re.finditer(schema_text):
@@ -145,7 +141,6 @@ def parse_schema_models(schema_text: str) -> dict:
 
 
 def parse_schema_indexes(schema_text: str) -> tuple[set, set]:
-    """Return (index_map_names, unique_map_names)."""
     idx = {m.group("name") for m in SCHEMA_INDEX_RE.finditer(schema_text)}
     unq = {
         m.group("name")

@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""Block force-push when an open CHANGES_REQUESTED review exists.
-
-Platform coverage: GitHub via `gh pr view --json reviews`. GitLab and
-Bitbucket Cloud are out of scope because they expose review or
-approval state through different endpoints; the `/respond` skill
-documents the equivalents in the platform-* reference files.
-
-Force-pushing during active review drops the reviewer's comment context
-and marks all inline comments as outdated without resolving them. The
-hook detects git push with --force or --force-with-lease, looks up the
-current branch's PR, and blocks if any CHANGES_REQUESTED review is open.
-
-The lookup uses gh pr view. If gh is unavailable, the hook allows the
-push (fail-open) rather than block on infrastructure problems.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-
-Bypass: set FORCE_PUSH_DURING_REVIEW_DISABLE=1 in the environment.
-"""
-
 import os
 import re
 import subprocess

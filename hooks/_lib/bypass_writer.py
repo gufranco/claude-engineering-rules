@@ -1,22 +1,3 @@
-"""Writer for the in-session bypass registry.
-
-
-Companion to `bypass.py` (read-side). Lets the assistant or the user engage
-or clear a bypass entry without hand-editing JSON.
-
-Public API:
-
-    set_bypass(hook, *, ttl_seconds=600, reason=None, state_path=None) -> Path
-        Add or replace a bypass entry for `hook`. TTL is clamped to
-        [60, 3600]. Writes the file with mode 0600. Returns the file path.
-
-    clear_bypass(hook=None, *, state_path=None) -> int
-        Remove the entry for `hook`, or every entry when `hook` is None.
-        Returns the number of entries removed.
-
-The file format is the v1 schema documented in `bypass.py`.
-"""
-
 from __future__ import annotations
 
 import json
@@ -94,7 +75,6 @@ def set_bypass(
     state_path: Path | None = None,
     now: datetime | None = None,
 ) -> Path:
-    """Add or replace a bypass entry. Returns the registry path."""
     if not hook:
         raise ValueError("hook name is required")
     path = state_path if state_path is not None else STATE_PATH
@@ -114,10 +94,6 @@ def set_bypass(
 
 
 def clear_bypass(hook: str | None = None, *, state_path: Path | None = None) -> int:
-    """Remove one entry by hook name or every entry when hook is None.
-
-    Returns the number of entries removed.
-    """
     path = state_path if state_path is not None else STATE_PATH
     state = _load_state(path)
     before = len(state["bypasses"])

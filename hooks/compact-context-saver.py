@@ -1,25 +1,4 @@
 #!/usr/bin/env python3
-"""Preserve and restore context across Claude Code compaction.
-
-Hook surfaces:
-    - SessionStart / PreCompact: snapshot `git status` + current branch.
-    - SessionStart resume / PostCompact: print the saved snapshot back.
-
-Usage: `compact-context-saver.py [pre|post]`. Defaults to `pre`.
-
-Snapshots are scoped to the project they describe. The default location is
-`~/.claude/.compact-context.d/<project-digest>.snapshot`, keyed by the git
-toplevel (or cwd when outside a repo). `post` prints a snapshot only when its
-recorded `Project:` matches the current project and the file is newer than
-`MAX_AGE_SECONDS`. A snapshot taken in one project can therefore never surface
-in another. Setting `$CLAUDE_COMPACT_CONTEXT` overrides the path; the project
-and freshness checks still apply.
-
-Bypass channels:
-    1. Env var `COMPACT_CONTEXT_DISABLE=1`.
-    2. File registry entry for hook `compact-context-saver`.
-"""
-
 from __future__ import annotations
 
 import datetime as dt

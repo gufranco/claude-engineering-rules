@@ -1,28 +1,4 @@
 #!/usr/bin/env python3
-"""Block edits to project linter, formatter, and typechecker configs.
-
-Runs on PreToolUse for Write/Edit/MultiEdit. When the target is a known
-config file for a linter, formatter, or typechecker (tsconfig.json,
-.eslintrc, ruff.toml, mypy.ini, etc.), block the edit and instruct the
-agent to fix the offending code rather than weaken the config.
-
-Rationale: when type checks or lint runs fail, the convenient path is
-to silence the rule in config. That converts a real defect into a
-silent regression. The rule lives in ~/.claude/CLAUDE.md
-"Maximum Compiler and Checker Strictness" and ~/.claude/rules/code-style.md
-"Zero Warnings". This hook makes the rule mechanical.
-
-Scope: project-level configs. The hook fires regardless of repo, so it
-protects every project the user touches.
-
-Exit 0 = allow, exit 2 = block.
-
-Bypass:
-  - Set `CONFIG_PROTECTION_DISABLE=1` for legitimate toolchain bumps
-    (raising the TypeScript target, upgrading ESLint major version,
-    adopting a new lint rule across the codebase).
-"""
-
 from __future__ import annotations
 
 import re

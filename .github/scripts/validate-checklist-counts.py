@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""Validate that checklist.md category count matches the declared total in CLAUDE.md and README.md."""
-
 import os
 import re
 import sys
@@ -14,7 +12,6 @@ ERRORS = []
 
 
 def count_checklist_items(path: str) -> tuple[int, int]:
-    """Return (category_count, item_count) from checklist.md."""
     with open(path) as f:
         content = f.read()
 

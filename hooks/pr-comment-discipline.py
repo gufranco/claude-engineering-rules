@@ -1,44 +1,4 @@
 #!/usr/bin/env python3
-"""
-pr-comment-discipline.py
-
-PreToolUse hook on Bash. Blocks every command that publishes a comment
-on a pull request outside an existing thread.
-
-Permitted, and therefore never blocked:
-  - A reply into an inline review thread:
-      gh api repos/<o>/<r>/pulls/<n>/comments/<id>/replies -X POST
-  - A review submission whose top-level body is empty, which is how
-    inline findings reach a pull request someone else authored:
-      gh api repos/<o>/<r>/pulls/<n>/reviews -X POST --input <file>
-  - A review event with no body at all:
-      gh pr review <n> --approve
-  - Any pull-request description edit. A description is not a comment.
-  - A reply into a GitLab discussion, or a Bitbucket comment carrying
-    parent.id.
-
-Blocked:
-  - gh pr comment
-  - gh pr review with --body or --body-file
-  - gh api POST to pulls/<n>/reviews with a non-empty top-level body
-  - gh api POST to pulls/<n>/comments without in_reply_to
-  - gh api POST to issues/<n>/comments, which is the pull-request
-    conversation channel. Real issues are commented with
-    `gh issue comment`, which this hook leaves alone.
-  - gh api POST to commits/<sha>/comments
-  - glab mr note, and a POST that creates a new GitLab discussion
-  - curl POST to a Bitbucket pullrequests/<id>/comments without parent
-
-The author of a thread cannot be read from a command string, so the
-"never reply to a bot" half of the rule has no mechanical backstop and
-stays a judgment obligation.
-
-Bypass:
-  PR_COMMENT_DISCIPLINE_DISABLE=1  (parent-shell export, not inline)
-
-Source rule: ~/.claude/rules/pr-comment-discipline.md
-"""
-
 from __future__ import annotations
 
 import json
@@ -158,12 +118,6 @@ def _writes(command: str, tool: re.Pattern[str]) -> bool:
 
 
 def _is_write(tokens: list[str], command: str) -> bool:
-    """True when the invocation sends a write request.
-
-    `gh api` defaults to GET, so a write needs an explicit method or a
-    payload flag. `curl` follows the same logic. Anything carrying a
-    body is a write regardless of how the method was spelled.
-    """
     lowered = [t.lower() for t in tokens]
     for index, token in enumerate(lowered):
         if token in ("-x", "--method", "--request"):
@@ -206,11 +160,6 @@ def _payload_chunks(
 
 
 def _iter_json_objects(text: str):
-    """Yield every balanced brace-delimited substring that parses as a dict.
-
-    A heredoc body sits inside the command string rather than in a file,
-    so the payload has to be recovered from the surrounding text.
-    """
     depth = 0
     start = -1
     for index, char in enumerate(text):
@@ -231,11 +180,6 @@ def _iter_json_objects(text: str):
 
 
 def _has_nonempty_body(chunks: list[str]) -> bool:
-    """True when a review payload carries a non-empty top-level body.
-
-    A parsed object decides on its own. Only when nothing parses does
-    the text fallback run, and that fallback errs toward blocking.
-    """
     for chunk in chunks:
         for parsed in _iter_json_objects(chunk):
             if "body" not in parsed:
@@ -309,7 +253,6 @@ def _api_violation(
 
 
 def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
-    """Return (code, explanation) for the first banned shape found."""
     tokens = _tokens(command)
     segments = _command_segments(command)
     executed = strip_heredoc_bodies(command)

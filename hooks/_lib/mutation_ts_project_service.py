@@ -1,60 +1,3 @@
-"""TypeScript Project Service integration (plan item 394).
-
-When `MUTATION_METHOD_TS_PROJECT_SERVICE=1` and Node.js with the
-`typescript` package (>= 5.6) are available, the hook spawns a
-long-running Node helper that uses the TypeScript Project Service to
-answer narrow type questions about each mutation site:
-
-    - Is the receiver typed as `readonly T[]` / `ReadonlyArray<T>` /
-      `ReadonlyMap` / `ReadonlySet`? Skip the finding because the
-      compiler already rejects it.
-    - Is the receiver a `URLSearchParams`, `Headers`, or `FormData`?
-      Keep the finding even when the source looks ambiguous.
-    - Is the receiver a `TypedArray` subtype (Uint8Array, Int32Array,
-      etc.)? Apply hot-path semantics regardless of directory.
-
-The integration is optional. When the env var is unset, or Node /
-typescript are not on PATH, the hook falls back to regex-only behavior
-with no penalty. Detection accuracy improves quietly when the
-integration is available; it never blocks the hook from running.
-
-Public API:
-
-    is_enabled() -> bool
-        True only when MUTATION_METHOD_TS_PROJECT_SERVICE=1.
-
-    is_available() -> bool
-        True when the helper subprocess can start (node + typescript
-        present, helper script readable).
-
-    query_receiver_type(file_path, line, col) -> dict | None
-        Returns a small dict describing the receiver type at the
-        mutation site or None when unavailable. Cached per
-        (file_path, line, col).
-
-    shutdown() -> None
-        Terminate the helper subprocess. Safe to call multiple times.
-
-Wire protocol (NDJSON over stdio):
-
-    request:   {"id":"<uuid>","file":"<abs>","line":<n>,"col":<n>}
-    response:  {"id":"<uuid>","type":"<name>","readonly":<bool>,
-                "kind":"array|map|set|typed-array|url-params|...",
-                "error":<str?>}
-
-Latency budget: the helper must answer in under 200ms p95 or the
-caller drops the request and continues with regex-only analysis.
-
-Design notes:
-
-  - One subprocess per hook invocation. Project Service caches the
-    project graph, so subsequent queries within the same run are fast.
-  - Fail closed: any subprocess error returns None and disables
-    further queries for the remainder of the invocation.
-  - Type information is advisory. The hook never relies on it for
-    correctness, only for confidence tuning and noise reduction.
-"""
-
 from __future__ import annotations
 
 import json
@@ -82,17 +25,10 @@ _START_TS: float = 0.0
 
 
 def is_enabled() -> bool:
-    """True when the env var requests the Project Service."""
     return (os.environ.get("MUTATION_METHOD_TS_PROJECT_SERVICE") or "").strip() == "1"
 
 
 def is_available() -> bool:
-    """True only when Node and the helper script are both present.
-
-    Does NOT verify the `typescript` package is installed; that check
-    happens inside the helper on first request and surfaces as an
-    error response.
-    """
     if not is_enabled():
         return False
     if not shutil.which("node"):
@@ -103,7 +39,6 @@ def is_available() -> bool:
 
 
 def _start_helper() -> subprocess.Popen[str] | None:
-    """Spawn the long-running Node helper. Returns None on failure."""
     global _PROC, _START_TS
     with _PROC_LOCK:
         if _PROC is not None:
@@ -126,7 +61,6 @@ def _start_helper() -> subprocess.Popen[str] | None:
 
 
 def _budget_exhausted() -> bool:
-    """True when the total Project Service budget has been used up."""
     if _START_TS <= 0.0:
         return False
     elapsed_ms = (time.perf_counter() - _START_TS) * 1000.0
@@ -134,7 +68,6 @@ def _budget_exhausted() -> bool:
 
 
 def _disable(reason: str) -> None:
-    """Disable further queries and log to stderr via audit."""
     global _DISABLED
     _DISABLED = True
     if (os.environ.get("MUTATION_METHOD_DEBUG") or "").strip() == "1":
@@ -142,12 +75,6 @@ def _disable(reason: str) -> None:
 
 
 def query_receiver_type(file_path: str, line: int, col: int) -> dict[str, Any] | None:
-    """Query the receiver type at `file_path:line:col`.
-
-    Returns a dict like
-    `{"type": "ReadonlyArray<number>", "readonly": True, "kind": "array"}`
-    or None when unavailable. Cached per (path, line, col).
-    """
     if _DISABLED or not is_enabled():
         return None
     if _budget_exhausted():
@@ -195,7 +122,6 @@ def query_receiver_type(file_path: str, line: int, col: int) -> dict[str, Any] |
 def _read_response(
     proc: subprocess.Popen[str], request_id: str
 ) -> dict[str, Any] | None:
-    """Read NDJSON responses until one matches `request_id`."""
     if proc.stdout is None:
         return None
     deadline = time.perf_counter() + (_QUERY_TIMEOUT_MS / 1000.0)
@@ -213,7 +139,6 @@ def _read_response(
 
 
 def shutdown() -> None:
-    """Terminate the helper subprocess."""
     global _PROC
     with _PROC_LOCK:
         if _PROC is None:
