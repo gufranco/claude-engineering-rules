@@ -42,7 +42,7 @@ READ_TARGET = rf"{BOUNDARY}read\b[^;&|\n]*\s(?:{NAMES})(?=$|[\s;&|])"
 SPECIAL_NAME_USE = re.compile(
     "|".join((DECLARATION, ASSIGNMENT, LOOP_VARIABLE, READ_TARGET)), re.MULTILINE
 )
-LEADING_EQUALS = re.compile(r"(?:^|(?<=[\s;&|(]))=\S*", re.MULTILINE)
+LEADING_EQUALS = re.compile(r"(?:^|(?<=[\s;&|(]))=\S+", re.MULTILINE)
 DOUBLE_BRACKET = re.compile(r"\[\[.*?\]\]", re.DOTALL)
 ARITHMETIC = re.compile(r"\(\(.*?\)\)", re.DOTALL)
 

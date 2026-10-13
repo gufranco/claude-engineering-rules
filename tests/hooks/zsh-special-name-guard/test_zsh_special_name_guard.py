@@ -71,6 +71,8 @@ def test_blocks_an_unquoted_word_starting_with_equals(tool_use, run_hook, comman
         "cat <<'PAYLOAD'\npath=x\n==\nPAYLOAD",
         "a=b c=d make",
         "status_code=200",
+        '[ "$t" = tag ] && echo y',
+        "test a = b",
     ],
 )
 def test_allows_commands_without_the_trap(tool_use, run_hook, command):
