@@ -131,17 +131,12 @@ WORD_MARKERS: tuple[str, ...] = ("TODO", "FIXME", "HACK", "XXX", "WIP")
 
 _MARKER_ALTERNATION = "|".join(WORD_MARKERS)
 MARKER_PATTERN = re.compile(
-    rf"\b({_MARKER_ALTERNATION})\b(?!\s*\()",
+    rf"\b({_MARKER_ALTERNATION})\b",
     re.IGNORECASE,
 )
 
 PHRASE_PATTERN = re.compile(
     r"\bleave\s+(?:it\s+|this\s+|that\s+)?for\s+later\b",
-    re.IGNORECASE,
-)
-
-ISSUE_LINKED_PATTERN = re.compile(
-    rf"\b({_MARKER_ALTERNATION})\s*\(\s*#?[A-Za-z0-9_\-]+\s*\)",
     re.IGNORECASE,
 )
 
@@ -184,24 +179,19 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
     return out
 
 
-def _mask_issue_linked(line: str) -> str:
-    """Replace TODO(#123) / FIXME(issue-42) with spaces so they don't match the bare pattern."""
-    return ISSUE_LINKED_PATTERN.sub(lambda m: " " * len(m.group(0)), line)
+PHRASE_LABEL = "leave for later"
 
 
 def find(text: str) -> list[str]:
-    """Return marker hits per line, honoring tool directives and the issue-link allowlist."""
     lines = text.splitlines()
     block_state = compute_block_state(lines)
     hits: list[str] = []
     for i, line in enumerate(lines):
         if is_suppressed(lines, i, block_state=block_state):
             continue
-        masked = _mask_issue_linked(line)
-        for m in MARKER_PATTERN.finditer(masked):
-            hits.append(m.group(1).upper())
-        if PHRASE_PATTERN.search(masked):
-            hits.append("leave for later")
+        hits = [*hits, *(m.group(1).upper() for m in MARKER_PATTERN.finditer(line))]
+        if PHRASE_PATTERN.search(line):
+            hits = [*hits, PHRASE_LABEL]
     return hits
 
 
@@ -255,15 +245,16 @@ def main() -> int:
 
     print(
         "Blocked: tactical-debt marker in source code. "
-        'Rule: ~/.claude/CLAUDE.md "Completeness" and '
-        '~/.claude/rules/design-philosophy.md "Strategic vs Tactical Programming".\n'
+        'Rule: ~/.claude/rules/code-style.md "Completeness" and '
+        "~/.claude/rules/found-fix.md, which says a code marker is never a fix.\n"
         + "\n".join(findings)
         + "\n\nFix options:\n"
-        "  1. Complete the work now. The marginal cost of finishing is near zero with AI assistance.\n"
-        "  2. Open a tracked issue. Reference it as TODO(#123) or FIXME(#issue-42) for the issue-linked form to pass.\n"
-        "  3. Delete the marker if the work is not actually needed.\n"
+        "  1. Complete the work now.\n"
+        "  2. Delete the marker if the work is not actually needed.\n"
+        "A marker with an issue number is still a marker; the issue tracks the "
+        "work, the code does not need to.\n"
         "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
-        "Bypass (rare, prefer the issue-linked form): set TODO_MARKER_DISABLE=1, "
+        "Bypass (rare): set TODO_MARKER_DISABLE=1, "
         "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
         "set todo-marker-blocker`.",
         file=sys.stderr,

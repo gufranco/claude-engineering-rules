@@ -127,9 +127,11 @@ def test_blocks_on_multiedit(tool_use, run_hook):
         "// HACK(#issue-789): tracked",
         "// TODO(GH-42): tracked",
         "// FIXME(jira-1234): tracked",
+        "// TODO(later) finish this",
+        "// TODO(fix this when we have time)",
     ],
 )
-def test_allows_issue_linked_form(tool_use, run_hook, issue_form):
+def test_blocks_a_marker_with_a_parenthesized_note(tool_use, run_hook, issue_form):
     # Arrange
     payload = tool_use(
         "Write",
@@ -143,7 +145,7 @@ def test_allows_issue_linked_form(tool_use, run_hook, issue_form):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result, "tactical-debt marker")
 
 
 def test_allows_marker_in_markdown(tool_use, run_hook):
