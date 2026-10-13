@@ -20,7 +20,7 @@ Follow the principles in [`_shared-principles.md`](_shared-principles.md).
 1. **Find translation files.** Search for locale files: `**/locales/**/*.json`, `**/messages/**/*.json`, `**/i18n/**/*.json`, `**/translations/**/*.ts`. Identify the base locale and all supported locales.
 2. **Build key inventory.** For each locale file, extract all translation keys. Build a matrix of key presence across locales.
 3. **Check missing keys.** Find keys present in the base locale but missing in other locales. Find keys present in non-base locales but missing from the base.
-4. **Check diacritical marks.** For Portuguese translations, verify correct usage: words ending in "cao" must be "ção", words ending in "coes" must be "ções". Verify accents on common words: titulo must be titulo, codigo must be codigo. For Spanish: "cion" must be "cion", verify accents on pagina, codigo, numero.
+4. **Check diacritical marks.** For Portuguese translations, verify correct usage: words ending in "cao" must be "ção", words ending in "coes" must be "ções". Verify accents on common words: "titulo" must be "título", "codigo" must be "código". For Spanish: words ending in "cion" must be "ción", and verify the accents on "página", "código", "número".
 5. **Check interpolation variables.** Find interpolation patterns in each locale. Verify that every locale uses the same variable names in the same keys. Flag mismatches: `{name}` in English but `{nombre}` in Spanish for the same key.
 6. **Check for untranslated values.** Find keys where the translation value is identical to the base locale value. These may be untranslated copies.
 7. **Check key usage.** Search the codebase for `t('key')`, `t.raw('key')`, and equivalent patterns. Find keys used in code but missing from translation files. Find keys in translation files never referenced in code.
@@ -51,7 +51,7 @@ Do not return raw file contents. File paths and line numbers only.
 ## Scenarios
 
 **No scope provided:**
-Run `git diff --name-only HEAD` to find changed files. If any are translation files, validate the full locale set. If changed files contain `t()` calls, verify their keys exist. If no diff exists, validate all translation files.
+This agent has no shell, so it cannot run git. Ask the orchestrator for the output of `git diff --name-only HEAD`. If any are translation files, validate the full locale set. If changed files contain `t()` calls, verify their keys exist. If the list is empty, validate all translation files.
 
 **Findings exceed the 20-item limit:**
 Prioritize missing-key and interpolation-mismatch first, then diacritical errors. Truncate at 20. State: "<N> additional findings omitted."

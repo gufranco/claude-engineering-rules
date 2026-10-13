@@ -11,13 +11,13 @@ Platform is detected from the remote URL during Phase 1.
 | `github.com`, `*.github.com`, `git@github.com:` | GitHub |
 | `gitlab.com`, `*.gitlab.com`, `git@gitlab.com:`, self-hosted GitLab via remote URL | GitLab |
 
-The skill switches the CLI tool and the API endpoints accordingly. Account safety follows [`../../standards/multi-account-cli.md`](../../standards/multi-account-cli.md). For GitLab, the equivalent of `GH_TOKEN` is `GITLAB_TOKEN`, set via `GITLAB_TOKEN=$(glab auth token --hostname gitlab.com)`.
+The skill switches the CLI tool and the API endpoints accordingly. Account safety follows [`../../standards/multi-account-cli.md`](../../standards/multi-account-cli.md). For GitLab, the equivalent of `GH_TOKEN` is `GITLAB_TOKEN`, set via `GITLAB_TOKEN=$(glab config get token --host gitlab.com)`.
 
 ## glab CLI Surface
 
 | Concern | Command |
 |---------|---------|
-| Find MR for current branch | `glab mr view --json url,iid,state,headRefName,baseRefName,author` |
+| Find MR for current branch | `glab mr view -F json`, then read `web_url`, `iid`, `state`, `source_branch`, `target_branch`, `author` |
 | List discussions and notes | `glab api projects/:id/merge_requests/:iid/discussions` |
 | Add an MR-level comment | Banned. See [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) |
 | Reply to a discussion | `glab api projects/:id/merge_requests/:iid/discussions/<discussion_id>/notes -X POST --field body=...` |
@@ -32,15 +32,16 @@ GitLab does not need a GraphQL query for thread state. The REST endpoint returns
 Replace the GraphQL block from SKILL.md Phase 2 with the REST equivalent.
 
 ```bash
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
-  "projects/$(printf '%s' '<group>/<project>' | python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=\"\"))')/merge_requests/<iid>/discussions" \
+PROJECT_PATH=$(printf '%s' '<group>/<project>' | python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=""))')
+GITLAB_TOKEN=$(glab config get token --host <host>) glab api \
+  "projects/$PROJECT_PATH/merge_requests/<iid>/discussions" \
   --paginate
 ```
 
 Commit discussions live on a separate endpoint and are not returned by the MR discussions endpoint. Fetch them too when the MR has commit-level feedback:
 
 ```bash
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
+GITLAB_TOKEN=$(glab config get token --host <host>) glab api \
   "projects/<encoded-project-path>/repository/commits/<sha>/discussions"
 ```
 
@@ -74,7 +75,7 @@ cat <<'PAYLOAD' > /tmp/respond-reply-<discussion-id>.json
 }
 PAYLOAD
 
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
+GITLAB_TOKEN=$(glab config get token --host <host>) glab api \
   "projects/<encoded-project-path>/merge_requests/<iid>/discussions/<discussion-id>/notes" \
   -X POST \
   --input /tmp/respond-reply-<discussion-id>.json
@@ -85,7 +86,7 @@ There is no MR-level reply. An individual note, a non-diff discussion opened by 
 ## Phase 6 Step 6 Resolve on GitLab
 
 ```bash
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
+GITLAB_TOKEN=$(glab config get token --host <host>) glab api \
   "projects/<encoded-project-path>/merge_requests/<iid>/discussions/<discussion-id>" \
   -X PUT \
   --field resolved=true
@@ -100,11 +101,11 @@ GitLab uses `reviewer_ids` rather than reviewer usernames. The skill resolves us
 ```bash
 # Step 1: resolve usernames to IDs
 for user in alice bob; do
-  GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api "users?username=$user" --jq '.[0].id'
+  GITLAB_TOKEN=$(glab config get token --host <host>) glab api "users?username=$user" | jq '.[0].id'
 done
 
 # Step 2: PUT the MR with the resolved IDs
-GITLAB_TOKEN=$(glab auth token --hostname <host>) glab api \
+GITLAB_TOKEN=$(glab config get token --host <host>) glab api \
   "projects/<encoded-project-path>/merge_requests/<iid>" \
   -X PUT \
   --field reviewer_ids[]=<id1> --field reviewer_ids[]=<id2>
@@ -141,7 +142,7 @@ Scope is decided by `system`, not by `resolvable`:
 |-----------|--------------|----------|
 | Diff discussion, unresolved | true | Yes |
 | Non-diff discussion on the overview, unresolved | true | Yes |
-| Individual note, MR-level comment | false | Yes. Closed by reply, since there is nothing to resolve |
+| Individual note, MR-level comment | false | Yes. Answered by the code change; it has no resolve button, so it stays open and is reported |
 | System note, automated activity | false | No |
 
 Non-diff discussions are resolvable on GitLab, contrary to a common assumption. Do not skip resolving them just because they carry no `position`.

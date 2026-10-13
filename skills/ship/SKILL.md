@@ -188,7 +188,7 @@ Monitor CI/CD pipeline checks and diagnose failures. Diagnosis only, no auto-fix
 2. Check for PR, or use provided number. Fall back to branch pipelines.
 3. Check status: `gh pr checks` or `glab ci status`.
 4. If passing, report and stop.
-5. If running, wait with timeout: `timeout 600 gh pr checks --watch` or equivalent. Report if timeout reached.
+5. If running, poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule. Report and stop when the poll budget runs out.
 6. If failed: fetch logs, parallel with `gh run view <id> --log-failed` or `glab ci trace <job-id>`. Search for existing fixes first.
 7. Present diagnosis per failure: check name, URL, error, log excerpt.
 8. Suggest next steps but do not auto-fix.
@@ -262,9 +262,9 @@ If no PR exists and the caller invoked `--pipeline`, fall through to the `pr` fl
 
 ### Step 2: Wait for CI checks
 
-- With PR: `timeout 600 gh pr checks --watch` or `glab ci status --wait`.
-- Without PR, only when CI fires on push, e.g. branch protections or scheduled workflows: `gh run watch <id>` or `glab ci status --wait`.
-- Exit code 124 = timeout; report and stop. Schedule a wakeup and re-poll if the loop is still active.
+- With PR: read the run IDs from `gh pr checks`, then poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule.
+- Without PR, only when CI fires on push, e.g. branch protections or scheduled workflows: the same bounded poll on the run ID from `gh run list --branch <branch> --limit 1`.
+- When the poll budget runs out, report and stop. Schedule a wakeup and re-poll if the loop is still active.
 
 ### Step 3: Evaluate CI
 
