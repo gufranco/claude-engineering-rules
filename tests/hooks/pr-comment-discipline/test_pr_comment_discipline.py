@@ -524,7 +524,7 @@ def test_stdin_payload_falls_back_to_the_command(tool_use, run_hook):
     assert_blocked(result, "PRC004")
 
 
-def test_missing_payload_file_reads_as_no_summary(tool_use, run_hook):
+def test_a_missing_review_payload_file_blocks(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Bash",
@@ -540,7 +540,7 @@ def test_missing_payload_file_reads_as_no_summary(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result, "PRC010")
 
 
 def test_unbalanced_json_in_payload_uses_the_text_fallback(
@@ -676,7 +676,7 @@ def test_empty_command_is_ignored(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_unreadable_payload_path_falls_back(tool_use, run_hook, tmp_path):
+def test_an_unreadable_review_payload_path_blocks(tool_use, run_hook, tmp_path):
     # Arrange
     payload = tool_use(
         "Bash",
@@ -687,7 +687,7 @@ def test_unreadable_payload_path_falls_back(tool_use, run_hook, tmp_path):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result, "PRC010")
 
 
 def test_unparseable_command_still_reads_the_payload_file(tool_use, run_hook, tmp_path):

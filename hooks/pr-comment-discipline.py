@@ -93,7 +93,10 @@ GLAB_DISCUSSIONS = re.compile(r"merge_requests/\d+/discussions(?:$|[?'\"\s])")
 GLAB_DISCUSSION_NOTES = re.compile(r"discussions/[^/\s'\"]+/notes")
 BB_PR_COMMENTS = re.compile(r"/pullrequests/\d+/comments(?:$|[?'\"\s])")
 
-BODY_FLAGS = ("--body", "--body-file")
+from _lib.shell_segments import strip_heredoc_bodies  # noqa: E402
+
+REVIEW_BODY_FLAGS = ("--body", "--body-file", "-b", "-F")
+REVIEW_BODY_PREFIXES = ("--body=", "--body-file=", "-b=", "-F=")
 PAYLOAD_FLAGS = ("--input", "--data", "--data-binary", "--data-raw", "-d")
 FIELD_FLAGS = ("-f", "--field", "--raw-field", "-F")
 
@@ -126,6 +129,25 @@ def _segments(command: str) -> list[list[str]]:
     return [segment for segment in segments if segment]
 
 
+def _command_segments(command: str) -> list[list[str]]:
+    lines = strip_heredoc_bodies(command).splitlines()
+    return [segment for line in lines for segment in _segments(line)]
+
+
+def _review_has_body(segment: list[str]) -> bool:
+    return any(
+        token in REVIEW_BODY_FLAGS or token.startswith(REVIEW_BODY_PREFIXES)
+        for token in segment
+    )
+
+
+def _resolve(path: str, cwd: str) -> str:
+    expanded = os.path.expanduser(path)
+    if cwd and not os.path.isabs(expanded):
+        return os.path.join(cwd, expanded)
+    return expanded
+
+
 def _writes(command: str, tool: re.Pattern[str]) -> bool:
     return any(
         _is_write(segment, " ".join(segment))
@@ -154,36 +176,32 @@ def _is_write(tokens: list[str], command: str) -> bool:
     return any(flag in lowered for flag in PAYLOAD_FLAGS + FIELD_FLAGS)
 
 
-def _payload_chunks(tokens: list[str], command: str) -> list[str]:
-    """Best-effort read of the request body a command would send.
-
-    Reads a file referenced by --input or --data @file when it exists,
-    falls back to the inline value, and finally appends the whole
-    command so an inline heredoc still contributes. Chunks stay
-    separate so a nested `body` in one chunk cannot be mistaken for the
-    top-level `body` of another.
-    """
+def _payload_chunks(
+    tokens: list[str], command: str, cwd: str = ""
+) -> tuple[list[str], bool]:
     chunks: list[str] = []
+    unreadable = False
     for index, token in enumerate(tokens):
-        if token.lower() not in PAYLOAD_FLAGS:
-            continue
-        if index + 1 >= len(tokens):
+        if token.lower() not in PAYLOAD_FLAGS or index + 1 >= len(tokens):
             continue
         value = tokens[index + 1]
         path = value[1:] if value.startswith("@") else value
         if path == "-":
             continue
-        try:
-            expanded = os.path.expanduser(path)
-            if os.path.isfile(expanded):
-                with open(expanded, encoding="utf-8", errors="replace") as handle:
-                    chunks.append(handle.read())
-                continue
-        except OSError:
-            pass
-        chunks.append(value)
-    chunks.append(command)
-    return chunks
+        resolved = _resolve(path, cwd)
+        if os.path.isfile(resolved):
+            try:
+                with open(resolved, encoding="utf-8", errors="replace") as handle:
+                    chunks = [*chunks, handle.read()]
+            except OSError as error:
+                sys.stderr.write(f"{HOOK_ID}: cannot read {resolved}: {error}\n")
+                unreadable = True
+            continue
+        if value.lstrip().startswith(("{", "[")):
+            chunks = [*chunks, value]
+            continue
+        unreadable = True
+    return [*chunks, command], unreadable
 
 
 def _iter_json_objects(text: str):
@@ -225,7 +243,7 @@ def _has_nonempty_body(chunks: list[str]) -> bool:
             return isinstance(body, str) and body.strip() != ""
     for chunk in chunks:
         for match in re.finditer(
-            r"(?:^|\s)(?:-f|--field|--raw-field)\s+body=(\S*)", chunk
+            r"(?:^|\s)(?:-f|-F|--field|--raw-field)\s+body=(\S*)", chunk
         ):
             if match.group(1).strip():
                 return True
@@ -244,10 +262,55 @@ def _mentions_reply_parent(chunks: list[str]) -> bool:
     )
 
 
-def find_violation(command: str) -> tuple[str, str] | None:
+def _api_violation(
+    segment: list[str], extra: list[str], cwd: str
+) -> tuple[str, str] | None:
+    text = " ".join(segment)
+    if REPLIES_ENDPOINT.search(text):
+        return None
+    chunks, unreadable = _payload_chunks(segment, text, cwd)
+    payload = [*chunks, *extra]
+    if REVIEWS_ENDPOINT.search(text):
+        if unreadable and not extra:
+            return (
+                "PRC010",
+                "The review payload file could not be read, so its `body` cannot "
+                "be checked. Point --input at a readable file, or pass the "
+                "payload through a heredoc.",
+            )
+        if _has_nonempty_body(payload):
+            return (
+                "PRC003",
+                "The review payload carries a non-empty top-level `body`. "
+                'Set it to "" and keep the findings in the `comments` array.',
+            )
+        return None
+    if REVIEW_COMMENTS_ENDPOINT.search(text) and not _mentions_reply_parent(payload):
+        return (
+            "PRC004",
+            "A POST to `pulls/<n>/comments` without `in_reply_to` starts a "
+            "standalone thread. Reply with `in_reply_to`, or open inline "
+            "findings through the reviews endpoint.",
+        )
+    if ISSUE_COMMENTS_ENDPOINT.search(text):
+        return (
+            "PRC005",
+            "`issues/<n>/comments` is the pull-request conversation channel. "
+            "Use `gh issue comment` when the target is a real issue.",
+        )
+    if COMMIT_COMMENTS_ENDPOINT.search(text):
+        return (
+            "PRC007",
+            "A commit comment cannot be replied to and must not be created. "
+            "Say it in the commit message instead.",
+        )
+    return None
+
+
+def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
     """Return (code, explanation) for the first banned shape found."""
     tokens = _tokens(command)
-    lowered = [t.lower() for t in tokens]
+    segments = _command_segments(command)
 
     if PR_COMMENT.search(command):
         return (
@@ -256,9 +319,9 @@ def find_violation(command: str) -> tuple[str, str] | None:
             "thread and no reader who asked for it.",
         )
 
-    if PR_REVIEW.search(command) and any(
-        token in BODY_FLAGS or token.startswith(("--body=", "--body-file="))
-        for token in lowered
+    if any(
+        PR_REVIEW.search(" ".join(segment)) and _review_has_body(segment)
+        for segment in segments
     ):
         return (
             "PRC002",
@@ -273,39 +336,14 @@ def find_violation(command: str) -> tuple[str, str] | None:
             "discussion instead, or answer with a code change.",
         )
 
-    if GH_API.search(command) and _writes(command, GH_API):
-        if REPLIES_ENDPOINT.search(command):
-            return None
-        payload = _payload_chunks(tokens, command)
-        if REVIEWS_ENDPOINT.search(command):
-            if _has_nonempty_body(payload):
-                return (
-                    "PRC003",
-                    "The review payload carries a non-empty top-level `body`. "
-                    'Set it to "" and keep the findings in the `comments` array.',
-                )
-            return None
-        if REVIEW_COMMENTS_ENDPOINT.search(command) and not _mentions_reply_parent(
-            payload
-        ):
-            return (
-                "PRC004",
-                "A POST to `pulls/<n>/comments` without `in_reply_to` starts a "
-                "standalone thread. Reply with `in_reply_to`, or open inline "
-                "findings through the reviews endpoint.",
-            )
-        if ISSUE_COMMENTS_ENDPOINT.search(command):
-            return (
-                "PRC005",
-                "`issues/<n>/comments` is the pull-request conversation channel. "
-                "Use `gh issue comment` when the target is a real issue.",
-            )
-        if COMMIT_COMMENTS_ENDPOINT.search(command):
-            return (
-                "PRC007",
-                "A commit comment cannot be replied to and must not be created. "
-                "Say it in the commit message instead.",
-            )
+    heredoc = [command] if "<<" in command else []
+    for segment in segments:
+        text = " ".join(segment)
+        if not GH_API.search(text) or not _is_write(segment, text):
+            continue
+        violation = _api_violation(segment, heredoc, cwd)
+        if violation is not None:
+            return violation
 
     if GLAB_API.search(command) and _writes(command, GLAB_API):
         if GLAB_DISCUSSION_NOTES.search(command):
@@ -319,7 +357,7 @@ def find_violation(command: str) -> tuple[str, str] | None:
 
     if CURL.search(command) and _writes(command, CURL):
         if BB_PR_COMMENTS.search(command):
-            payload = _payload_chunks(tokens, command)
+            payload, _unreadable = _payload_chunks(tokens, command, cwd)
             if not _mentions_reply_parent(payload):
                 return (
                     "PRC009",
@@ -351,7 +389,8 @@ def main() -> int:
     if not command:
         return 0
 
-    violation = find_violation(command)
+    cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
+    violation = find_violation(command, cwd)
     if violation is None:
         return 0
 

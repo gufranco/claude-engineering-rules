@@ -49,6 +49,9 @@ MERGE_COMMANDS = [
     "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {}) { number } }'",
     "glab api --method PUT projects/9/merge_requests/3/merge",
     "curl -X POST https://api.bitbucket.org/2.0/repositories/o/r/pullrequests/5/merge",
+    "gh pr merge 12 --squash && df -h",
+    "ls --help; gh pr merge 12 --squash",
+    "gh pr merge 12 --squash\ngrep -h x file",
 ]
 
 
@@ -68,6 +71,7 @@ ALLOWED_COMMANDS = [
     "glab mr view 45",
     "glab mr list",
     "gh pr merge --help",
+    "gh pr merge -h && ls",
 ]
 
 
