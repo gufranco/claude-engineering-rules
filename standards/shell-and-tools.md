@@ -29,7 +29,7 @@ Commands may be aliased (e.g., `du`→`dust` or `ls`→`eza`), changing flags an
 
 **zsh does not split an unquoted variable.** Unlike bash, zsh passes `$var` as one word even when it holds spaces, so `n="2 1"; set -- $n` leaves `$1` as `2 1` and `[ "$1" -ge 2 ]` fails with `integer expression expected: 2 1`. Seen on 2026-09-28 in a CI poll loop that never met its exit condition and ran to its cap while reporting nothing wrong. Split explicitly with `${=var}`, read the fields with `read -r first second <<< "$var"`, or have the producing command print one value per variable.
 
-**zsh expands a leading equals sign.** An unquoted word starting with `=` is replaced by the path of the command it names, so `echo ==up` as a section separator fails with `=up not found`. That failure is fatal: every later line of the command is skipped, and the exit code is 1. Seen twice on 2026-10-12, both times in a multi-line verification command that silently lost its second half. Quote any literal that starts with `=`: `echo '== up'`.
+**zsh expands a leading equals sign.** An unquoted word starting with `=` is replaced by the path of the command it names, so `echo ==up` as a section separator fails with `=up not found`. That failure is fatal: every later line of the command is skipped, and the exit code is 1. Seen twice on 2026-10-12, both times in a multi-line verification command that silently lost its second half. Quote any literal that starts with `=`: `echo '== up'`. A lone `=`, as in `[ "$a" = b ]`, has no command name after it and stays literal, so the guard allows it.
 
 ## Shell Argument Safety (MANDATORY)
 
