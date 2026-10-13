@@ -467,7 +467,7 @@ Declare page language: `<html lang="en">`. Mark language changes inline: `<span 
 
 - Viewport: `<meta name="viewport" content="width=device-width, initial-scale=1">`
 - Body font size: 16px minimum
-- Tap targets: 48x48px minimum with 12px padding
+- Tap targets: 44x44 CSS px minimum, 48x48 on Android, with 12px padding
 
 ## Core Web Vitals Performance Budget
 

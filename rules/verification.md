@@ -7,7 +7,7 @@ No completion claim without fresh evidence run in this session. Previous runs, c
 - Evidence means output: 0 test failures, 0 lint warnings, a clean build, a reproduction that now succeeds, the actual endpoint response, the file re-read.
 - Zero warnings is part of clean. Scan output for `warn`, `warning`, `deprecated`, `deprecation`, `notice`. CI is clean only with zero annotations.
 - A flagged problem is in scope even when it predates your work. Fix it rather than dismissing it by age or authorship.
-- Never read test results with `tail -N`; grep for `passed|failed` or check the exit code.
+- Never read test results with `tail -N`; gate on the exit code and read the full output for the counts.
 - A check that errored or would not parse is failed, never skipped. Gate on exit codes, never on grepping output. Confirm which stream carries the payload before parsing.
 - Calibrate an existence oracle both ways before trusting it: a name that cannot exist reports absent, one that exists reports present.
 - Before blaming your change, stash it and rerun. A randomized-order suite failing outside the diff reruns with order fixed, `-p no:randomly` for pytest.

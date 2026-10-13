@@ -6,13 +6,13 @@ Always-on architectural baseline. This rule defines what applies to every line o
 
 | Principle | Rule | Source |
 |-----------|------|--------|
-| DRY | No duplicated logic across files. Extract shared logic into a single source of truth. Three similar lines is fine; the fourth is a function. | [`code-style.md`](../rules/code-style.md) Fundamentals |
-| SOLID | Single responsibility per module. Open for extension, closed for modification. Liskov substitution. Interface segregation. Dependency inversion via constructor params or interfaces. | [`code-style.md`](../rules/code-style.md) Fundamentals |
-| YAGNI | No speculative features, no abstractions for hypothetical futures, no hooks for unwritten callers. Implement only what the current task requires. | [`code-style.md`](../rules/code-style.md) Fundamentals + [`surgical-edits.md`](../rules/surgical-edits.md) |
-| KISS | Simplest design that solves the problem. Reach for the next layer of abstraction only when the current one breaks down. | [`code-style.md`](../rules/code-style.md) Fundamentals |
+| DRY | No duplicated logic across files. Extract shared logic into a single source of truth. Three similar lines is fine; the fourth is a function. | [`code-style.md`](code-style.md) Fundamentals |
+| SOLID | Single responsibility per module. Open for extension, closed for modification. Liskov substitution. Interface segregation. Dependency inversion via constructor params or interfaces. | [`code-style.md`](code-style.md) Fundamentals |
+| YAGNI | No speculative features, no abstractions for hypothetical futures, no hooks for unwritten callers. Implement only what the current task requires. | [`code-style.md`](code-style.md) Fundamentals + [`surgical-edits.md`](surgical-edits.md) |
+| KISS | Simplest design that solves the problem. Reach for the next layer of abstraction only when the current one breaks down. | [`code-style.md`](code-style.md) Fundamentals |
 | Immutability | Every value is readonly by default. `const` not `let`. `[...arr, x]` not `.push()`. `.toSorted()` not `.sort()`. No parameter mutation. No mutating Date setters. | [`lang/typescript-immutability.md`](../rules/lang/typescript-immutability.md) + mutation-method-blocker hook |
-| Idempotency | Every mutating operation must be safe to run twice with the same input. Use unique constraints, dedup keys, or guard checks. | [`code-style.md`](../rules/code-style.md) Data Safety |
-| Deduplication | Networks retry, queues redeliver, users double-click. Every endpoint accepting a write must extract a dedup key and persist it in a durable store. | [`code-style.md`](../rules/code-style.md) Data Safety + [`../standards/resilience.md`](resilience.md) |
+| Idempotency | Every mutating operation must be safe to run twice with the same input. Use unique constraints, dedup keys, or guard checks. | [`code-style.md`](code-style.md) Data Safety |
+| Deduplication | Networks retry, queues redeliver, users double-click. Every endpoint accepting a write must extract a dedup key and persist it in a durable store. | [`code-style.md`](code-style.md) Data Safety + [`../standards/resilience.md`](resilience.md) |
 | Race freedom | Two actors may execute any write path at the same instant. Every read that decides a write must be protected by a constraint, a conditional write, or a lock held across both. | [`../standards/concurrency.md`](concurrency.md) |
 
 ## Architecture Gate (Pre-Implementation)
@@ -23,8 +23,8 @@ Before writing any non-trivial code, answer all six questions. Failure to ask an
 |----------|-------------|--------|
 | Does this involve business rules, state transitions, or invariants beyond CRUD? | [`../standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md) | Model with entities, value objects, aggregates. Ubiquitous language in code |
 | Are there two or more infrastructure dependencies, like DB plus queue, DB plus external API? | [`../standards/hexagonal-architecture.md`](hexagonal-architecture.md) | Define ports in domain, adapters in outer layer. Domain imports nothing from infra |
-| Is the operation mutating shared state, persisting data, or producing side effects? | [`code-style.md`](../rules/code-style.md) Data Safety + [`../standards/resilience.md`](resilience.md) | Apply idempotency + dedup key + atomic transaction |
-| Does the operation cross trust boundaries: HTTP, queue, external API, LLM output? | [`code-style.md`](../rules/code-style.md) Validation + LLM Trust Boundary | Validate at boundary with Zod, parse-don't-validate, brand the result type |
+| Is the operation mutating shared state, persisting data, or producing side effects? | [`code-style.md`](code-style.md) Data Safety + [`../standards/resilience.md`](resilience.md) | Apply idempotency + dedup key + atomic transaction |
+| Does the operation cross trust boundaries: HTTP, queue, external API, LLM output? | [`code-style.md`](code-style.md) Validation + LLM Output Trust Boundary | Validate at boundary with Zod, parse-don't-validate, brand the result type |
 | Are there multiple states or transitions for a domain object? | [`../standards/state-machines.md`](state-machines.md) | Type-state pattern or explicit state machine. No boolean blindness |
 | Can two actors run this operation at the same time? | [`../standards/concurrency.md`](concurrency.md) | Name every actor, trace one interleaving, pick a rung of the correctness ladder before writing the handler |
 
@@ -148,10 +148,10 @@ When in doubt, apply. Removing later is cheaper than retrofitting.
 
 ## Cross-References
 
-- [`code-style.md`](../rules/code-style.md): SOLID/DRY/YAGNI/KISS fundamentals, immutability baseline, error classification, data safety, validation
+- [`code-style.md`](code-style.md): SOLID/DRY/YAGNI/KISS fundamentals, immutability baseline, error classification, data safety, validation
 - [`lang/typescript-immutability.md`](../rules/lang/typescript-immutability.md): TS-specific mutation surface, hook coverage, ES2024+ replacements
-- [`pre-flight.md`](../rules/pre-flight.md): Pre-implementation duplicate check, architecture fit, interface verification
-- [`design-philosophy.md`](../rules/design-philosophy.md): Ousterhout complexity heuristics, deep modules, design it twice
+- [`pre-flight.md`](pre-flight.md): Pre-implementation duplicate check, architecture fit, interface verification
+- [`design-philosophy.md`](design-philosophy.md): Ousterhout complexity heuristics, deep modules, design it twice
 - [`../standards/ddd-tactical-patterns.md`](ddd-tactical-patterns.md): Entities, value objects, aggregates, repositories, domain events
 - [`../standards/hexagonal-architecture.md`](hexagonal-architecture.md): Ports, adapters, dependency direction, layer testing
 - [`../standards/resilience.md`](resilience.md): Idempotency, deduplication, retries, circuit breakers
