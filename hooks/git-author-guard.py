@@ -45,6 +45,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
+from _lib.shell_segments import mask_literal_text  # noqa: E402
 
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -75,6 +76,10 @@ CONFIG_USER_WRITE = re.compile(r"\bgit\s+config\b(?P<rest>[^|;&]*)")
 CONFIG_READ_FLAGS = re.compile(
     r"--(?:get|get-all|get-regexp|list|show-origin|show-scope)\b"
 )
+
+CONFIG_REMOVE_FLAGS = re.compile(r"--(?:unset|unset-all|remove-section)\b")
+
+AUTHOR_FLAG = re.compile(r"(?:^|\s)--author(?:=|\s)")
 
 ENV_AUTHOR_OVERRIDE = re.compile(
     r"\b(?:GIT_AUTHOR_EMAIL|GIT_COMMITTER_EMAIL|GIT_AUTHOR_NAME|GIT_COMMITTER_NAME)=\S+"
@@ -175,6 +180,14 @@ def check_commit(command: str, cwd: Path) -> None:
             f"Command: {command}"
         )
 
+    if AUTHOR_FLAG.search(command):
+        block(
+            "BLOCKED: --author override on the commit command line.\n"
+            "Identity must come from ~/.gitconfig includeIf resolution.\n"
+            "See: standards/git-identity.md\n"
+            f"Command: {command}"
+        )
+
     if INLINE_C_OVERRIDE.search(command):
         block(
             "BLOCKED: inline `-c user.email=`/`-c user.name=`/"
@@ -261,7 +274,7 @@ def check_config_mutation(command: str) -> None:
     if not match:
         return
     rest = match.group("rest")
-    if CONFIG_READ_FLAGS.search(rest):
+    if CONFIG_READ_FLAGS.search(rest) or CONFIG_REMOVE_FLAGS.search(rest):
         return
     if not re.search(r"\buser\.(?:email|name)\b", rest):
         return
@@ -322,16 +335,17 @@ def main() -> None:
         sys.exit(0)
 
     cwd = repo_dir(command)
-    matched = strip_git_global_options(command)
+    executed = mask_literal_text(command)
+    matched = strip_git_global_options(executed)
 
     check_config_mutation(matched)
 
     if PUSH_TRIGGER.search(matched):
-        check_push(command, cwd)
+        check_push(executed, cwd)
         sys.exit(0)
 
     if COMMIT_TRIGGERS.search(matched):
-        check_commit(command, cwd)
+        check_commit(executed, cwd)
         sys.exit(0)
 
     sys.exit(0)

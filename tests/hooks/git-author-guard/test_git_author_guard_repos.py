@@ -337,3 +337,54 @@ def test_a_missing_git_binary_reads_as_outside_a_repository(
 
     # Assert
     assert_allowed(result)
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        "--local --unset user.email",
+        "--unset-all user.name",
+        "--local --remove-section user",
+    ],
+)
+def test_removing_a_local_identity_is_allowed(tool_use, run_hook, scope):
+    # Arrange
+    payload = tool_use("Bash", {"command": f"git config {scope}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_an_author_flag_on_commit_is_blocked(tmp_path, tool_use, run_hook):
+    # Arrange
+    repo, env = _repo(tmp_path, REAL_EMAIL)
+    author = f"{AUTHOR_NAME} <{OVERRIDE_EMAIL}>"
+    payload = tool_use(
+        "Bash", {"command": f'git -C {repo} commit --author="{author}" -m "fix: y"'}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_blocked(result, "--author")
+
+
+def test_identity_text_inside_a_commit_message_body_is_data(
+    tmp_path, tool_use, run_hook
+):
+    # Arrange
+    repo, env = _repo(tmp_path, REAL_EMAIL)
+    body = f"docs: explain why git config user.email {OTHER_EMAIL} is wrong"
+    payload = tool_use(
+        "Bash", {"command": f"git -C {repo} commit -F - <<'EOF'\n{body}\nEOF"}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_allowed(result)
