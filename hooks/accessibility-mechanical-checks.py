@@ -28,6 +28,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from dataclasses import dataclass
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -55,6 +56,7 @@ SKIP_SEGMENTS = (
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.suppression import is_suppressed  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
@@ -69,127 +71,197 @@ def is_skipped(path: str) -> bool:
     return False
 
 
-def check_img_alt(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(r"<img\b(?![^>]*\salt\s*=)[^>]*>", re.IGNORECASE)
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append((line, "AMC001: <img> without alt attribute (WCAG 1.1.1 A)"))
-    return findings
+MAX_TAG_LENGTH = 4000
+EXPRESSION = re.compile(r"\{[^{}]*\}")
+TAG_START = re.compile(r"<([A-Za-z][\w.-]*)\b")
+ICON_CHILD = re.compile(r"<(?:svg\b|Icon\b|[A-Z]\w*Icon\b)")
+INTERACTIVE_ROLES = ("button", "link", "checkbox", "switch", "tab")
+NON_INTERACTIVE = ("div", "span", "p", "li", "td", "tr")
+KEY_HANDLERS = (
+    "onKeyDown",
+    "onKeyUp",
+    "onKeyPress",
+    "onkeydown",
+    "onkeyup",
+    "onkeypress",
+)
 
 
-def check_input_label(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(
-        r"<input\b(?![^>]*type\s*=\s*[\"']hidden[\"'])(?![^>]*aria-label\b)(?![^>]*aria-labelledby\b)(?![^>]*id\s*=\s*[\"'][^\"']+[\"'])[^>]*/?>",
-        re.IGNORECASE,
+@dataclass(frozen=True, slots=True)
+class Tag:
+    name: str
+    attrs: str
+    start: int
+    end: int
+
+
+def _tag_end(text: str, index: int) -> int:
+    depth, quote = 0, ""
+    for position in range(index, min(len(text), index + MAX_TAG_LENGTH)):
+        char = text[position]
+        if quote:
+            quote = "" if char == quote else quote
+        elif char in "\"'`":
+            quote = char
+        elif char in "{}":
+            depth = depth + 1 if char == "{" else max(0, depth - 1)
+        elif char == ">" and depth == 0:
+            return position
+    return -1
+
+
+def _flatten(attrs: str) -> str:
+    for _ in range(10):
+        flattened = EXPRESSION.sub("{}", attrs)
+        if flattened == attrs:
+            return attrs
+        attrs = flattened
+    return attrs
+
+
+def tags(content: str) -> list[Tag]:
+    found: list[Tag] = []
+    for match in TAG_START.finditer(content):
+        end = _tag_end(content, match.end())
+        if end >= 0:
+            attrs = _flatten(content[match.end() : end])
+            found = [*found, Tag(match.group(1), attrs, match.start(), end + 1)]
+    return found
+
+
+def is_element(tag: Tag, *names: str) -> bool:
+    return tag.name in names or (tag.name.isupper() and tag.name.lower() in names)
+
+
+def has_attr(tag: Tag, *names: str) -> bool:
+    return any(re.search(rf"(?:^|\s){re.escape(n)}\s*=", tag.attrs) for n in names)
+
+
+def attr_value(tag: Tag, name: str) -> str:
+    match = re.search(
+        rf"(?:^|\s){name}\s*=\s*[\"']([^\"']*)[\"']", tag.attrs, re.IGNORECASE
     )
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append(
-            (
-                line,
-                "AMC002: <input> without label, aria-label, aria-labelledby, or id for label-for (WCAG 3.3.2 A)",
-            )
-        )
-    return findings
+    return match.group(1).lower() if match else ""
 
 
-def check_role_on_div(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(
-        r"<(div|span)\b[^>]*\brole\s*=\s*[\"'](button|link|checkbox|switch|tab)[\"'][^>]*(?<!onkeydown=)(?<!onKeyDown=)>",
-        re.IGNORECASE,
+def _line(content: str, tag: Tag) -> int:
+    return content[: tag.start].count("\n") + 1
+
+
+def _tag_findings(content: str, tag: Tag) -> list[tuple[int, str]]:
+    line = _line(content, tag)
+    checks = (
+        (
+            is_element(tag, "img") and not has_attr(tag, "alt"),
+            "AMC001: <img> without alt attribute (WCAG 1.1.1 A)",
+        ),
+        (
+            is_element(tag, "input")
+            and attr_value(tag, "type") != "hidden"
+            and not has_attr(tag, "aria-label", "aria-labelledby", "id"),
+            "AMC002: <input> without label, aria-label, aria-labelledby, or id for label-for (WCAG 3.3.2 A)",
+        ),
+        (
+            is_element(tag, "div", "span")
+            and attr_value(tag, "role") in INTERACTIVE_ROLES
+            and not has_attr(tag, *KEY_HANDLERS),
+            f'AMC003: role="{attr_value(tag, "role")}" on <{tag.name}> without keyboard handler (WCAG 2.1.1 A). Use a semantic element instead',
+        ),
+        (
+            is_element(tag, "html") and not has_attr(tag, "lang"),
+            "AMC005: <html> without lang attribute (WCAG 3.1.1 A)",
+        ),
+        (
+            is_element(tag, "a") and not has_attr(tag, "href"),
+            "AMC006: <a> without href attribute. Use <button> or add href",
+        ),
+        (
+            is_element(tag, *NON_INTERACTIVE)
+            and has_attr(tag, "onClick", "onclick")
+            and not has_attr(tag, "role"),
+            f"AMC007: onClick on <{tag.name}> without role+tabIndex+onKeyDown (WCAG 2.1.1 A). Use <button>",
+        ),
+        (
+            is_element(tag, "input")
+            and attr_value(tag, "type") == "password"
+            and not has_attr(tag, "autocomplete", "autoComplete"),
+            'AMC008: <input type="password"> without autocomplete attribute (current-password or new-password)',
+        ),
     )
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append(
-            (
-                line,
-                f'AMC003: role="{m.group(2)}" on <{m.group(1)}> without keyboard handler (WCAG 2.1.1 A). Use a semantic element instead',
-            )
+    return [(line, message) for failed, message in checks if failed]
+
+
+def check_icon_only_button(content: str, tag: Tag) -> list[tuple[int, str]]:
+    if not is_element(tag, "button") or has_attr(
+        tag, "aria-label", "aria-labelledby", "title"
+    ):
+        return []
+    close = content.find("</button>", tag.end)
+    if close < 0:
+        return []
+    inner = content[tag.end : close]
+    text = re.sub(r"<[^>]*>", "", EXPRESSION.sub("", inner)).strip()
+    if text or not ICON_CHILD.search(inner):
+        return []
+    return [
+        (
+            _line(content, tag),
+            "AMC009: icon-only <button> without aria-label (WCAG 4.1.2 A)",
         )
-    return findings
+    ]
 
 
 def check_tabindex_positive(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
     pat = re.compile(r"\btabIndex\s*=\s*\{?\s*([1-9]\d*)", re.IGNORECASE)
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append(
-            (
-                line,
-                f"AMC004: tabIndex={m.group(1)} breaks logical tab order. Use 0 or -1",
-            )
+    return [
+        (
+            content[: m.start()].count("\n") + 1,
+            f"AMC004: tabIndex={m.group(1)} breaks logical tab order. Use 0 or -1",
         )
-    return findings
+        for m in pat.finditer(content)
+    ]
 
 
-def check_html_lang(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(r"<html\b(?![^>]*\blang\s*=)[^>]*>", re.IGNORECASE)
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append((line, "AMC005: <html> without lang attribute (WCAG 3.1.1 A)"))
-    return findings
+SUPPRESSING_RULES = {
+    "AMC001": frozenset({"jsx-a11y/alt-text"}),
+    "AMC002": frozenset(
+        {
+            "jsx-a11y/label-has-associated-control",
+            "jsx-a11y/control-has-associated-label",
+        }
+    ),
+    "AMC003": frozenset(
+        {"jsx-a11y/interactive-supports-focus", "jsx-a11y/click-events-have-key-events"}
+    ),
+    "AMC004": frozenset({"jsx-a11y/tabindex-no-positive"}),
+    "AMC005": frozenset({"jsx-a11y/html-has-lang"}),
+    "AMC006": frozenset({"jsx-a11y/anchor-is-valid"}),
+    "AMC007": frozenset(
+        {
+            "jsx-a11y/no-static-element-interactions",
+            "jsx-a11y/click-events-have-key-events",
+        }
+    ),
+    "AMC008": frozenset({"jsx-a11y/autocomplete-valid"}),
+    "AMC009": frozenset({"jsx-a11y/control-has-associated-label"}),
+}
 
 
-def check_anchor_no_href(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(r"<a\b(?![^>]*\shref\s*=)[^>]*>", re.IGNORECASE)
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append(
-            (line, "AMC006: <a> without href attribute. Use <button> or add href")
+def find_all(content: str) -> list[tuple[int, str]]:
+    found = [
+        finding
+        for tag in tags(content)
+        for finding in (
+            *_tag_findings(content, tag),
+            *check_icon_only_button(content, tag),
         )
-    return findings
-
-
-def check_click_on_non_interactive(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(
-        r"<(div|span|p|li|td|tr)\b(?![^>]*\brole\s*=)[^>]*\bon[Cc]lick\s*=",
-        re.IGNORECASE,
-    )
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append(
-            (
-                line,
-                f"AMC007: onClick on <{m.group(1)}> without role+tabIndex+onKeyDown (WCAG 2.1.1 A). Use <button>",
-            )
-        )
-    return findings
-
-
-def check_password_autocomplete(content: str) -> list[tuple[int, str]]:
-    findings: list[tuple[int, str]] = []
-    pat = re.compile(
-        r"<input\b[^>]*\btype\s*=\s*[\"']password[\"'](?![^>]*\bautocomplete\s*=)[^>]*>",
-        re.IGNORECASE,
-    )
-    for m in pat.finditer(content):
-        line = content[: m.start()].count("\n") + 1
-        findings.append(
-            (
-                line,
-                'AMC008: <input type="password"> without autocomplete attribute (current-password or new-password)',
-            )
-        )
-    return findings
-
-
-CHECKS = [
-    check_img_alt,
-    check_input_label,
-    check_role_on_div,
-    check_tabindex_positive,
-    check_html_lang,
-    check_anchor_no_href,
-    check_click_on_non_interactive,
-    check_password_autocomplete,
-]
+    ]
+    lines = content.splitlines()
+    return [
+        (line, message)
+        for line, message in [*found, *check_tabindex_positive(content)]
+        if not is_suppressed(lines, line - 1, rules=SUPPRESSING_RULES[message[:6]])
+    ]
 
 
 def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
@@ -223,9 +295,7 @@ def main() -> int:
     if is_skipped(path):
         return 0
 
-    all_findings: list[tuple[int, str]] = []
-    for check in CHECKS:
-        all_findings.extend(check(content))
+    all_findings = find_all(content)
 
     if not all_findings:
         return 0
@@ -246,7 +316,7 @@ def main() -> int:
     print(
         "Blocked: accessibility violations detected. Rule: ~/.claude/rules/accessibility-defaults.md\n"
         f"\n{bullet_lines}{extra}\n\n"
-        "Fix the patterns above or wrap with a suppression marker. Bypass: ACCESSIBILITY_CHECKS_DISABLE=1 in the parent shell.",
+        "Fix the patterns above, or suppress one line with an eslint-disable-next-line directive naming the matching jsx-a11y rule. Bypass: ACCESSIBILITY_CHECKS_DISABLE=1 in the parent shell.",
         file=sys.stderr,
     )
     return 2

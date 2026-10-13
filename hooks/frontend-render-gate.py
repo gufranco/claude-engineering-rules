@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.commit_scope import repo_dir  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 UI_SUFFIXES = (
@@ -37,6 +38,10 @@ UI_SUFFIXES = (
     ".sass",
     ".less",
 )
+NATIVE_UI_SOURCE = re.compile(
+    r"(?:View|ViewController|Screen|Activity|Fragment|Composable)\.(?:swift|kt)$"
+    r"|(^|/)ui/[^/]+\.(?:swift|kt)$"
+)
 
 THEME_OR_TOKEN_SOURCE = re.compile(
     r"(^|/)(theme|tokens?|palette|design-tokens|typography|colors?)\.[cm]?[jt]s$",
@@ -45,7 +50,9 @@ THEME_OR_TOKEN_SOURCE = re.compile(
 
 RENDER_LEVEL_CHECK = re.compile(
     r"(^|/)(e2e|acceptance|integration_test|playwright|cypress|puppeteer|maestro|patrol)(/|$)"
-    r"|\.(e2e|spec)\.[cm]?[jt]sx?$"
+    r"|\.e2e\.[cm]?[jt]sx?$"
+    r"|(^|/)[^/]*UITests?(/|\.swift$)"
+    r"|(^|/)androidTest(/|$)"
     r"|(^|/)[^/]*(accessibility|a11y|axe|visual|screenshot)[^/]*\.[cm]?[jt]sx?$"
     r"|(^|/)[^/]*(accessibility|a11y|golden|integration)[^/]*_test\.dart$"
     r"|(^|/)(playwright|cypress|percy|chromatic|lighthouserc)\.[^/]*$"
@@ -98,13 +105,28 @@ BLOCK_MESSAGE = (
 )
 
 
-def staged_files() -> list[str]:
-    result = subprocess.run(
-        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+GIT_TIMEOUT_SECONDS = 10
+
+
+def staged_files(repo: str) -> list[str] | None:
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                repo,
+                "diff",
+                "--cached",
+                "--name-only",
+                "--diff-filter=ACMR",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
     if result.returncode != 0:
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
@@ -113,7 +135,11 @@ def staged_files() -> list[str]:
 def renders_to_a_screen(path: str) -> bool:
     if NOT_A_SHIPPED_SURFACE.search(path):
         return False
-    return path.endswith(UI_SUFFIXES) or bool(THEME_OR_TOKEN_SOURCE.search(path))
+    return (
+        path.endswith(UI_SUFFIXES)
+        or bool(THEME_OR_TOKEN_SOURCE.search(path))
+        or bool(NATIVE_UI_SOURCE.search(path))
+    )
 
 
 def any_render_level_check(paths: list[str]) -> bool:
@@ -142,7 +168,15 @@ def main() -> int:
     if not GIT_COMMIT_INVOCATION.search(strip_git_global_options(command)):
         return 0
 
-    paths = staged_files()
+    cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
+    paths = staged_files(repo_dir(command, cwd))
+    if paths is None:
+        print(
+            "BLOCKED: frontend-render-gate could not list the staged files in time. "
+            "Retry the commit; export FRONTEND_RENDER_GATE_DISABLE=1 for a known outage.",
+            file=sys.stderr,
+        )
+        return 2
     ui_files = [path for path in paths if renders_to_a_screen(path)]
 
     if not ui_files or any_render_level_check(paths):
