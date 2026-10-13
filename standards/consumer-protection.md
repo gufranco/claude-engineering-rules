@@ -49,14 +49,21 @@ Total price on the first display, with optional breakdown below. Currency clearl
 | US FTC Cooling-Off | 3 business days | Door-to-door and similar (not most online) |
 | California ARL | Pro-rated refund for auto-renewals | Per BPC 17600 |
 
-**Locked default**: 14 days, no reason required, full refund within 14 days of cancellation. Strictest-wins.
+**Locked default**: 14 days, no reason required, full refund within 14 days of cancellation. Strictest-wins. The window opens on the day the consumer receives the goods, the last item when one order ships in parts, or on the contract date for a service, per CRD Art. 9(2). Counting from the purchase date shortens the window and is a violation.
 
 ## Withdrawal UI Flow
 
 ```tsx
-function WithdrawalRequest({ orderId, purchaseDate }: Props) {
-  const daysSincePurchase = differenceInDays(new Date(), purchaseDate);
-  const withinWindow = daysSincePurchase <= 14;
+const WITHDRAWAL_DAYS = 14;
+
+interface WithdrawalRequestProps {
+  readonly orderId: OrderId;
+  readonly windowStartsAt: Date;
+  readonly now: Date;
+}
+
+function WithdrawalRequest({ orderId, windowStartsAt, now }: WithdrawalRequestProps) {
+  const withinWindow = differenceInCalendarDays(now, windowStartsAt) <= WITHDRAWAL_DAYS;
 
   if (!withinWindow) {
     return <p>The 14-day withdrawal period has passed for this order. You may still request a refund under our return policy.</p>;

@@ -144,7 +144,7 @@ function calculateDelay(attempt: number, config: ReconnectConfig): number {
 |-----------|-------|-----------|
 | Base delay | 500ms | Fast first reconnect for transient failures |
 | Max delay | 30 seconds | Upper bound prevents excessive wait |
-| Max retries | 10 | Total window of ~5 minutes before giving up |
+| Max retries | 10 | Worst-case total wait of about 150 seconds before giving up; full jitter halves the expected wait |
 | Jitter | Full (0 to computed delay) | Spreads reconnections after server restart |
 
 After exhausting retries, notify the user that the connection is lost and provide a manual reconnect action.
@@ -439,28 +439,34 @@ When the client receives a message ahead of sequence, it must buffer and request
 Every client message must include a unique `id` field that is its idempotency key. The server must deduplicate by this key before processing.
 
 ```typescript
-const processedAtById = new Map<string, number>();
+const DEDUP_TTL_SECONDS = 300;
 
-function isDuplicate(messageId: string): boolean {
-  if (processedAtById.has(messageId)) {
-    return true;
-  }
-  processedAtById.set(messageId, Date.now());
-  return false;
+enum ClaimOutcome {
+  Claimed = "claimed",
+  Duplicate = "duplicate",
+}
+
+async function claimMessage(channelId: string, messageId: string): Promise<ClaimOutcome> {
+  const result = await redis.set(`dedup:${channelId}:${messageId}`, String(Date.now()), {
+    NX: true,
+    EX: DEDUP_TTL_SECONDS,
+  });
+  return result === "OK" ? ClaimOutcome.Claimed : ClaimOutcome.Duplicate;
 }
 ```
+
+The check and the insert are one atomic `SET ... NX EX` call, so two servers receiving the same message cannot both claim it.
 
 ### Server-Side Deduplication
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
 | Dedup window TTL | 5 minutes | Must exceed max reconnect + queue flush time |
-| Storage | Redis with TTL or in-memory with eviction | In-memory is acceptable for single-server, Redis for multi-server |
+| Storage | Redis with TTL | Durable and shared across servers. Never an in-memory `Map` or `Set`, which is empty after a restart and invisible to other instances |
 | Key format | `dedup:{channelId}:{messageId}` | Scoped per channel to reduce key space |
 
 - Use Redis `SET ... NX EX 300` for atomic dedup check + insert with TTL
-- Evict expired entries every 60 seconds if using in-memory storage
-- Log every deduplicated message at debug level with: channel, message ID, original receive time
+- Log every deduplicated message at info level with: channel and message ID
 
 ### Client-Side Deduplication
 

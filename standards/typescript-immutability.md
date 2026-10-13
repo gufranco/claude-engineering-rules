@@ -29,7 +29,7 @@ Make the compiler catch mutations instead of relying on discipline alone. `reado
 
 ## Mutation Surface
 
-Every name below is rejected by `~/.claude/hooks/mutation-method-blocker.py` unless the file matches an auto-allowed scope (see "Auto-allowed scopes" further down). The hook covers 90+ patterns across 16 categories with stable codes MMB001-MMB092.
+Every name below is rejected by `~/.claude/hooks/mutation-method-blocker.py` unless the file matches an auto-allowed scope (see "Auto-allowed scopes" further down). The hook maps 102 detector codes, MMB001 through MMB108 with MMB056 to MMB059 unassigned, plus one fallback code per category prefix, in [`mutation_fix_suggestions.json`](../hooks/mutation_fix_suggestions.json). The table below groups the core JavaScript surface into 17 categories; the same file also holds framework-specific detectors such as MobX, Vue, and Svelte stores.
 
 | Category | Methods or operators |
 |----------|----------------------|
@@ -73,7 +73,7 @@ The Records and Tuples proposal, deeply immutable `#{}` records and `#[]` tuples
 
 ## ES2024+ Fix Suggestions
 
-Modern replacements are organized by category. ES2023 introduced the change-by-copy array methods. ES2024 added Set composition methods, iterator helpers, grouping primitives, `Promise.withResolvers`, and `Float16Array`. ES2025 / Stage 4 brings Temporal. None of the replacements below mutate the receiver.
+Modern replacements are organized by category. ES2023 introduced the change-by-copy array methods. ES2024 added the grouping primitives and `Promise.withResolvers`. ES2025 added Set composition methods, iterator helpers, `Promise.try`, `RegExp.escape`, and `Float16Array`. Temporal reached Stage 4 and is part of ES2026. None of the replacements below mutate the receiver.
 
 ### Arrays
 
@@ -111,17 +111,17 @@ Modern replacements are organized by category. ES2023 introduced the change-by-c
 | `set.add(v)` | `new Set([...set, v])` | ES2015 |
 | `set.delete(v)` | `new Set([...set].filter(x => x !== v))` | ES2015 |
 | `set.clear()` | `new Set()` and reassign | ES2015 |
-| Manual union `[...a, ...b]` (deduped) | `a.union(b)` | ES2024 |
-| Manual intersection via filter | `a.intersection(b)` | ES2024 |
-| Manual difference via filter | `a.difference(b)` | ES2024 |
-| Manual XOR | `a.symmetricDifference(b)` | ES2024 |
-| Manual subset check | `a.isSubsetOf(b)` | ES2024 |
-| Manual superset check | `a.isSupersetOf(b)` | ES2024 |
-| Manual disjoint check | `a.isDisjointFrom(b)` | ES2024 |
+| Manual union `[...a, ...b]` (deduped) | `a.union(b)` | ES2025 |
+| Manual intersection via filter | `a.intersection(b)` | ES2025 |
+| Manual difference via filter | `a.difference(b)` | ES2025 |
+| Manual XOR | `a.symmetricDifference(b)` | ES2025 |
+| Manual subset check | `a.isSubsetOf(b)` | ES2025 |
+| Manual superset check | `a.isSupersetOf(b)` | ES2025 |
+| Manual disjoint check | `a.isDisjointFrom(b)` | ES2025 |
 
 The seven Set composition methods all return new Set instances and never mutate the receiver. The mutation-method-blocker hook does not flag them.
 
-### Iterables (iterator helpers, ES2024)
+### Iterables (iterator helpers, ES2025)
 
 When the input is an iterable, generator, lazy stream, range, iterator helpers avoid materializing intermediate arrays and never mutate the source.
 
@@ -135,7 +135,7 @@ When the input is an iterable, generator, lazy stream, range, iterator helpers a
 | Materialize | `iter.toArray()` |
 | Aggregate | `iter.reduce(fn, init)` |
 
-`.forEach`, `.some`, `.every`, `.find` are also available as iterator helpers in ES2024.
+`.forEach`, `.some`, `.every`, `.find` are also available as iterator helpers in ES2025.
 
 ### Dates
 
@@ -166,9 +166,9 @@ The hook recognizes the following advanced proposals and emits Stage-aware fix s
 |---------|-------|----------------|
 | AsyncIterator helpers (`map`, `filter`, `take`, `drop`, `flatMap`, `toArray`) | Stage 3 | `for await` + `.push` materialization |
 | `Iterator.range(start, end, step)` | Stage 2/3 | `Array.from({ length: n }, (_, i) => i)` |
-| `Iterator.from(iterable)` chain | Stage 3 | Manual generator + array accumulator |
+| `Iterator.from(iterable)` chain | ES2025 (shipped) | Manual generator + array accumulator |
 | `Uint8Array.fromBase64(str)` / `fromHex(str)` static factories | Stage 3 | `buf.setFromBase64(str)` / `setFromHex(str)` (mutate receiver) |
-| `Float16Array` (allocation, no mutation) | ES2024 (shipped) | `Float32Array` cast or manual half-float bit packing |
+| `Float16Array` (allocation, no mutation) | ES2025 (shipped) | `Float32Array` cast or manual half-float bit packing |
 | Pipeline operator `\|>` | Stage 2 (hack-style) | Nested function calls (parser-conditional) |
 | Records and Tuples (`#{}`, `#[]`) | Withdrawn 2025-04-14 | Plain literals + `as const` and `readonly` ladder |
 | Composites proposal | Stage 1 | Records and Tuples successor; not usable yet |
@@ -210,7 +210,7 @@ The hook recognizes these scopes without a suppression marker:
 - State-management filename patterns: `*Slice.ts`, `*Store.ts`, `*reducer.ts`, `*.pinia.ts`, `*.mobx.ts`, `*.valtio.ts`, `*.proxy.ts`, `*.machine.ts`, `*.actor.ts`, `*.svelte`, `*.svelte.ts`, `*.signal.ts`, `*.qwik.tsx`, `*.component.ts`, `*.service.ts`, `*.effect.ts`
 - TypedArray hot-path directories: `crypto`, `codec`, `image`, `audio`, `parser`, `wasm`, `canvas`, `encoder`, `decoder`, `simd`, `webgl`, `pixel`, `hash`, `cipher`, `dsp`, `signal`, `fft`, `ml`, `tensor`
 
-Outside these scopes, the rule is absolute. There is no allow marker: the hook honors third-party tool directives (`eslint-disable`, `@ts-expect-error`, `@ts-nocheck`) because another tool parses them, and nothing else. A comment invented to silence our own hook would be banned by the comments policy in [`../code-style.md`](../rules/code-style.md), so the escape hatch lives out-of-band instead.
+Outside these scopes, the rule is absolute. There is no allow marker: the hook honors third-party tool directives (`eslint-disable`, `@ts-expect-error`, `@ts-nocheck`) because another tool parses them, and nothing else. A comment invented to silence our own hook would be banned by the "Comments Policy" in [`code-style.md`](code-style.md), so the escape hatch lives out-of-band instead.
 
 ## Bypass
 

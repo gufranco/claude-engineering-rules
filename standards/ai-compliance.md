@@ -2,7 +2,7 @@
 
 ## Disclaimer
 
-This standard summarizes the obligations of EU AI Act (Regulation 2024/1689), Colorado AI Act (SB24-205), NYC Local Law 144, California AI Transparency Act (SB 942), California Generative AI Training Data Transparency Act (AB 2013), California ADMT regulations, US Executive Order 14110, Canada AIDA (proposed), Brazil PL 2338/2023, GDPR Art. 22, LGPD Art. 20. It is a technical default, not legal advice.
+This standard summarizes the obligations of EU AI Act (Regulation 2024/1689), Colorado AI Act (SB24-205), NYC Local Law 144, California AI Transparency Act (SB 942), California Generative AI Training Data Transparency Act (AB 2013), California ADMT regulations, Brazil PL 2338/2023, GDPR Art. 22, LGPD Art. 20. It is a technical default, not legal advice. US Executive Order 14110 is omitted: Executive Order 14148 revoked it on 20 January 2025.
 
 ## EU AI Act Implementation Phases
 
@@ -26,7 +26,7 @@ Cannot be deployed in scope of EU AI Act:
 
 - Subliminal manipulation causing significant harm
 - Exploitation of vulnerabilities (age, disability, economic situation)
-- Social scoring by public authorities
+- Social scoring by any public or private provider or deployer
 - Real-time remote biometric ID in public spaces (limited law-enforcement exceptions)
 - Untargeted facial recognition database scraping
 - Emotion recognition in workplace or education
@@ -47,7 +47,7 @@ Triggers full conformity assessment + technical documentation + human oversight 
 
 ### Limited-risk (transparency obligations)
 
-Apply Art. 52 transparency:
+Apply Art. 50 transparency:
 
 - AI chatbots interacting with humans
 - Deepfakes and AI-generated content
@@ -218,8 +218,8 @@ Automated Employment Decision Tools require:
 
 | Pattern | Reason |
 |---------|--------|
-| Rendering model output without a visible disclosure label | EU AI Act Art. 52 + California SB 942 + Brazil PL 2338 |
-| Chatbot pretending to be human | EU AI Act Art. 52 |
+| Rendering model output without a visible disclosure label | EU AI Act Art. 50 + California SB 942 + Brazil PL 2338 |
+| Chatbot pretending to be human | EU AI Act Art. 50 |
 | Automated decision with legal effect without human review path | GDPR Art. 22 + LGPD Art. 20 + Colorado AI Act |
 | Emotion recognition in workplace or education | EU AI Act Art. 5 prohibition |
 | Social scoring of natural persons | EU AI Act Art. 5 prohibition |
@@ -250,7 +250,7 @@ Also review:
 - When Colorado AI Act rulemaking publishes implementing rules
 - When NYC LL 144 audit methodology guidance updates
 - When California AB 2013 / SB 942 secondary rules land
-- When Canada AIDA enters into force (Bill C-27)
+- When Canada reintroduces federal AI legislation; Bill C-27, which carried AIDA, died on the order paper at the prorogation of 6 January 2025
 - When Brazil PL 2338/2023 is passed
 - When EU AI Office publishes guidance, codes of practice, or templates
 - Yearly review on 1 January regardless

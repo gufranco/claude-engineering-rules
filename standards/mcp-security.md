@@ -106,4 +106,4 @@ The OWASP Top 10 for LLM Applications was revised in 2025 with new categories th
 
 For agentic workflows that go beyond single MCP tool calls, also reference the separate OWASP Agentic AI Top 10 published in late 2025. Its emphasis is multi-step plans, tool-use chains, and inter-agent communication, which extend beyond what this MCP-focused file covers.
 
-The LLM Output Trust Boundary section in [`code-style.md`](../rules/code-style.md) covers the application-side hardening: validate format and shape, sanitize before vector-DB inserts, allowlist URLs, verify tool-output schemas, never store raw LLM output in user-visible fields.
+The "LLM Output Trust Boundary" section in [`code-style.md`](code-style.md) covers the application-side hardening: validate format and shape, sanitize before vector-DB inserts, allowlist URLs, verify tool-output schemas, never store raw LLM output in user-visible fields.

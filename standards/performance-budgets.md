@@ -28,11 +28,11 @@ The "Under 300KB JavaScript" line in Resource Budgets is a global cap. Real code
 | Heavy interactive | Editor, dashboard, table-heavy console | Under 500KB | Justified by feature depth. Document the budget in the page's README. |
 | Embedded widget | Iframe widgets, embeddable scripts | Under 50KB | Host site is paying the cost. Keep it negligible. |
 
-Anything above "heavy interactive" requires an explicit budget waiver in the spec folder, with an owner and a follow-up to reduce it. A 1MB+ page is not a budget; it is a technical debt entry.
+Anything above "heavy interactive" requires a waiver per [`deviation-waivers.md`](deviation-waivers.md): the seven-field record in the pull request body, or in the plan folder when there is no pull request, with the reduction target in its `revisit` field. A 1MB+ page is not a budget; it is a technical debt entry.
 
 ## Resource Budgets
 
-Hard limits on asset sizes. Exceeding any budget requires explicit justification and team review.
+Hard limits on asset sizes. Exceeding any budget requires a waiver per [`deviation-waivers.md`](deviation-waivers.md).
 
 | Resource | Budget | Rationale |
 |----------|--------|-----------|

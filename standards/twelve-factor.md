@@ -72,7 +72,7 @@ Strictly separate the three stages.
 | Run | Execute the release in the target environment | Minimal moving parts |
 
 - Code changes cannot happen at runtime. Every change requires a new build and release
-- Every release has a unique identifier such as Git SHA, timestamp, or or incremental version
+- Every release has a unique identifier such as a Git SHA, a timestamp, or an incremental version
 - Releases are append-only. Rollback means deploying a previous release, not mutating the current one
 - The run stage must be simple and predictable. Build complexity is acceptable because developers oversee it
 

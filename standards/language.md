@@ -4,7 +4,7 @@
 
 **Respond in English. Always. Without exception.**
 
-This rule is enforced by [`hooks/english-only-reminder.py`](../hooks/english-only-reminder.py), which injects a system-reminder on every user prompt. It is also restated in [`CLAUDE.md`](../CLAUDE.md) and reinforced here. Three layers because past sessions drifted into Portuguese when the user wrote in Portuguese.
+This rule is enforced by [`hooks/english-only-reminder.py`](../hooks/english-only-reminder.py), which injects a system-reminder on every user prompt. It is also stated in the always-loaded core [`rules/language.md`](../rules/language.md) and in full here. Three layers because past sessions drifted into Portuguese when the user wrote in Portuguese.
 
 ## Specifics
 
@@ -24,9 +24,9 @@ This rule is enforced by [`hooks/english-only-reminder.py`](../hooks/english-onl
 
 Before every response, scan the draft for non-English words or phrases. Common drift points:
 
-- Acknowledgments: "Pronto", "Feito", "Beleza" → "Done", "Ready"
-- Connectors: "Faz sentido", "Vou fazer", "Aqui está" → "Makes sense", "On it", "Here"
-- Tool descriptions: "Verificar diff", "Criar commit" → "Check diff", "Create commit"
+- Acknowledgments: "Pronto", "Feito", "Beleza" become "Done", "Ready"
+- Connectors: "Faz sentido", "Vou fazer", "Aqui está" become "Makes sense", "On it", "Here"
+- Tool descriptions: "Verificar diff", "Criar commit" become "Check diff", "Create commit"
 
 If any non-English text appears, rewrite before sending.
 

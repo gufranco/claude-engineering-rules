@@ -213,8 +213,8 @@ Rules:
 
 - Every queue must have a DLQ configured. No exceptions.
 - Set `maxReceiveCount` or equivalent to 3-5 attempts before DLQ routing.
-- Use visibility timeout, SQS or nack with requeue delay, RabbitMQ for delayed retries. Never use `setTimeout` or `sleep` in the consumer.
-- Classify errors before retrying. Permanent errors, validation failure, schema mismatch, missing required field must go directly to the DLQ. Retrying permanent errors wastes time and delays the alert.
+- For delayed retries, use the visibility timeout on SQS or a nack with a requeue delay on RabbitMQ. Never use `setTimeout` or `sleep` in the consumer.
+- Classify errors before retrying. Permanent errors, such as a validation failure, a schema mismatch, or a missing required field, must go directly to the DLQ. Retrying permanent errors wastes time and delays the alert.
 
 ### Dead Letter Queue Configuration
 
@@ -242,7 +242,7 @@ A poison message is one that causes the consumer to fail on every attempt. Witho
 
 Detection rules:
 
-- Track the `ApproximateReceiveCount`, SQS or delivery count, RabbitMQ, NATS for each message.
+- Track the delivery count of each message: `ApproximateReceiveCount` on SQS, the delivery count on RabbitMQ and NATS.
 - If the count exceeds 1 and the error is a validation or parse error, route to DLQ immediately without further retries.
 - Log every DLQ routing with the full message envelope, the error, and the attempt count.
 
@@ -251,41 +251,62 @@ Detection rules:
 Build a reprocessing pipeline from the start, not after the first incident.
 
 ```typescript
-async function reprocessDlq(dlqUrl: string, targetUrl: string): Promise<ReprocessResult> {
-  let processed = 0;
-  let failed = 0;
+const MAX_RECEIVE_ROUNDS = 1_000;
 
-  while (true) {
+enum ReplayOutcome {
+  Replayed = "replayed",
+  Failed = "failed",
+}
+
+async function replayMessage(
+  message: Message,
+  dlqUrl: string,
+  targetUrl: string,
+): Promise<ReplayOutcome> {
+  if (message.Body === undefined || message.ReceiptHandle === undefined) {
+    logger.error("dlq message missing body or receipt handle", { messageId: message.MessageId });
+    return ReplayOutcome.Failed;
+  }
+
+  try {
+    await sqs.sendMessage({ QueueUrl: targetUrl, MessageBody: message.Body });
+    await sqs.deleteMessage({ QueueUrl: dlqUrl, ReceiptHandle: message.ReceiptHandle });
+    return ReplayOutcome.Replayed;
+  } catch (error: unknown) {
+    logger.error("dlq replay failed, message stays in the dlq", { messageId: message.MessageId, error });
+    return ReplayOutcome.Failed;
+  }
+}
+
+async function reprocessDlq(dlqUrl: string, targetUrl: string): Promise<ReprocessResult> {
+  let totals: ReprocessResult = { processed: 0, failed: 0 };
+
+  for (let round = 0; round < MAX_RECEIVE_ROUNDS; round += 1) {
     const response = await sqs.receiveMessage({
       QueueUrl: dlqUrl,
       MaxNumberOfMessages: 10,
       WaitTimeSeconds: 1,
     });
+    const messages = response.Messages ?? [];
 
-    if (response.Messages === undefined || response.Messages.length === 0) {
-      break;
+    if (messages.length === 0) {
+      return totals;
     }
 
-    for (const message of response.Messages) {
-      try {
-        await sqs.sendMessage({
-          QueueUrl: targetUrl,
-          MessageBody: message.Body!,
-        });
-        await sqs.deleteMessage({
-          QueueUrl: dlqUrl,
-          ReceiptHandle: message.ReceiptHandle!,
-        });
-        processed++;
-      } catch {
-        failed++;
-      }
+    for (const message of messages) {
+      const outcome = await replayMessage(message, dlqUrl, targetUrl);
+      totals = outcome === ReplayOutcome.Replayed
+        ? { ...totals, processed: totals.processed + 1 }
+        : { ...totals, failed: totals.failed + 1 };
     }
   }
 
-  return { processed, failed };
+  logger.warn("dlq reprocessing stopped at the round limit", { dlqUrl, rounds: MAX_RECEIVE_ROUNDS });
+  return totals;
 }
 ```
+
+`MAX_RECEIVE_ROUNDS` bounds the loop, so a DLQ that refills as fast as it drains cannot hold the job forever. A failed replay is logged and leaves the message in the DLQ, where the next run picks it up.
 
 ## Backpressure
 
@@ -463,7 +484,7 @@ async function publishOutbox(): Promise<void> {
 
 The outbox poller must be idempotent. If it crashes between publishing and marking as published, it will publish again on the next run. The consumer's deduplication handles this.
 
-For high-throughput systems, use change data capture, Debezium, DynamoDB Streams, instead of polling. CDC reads the transaction log directly, eliminating polling delay and reducing database load.
+For high-throughput systems, use change data capture, such as Debezium or DynamoDB Streams, instead of polling. CDC reads the transaction log directly, eliminating polling delay and reducing database load.
 
 ### Consumer Offset Management
 
@@ -515,44 +536,13 @@ Every message queue system must have a dashboard with these panels:
 
 ## Testing
 
-### Unit Tests: In-Memory Broker
+### Unit Tests: Pure Logic Only
 
-Use an in-memory broker implementation for unit tests. Tests must not depend on a running broker instance.
+Never replace the broker with an in-memory fake. The broker is internal infrastructure, and the mock policy in [`testing.md`](testing.md) "Mocks Policy (STRICT)" bans mocking it. Unit tests cover only pure functions that never touch the broker, such as `applyEvent` or envelope parsing. Every test that publishes, consumes, acknowledges, or routes a message runs against the real broker.
 
-```typescript
-class InMemoryBroker implements MessageBroker {
-  private readonly queues = new Map<string, MessageEnvelope[]>();
-  private readonly handlers = new Map<string, MessageHandler[]>();
+### Integration Tests: Real Broker
 
-  async publish(topic: string, envelope: MessageEnvelope): Promise<void> {
-    const queue = this.queues.get(topic) ?? [];
-    this.queues.set(topic, [...queue, envelope]);
-
-    const topicHandlers = this.handlers.get(topic) ?? [];
-    for (const handler of topicHandlers) {
-      await handler(envelope);
-    }
-  }
-
-  subscribe(topic: string, handler: MessageHandler): void {
-    const topicHandlers = this.handlers.get(topic) ?? [];
-    this.handlers.set(topic, [...topicHandlers, handler]);
-  }
-
-  getMessages(topic: string): readonly MessageEnvelope[] {
-    return this.queues.get(topic) ?? [];
-  }
-
-  clear(): void {
-    this.queues.clear();
-    this.handlers.clear();
-  }
-}
-```
-
-### Integration Tests: Real Broker with Testcontainers
-
-For integration tests, run a real broker via testcontainers. Tests must verify actual broker behavior: acknowledgment, redelivery, DLQ routing.
+Run the real broker in the project's docker-compose file, the same way the database runs. Testcontainers is an acceptable launcher when the project has no compose file, since it also starts the real broker image. Tests must verify actual broker behavior: acknowledgment, redelivery, DLQ routing.
 
 ```typescript
 import { GenericContainer, StartedTestContainer } from "testcontainers";
@@ -601,11 +591,11 @@ describe("OrderConsumer", () => {
 | Happy path processing | Message consumed, business logic executed, message acknowledged | Integration |
 | Duplicate message | Same message ID processed twice, no duplicate side effects | Integration |
 | Poison message to DLQ | Invalid message retried N times, then moved to DLQ | Integration |
-| Out-of-order delivery | Later event arrives first, consumer handles gracefully | Unit |
+| Out-of-order delivery | Later event arrives first, consumer handles gracefully | Integration |
 | Consumer crash mid-processing | Message redelivered after visibility timeout, no data corruption | Integration |
 | DLQ reprocessing | Messages in DLQ replayed to main queue, processed successfully | Integration |
 | Batch partial failure | Some messages in batch fail, only failed ones are retried | Integration |
-| Schema version mismatch | Consumer receives unknown schema version, routes to DLQ with clear error | Unit |
+| Schema version mismatch | Consumer receives unknown schema version, routes to DLQ with clear error | Integration |
 | Backpressure behavior | Consumer slows down when downstream is degraded | Integration |
 | Ordering within key | Messages with same ordering key processed in order | Integration |
 
@@ -680,7 +670,6 @@ it("must process events for the same order in sequence order", async () => {
 
 ## Related Standards
 
-- `standards/event-driven-architecture.md`: Event-Driven Architecture
 - [`standards/resilience.md`](resilience.md): Resilience
 - [`standards/distributed-systems.md`](distributed-systems.md): Distributed Systems
 - [`standards/idempotency.md`](idempotency.md): idempotent consumers, dedup keys, and the storage contract

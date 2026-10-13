@@ -32,7 +32,7 @@ Uppercase is permitted for genuinely critical statements where misreading would 
 
 | Category | Example |
 |----------|---------|
-| Security boundary | "Required env vars MUST be documented in `.env.example`." [`security.md`](../rules/security.md):7 |
+| Security boundary | "Required env vars MUST be documented in `.env.example`." Paraphrased from [`security.md`](../rules/security.md):5 |
 | Correctness invariant | "Every test MUST produce the same result on every run, on every machine." Paraphrased from the deterministic-tests rule in [`testing.md`](../rules/testing.md) |
 | Data integrity | "Every mutating operation MUST be safe to run twice with the same input." Hypothetical illustration |
 | Irreversibility | "Migrations MUST be safe to run more than once." Paraphrased from the migration idempotency rule |
@@ -76,9 +76,9 @@ This keeps the convention traceable to its source without turning every rule fil
 
 | Rule | Why |
 |------|-----|
-| [`writing-precision.md`](../rules/writing-precision.md) "Eliminate weasel words" | Removes escape-hatch language so the keyword in this rule carries the full obligation |
-| [`writing-precision.md`](../rules/writing-precision.md) "Tone Calibration" | Defines the friendly-direct register; this rule defines the obligation vocabulary used within that register |
-| [`code-style.md`](../rules/code-style.md) "Comments Policy" | The lowercase normative-keyword principle extends to code comments |
+| [`writing-precision.md`](writing-precision.md) "8. Eliminate weasel words" | Removes escape-hatch language so the keyword in this rule carries the full obligation |
+| [`writing-precision.md`](writing-precision.md) "11. Tone calibration" | Defines the friendly-direct register; this rule defines the obligation vocabulary used within that register |
+| [`code-style.md`](code-style.md) "Comments Policy" | Source code carries no comments, so the keywords apply to documents, commit bodies, and messages, never to code |
 | [`smart-questions.md`](../rules/smart-questions.md) | Question and report wording follows the same vocabulary |
 
 ## Source

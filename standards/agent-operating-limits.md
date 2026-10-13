@@ -22,12 +22,12 @@ The number therefore goes **above** the observed ceiling, never at the expected 
 ```
 Measurement: 68 turns observed as the maximum across 60 sampled runs.
 Wasted turns from denied tool calls account for roughly 8 of those.
-Ceiling set to 60, which clears the corrected maximum with headroom.
-Tightening below 60 pays off only if the denial reduction holds.
-Re-measure before changing it.
+The denials are not fixed yet, so the uncorrected maximum of 68 still binds.
+Ceiling set to 85, 25 percent headroom above 68.
+After the denial fix lands, re-measure; a corrected maximum near 60 supports a ceiling near 75.
 ```
 
-Three obligations:
+Four obligations:
 
 - **Sample before setting.** A ceiling with no observed distribution behind it is arbitrary in both directions.
 - **Subtract known waste.** A ceiling measured against runs that burned turns on denied calls is measuring the waste, not the work. Fix the waste, then re-measure.
@@ -38,7 +38,7 @@ Three obligations:
 
 A per-run change cap is a budget. It bounds blast radius and keeps a run reviewable. Hitting it is a normal outcome, not a failure.
 
-The rule that makes a cap work: **overflow is reported, never dropped.** Findings past the cap go into the run's output as a list for the next pass. A cap that silently truncates reads as "covered everything" when it did not, which is the failure named in [`verification.md`](../rules/verification.md) under no-silent-caps.
+The rule that makes a cap work: **overflow is reported, never dropped.** Findings past the cap go into the run's output as a list for the next pass. A cap that silently truncates reads as "covered everything" when it did not, which is the failure named in [`verification.md`](verification.md) under "Partial Completion": never round up.
 
 Caps worth setting on any long autonomous run:
 

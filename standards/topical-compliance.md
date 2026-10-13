@@ -24,14 +24,17 @@ function ReportContent({ contentId }: Props) {
   return (
     <form>
       <h2>Report this content</h2>
-      <select name="reason">
+      <label htmlFor="reason">Reason</label>
+      <select id="reason" name="reason">
         <option value="illegal">Illegal content under EU or national law</option>
         <option value="terms">Violates the platform's terms</option>
         <option value="ip">Intellectual property infringement</option>
         <option value="other">Other</option>
       </select>
-      <textarea name="details" required />
-      <input type="text" name="reporterContact" placeholder="Email for follow-up (optional)" />
+      <label htmlFor="details">Explain why this content should be removed</label>
+      <textarea id="details" name="details" required />
+      <label htmlFor="reporterContact">Email for follow-up, optional</label>
+      <input id="reporterContact" type="email" name="reporterContact" autoComplete="email" />
       <ConsentCheckbox name="goodFaith">
         I declare in good faith that the information is accurate and complete.
       </ConsentCheckbox>
@@ -125,17 +128,21 @@ function TransparencyRequest() {
       <h2>Solicitação de Acesso à Informação / Information Request</h2>
       <fieldset>
         <legend>Your request</legend>
-        <textarea name="request" required minLength={20} maxLength={5000} />
+        <label htmlFor="request">Information you are requesting</label>
+        <textarea id="request" name="request" required minLength={20} maxLength={5000} />
         <p>We will respond within 15 working days.</p>
       </fieldset>
       <fieldset>
         <legend>Receive the response</legend>
-        <input name="email" type="email" required />
-        <input name="postalAddress" />
+        <label htmlFor="email">Email</label>
+        <input id="email" name="email" type="email" autoComplete="email" required />
+        <label htmlFor="postalAddress">Postal address, optional</label>
+        <input id="postalAddress" name="postalAddress" autoComplete="street-address" />
       </fieldset>
       <fieldset>
         <legend>Identification (optional under most laws)</legend>
-        <input name="name" />
+        <label htmlFor="name">Name</label>
+        <input id="name" name="name" autoComplete="name" />
         <p>Most laws permit anonymous requests.</p>
       </fieldset>
       <button type="submit">Submit request</button>

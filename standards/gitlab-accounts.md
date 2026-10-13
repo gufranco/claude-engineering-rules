@@ -12,8 +12,10 @@ Before running any `glab` command:
 **Correct:** the token and host are scoped to this command only.
 
 ```bash
-GITLAB_TOKEN=glpat-xxx GITLAB_HOST=gitlab.com glab mr list
+GITLAB_TOKEN=$(glab config get token --host gitlab.com) GITLAB_HOST=gitlab.com glab mr list
 ```
+
+The substitution reads the token at call time, so it never appears in the command text, the transcript, or shell history. Never paste a literal token into a command.
 
 **Wrong:** this relies on global config that another terminal can change.
 

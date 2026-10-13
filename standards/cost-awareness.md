@@ -31,7 +31,7 @@ Every file read consumes context tokens. Read strategically.
 | Pattern | Cost | Fix |
 |---------|------|-----|
 | Reading the same file twice in one session | 2x tokens | Read once, reference by line numbers |
-| Reading an entire 2000-line file for one function | Thousands of wasted tokens | Use offset and limit parameters |
+| Re-reading an entire 2000-line file for one function after a full read | Thousands of wasted tokens | Use offset and limit on the region already located. A file in scope gets one full read first, per [`../rules/verification.md`](../rules/verification.md) |
 | Agent re-reads files the orchestrator already read | Full duplication | Send file paths to agent, let it read only if needed |
 | Reading a file to check if it exists | Unnecessary tokens | Use Glob or ls instead |
 
@@ -79,7 +79,7 @@ Parallel agent spawns hit the same rate limit window simultaneously. When the ra
 Before any operation, ask:
 
 1. Can I do this with a direct tool call instead of an agent? If yes, do that.
-2. Can I read just the relevant section instead of the whole file? If yes, use offset and limit.
+2. Is the file in scope for the analysis or the edit? If yes, read it in full once. If it is only a lookup in a file already read, use offset and limit.
 3. Can I batch these operations into fewer pushes? If yes, batch them.
 4. Is the model tier appropriate for this task's complexity? If not, adjust.
 5. Have I specified the output format to prevent verbose agent responses? If not, add constraints.

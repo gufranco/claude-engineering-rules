@@ -53,7 +53,7 @@ Mobile apps must handle network unavailability gracefully.
 - Request permission at a contextually appropriate moment, not on first launch. Explain the value before asking
 - Handle notification payloads in both foreground and background states
 - Deep link from notifications to the relevant screen with full context
-- Support notification channels, Android for user-controlled granularity
+- Support notification channels on Android, so users control which kinds of notification they receive
 - Handle token refresh. Device tokens change. Update the server on every app launch
 
 ## App Store Compliance
@@ -64,16 +64,16 @@ Mobile apps must handle network unavailability gracefully.
 | Android | Data safety section, target API level requirements, permissions must be justified, Play Store policies |
 
 - Test on the minimum supported OS version, not just the latest
-- Handle permission denials gracefully. The app must work, with reduced functionality when the user denies camera, location, or notifications
-- Over-the-air updates, CodePush, Expo Updates for JS bundle changes. Native code changes require a store submission
+- Handle permission denials gracefully. When the user denies camera, location, or notifications, the app must keep working with reduced functionality
+- Ship JS bundle changes through an over-the-air update service such as Expo Updates. Native code changes require a store submission
 
 ## Testing
 
 - **Unit tests**: business logic, state management, data transformations. No device needed
 - **Component tests**: render individual screens with mock data. Verify layout and interaction
 - **Integration tests**: test navigation flows and API integration against a test server
-- **E2E tests**: Detox, React Native or Maestro for full device automation
-- **Device matrix**: test on at least 3 screen sizes, small phone, large phone, tablet and 2 OS versions such as current, or minimum supported
+- **E2E tests**: Detox for React Native, or Maestro, for full device automation
+- **Device matrix**: test on at least 3 screen sizes, a small phone, a large phone, and a tablet, and on 2 OS versions, the current one and the minimum supported one
 - **Performance tests**: measure startup time, scroll performance, and memory on a low-end device. CI should fail if metrics regress
 
 ### The device tier is not optional for a visual change

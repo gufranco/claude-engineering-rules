@@ -16,7 +16,7 @@ If any answer points toward doing the work inline, do it inline.
 
 ## Rate Budget Awareness
 
-Spawning N agents in parallel is N× the rate pressure in the same window. Before spawning multiple agents concurrently:
+Spawning N agents in parallel is N times the rate pressure in the same window. Before spawning multiple agents concurrently:
 
 - Count how many agents you plan to launch.
 - If the count is 3 or more, stop and reconsider. Can any of them be replaced with a direct tool call? Can any be sequenced instead of parallelized?
@@ -75,7 +75,7 @@ Do not use when the diff is small, single-concern, or already covered by a speci
 
 Every agent spawn consumes three token pools at once: the orchestrator's full accumulated context, the subagent initialization prompt, and the subagent's response returning to the orchestrator. None of these is small.
 
-A moderately complex task spawning 3 concurrent agents uses roughly 50-150K tokens per session: 3-5× what doing the same work inline would cost. The orchestrator context alone is the largest variable. The further into a session, the more expensive each spawn becomes.
+A moderately complex task spawning 3 concurrent agents uses roughly 50-150K tokens per session: 3-5x what doing the same work inline would cost. The orchestrator context alone is the largest variable. The further into a session, the more expensive each spawn becomes.
 
 This is why the two-agent cap and sequencing rules exist. The overhead is not the agent's work. It is the context duplication across N simultaneous windows.
 

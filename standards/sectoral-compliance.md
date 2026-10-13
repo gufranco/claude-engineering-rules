@@ -60,31 +60,29 @@ Any feature accepts, processes, transmits, or stores cardholder data; any featur
 ### UI patterns
 
 ```tsx
-function CardForm() {
+import type { Stripe, StripeElementLocale } from "@stripe/stripe-js";
+import { Elements, PaymentElement } from "@stripe/react-stripe-js";
+
+interface CardFormProps {
+  readonly stripe: Promise<Stripe | null>;
+  readonly clientSecret: string;
+  readonly locale: StripeElementLocale;
+}
+
+function CardForm({ stripe, clientSecret, locale }: CardFormProps) {
   return (
-    <form>
-      <input
-        name="cardNumber"
-        autoComplete="cc-number"
-        inputMode="numeric"
-        pattern="[0-9 ]{13,19}"
-      />
-      <input
-        name="cardExpiry"
-        autoComplete="cc-exp"
-        inputMode="numeric"
-      />
-      <input
-        name="cardCvc"
-        autoComplete="cc-csc"
-        inputMode="numeric"
-      />
-    </form>
+    <Elements stripe={stripe} options={{ clientSecret, locale }}>
+      <form aria-labelledby="payment-heading">
+        <h2 id="payment-heading">Payment details</h2>
+        <PaymentElement />
+        <button type="submit">Pay</button>
+      </form>
+    </Elements>
   );
 }
 ```
 
-The CVC value is never persisted server-side. Use a PCI-DSS-compliant tokenization service (Stripe Elements, Adyen Components, etc.). Never receive raw PAN in the application server.
+The card fields render inside the provider's hosted iframe with their own labels, translated through `locale`. The card number, expiry, and CVC go straight to the provider, and the application receives only a token or payment intent ID. Never render raw `<input>` elements for card data: a form that posts the PAN to the application server pulls that server into full PCI DSS scope. Use a PCI-DSS-compliant tokenization service, such as Stripe Elements or Adyen Components. Never receive raw PAN in the application server.
 
 ## Biometric (Illinois BIPA + Texas CUBI + Washington MHMD)
 
@@ -221,8 +219,10 @@ function WhistleblowerForm() {
         <ConsentCheckbox name="anonymous">
           I want to submit anonymously. The system will generate a token that I can use to follow up without revealing my identity.
         </ConsentCheckbox>
-        <textarea name="report" required />
-        <input type="file" name="attachments" multiple />
+        <label htmlFor="report">Describe your concern</label>
+        <textarea id="report" name="report" required />
+        <label htmlFor="attachments">Attach supporting files</label>
+        <input id="attachments" type="file" name="attachments" multiple />
         <button type="submit">Submit</button>
       </fieldset>
       <p>Your submission is protected by EU Whistleblower Directive 2019/1937 + Brazil Lei 13.608. Retaliation is prohibited.</p>

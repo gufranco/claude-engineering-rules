@@ -43,7 +43,7 @@ For more information, contact [SUPPORT CHANNEL].
 For details on this incident, visit [STATUS PAGE URL].
 ```
 
-Localize per supported language (locale equivalence per `conflicts.md`).
+Localize per supported language, per the locale equivalence target in [`compliance-defaults.md`](compliance-defaults.md).
 
 ## NIS2 Scope (EU Directive 2022/2555)
 
@@ -134,17 +134,40 @@ function safeRedirect(target: string): string {
 ## SSRF Prevention (Server-Side Fetch on Behalf of Frontend)
 
 ```typescript
-const BLOCKED_RANGES = [
-  /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2[0-9]|3[01])\./,
-  /^169\.254\./, /^::1$/, /^fe80::/, /^fc00::/,
+import { BlockList, isIP } from "node:net";
+
+type Subnet = readonly [network: string, prefix: number];
+
+const BLOCKED_IPV4: readonly Subnet[] = [
+  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8],
+  ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.0.0.0", 24],
+  ["192.168.0.0", 16], ["198.18.0.0", 15], ["224.0.0.0", 4], ["240.0.0.0", 4],
 ];
 
-function isPublicAddress(ip: string): boolean {
-  return !BLOCKED_RANGES.some((re) => re.test(ip));
+const BLOCKED_IPV6: readonly Subnet[] = [
+  ["::", 128], ["::1", 128], ["64:ff9b::", 96], ["2002::", 16],
+  ["fc00::", 7], ["fe80::", 10], ["ff00::", 8],
+];
+
+function buildBlockList(): BlockList {
+  const list = new BlockList();
+  BLOCKED_IPV4.forEach(([network, prefix]) => list.addSubnet(network, prefix, "ipv4"));
+  BLOCKED_IPV6.forEach(([network, prefix]) => list.addSubnet(network, prefix, "ipv6"));
+  return list;
+}
+
+function isPublicAddress(ip: string, blocked: BlockList): boolean {
+  const family = isIP(ip);
+  if (family === 0) {
+    return false;
+  }
+  return !blocked.check(ip, family === 4 ? "ipv4" : "ipv6");
 }
 ```
 
-Resolve the URL first, validate the resolved IP, then fetch. Re-validate on every redirect to prevent DNS rebinding.
+Build the list once at startup and pass it in. `BlockList` parses the address, so it catches the forms a prefix regex misses: `::ffff:169.254.169.254` and `::ffff:a9fe:a9fe` match the IPv4 rules, and `fe80:0:0::1`, `FE80::1`, and `fd12::1` match the IPv6 rules. Input that is not an IP literal fails closed.
+
+Resolve the URL first, validate every resolved IP, then fetch by that IP. Re-validate on every redirect to prevent DNS rebinding.
 
 ## Maintenance
 

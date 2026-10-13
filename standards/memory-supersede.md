@@ -59,6 +59,6 @@ Reference memories are exempt because they point to external resources that chan
 
 This rule described a convention and supplied no mechanism, and the result is visible: no memory file carries `superseded_by` or `supersedes`, and none carries a date. A convention with nothing enforcing it does not survive a busy session.
 
-The mechanism is the `timeline:` array specified in [`knowledge-notes.md`](../rules/knowledge-notes.md). A fact that changes gets a new entry carrying `from` and `until` for when it was true, `learned` for when it was recorded, and `source` for where it came from. The previous entry survives untouched, which is what this rule was always asking for.
+The mechanism is the `timeline:` array specified in [`knowledge-notes.md`](knowledge-notes.md) "Facts That Change". A fact that changes gets a new entry carrying `from` and `until` for when it was true, `learned` for when it was recorded, and `source` for where it came from. The previous entry survives untouched, which is what this rule was always asking for.
 
 Memory files are compiled from vault notes, so the chain is maintained once, in the vault, and the compiled artifact inherits it. A memory file is no longer the place to hand-edit a supersession.
