@@ -379,7 +379,7 @@ def looks_like_publishing_json(content: str) -> bool:
         return False
     try:
         obj = json.loads(content)
-    except Exception:
+    except ValueError:
         return False
     if not isinstance(obj, dict):
         return False
@@ -489,7 +489,8 @@ def read_payload_file(path: str) -> str | None:
             return None
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             return f.read()
-    except Exception:
+    except OSError as error:
+        sys.stderr.write(f"internal-config-leakage: cannot read {path}: {error}\n")
         return None
 
 

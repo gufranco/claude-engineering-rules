@@ -42,6 +42,7 @@ ALLOWED_ENV_BASENAMES = {
     ".env.template",
     ".env.sample",
     ".env.defaults",
+    ".env.test",
 }
 PRIVATE_KEY_GLOBS = ("*.pem", "*.key")
 PRIVATE_KEY_NAMES = {"id_rsa", "id_ed25519", "id_ecdsa", "id_dsa"}
@@ -77,8 +78,8 @@ def _audit(reason: str, tool: str, file_path: str) -> None:
             tool=tool,
             command_excerpt=file_path[:200],
         )
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as error:  # noqa: BLE001
+        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
 
 
 def _match_any(name: str, patterns: tuple[str, ...]) -> bool:

@@ -528,7 +528,7 @@ def _repo_root(cwd: str = "") -> str:
             text=True,
             cwd=cwd or None,
         ).strip()
-    except Exception:
+    except (subprocess.CalledProcessError, OSError):
         return ""
 
 

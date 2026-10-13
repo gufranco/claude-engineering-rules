@@ -48,8 +48,13 @@ def main() -> int:
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
             response.read()
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError):
-        pass
+    except (
+        urllib.error.URLError,
+        urllib.error.HTTPError,
+        OSError,
+        ValueError,
+    ) as error:
+        sys.stderr.write(f"notify-webhook: delivery failed: {error}\n")
     return 0
 
 

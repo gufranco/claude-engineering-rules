@@ -890,8 +890,8 @@ def _deny(reason: str) -> int:
     try:
         sys.stdout.write(json.dumps(body, ensure_ascii=False))
         sys.stdout.flush()
-    except (OSError, TypeError, ValueError):
-        pass
+    except (OSError, TypeError, ValueError) as error:
+        sys.stderr.write(f"mutation-method-blocker: decision write failed: {error}\n")
     return 2
 
 
@@ -1065,12 +1065,9 @@ def main() -> int:
             continue
         for m in survived:
             detector_counts[m.detector] = detector_counts.get(m.detector, 0) + 1
-            try:
-                confidence_max = max(
-                    confidence_max, int(m.metadata.get("confidence", "0"))
-                )
-            except (TypeError, ValueError):
-                pass
+            raw_confidence = str(m.metadata.get("confidence", "0"))
+            if raw_confidence.isdigit():
+                confidence_max = max(confidence_max, int(raw_confidence))
         report_path, survived = _remap_via_source_map(path, survived)
         findings.extend(_format_findings(report_path, survived))
 
@@ -1161,8 +1158,10 @@ def _entrypoint() -> int:
             ) as fh:
                 stats = pstats.Stats(profiler, stream=fh).sort_stats("cumulative")
                 stats.print_stats(30)
-        except OSError:
-            pass
+        except OSError as error:
+            sys.stderr.write(
+                f"mutation-method-blocker: profile write failed: {error}\n"
+            )
         return code
     finally:
         ts_ps_shutdown()

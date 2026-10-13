@@ -59,6 +59,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import shutil
 import subprocess
 import threading
@@ -136,13 +137,8 @@ def _disable(reason: str) -> None:
     """Disable further queries and log to stderr via audit."""
     global _DISABLED
     _DISABLED = True
-    try:
-        import sys
-
-        if (os.environ.get("MUTATION_METHOD_DEBUG") or "").strip() == "1":
-            sys.stderr.write(f"ts-project-service: disabled ({reason})\n")
-    except Exception:
-        pass
+    if (os.environ.get("MUTATION_METHOD_DEBUG") or "").strip() == "1":
+        sys.stderr.write(f"ts-project-service: disabled ({reason})\n")
 
 
 def query_receiver_type(file_path: str, line: int, col: int) -> dict[str, Any] | None:
@@ -225,14 +221,14 @@ def shutdown() -> None:
         try:
             if _PROC.stdin is not None and not _PROC.stdin.closed:
                 _PROC.stdin.close()
-        except OSError:
-            pass
+        except OSError as error:
+            sys.stderr.write(f"ts-project-service: stdin close failed: {error}\n")
         try:
             _PROC.terminate()
             _PROC.wait(timeout=0.5)
         except (subprocess.TimeoutExpired, OSError):
             try:
                 _PROC.kill()
-            except OSError:
-                pass
+            except OSError as error:
+                sys.stderr.write(f"ts-project-service: kill failed: {error}\n")
         _PROC = None

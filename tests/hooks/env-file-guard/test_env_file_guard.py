@@ -77,7 +77,8 @@ def test_blocks_env_variants(name: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "name", [".env.example", ".env.template", ".env.sample", ".env.defaults"]
+    "name",
+    [".env.example", ".env.template", ".env.sample", ".env.defaults", ".env.test"],
 )
 def test_allows_documentation_env_files(name: str) -> None:
     # Arrange

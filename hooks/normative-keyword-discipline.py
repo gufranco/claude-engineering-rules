@@ -131,7 +131,8 @@ def main() -> int:
 
     try:
         payload = json.load(sys.stdin)
-    except Exception:  # pragma: no cover
+    except ValueError as error:
+        sys.stderr.write(f"normative-keyword-discipline: unreadable payload: {error}\n")
         return 0
 
     tool = payload.get("tool_name", "")

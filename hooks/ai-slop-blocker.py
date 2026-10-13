@@ -430,8 +430,8 @@ def comment_bodies(cmd: str, tokens: list[str]) -> list[str]:
             if os.path.isfile(expanded):
                 with open(expanded, encoding="utf-8", errors="replace") as handle:
                     raw = handle.read()
-        except OSError:
-            pass
+        except OSError as error:
+            sys.stderr.write(f"ai-slop-blocker: cannot read {path}: {error}\n")
         texts.extend(extract_bodies(raw))
     texts.extend(extract_bodies(cmd))
     return [t for t in texts if t.strip()]
