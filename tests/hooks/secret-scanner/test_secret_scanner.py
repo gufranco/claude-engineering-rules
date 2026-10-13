@@ -53,9 +53,9 @@ def test_allows_empty_command(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_allows_git_commit_outside_repo(tool_use, run_hook):
+def test_allows_git_commit_outside_repo(tool_use, run_hook, tmp_path):
     # Arrange
-    payload = tool_use("Bash", {"command": "git commit -m 'fix'"})
+    payload = tool_use("Bash", {"command": "git commit -m 'fix'"}, cwd=str(tmp_path))
 
     # Act
     result = run_hook(HOOK, payload)

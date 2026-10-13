@@ -26,6 +26,25 @@ def test_blocks_inline_credentials(tool_use, run_hook):
     assert_blocked(result)
 
 
+def test_the_block_report_never_echoes_the_password(tool_use, run_hook):
+    # Arrange
+    literal = "Pa55" + "w0rdLongEnough"
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/repo/settings.json",
+            "content": f'{{"db": "postgresql://user:{literal}@host/x"}}',
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _code, stderr = assert_blocked(result, "postgresql://user:****@host/x")
+    assert literal not in stderr
+
+
 def test_blocks_absolute_home_path(tool_use, run_hook):
     # Arrange
     payload = tool_use(
