@@ -97,3 +97,18 @@ def test_a_commit_message_fed_by_heredoc_is_still_scanned(tool_use, run_hook):
 
     # Assert
     assert_blocked(result)
+
+
+def test_a_publish_after_a_heredoc_is_still_scanned(tool_use, run_hook):
+    # Arrange
+    command = (
+        "cat > notes.md <<'EOF'\nit's fine\nEOF\n"
+        f"{GH} pr create --title t --body 'see {LEAK_PATH}'"
+    )
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)

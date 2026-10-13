@@ -66,9 +66,16 @@ UNQUOTED_OPERATOR = re.compile(r"&&|\|\||[;|&\n]")
 def unquoted_segments(command: str) -> list[str]:
     parts: list[str] = []
     state = ""
+    delimiter = ""
     for index, line in enumerate(command.split("\n")):
-        separator = [" " if state else "\n"] if index else []
-        blanked, state = _blank_quoted(line, state)
+        separator = [" " if state or delimiter else "\n"] if index else []
+        if delimiter:
+            blanked = " " * len(line)
+            delimiter = "" if line.strip() == delimiter else delimiter
+        else:
+            match, _ = _unquoted_match(HEREDOC_START, line, state)
+            blanked, state = _blank_quoted(line, state)
+            delimiter = match.group(1) if match else ""
         parts = [*parts, *separator, blanked]
     blanked_text = "".join(parts)
     bounds = [(m.start(), m.end()) for m in UNQUOTED_OPERATOR.finditer(blanked_text)]
