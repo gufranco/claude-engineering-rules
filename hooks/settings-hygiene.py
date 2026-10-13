@@ -49,6 +49,13 @@ except Exception:  # pragma: no cover
 SETTINGS_FILENAMES = ("settings.json", "settings.local.json")
 BLOCKLIST_PATH = os.path.expanduser("~/.claude/.settings-hygiene-blocklist")
 
+
+def _masked(value: str) -> str:
+    return INLINE_CREDENTIAL_RE.sub(
+        lambda m: m.group(0).replace(f":{m.group('password')}@", ":****@"), value
+    )
+
+
 INLINE_CREDENTIAL_RE = re.compile(
     r"\b[a-zA-Z][a-zA-Z0-9+.-]*://"
     r"(?P<user>[^:/@\s${}]+):"
@@ -117,7 +124,7 @@ def _check_string(s: str, blocklist: list[str]) -> str | None:
         }:
             return (
                 "inline credential in connection string. "
-                f"Password literal `{password[:4]}...` should be `${{ENV_VAR}}`."
+                "The password literal should be `${ENV_VAR}`."
             )
     if HOME_PATH_RE.search(s):
         return "absolute home path leaks the user's machine layout. Use `~`, `${HOME}`, or `${VAR}`."
@@ -265,7 +272,7 @@ def main() -> None:
             file=sys.stderr,
         )
         for value, reason in findings[:10]:
-            print(f"  - {reason}\n    value: {value}", file=sys.stderr)
+            print(f"  - {reason}\n    value: {_masked(value)}", file=sys.stderr)
 
     if structure_findings:
         if findings:
