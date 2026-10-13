@@ -7,6 +7,8 @@ from pathlib import Path
 import json as _json
 import builtins as _builtins
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 HOOKS_DIR = REPO_ROOT / "hooks"
@@ -225,17 +227,18 @@ def test_main_handles_disable_env(monkeypatch) -> None:
     assert rc == 0
 
 
-def test_main_handles_invalid_json_payload(monkeypatch) -> None:
+def test_main_blocks_invalid_json_payload(monkeypatch) -> None:
     # Arrange
     monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
     monkeypatch.delenv("MUTATION_METHOD_BATCH_MODE", raising=False)
     monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
 
     # Act
-    rc = hook.main()
+    with pytest.raises(SystemExit) as exit_info:
+        hook.main()
 
     # Assert
-    assert rc == 0
+    assert exit_info.value.code == 2
 
 
 def test_handle_cli_flags_version(monkeypatch, capsys) -> None:

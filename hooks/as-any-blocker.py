@@ -34,7 +34,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -68,6 +67,7 @@ MAX_HITS_PER_FILE = 8
 ESLINT_RULES = frozenset({"@typescript-eslint/no-explicit-any"})
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped_path(path: str) -> bool:
@@ -154,10 +154,7 @@ def main() -> int:
     if is_bypassed("as-any-blocker"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("as-any-blocker")
 
     tool = payload.get("tool_name", "") or ""
     tool_input = payload.get("tool_input", {}) or {}

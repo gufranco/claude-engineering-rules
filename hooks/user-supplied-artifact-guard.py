@@ -44,6 +44,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
@@ -111,15 +112,8 @@ ARTIFACT_EXTENSIONS = frozenset(
 
 
 def _read_command() -> str:
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return ""
-    if not isinstance(data, dict):
-        return ""
-    tool_input = data.get("tool_input") or data.get("input") or {}
-    if not isinstance(tool_input, dict):
-        return ""
+    data = read_hook_payload("user-supplied-artifact-guard")
+    tool_input = tool_input_of(data)
     cmd = tool_input.get("command", "")
     return cmd if isinstance(cmd, str) else ""
 

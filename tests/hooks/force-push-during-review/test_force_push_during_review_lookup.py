@@ -113,7 +113,7 @@ def test_a_live_bypass_entry_allows(tmp_path, tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_a_payload_that_is_not_json_allows():
+def test_a_payload_that_is_not_json_blocks():
     # Arrange
     env = apply_coverage_env(dict(os.environ))
 
@@ -129,7 +129,7 @@ def test_a_payload_that_is_not_json_allows():
     )
 
     # Assert
-    assert (proc.returncode, proc.stderr) == (0, "")
+    assert (proc.returncode, "could not read its input" in proc.stderr) == (2, True)
 
 
 def test_a_push_spelled_with_extra_spacing_and_no_force_is_not_forced():

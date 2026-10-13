@@ -17,7 +17,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -58,6 +57,7 @@ CREATE_INDEX_BLOCKING = re.compile(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_migration_path(path: str) -> bool:
@@ -140,10 +140,7 @@ def main() -> int:
     if is_bypassed("migration-idempotency"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("migration-idempotency")
 
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}

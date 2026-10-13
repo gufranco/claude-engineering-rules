@@ -89,7 +89,7 @@ def test_allows_empty_command(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = Path(__file__).resolve().parents[3] / "hooks" / "glab-token-guard.py"
     env = dict(os.environ)
@@ -107,4 +107,4 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2

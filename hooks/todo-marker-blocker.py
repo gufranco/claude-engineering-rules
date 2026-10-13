@@ -36,7 +36,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -142,6 +141,7 @@ PHRASE_PATTERN = re.compile(
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
@@ -221,10 +221,7 @@ def main() -> int:
     if is_bypassed("todo-marker-blocker"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("todo-marker-blocker")
 
     tool = payload.get("tool_name", "") or ""
     tool_input = payload.get("tool_input", {}) or {}

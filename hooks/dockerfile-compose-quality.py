@@ -27,7 +27,6 @@ Conforms to the hook conventions used by `docker-context-guard.py` and
 `secret-scanner.py`. Pure stdlib, no YAML parser dependency.
 """
 
-import json
 import os
 import re
 import sys
@@ -35,6 +34,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 try:
     from _lib.audit_log import record as _audit  # type: ignore
@@ -311,10 +311,7 @@ def main() -> None:
     if not should_run("dockerfile-compose-quality"):
         sys.exit(0)
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("dockerfile-compose-quality")
 
     tool_name = data.get("tool_name", "")
     tool_input = data.get("tool_input", data.get("input", {})) or {}

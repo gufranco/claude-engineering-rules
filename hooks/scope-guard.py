@@ -109,6 +109,7 @@ BARE_EXTENSIONS = frozenset(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def plan_is_closed(plan: Path) -> bool:
@@ -217,10 +218,7 @@ def main() -> int:
     if is_bypassed("scope-guard"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    data = read_hook_payload("scope-guard")
 
     tool_name = data.get("tool_name", "")
     if tool_name not in {"Write", "Edit", "MultiEdit"}:

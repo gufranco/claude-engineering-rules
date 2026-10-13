@@ -20,7 +20,6 @@ Exit 0 = allow, exit 2 = block.
 Bypass: set FORCE_PUSH_DURING_REVIEW_DISABLE=1 in the environment.
 """
 
-import json
 import os
 import re
 import subprocess
@@ -36,6 +35,7 @@ except Exception:  # pragma: no cover
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import (  # noqa: E402
     FORCE_PUSH_LONG,
     FORCE_PUSH_SHORT,
@@ -139,10 +139,7 @@ def main() -> None:
     if is_bypassed("force-push-during-review"):
         sys.exit(0)
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        sys.exit(0)
+    data = read_hook_payload("force-push-during-review")
 
     tool_input = data.get("tool_input", data.get("input", {}))
     command = tool_input.get("command", "")

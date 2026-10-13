@@ -56,6 +56,7 @@ KCOV_REASON = (
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
 
@@ -162,10 +163,7 @@ def main() -> int:
     if is_bypassed("interactive-cmd-blocker"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    data = read_hook_payload("interactive-cmd-blocker")
 
     if data.get("tool_name") != "Bash":
         return 0

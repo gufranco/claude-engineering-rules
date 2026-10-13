@@ -25,7 +25,6 @@ Bypass:
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -55,6 +54,7 @@ SKIP_SEGMENTS = (
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
@@ -210,10 +210,7 @@ def main() -> int:
         return 0
     if is_bypassed("accessibility-mechanical-checks"):
         return 0
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("accessibility-mechanical-checks")
 
     tool_name = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {})

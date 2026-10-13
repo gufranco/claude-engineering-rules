@@ -246,7 +246,7 @@ class TestBypass:
 
 
 class TestMalformedInput:
-    def test_invalid_json_on_stdin_allows(self, locked: dict[str, str]) -> None:
+    def test_invalid_json_on_stdin_blocks(self, locked: dict[str, str]) -> None:
         # Arrange
         hook = ROOT / "hooks" / f"{HOOK}.py"
         env = apply_coverage_env({**os.environ, **locked})
@@ -263,4 +263,4 @@ class TestMalformedInput:
         )
 
         # Assert
-        assert proc.returncode == 0
+        assert proc.returncode == 2

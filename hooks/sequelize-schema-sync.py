@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -48,6 +47,7 @@ UMZUG_NONE_STORAGE_RE = re.compile(
 )
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
 def is_skipped_path(path: str) -> bool:
@@ -158,10 +158,7 @@ def main() -> int:
     if is_bypassed("sequelize-schema-sync"):
         return 0
 
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        return 0
+    payload = read_hook_payload("sequelize-schema-sync")
 
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}

@@ -305,7 +305,7 @@ def test_disable_env_value_other_than_one_does_not_bypass(tool_use, run_hook):
     assert_blocked(result, "banned phrase")
 
 
-def test_invalid_json_stdin_does_not_crash():
+def test_invalid_json_stdin_blocks():
     # Arrange
     hook_path = (
         Path(__file__).resolve().parents[3] / "hooks" / "banned-phrases-blocker.py"
@@ -325,4 +325,4 @@ def test_invalid_json_stdin_does_not_crash():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2

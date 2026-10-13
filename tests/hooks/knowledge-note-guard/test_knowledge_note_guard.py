@@ -654,7 +654,7 @@ def test_allows_removal_of_a_relative_path_outside_the_vault(
     assert_allowed(result)
 
 
-def test_allows_malformed_stdin():
+def test_blocks_malformed_stdin():
     # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
 
@@ -668,7 +668,7 @@ def test_allows_malformed_stdin():
     )
 
     # Assert
-    assert proc.returncode == 0
+    assert proc.returncode == 2
 
 
 def test_skips_flag_tokens_in_a_removal(tool_use, run_hook, vault, env):
@@ -684,7 +684,7 @@ def test_skips_flag_tokens_in_a_removal(tool_use, run_hook, vault, env):
     assert_blocked(result, "KN006")
 
 
-def test_exits_zero_on_undecodable_stdin(monkeypatch, vault):
+def test_blocks_on_undecodable_stdin(monkeypatch, vault):
     # Arrange
     hook = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
     spec = importlib.util.spec_from_file_location("knowledge_note_guard", hook)
@@ -698,4 +698,4 @@ def test_exits_zero_on_undecodable_stdin(monkeypatch, vault):
         module.main()
 
     # Assert
-    assert exit_info.value.code == 0
+    assert exit_info.value.code == 2

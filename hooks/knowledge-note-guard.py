@@ -24,7 +24,6 @@ Bypass: set ``KNOWLEDGE_NOTE_DISABLE=1`` in a parent shell.
 
 from __future__ import annotations
 
-import json
 import os
 import shlex
 import sys
@@ -32,6 +31,7 @@ from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib.hook_input import read_hook_payload  # noqa: E402
 
 try:
     from _lib import knowledge_notes as kn
@@ -233,10 +233,7 @@ def handle_bash(command: str, root: Path) -> None:
 def main() -> None:
     if os.environ.get(ENV_VAR) == "1" or is_bypassed(HOOK):
         sys.exit(0)
-    try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        sys.exit(0)
+    payload = read_hook_payload("knowledge-note-guard")
     root = kn.vault_root()
     if root is None:
         sys.exit(0)

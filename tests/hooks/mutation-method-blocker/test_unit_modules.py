@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
 HOOKS_DIR = REPO_ROOT / "hooks"
@@ -1259,16 +1261,17 @@ def test_hook_inside_state_mgmt_scope_yjs_receiver_match():
     assert label == "yjs-crdt"
 
 
-def test_hook_main_invalid_json_payload(monkeypatch):
+def test_hook_main_invalid_json_payload_blocks(monkeypatch):
     # Arrange
     monkeypatch.delenv("MUTATION_METHOD_DISABLE", raising=False)
     monkeypatch.setattr(HOOK_MODULE.sys, "stdin", io.StringIO("not-json"))
 
     # Act
-    result = HOOK_MODULE.main()
+    with pytest.raises(SystemExit) as exit_info:
+        HOOK_MODULE.main()
 
     # Assert
-    assert result == 0
+    assert exit_info.value.code == 2
 
 
 def test_hook_main_disable_env(monkeypatch):
