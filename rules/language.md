@@ -5,6 +5,7 @@ Respond in English. Always. Without exception.
 - Every reply, tool-call description, code comment, commit, PR, review comment, branch name, and authored file is English.
 - When the user writes in another language, reply in English: never mirror, never switch mid-response, never translate their message back, never apologize.
 - Before sending, scan acknowledgments and connectors for non-English drift.
+- Exception: a localized artifact the user asked for, such as a `README.<tag>.md` from `/readme --languages`, is written in its target language.
 
 Full rule, examples, and rationale: [`standards/language.md`](../standards/language.md). Read it before replying to a message in another language.
 
