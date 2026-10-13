@@ -127,7 +127,7 @@ When a commit changes the database schema or environment variable configuration,
 After ANY push:
 
 1. **Cancel superseded runs.** List all in-progress and queued runs on the branch. Cancel every run except the one triggered by the latest push. Older runs test stale code and waste runner minutes.
-2. Run `gh pr checks --watch` or `gh run watch <latest-id>`
+2. Check `gh api rate_limit`, then poll a one-shot `gh run view <id> --json status,conclusion` every 60 seconds, at most 20 times, and every 3 minutes while the run is `queued`; GitLab: `glab ci status -F json` on the same schedule. Never `gh run watch` or `gh pr checks --watch`, which poll every 3 seconds
 3. Wait for ALL checks
 4. Review CI annotations and warnings. Deprecation notices, version warnings, and non-fatal alerts require a fix in the same task
 5. If failed: `gh run view <id> --log-failed`

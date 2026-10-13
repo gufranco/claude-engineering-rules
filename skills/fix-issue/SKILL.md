@@ -73,16 +73,16 @@ Run the pre-flight checks from [`../../rules/pre-flight.md`](../../rules/pre-fli
 
 ### Phase 3: Implement
 
-1. **Create a branch.** Name it `<type>/<number>-<short-description>` per [`../../rules/git-workflow.md`](../../rules/git-workflow.md): `fix/` for bugs, `feat/` for features.
+1. **If `--dry-run`:** stop here, before any branch or file changes. Present the proposed approach, affected files, and test plan.
 
-2. **Implement the fix.** Follow [`../../rules/code-style.md`](../../rules/code-style.md) for all code written.
+2. **Create a branch.** Name it `<type>/<number>-<short-description>` per [`../../rules/git-workflow.md`](../../rules/git-workflow.md): `fix/` for bugs, `feat/` for features.
 
-3. **Write tests.** Every fix must have tests that:
-   - Fail without the fix and pass with it, for bugs.
+3. **Write the tests first.** Every fix must have tests that:
+   - Fail before the fix, for bugs. Run them and show the failure.
    - Cover the new behavior including edge cases, for features.
    - Meet 95%+ coverage on changed files.
 
-4. **If `--dry-run`:** stop here. Present the proposed approach, affected files, and test plan. Do not write code.
+4. **Implement the fix** until those tests pass. Follow [`../../rules/code-style.md`](../../rules/code-style.md) for all code written.
 
 ### Phase 4: Verify
 

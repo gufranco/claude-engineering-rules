@@ -20,7 +20,13 @@ When history is needed for the analysis (blame, log, prior versions), drop `--de
 
 When the target is a single branch other than the default: `git clone --depth=1 --branch <name> --single-branch <repo-url> "$WORKDIR/repo"`.
 
-Authenticate per [`standards/multi-account-cli.md`](multi-account-cli.md) when the repo is private. For GitHub: `git clone https://x-access-token:$(gh auth token --user <account>)@github.com/<owner>/<repo>.git`.
+Authenticate per [`standards/multi-account-cli.md`](multi-account-cli.md) when the repo is private. For GitHub, hand git a credential helper that reads the token at call time, so the token never lands in the URL, `.git/config`, or the transcript:
+
+```bash
+git -c credential."https://github.com".helper= \
+    -c credential."https://github.com".helper='!f(){ echo username=x-access-token; echo "password=$(gh auth token --user <account>)"; }; f' \
+    clone --depth=1 https://github.com/<owner>/<repo>.git "$WORKDIR/repo"
+```
 
 ## Forbidden Patterns
 

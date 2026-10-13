@@ -107,10 +107,15 @@ Run tests on main to verify the cherry-pick applies cleanly. If conflicts exist,
 
 ### Step 10: Tag the patch release
 
+Tag the merged fix on the release branch, never `HEAD`. After Step 9 the checkout is `main`, whose tip is the cherry-pick and carries none of the release branch's history.
+
 ```
-git tag v<major>.<minor>.<patch+1>
+git fetch origin <release-branch>
+git tag -a v<major>.<minor>.<patch+1> -m "v<major>.<minor>.<patch+1>" origin/<release-branch>
 git push origin v<major>.<minor>.<patch+1>
 ```
+
+When no release branch exists and the PR targeted `main`, tag that PR's merge commit by its SHA instead of `origin/<release-branch>`.
 
 ## Rules
 

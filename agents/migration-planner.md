@@ -33,7 +33,7 @@ Do not push to remote. The orchestrator pushes; agents must not. Do not spawn su
 
 1. **Detect migration framework.** Look for Prisma (`prisma/migrations/`), Knex (`migrations/`), Flyway (`db/migration/`), TypeORM, Sequelize, or raw SQL migration directories.
 2. **List migrations.** Glob the migration directory. Sort by timestamp/sequence number.
-3. **Read each migration file** in the scope provided, or all new and changed migrations from `git diff --name-only`.
+3. **Read each migration file** in the scope provided. With no scope, ask the orchestrator for the output of `git diff --name-only HEAD`, since this agent has no shell to run git, and read every new or changed migration in it.
 4. **Run safety checks** on each file against the rules below.
 5. **Verify ordering.** Confirm the new migrations have the latest timestamps.
 

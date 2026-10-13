@@ -70,7 +70,7 @@ Do not return raw file contents. File paths and line numbers only.
 ## Scenarios
 
 **No scope provided, no changed interfaces specified:**
-Run `git diff --name-only HEAD` to find changed files. Read each file's diff to identify changed exports, types, routes, or columns. Use those as the interface list.
+This agent has no shell, so it cannot run git. Ask the orchestrator for the output of `git diff HEAD`, then read it to identify changed exports, types, routes, or columns. Use those as the interface list.
 
 **Changed interface has 50+ consumers:**
 Report the first 50 sorted by proximity, same module first, then same package, then external. State: "Truncated at 50. <N> additional consumers omitted."

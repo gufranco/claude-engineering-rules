@@ -53,7 +53,7 @@ Do not return raw file contents or full function bodies. File paths and line num
 ## Scenarios
 
 **No scope provided:**
-Run `git diff --name-only HEAD` to find changed files. Filter to controller, route, handler, and schema files. Review those. If no diff exists, ask the orchestrator to specify files.
+This agent has no shell, so it cannot run git. Ask the orchestrator for the output of `git diff --name-only HEAD`. Filter that list to controller, route, handler, and schema files and review those. If the list is empty, ask the orchestrator to specify files.
 
 **Findings exceed the 15-item limit:**
 Prioritize breaking changes first, then consumer-impact, then design consistency. Truncate at 15. State: "<N> additional findings omitted."

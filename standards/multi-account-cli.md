@@ -69,7 +69,7 @@ Never solve this by putting the token in the remote URL. That discloses it into 
 GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab mr list
 ```
 
-Both env vars are mandatory. `GITLAB_HOST` defaults to `gitlab.com` only when set explicitly; do not rely on the default.
+Both env vars are mandatory. `GITLAB_HOST` defaults to `gitlab.com` only when set explicitly; do not rely on the default. Read the stored token for a host with `glab config get token --host <host>`; glab has no `auth token` subcommand.
 
 ### `docker`
 

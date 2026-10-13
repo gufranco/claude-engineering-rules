@@ -69,7 +69,7 @@ Do not return raw file contents or full function bodies. File paths and line num
 ## Scenarios
 
 **No scope provided:**
-Run `git diff --name-only HEAD` to find changed files. Check documentation files in the diff, and check if changed code files invalidate existing documentation. If no diff exists, scan all `*.md` files in the project root and [`docs/`](../docs) directory.
+This agent has no shell, so it cannot run git. Ask the orchestrator for the output of `git diff --name-only HEAD`. Check documentation files in that list, and check if changed code files invalidate existing documentation. If the list is empty, scan all `*.md` files in the project root and [`docs/`](../docs) directory.
 
 **Findings exceed the 15-item limit:**
 Prioritize code-mismatch and env-mismatch first, then stale-content. Truncate at 15. State: "<N> additional findings omitted."
