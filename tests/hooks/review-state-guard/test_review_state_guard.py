@@ -4,37 +4,33 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 
 HOOK = "review-state-guard"
 
 
-def test_blocks_request_changes(tool_use, run_hook):
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh pr review 123 --request-changes --body 'please fix'",
+        "gh pr review 123 -r -b 'please fix'",
+        "gh pr review 123 -R owner/repo -r -b 'please fix'",
+        "GH_TOKEN=x gh pr review 123 --request-changes -b fix",
+        "ls && gh pr review 123 -r -b fix",
+        "gh api repos/o/r/pulls/1/reviews -X POST -f event=REQUEST_CHANGES -f body=x",
+        "gh api -X POST repos/o/r/pulls/1/reviews --raw-field event=REQUEST_CHANGES",
+    ],
+)
+def test_blocks_request_changes(tool_use, run_hook, command):
     # Arrange
-    payload = tool_use(
-        "Bash",
-        {"command": "gh pr review 123 --event REQUEST_CHANGES --body 'please fix'"},
-    )
+    payload = tool_use("Bash", {"command": command})
 
     # Act
     result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "REQUEST_CHANGES")
-
-
-def test_blocks_dismiss_via_pr_review(tool_use, run_hook):
-    # Arrange
-    payload = tool_use(
-        "Bash",
-        {"command": "gh pr review 123 --event DISMISS --body 'dismissing'"},
-    )
-
-    # Act
-    result = run_hook(HOOK, payload)
-
-    # Assert
-    assert_blocked(result, "DISMISS")
 
 
 def test_blocks_dismiss_via_api(tool_use, run_hook):
@@ -83,7 +79,7 @@ def test_allows_comment_event(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Bash",
-        {"command": "gh pr review 123 --event COMMENT --body 'looking good'"},
+        {"command": "gh pr review 123 --comment --body 'looking good'"},
     )
 
     # Act
@@ -97,7 +93,7 @@ def test_allows_approve_event(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Bash",
-        {"command": "gh pr review 123 --event APPROVE"},
+        {"command": "gh pr review 123 --approve -R owner/repo"},
     )
 
     # Act
@@ -125,7 +121,7 @@ def test_allows_bypass_env(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Bash",
-        {"command": "gh pr review 123 --event REQUEST_CHANGES --body 'please fix'"},
+        {"command": "gh pr review 123 --request-changes --body 'please fix'"},
     )
 
     # Act

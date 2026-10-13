@@ -25,6 +25,8 @@ Exit 0 = allow, exit 2 = block.
 Bypass: set REVIEW_STATE_GUARD_DISABLE=1 in the environment.
 """
 
+from __future__ import annotations
+
 import json
 import os
 import re
@@ -39,8 +41,13 @@ except Exception:  # pragma: no cover
         return None
 
 
-REQUEST_CHANGES_PATTERN = re.compile(
-    r"gh\s+pr\s+review\b[^\n]*--event\s+REQUEST_CHANGES",
+from _lib.cli_invocations import Invocation, invocations  # noqa: E402
+
+SHORT_FLAG_CLUSTER = re.compile(r"-[a-zA-Z]+")
+
+REQUEST_CHANGES_VIA_API = re.compile(
+    r"gh\s+api\b[^\n]*pulls/[^/\s]+/reviews\b(?!/)[^\n]*event[\"']?\s*[=:]\s*[\"']?REQUEST_CHANGES"
+    r"|gh\s+api\b[^\n]*event[\"']?\s*[=:]\s*[\"']?REQUEST_CHANGES[^\n]*pulls/[^/\s]+/reviews\b(?!/)",
     re.IGNORECASE,
 )
 
@@ -49,10 +56,17 @@ DISMISS_VIA_API = re.compile(
     re.IGNORECASE,
 )
 
-DISMISS_VIA_PR_REVIEW = re.compile(
-    r"gh\s+pr\s+review\b[^\n]*--event\s+DISMISS",
-    re.IGNORECASE,
-)
+
+def _requests_changes(call: Invocation) -> bool:
+    if call.args[:2] != ("pr", "review"):
+        return False
+    flags = call.args[2:]
+    return any(
+        arg == "--request-changes"
+        or (SHORT_FLAG_CLUSTER.fullmatch(arg) is not None and "r" in arg[1:])
+        for arg in flags
+    )
+
 
 DELETE_REVIEW = re.compile(
     r"gh\s+api\b[^\n]*-X\s+DELETE\b[^\n]*pulls/[^/]+/reviews/\d+",
@@ -68,7 +82,9 @@ from _lib.bypass import is_bypassed  # noqa: E402
 
 
 def detect_violation(command: str) -> tuple[str, str] | None:
-    if REQUEST_CHANGES_PATTERN.search(command):
+    if REQUEST_CHANGES_VIA_API.search(command) or any(
+        _requests_changes(call) for call in invocations(command, "gh")
+    ):
         return (
             "REQUEST_CHANGES",
             "Posting REQUEST_CHANGES on a PR review is reserved for reviewers. "
@@ -76,7 +92,7 @@ def detect_violation(command: str) -> tuple[str, str] | None:
             "reviewer, confirm the action with the user before posting.",
         )
 
-    if DISMISS_VIA_API.search(command) or DISMISS_VIA_PR_REVIEW.search(command):
+    if DISMISS_VIA_API.search(command):
         return (
             "DISMISS",
             "Dismissing a review mutes another contributor's blocking signal. "
