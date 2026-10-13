@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Scan staged files for secrets before git commit.
-
-Intercepts Bash tool calls that run git commit. Scans all staged files
-for 40+ secret patterns. Blocks the commit if any secrets are found.
-
-Receives Bash tool input as JSON on stdin.
-Exit 0 = allow, exit 2 = block.
-"""
 
 import os
 import re
@@ -120,7 +112,7 @@ SECRET_PATTERNS = [
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
-from _lib.cli_invocations import invocations  # noqa: E402
+from _lib.commit_scope import add_scope, commits_all, repo_dir, within  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 
 
@@ -139,9 +131,6 @@ def should_skip(filepath):
     return False
 
 
-LEADING_CD = re.compile(r"""\s*cd\s+(?:'([^']*)'|"([^"]*)"|(\S+))\s*(?:&&|;)""")
-GIT_DASH_C = re.compile(r"""\bgit\s+-C\s+(?:'([^']*)'|"([^"]*)"|(\S+))""")
-COMMIT_ALL = re.compile(r"\bcommit\b[^\n;&|]*\s(?:--all|-[a-zA-Z]*a[a-zA-Z]*)(?=\s|$)")
 HUNK_HEADER = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 MAX_UNTRACKED_BYTES = 512 * 1024
 MAX_UNTRACKED_FILES = 2000
@@ -149,22 +138,6 @@ MAX_UNTRACKED_FILES = 2000
 
 class ScanError(Exception):
     pass
-
-
-def _first_group(match: re.Match[str]) -> str:
-    return next(group for group in match.groups() if group is not None)
-
-
-def _repo_dir(command: str, cwd: str) -> str:
-    base = cwd or os.getcwd()
-    for pattern in (LEADING_CD, GIT_DASH_C):
-        match = (
-            pattern.match(command) if pattern is LEADING_CD else pattern.search(command)
-        )
-        if match:
-            target = os.path.expandvars(os.path.expanduser(_first_group(match)))
-            base = os.path.join(base, target)
-    return base
 
 
 def _git(repo: str, *args: str) -> subprocess.CompletedProcess[str]:
@@ -209,33 +182,13 @@ def _added_lines(diff_text: str) -> list[tuple[str, int, str]]:
     return added
 
 
-def _add_scope(command: str) -> tuple[bool, list[str]]:
-    whole = False
-    paths: list[str] = []
-    for call in invocations(command, "git"):
-        args = list(call.args)
-        while args[:1] in (["-C"], ["-c"]) and len(args) > 1:
-            args = args[2:]
-        if args[:1] != ["add"]:
-            continue
-        rest = args[1:]
-        whole = whole or any(a in ("-A", "--all", ".", ":/") for a in rest)
-        paths = [*paths, *(a for a in rest if not a.startswith("-") and a != ".")]
-    return whole, paths
-
-
-def _within(name: str, paths: list[str]) -> bool:
-    cleaned = [p.removeprefix("./").rstrip("/") for p in paths]
-    return any(name == p or name.startswith(f"{p}/") for p in cleaned)
-
-
 def _untracked_lines(repo: str, paths: list[str] | None) -> list[tuple[str, int, str]]:
     listing = _git(repo, "ls-files", "--others", "--exclude-standard")
     if listing.returncode != 0:
         raise ScanError(f"git ls-files failed: {listing.stderr.strip()}")
     names = listing.stdout.splitlines()[:MAX_UNTRACKED_FILES]
     lines: list[tuple[str, int, str]] = []
-    for name in (n for n in names if paths is None or _within(n, paths)):
+    for name in (n for n in names if paths is None or within(n, paths)):
         target = os.path.join(repo, name)
         if os.path.getsize(target) > MAX_UNTRACKED_BYTES:
             continue
@@ -245,9 +198,9 @@ def _untracked_lines(repo: str, paths: list[str] | None) -> list[tuple[str, int,
 
 
 def _candidate_lines(command: str, repo: str) -> list[tuple[str, int, str]]:
-    whole, paths = _add_scope(command)
+    whole, paths = add_scope(command)
     lines = _added_lines(_diff(repo, "--cached"))
-    if COMMIT_ALL.search(command) or whole:
+    if commits_all(command) or whole:
         lines = [*lines, *_added_lines(_diff(repo))]
     elif paths:
         lines = [*lines, *_added_lines(_diff(repo, "--", *paths))]
@@ -257,7 +210,7 @@ def _candidate_lines(command: str, repo: str) -> list[tuple[str, int, str]]:
 
 
 def scan_command(command: str, cwd: str) -> list[tuple[str, int, str]]:
-    repo = _repo_dir(command, cwd)
+    repo = repo_dir(command, cwd)
     if not _is_repository(repo):
         return []
     findings: list[tuple[str, int, str]] = []

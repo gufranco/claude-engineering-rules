@@ -39,12 +39,19 @@ MIGRATION_PATH_HINTS = (
 FLYWAY_NAME = re.compile(r"/[VRU]\d+(?:_\d+)*__[^/]+\.sql$", re.IGNORECASE)
 
 CREATE_BAD = re.compile(
-    r"\bCREATE\s+(?!OR\s+REPLACE\b)"
+    r"\bCREATE\s+"
     r"(?:UNIQUE\s+)?(?:CONCURRENTLY\s+)?"
-    r"(TABLE|INDEX|EXTENSION|MATERIALIZED\s+VIEW|TYPE|FUNCTION|SCHEMA|SEQUENCE|TRIGGER|VIEW|ROLE|USER|POLICY)\b"
+    r"(TABLE|INDEX|EXTENSION|MATERIALIZED\s+VIEW|SCHEMA|SEQUENCE)\b"
     r"(?!\s+(?:CONCURRENTLY\s+)?IF\s+NOT\s+EXISTS\b)",
     re.IGNORECASE,
 )
+CREATE_WITHOUT_REPLACE = re.compile(
+    r"\bCREATE\s+(?:CONSTRAINT\s+)?(FUNCTION|VIEW|TRIGGER|PROCEDURE)\b",
+    re.IGNORECASE,
+)
+CREATE_UNGUARDABLE = re.compile(r"\bCREATE\s+(TYPE|POLICY|ROLE|USER)\b", re.IGNORECASE)
+DO_BLOCK = re.compile(r"\bDO\s+(\$\w*\$)(?P<body>.*?)\1", re.IGNORECASE | re.DOTALL)
+DO_GUARD = re.compile(r"\bIF\s+NOT\s+EXISTS\b|\bEXCEPTION\s+WHEN\b", re.IGNORECASE)
 DROP_BAD = re.compile(
     r"\bDROP\s+"
     r"(TABLE|INDEX|EXTENSION|MATERIALIZED\s+VIEW|TYPE|FUNCTION|SCHEMA|SEQUENCE|TRIGGER|VIEW|ROLE|USER|POLICY|COLUMN|CONSTRAINT)\b"
@@ -98,11 +105,21 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
     return out
 
 
+def strip_guarded_do_blocks(sql: str) -> str:
+    return DO_BLOCK.sub(
+        lambda m: "" if DO_GUARD.search(m.group("body")) else m.group(0), sql
+    )
+
+
 def find(text: str) -> list[str]:
-    sql = strip_comments(text)
+    sql = strip_guarded_do_blocks(strip_comments(text))
     hits: list[str] = []
     for m in CREATE_BAD.finditer(sql):
         hits.append(f"CREATE {m.group(1).upper()} without IF NOT EXISTS")
+    for m in CREATE_WITHOUT_REPLACE.finditer(sql):
+        hits.append(f"CREATE {m.group(1).upper()} without OR REPLACE")
+    for m in CREATE_UNGUARDABLE.finditer(sql):
+        hits.append(f"CREATE {m.group(1).upper()} outside a guarded DO block")
     for m in DROP_BAD.finditer(sql):
         hits.append(f"DROP {m.group(1).upper()} without IF EXISTS")
     if os.environ.get("MIGRATION_ALLOW_BLOCKING_INDEX") != "1":
@@ -164,9 +181,11 @@ def main() -> int:
         "Blocked: migration is not idempotent. "
         'Rule: ~/.claude/rules/git-workflow.md "Migration Idempotency".\n'
         + "\n".join(findings)
-        + "\n\nFix: every CREATE must use IF NOT EXISTS, every DROP must use IF EXISTS. "
-        "For statements without native support (CREATE MATERIALIZED VIEW pre-Postgres 14), "
-        "wrap in DO $$ BEGIN ... IF NOT EXISTS ... END $$.\n"
+        + "\n\nFix: CREATE TABLE, INDEX, EXTENSION, MATERIALIZED VIEW, SCHEMA and SEQUENCE "
+        "use IF NOT EXISTS; CREATE FUNCTION, VIEW, TRIGGER and PROCEDURE use OR REPLACE; "
+        "CREATE TYPE, POLICY, ROLE and USER have no native guard, so wrap them in "
+        "DO $$ BEGIN IF NOT EXISTS (SELECT ...) THEN ... END IF; END $$ or catch "
+        "duplicate_object in an EXCEPTION block. Every DROP uses IF EXISTS.\n"
         "Bypass (rare, e.g., baseline migration): set MIGRATION_IDEMPOTENCY_DISABLE=1.",
         file=sys.stderr,
     )
