@@ -156,7 +156,7 @@ def main() -> int:
     )
     message = _block(
         hook=HOOK_NAME,
-        rule_anchor="rules/git-workflow.md (Ignored Artifacts)",
+        rule_anchor="standards/git-workflow.md (Ignored Artifacts)",
         detected=detected,
         why="Large binaries in git history bloat clones, slow CI, and waste storage forever.",
         fix=(

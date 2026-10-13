@@ -119,7 +119,7 @@ def main() -> int:
 
     print(
         "Blocked: TypeORM raw .query() is banned in application code. "
-        'Rule: ~/.claude/rules/code-style.md "No raw SQL".\n'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
         + "\n\nFix: express the query using TypeORM's query builder "
         "(repository.createQueryBuilder(), find(), findOne(), update(), delete()). "

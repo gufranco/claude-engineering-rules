@@ -179,7 +179,7 @@ def main() -> int:
 
     print(
         "Blocked: `any` type detected. "
-        'Rule: ~/.claude/rules/code-style.md "Strong typing".\n'
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
         + "\n".join(findings)
         + "\n\nFix: replace `any` with `unknown` and narrow at the boundary, or define a "
         "proper type. For ORM queries use the generated types (Prisma.WhereInput, etc.). "

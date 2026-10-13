@@ -179,7 +179,7 @@ def main() -> int:
 
     print(
         "Blocked: migration is not idempotent. "
-        'Rule: ~/.claude/rules/git-workflow.md "Migration Idempotency".\n'
+        'Rule: ~/.claude/standards/git-workflow.md "Migration Idempotency".\n'
         + "\n".join(findings)
         + "\n\nFix: CREATE TABLE, INDEX, EXTENSION, MATERIALIZED VIEW, SCHEMA and SEQUENCE "
         "use IF NOT EXISTS; CREATE FUNCTION, VIEW, TRIGGER and PROCEDURE use OR REPLACE; "

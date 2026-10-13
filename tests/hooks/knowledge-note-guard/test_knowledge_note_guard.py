@@ -699,3 +699,57 @@ def test_blocks_on_undecodable_stdin(monkeypatch, vault):
 
     # Assert
     assert exit_info.value.code == 2
+
+
+def test_blocks_overwriting_an_existing_raw_source(tool_use, run_hook, vault, env):
+    # Arrange
+    source = vault / "raw/articles/Kept.md"
+    source.write_text(GOOD)
+    payload = tool_use(
+        "Write", {"file_path": str(source), "content": GOOD + "\nmore\n"}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_blocked(result, "KN005")
+
+
+def test_blocks_moving_a_note_out_of_the_vault(
+    tool_use, run_hook, vault, env, tmp_path
+):
+    # Arrange
+    target = vault / "wiki/concepts/Leaving.md"
+    target.write_text(GOOD)
+    payload = tool_use("Bash", {"command": f"mv {target} {tmp_path}/"})
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_blocked(result, "KN006")
+
+
+@pytest.mark.parametrize(
+    "command_for",
+    [
+        lambda vault, target: f"mv {target} {vault / '_trash'}/",
+        lambda vault, target: f"mv {target} {vault / 'wiki/concepts/Renamed.md'}",
+        lambda vault, target: f"rm -f /tmp/scratch.txt && cat {target}",
+    ],
+    ids=["retire-to-trash", "rename-inside", "read-after-unrelated-rm"],
+)
+def test_allows_commands_that_keep_the_note(
+    tool_use, run_hook, vault, env, command_for
+):
+    # Arrange
+    target = vault / "wiki/concepts/Staying.md"
+    target.write_text(GOOD)
+    payload = tool_use("Bash", {"command": command_for(vault, target)})
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_allowed(result)

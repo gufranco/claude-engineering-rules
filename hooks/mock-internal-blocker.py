@@ -169,7 +169,7 @@ def main() -> int:
 
     print(
         "Blocked: mocking internal infrastructure. "
-        'Rule: ~/.claude/rules/testing.md "Mocks Policy (STRICT)".\n'
+        'Rule: ~/.claude/standards/testing.md "Mocks Policy (STRICT)".\n'
         + "\n".join(findings)
         + "\n\nFix: use a real database, real Redis, real services. Add them to "
         "docker-compose for the test environment. Mocks are only allowed for external APIs "

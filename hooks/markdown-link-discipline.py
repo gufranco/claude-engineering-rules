@@ -27,15 +27,11 @@ except Exception:  # pragma: no cover
         return None
 
 
-try:
-    from _lib.markdown_link_detector import (  # type: ignore
-        Finding,
-        detect_findings,
-        is_advisory_file,
-        tracked_paths,
-    )
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib.markdown_link_detector import (  # noqa: E402
+    detect_findings,
+    is_advisory_file,
+    tracked_paths,
+)
 
 
 MARKDOWN_EXTENSIONS = (".md", ".mdx")
@@ -54,17 +50,6 @@ def relative_to_repo(path: str) -> str | None:
         return str(p.relative_to(REPO_ROOT))
     except (ValueError, OSError):
         return None
-
-
-def findings_signature(findings: list[Finding]) -> set[tuple[str, int, str]]:
-    """Return a comparable set of (line-anchor, column, token) for diffing.
-
-    Line numbers can shift between the pre-edit and post-edit content. To
-    minimize false positives, we use (line content, token) as the anchor,
-    keyed off the token plus the surrounding context, rather than line number
-    alone.
-    """
-    return {(f.token, f.column, f.line) for f in findings}
 
 
 def derive_post_text(tool: str, tool_input: dict, pre_text: str) -> str:

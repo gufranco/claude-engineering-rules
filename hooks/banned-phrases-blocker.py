@@ -272,7 +272,7 @@ def main() -> int:
             print(
                 "Blocked: subagent prompt starts with a meta-question. "
                 f"Leading phrase: {hit!r}. "
-                'Rule: ~/.claude/rules/smart-questions.md "Briefing Subagents" '
+                'Rule: ~/.claude/standards/smart-questions.md "Briefing Subagents" '
                 'and "Ship the Question".\n'
                 "Fix: replace the meta-prompt with the actual instruction. "
                 "Include scope, file:line refs from prior investigation, prior "

@@ -173,7 +173,7 @@ def main() -> int:
 
     print(
         "Blocked: payload contains characters banned by "
-        '~/.claude/rules/code-style.md "Writing Style".\n'
+        '~/.claude/standards/tone-and-writing.md "Writing Style".\n'
         + "\n".join(all_findings)
         + "\n\nFix:\n"
         "  - Replace em dashes with a period, comma, colon, or rewrite.\n"

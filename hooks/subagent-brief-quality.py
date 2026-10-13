@@ -219,7 +219,7 @@ def main() -> int:
     print(
         "Blocked: subagent prompt fails "
         f"{len(failures)} of 4 quality heuristics. "
-        'Rule: ~/.claude/rules/smart-questions.md "Briefing Subagents".\n'
+        'Rule: ~/.claude/standards/smart-questions.md "Briefing Subagents".\n'
         + "\n".join(f"  - {m}" for m in failures)
         + "\n\nFix: rewrite the prompt with scope, file:line refs from prior "
         "investigation, prior attempts with errors, expected output shape, "
