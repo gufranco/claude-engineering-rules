@@ -2,7 +2,7 @@
 
 Applies to Prisma, TypeORM, Drizzle, Sequelize, and MikroORM. The schema source is the single source of truth; every migration DDL has a matching schema declaration.
 
-- Never use a schema-sync shortcut such as `db push`, `synchronize`, `sync()`, or `schema:update` outside local dev.
+- Never use a schema-sync shortcut such as `db push`, `synchronize`, `sync()`, or `schema:update` outside local dev and disposable test databases.
 - Every index and constraint gets an explicit name: `<Table>_<col>_<purpose>_idx`.
 - DDL is idempotent via `IF NOT EXISTS` and `IF EXISTS`; `CREATE INDEX CONCURRENTLY` gets its own migration.
 - Your migrations sort last; no raw SQL outside migrations; handlers never import the ORM.

@@ -18,7 +18,7 @@ This standard summarizes the obligations of NIS2 Directive 2022/2555, DORA Regul
 | NIS2 essential entities early warning | 24 hours | Significant incident | Authority |
 | NIS2 incident notification | 72 hours | Same | Authority |
 | NIS2 final report | 1 month | Same | Authority |
-| Brazil ANPD | ~2 business days (ANPD interpretation) | Discovery of incident | Authority + affected users |
+| Brazil ANPD | 3 business days per Resolução CD/ANPD 15/2024, 6 for small processing agents | Awareness that the incident affected personal data | Authority + affected users |
 | Brazil affected data subjects | "Reasonable time" | Same | User-facing notification |
 
 ## Breach Notification UI Template
