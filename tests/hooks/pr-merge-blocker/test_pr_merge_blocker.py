@@ -52,10 +52,12 @@ MERGE_COMMANDS = [
     "gh pr merge 12 --squash && df -h",
     "ls --help; gh pr merge 12 --squash",
     "gh pr merge 12 --squash\ngrep -h x file",
+    "cat > notes.md <<'EOF'\nit's done\nEOF\ngh pr merge 12",
 ]
 
 
 ALLOWED_COMMANDS = [
+    "cat > notes.md <<'EOF'\ngh pr merge 12\nEOF",
     "gh pr view 123",
     "gh pr list --state open",
     "gh pr diff 123",

@@ -44,7 +44,7 @@ except ImportError:  # pragma: no cover
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
-from _lib.shell_segments import unquoted_segments  # noqa: E402
+from _lib.shell_segments import strip_heredoc_bodies, unquoted_segments  # noqa: E402
 from _lib.session_lock import is_locked  # noqa: E402
 
 LOCK_NAME = "morning"
@@ -77,7 +77,9 @@ def _merges(segment: str) -> bool:
 
 
 def is_merge_command(command: str) -> bool:
-    return any(_merges(segment) for segment in unquoted_segments(command))
+    return any(
+        _merges(strip_heredoc_bodies(segment)) for segment in unquoted_segments(command)
+    )
 
 
 def main() -> int:

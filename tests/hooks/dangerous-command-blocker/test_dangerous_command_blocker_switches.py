@@ -108,3 +108,39 @@ def test_an_env_bypass_lets_a_protected_push_through(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_solo_push_after_a_multi_line_commit_message_is_allowed(
+    solo_home, tool_use, run_hook
+):
+    # Arrange
+    home, repo = solo_home
+    command = (
+        f'cd {repo} && git commit -q -m "fix: x" -m "first line\nsecond line" '
+        "&& git push -q origin main"
+    )
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload, env={"HOME": str(home)})
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_a_solo_push_after_a_heredoc_message_with_an_apostrophe_is_allowed(
+    solo_home, tool_use, run_hook
+):
+    # Arrange
+    home, repo = solo_home
+    command = (
+        f"cd {repo} && git commit -q -F - <<'EOF'\nfix: the machine's login\nEOF\n"
+        "git push -q origin main"
+    )
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload, env={"HOME": str(home)})
+
+    # Assert
+    assert_allowed(result)
