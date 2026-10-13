@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_PATH = REPO_ROOT / ".github" / "scripts" / "validate-normative-keywords.py"
 
 
 @pytest.fixture(scope="module")
-def validator_mod():
-    import sys
-
+def validator_mod() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "validate_normative_keywords", SCRIPT_PATH
     )
@@ -23,82 +24,63 @@ def validator_mod():
     return mod
 
 
-def test_scan_detects_should_bullet(validator_mod, tmp_path):
+def _rule_file(tmp_path: Path, faker: Faker, text: str) -> Path:
+    path = tmp_path / f"{faker.word()}.md"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize("keyword", ["Should", "should"])
+def test_scan_detects_should_bullet(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker, keyword: str
+) -> None:
     # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("- Should validate input.\n")
+    line = f"- {keyword} {faker.word()} {faker.word()}."
+    f = _rule_file(tmp_path, faker, f"{line}\n")
 
     # Act
     findings = validator_mod.scan(f, "rules/rule.md")
 
     # Assert
-    assert any(c == "should-bullet" for _, c, _ in findings)
+    assert findings == [(1, "should-bullet", line)]
 
 
-def test_scan_detects_lowercase_should_bullet(validator_mod, tmp_path):
+@pytest.mark.parametrize(
+    ("phrase", "category"),
+    [
+        ("Great question!", "banned-opener"),
+        ("Hope this helps", "banned-closer"),
+        ("It's worth noting", "banned-hedge"),
+        ("That said,", "banned-transition"),
+    ],
+)
+def test_scan_detects_banned_phrase(
+    validator_mod: ModuleType,
+    tmp_path: Path,
+    faker: Faker,
+    phrase: str,
+    category: str,
+) -> None:
     # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("- should validate input.\n")
+    line = f"{phrase} {faker.word()} {faker.word()}."
+    f = _rule_file(tmp_path, faker, f"{line}\n")
 
     # Act
     findings = validator_mod.scan(f, "rules/rule.md")
 
     # Assert
-    assert any(c == "should-bullet" for _, c, _ in findings)
+    assert findings == [(1, category, line)]
 
 
-def test_scan_detects_opener(validator_mod, tmp_path):
+def test_scan_skips_code_fences(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("Great question! Here is the answer.\n")
-
-    # Act
-    findings = validator_mod.scan(f, "rules/rule.md")
-
-    # Assert
-    assert any(c == "banned-opener" for _, c, _ in findings)
-
-
-def test_scan_detects_closer(validator_mod, tmp_path):
-    # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("Hope this helps your team.\n")
-
-    # Act
-    findings = validator_mod.scan(f, "rules/rule.md")
-
-    # Assert
-    assert any(c == "banned-closer" for _, c, _ in findings)
-
-
-def test_scan_detects_hedge(validator_mod, tmp_path):
-    # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("It's worth noting that the API changed.\n")
-
-    # Act
-    findings = validator_mod.scan(f, "rules/rule.md")
-
-    # Assert
-    assert any(c == "banned-hedge" for _, c, _ in findings)
-
-
-def test_scan_detects_transition(validator_mod, tmp_path):
-    # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("That said, this is the correct way.\n")
-
-    # Act
-    findings = validator_mod.scan(f, "rules/rule.md")
-
-    # Assert
-    assert any(c == "banned-transition" for _, c, _ in findings)
-
-
-def test_scan_skips_code_fences(validator_mod, tmp_path):
-    # Arrange
-    f = tmp_path / "rule.md"
-    f.write_text("Real prose.\n```\n- Should validate input.\nGreat question!\n```\n")
+    f = _rule_file(
+        tmp_path,
+        faker,
+        f"{faker.word()}.\n```\n- Should {faker.word()}.\nGreat question!\n```\n",
+    )
 
     # Act
     findings = validator_mod.scan(f, "rules/rule.md")
@@ -107,22 +89,38 @@ def test_scan_skips_code_fences(validator_mod, tmp_path):
     assert findings == []
 
 
-def test_scan_skips_self_reference_phrases(validator_mod, tmp_path):
+def test_scan_skips_banned_phrases_in_self_reference_files(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
-    f = tmp_path / "writing-precision.md"
-    f.write_text("Banned: Great question! Hope this helps.\n")
+    f = _rule_file(tmp_path, faker, "Banned: Great question! Hope this helps.\n")
 
     # Act
     findings = validator_mod.scan(f, "rules/writing-precision.md")
 
     # Assert
-    assert all(c == "should-bullet" for _, c, _ in findings)
+    assert findings == []
 
 
-def test_scan_clean_file_produces_no_findings(validator_mod, tmp_path):
+def test_scan_still_flags_should_bullets_in_self_reference_files(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
-    f = tmp_path / "clean.md"
-    f.write_text("- Must validate input.\n- May skip null values.\n")
+    line = f"- Should {faker.word()}."
+    f = _rule_file(tmp_path, faker, f"{line}\n")
+
+    # Act
+    findings = validator_mod.scan(f, "rules/writing-precision.md")
+
+    # Assert
+    assert findings == [(1, "should-bullet", line)]
+
+
+def test_scan_clean_file_produces_no_findings(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
+    # Arrange
+    f = _rule_file(tmp_path, faker, f"- Must {faker.word()}.\n- May {faker.word()}.\n")
 
     # Act
     findings = validator_mod.scan(f, "rules/clean.md")
@@ -131,7 +129,9 @@ def test_scan_clean_file_produces_no_findings(validator_mod, tmp_path):
     assert findings == []
 
 
-def test_scan_reports_an_unreadable_file(validator_mod, tmp_path):
+def test_scan_reports_an_unreadable_file(
+    validator_mod: ModuleType, tmp_path: Path
+) -> None:
     # Arrange
     f = tmp_path / "bad.md"
     f.write_bytes(b"\xff\xfe\xfd")
@@ -143,51 +143,55 @@ def test_scan_reports_an_unreadable_file(validator_mod, tmp_path):
     assert [finding[:2] for finding in findings] == [(0, "unreadable")]
 
 
-def test_walk_in_scope_includes_in_scope_dirs(validator_mod, tmp_path):
+def test_walk_in_scope_includes_in_scope_dirs(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
-    (tmp_path / "rules").mkdir()
-    (tmp_path / "rules" / "a.md").write_text("a")
-    (tmp_path / "standards").mkdir()
-    (tmp_path / "standards" / "b.md").write_text("b")
-    (tmp_path / "checklists").mkdir()
-    (tmp_path / "checklists" / "c.md").write_text("c")
-    (tmp_path / "CLAUDE.md").write_text("d")
-    (tmp_path / "specs").mkdir()
-    (tmp_path / "specs" / "e.md").write_text("e")
+    for directory, name in [
+        ("rules", "a.md"),
+        ("standards", "b.md"),
+        ("checklists", "c.md"),
+        ("specs", "e.md"),
+    ]:
+        (tmp_path / directory).mkdir()
+        (tmp_path / directory / name).write_text(faker.word())
+    (tmp_path / "CLAUDE.md").write_text(faker.word())
 
     # Act
     files = list(validator_mod.walk_in_scope(tmp_path))
 
     # Assert
-    names = {p.name for p in files}
-    assert names == {"a.md", "b.md", "c.md", "CLAUDE.md"}
+    assert {p.name for p in files} == {"a.md", "b.md", "c.md", "CLAUDE.md"}
 
 
-def test_walk_in_scope_handles_missing_dirs(validator_mod, tmp_path):
+def test_walk_in_scope_handles_missing_dirs(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
     (tmp_path / "rules").mkdir()
-    (tmp_path / "rules" / "a.md").write_text("a")
+    (tmp_path / "rules" / "a.md").write_text(faker.word())
 
     # Act
     files = list(validator_mod.walk_in_scope(tmp_path))
 
     # Assert
-    assert any(p.name == "a.md" for p in files)
+    assert files == [tmp_path / "rules" / "a.md"]
 
 
-def test_walk_in_scope_skips_dotfiles(validator_mod, tmp_path):
+def test_walk_in_scope_skips_dotfiles(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / ".hidden").mkdir()
-    (tmp_path / "rules" / ".hidden" / "x.md").write_text("x")
-    (tmp_path / "rules" / "ok.md").write_text("ok")
+    (tmp_path / "rules" / ".hidden" / "x.md").write_text(faker.word())
+    (tmp_path / "rules" / "ok.md").write_text(faker.word())
 
     # Act
     files = list(validator_mod.walk_in_scope(tmp_path))
 
     # Assert
-    names = {p.name for p in files}
-    assert names == {"ok.md"}
+    assert {p.name for p in files} == {"ok.md"}
 
 
 @pytest.mark.parametrize(
@@ -199,7 +203,9 @@ def test_walk_in_scope_skips_dotfiles(validator_mod, tmp_path):
         ("rules/random.md", False),
     ],
 )
-def test_is_self_reference_recognizes_known_paths(validator_mod, path, expected):
+def test_is_self_reference_recognizes_known_paths(
+    validator_mod: ModuleType, path: str, expected: bool
+) -> None:
     # Arrange
     candidate = path
 
@@ -210,10 +216,16 @@ def test_is_self_reference_recognizes_known_paths(validator_mod, path, expected)
     assert result is expected
 
 
-def test_main_clean_exits_zero(validator_mod, tmp_path, monkeypatch, capsys):
+def test_main_clean_exits_zero(
+    validator_mod: ModuleType,
+    tmp_path: Path,
+    faker: Faker,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
     (tmp_path / "rules").mkdir()
-    (tmp_path / "rules" / "ok.md").write_text("- Must validate input.\n")
+    (tmp_path / "rules" / "ok.md").write_text(f"- Must {faker.word()}.\n")
     monkeypatch.setattr(
         "sys.argv",
         ["validate-normative-keywords.py", "--root", str(tmp_path)],
@@ -223,15 +235,23 @@ def test_main_clean_exits_zero(validator_mod, tmp_path, monkeypatch, capsys):
     code = validator_mod.main()
 
     # Assert
-    out = capsys.readouterr().out
     assert code == 0
-    assert "Clean" in out
+    assert capsys.readouterr().out == (
+        "Clean: no normative-keyword or banned-phrase findings.\n"
+    )
 
 
-def test_main_dirty_exits_one(validator_mod, tmp_path, monkeypatch, capsys):
+def test_main_dirty_exits_one(
+    validator_mod: ModuleType,
+    tmp_path: Path,
+    faker: Faker,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     # Arrange
+    line = f"- Should {faker.word()}."
     (tmp_path / "rules").mkdir()
-    (tmp_path / "rules" / "bad.md").write_text("- Should validate input.\n")
+    (tmp_path / "rules" / "bad.md").write_text(f"{line}\n")
     monkeypatch.setattr(
         "sys.argv",
         ["validate-normative-keywords.py", "--root", str(tmp_path)],
@@ -241,7 +261,9 @@ def test_main_dirty_exits_one(validator_mod, tmp_path, monkeypatch, capsys):
     code = validator_mod.main()
 
     # Assert
-    out = capsys.readouterr().out
     assert code == 1
-    assert "should-bullet" in out
-    assert "Total" in out
+    assert capsys.readouterr().out == (
+        "rules/bad.md: 1 finding(s)\n"
+        f"     1  [should-bullet]  {line}\n"
+        "\nTotal: 1 finding(s).\n"
+    )

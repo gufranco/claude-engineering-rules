@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
@@ -16,7 +17,7 @@ from _lib import hook_integrity  # noqa: E402
 
 
 @pytest.fixture
-def isolated_repo(tmp_path: Path, monkeypatch) -> Path:
+def isolated_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     repo = tmp_path / "repo"
     (repo / "hooks").mkdir(parents=True)
     monkeypatch.setattr(hook_integrity, "REPO_ROOT", repo)
@@ -27,9 +28,17 @@ def isolated_repo(tmp_path: Path, monkeypatch) -> Path:
     return repo
 
 
-def test_load_baseline_returns_empty_for_malformed_json(isolated_repo: Path) -> None:
+def _write_hook(repo: Path, faker: Faker) -> Path:
+    hook = repo / "hooks" / f"{faker.word()}_hook.py"
+    hook.write_text(f"{faker.word()} = 1\n", encoding="utf-8")
+    return hook
+
+
+def test_load_baseline_returns_empty_for_malformed_json(
+    isolated_repo: Path, faker: Faker
+) -> None:
     # Arrange
-    hook_integrity.INTEGRITY_FILE.write_text("not json {", encoding="utf-8")
+    hook_integrity.INTEGRITY_FILE.write_text(f"{faker.word()} {{", encoding="utf-8")
 
     # Act
     baseline = hook_integrity._load_baseline()
@@ -50,14 +59,15 @@ def test_load_baseline_returns_empty_for_non_dict(isolated_repo: Path) -> None:
 
 
 def test_verify_baseline_reports_missing_files(
-    isolated_repo: Path, capsys: pytest.CaptureFixture[str]
+    isolated_repo: Path, capsys: pytest.CaptureFixture[str], faker: Faker
 ) -> None:
     # Arrange
+    ghost = f"{faker.word()}_{faker.word()}.py"
     hook_integrity.INTEGRITY_FILE.write_text(
         json.dumps(
             {
                 "version": 1,
-                "files": {"hooks/ghost.py": "deadbeef" * 8},
+                "files": {f"hooks/{ghost}": faker.sha256()},
             }
         ),
         encoding="utf-8",
@@ -70,17 +80,17 @@ def test_verify_baseline_reports_missing_files(
     captured = capsys.readouterr()
     assert rc == 2
     assert "MISSING" in captured.err
-    assert "ghost.py" in captured.err
+    assert ghost in captured.err
 
 
 def test_assert_self_returns_true_for_path_outside_repo(
-    isolated_repo: Path, tmp_path: Path
+    isolated_repo: Path, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
-    (isolated_repo / "hooks" / "demo.py").write_text("x=1\n", encoding="utf-8")
+    _write_hook(isolated_repo, faker)
     hook_integrity.update_baseline()
-    outside = tmp_path / "elsewhere.py"
-    outside.write_text("# not in repo\n", encoding="utf-8")
+    outside = tmp_path / f"{faker.word()}.py"
+    outside.write_text(f"{faker.word()} = 1\n", encoding="utf-8")
 
     # Act
     result = hook_integrity.assert_self(str(outside))
@@ -90,13 +100,13 @@ def test_assert_self_returns_true_for_path_outside_repo(
 
 
 def test_assert_self_returns_true_when_path_not_in_baseline(
-    isolated_repo: Path,
+    isolated_repo: Path, faker: Faker
 ) -> None:
     # Arrange
-    (isolated_repo / "hooks" / "demo.py").write_text("x=1\n", encoding="utf-8")
+    _write_hook(isolated_repo, faker)
     hook_integrity.update_baseline()
-    other = isolated_repo / "hooks" / "stranger.py"
-    other.write_text("y=2\n", encoding="utf-8")
+    other = isolated_repo / "hooks" / f"stranger_{faker.word()}.py"
+    other.write_text(f"{faker.word()} = 2\n", encoding="utf-8")
 
     # Act
     result = hook_integrity.assert_self(str(other))
@@ -106,10 +116,13 @@ def test_assert_self_returns_true_when_path_not_in_baseline(
 
 
 def test_main_dispatches_update(
-    isolated_repo: Path, monkeypatch, capsys: pytest.CaptureFixture[str]
+    isolated_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    faker: Faker,
 ) -> None:
     # Arrange
-    (isolated_repo / "hooks" / "demo.py").write_text("x=1\n", encoding="utf-8")
+    _write_hook(isolated_repo, faker)
     monkeypatch.setattr(sys, "argv", ["hook_integrity", "--update"])
 
     # Act
@@ -122,10 +135,13 @@ def test_main_dispatches_update(
 
 
 def test_main_dispatches_verify(
-    isolated_repo: Path, monkeypatch, capsys: pytest.CaptureFixture[str]
+    isolated_repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    faker: Faker,
 ) -> None:
     # Arrange
-    (isolated_repo / "hooks" / "demo.py").write_text("x=1\n", encoding="utf-8")
+    _write_hook(isolated_repo, faker)
     hook_integrity.update_baseline()
     monkeypatch.setattr(sys, "argv", ["hook_integrity", "--verify"])
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "validate-skills.py"
@@ -25,11 +26,11 @@ def make_dirs(root: Path, names: tuple[str, ...]) -> None:
 
 
 def test_skill_dirs_skip_dot_prefixed_and_harness_directories(
-    skills_module: ModuleType, tmp_path: Path
+    skills_module: ModuleType, tmp_path: Path, faker: Faker
 ) -> None:
     # Arrange
     make_dirs(tmp_path, ("plan", ".trash", ".cache", "synced", "ship"))
-    (tmp_path / "README.md").write_text("not a directory")
+    (tmp_path / "README.md").write_text(faker.sentence())
 
     # Act
     found = skills_module.skill_dirs(str(tmp_path))

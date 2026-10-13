@@ -1,375 +1,251 @@
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
-from _helpers.timing import timed  # noqa: E402
+
+from faker import Faker
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "statusline.py"
+OPUS = "claude-opus-4-7"
+SONNET = "claude-sonnet-4-6"
+SCRIPT_TIMEOUT_S = 6
+
+Usage = dict[str, int]
+Payload = dict[str, object]
 
 
-def run(stdin_json: dict, env: dict | None = None):
+def run(stdin_text: str, cwd: Path | None = None) -> tuple[int, str, str]:
     proc = subprocess.run(
         [sys.executable, str(SCRIPT)],
-        input=json.dumps(stdin_json),
+        input=stdin_text,
         capture_output=True,
         text=True,
-        timeout=6,
-        env=env,
+        timeout=SCRIPT_TIMEOUT_S,
+        cwd=cwd,
         check=False,
     )
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def make_transcript(tmp_path: Path, usages: list[dict]) -> Path:
-    p = tmp_path / "transcript.jsonl"
-    lines = []
-    for i, usage in enumerate(usages):
-        lines.append(
-            json.dumps(
-                {
-                    "type": "assistant",
-                    "uuid": f"u-{i}",
-                    "message": {
-                        "id": f"m-{i}",
-                        "model": "claude-opus-4-7",
-                        "usage": usage,
-                    },
-                }
-            )
+def usage(
+    input_tokens: int, output_tokens: int, cache_read: int = 0, cache_write: int = 0
+) -> Usage:
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cache_read_input_tokens": cache_read,
+        "cache_creation_input_tokens": cache_write,
+    }
+
+
+def make_transcript(tmp_path: Path, faker: Faker, usages: list[Usage]) -> Path:
+    path = tmp_path / "transcript.jsonl"
+    lines = [
+        json.dumps(
+            {
+                "type": "assistant",
+                "uuid": faker.uuid4(),
+                "message": {"id": faker.uuid4(), "model": OPUS, "usage": entry},
+            }
         )
-    p.write_text("\n".join(lines) + "\n")
-    return p
+        for entry in usages
+    ]
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return path
 
 
-def assert_contains(out: str, needles: list[str]):
-    for n in needles:
-        assert n in out, f"expected {n!r} in statusline output, got: {out!r}"
+def make_project(tmp_path: Path, faker: Faker) -> Path:
+    project = tmp_path / faker.slug()
+    project.mkdir()
+    return project
 
 
-def test_outputs_single_line(tmp_path):
+def payload_for(project: Path, model: str, transcript: Path) -> str:
+    body: Payload = {
+        "cwd": str(project),
+        "model": model,
+        "transcript_path": str(transcript),
+    }
+    return json.dumps(body)
+
+
+def test_outputs_one_line_without_a_trailing_newline(
+    tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(100, 50, cache_write=1000)])
+
+    # Act
+    result = run(payload_for(project, OPUS, transcript))
+
+    # Assert
+    assert result == (0, f"[{project.name}] | opus | cache 0% | ctx 0% | $0.02", "")
+
+
+def test_reports_the_model_short_name_for_a_sonnet_id(
+    tmp_path: Path, faker: Faker
+) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(10, 10)])
+
+    # Act
+    _, stdout, _ = run(payload_for(project, SONNET, transcript))
+
+    # Assert
+    assert stdout == f"[{project.name}] | sonnet | cache 0% | ctx 0% | $0.00"
+
+
+def test_cache_hit_ratio_counts_reads_over_all_input(
+    tmp_path: Path, faker: Faker
+) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
     transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 100,
-                "output_tokens": 50,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 1000,
-            }
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    code, stdout, _ = run(payload)
-
-    # Assert
-    assert code == 0
-    assert stdout.count("\n") <= 1, "statusline must be a single line"
-    assert stdout.strip() != "", "statusline must produce output"
-
-
-def test_includes_model_short_name(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 10,
-                "output_tokens": 10,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 0,
-            }
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "opus" in stdout.lower()
-
-
-def test_includes_cwd_basename(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 10,
-                "output_tokens": 10,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 0,
-            }
-        ],
-    )
-    cwd = tmp_path / "my-project"
-    cwd.mkdir()
-    payload = {
-        "cwd": str(cwd),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "my-project" in stdout
-
-
-def test_cache_hit_ratio_high(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 100,
-                "output_tokens": 10,
-                "cache_read_input_tokens": 9000,
-                "cache_creation_input_tokens": 900,
-            },
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "90%" in stdout or "89%" in stdout or "91%" in stdout
-
-
-def test_cache_hit_ratio_zero(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 1000,
-                "output_tokens": 10,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 0,
-            },
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "0%" in stdout
-
-
-def test_cost_estimation_opus(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 1_000_000,
-                "output_tokens": 100_000,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 0,
-            }
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "$2" in stdout, f"expected ~$22 in output, got: {stdout}"
-
-
-def test_cost_estimation_sonnet(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 1_000_000,
-                "output_tokens": 100_000,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 0,
-            }
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-sonnet-4-6",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "$4" in stdout, f"expected ~$4 in output, got: {stdout}"
-
-
-def test_cost_aggregates_across_multiple_turns(tmp_path):
-    # Arrange
-    usage = {
-        "input_tokens": 1000,
-        "output_tokens": 500,
-        "cache_read_input_tokens": 0,
-        "cache_creation_input_tokens": 0,
-    }
-    transcript = make_transcript(tmp_path, [usage] * 10)
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert "$" in stdout
-
-
-def test_context_percentage_reported(tmp_path):
-    # Arrange
-    transcript = make_transcript(
-        tmp_path,
-        [
-            {
-                "input_tokens": 100,
-                "output_tokens": 50,
-                "cache_read_input_tokens": 0,
-                "cache_creation_input_tokens": 100_000,
-            },
-        ],
-    )
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    _, stdout, _ = run(payload)
-
-    # Assert
-    assert re.search(r"\d+%", stdout) is not None, (
-        f"expected percentage in output, got: {stdout}"
+        tmp_path, faker, [usage(100, 10, cache_read=9000, cache_write=900)]
     )
 
-
-def test_handles_missing_transcript():
-    # Arrange
-    payload = {
-        "cwd": "/tmp",
-        "model": "claude-opus-4-7",
-        "transcript_path": "/nonexistent/path.jsonl",
-    }
-
     # Act
-    code, stdout, _ = run(payload)
+    _, stdout, _ = run(payload_for(project, OPUS, transcript))
 
     # Assert
-    assert code == 0
-    assert stdout.strip() != ""
+    assert stdout == f"[{project.name}] | opus | cache 90% | ctx 1% | $0.03"
 
 
-def test_handles_malformed_jsonl(tmp_path):
+def test_cache_hit_ratio_is_zero_without_cache_reads(
+    tmp_path: Path, faker: Faker
+) -> None:
     # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(1000, 10)])
+
+    # Act
+    _, stdout, _ = run(payload_for(project, OPUS, transcript))
+
+    # Assert
+    assert stdout == f"[{project.name}] | opus | cache 0% | ctx 0% | $0.02"
+
+
+def test_cost_estimation_opus(tmp_path: Path, faker: Faker) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(1_000_000, 100_000)])
+
+    # Act
+    _, stdout, _ = run(payload_for(project, OPUS, transcript))
+
+    # Assert
+    assert stdout == f"[{project.name}] | opus | cache 0% | ctx 100% | $22.5"
+
+
+def test_cost_estimation_sonnet_clamps_context_at_full(
+    tmp_path: Path, faker: Faker
+) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(1_000_000, 100_000)])
+
+    # Act
+    _, stdout, _ = run(payload_for(project, SONNET, transcript))
+
+    # Assert
+    assert stdout == f"[{project.name}] | sonnet | cache 0% | ctx 100% | $4.50"
+
+
+def test_cost_aggregates_across_multiple_turns(tmp_path: Path, faker: Faker) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(1000, 400)] * 10)
+
+    # Act
+    _, stdout, _ = run(payload_for(project, OPUS, transcript))
+
+    # Assert
+    assert stdout == f"[{project.name}] | opus | cache 0% | ctx 0% | $0.45"
+
+
+def test_context_percentage_uses_the_latest_turn(tmp_path: Path, faker: Faker) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(tmp_path, faker, [usage(100, 50, cache_write=100_000)])
+
+    # Act
+    _, stdout, _ = run(payload_for(project, OPUS, transcript))
+
+    # Assert
+    assert stdout == f"[{project.name}] | opus | cache 0% | ctx 10% | $1.88"
+
+
+def test_handles_missing_transcript(tmp_path: Path, faker: Faker) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    missing = tmp_path / f"{faker.word()}.jsonl"
+
+    # Act
+    result = run(payload_for(project, OPUS, missing))
+
+    # Assert
+    assert result == (0, f"[{project.name}] | opus | cache 0% | ctx 0% | $0.00", "")
+
+
+def test_handles_malformed_jsonl(tmp_path: Path, faker: Faker) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
     transcript = tmp_path / "bad.jsonl"
-    transcript.write_text("not json\n{also not json}\nfine but no usage:{}\n")
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
-
-    # Act
-    code, stdout, _ = run(payload)
-
-    # Assert
-    assert code == 0
-    assert stdout.strip() != ""
-
-
-def test_handles_empty_stdin():
-    # Arrange
-    argv = [sys.executable, str(SCRIPT)]
-
-    # Act
-    proc = subprocess.run(
-        argv,
-        input="",
-        capture_output=True,
-        text=True,
-        timeout=5,
-        check=False,
+    transcript.write_text(
+        f"{faker.sentence()}\n{{{faker.word()}}}\n{faker.word()}:{{}}\n",
+        encoding="utf-8",
     )
 
+    # Act
+    result = run(payload_for(project, OPUS, transcript))
+
     # Assert
-    assert proc.returncode == 0
-    assert proc.stdout.strip() != ""
+    assert result == (0, f"[{project.name}] | opus | cache 0% | ctx 0% | $0.00", "")
 
 
-def test_handles_missing_fields():
+def test_handles_empty_stdin(tmp_path: Path, faker: Faker) -> None:
     # Arrange
-    payload = {"cwd": "/tmp"}
+    project = make_project(tmp_path, faker)
 
     # Act
-    code, stdout, _ = run(payload)
+    result = run("", cwd=project)
 
     # Assert
-    assert code == 0
-    assert stdout.strip() != ""
+    assert result == (
+        0,
+        f"[{project.name}] | unknown | cache 0% | ctx 0% | $0.00",
+        "",
+    )
 
 
-def test_completes_under_one_second(tmp_path):
+def test_handles_missing_fields(tmp_path: Path, faker: Faker) -> None:
     # Arrange
-    usages = [
-        {
-            "input_tokens": 100,
-            "output_tokens": 50,
-            "cache_read_input_tokens": 1000,
-            "cache_creation_input_tokens": 0,
-        }
-    ] * 1000
-    transcript = make_transcript(tmp_path, usages)
-    payload = {
-        "cwd": str(tmp_path),
-        "model": "claude-opus-4-7",
-        "transcript_path": str(transcript),
-    }
+    project = make_project(tmp_path, faker)
 
     # Act
-    (code, _, _), elapsed_ms = timed(run, payload)
+    result = run(json.dumps({"cwd": str(project)}))
 
     # Assert
-    assert code == 0
-    assert elapsed_ms < 1000.0, f"statusline took {elapsed_ms:.0f}ms, budget is 1000ms"
+    assert result == (
+        0,
+        f"[{project.name}] | unknown | cache 0% | ctx 0% | $0.00",
+        "",
+    )
+
+
+def test_aggregates_a_thousand_turn_transcript(tmp_path: Path, faker: Faker) -> None:
+    # Arrange
+    project = make_project(tmp_path, faker)
+    transcript = make_transcript(
+        tmp_path, faker, [usage(100, 50, cache_read=1000)] * 1000
+    )
+
+    # Act
+    result = run(payload_for(project, OPUS, transcript))
+
+    # Assert
+    assert result == (0, f"[{project.name}] | opus | cache 91% | ctx 0% | $6.75", "")

@@ -2,13 +2,28 @@
 
 set -euo pipefail
 
-export CLAUDE_HOOK_AUDIT_DISABLE=1
+export CLAUDE_HOOK_AUDIT_DISABLE="${CLAUDE_HOOK_AUDIT_DISABLE:-1}"
+export CLAUDE_BYPASS_STATE="${CLAUDE_BYPASS_STATE:-/dev/null}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FIXTURES="${SCRIPT_DIR}/fixtures"
 HOOKS="${SCRIPT_DIR}/../hooks"
 PASS=0
 FAIL=0
+
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "${WORK_DIR}"' EXIT
+CASE_CWD="${WORK_DIR}/cwd"
+git init -q "${CASE_CWD}"
+cd "${CASE_CWD}"
+
+render_fixture() {
+    local source="$1"
+    local target
+    target="${WORK_DIR}/rendered-$(basename "${source}")"
+    sed "s|@WORK_DIR@|${WORK_DIR}|g" "${source}" > "${target}"
+    printf '%s' "${target}"
+}
 
 run_test() {
     local description="$1"
@@ -233,7 +248,25 @@ run_test "allows safe commands" \
 
 run_test "allows commit when no staged files have secrets" \
     "${HOOKS}/secret-scanner.py" \
-    "${FIXTURES}/commit-with-secret.json" 0
+    "${FIXTURES}/commit-valid.json" 0
+
+SECRET_REPO="${WORK_DIR}/staged-secret"
+git init -q "${SECRET_REPO}"
+SECRET_KEY_PREFIX="AKIA"
+SECRET_KEY_BODY="$(printf 'Q%.0s' {1..16})"
+printf 'aws_key = %s%s\n' "${SECRET_KEY_PREFIX}" "${SECRET_KEY_BODY}" > "${SECRET_REPO}/settings.ini"
+git -C "${SECRET_REPO}" add settings.ini
+
+ACTUAL_SECRET=0
+(cd "${SECRET_REPO}" && "${HOOKS}/secret-scanner.py" < "${FIXTURES}/commit-valid.json") \
+    >/dev/null 2>&1 || ACTUAL_SECRET=$?
+if [[ "${ACTUAL_SECRET}" -eq 2 ]]; then
+    echo "  PASS: blocks commit when a staged file holds an AWS-shaped key (exit 2)"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: blocks commit when a staged file holds an AWS-shaped key (expected 2, got ${ACTUAL_SECRET})"
+    FAIL=$((FAIL + 1))
+fi
 
 run_test "blocks malformed JSON" \
     "${HOOKS}/secret-scanner.py" \
@@ -568,28 +601,23 @@ run_test "ignores DDL outside migration paths" \
 echo ""
 echo "=== Git Author Guard ==="
 
-LOCAL_OVERRIDE_REPO="/tmp/git-author-guard-fixture-local-override"
-PLACEHOLDER_COMMIT_REPO="/tmp/git-author-guard-fixture-placeholder-commit"
-NO_IDENTITY_REPO="/tmp/git-author-guard-fixture-no-identity"
-RESOLVED_REPO="/tmp/git-author-guard-fixture-resolved"
-RESOLVED_HOME="/tmp/git-author-guard-fixture-resolved-home"
-trap 'rm -rf "${LOCAL_OVERRIDE_REPO}" "${PLACEHOLDER_COMMIT_REPO}" "${NO_IDENTITY_REPO}" "${RESOLVED_REPO}" "${RESOLVED_HOME}"' EXIT
+LOCAL_OVERRIDE_REPO="${WORK_DIR}/local-override"
+PLACEHOLDER_COMMIT_REPO="${WORK_DIR}/placeholder-commit"
+NO_IDENTITY_REPO="${WORK_DIR}/no-identity"
+RESOLVED_REPO="${WORK_DIR}/resolved"
+RESOLVED_HOME="${WORK_DIR}/resolved-home"
 
-rm -rf "${LOCAL_OVERRIDE_REPO}"
 git init -q "${LOCAL_OVERRIDE_REPO}"
 git -C "${LOCAL_OVERRIDE_REPO}" config --local user.email "override@example.com"
 git -C "${LOCAL_OVERRIDE_REPO}" config --local user.name "Override"
 
-rm -rf "${PLACEHOLDER_COMMIT_REPO}"
 git init -q "${PLACEHOLDER_COMMIT_REPO}"
 GIT_AUTHOR_NAME="Placeholder" GIT_AUTHOR_EMAIL="placeholder@example.com" \
 GIT_COMMITTER_NAME="Placeholder" GIT_COMMITTER_EMAIL="placeholder@example.com" \
     git -C "${PLACEHOLDER_COMMIT_REPO}" commit --allow-empty -q -m "placeholder commit"
 
-rm -rf "${NO_IDENTITY_REPO}"
 git init -q "${NO_IDENTITY_REPO}"
 
-rm -rf "${RESOLVED_REPO}" "${RESOLVED_HOME}"
 git init -q "${RESOLVED_REPO}"
 mkdir -p "${RESOLVED_HOME}"
 cat > "${RESOLVED_HOME}/.gitconfig" <<EOF
@@ -604,12 +632,12 @@ run_test "blocks commit with env override on command line" \
 
 run_test "blocks commit when local [user] block overrides identity" \
     "${HOOKS}/git-author-guard.py" \
-    "${FIXTURES}/bash-git-commit-local-override.json" 2
+    "$(render_fixture "${FIXTURES}/bash-git-commit-local-override.json")" 2
 
 echo -n "  "
 ACTUAL_NO_ID=0
 HOME="${NO_IDENTITY_REPO}" GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
-    "${HOOKS}/git-author-guard.py" < "${FIXTURES}/bash-git-commit-no-identity.json" \
+    "${HOOKS}/git-author-guard.py" < "$(render_fixture "${FIXTURES}/bash-git-commit-no-identity.json")" \
     >/dev/null 2>&1 || ACTUAL_NO_ID=$?
 if [[ "${ACTUAL_NO_ID}" -eq 2 ]]; then
     echo "PASS: blocks commit when user.email is unset (exit 2)"
@@ -621,8 +649,9 @@ fi
 
 echo -n "  "
 ACTUAL_RESOLVED=0
-HOME="${RESOLVED_HOME}" GIT_CONFIG_GLOBAL="${RESOLVED_HOME}/.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
-    "${HOOKS}/git-author-guard.py" < "${FIXTURES}/bash-git-commit-resolved-identity.json" \
+(cd "${RESOLVED_REPO}" \
+    && HOME="${RESOLVED_HOME}" GIT_CONFIG_GLOBAL="${RESOLVED_HOME}/.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+    "${HOOKS}/git-author-guard.py" < "${FIXTURES}/bash-git-commit-resolved-identity.json") \
     >/dev/null 2>&1 || ACTUAL_RESOLVED=$?
 if [[ "${ACTUAL_RESOLVED}" -eq 0 ]]; then
     echo "PASS: allows commit with resolved identity (exit 0)"
@@ -638,7 +667,7 @@ run_test "allows clean push" \
 
 run_test "blocks push when commit has placeholder author" \
     "${HOOKS}/git-author-guard.py" \
-    "${FIXTURES}/bash-git-push-placeholder.json" 2
+    "$(render_fixture "${FIXTURES}/bash-git-push-placeholder.json")" 2
 
 run_test "blocks git config --local user.email" \
     "${HOOKS}/git-author-guard.py" \

@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from faker import Faker
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
 if str(SCRIPTS_DIR) not in sys.path:
@@ -11,76 +13,90 @@ if str(SCRIPTS_DIR) not in sys.path:
 from _lib import mutation_detectors_methods as mdm  # noqa: E402
 
 
-def test_array_pop_skips_web_api_owner() -> None:
+def _source_path(faker: Faker) -> str:
+    return f"src/{faker.word()}.ts"
+
+
+def test_array_pop_skips_web_api_owner(faker: Faker) -> None:
     # Arrange
     text = "const params: URLSearchParams = new URLSearchParams();\nparams.pop();\n"
 
     # Act
     hits = mdm.detect_array_pop_shift_unshift_splice_reverse_fill_copywithin(
-        text, "ts", "src/foo.ts"
+        text, "ts", _source_path(faker)
     )
 
     # Assert
     assert hits == []
 
 
-def test_array_push_skips_web_api_owner() -> None:
+def test_array_push_skips_web_api_owner(faker: Faker) -> None:
     # Arrange
     text = (
         "const params: URLSearchParams = new URLSearchParams();\n"
-        "params.push(['x', '1']);\n"
+        f"params.push(['{faker.word()}', '{faker.word()}']);\n"
     )
 
     # Act
-    hits = mdm.detect_array_push(text, "ts", "src/foo.ts")
+    hits = mdm.detect_array_push(text, "ts", _source_path(faker))
 
     # Assert
     assert hits == []
 
 
-def test_map_set_skips_temporal_chain() -> None:
+def test_map_set_skips_temporal_chain(faker: Faker) -> None:
     # Arrange
     text = "const t = Temporal.Now.instant();\nconst tomorrow = t.set({ hours: 24 });\n"
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
     assert hits == []
 
 
-def test_map_set_skips_web_api_owner() -> None:
+def test_map_set_skips_web_api_owner(faker: Faker) -> None:
     # Arrange
     text = (
         "const m = new Map();\n"
         "const headers: Headers = new Headers();\n"
-        "headers.set('content-type', 'application/json');\n"
+        f"headers.set('{faker.word()}', '{faker.word()}');\n"
     )
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    assert all("headers" not in h.metadata.get("kind", "") for h in hits)
+    assert hits == []
 
 
-def test_map_delete_skips_web_api_owner() -> None:
+def test_map_set_on_a_plain_map_is_flagged(faker: Faker) -> None:
+    # Arrange
+    text = f"const m = new Map();\nm.set('{faker.word()}', 1);\n"
+
+    # Act
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
+
+    # Assert
+    assert [(hit.detector, hit.line) for hit in hits] == [("collection.map.set", 2)]
+
+
+def test_map_delete_skips_web_api_owner(faker: Faker) -> None:
     # Arrange
     text = (
         "const m = new Map();\n"
         "const headers: Headers = new Headers();\n"
-        "headers.delete('content-type');\n"
+        f"headers.delete('{faker.word()}');\n"
     )
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    detectors = [h.detector for h in hits]
-    assert "collection.map.delete" not in detectors
+    assert hits == []
 
 
-def test_map_delete_skips_temporal_chain() -> None:
+def test_map_delete_skips_temporal_chain(faker: Faker) -> None:
     # Arrange
     text = (
         "const m = new Map();\n"
@@ -89,14 +105,13 @@ def test_map_delete_skips_temporal_chain() -> None:
     )
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    detectors = [h.detector for h in hits]
-    assert "collection.map.delete" not in detectors
+    assert hits == []
 
 
-def test_map_clear_skips_web_api_owner() -> None:
+def test_map_clear_skips_web_api_owner(faker: Faker) -> None:
     # Arrange
     text = (
         "const m: Map<string, number> = new Map();\n"
@@ -105,30 +120,28 @@ def test_map_clear_skips_web_api_owner() -> None:
     )
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    detectors = [h.detector for h in hits]
-    assert "collection.map.clear" not in detectors
+    assert hits == []
 
 
-def test_set_add_skips_web_api_owner() -> None:
+def test_set_add_skips_web_api_owner(faker: Faker) -> None:
     # Arrange
     text = (
         "const s = new Set();\n"
         "const fd: FormData = new FormData();\n"
-        "fd.add('field', 'value');\n"
+        f"fd.add('{faker.word()}', '{faker.word()}');\n"
     )
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    detectors = [h.detector for h in hits]
-    assert "collection.set.add" not in detectors
+    assert hits == []
 
 
-def test_set_delete_skips_temporal_chain() -> None:
+def test_set_delete_skips_temporal_chain(faker: Faker) -> None:
     # Arrange
     text = (
         "const s = new Set();\n"
@@ -137,31 +150,50 @@ def test_set_delete_skips_temporal_chain() -> None:
     )
 
     # Act
-    hits = mdm.detect_map_set_collection_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_map_set_collection_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    detectors = [h.detector for h in hits]
-    assert "collection.set.delete" not in detectors
+    assert hits == []
 
 
-def test_url_search_params_skips_unanchored_owner() -> None:
+def test_url_search_params_skips_unanchored_owner(faker: Faker) -> None:
     # Arrange
-    text = "const params = new URLSearchParams();\nother.append('x', 'y');\n"
+    text = (
+        "const params = new URLSearchParams();\n"
+        f"other.append('{faker.word()}', '{faker.word()}');\n"
+    )
 
     # Act
-    hits = mdm.detect_url_search_params_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_url_search_params_mutations(text, "ts", _source_path(faker))
 
     # Assert
-    detectors = [h.detector for h in hits]
-    assert all(d != "web-api.url-search-params.append" for d in detectors)
+    assert hits == []
 
 
-def test_headers_skips_when_no_strong_signal() -> None:
+def test_url_search_params_flags_the_anchored_owner(faker: Faker) -> None:
     # Arrange
-    text = "// Headers helpers\nheadersBag.append('x', 'y');\n"
+    text = (
+        "const params = new URLSearchParams();\n"
+        f"params.append('{faker.word()}', '{faker.word()}');\n"
+    )
 
     # Act
-    hits = mdm.detect_headers_mutations(text, "ts", "src/foo.ts")
+    hits = mdm.detect_url_search_params_mutations(text, "ts", _source_path(faker))
+
+    # Assert
+    assert [(hit.detector, hit.line) for hit in hits] == [
+        ("web-api.url-search-params.append", 2)
+    ]
+
+
+def test_headers_skips_when_no_strong_signal(faker: Faker) -> None:
+    # Arrange
+    text = (
+        f"// Headers helpers\nheadersBag.append('{faker.word()}', '{faker.word()}');\n"
+    )
+
+    # Act
+    hits = mdm.detect_headers_mutations(text, "ts", _source_path(faker))
 
     # Assert
     assert hits == []

@@ -1,6 +1,6 @@
 {
   "tool_name": "Bash",
   "tool_input": {
-    "command": "cd /tmp/git-author-guard-fixture-no-identity && git commit -m test"
+    "command": "cd @WORK_DIR@/no-identity && git commit -m test"
   }
 }

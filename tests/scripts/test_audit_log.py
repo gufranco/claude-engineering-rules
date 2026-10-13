@@ -1,21 +1,40 @@
 from __future__ import annotations
+
 import importlib
 import json
 import os
 import sys
 import threading
 from pathlib import Path
+
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS_DIR = REPO_ROOT / "hooks"
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+sys.path.insert(0, str(REPO_ROOT / "hooks"))
+
 from _lib import audit_log  # noqa: E402
+
+REDACTED = "[REDACTED]"
+AWS_STYLE_KEY = "AKIA" + "ABCDEFGHIJKLMNOP"
+EXCERPT_LIMIT = 240
+DETECTOR_TAG_LIMIT = 80
+DEFECT_PATTERN_TAG_LIMIT = 64
+SESSION_ENV_VARS = ("CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID", "SESSION_ID")
+
+Record = dict[str, object]
+
+
+class _StrOnly:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+    def __str__(self) -> str:
+        return self.text
 
 
 @pytest.fixture
-def isolated_log(monkeypatch, tmp_path):
+def isolated_log(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     log_dir = tmp_path / "logs"
     log_path = log_dir / "hooks.log"
     backup_path = log_dir / "hooks.log.1"
@@ -24,6 +43,11 @@ def isolated_log(monkeypatch, tmp_path):
     monkeypatch.setattr(audit_log, "BACKUP_PATH", str(backup_path))
     monkeypatch.delenv("CLAUDE_HOOK_AUDIT_DISABLE", raising=False)
     return log_path
+
+
+def _clear_session_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in SESSION_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
 
 
 def _run_concurrent_writers(writers: int, per_writer: int) -> None:
@@ -38,23 +62,25 @@ def _run_concurrent_writers(writers: int, per_writer: int) -> None:
         t.join()
 
 
-def _read_records(log_path: Path) -> list[dict]:
+def _read_records(log_path: Path) -> list[Record]:
     if not log_path.exists():
         return []
     return [
-        json.loads(line) for line in log_path.read_text().splitlines() if line.strip()
+        json.loads(line)
+        for line in log_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
     ]
 
 
-def fail_rename(*_args, **_kwargs):
+def fail_rename(*_args: object, **_kwargs: object) -> None:
     raise OSError("simulated cross-device rename failure")
 
 
-def boom(*_args, **_kwargs):
+def boom(*_args: object, **_kwargs: object) -> None:
     raise OSError("readonly fs")
 
 
-def test_decision_class_passthrough_when_valid():
+def test_decision_class_passthrough_when_valid() -> None:
     # Arrange
     fields = {"decision_class": "block"}
 
@@ -62,15 +88,14 @@ def test_decision_class_passthrough_when_valid():
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert out["decision_class"] == "block"
-    assert "original_decision_class" not in out
+    assert out == {"decision_class": "block"}
 
 
 @pytest.mark.parametrize(
     "valid_class",
     sorted(audit_log.ALLOWED_DECISION_CLASSES),
 )
-def test_each_allowed_decision_class_is_preserved(valid_class):
+def test_each_allowed_decision_class_is_preserved(valid_class: str) -> None:
     # Arrange
     fields = {"decision_class": valid_class}
 
@@ -78,35 +103,32 @@ def test_each_allowed_decision_class_is_preserved(valid_class):
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert out["decision_class"] == valid_class
-    assert "original_decision_class" not in out
+    assert out == {"decision_class": valid_class}
 
 
-def test_decision_class_invalid_string_is_demoted_to_warn():
+def test_decision_class_invalid_string_is_demoted_to_warn(faker: Faker) -> None:
     # Arrange
-    fields = {"decision_class": "wat"}
+    invalid = f"{faker.word()}-{faker.word()}"
 
     # Act
-    out = audit_log._normalize_schema(fields)
+    out = audit_log._normalize_schema({"decision_class": invalid})
 
     # Assert
-    assert out["decision_class"] == "warn"
-    assert out["original_decision_class"] == "wat"
+    assert out == {"decision_class": "warn", "original_decision_class": invalid}
 
 
-def test_decision_class_non_string_is_demoted_to_warn():
+def test_decision_class_non_string_is_demoted_to_warn(faker: Faker) -> None:
     # Arrange
-    fields = {"decision_class": 42}
+    invalid = faker.pyint()
 
     # Act
-    out = audit_log._normalize_schema(fields)
+    out = audit_log._normalize_schema({"decision_class": invalid})
 
     # Assert
-    assert out["decision_class"] == "warn"
-    assert out["original_decision_class"] == 42
+    assert out == {"decision_class": "warn", "original_decision_class": invalid}
 
 
-def test_confidence_score_clamps_high():
+def test_confidence_score_clamps_high() -> None:
     # Arrange
     fields = {"confidence_score": 99}
 
@@ -117,7 +139,7 @@ def test_confidence_score_clamps_high():
     assert out["confidence_score"] == 10
 
 
-def test_confidence_score_clamps_low():
+def test_confidence_score_clamps_low() -> None:
     # Arrange
     fields = {"confidence_score": -3}
 
@@ -128,7 +150,7 @@ def test_confidence_score_clamps_low():
     assert out["confidence_score"] == 1
 
 
-def test_confidence_score_inside_range_passes_through():
+def test_confidence_score_inside_range_passes_through() -> None:
     # Arrange
     fields = {"confidence_score": 7}
 
@@ -139,7 +161,7 @@ def test_confidence_score_inside_range_passes_through():
     assert out["confidence_score"] == 7
 
 
-def test_confidence_score_string_int_is_coerced():
+def test_confidence_score_string_int_is_coerced() -> None:
     # Arrange
     fields = {"confidence_score": "5"}
 
@@ -150,18 +172,18 @@ def test_confidence_score_string_int_is_coerced():
     assert out["confidence_score"] == 5
 
 
-def test_confidence_score_non_numeric_is_dropped():
+def test_confidence_score_non_numeric_is_dropped(faker: Faker) -> None:
     # Arrange
-    fields = {"confidence_score": "abc"}
+    fields = {"confidence_score": faker.word()}
 
     # Act
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert "confidence_score" not in out
+    assert out == {}
 
 
-def test_confidence_score_none_is_dropped():
+def test_confidence_score_none_is_dropped() -> None:
     # Arrange
     fields = {"confidence_score": None}
 
@@ -169,65 +191,69 @@ def test_confidence_score_none_is_dropped():
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert "confidence_score" not in out
+    assert out == {}
 
 
-def test_detector_tag_truncates_to_max():
+def test_detector_tag_truncates_to_max(faker: Faker) -> None:
     # Arrange
-    long = "x" * (audit_log.MAX_DETECTOR_TAG + 50)
+    long = faker.pystr(
+        min_chars=DETECTOR_TAG_LIMIT + 50, max_chars=DETECTOR_TAG_LIMIT + 50
+    )
 
     # Act
     out = audit_log._normalize_schema({"detector_tag": long})
 
     # Assert
-    assert len(out["detector_tag"]) == audit_log.MAX_DETECTOR_TAG
+    assert out == {"detector_tag": long[:DETECTOR_TAG_LIMIT]}
 
 
-def test_detector_tag_non_string_is_dropped():
+def test_detector_tag_non_string_is_dropped(faker: Faker) -> None:
     # Arrange
-    fields = {"detector_tag": ["array.push"]}
+    fields = {"detector_tag": [faker.word()]}
 
     # Act
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert "detector_tag" not in out
+    assert out == {}
 
 
-def test_defect_pattern_tag_truncates_to_max():
+def test_defect_pattern_tag_truncates_to_max(faker: Faker) -> None:
     # Arrange
-    long = "y" * (audit_log.MAX_DEFECT_PATTERN_TAG + 25)
+    long = faker.pystr(
+        min_chars=DEFECT_PATTERN_TAG_LIMIT + 25, max_chars=DEFECT_PATTERN_TAG_LIMIT + 25
+    )
 
     # Act
     out = audit_log._normalize_schema({"defect_pattern_tag": long})
 
     # Assert
-    assert len(out["defect_pattern_tag"]) == audit_log.MAX_DEFECT_PATTERN_TAG
+    assert out == {"defect_pattern_tag": long[:DEFECT_PATTERN_TAG_LIMIT]}
 
 
-def test_defect_pattern_tag_non_string_is_dropped():
+def test_defect_pattern_tag_non_string_is_dropped(faker: Faker) -> None:
     # Arrange
-    fields = {"defect_pattern_tag": 12}
+    fields = {"defect_pattern_tag": faker.pyint()}
 
     # Act
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert "defect_pattern_tag" not in out
+    assert out == {}
 
 
-def test_normalize_schema_preserves_unrelated_fields():
+def test_normalize_schema_preserves_unrelated_fields(faker: Faker) -> None:
     # Arrange
-    fields = {"hook": "x", "decision": "block", "reason": "r"}
+    fields = {"hook": faker.word(), "decision": "block", "reason": faker.sentence()}
 
     # Act
     out = audit_log._normalize_schema(fields)
 
     # Assert
-    assert out == {"hook": "x", "decision": "block", "reason": "r"}
+    assert out == fields
 
 
-def test_defect_pattern_tags_constant_includes_canonical_set():
+def test_defect_pattern_tags_constant_includes_canonical_set() -> None:
     # Arrange
     canonical = {
         "plausible-hallucination",
@@ -246,28 +272,25 @@ def test_defect_pattern_tags_constant_includes_canonical_set():
 
 
 @pytest.mark.parametrize(
-    "raw,expected_in_output",
+    "raw,expected",
     [
-        ("AKIAABCDEFGHIJKLMNOP", "[REDACTED]"),
-        ("sk-ant-abc123def456ghi789jklmn", "[REDACTED]"),
-        ("AIza" + "x" * 35, "[REDACTED]"),
-        ("ghp_" + "a" * 36, "[REDACTED]"),
-        ("github_pat_" + "a" * 22, "[REDACTED]"),
-        ("glpat-" + "x" * 20, "[REDACTED]"),
-        ("xoxb-1234567890-abcdefghij", "[REDACTED]"),
-        ("hf_" + "a" * 34, "[REDACTED]"),
-        ("npm_" + "a" * 36, "[REDACTED]"),
-        ("pypi-" + "a" * 16, "[REDACTED]"),
-        (
-            "eyJabcdefghij.eyJklmnopqrst.signaturefoo",
-            "[REDACTED]",
-        ),
-        ("-----BEGIN RSA PRIVATE KEY-----", "[REDACTED]"),
-        ("postgres://user:secret@host:5432/db", "[REDACTED]"),
-        ("password='supersecret'", "[REDACTED]"),
+        (AWS_STYLE_KEY, REDACTED),
+        ("sk-" + "ant-abc123def456ghi789jklmn", REDACTED),
+        ("AIza" + "x" * 35, REDACTED),
+        ("ghp_" + "a" * 36, REDACTED),
+        ("github_pat_" + "a" * 22, REDACTED),
+        ("glpat-" + "x" * 20, REDACTED),
+        ("xo" + "xb-1234567890-abcdefghij", REDACTED),
+        ("hf_" + "a" * 34, REDACTED),
+        ("npm_" + "a" * 36, REDACTED),
+        ("pypi-" + "a" * 16, REDACTED),
+        ("ey" + "Jabcdefghij." + "ey" + "Jklmnopqrst.signaturefoo", REDACTED),
+        ("-----BEGIN RSA " + "PRIVATE KEY-----", REDACTED),
+        ("postgres" + "://user:secret@host:5432/db", f"{REDACTED}host:5432/db"),
+        ("pass" + "word='supersecret'", REDACTED),
     ],
 )
-def test_redact_replaces_known_patterns(raw, expected_in_output):
+def test_redact_replaces_known_patterns(raw: str, expected: str) -> None:
     # Arrange
     secret_text = raw
 
@@ -275,7 +298,7 @@ def test_redact_replaces_known_patterns(raw, expected_in_output):
     out = audit_log.redact(secret_text)
 
     # Assert
-    assert expected_in_output in out
+    assert out == expected
 
 
 @pytest.mark.parametrize(
@@ -287,7 +310,7 @@ def test_redact_replaces_known_patterns(raw, expected_in_output):
         "rk_test_" + "51H9xQ2LkzOjVb7nMp4Tq8Rs",
     ],
 )
-def test_redact_removes_current_key_shapes(secret):
+def test_redact_removes_current_key_shapes(secret: str) -> None:
     # Arrange
     line = f"key={secret} used"
 
@@ -295,21 +318,21 @@ def test_redact_removes_current_key_shapes(secret):
     out = audit_log.redact(line)
 
     # Assert
-    assert out == "key=[REDACTED] used"
+    assert out == f"key={REDACTED} used"
 
 
-def test_redact_is_idempotent():
+def test_redact_leaves_an_already_redacted_marker_unchanged(faker: Faker) -> None:
     # Arrange
-    once = audit_log.redact("AKIAABCDEFGHIJKLMNOP")
+    text = f"{faker.word()} {REDACTED} {faker.word()}"
 
     # Act
-    twice = audit_log.redact(once)
+    out = audit_log.redact(text)
 
     # Assert
-    assert once == twice
+    assert out == text
 
 
-def test_redact_empty_string_is_returned_as_is():
+def test_redact_empty_string_is_returned_as_is() -> None:
     # Arrange
     text = ""
 
@@ -320,7 +343,7 @@ def test_redact_empty_string_is_returned_as_is():
     assert out == ""
 
 
-def test_redact_none_is_returned_as_is():
+def test_redact_none_is_returned_as_is() -> None:
     # Arrange
     missing = None
 
@@ -331,9 +354,9 @@ def test_redact_none_is_returned_as_is():
     assert out is None
 
 
-def test_redact_leaves_non_secret_text_alone():
+def test_redact_leaves_non_secret_text_alone(faker: Faker) -> None:
     # Arrange
-    text = "running rm -rf / on a build artifact path"
+    text = faker.sentence()
 
     # Act
     out = audit_log.redact(text)
@@ -342,34 +365,37 @@ def test_redact_leaves_non_secret_text_alone():
     assert out == text
 
 
-def test_record_redacts_command_excerpt(isolated_log):
+def test_record_redacts_command_excerpt(isolated_log: Path, faker: Faker) -> None:
     # Arrange
-    secret = "AKIAABCDEFGHIJKLMNOP"
+    command = faker.word()
 
     # Act
-    audit_log.record(hook="x", decision="block", command_excerpt=f"aws --key {secret}")
+    audit_log.record(
+        hook=faker.word(),
+        decision="block",
+        command_excerpt=f"{command} {AWS_STYLE_KEY}",
+    )
 
     # Assert
     records = _read_records(isolated_log)
-    assert len(records) == 1
-    assert "[REDACTED]" in records[0]["command_excerpt"]
-    assert secret not in records[0]["command_excerpt"]
+    assert [r["command_excerpt"] for r in records] == [f"{command} {REDACTED}"]
 
 
-def test_record_truncates_command_excerpt(isolated_log):
+def test_record_truncates_command_excerpt(isolated_log: Path, faker: Faker) -> None:
     # Arrange
-    long_cmd = "echo " + ("x" * 1000)
+    long_cmd = "echo " + faker.pystr(min_chars=1000, max_chars=1000)
 
     # Act
-    audit_log.record(hook="x", decision="allow", command_excerpt=long_cmd)
+    audit_log.record(hook=faker.word(), decision="allow", command_excerpt=long_cmd)
 
     # Assert
     records = _read_records(isolated_log)
-    assert len(records) == 1
-    assert len(records[0]["command_excerpt"]) <= audit_log.MAX_EXCERPT
+    assert [r["command_excerpt"] for r in records] == [long_cmd[:EXCERPT_LIMIT]]
 
 
-def test_rotation_triggers_when_log_exceeds_max_bytes(monkeypatch, isolated_log):
+def test_rotation_triggers_when_log_exceeds_max_bytes(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path
+) -> None:
     # Arrange
     monkeypatch.setattr(audit_log, "MAX_BYTES", 50)
     audit_log.record(hook="first", decision="allow")
@@ -384,11 +410,13 @@ def test_rotation_triggers_when_log_exceeds_max_bytes(monkeypatch, isolated_log)
     assert [r["hook"] for r in current_records] == ["second"]
 
 
-def test_rotation_replaces_existing_backup(monkeypatch, isolated_log):
+def test_rotation_replaces_existing_backup(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path
+) -> None:
     # Arrange
     monkeypatch.setattr(audit_log, "MAX_BYTES", 50)
     Path(audit_log.LOG_DIR).mkdir(parents=True, exist_ok=True)
-    Path(audit_log.BACKUP_PATH).write_text('{"hook":"stale"}\n')
+    Path(audit_log.BACKUP_PATH).write_text('{"hook":"stale"}\n', encoding="utf-8")
     audit_log.record(hook="primary", decision="allow")
 
     # Act
@@ -399,7 +427,9 @@ def test_rotation_replaces_existing_backup(monkeypatch, isolated_log):
     assert [r.get("hook") for r in backup_records] == ["primary"]
 
 
-def test_rotation_no_op_when_log_missing(monkeypatch, isolated_log):
+def test_rotation_no_op_when_log_missing(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path
+) -> None:
     # Arrange
     monkeypatch.setattr(audit_log, "MAX_BYTES", 50)
 
@@ -413,35 +443,40 @@ def test_rotation_no_op_when_log_missing(monkeypatch, isolated_log):
     )
 
 
-def test_rotation_no_op_when_under_threshold(monkeypatch, isolated_log):
+def test_rotation_no_op_when_under_threshold(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
     monkeypatch.setattr(audit_log, "MAX_BYTES", 10_000)
-    audit_log.record(hook="small", decision="allow")
-    size_before = isolated_log.stat().st_size
+    audit_log.record(hook=faker.word(), decision="allow")
+    content_before = isolated_log.read_text(encoding="utf-8")
 
     # Act
     audit_log._rotate_if_needed()
 
     # Assert
-    assert isolated_log.stat().st_size == size_before
+    assert isolated_log.read_text(encoding="utf-8") == content_before
     assert Path(audit_log.BACKUP_PATH).exists() is False
 
 
-def test_rotation_swallows_oserror_on_rename(monkeypatch, isolated_log):
+def test_rotation_swallows_oserror_on_rename(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
+    hook = faker.word()
     monkeypatch.setattr(audit_log, "MAX_BYTES", 10)
-    audit_log.record(hook="boom", decision="allow")
+    audit_log.record(hook=hook, decision="allow")
     monkeypatch.setattr(audit_log.os, "rename", fail_rename)
 
     # Act
     audit_log._rotate_if_needed()
 
     # Assert
-    assert [r["hook"] for r in _read_records(isolated_log)] == ["boom"]
+    assert [r["hook"] for r in _read_records(isolated_log)] == [hook]
     assert Path(audit_log.BACKUP_PATH).exists() is False
 
 
-def test_concurrent_writers_produce_intact_lines(isolated_log):
+def test_concurrent_writers_produce_intact_lines(isolated_log: Path) -> None:
     # Arrange
     writers = 16
     per_writer = 25
@@ -451,99 +486,114 @@ def test_concurrent_writers_produce_intact_lines(isolated_log):
 
     # Assert
     records = _read_records(isolated_log)
-    assert len(records) == writers * per_writer
-    assert [r for r in records if "hook" not in r or "decision" not in r] == []
+    assert sorted(str(r["reason"]) for r in records) == sorted(
+        f"r-{idx}-{n}" for idx in range(writers) for n in range(per_writer)
+    )
 
 
-def test_record_with_no_fields_writes_timestamp_only(isolated_log):
+def test_record_with_no_fields_writes_timestamp_and_cwd_only(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path
+) -> None:
     # Arrange
-    log_path = isolated_log
+    _clear_session_env(monkeypatch)
 
     # Act
     audit_log.record()
 
     # Assert
-    records = _read_records(log_path)
-    assert len(records) == 1
-    assert "ts" in records[0]
+    records = _read_records(isolated_log)
+    assert [sorted(r) for r in records] == [["cwd", "ts"]]
+    assert records[0]["cwd"] == os.getcwd()
 
 
-def test_record_swallows_non_serializable_field(isolated_log):
+def test_record_stringifies_a_non_serializable_field(
+    isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    class Weird:
-        def __str__(self) -> str:
-            return "weird-object"
+    text = faker.word()
 
     # Act
-    audit_log.record(hook="x", decision="allow", payload=Weird())
+    audit_log.record(hook=faker.word(), decision="allow", payload=_StrOnly(text))
 
     # Assert
     records = _read_records(isolated_log)
-    assert records[0]["payload"] == "weird-object"
+    assert [r["payload"] for r in records] == [text]
 
 
-def test_record_handles_recursive_object_silently(isolated_log):
+def test_record_skips_a_recursive_object(isolated_log: Path, faker: Faker) -> None:
     # Arrange
-    cycle: dict = {}
+    cycle: dict[str, object] = {}
     cycle["self"] = cycle
 
     # Act
-    audit_log.record(hook="x", decision="allow", payload=cycle)
+    audit_log.record(hook=faker.word(), decision="allow", payload=cycle)
 
     # Assert
     assert _read_records(isolated_log) == []
 
 
-def test_record_silent_when_disable_env_set(monkeypatch, isolated_log):
+def test_record_silent_when_disable_env_set(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
     monkeypatch.setenv("CLAUDE_HOOK_AUDIT_DISABLE", "1")
 
     # Act
-    audit_log.record(hook="x", decision="allow")
+    audit_log.record(hook=faker.word(), decision="allow")
 
     # Assert
     assert isolated_log.exists() is False
 
 
-def test_record_swallows_makedirs_oserror(monkeypatch, isolated_log):
+def test_record_swallows_makedirs_oserror(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
     monkeypatch.setattr(audit_log.os, "makedirs", boom)
 
     # Act
-    audit_log.record(hook="x", decision="allow")
+    audit_log.record(hook=faker.word(), decision="allow")
 
     # Assert
     assert isolated_log.exists() is False
 
 
-def test_record_with_long_detector_tag_writes_truncated(isolated_log):
+def test_record_with_long_detector_tag_writes_truncated(
+    isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    long = "z" * (audit_log.MAX_DETECTOR_TAG * 4)
+    long = faker.pystr(
+        min_chars=DETECTOR_TAG_LIMIT * 4, max_chars=DETECTOR_TAG_LIMIT * 4
+    )
 
     # Act
-    audit_log.record(hook="x", decision="block", detector_tag=long)
+    audit_log.record(hook=faker.word(), decision="block", detector_tag=long)
 
     # Assert
     records = _read_records(isolated_log)
-    assert len(records[0]["detector_tag"]) == audit_log.MAX_DETECTOR_TAG
+    assert [r["detector_tag"] for r in records] == [long[:DETECTOR_TAG_LIMIT]]
 
 
-def test_record_normalizes_decision_class_on_write(isolated_log):
+def test_record_normalizes_decision_class_on_write(
+    isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    hook = "x"
+    invalid = f"{faker.word()}-{faker.word()}"
 
     # Act
-    audit_log.record(hook=hook, decision_class="invalid-class")
+    audit_log.record(hook=faker.word(), decision_class=invalid)
 
     # Assert
     records = _read_records(isolated_log)
     assert records[0]["decision_class"] == "warn"
-    assert records[0]["original_decision_class"] == "invalid-class"
+    assert records[0]["original_decision_class"] == invalid
 
 
-def test_record_clamps_confidence_score_on_write(isolated_log):
+def test_record_clamps_confidence_score_on_write(
+    isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    hook = "x"
+    hook = faker.word()
 
     # Act
     audit_log.record(hook=hook, decision="allow", confidence_score=99)
@@ -553,9 +603,9 @@ def test_record_clamps_confidence_score_on_write(isolated_log):
     assert records[0]["confidence_score"] == 10
 
 
-def test_record_autofills_cwd_when_missing(isolated_log):
+def test_record_autofills_cwd_when_missing(isolated_log: Path, faker: Faker) -> None:
     # Arrange
-    hook = "x"
+    hook = faker.word()
 
     # Act
     audit_log.record(hook=hook, decision="allow")
@@ -565,60 +615,73 @@ def test_record_autofills_cwd_when_missing(isolated_log):
     assert records[0]["cwd"] == os.getcwd()
 
 
-def test_record_autofills_session_id_from_claude_code_env(monkeypatch, isolated_log):
+def test_record_prefers_the_claude_code_session_id(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "primary-123")
-    monkeypatch.setenv("CLAUDE_SESSION_ID", "secondary-456")
+    primary = faker.uuid4()
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", primary)
+    monkeypatch.setenv("CLAUDE_SESSION_ID", faker.uuid4())
 
     # Act
-    audit_log.record(hook="x", decision="allow")
+    audit_log.record(hook=faker.word(), decision="allow")
 
     # Assert
     records = _read_records(isolated_log)
-    assert records[0]["session_id"] == "primary-123"
+    assert records[0]["session_id"] == primary
 
 
-def test_record_autofills_session_id_from_env(monkeypatch, isolated_log):
+def test_record_autofills_session_id_from_env(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
-    monkeypatch.setenv("CLAUDE_SESSION_ID", "abc-123")
+    _clear_session_env(monkeypatch)
+    session = faker.uuid4()
+    monkeypatch.setenv("CLAUDE_SESSION_ID", session)
 
     # Act
-    audit_log.record(hook="x", decision="allow")
+    audit_log.record(hook=faker.word(), decision="allow")
 
     # Assert
     records = _read_records(isolated_log)
-    assert records[0]["session_id"] == "abc-123"
+    assert records[0]["session_id"] == session
 
 
-def test_record_falls_back_to_legacy_session_id_env(monkeypatch, isolated_log):
+def test_record_falls_back_to_legacy_session_id_env(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
-    monkeypatch.delenv("CLAUDE_SESSION_ID", raising=False)
-    monkeypatch.setenv("SESSION_ID", "legacy-xyz")
+    _clear_session_env(monkeypatch)
+    session = faker.uuid4()
+    monkeypatch.setenv("SESSION_ID", session)
 
     # Act
-    audit_log.record(hook="x", decision="allow")
+    audit_log.record(hook=faker.word(), decision="allow")
 
     # Assert
     records = _read_records(isolated_log)
-    assert records[0]["session_id"] == "legacy-xyz"
+    assert records[0]["session_id"] == session
 
 
-def test_record_explicit_session_id_overrides_env(monkeypatch, isolated_log):
+def test_record_explicit_session_id_overrides_env(
+    monkeypatch: pytest.MonkeyPatch, isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
-    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", "from-env")
+    explicit = faker.uuid4()
+    monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", faker.uuid4())
 
     # Act
-    audit_log.record(hook="x", decision="allow", session_id="from-caller")
+    audit_log.record(hook=faker.word(), decision="allow", session_id=explicit)
 
     # Assert
     records = _read_records(isolated_log)
-    assert records[0]["session_id"] == "from-caller"
+    assert records[0]["session_id"] == explicit
 
 
-def test_cli_writes_record_with_legacy_flags(isolated_log):
+def test_cli_writes_record_with_legacy_flags(isolated_log: Path, faker: Faker) -> None:
     # Arrange
+    reason = faker.sentence()
+    command = f"echo {faker.word()}"
     argv = [
         "--hook",
         "large-file-blocker",
@@ -627,9 +690,9 @@ def test_cli_writes_record_with_legacy_flags(isolated_log):
         "--tool",
         "Bash",
         "--reason",
-        "file > 5MB",
+        reason,
         "--command",
-        "echo hello",
+        command,
     ]
 
     # Act
@@ -643,12 +706,16 @@ def test_cli_writes_record_with_legacy_flags(isolated_log):
     assert entry["hook"] == "large-file-blocker"
     assert entry["decision"] == "block"
     assert entry["tool"] == "Bash"
-    assert entry["reason"] == "file > 5MB"
-    assert entry["command_excerpt"] == "echo hello"
+    assert entry["reason"] == reason
+    assert entry["command_excerpt"] == command
 
 
-def test_cli_writes_record_with_new_schema_flags(isolated_log):
+def test_cli_writes_record_with_new_schema_flags(
+    isolated_log: Path, faker: Faker
+) -> None:
     # Arrange
+    file_path = f"/repo/src/{faker.word()}.ts"
+    latency = faker.pyint(min_value=1, max_value=999)
     argv = [
         "--hook",
         "mutation-method-blocker",
@@ -663,9 +730,9 @@ def test_cli_writes_record_with_new_schema_flags(isolated_log):
         "--confidence-score",
         "8",
         "--file-path",
-        "/repo/src/app.ts",
+        file_path,
         "--latency-ms",
-        "42",
+        str(latency),
     ]
 
     # Act
@@ -679,11 +746,13 @@ def test_cli_writes_record_with_new_schema_flags(isolated_log):
     assert entry["detector_tag"] == "array.push"
     assert entry["defect_pattern_tag"] == "missing-cleanup"
     assert entry["confidence_score"] == 8
-    assert entry["file_path"] == "/repo/src/app.ts"
-    assert entry["latency_ms"] == 42
+    assert entry["file_path"] == file_path
+    assert entry["latency_ms"] == latency
 
 
-def test_cli_rejects_unknown_decision_class(capsys, isolated_log):
+def test_cli_rejects_unknown_decision_class(
+    capsys: pytest.CaptureFixture[str], isolated_log: Path
+) -> None:
     # Arrange
     argv = [
         "--hook",
@@ -704,7 +773,9 @@ def test_cli_rejects_unknown_decision_class(capsys, isolated_log):
     assert _read_records(isolated_log) == []
 
 
-def test_cli_rejects_invalid_decision(capsys, isolated_log):
+def test_cli_rejects_invalid_decision(
+    capsys: pytest.CaptureFixture[str], isolated_log: Path
+) -> None:
     # Arrange
     argv = ["--hook", "x", "--decision", "wat"]
 
@@ -718,22 +789,21 @@ def test_cli_rejects_invalid_decision(capsys, isolated_log):
     assert _read_records(isolated_log) == []
 
 
-def test_cli_main_entrypoint_runs(monkeypatch, isolated_log):
+def test_cli_writes_a_minimal_allow_record(isolated_log: Path, faker: Faker) -> None:
     # Arrange
-    monkeypatch.setattr(
-        audit_log.sys,
-        "argv",
-        ["audit_log.py", "--hook", "x", "--decision", "allow"],
-    )
+    hook = faker.word()
+    argv = ["--hook", hook, "--decision", "allow"]
 
     # Act
-    rc = audit_log._cli(sys.argv[1:])
+    rc = audit_log._cli(argv)
 
     # Assert
     assert rc == 0
+    records = _read_records(isolated_log)
+    assert [(r["hook"], r["decision"]) for r in records] == [(hook, "allow")]
 
 
-def test_module_can_be_imported_repeatedly():
+def test_module_can_be_imported_repeatedly() -> None:
     # Arrange
     module = audit_log
 
@@ -743,6 +813,7 @@ def test_module_can_be_imported_repeatedly():
     # Assert
     assert (
         reloaded.MAX_BYTES,
+        reloaded.MAX_EXCERPT,
         reloaded.MAX_DETECTOR_TAG,
         reloaded.MAX_DEFECT_PATTERN_TAG,
-    ) == (5 * 1024 * 1024, 80, 64)
+    ) == (5 * 1024 * 1024, EXCERPT_LIMIT, DETECTOR_TAG_LIMIT, DEFECT_PATTERN_TAG_LIMIT)

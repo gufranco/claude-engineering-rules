@@ -1,7 +1,7 @@
 corpus_version: 1
 hook_version_min: 2.0.0
 last_regenerated: 2026-05-10
-fixture_count_target: 500
+fixture_count: 4
 schema:
   - category: top-level directory under tests/corpus/mutation-method-blocker/
   - subcategory: optional second-level directory

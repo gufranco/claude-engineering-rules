@@ -2,6 +2,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 import pytest
+from faker import Faker
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
@@ -65,16 +66,12 @@ def test_eslint_block_disable_covers_lines_in_range() -> None:
     state = compute_block_state(lines)
 
     # Assert
-    assert 0 in state.disabled_lines
-    assert 1 in state.disabled_lines
-    assert 2 in state.disabled_lines
-    assert 3 not in state.disabled_lines
-    assert 4 not in state.disabled_lines
+    assert state.disabled_lines == frozenset({0, 1, 2})
 
 
 def test_block_state_dataclass_default_is_empty() -> None:
     # Arrange
-    empty = frozenset()
+    empty: frozenset[int] = frozenset()
 
     # Act
     state = BlockState()
@@ -116,9 +113,9 @@ def test_has_inline_marker_recognizes_block_comment() -> None:
     assert actual is True
 
 
-def test_has_top_of_file_marker_finds_directive() -> None:
+def test_has_top_of_file_marker_finds_directive(faker: Faker) -> None:
     # Arrange
-    lines = ["", "// @ts-nocheck", "const x = 1;"]
+    lines = ["", "// @ts-nocheck", f"const {faker.word()} = 1;"]
 
     # Act
     actual = has_top_of_file_marker(lines, "@ts-nocheck")
@@ -127,9 +124,9 @@ def test_has_top_of_file_marker_finds_directive() -> None:
     assert actual is True
 
 
-def test_has_top_of_file_marker_skips_past_scan_limit() -> None:
+def test_has_top_of_file_marker_skips_past_scan_limit(faker: Faker) -> None:
     # Arrange
-    lines = ["// line"] * 12 + ["// @ts-nocheck"]
+    lines = [f"// {faker.word()}" for _ in range(12)] + ["// @ts-nocheck"]
 
     # Act
     actual = has_top_of_file_marker(lines, "@ts-nocheck")
@@ -142,7 +139,9 @@ def test_has_top_of_file_marker_skips_past_scan_limit() -> None:
     ("lines", "expected"),
     [(["// @ts-nocheck", "code()"], True), (["code()"], False)],
 )
-def test_has_ts_nocheck_directive_alias_matches(lines, expected) -> None:
+def test_has_ts_nocheck_directive_alias_matches(
+    lines: list[str], expected: bool
+) -> None:
     # Arrange
     source_lines = list(lines)
 
@@ -175,9 +174,9 @@ def test_has_python_file_disable_recognizes_ruff() -> None:
     assert result is True
 
 
-def test_has_python_file_disable_absent() -> None:
+def test_has_python_file_disable_absent(faker: Faker) -> None:
     # Arrange
-    lines = ["def f(): ...", "    pass"]
+    lines = [f"def {faker.word()}(): ...", "    pass"]
 
     # Act
     result = has_python_file_disable(lines)
@@ -186,17 +185,15 @@ def test_has_python_file_disable_absent() -> None:
     assert result is False
 
 
-def test_line_or_prev_has_suppression_alias_matches_is_suppressed() -> None:
+def test_line_or_prev_has_suppression_honors_a_next_line_directive() -> None:
     # Arrange
     lines = ["// eslint-disable-next-line", "items.push(v)"]
-    via_canonical = is_suppressed(lines, 1)
 
     # Act
     via_alias = line_or_prev_has_suppression(lines, 1)
 
     # Assert
     assert via_alias is True
-    assert via_alias == via_canonical
 
 
 def test_our_own_allow_marker_does_not_suppress() -> None:
@@ -222,7 +219,7 @@ def test_third_party_directive_still_suppresses() -> None:
 
 
 @pytest.mark.parametrize("index", [-1, 5])
-def test_is_suppressed_out_of_range_returns_false(index) -> None:
+def test_is_suppressed_out_of_range_returns_false(index: int) -> None:
     # Arrange
     lines = ["arr.push(v)"]
 

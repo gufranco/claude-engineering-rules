@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from faker import Faker
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = REPO_ROOT / "hooks"
 if str(SCRIPTS_DIR) not in sys.path:
@@ -44,12 +46,13 @@ def test_is_dom_receiver_returns_false_for_whitespace_only() -> None:
     assert result is False
 
 
-def test_is_dom_assignment_returns_false_when_no_signals() -> None:
+def test_is_dom_assignment_returns_false_when_no_signals(faker: Faker) -> None:
     # Arrange
-    receiver = "notADomReceiver"
+    receiver = f"ledger{faker.word().capitalize()}"
+    prop = f"total{faker.word().capitalize()}"
 
     # Act
-    result = ma.is_dom_assignment(receiver, "someRandomProp")
+    result = ma.is_dom_assignment(receiver, prop)
 
     # Assert
     assert result is False
@@ -99,20 +102,23 @@ def test_is_temporal_chain_call_returns_false_when_temporal_unrelated() -> None:
     assert result is False
 
 
-def test_is_temporal_chain_call_owner_in_receivers_short_circuits() -> None:
+def test_is_temporal_chain_call_owner_in_receivers_short_circuits(
+    faker: Faker,
+) -> None:
     # Arrange
-    line = "anything"
+    line = faker.sentence()
+    owner = f"clock{faker.word().capitalize()}"
 
     # Act
-    result = ma.is_temporal_chain_call(line, "t", frozenset({"t"}))
+    result = ma.is_temporal_chain_call(line, owner, frozenset({owner}))
 
     # Assert
     assert result is True
 
 
-def test_is_web_api_receiver_returns_false_when_owner_none() -> None:
+def test_is_web_api_receiver_returns_false_when_owner_none(faker: Faker) -> None:
     # Arrange
-    receivers = frozenset({"params"})
+    receivers = frozenset({f"params{faker.word().capitalize()}"})
 
     # Act
     result = ma.is_web_api_receiver(None, receivers)
@@ -121,12 +127,12 @@ def test_is_web_api_receiver_returns_false_when_owner_none() -> None:
     assert result is False
 
 
-def test_is_web_api_receiver_matches_when_owner_in_set() -> None:
+def test_is_web_api_receiver_matches_when_owner_in_set(faker: Faker) -> None:
     # Arrange
-    owner = "params"
+    owner = f"params{faker.word().capitalize()}"
 
     # Act
-    result = ma.is_web_api_receiver(owner, frozenset({"params"}))
+    result = ma.is_web_api_receiver(owner, frozenset({owner}))
 
     # Assert
     assert result is True
@@ -198,9 +204,9 @@ def test_skip_extension_returns_true_for_empty_path() -> None:
     assert result is True
 
 
-def test_skip_extension_returns_true_for_python_file() -> None:
+def test_skip_extension_returns_true_for_python_file(faker: Faker) -> None:
     # Arrange
-    file_path = "src/foo.py"
+    file_path = f"src/{faker.word()}.py"
 
     # Act
     result = ma.skip_extension(file_path)
@@ -209,9 +215,9 @@ def test_skip_extension_returns_true_for_python_file() -> None:
     assert result is True
 
 
-def test_skip_extension_returns_false_for_regular_ts() -> None:
+def test_skip_extension_returns_false_for_regular_ts(faker: Faker) -> None:
     # Arrange
-    file_path = "src/foo.ts"
+    file_path = f"src/{faker.word()}.ts"
 
     # Act
     result = ma.skip_extension(file_path)
@@ -231,9 +237,9 @@ def test_skip_path_returns_true_for_empty_path() -> None:
     assert result is True
 
 
-def test_skip_path_returns_false_for_src_path() -> None:
+def test_skip_path_returns_false_for_src_path(faker: Faker) -> None:
     # Arrange
-    file_path = "src/foo.ts"
+    file_path = f"src/{faker.word()}.ts"
 
     # Act
     result = ma.skip_path(file_path)
@@ -264,20 +270,20 @@ def test_is_hot_path_returns_false_for_regular_path() -> None:
     assert result is False
 
 
-def test_hit_uses_receiver_returns_false_for_empty_line() -> None:
+def test_hit_uses_receiver_returns_false_for_empty_line(faker: Faker) -> None:
     # Arrange
     hit_line = ""
 
     # Act
-    result = ma.hit_uses_receiver(hit_line, frozenset({"x"}))
+    result = ma.hit_uses_receiver(hit_line, frozenset({faker.word()}))
 
     # Assert
     assert result is False
 
 
-def test_hit_uses_receiver_returns_false_for_empty_receivers() -> None:
+def test_hit_uses_receiver_returns_false_for_empty_receivers(faker: Faker) -> None:
     # Arrange
-    hit_line = "x.push(y)"
+    hit_line = f"{faker.word()}.push({faker.word()})"
 
     # Act
     result = ma.hit_uses_receiver(hit_line, frozenset())
@@ -298,23 +304,25 @@ def test_hit_uses_receiver_skips_empty_name_in_set() -> None:
     assert result is True
 
 
-def test_hit_uses_receiver_matches_dot_access() -> None:
+def test_hit_uses_receiver_matches_dot_access(faker: Faker) -> None:
     # Arrange
-    line = "    state.items.push(value);"
+    receiver = f"state{faker.word().capitalize()}"
+    line = f"    {receiver}.items.push(value);"
 
     # Act
-    result = ma.hit_uses_receiver(line, frozenset({"state"}))
+    result = ma.hit_uses_receiver(line, frozenset({receiver}))
 
     # Assert
     assert result is True
 
 
-def test_hit_uses_receiver_matches_word_boundary() -> None:
+def test_hit_uses_receiver_matches_word_boundary(faker: Faker) -> None:
     # Arrange
-    line = "total += 1;"
+    receiver = f"total{faker.word().capitalize()}"
+    line = f"{receiver} += 1;"
 
     # Act
-    result = ma.hit_uses_receiver(line, frozenset({"total"}))
+    result = ma.hit_uses_receiver(line, frozenset({receiver}))
 
     # Assert
     assert result is True
