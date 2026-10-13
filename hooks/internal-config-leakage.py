@@ -226,18 +226,25 @@ NON_PUBLISHING_PREFIXES = (
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
+from _lib.shell_segments import strip_heredoc_bodies  # noqa: E402
+
+
+SEGMENT_SEPARATOR = re.compile(r"&&|\|\||[;|\n]")
+
+
+def _segment_publishes(segment: str) -> bool:
+    stripped = segment.lstrip()
+    if not stripped or stripped.startswith(NON_PUBLISHING_PREFIXES):
+        return False
+    matched = strip_git_global_options(segment)
+    return any(p.search(matched) for p in PUBLISHING_BASH_PATTERNS)
 
 
 def is_publishing_bash(cmd: str) -> bool:
-    """True if the Bash command publishes externally. False for inert commands."""
     if not cmd:
         return False
-    stripped = cmd.lstrip()
-    for pref in NON_PUBLISHING_PREFIXES:
-        if stripped.startswith(pref):
-            return False
-    matched = strip_git_global_options(cmd)
-    return any(p.search(matched) for p in PUBLISHING_BASH_PATTERNS)
+    command_lines = strip_heredoc_bodies(cmd)
+    return any(_segment_publishes(s) for s in SEGMENT_SEPARATOR.split(command_lines))
 
 
 def is_git_message_bash(cmd: str) -> bool:
