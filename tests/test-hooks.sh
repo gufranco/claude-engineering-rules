@@ -216,9 +216,9 @@ run_test "allows valid heredoc commit" \
     "${HOOKS}/conventional-commits.py" \
     "${FIXTURES}/bash-commit-heredoc.json" 0
 
-run_test "handles malformed JSON gracefully" \
+run_test "blocks malformed JSON" \
     "${HOOKS}/conventional-commits.py" \
-    "${FIXTURES}/malformed-json.txt" 0
+    "${FIXTURES}/malformed-json.txt" 2
 
 echo ""
 echo "=== Secret Scanner ==="
@@ -235,9 +235,9 @@ run_test "allows commit when no staged files have secrets" \
     "${HOOKS}/secret-scanner.py" \
     "${FIXTURES}/commit-with-secret.json" 0
 
-run_test "handles malformed JSON gracefully" \
+run_test "blocks malformed JSON" \
     "${HOOKS}/secret-scanner.py" \
-    "${FIXTURES}/malformed-json.txt" 0
+    "${FIXTURES}/malformed-json.txt" 2
 
 echo ""
 echo "=== Smart Formatter ==="
@@ -311,9 +311,9 @@ run_test "ignores non-Write/Edit tools" \
     "${HOOKS}/env-file-guard.py" \
     "${FIXTURES}/bash-safe-command.json" 0
 
-run_test "handles malformed JSON gracefully" \
+run_test "blocks malformed JSON" \
     "${HOOKS}/env-file-guard.py" \
-    "${FIXTURES}/malformed-json.txt" 0
+    "${FIXTURES}/malformed-json.txt" 2
 
 echo ""
 echo "=== Env File Guard: Credential Files ==="

@@ -72,7 +72,7 @@ PYTEST_N   ?= auto
 
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
-.PHONY: help install test test-fast test-cov test-bats test-all \
+.PHONY: help install test test-fast test-cov test-bats test-smoke benchmark test-all \
         lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
@@ -84,7 +84,9 @@ help:
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
 	@echo "  test-cov     Run pytest with branch coverage, enforce 95%"
 	@echo "  test-bats    Run bats-core suites for shell hooks"
-	@echo "  test-all     test-cov + test-bats + lint + typecheck"
+	@echo "  test-smoke   Run the hook smoke suite CI runs, tests/test-hooks.sh"
+	@echo "  benchmark    Hold every hook under 500 ms, as CI does"
+	@echo "  test-all     test-cov + test-bats + test-smoke + benchmark + lint + typecheck + validate"
 	@echo "  lint         All linters: ruff + shellcheck + actionlint + yamllint + zizmor + lint-skills"
 	@echo "  lint-skills  tools/lint-skills.py --strict over every skill"
 	@echo "  format       ruff format (writes)"
@@ -120,7 +122,13 @@ else
 	fi
 endif
 
-test-all: test-cov test-bats lint typecheck validate
+test-smoke:
+	bash tests/test-hooks.sh
+
+benchmark:
+	bash .github/scripts/hook-benchmark.sh --threshold 500
+
+test-all: test-cov test-bats test-smoke benchmark lint typecheck validate
 
 lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills
 
