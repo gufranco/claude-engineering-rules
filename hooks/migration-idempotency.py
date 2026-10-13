@@ -119,7 +119,21 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+BLOCK_MESSAGE_HEAD = (
+    "Blocked: migration is not idempotent. "
+    'Rule: ~/.claude/standards/git-workflow.md "Migration Idempotency".\n'
+)
+BLOCK_MESSAGE_TAIL = (
+    "\n\nFix: CREATE TABLE, INDEX, EXTENSION, MATERIALIZED VIEW, SCHEMA and SEQUENCE "
+    "use IF NOT EXISTS; CREATE FUNCTION, VIEW, TRIGGER and PROCEDURE use OR REPLACE; "
+    "CREATE TYPE, POLICY, ROLE and USER have no native guard, so wrap them in "
+    "DO $$ BEGIN IF NOT EXISTS (SELECT ...) THEN ... END IF; END $$ or catch "
+    "duplicate_object in an EXCEPTION block. Every DROP uses IF EXISTS.\n"
+    "Bypass (rare, e.g., baseline migration): set MIGRATION_IDEMPOTENCY_DISABLE=1."
+)
+
+
+def _skip_run() -> bool:
     if not should_run("migration-idempotency"):
         sys.exit(0)
     if os.environ.get("MIGRATION_IDEMPOTENCY_DISABLE") == "1":
@@ -128,40 +142,23 @@ def main() -> int:
             decision="bypass",
             bypass_env="MIGRATION_IDEMPOTENCY_DISABLE",
         )
-        return 0
-    if is_bypassed("migration-idempotency"):
-        return 0
+        return True
+    return is_bypassed("migration-idempotency")
 
-    payload = read_hook_payload("migration-idempotency")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
-    for path, field, text in items:
+    for path, _field, text in items:
         hits = find(text)
         if hits:
             findings.append(f"  - {path}:")
-            for h in sorted(set(hits)):
-                findings.append(f"      {h}")
+            findings.extend(f"      {h}" for h in sorted(set(hits)))
+    return findings
 
-    if not findings:
-        return 0
 
+def _block(tool: str, findings: list[str]) -> int:
     print(
-        "Blocked: migration is not idempotent. "
-        'Rule: ~/.claude/standards/git-workflow.md "Migration Idempotency".\n'
-        + "\n".join(findings)
-        + "\n\nFix: CREATE TABLE, INDEX, EXTENSION, MATERIALIZED VIEW, SCHEMA and SEQUENCE "
-        "use IF NOT EXISTS; CREATE FUNCTION, VIEW, TRIGGER and PROCEDURE use OR REPLACE; "
-        "CREATE TYPE, POLICY, ROLE and USER have no native guard, so wrap them in "
-        "DO $$ BEGIN IF NOT EXISTS (SELECT ...) THEN ... END IF; END $$ or catch "
-        "duplicate_object in an EXCEPTION block. Every DROP uses IF EXISTS.\n"
-        "Bypass (rare, e.g., baseline migration): set MIGRATION_IDEMPOTENCY_DISABLE=1.",
+        BLOCK_MESSAGE_HEAD + "\n".join(findings) + BLOCK_MESSAGE_TAIL,
         file=sys.stderr,
     )
     _audit(
@@ -172,6 +169,21 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    payload = read_hook_payload("migration-idempotency")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    items = collect(tool, tool_input)
+    if not items:
+        return 0
+    findings = _findings(items)
+    if not findings:
+        return 0
+    return _block(tool, findings)
 
 
 if __name__ == "__main__":

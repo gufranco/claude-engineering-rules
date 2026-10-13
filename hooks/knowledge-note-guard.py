@@ -231,16 +231,15 @@ def main() -> None:
     raw_path = tool_input.get("file_path")
     if not raw_path:
         sys.exit(0)
-    path = Path(raw_path)
+    handle_edit(tool, tool_input, Path(raw_path), root)
+    sys.exit(0)
+
+
+def handle_edit(tool: str, tool_input: dict, path: Path, root: Path) -> None:
     rel = kn.relative(path, root)
     if rel is None or kn.is_exempt(rel):
         sys.exit(0)
-    if (
-        rel.parts
-        and rel.parts[0] == kn.RAW_DIR
-        and tool in ("Write", "Edit", "MultiEdit")
-        and path.exists()
-    ):
+    if rel.parts and rel.parts[0] == kn.RAW_DIR and path.exists():
         emit([("KN005", 1, f"edit to immutable source {rel}")], rel)
     if path.suffix.lower() != ".md":
         sys.exit(0)

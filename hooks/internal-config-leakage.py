@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import os
 import re
 import shlex
@@ -17,92 +16,35 @@ except Exception:  # pragma: no cover
         return None
 
 
-GIT_MESSAGE_BASH_PATTERNS = [
-    re.compile(r"\bgit\s+commit\b"),
-    re.compile(r"\bgit\s+tag\b"),
-    re.compile(r"\bgit\s+notes\b"),
-]
-
-NON_GIT_PUBLISHING_BASH_PATTERNS = [
-    re.compile(r"\bgh\s+(?:pr|issue|api|release|gist)\b"),
-    re.compile(r"\bglab\s+(?:mr|issue|api|release)\b"),
-    re.compile(r"\bslack(?:-cli)?\s+(?:send|post|chat)\b"),
-    re.compile(r"\bcurl\b.*\b(?:slack|discord|teams|telegram)\b"),
-]
-
-PUBLISHING_BASH_PATTERNS = [
-    *NON_GIT_PUBLISHING_BASH_PATTERNS,
-    *GIT_MESSAGE_BASH_PATTERNS,
-]
-
-HEREDOC_HEADER_PATTERN = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
-
-GIT_MESSAGE_SHORT_FLAG_PATTERN = re.compile(r"^-[A-Za-z]*m$")
-
-GIT_MESSAGE_LONG_FLAGS = ("--message", "-m")
-
-PATH_LEAK_PATTERNS = [
-    (re.compile(r"~/\.claude\b"), "~/.claude path reference"),
-    (
-        re.compile(r"\.claude/(?:rules|standards|checklists|skills|hooks)/"),
-        ".claude/<dir>/ reference",
-    ),
-    (
-        re.compile(r"\b(?:rules|standards|checklists)/[a-z0-9_\-]+\.md\b"),
-        "internal markdown reference",
-    ),
-    (re.compile(r"\bchecklist\.md\b"), "checklist.md reference"),
-    (re.compile(r"\brules/index\.yml\b"), "rules/index.yml reference"),
-    (re.compile(r"\bCLAUDE\.md\b"), "CLAUDE.md reference"),
-]
-
-CATEGORY_LEAK_PATTERNS = [
-    (
-        re.compile(r"\bcategor(?:y|ies)\s*#?\s*\d+\b", re.IGNORECASE),
-        "category number reference",
-    ),
-    (
-        re.compile(r"\bcat\.?\s*\d+\b(?!\s*(?:bytes|MB|KB|GB|files|items))"),
-        "cat <n> shorthand",
-    ),
-    (
-        re.compile(r"checklist[s]?\s+(?:item|category)", re.IGNORECASE),
-        "checklist item/category mention",
-    ),
-]
-
-LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT = r"issue\s*\((?:blocking|non-blocking)\)|nitpick|suggestion|question|thought|praise|todo"
-
-CONVENTIONAL_LABEL_PATTERN = re.compile(
-    rf"(?m)^\s*(?:{LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT}|chore)\s*:",
-    re.IGNORECASE,
+from _lib.internal_config_leakage_patterns import (  # noqa: E402
+    API_BODY_FLAGS,
+    API_METHOD_FLAGS,
+    CATEGORY_LEAK_PATTERNS,
+    CONVENTIONAL_LABEL_PATTERN,
+    CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE,
+    FORGE_CLIS,
+    GIT_MESSAGE_BASH_PATTERNS,
+    GIT_MESSAGE_LONG_FLAGS,
+    GIT_MESSAGE_SHORT_FLAG_PATTERN,
+    GIT_WORD,
+    HEREDOC_HEADER_PATTERN,
+    NON_GIT_PUBLISHING_BASH_PATTERNS,
+    NON_PUBLISHING_PREFIXES,
+    PATH_LEAK_PATTERNS,
+    PUBLISHING_BASH_PATTERNS,
+    READ_ONLY_ACTIONS,
+    REVIEW_PREAMBLE_WORDS,
+    SECTION_HEADING_PATTERN,
+    SEGMENT_OPERATOR,
+    SEVERITY_TIER_PATTERN,
+    SKILL_FLAG_HEAD_PATTERN,
+    SKIPPED_DOCS,
 )
-
-CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE = re.compile(
-    rf"(?m)^\s*(?:{LABELS_NEVER_VALID_IN_A_COMMIT_SUBJECT})\s*:",
-    re.IGNORECASE,
-)
-
-SKILL_FLAG_HEAD_PATTERN = re.compile(
-    r"\(?`?--(?:backend|frontend|local|post|focus|severity|fix|pict|coverage)`?\)?",
-)
-
-SEVERITY_TIER_PATTERN = re.compile(
-    r"(?m)^\s*(?:#+\s+P[0-3]\b|P[0-3]\b(?:\s*[:.\-]"
-    r"|\s+(?:blocking|should|nits?|critical|important|optional|minor|major)"
-    r"|\s+\w{1,12}:))",
-    re.IGNORECASE,
-)
-
-INTERNAL_SECTION_HEADINGS = [
-    "Behavioral Flow Analysis",
-    "Blast Radius Summary",
-    "Standards Applied",
-]
-SECTION_HEADING_PATTERN = re.compile(
-    r"(?im)^\s*#+\s*(?:"
-    + "|".join(re.escape(h) for h in INTERNAL_SECTION_HEADINGS)
-    + r")\b",
+from _lib.internal_config_leakage_payloads import (  # noqa: E402
+    extract_publishing_text_blocks,
+    extract_referenced_files,
+    looks_like_publishing_json,
+    read_payload_file,
 )
 
 try:
@@ -114,69 +56,6 @@ except Exception:  # pragma: no cover
 
 
 from _lib import project_workspace as _workspace  # noqa: E402
-
-SKIPPED_DOCS = (
-    "/.claude/CLAUDE.md",
-    "/.claude/README.md",
-    "/.claude/CHANGELOG.md",
-    "/.claude/rules/",
-    "/.claude/standards/",
-    "/.claude/checklists/",
-    "/.claude/hooks/",
-    "/.claude/skills/",
-    "/.claude/specs/",
-    "/.claude/.github/scripts/",
-    "/.claude/agents/",
-    "/.claude/tests/",
-    "/.claude/projects/",
-    "/.claude/settings.json",
-    "/.claude/settings.local.json",
-)
-
-NON_PUBLISHING_PREFIXES = (
-    "cat ",
-    "head ",
-    "tail ",
-    "less ",
-    "ls ",
-    "find ",
-    "grep ",
-    "rg ",
-    "sed ",
-    "awk ",
-    "wc ",
-    "echo ",
-    "printf ",
-    "python ",
-    "python3 ",
-    "node ",
-    "ruby ",
-    "go ",
-    "rustc ",
-    "cargo ",
-    "npm ",
-    "pnpm ",
-    "yarn ",
-    "make ",
-    "cd ",
-    "pwd",
-    "source ",
-    ". ",
-    "rm ",
-    "mv ",
-    "cp ",
-    "mkdir ",
-    "touch ",
-    "chmod ",
-    "chown ",
-    "stat ",
-    "file ",
-    "diff ",
-    "tar ",
-    "zip ",
-    "unzip ",
-)
-
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
@@ -187,11 +66,28 @@ from _lib.shell_segments import (  # noqa: E402
     unquoted_segments,
 )
 
+Item = tuple[str, str, str, str]
 
-FORGE_CLIS = frozenset({"gh", "glab"})
-READ_ONLY_ACTIONS = frozenset({"view", "list", "diff", "checks", "status", "search"})
-API_BODY_FLAGS = frozenset({"-f", "-F", "--field", "--raw-field", "--input", "--form"})
-API_METHOD_FLAGS = frozenset({"-X", "--method"})
+BLOCK_HEADER = (
+    "Blocked: internal Claude config or templated scaffolding leaking into "
+    'external output. Rule: ~/.claude/standards/code-review.md "No Internal '
+    'Config Leakage".\n'
+)
+
+BLOCK_FIX = (
+    "\n\nFix: rewrite the message so it reads as if a human engineer wrote it. "
+    "State the engineering reason directly. Strip Conventional Comments labels "
+    "(`issue (blocking):`, `nitpick:`, etc.), internal severity tiers (P0/P1/P2), "
+    "skill invocation flags (--backend/--frontend/--local), and references to "
+    "personal config paths.\n"
+    "Bypass (when editing the config itself): export CONFIG_LEAKAGE_DISABLE=1 "
+    "in a parent shell."
+)
+
+PREAMBLE_CONTENT_KINDS = ("payload", "markdown", "git-message-payload")
+GIT_MESSAGE_KINDS = ("git-message", "git-message-payload")
+FILE_TOOLS = ("Write", "Edit", "MultiEdit")
+MAX_HITS_PER_ITEM = 6
 
 
 def _segment_publishes(segment: str) -> bool:
@@ -249,10 +145,6 @@ def is_git_message_bash(cmd: str) -> bool:
         return False
     matched = strip_git_global_options(cmd)
     return any(p.search(matched) for p in GIT_MESSAGE_BASH_PATTERNS)
-
-
-GIT_WORD = re.compile(r"\bgit\b")
-SEGMENT_OPERATOR = re.compile(r"&&|\|\||[;|]")
 
 
 def _feeds_git(line: str, position: int) -> bool:
@@ -327,299 +219,181 @@ def is_skipped_md_path(path: str) -> bool:
     return _in_vault(path) or _workspace.in_workspace(Path(path))
 
 
-def looks_like_publishing_json(content: str) -> bool:
-    if not content or not content.strip().startswith("{"):
-        return False
-    try:
-        obj = json.loads(content)
-    except ValueError:
-        return False
-    if not isinstance(obj, dict):
-        return False
-    if "comments" in obj and ("commit_id" in obj or "event" in obj):
-        return True
-    if isinstance(obj.get("body"), str) and obj["body"].strip():
-        return True
-    if isinstance(obj.get("title"), str) and (
-        "head" in obj or "base" in obj or "labels" in obj or "draft" in obj
-    ):
-        return True
-    return False
+def _command_items(cmd: str, authors_git_message: bool) -> list[Item]:
+    texts = extract_git_message_texts(cmd) if authors_git_message else None
+    if texts is not None:
+        return [
+            ("bash", f"git message[{idx}]", "git-message", text)
+            for idx, text in enumerate(texts)
+        ]
+    kind = "git-message" if authors_git_message else "command"
+    return [("bash", "command", kind, cmd)]
 
 
-def extract_publishing_text_blocks(content: str) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
-    try:
-        obj = json.loads(content)
-    except Exception:
-        return out
-    if not isinstance(obj, dict):
-        return out
-
-    if isinstance(obj.get("body"), str) and obj["body"].strip():
-        out.append(("body", obj["body"]))
-    if isinstance(obj.get("title"), str) and obj["title"].strip():
-        out.append(("title", obj["title"]))
-    if isinstance(obj.get("message"), str) and obj["message"].strip():
-        out.append(("message", obj["message"]))
-
-    comments = obj.get("comments")
-    if isinstance(comments, list):
-        for i, c in enumerate(comments):
-            if not isinstance(c, dict):
-                continue
-            b = c.get("body")
-            if isinstance(b, str) and b.strip():
-                out.append((f"comments[{i}].body", b))
-
+def _referenced_payload_items(cmd: str, payload_kind: str) -> list[Item]:
+    out: list[Item] = []
+    for ref in extract_referenced_files(cmd):
+        payload = read_payload_file(ref)
+        if payload is None:
+            continue
+        blocks = extract_publishing_text_blocks(payload)
+        if not blocks:
+            out = [*out, ("bash-payload", ref, payload_kind, payload)]
+            continue
+        out = [
+            *out,
+            *((f"bash-payload:{ref}", lb, payload_kind, t) for lb, t in blocks),
+        ]
     return out
 
 
-PAYLOAD_FILE_FLAGS = (
-    "--input",
-    "--body-file",
-    "--file",
-    "-F",
-    "--form",
-    "--data-binary",
-    "--data",
-    "-d",
-)
+def _collect_bash(cmd: object) -> list[Item]:
+    if not isinstance(cmd, str) or not is_publishing_bash(cmd):
+        return []
+    authors_git_message = is_git_message_bash(cmd)
+    payload_kind = "git-message-payload" if authors_git_message else "payload"
+    return [
+        *_command_items(cmd, authors_git_message),
+        *_referenced_payload_items(cmd, payload_kind),
+    ]
 
 
-def extract_referenced_files(cmd: str) -> list[str]:
-    paths: list[str] = []
-    try:
-        tokens = shlex.split(cmd, comments=False, posix=True)
-    except Exception:
-        return paths
-
-    i = 0
-    while i < len(tokens):
-        tok = tokens[i]
-        for flag in ("--input", "--body-file", "--file"):
-            if tok.startswith(flag + "="):
-                paths.append(tok[len(flag) + 1 :])
-        if tok in PAYLOAD_FILE_FLAGS and i + 1 < len(tokens):
-            nxt = tokens[i + 1]
-            if nxt.startswith("@"):
-                paths.append(nxt[1:])
-            elif "=" in nxt and nxt.split("=", 1)[1].startswith("@"):
-                paths.append(nxt.split("=", 1)[1][1:])
-            else:
-                paths.append(nxt)
-            i += 2
-            continue
-        i += 1
-
-    resolved: list[str] = []
-    seen = set()
-    for p in paths:
-        p = os.path.expanduser(p)
-        if not p:
-            continue
-        if p in seen:
-            continue
-        seen.add(p)
-        resolved.append(p)
-    return resolved
+def _file_kind(fp: str) -> str | None:
+    ext = fp.lower()
+    if ext.endswith(".md"):
+        return "markdown"
+    if ext.endswith(".json"):
+        return "json-maybe"
+    return None
 
 
-def read_payload_file(path: str) -> str | None:
-    try:
-        if not os.path.isfile(path):
-            return None
-        if os.path.getsize(path) > 5 * 1024 * 1024:
-            return None
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            return f.read()
-    except OSError as error:
-        sys.stderr.write(f"internal-config-leakage: cannot read {path}: {error}\n")
-        return None
+def _collect_write(fp: str, kind: str, content: object) -> list[Item]:
+    if not isinstance(content, str):
+        return []
+    if kind != "json-maybe":
+        return [(fp, "content", "markdown", content)]
+    if not looks_like_publishing_json(content):
+        return []
+    blocks = extract_publishing_text_blocks(content)
+    if not blocks:
+        return [(fp, "content", "payload", content)]
+    return [(fp, label, "payload", text) for label, text in blocks]
+
+
+def _collect_multiedit(fp: str, content_kind: str, edits: list[object]) -> list[Item]:
+    return [
+        (fp, f"edits[{i}].new_string", content_kind, edit.get("new_string", ""))
+        for i, edit in enumerate(edits)
+        if isinstance(edit, dict) and isinstance(edit.get("new_string", ""), str)
+    ]
+
+
+def _collect_file(tool: str, tool_input: dict, fp: str) -> list[Item]:
+    if is_skipped_md_path(fp):
+        return []
+    kind = _file_kind(fp)
+    if kind is None:
+        return []
+    if tool == "Write":
+        return _collect_write(fp, kind, tool_input.get("content", ""))
+    content_kind = "markdown" if kind == "markdown" else "payload"
+    if tool == "Edit":
+        content = tool_input.get("new_string", "")
+        if not isinstance(content, str):
+            return []
+        return [(fp, "new_string", content_kind, content)]
+    return _collect_multiedit(fp, content_kind, tool_input.get("edits", []) or [])
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
-    out: list[tuple[str, str, str, str]] = []
-    fp = tool_input.get("file_path", "") or ""
-
     if tool == "Bash":
-        cmd = tool_input.get("command", "")
-        if not isinstance(cmd, str) or not is_publishing_bash(cmd):
-            return out
-        authors_git_message = is_git_message_bash(cmd)
-        git_message_texts = (
-            extract_git_message_texts(cmd) if authors_git_message else None
-        )
-        payload_kind = "git-message-payload" if authors_git_message else "payload"
+        return _collect_bash(tool_input.get("command", ""))
+    if tool in FILE_TOOLS:
+        return _collect_file(tool, tool_input, tool_input.get("file_path", "") or "")
+    return []
 
-        if git_message_texts is not None:
-            for idx, text in enumerate(git_message_texts):
-                out.append(("bash", f"git message[{idx}]", "git-message", text))
-        else:
-            kind = "git-message" if authors_git_message else "command"
-            out.append(("bash", "command", kind, cmd))
-        for ref in extract_referenced_files(cmd):
-            payload = read_payload_file(ref)
-            if payload is None:
-                continue
-            blocks = extract_publishing_text_blocks(payload)
-            if blocks:
-                for label, text in blocks:
-                    out.append((f"bash-payload:{ref}", label, payload_kind, text))
-            else:
-                out.append(("bash-payload", ref, payload_kind, payload))
 
-    elif tool in ("Write", "Edit", "MultiEdit"):
-        if is_skipped_md_path(fp):
-            return out
-        kind = ""
-        ext = fp.lower()
-        if ext.endswith(".md"):
-            kind = "markdown"
-        elif ext.endswith(".json"):
-            kind = "json-maybe"
-        else:
-            return out
+def _hit(text: str, label: str, m: re.Match[str]) -> str:
+    start = max(0, m.start() - 30)
+    end = min(len(text), m.end() + 30)
+    snippet = text[start:end].replace("\n", " | ")
+    return f"{label}: ...{snippet}..."
 
-        if tool == "Write":
-            content = tool_input.get("content", "")
-            if isinstance(content, str):
-                if kind == "json-maybe":
-                    if not looks_like_publishing_json(content):
-                        return out
-                    blocks = extract_publishing_text_blocks(content)
-                    if blocks:
-                        for label, text in blocks:
-                            out.append((fp, label, "payload", text))
-                    else:
-                        out.append((fp, "content", "payload", content))
-                else:
-                    out.append((fp, "content", "markdown", content))
-        elif tool == "Edit":
-            content = tool_input.get("new_string", "")
-            if isinstance(content, str):
-                if kind == "json-maybe":
-                    out.append((fp, "new_string", "payload", content))
-                else:
-                    out.append((fp, "new_string", "markdown", content))
-        elif tool == "MultiEdit":
-            for i, edit in enumerate(tool_input.get("edits", []) or []):
-                if isinstance(edit, dict):
-                    content = edit.get("new_string", "")
-                    if isinstance(content, str):
-                        out.append(
-                            (
-                                fp,
-                                f"edits[{i}].new_string",
-                                "markdown" if kind == "markdown" else "payload",
-                                content,
-                            )
-                        )
 
-    return out
+def _skill_flag_match(text: str, content_kind: str) -> re.Match[str] | None:
+    if content_kind not in PREAMBLE_CONTENT_KINDS:
+        return None
+    head = text[:300]
+    m = SKILL_FLAG_HEAD_PATTERN.search(head)
+    if m is None:
+        return None
+    head_lower = head.lower()
+    return m if any(w in head_lower for w in REVIEW_PREAMBLE_WORDS) else None
+
+
+def _candidate_matches(
+    text: str, content_kind: str
+) -> list[tuple[str, re.Match[str] | None]]:
+    label_pattern = (
+        CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE
+        if content_kind in GIT_MESSAGE_KINDS
+        else CONVENTIONAL_LABEL_PATTERN
+    )
+    return [
+        *((label, pat.search(text)) for pat, label in PATH_LEAK_PATTERNS),
+        *((label, pat.search(text)) for pat, label in CATEGORY_LEAK_PATTERNS),
+        ("Conventional Comments label prefix", label_pattern.search(text)),
+        (
+            "internal severity tier (P0/P1/P2 scaffolding)",
+            SEVERITY_TIER_PATTERN.search(text),
+        ),
+        ("internal section heading", SECTION_HEADING_PATTERN.search(text)),
+        (
+            "skill invocation flag in review preamble",
+            _skill_flag_match(text, content_kind),
+        ),
+    ]
 
 
 def find_leaks(text: str, content_kind: str) -> list[str]:
-    hits: list[str] = []
-
-    def add(label: str, m: re.Match[str]) -> None:
-        start = max(0, m.start() - 30)
-        end = min(len(text), m.end() + 30)
-        snippet = text[start:end].replace("\n", " | ")
-        hits.append(f"{label}: ...{snippet}...")
-
-    for pat, label in PATH_LEAK_PATTERNS + CATEGORY_LEAK_PATTERNS:
-        m = pat.search(text)
-        if m:
-            add(label, m)
-
-    label_pattern = (
-        CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE
-        if content_kind in ("git-message", "git-message-payload")
-        else CONVENTIONAL_LABEL_PATTERN
-    )
-    m = label_pattern.search(text)
-    if m:
-        add("Conventional Comments label prefix", m)
-
-    m = SEVERITY_TIER_PATTERN.search(text)
-    if m:
-        add("internal severity tier (P0/P1/P2 scaffolding)", m)
-
-    m = SECTION_HEADING_PATTERN.search(text)
-    if m:
-        add("internal section heading", m)
-
-    if content_kind in ("payload", "markdown", "git-message-payload"):
-        head = text[:300]
-        m = SKILL_FLAG_HEAD_PATTERN.search(head)
-        if m:
-            head_lower = head.lower()
-            meta_words = (
-                "review",
-                "this pr",
-                "this mr",
-                "audit",
-                "scope",
-                "out of scope",
-                "skimmed",
-                "looked through",
-            )
-            if any(w in head_lower for w in meta_words):
-                add("skill invocation flag in review preamble", m)
-
-    return hits
+    return [
+        _hit(text, label, m)
+        for label, m in _candidate_matches(text, content_kind)
+        if m is not None
+    ]
 
 
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _should_skip() -> bool:
     if not should_run("internal-config-leakage"):
-        sys.exit(0)
+        return True
     if os.environ.get("CONFIG_LEAKAGE_DISABLE") == "1":
         _audit(
             hook="internal-config-leakage",
             decision="bypass",
             bypass_env="CONFIG_LEAKAGE_DISABLE",
         )
-        return 0
-    if is_bypassed("internal-config-leakage"):
-        return 0
+        return True
+    return is_bypassed("internal-config-leakage")
 
-    payload = read_hook_payload("internal-config-leakage")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _findings(items: list[Item]) -> list[str]:
     findings: list[str] = []
     for source_label, path_or_field, content_kind, text in items:
         hits = find_leaks(text, content_kind)
         if hits:
-            findings.append(f"  - {path_or_field} ({source_label}):")
-            findings.extend(f"      {h}" for h in hits[:6])
+            findings = [
+                *findings,
+                f"  - {path_or_field} ({source_label}):",
+                *(f"      {h}" for h in hits[:MAX_HITS_PER_ITEM]),
+            ]
+    return findings
 
-    if not findings:
-        return 0
 
-    print(
-        "Blocked: internal Claude config or templated scaffolding leaking into "
-        'external output. Rule: ~/.claude/standards/code-review.md "No Internal '
-        'Config Leakage".\n'
-        + "\n".join(findings)
-        + "\n\nFix: rewrite the message so it reads as if a human engineer wrote it. "
-        "State the engineering reason directly. Strip Conventional Comments labels "
-        "(`issue (blocking):`, `nitpick:`, etc.), internal severity tiers (P0/P1/P2), "
-        "skill invocation flags (--backend/--frontend/--local), and references to "
-        "personal config paths.\n"
-        "Bypass (when editing the config itself): export CONFIG_LEAKAGE_DISABLE=1 "
-        "in a parent shell.",
-        file=sys.stderr,
-    )
+def _report(tool: str, findings: list[str]) -> None:
+    print(BLOCK_HEADER + "\n".join(findings) + BLOCK_FIX, file=sys.stderr)
     _audit(
         hook="internal-config-leakage",
         decision="block",
@@ -627,6 +401,22 @@ def main() -> int:
         reason="claude config or templated scaffolding leakage",
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
+
+
+def main() -> int:
+    if _should_skip():
+        return 0
+
+    payload = read_hook_payload("internal-config-leakage")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+
+    _report(tool, findings)
     return 2
 
 

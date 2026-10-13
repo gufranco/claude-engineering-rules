@@ -188,60 +188,70 @@ def defaults_of(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[ast.expr]:
     return [node for node in [*args.defaults, *args.kw_defaults] if node is not None]
 
 
+def _subscript_name(targets: list[ast.expr]) -> str:
+    names = [
+        target.value.id
+        for target in targets
+        if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name)
+    ]
+    return names[-1] if names else ""
+
+
+def _mutated_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        func = node.func
+        if func.attr in MUTATING_METHODS and isinstance(func.value, ast.Name):
+            return func.value.id
+        return ""
+    if isinstance(node, ast.Assign):
+        return _subscript_name(node.targets)
+    if isinstance(node, ast.AugAssign):
+        return _subscript_name([node.target])
+    if isinstance(node, ast.Delete):
+        return _subscript_name(node.targets)
+    return ""
+
+
+def _default_hits(
+    func: ast.FunctionDef | ast.AsyncFunctionDef, lines: list[str]
+) -> list[str]:
+    return [
+        f"L{default.lineno}: mutable default argument in `{func.name}`. "
+        "One instance is shared by every call"
+        for default in defaults_of(func)
+        if is_mutable_default(default)
+        and not line_or_prev_has_suppression(lines, default.lineno - 1)
+    ]
+
+
+def _parameter_hit(
+    func: ast.FunctionDef | ast.AsyncFunctionDef,
+    node: ast.AST,
+    params: dict[str, str],
+    lines: list[str],
+) -> str | None:
+    target_name = _mutated_name(node)
+    line_no = getattr(node, "lineno", 0)
+    if not target_name or target_name not in params:
+        return None
+    if line_or_prev_has_suppression(lines, max(0, line_no - 1)):
+        return None
+    annotated = params[target_name]
+    annotation_note = (
+        f", annotated `{annotated}`" if annotated in READ_ONLY_ANNOTATIONS else ""
+    )
+    return (
+        f"L{line_no}: parameter `{target_name}` is mutated inside "
+        f"`{func.name}`{annotation_note}"
+    )
+
+
 def find_in_function(
     func: ast.FunctionDef | ast.AsyncFunctionDef, lines: list[str]
 ) -> list[str]:
-    hits: list[str] = []
     params = parameters_of(func)
-
-    for default in defaults_of(func):
-        if not is_mutable_default(default):
-            continue
-        if line_or_prev_has_suppression(lines, default.lineno - 1):
-            continue
-        hits.append(
-            f"L{default.lineno}: mutable default argument in `{func.name}`. "
-            "One instance is shared by every call"
-        )
-
-    for node in ast.walk(func):
-        target_name = ""
-        line_no = getattr(node, "lineno", 0)
-
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            if node.func.attr in MUTATING_METHODS and isinstance(
-                node.func.value, ast.Name
-            ):
-                target_name = node.func.value.id
-        elif isinstance(node, (ast.Assign, ast.AugAssign)):
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            for target in targets:
-                if isinstance(target, ast.Subscript) and isinstance(
-                    target.value, ast.Name
-                ):
-                    target_name = target.value.id
-        elif isinstance(node, ast.Delete):
-            for target in node.targets:
-                if isinstance(target, ast.Subscript) and isinstance(
-                    target.value, ast.Name
-                ):
-                    target_name = target.value.id
-
-        if not target_name or target_name not in params:
-            continue
-        if line_or_prev_has_suppression(lines, max(0, line_no - 1)):
-            continue
-
-        annotated = params[target_name]
-        annotation_note = (
-            f", annotated `{annotated}`" if annotated in READ_ONLY_ANNOTATIONS else ""
-        )
-        hits.append(
-            f"L{line_no}: parameter `{target_name}` is mutated inside "
-            f"`{func.name}`{annotation_note}"
-        )
-
-    return hits
+    mutations = (_parameter_hit(func, node, params, lines) for node in ast.walk(func))
+    return [*_default_hits(func, lines), *(hit for hit in mutations if hit is not None)]
 
 
 def find(text: str) -> list[str]:
@@ -305,20 +315,16 @@ def render_findings(findings: list[tuple[str, list[str]]]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def _skip_run() -> bool:
     if not should_run(HOOK_ID):
-        return 0
+        return True
     if os.environ.get(ENV_DISABLE) == "1":
         _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_DISABLE)
-        return 0
-    if is_bypassed(HOOK_ID):
-        return 0
+        return True
+    return is_bypassed(HOOK_ID)
 
-    payload = read_hook_payload("python-mutation-guard")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
+def _collect_findings(tool: str, tool_input: dict) -> list[tuple[str, list[str]]]:
     findings: list[tuple[str, list[str]]] = []
     for path, text in collect(tool, tool_input):
         if is_skipped(path):
@@ -326,32 +332,31 @@ def main() -> int:
         hits = find(text)
         if hits:
             findings.append((path, hits))
+    return findings
 
-    if not findings:
-        return 0
 
-    detected = render_findings(findings)
-
-    if os.environ.get(ENV_ENFORCE) != "1":
-        emit_warning(
-            warn(
-                hook=HOOK_ID,
-                purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
-                next_action=(
-                    "Return a fresh value instead of mutating. Set "
-                    f"{ENV_ENFORCE}=1 to make this a blocking check."
-                ),
-            )
-        )
-        _audit(
+def _warn(tool: str, detected: str) -> int:
+    emit_warning(
+        warn(
             hook=HOOK_ID,
-            decision="warn",
-            tool=tool,
-            reason="python mutation",
-            command_excerpt=detected[:240],
+            purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
+            next_action=(
+                "Return a fresh value instead of mutating. Set "
+                f"{ENV_ENFORCE}=1 to make this a blocking check."
+            ),
         )
-        return 0
+    )
+    _audit(
+        hook=HOOK_ID,
+        decision="warn",
+        tool=tool,
+        reason="python mutation",
+        command_excerpt=detected[:240],
+    )
+    return 0
 
+
+def _block(tool: str, detected: str) -> int:
     print(
         block(
             hook=HOOK_ID,
@@ -374,6 +379,21 @@ def main() -> int:
         command_excerpt=detected[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    payload = read_hook_payload("python-mutation-guard")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    findings = _collect_findings(tool, tool_input)
+    if not findings:
+        return 0
+    detected = render_findings(findings)
+    if os.environ.get(ENV_ENFORCE) != "1":
+        return _warn(tool, detected)
+    return _block(tool, detected)
 
 
 if __name__ == "__main__":

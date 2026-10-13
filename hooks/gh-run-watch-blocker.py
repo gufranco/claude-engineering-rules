@@ -67,6 +67,23 @@ def emit_block(reason: str, command: str) -> None:
     sys.exit(2)
 
 
+def _block_reason(offender: str) -> str:
+    return (
+        f"BLOCKED: `{offender}` polls every 3 seconds and burns the GitHub "
+        f"API rate budget (~1200 requests/hour).\n"
+        f"Rule: ~/.claude/rules/git-workflow.md CI/CD Monitoring.\n"
+        f"Fix one of:\n"
+        f"  - One-shot snapshot: `gh run view <run-id>`\n"
+        f"  - One-shot failure logs: `gh run view <run-id> --log-failed`\n"
+        f"  - GitLab one-shot: `glab ci status -F json`\n"
+        f"  - Bounded poll loop with `sleep 30` between checks\n"
+        f"  - Wait for the run, then read it once.\n"
+        f"Before polling, check quota: `gh api rate_limit`. Quota under 500 "
+        f"means stop polling entirely.\n"
+        f"Bypass (one-off): set GH_RUN_WATCH_DISABLE=1 in parent shell."
+    )
+
+
 def main() -> int:
     if os.environ.get("GH_RUN_WATCH_DISABLE") == "1":
         return 0
@@ -86,21 +103,7 @@ def main() -> int:
     if offender is None:
         return 0
 
-    reason = (
-        f"BLOCKED: `{offender}` polls every 3 seconds and burns the GitHub "
-        f"API rate budget (~1200 requests/hour).\n"
-        f"Rule: ~/.claude/rules/git-workflow.md CI/CD Monitoring.\n"
-        f"Fix one of:\n"
-        f"  - One-shot snapshot: `gh run view <run-id>`\n"
-        f"  - One-shot failure logs: `gh run view <run-id> --log-failed`\n"
-        f"  - GitLab one-shot: `glab ci status -F json`\n"
-        f"  - Bounded poll loop with `sleep 30` between checks\n"
-        f"  - Wait for the run, then read it once.\n"
-        f"Before polling, check quota: `gh api rate_limit`. Quota under 500 "
-        f"means stop polling entirely.\n"
-        f"Bypass (one-off): set GH_RUN_WATCH_DISABLE=1 in parent shell."
-    )
-    emit_block(reason, command)
+    emit_block(_block_reason(offender), command)
     return 2
 
 

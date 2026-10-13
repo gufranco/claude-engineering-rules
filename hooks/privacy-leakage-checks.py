@@ -187,35 +187,25 @@ def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
     return "", ""
 
 
-def main() -> int:
+MAX_LISTED_FINDINGS = 10
+
+
+def _disabled() -> bool:
     if os.environ.get("PRIVACY_CHECKS_DISABLE") == "1":
-        return 0
-    if is_bypassed("privacy-leakage-checks"):
-        return 0
-    payload = read_hook_payload("privacy-leakage-checks")
+        return True
+    return is_bypassed("privacy-leakage-checks")
 
-    tool_name = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {})
-    if tool_name not in {"Write", "Edit", "MultiEdit"}:
-        return 0
 
-    path, content = extract_content(tool_name, tool_input)
-    if not path or not content:
-        return 0
-    if is_skipped(path):
-        return 0
+def _run_checks(content: str) -> list[tuple[int, str]]:
+    found = [finding for check in CHECKS for finding in check(content)]
+    return sorted(found, key=lambda f: f[0])
 
-    all_findings: list[tuple[int, str]] = []
-    for check in CHECKS:
-        all_findings.extend(check(content))
 
-    if not all_findings:
-        return 0
-
-    all_findings.sort(key=lambda f: f[0])
-    bullet_lines = "\n".join(f"  - line {ln}: {msg}" for ln, msg in all_findings[:10])
-    extra = "" if len(all_findings) <= 10 else f"\n  ... {len(all_findings) - 10} more"
-
+def _block(tool_name: str, path: str, all_findings: list[tuple[int, str]]) -> int:
+    listed = all_findings[:MAX_LISTED_FINDINGS]
+    bullet_lines = "\n".join(f"  - line {ln}: {msg}" for ln, msg in listed)
+    overflow = len(all_findings) - MAX_LISTED_FINDINGS
+    extra = "" if overflow <= 0 else f"\n  ... {overflow} more"
     _audit(
         hook="privacy-leakage-checks",
         decision="block",
@@ -224,7 +214,6 @@ def main() -> int:
         command_excerpt=path,
         bypass_env="PRIVACY_CHECKS_DISABLE",
     )
-
     print(
         "Blocked: privacy leakage patterns detected. Rule: ~/.claude/rules/privacy-defaults.md\n"
         f"\n{bullet_lines}{extra}\n\n"
@@ -233,6 +222,23 @@ def main() -> int:
         file=sys.stderr,
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+    payload = read_hook_payload("privacy-leakage-checks")
+    tool_name = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {})
+    if tool_name not in {"Write", "Edit", "MultiEdit"}:
+        return 0
+    path, content = extract_content(tool_name, tool_input)
+    if not path or not content or is_skipped(path):
+        return 0
+    all_findings = _run_checks(content)
+    if not all_findings:
+        return 0
+    return _block(tool_name, path, all_findings)
 
 
 if __name__ == "__main__":

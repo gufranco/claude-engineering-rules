@@ -89,7 +89,7 @@ def find_should_bullets(text: str) -> list[str]:
     return hits
 
 
-def main() -> int:
+def _skip_run() -> bool:
     if not should_run("normative-keyword-discipline"):
         sys.exit(0)
     if os.environ.get("NORMATIVE_KEYWORD_DISABLE") == "1":
@@ -98,33 +98,21 @@ def main() -> int:
             decision="bypass",
             bypass_env="NORMATIVE_KEYWORD_DISABLE",
         )
-        return 0
-    if is_bypassed("normative-keyword-discipline"):
-        return 0
+        return True
+    return is_bypassed("normative-keyword-discipline")
 
-    try:
-        payload = json.load(sys.stdin)
-    except ValueError as error:
-        sys.stderr.write(f"normative-keyword-discipline: unreadable payload: {error}\n")
-        return 0
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _findings(items: list[tuple[str, str]]) -> list[str]:
     findings: list[str] = []
     for label, text in items:
         hits = find_should_bullets(text)
         if hits:
             findings.append(f"  - {label}:")
             findings.extend(f"      {h[:120]}" for h in hits[:5])
+    return findings
 
-    if not findings:
-        return 0
 
+def _report(tool: str, findings: list[str]) -> int:
     severity_label = "Warning" if ADVISORY_MODE else "Blocked"
     message = (
         f"{severity_label}: bullet items starting with 'Should ' detected. "
@@ -145,6 +133,25 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240],
     )
     return 0 if ADVISORY_MODE else 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    try:
+        payload = json.load(sys.stdin)
+    except ValueError as error:
+        sys.stderr.write(f"normative-keyword-discipline: unreadable payload: {error}\n")
+        return 0
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    items = collect(tool, tool_input)
+    if not items:
+        return 0
+    findings = _findings(items)
+    if not findings:
+        return 0
+    return _report(tool, findings)
 
 
 if __name__ == "__main__":

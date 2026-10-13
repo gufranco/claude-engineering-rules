@@ -79,7 +79,18 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+BLOCK_MESSAGE_HEAD = (
+    "Blocked: Prisma raw SQL is banned in application code. "
+    'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
+)
+BLOCK_MESSAGE_TAIL = (
+    "\n\nFix: express the query using Prisma's typed methods "
+    "(findMany, updateMany, createMany, etc.). Raw SQL is only allowed in migration files.\n"
+    "Bypass (when there is genuinely no Prisma equivalent): set PRISMA_RAW_SQL_DISABLE=1."
+)
+
+
+def _skip_run() -> bool:
     if not should_run("prisma-raw-sql-blocker"):
         sys.exit(0)
     if os.environ.get("PRISMA_RAW_SQL_DISABLE") == "1":
@@ -88,19 +99,11 @@ def main() -> int:
             decision="bypass",
             bypass_env="PRISMA_RAW_SQL_DISABLE",
         )
-        return 0
-    if is_bypassed("prisma-raw-sql-blocker"):
-        return 0
+        return True
+    return is_bypassed("prisma-raw-sql-blocker")
 
-    payload = read_hook_payload("prisma-raw-sql-blocker")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
     for path, field, text in items:
         if is_skipped_path(path):
@@ -110,17 +113,12 @@ def main() -> int:
             findings.append(
                 f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
             )
+    return findings
 
-    if not findings:
-        return 0
 
+def _block(tool: str, findings: list[str]) -> int:
     print(
-        "Blocked: Prisma raw SQL is banned in application code. "
-        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
-        + "\n".join(findings)
-        + "\n\nFix: express the query using Prisma's typed methods "
-        "(findMany, updateMany, createMany, etc.). Raw SQL is only allowed in migration files.\n"
-        "Bypass (when there is genuinely no Prisma equivalent): set PRISMA_RAW_SQL_DISABLE=1.",
+        BLOCK_MESSAGE_HEAD + "\n".join(findings) + BLOCK_MESSAGE_TAIL,
         file=sys.stderr,
     )
     _audit(
@@ -131,6 +129,21 @@ def main() -> int:
         command_excerpt=" | ".join(findings)[:240] if findings else None,
     )
     return 2
+
+
+def main() -> int:
+    if _skip_run():
+        return 0
+    payload = read_hook_payload("prisma-raw-sql-blocker")
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+    items = collect(tool, tool_input)
+    if not items:
+        return 0
+    findings = _findings(items)
+    if not findings:
+        return 0
+    return _block(tool, findings)
 
 
 if __name__ == "__main__":

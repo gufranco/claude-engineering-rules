@@ -134,7 +134,7 @@ def block(message: str) -> None:
     sys.exit(2)
 
 
-def check_commit(command: str, cwd: Path) -> None:
+def _check_command_overrides(command: str) -> None:
     if ENV_AUTHOR_OVERRIDE.search(command):
         block(
             "BLOCKED: identity override env var on the command line "
@@ -163,9 +163,8 @@ def check_commit(command: str, cwd: Path) -> None:
             f"Command: {command}"
         )
 
-    if not is_inside_repo(cwd):
-        return
 
+def _check_resolved_identity(cwd: Path) -> None:
     if has_local_user_block(cwd):
         block(
             "BLOCKED: repository .git/config contains a local [user] block "
@@ -193,10 +192,14 @@ def check_commit(command: str, cwd: Path) -> None:
         )
 
 
-def check_push(command: str, cwd: Path) -> None:
+def check_commit(command: str, cwd: Path) -> None:
+    _check_command_overrides(command)
     if not is_inside_repo(cwd):
         return
+    _check_resolved_identity(cwd)
 
+
+def _unpushed_author_log(cwd: Path) -> str | None:
     code, log = run_git(
         cwd,
         "log",
@@ -204,33 +207,44 @@ def check_push(command: str, cwd: Path) -> None:
         "--format=<%ae>",
         "@{push}..HEAD",
     )
-    if code != 0:
-        code, log = run_git(cwd, "log", "-1", "--format=<%ae>", "HEAD")
-        if code != 0:
-            return
+    if code == 0:
+        return log
+    code, log = run_git(cwd, "log", "-1", "--format=<%ae>", "HEAD")
+    return log if code == 0 else None
+
+
+def _check_push_email(email: str) -> None:
+    if not email:
+        block(
+            "BLOCKED: a commit in @{push}..HEAD has an empty author "
+            "email.\n"
+            "Rewrite the affected commit with the correct identity "
+            "before pushing.\n"
+            "See: standards/git-identity.md"
+        )
+    if PLACEHOLDER_EMAIL.search(email):
+        block(
+            f"BLOCKED: a commit in @{{push}}..HEAD has a placeholder "
+            f"author email ({email}).\n"
+            "Rewrite the affected commit with the real identity "
+            "before pushing.\n"
+            "See: standards/git-identity.md"
+        )
+
+
+def check_push(command: str, cwd: Path) -> None:
+    if not is_inside_repo(cwd):
+        return
+    log = _unpushed_author_log(cwd)
+    if log is None:
+        return
     emails = [
         line.strip()[1:-1]
         for line in log.splitlines()
         if line.strip().startswith("<") and line.strip().endswith(">")
     ]
-
     for email in emails:
-        if not email:
-            block(
-                "BLOCKED: a commit in @{push}..HEAD has an empty author "
-                "email.\n"
-                "Rewrite the affected commit with the correct identity "
-                "before pushing.\n"
-                "See: standards/git-identity.md"
-            )
-        if PLACEHOLDER_EMAIL.search(email):
-            block(
-                f"BLOCKED: a commit in @{{push}}..HEAD has a placeholder "
-                f"author email ({email}).\n"
-                "Rewrite the affected commit with the real identity "
-                "before pushing.\n"
-                "See: standards/git-identity.md"
-            )
+        _check_push_email(email)
 
 
 def check_config_mutation(command: str) -> None:
@@ -267,20 +281,24 @@ def check_config_mutation(command: str) -> None:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> None:
+def _should_skip() -> bool:
     if not should_run("git-author-guard"):
-        sys.exit(0)
+        return True
     if is_bypassed("git-author-guard"):
-        sys.exit(0)
-    if os.environ.get("GIT_AUTHOR_GUARD_DISABLE") == "1":
-        sys.stderr.write(
-            "git-author-guard: bypass active (GIT_AUTHOR_GUARD_DISABLE=1)\n"
-        )
-        _audit(
-            hook="git-author-guard",
-            decision="bypass",
-            bypass_env="GIT_AUTHOR_GUARD_DISABLE",
-        )
+        return True
+    if os.environ.get("GIT_AUTHOR_GUARD_DISABLE") != "1":
+        return False
+    sys.stderr.write("git-author-guard: bypass active (GIT_AUTHOR_GUARD_DISABLE=1)\n")
+    _audit(
+        hook="git-author-guard",
+        decision="bypass",
+        bypass_env="GIT_AUTHOR_GUARD_DISABLE",
+    )
+    return True
+
+
+def main() -> None:
+    if _should_skip():
         sys.exit(0)
 
     data = read_hook_payload("git-author-guard")

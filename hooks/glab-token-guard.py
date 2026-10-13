@@ -39,10 +39,45 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
-def main():
+AUTH_LOGIN_MESSAGE = (
+    "BLOCKED: glab auth login changes the global config "
+    "and affects all terminals.\n"
+    "Use GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab <command> instead.\n"
+    "Check the git remote to determine the correct instance.\n"
+    "See: standards/multi-account-cli.md"
+)
+
+MISSING_TOKEN_MESSAGE = (
+    "BLOCKED: glab command without explicit GITLAB_TOKEN.\n"
+    "Multiple GitLab instances may be configured. The global config "
+    "can change from another terminal at any time.\n"
+    "Prefix with: GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab ...\n"
+    "Or export them: export GITLAB_TOKEN=<token> GITLAB_HOST=<host>\n"
+    "Check git remote get-url origin to determine the correct instance.\n"
+    "See: standards/multi-account-cli.md\n"
+)
+
+
+def _block(message: str, command: str) -> None:
+    print(message, file=sys.stderr)
+    _audit(
+        hook="glab-token-guard",
+        decision="block",
+        tool="Bash",
+        reason="glab CLI without explicit GITLAB_TOKEN",
+        command_excerpt=command[:240],
+    )
+    sys.exit(2)
+
+
+def _disabled() -> bool:
     if os.environ.get("GLAB_TOKEN_GUARD_DISABLE") == "1":
-        return 0
-    if is_bypassed("glab-token-guard"):
+        return True
+    return is_bypassed("glab-token-guard")
+
+
+def main() -> int:
+    if _disabled():
         return 0
     if not should_run("glab-token-guard"):
         sys.exit(0)
@@ -54,45 +89,13 @@ def main():
 
     calls = invocations(command, "glab")
     if any(_logs_in(call) for call in calls):
-        print(
-            "BLOCKED: glab auth login changes the global config "
-            "and affects all terminals.\n"
-            "Use GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab <command> instead.\n"
-            "Check the git remote to determine the correct instance.\n"
-            "See: standards/multi-account-cli.md",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="glab-token-guard",
-            decision="block",
-            tool="Bash",
-            reason="glab CLI without explicit GITLAB_TOKEN",
-            command_excerpt=command[:240],
-        )
-        sys.exit(2)
+        _block(AUTH_LOGIN_MESSAGE, command)
 
     if not any(_needs_token(call) for call in calls):
         sys.exit(0)
 
-    print(
-        "BLOCKED: glab command without explicit GITLAB_TOKEN.\n"
-        "Multiple GitLab instances may be configured. The global config "
-        "can change from another terminal at any time.\n"
-        "Prefix with: GITLAB_TOKEN=<token> GITLAB_HOST=<host> glab ...\n"
-        "Or export them: export GITLAB_TOKEN=<token> GITLAB_HOST=<host>\n"
-        "Check git remote get-url origin to determine the correct instance.\n"
-        "See: standards/multi-account-cli.md\n"
-        f"Command: {command}",
-        file=sys.stderr,
-    )
-    _audit(
-        hook="glab-token-guard",
-        decision="block",
-        tool="Bash",
-        reason="glab CLI without explicit GITLAB_TOKEN",
-        command_excerpt=command[:240],
-    )
-    sys.exit(2)
+    _block(f"{MISSING_TOKEN_MESSAGE}Command: {command}", command)
+    return 2
 
 
 if __name__ == "__main__":
