@@ -35,7 +35,9 @@ def test_blocks_handwritten_memory_file_when_vault_configured(
     assert_blocked(result, "generated from the vault")
 
 
-def test_allows_compiled_memory_file(tool_use, run_hook, vault):
+def test_a_write_carrying_the_compile_marker_is_still_blocked(
+    tool_use, run_hook, vault
+):
     # Arrange
     payload = tool_use("Write", {"file_path": MEMORY_FILE, "content": COMPILED})
 
@@ -43,7 +45,7 @@ def test_allows_compiled_memory_file(tool_use, run_hook, vault):
     result = run_hook(HOOK, payload, env=vault)
 
     # Assert
-    assert_allowed(result)
+    assert_blocked(result, "generated from the vault")
 
 
 def test_allows_memory_index(tool_use, run_hook, vault):
@@ -123,6 +125,62 @@ def test_bypass_env_disables_the_guard(tool_use, run_hook, vault):
 def test_ignores_unrelated_tools(tool_use, run_hook, vault):
     # Arrange
     payload = tool_use("Bash", {"command": f"cat {MEMORY_FILE}"})
+
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_allowed(result)
+
+
+GENERATED_INDEX = (
+    "# Memory\n\nEverything below this line is generated from the vault.\n\n"
+    "## Compiled from the vault\n\n- [A](a.md): a fact\n"
+)
+
+
+def _index(tmp_path):
+    memory = tmp_path / ".claude" / "projects" / "p" / "memory"
+    memory.mkdir(parents=True)
+    index = memory / "MEMORY.md"
+    index.write_text(GENERATED_INDEX, encoding="utf-8")
+    return index
+
+
+def test_an_edit_inside_the_compiled_index_block_is_blocked(
+    tool_use, run_hook, vault, tmp_path
+):
+    # Arrange
+    index = _index(tmp_path)
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": str(index),
+            "old_string": "- [A](a.md): a fact",
+            "new_string": "- [A](a.md): a fact\n- [B](b.md): hand added",
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_blocked(result, "generated from the vault")
+
+
+def test_an_edit_above_the_compiled_index_block_is_allowed(
+    tool_use, run_hook, vault, tmp_path
+):
+    # Arrange
+    index = _index(tmp_path)
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": str(index),
+            "old_string": "# Memory",
+            "new_string": "# Memory index",
+        },
+    )
 
     # Act
     result = run_hook(HOOK, payload, env=vault)

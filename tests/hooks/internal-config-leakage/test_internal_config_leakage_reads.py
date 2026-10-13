@@ -64,3 +64,36 @@ def test_a_publishing_call_after_a_harmless_prefix_is_scanned(
 
     # Assert
     assert_blocked(result)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        f"python3 - <<'EOF'\nprint('{LEAK_PATH}')\nEOF\ngit commit -m 'fix: tidy'",
+        f"python3 -m pytest {LEAK_PATH} && git commit -m 'fix: tidy'",
+    ],
+    ids=["heredoc-for-another-command", "dash-m-of-another-command"],
+)
+def test_text_for_another_command_is_not_the_commit_message(
+    tool_use, run_hook, command
+):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_a_commit_message_fed_by_heredoc_is_still_scanned(tool_use, run_hook):
+    # Arrange
+    command = f"git commit -F - <<'EOF'\nfix: see {LEAK_PATH}\nEOF"
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result)

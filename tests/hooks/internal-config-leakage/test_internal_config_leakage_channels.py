@@ -56,13 +56,24 @@ def test_an_empty_command_does_not_author_a_git_message(hook):
 
 def test_an_unterminated_heredoc_keeps_its_body(hook):
     # Arrange
-    cmd = "cat <<EOF\nline one\nline two"
+    cmd = "git commit -F - <<EOF\nline one\nline two"
 
     # Act
     bodies, remainder = hook.split_heredoc_bodies(cmd)
 
     # Assert
-    assert (bodies, remainder) == (["line one\nline two"], "cat <<EOF")
+    assert (bodies, remainder) == (["line one\nline two"], "git commit -F - <<EOF")
+
+
+def test_a_heredoc_for_another_command_is_not_a_message_body(hook):
+    # Arrange
+    cmd = "cat <<EOF\nline one\nEOF"
+
+    # Act
+    bodies, remainder = hook.split_heredoc_bodies(cmd)
+
+    # Assert
+    assert (bodies, remainder) == ([], "cat <<EOF")
 
 
 @pytest.mark.parametrize(

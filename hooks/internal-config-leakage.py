@@ -297,8 +297,16 @@ def is_git_message_bash(cmd: str) -> bool:
     return any(p.search(matched) for p in GIT_MESSAGE_BASH_PATTERNS)
 
 
+GIT_WORD = re.compile(r"\bgit\b")
+SEGMENT_OPERATOR = re.compile(r"&&|\|\||[;|]")
+
+
+def _feeds_git(line: str, position: int) -> bool:
+    segment = SEGMENT_OPERATOR.split(line[:position])[-1]
+    return GIT_WORD.search(segment) is not None
+
+
 def split_heredoc_bodies(cmd: str) -> tuple[list[str], str]:
-    """Split a command into its heredoc bodies and the command without them."""
     bodies: list[str] = []
     remainder: list[str] = []
     lines = cmd.split("\n")
@@ -306,46 +314,52 @@ def split_heredoc_bodies(cmd: str) -> tuple[list[str], str]:
     while i < len(lines):
         line = lines[i]
         remainder.append(line)
-        delimiters = [m.group(2) for m in HEREDOC_HEADER_PATTERN.finditer(line)]
+        openers = list(HEREDOC_HEADER_PATTERN.finditer(line))
         i += 1
-        for delimiter in delimiters:
+        for opener in openers:
             body: list[str] = []
-            while i < len(lines) and lines[i].strip() != delimiter:
+            while i < len(lines) and lines[i].strip() != opener.group(2):
                 body.append(lines[i])
                 i += 1
             if i < len(lines):
                 i += 1
-            bodies.append("\n".join(body))
+            if _feeds_git(line, opener.start()):
+                bodies.append("\n".join(body))
     return bodies, "\n".join(remainder)
 
 
-def extract_git_message_texts(cmd: str) -> list[str] | None:
-    """Return the message text a git commit, tag, or notes command publishes.
-
-    None means the message could not be isolated from the command, so the
-    caller must scan the whole command rather than assume it carries none.
-    """
-    bodies, without_heredocs = split_heredoc_bodies(cmd)
-    texts = [body for body in bodies if body.strip()]
-    try:
-        tokens = shlex.split(without_heredocs, comments=False, posix=True)
-    except Exception:
-        return None
-
-    saw_message_flag = False
+def _message_args(tokens: list[str]) -> tuple[bool, list[str]]:
+    saw_flag = False
+    texts: list[str] = []
     i = 0
     while i < len(tokens):
         tok = tokens[i]
         if tok.startswith("--message="):
-            saw_message_flag = True
+            saw_flag = True
             texts.append(tok[len("--message=") :])
         elif tok in GIT_MESSAGE_LONG_FLAGS or GIT_MESSAGE_SHORT_FLAG_PATTERN.match(tok):
-            saw_message_flag = True
+            saw_flag = True
             if i + 1 < len(tokens):
                 texts.append(tokens[i + 1])
                 i += 1
         i += 1
+    return saw_flag, texts
 
+
+def extract_git_message_texts(cmd: str) -> list[str] | None:
+    bodies, without_heredocs = split_heredoc_bodies(cmd)
+    texts = [body for body in bodies if body.strip()]
+    saw_message_flag = False
+    for segment in unquoted_segments(without_heredocs):
+        if not GIT_WORD.search(segment):
+            continue
+        try:
+            tokens = shlex.split(segment, comments=False, posix=True)
+        except ValueError:
+            return None
+        saw, found = _message_args(tokens)
+        saw_message_flag = saw_message_flag or saw
+        texts = [*texts, *found]
     if not texts and not saw_message_flag:
         return None
     return texts
