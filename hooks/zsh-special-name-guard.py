@@ -36,7 +36,8 @@ SPECIAL_NAMES = (
 NAMES = "|".join(SPECIAL_NAMES)
 BOUNDARY = r"(?:^|(?<=[\s;&|(){}]))"
 DECLARATION = rf"{BOUNDARY}(?:local|typeset|declare|export|readonly|integer|float)(?:\s+-\w+)*\s+(?:{NAMES})\b"
-ASSIGNMENT = rf"{BOUNDARY}(?:{NAMES})(?:\[[^\]]*\])?\+?="
+COMMAND_START = r"(?:^|(?<=[;&|(){}]))\s*(?:(?:then|do|else|elif|!)\s+)?(?:\w+=\S*\s+)*"
+ASSIGNMENT = rf"{COMMAND_START}(?:{NAMES})(?:\[[^\]]*\])?\+?="
 LOOP_VARIABLE = rf"{BOUNDARY}(?:for|select)\s+(?:{NAMES})\s+in\b"
 READ_TARGET = rf"{BOUNDARY}read\b[^;&|\n]*\s(?:{NAMES})(?=$|[\s;&|])"
 SPECIAL_NAME_USE = re.compile(

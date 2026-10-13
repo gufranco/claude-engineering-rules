@@ -283,7 +283,11 @@ def find_companion_test(path: Path) -> Path | None:
         td = parent / testdir_name
         if td.is_dir():
             for cand in td.iterdir():
-                if cand.is_file() and any(v in cand.name for v in variants):
+                if (
+                    cand.is_file()
+                    and is_test_file(cand)
+                    and names_the_source(cand, variants)
+                ):
                     return cand
 
     for cursor in walk_up(parent, limit=6):

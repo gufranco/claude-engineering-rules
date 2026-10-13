@@ -14,6 +14,7 @@ import shlex
 
 OPERATOR_CHARS = ";&|"
 DATA_SINKS = frozenset({"cat", "tee", "git", "gh", "glab"})
+CODE_INTERPRETERS = frozenset({"python", "python3", "node", "ruby", "perl"})
 HEREDOC_START = re.compile(r"(?<!<)<<(?!<)-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?")
 QUOTED_HEREDOC_START = re.compile(
     r"(?<!<)<<(?!<)-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1"
