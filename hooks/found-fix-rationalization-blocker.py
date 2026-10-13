@@ -166,6 +166,8 @@ SKIPPED_PATH_SEGMENTS = (
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
+from _lib.shell_segments import mask_literal_text  # noqa: E402
+from _lib.published_text import is_scratch_path, published_text  # noqa: E402
 
 
 def is_skipped_path(path: str) -> bool:
@@ -188,29 +190,31 @@ PUBLISHING_BASH_PATTERNS = (
 
 
 def bash_command_publishes(command: str) -> bool:
-    matched = strip_git_global_options(command)
+    matched = strip_git_global_options(mask_literal_text(command))
     return any(pat.search(matched) for pat in PUBLISHING_BASH_PATTERNS)
 
 
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     fp = tool_input.get("file_path", "") or ""
-    if tool in ("Write", "Edit", "MultiEdit") and is_skipped_path(fp):
+    if tool in ("Write", "Edit", "MultiEdit") and (
+        is_skipped_path(fp) or is_scratch_path(fp)
+    ):
         return out
     if tool == "Write":
         c = tool_input.get("content", "")
         if isinstance(c, str):
-            out.append(("content", c))
+            out.append(("content", published_text(fp, c)))
     elif tool == "Edit":
         c = tool_input.get("new_string", "")
         if isinstance(c, str):
-            out.append(("new_string", c))
+            out.append(("new_string", published_text(fp, c)))
     elif tool == "MultiEdit":
         for i, edit in enumerate(tool_input.get("edits", []) or []):
             if isinstance(edit, dict):
                 c = edit.get("new_string", "")
                 if isinstance(c, str):
-                    out.append((f"edits[{i}].new_string", c))
+                    out.append((f"edits[{i}].new_string", published_text(fp, c)))
     elif tool == "Bash":
         c = tool_input.get("command", "")
         if isinstance(c, str) and bash_command_publishes(c):
