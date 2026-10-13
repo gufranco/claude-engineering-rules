@@ -46,7 +46,9 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/yaml_shell.py \
                    hooks/test-aaa-markers.py \
                    hooks/comment-blocker.py \
-                   hooks/_lib/cli_invocations.py
+                   hooks/_lib/cli_invocations.py \
+                   hooks/_lib/shell_segments.py \
+                   hooks/_lib/published_text.py
 
 # yamllint and zizmor ship in requirements-dev.txt, so they resolve through
 # the venv like the rest of the python toolchain. bats, shellcheck, and
