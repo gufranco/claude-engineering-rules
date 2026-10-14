@@ -3,7 +3,7 @@
 Conventional commits, a full local quality gate before every commit, one push per task, and CI watched until green with zero annotations.
 
 - Commit format `<type>(<scope>): <subject>`. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
-- Subject: imperative, lowercase start, no period, max 50 characters including type and scope. Drop the scope when it does not fit.
+- Subject: imperative, lowercase start, no period, max 50 characters including type and scope. Drop the scope when it does not fit. Measure the length in a call before `git commit`, never by eye, and pass the subject to `-m` as a literal.
 - Body wraps at 72 and explains what and why. Footer: `BREAKING CHANGE:`, `Fixes #123`. Optional trailers `Rejected: <alt> | <reason>`, `Constraint:`, `Risk:`.
 - Never add AI attribution or `Co-authored-by` lines for any AI. Never write phase-N markers, plan or spec paths, or process narration.
 - Branches: `<type>/<ticket-id>-<description>`.
@@ -38,4 +38,4 @@ Enforced by: [`hooks/review-state-guard.py`](../hooks/review-state-guard.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-14, recurrence 5 in one session: subjects judged by eye overran the 50-character limit and each cost a blocked commit, so the core now requires measuring the length first.
