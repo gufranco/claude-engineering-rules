@@ -20,7 +20,7 @@ MYPY       := $(call tool,mypy)
 
 # Must match the paths the CI Lint job passes to ruff. When the two drift,
 # a lint failure only ever surfaces after a push.
-LINT_PATHS := hooks scripts tools .github/scripts tests
+LINT_PATHS := hooks scripts tools .github/scripts tests analyzers
 
 # The modules held to mypy --strict. The rest of the tree does not pass yet, so
 # widening this list is a deliberate change that comes with the fixes. CI calls
@@ -33,6 +33,12 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/python_mutation_detectors.py \
                    hooks/_lib/dedup_detectors.py \
                    hooks/_lib/idempotency_detectors.py \
+                   hooks/_lib/analyzer_runs.py \
+                   hooks/_lib/analyzer_parsers.py \
+                   hooks/_lib/analyzer_batch.py \
+                   hooks/_lib/changed_lines.py \
+                   hooks/_lib/source_scope.py \
+                   hooks/immutability-analyzers.py \
                    hooks/python-mutation-guard.py \
                    hooks/polyglot-immutability-guard.py \
                    hooks/idempotency-guard.py \
@@ -80,7 +86,7 @@ PYTEST_N   ?= auto
 
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
-.PHONY: help install test test-fast test-cov test-bats test-smoke benchmark test-all \
+.PHONY: help install test test-fast test-cov test-bats test-analyzers test-smoke benchmark test-all \
         lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
@@ -92,6 +98,7 @@ help:
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
 	@echo "  test-cov     Run pytest with branch coverage, enforce 95%"
 	@echo "  test-bats    Run bats-core suites for the shell scripts"
+	@echo "  test-analyzers  Prove every analyzer catalog rule against the real tools, local only"
 	@echo "  test-smoke   Run the hook smoke suite CI runs, tests/test-hooks.sh"
 	@echo "  benchmark    Hold every hook under 500 ms, as CI does"
 	@echo "  test-all     test-cov + test-bats + test-smoke + benchmark + lint + typecheck + validate"
@@ -117,6 +124,9 @@ test-cov:
 	$(PYTEST) -n $(PYTEST_N) $(PYTEST_OPTS)
 	if find . -maxdepth 1 -name '.coverage.*' -print -quit | grep -q .; then $(COVERAGE) combine; fi
 	$(COVERAGE) report
+
+test-analyzers:
+	$(PYTEST) --no-cov -p no:randomly analyzers/tests
 
 test-bats:
 ifndef BATS

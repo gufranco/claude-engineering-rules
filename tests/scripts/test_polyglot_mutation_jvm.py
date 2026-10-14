@@ -210,3 +210,27 @@ def test_kotlin_local_with_inferred_mutable_type_is_not_public_api():
 
     # Assert
     assert hits == ()
+
+
+def test_kotlin_var_never_reassigned_blocks_in_a_whole_file():
+    # Arrange
+    text = "fun area(): Int {\n    var width = 2\n    var height = 3\n    height++\n    return width * height\n}\n"
+
+    # Act
+    hits = _run("A.kt", text)
+
+    # Assert
+    assert [(hit.line, hit.blocking, "`width`" in hit.message) for hit in hits] == [
+        (2, True, True)
+    ]
+
+
+def test_kotlin_var_in_a_fragment_is_not_judged():
+    # Arrange
+    edit = Edit(path="/repo/A.kt", text="    var width = 2\n", full_file=False)
+
+    # Act
+    hits = JVM_FINDERS[".kt"](edit)
+
+    # Assert
+    assert hits == ()

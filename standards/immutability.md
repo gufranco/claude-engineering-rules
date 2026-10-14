@@ -36,7 +36,7 @@ Every value starts readonly. Mutability is a decision with a reason, written whe
 |----------|-------------------|------------------|-------------|-----------------------|
 | TypeScript | `readonly` fields, `readonly T[]`, `ReadonlyMap`, `as const` | `{ ...obj, k: v }`, `arr.with(i, v)`, `arr.toSorted()` | Compiler, plus [`../hooks/mutation-method-blocker.py`](../hooks/mutation-method-blocker.py) | `as any`, `Object.freeze` used as a substitute for types |
 | Python | `@dataclass(frozen=True, slots=True)`, `Final`, `tuple`, `Mapping` parameters | `dataclasses.replace(obj, k=v)`, `(*items, new)` | `mypy --strict` or `pyright`, plus [`../hooks/python-mutation-guard.py`](../hooks/python-mutation-guard.py) | `object.__setattr__` on a frozen instance |
-| Go | Unexported fields with value receivers, returning copies | `slices.Clone`, `maps.Clone`, struct copy | [`../hooks/polyglot-immutability-guard.py`](../hooks/polyglot-immutability-guard.py) for package-level state; `golangci-lint` with `reassign` and `gocritic` | Returning a slice or map that aliases internal state |
+| Go | Unexported fields with value receivers, returning copies | `slices.Clone`, `maps.Clone`, struct copy | [`../hooks/polyglot-immutability-guard.py`](../hooks/polyglot-immutability-guard.py) for package-level state and writes into slice or map parameters; `golangci-lint` with `reassign`, `gocritic` and `revive` | Returning a slice or map that aliases internal state |
 | Rust | Bindings are immutable unless `mut`, shared references are readonly | `Clone` then mutate the clone, or a struct update expression | The compiler; the polyglot hook blocks `static mut` | `unsafe`, `static mut`, interior mutability without a stated reason |
 | C and C++ | `static const` and `constexpr` tables, `const` pointers and parameters | Copy into a local, return by value | The polyglot hook for file-scope tables; `clang-tidy` `misc-const-correctness` for the rest | A writable table that never changes, which also costs RAM on embedded targets |
 | Java | `record`, `final` fields, `List.copyOf` and friends | Canonical constructor, or a `with`-style builder | The polyglot hook for static state; Error Prone `@Immutable`, PMD | Returning the backing collection from a getter |
@@ -152,11 +152,71 @@ Immutability costs allocations. The cost matters in a narrow set of places and i
 | [`../hooks/mutation-method-blocker.py`](../hooks/mutation-method-blocker.py) | TypeScript and JavaScript: array, collection, property, prototype, destructuring and loop-target writes, plus framework state rules |
 | [`../hooks/python-mutation-guard.py`](../hooks/python-mutation-guard.py) | Python, parsed with `ast`: mutable defaults, parameter mutation, `object.__setattr__` outside init hooks, `global`, module-level and class-level containers, and dataclasses without `frozen=True` as advisory |
 | [`../hooks/polyglot-immutability-guard.py`](../hooks/polyglot-immutability-guard.py) | Go, Rust, C, C++, Swift, Java, Kotlin, C#, Dart, Ruby, Lua |
+| [`../hooks/immutability-analyzers.py`](../hooks/immutability-analyzers.py) | End of turn: clang-tidy, golangci-lint, ruff, pyright, rubocop, luacheck, detekt, PMD, swiftlint and the Dart analyzer on every edited file; see Analyzer Catalog |
 | Type checkers | `tsc` with the strict flag set, `mypy --strict` or `pyright`, the Rust, Swift, Kotlin and Java compilers |
 | Linters | `@typescript-eslint/prefer-readonly-parameter-types`, `ruff` B006 and RUF012, `golangci-lint`, `clang-tidy`, detekt, RuboCop, luacheck, the Dart analyzer |
 | Review | [`../checklists/checklist.md`](../checklists/checklist.md) categories 1 and 5 |
 
 Checks that need type information stay with the real tool: aliasing returns in Go, needless `&mut` in Rust, const correctness in C and C++, `ImmutableField` in Java, and IDE0044 in C#. A text hook cannot see the types those rules depend on.
+
+## Analyzer Catalog
+
+Decided 2026-10-14. Literal 100% detection is impossible from source alone: writes through aliased pointers, reflection, FFI and native code escape every tool. The guarantee is narrower and checkable: every rule below is enforced, and each one is proven by a fixture that makes the real tool report it.
+
+Three layers enforce the directives:
+
+1. Write-time hooks block the change before it lands; see Enforcement.
+2. [`../hooks/immutability-analyzers.py`](../hooks/immutability-analyzers.py) records every in-scope file edited in a turn and, at the end of the turn, runs that language's analyzer with the configuration in [`../analyzers/`](../analyzers/). The configuration is passed explicitly, so a project's own lint config cannot drop a directive.
+3. Findings on lines changed against `HEAD` block the end of the turn; findings on untouched lines are listed as advisory, so a legacy file never blocks an unrelated edit. A missing or crashing analyzer blocks. When identical findings survive one block, they are shown to the user instead of blocking again.
+
+| Language | Tool | Rule | Severity |
+|----------|------|------|----------|
+| C, C++ | `clang-tidy` | `cppcoreguidelines-pro-type-const-cast` | Blocks |
+| C, C++ | `clang-tidy` | `misc-const-correctness` | Blocks |
+| C, C++ | `clang-tidy` | `readability-make-member-function-const` | Blocks |
+| C, C++ | `clang-tidy` | `readability-non-const-parameter` | Blocks |
+| C, C++ | `clang-tidy` | `cppcoreguidelines-avoid-non-const-global-variables` | Warns |
+| Go | `golangci-lint` | `gocritic` | Blocks |
+| Go | `golangci-lint` | `reassign` | Blocks |
+| Go | `golangci-lint` | `revive` | Blocks |
+| Go | `golangci-lint` | `gochecknoglobals` | Warns |
+| Python | `ruff` | `B006` | Blocks |
+| Python | `ruff` | `B008` | Blocks |
+| Python | `ruff` | `B020` | Blocks |
+| Python | `ruff` | `B909` | Blocks |
+| Python | `ruff` | `PLW0602` | Blocks |
+| Python | `ruff` | `PLW0603` | Blocks |
+| Python | `ruff` | `PLW0642` | Blocks |
+| Python | `ruff` | `PLW2901` | Blocks |
+| Python | `ruff` | `RUF008` | Blocks |
+| Python | `ruff` | `RUF009` | Blocks |
+| Python | `ruff` | `RUF012` | Blocks |
+| Python | `pyright` | `reportConstantRedefinition` | Blocks |
+| Ruby | `rubocop` | `Style/ClassVars` | Blocks |
+| Ruby | `rubocop` | `Style/FrozenStringLiteralComment` | Blocks |
+| Ruby | `rubocop` | `Style/GlobalVars` | Blocks |
+| Ruby | `rubocop` | `Style/MutableConstant` | Blocks |
+| Lua | `luacheck` | `W121` | Blocks |
+| Lua | `luacheck` | `W122` | Blocks |
+| Lua | `luacheck` | `W142` | Blocks |
+| Lua | `luacheck` | `W111` | Warns |
+| Lua | `luacheck` | `W112` | Warns |
+| Kotlin | `detekt` | `DataClassShouldBeImmutable` | Blocks |
+| Java | `pmd` | `ArrayIsStoredDirectly` | Blocks |
+| Java | `pmd` | `AssignmentToNonFinalStatic` | Blocks |
+| Java | `pmd` | `AvoidReassigningParameters` | Blocks |
+| Java | `pmd` | `ImmutableField` | Blocks |
+| Java | `pmd` | `MethodReturnsInternalArray` | Blocks |
+| Java | `pmd` | `MutableStaticState` | Blocks |
+| Swift | `swiftlint` | `shared_static_var` | Warns |
+| Swift | `swiftlint` | `top_level_var` | Warns |
+| Dart | `dart` | `PREFER_FINAL_FIELDS` | Blocks |
+| Dart | `dart` | `PREFER_FINAL_IN_FOR_EACH` | Blocks |
+| Dart | `dart` | `PREFER_FINAL_LOCALS` | Blocks |
+
+Editor and command-line runs apply the same rules through user-level configs that the dotfiles installer links into `~/.clang-tidy`, `~/.golangci.yml`, `~/.config/ruff/ruff.toml`, `~/.config/rubocop/config.yml`, `~/.config/luacheck/.luacheckrc` and `~/analysis_options.yaml`; where the tool supports an include, those files include the configs in [`analyzers/`](../analyzers/) rather than copying them.
+
+The catalog is held to the code by [`tests/scripts/test_analyzer_catalog.py`](../tests/scripts/test_analyzer_catalog.py), and every row is proven against the real tool by `make test-analyzers`, which runs locally because CI runners do not carry these analyzers. Rules that need type information the tools lack outside a full build, such as detekt `VarCouldBeVal` and Dart `must_be_immutable`, are covered by the write-time hooks instead.
 
 ## Related Standards
 

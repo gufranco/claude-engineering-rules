@@ -161,3 +161,64 @@ def test_go_reading_a_shared_map_is_not_a_write():
 
     # Assert
     assert hits == ()
+
+
+def test_go_write_into_a_slice_parameter_blocks():
+    # Arrange
+    text = 'func fill(xs []int, counts map[string]int) {\n\txs[0] = 1\n\tcounts["a"]++\n\tdelete(counts, "b")\n}\n'
+
+    # Act
+    hits = _run("a.go", text)
+
+    # Assert
+    assert [(hit.line, hit.blocking) for hit in hits] == [
+        (2, True),
+        (3, True),
+        (4, True),
+    ]
+
+
+def test_go_field_write_through_a_pointer_parameter_is_advisory():
+    # Arrange
+    text = "func reset(s *State, n int) {\n\ts.count = n\n\tn = 0\n}\n"
+
+    # Act
+    hits = _run("a.go", text)
+
+    # Assert
+    assert [(hit.line, hit.blocking) for hit in hits] == [(2, False)]
+
+
+def test_go_receiver_and_local_writes_are_allowed():
+    # Arrange
+    text = "func (s *State) bump(xs []int) []int {\n\ts.count++\n\tout := slices.Clone(xs)\n\tout[0] = 1\n\treturn out\n}\n"
+
+    # Act
+    hits = _run("a.go", text)
+
+    # Assert
+    assert hits == ()
+
+
+def test_swift_var_never_reassigned_blocks_in_a_whole_file():
+    # Arrange
+    text = "func area() -> Int {\n    var width = 2\n    var height = 3\n    height += 1\n    return width * height\n}\n"
+
+    # Act
+    hits = _run("a.swift", text)
+
+    # Assert
+    assert [(hit.line, hit.blocking, "`width`" in hit.message) for hit in hits] == [
+        (2, True, True)
+    ]
+
+
+def test_swift_fragment_is_not_judged_for_let():
+    # Arrange
+    edit = Edit(path="/repo/a.swift", text="    var width = 2\n", full_file=False)
+
+    # Act
+    hits = NATIVE_FINDERS[".swift"](edit)
+
+    # Assert
+    assert hits == ()

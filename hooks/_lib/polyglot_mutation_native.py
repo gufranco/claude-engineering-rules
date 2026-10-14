@@ -8,10 +8,12 @@ from .polyglot_mutation_common import (
     CommentStyle,
     LineRule,
     NamedRule,
+    body_line_ranges,
     mask_source,
     scan_named,
     scan_rules,
     suppressed_filter,
+    var_could_be_constant,
 )
 
 Finder = Callable[[Edit], tuple[Finding, ...]]
@@ -183,6 +185,98 @@ def _go_append_hits(masked: Sequence[str], shared: frozenset[str]) -> Iterator[F
             )
 
 
+GO_FUNC = re.compile(
+    r"^func\s*(?:\([^)]*\)\s*)?\w+(?:\[[^\]]*\])?\s*\((?P<params>[^)]*)\)"
+)
+GO_FUNC_HEADER = re.compile(r"^func\b")
+SWIFT_FUNC_HEADER = re.compile(r"\bfunc\s+\w+")
+
+
+def go_parameters(signature: str) -> dict[str, str]:
+    typed: dict[str, str] = {}
+    current = ""
+    for token in reversed(
+        [part.strip() for part in signature.split(",") if part.strip()]
+    ):
+        parts = token.split(None, 1)
+        current = parts[1] if len(parts) == 2 else current
+        typed = {**typed, parts[0]: current}
+    return typed
+
+
+def _go_collection_write(line: str, name: str) -> bool:
+    escaped = re.escape(name)
+    return bool(
+        re.search(
+            rf"(?<![\w.]){escaped}\s*\[[^\]]*\]\s*(?:(?:[-+*/|&^%]|<<|>>)?=(?!=)|\+\+|--)",
+            line,
+        )
+        or re.search(rf"\b(?:delete|clear)\(\s*{escaped}\b", line)
+    )
+
+
+def _go_field_write(line: str, name: str) -> bool:
+    escaped = re.escape(name)
+    return bool(
+        re.search(
+            rf"(?<![\w.]){escaped}(?:\.\w+)+\s*(?:(?:[-+*/|&^%]|<<|>>)?=(?!=)|\+\+|--)",
+            line,
+        )
+    )
+
+
+def _go_rebound(lines: Sequence[str], name: str) -> bool:
+    return any(re.match(rf"^\s*{re.escape(name)}\s*=(?!=)", line) for line in lines)
+
+
+def _go_parameter_verdict(line: str, name: str, kind: str) -> Finding | None:
+    collection = kind.startswith(("[]", "map["))
+    if collection and _go_collection_write(line, name):
+        return Finding(
+            line=0,
+            message=f"parameter `{name}` is mutated; copy it with `slices.Clone` or `maps.Clone` and return the copy",
+        )
+    if kind.startswith("*") and _go_field_write(line, name):
+        return Finding(
+            line=0,
+            message=f"parameter `{name}` is written through its pointer",
+            blocking=False,
+        )
+    return None
+
+
+def _go_parameter_hits(masked: Sequence[str]) -> Iterator[Finding]:
+    for start, end in body_line_ranges(masked, GO_FUNC_HEADER):
+        signature = GO_FUNC.match(masked[start])
+        params = go_parameters(signature.group("params")) if signature else {}
+        body = masked[start + 1 : end + 1]
+        live = {
+            name: kind for name, kind in params.items() if not _go_rebound(body, name)
+        }
+        for offset, line in enumerate(body):
+            for name, kind in live.items():
+                verdict = _go_parameter_verdict(line, name, kind)
+                if verdict is not None:
+                    yield Finding(
+                        line=start + offset + 2,
+                        message=verdict.message,
+                        blocking=verdict.blocking,
+                    )
+
+
+def _swift_constant_hits(edit: Edit) -> Iterator[Finding]:
+    if not edit.full_file:
+        return
+    masked = mask_source(edit.text, CommentStyle.C)
+    for index, name in var_could_be_constant(
+        masked, SWIFT_FUNC_HEADER, member_calls_mutate=True
+    ):
+        yield Finding(
+            line=index + 1,
+            message=f"`{name}` is never reassigned; declare it with `let`",
+        )
+
+
 def find_go(edit: Edit) -> tuple[Finding, ...]:
     masked = mask_source(edit.text, CommentStyle.C)
     imports = go_imports(edit.text.splitlines())
@@ -191,6 +285,7 @@ def find_go(edit: Edit) -> tuple[Finding, ...]:
         *_go_package_hits(masked, imports),
         *_go_shared_hits(masked),
         *_go_append_hits(masked, shared),
+        *_go_parameter_hits(masked),
     ]
     return suppressed_filter(edit.text, sorted(hits, key=lambda hit: hit.line))
 
@@ -204,7 +299,11 @@ def find_c(edit: Edit) -> tuple[Finding, ...]:
 
 
 def find_swift(edit: Edit) -> tuple[Finding, ...]:
-    return scan_rules(edit.text, CommentStyle.C, SWIFT_RULES)
+    hits = [
+        *scan_rules(edit.text, CommentStyle.C, SWIFT_RULES),
+        *_swift_constant_hits(edit),
+    ]
+    return suppressed_filter(edit.text, sorted(hits, key=lambda hit: hit.line))
 
 
 NATIVE_FINDERS: dict[str, Finder] = {

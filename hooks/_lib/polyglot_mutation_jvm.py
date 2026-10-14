@@ -11,6 +11,7 @@ from .polyglot_mutation_common import (
     mask_source,
     scan_named,
     suppressed_filter,
+    var_could_be_constant,
 )
 
 Finder = Callable[[Edit], tuple[Finding, ...]]
@@ -50,6 +51,7 @@ KOTLIN_DECLARATION = re.compile(
     r"^(?P<indent>\s{0,4})(?:(?:public|open|override|abstract|suspend|inline|operator)\s+)*(?:fun|val|var)\b"
 )
 KOTLIN_HIDDEN = re.compile(r"\b(?:private|internal|protected)\b")
+KOTLIN_FUNC_HEADER = re.compile(r"\bfun\s+")
 KOTLIN_DATA_CLASS = re.compile(r"\bdata\s+class\s+(?P<name>\w+)[^(]*\(")
 
 CSHARP_RULES = (
@@ -131,11 +133,24 @@ def _kotlin_signature_hits(masked: Sequence[str]) -> Iterator[Finding]:
             )
 
 
+def _kotlin_constant_hits(edit: Edit, masked: Sequence[str]) -> Iterator[Finding]:
+    if not edit.full_file:
+        return
+    for index, name in var_could_be_constant(
+        masked, KOTLIN_FUNC_HEADER, member_calls_mutate=False
+    ):
+        yield Finding(
+            line=index + 1,
+            message=f"`{name}` is never reassigned; declare it with `val`",
+        )
+
+
 def find_kotlin(edit: Edit) -> tuple[Finding, ...]:
     masked = mask_source(edit.text, CommentStyle.C)
     hits = [
         *_kotlin_data_class_hits("\n".join(masked)),
         *_kotlin_signature_hits(masked),
+        *_kotlin_constant_hits(edit, masked),
     ]
     return suppressed_filter(edit.text, sorted(hits, key=lambda hit: hit.line))
 
