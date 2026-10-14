@@ -22,14 +22,14 @@ def _load_maintenance():
     return maintenance
 
 
+from _lib.mutation_detectors_binary import detect_uint8_base64_setter  # noqa: E402
 from _lib.mutation_detectors_methods import (  # noqa: E402
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
     detect_array_push,
     detect_array_sort,
-    detect_for_await_push_pattern,
     detect_map_set_collection_mutations,
-    detect_uint8_base64_setter,
 )
+from _lib.mutation_detectors_runtime import detect_for_await_push_pattern  # noqa: E402
 
 CORPUS = REPO_ROOT / "tests" / "corpus" / "mutation-method-blocker" / "stage4_features"
 

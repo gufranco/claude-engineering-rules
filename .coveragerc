@@ -36,11 +36,6 @@ omit =
     # entry points (`main()` argument parsing, file-not-found branches).
     */.github/scripts/audit-writing-quality.py
     */.github/scripts/fix-markdown-links.py
-    # Mutation detector modules at 91-92% coverage. Tests exist for each
-    # detector; remaining branches are defensive guards. Re-introduce once
-    # the full branch matrix is covered.
-    */hooks/_lib/mutation_detectors_assignments.py
-    */hooks/_lib/mutation_detectors_methods.py
     */hooks/_lib/markdown_link_detector.py
     # Hooks at 73-89% coverage. Tests exist; remaining branches are
     # error-path handlers or env-specific code that pytest cannot reach

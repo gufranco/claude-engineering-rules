@@ -119,11 +119,7 @@ def _anchored(inner: str) -> bool:
 
 def test_no_zero_width_unbounded_repetition() -> None:
     # Arrange
-    pattern_files = [
-        ROOT / "hooks" / "_lib" / "mutation_detectors_methods.py",
-        ROOT / "hooks" / "_lib" / "mutation_detectors_assignments.py",
-        ROOT / "hooks" / "_lib" / "mutation_detectors_core.py",
-    ]
+    pattern_files = sorted((ROOT / "hooks" / "_lib").glob("mutation_detectors_*.py"))
 
     # Act
     offenders = [

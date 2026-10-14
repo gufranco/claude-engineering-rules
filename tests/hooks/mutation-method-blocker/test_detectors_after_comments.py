@@ -8,13 +8,15 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from _lib.mutation_detectors_methods import (  # noqa: E402
+from _lib.mutation_detectors_binary import (  # noqa: E402
     detect_atomics_mutations,
     detect_dataview_setters,
-    detect_finalization_registry,
-    detect_proxy_mutating_traps,
     detect_uint8array_set_buffer_offset,
     detect_wasm_memory_grow,
+)
+from _lib.mutation_detectors_runtime import (  # noqa: E402
+    detect_finalization_registry,
+    detect_proxy_mutating_traps,
     detect_weakref_then_mutate,
 )
 
