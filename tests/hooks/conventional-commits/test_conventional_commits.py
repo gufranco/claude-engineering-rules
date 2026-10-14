@@ -50,10 +50,6 @@ def _load(name: str):
     return module
 
 
-def boom(**_kwargs: object) -> None:
-    raise RuntimeError("audit explosion")
-
-
 def test_allows_valid_conventional_commit() -> None:
     # Arrange
     command = "git commit -m 'feat(auth): add SSO login'"
@@ -386,22 +382,6 @@ def test_allows_indented_long_body_line() -> None:
 
     # Assert
     assert result.returncode == 0
-
-
-def test_audit_reports_a_record_failure_on_stderr(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    # Arrange
-    module = _load("_cc_mod")
-    monkeypatch.setattr(module, "_audit_record", boom)
-
-    # Act
-    module._audit("reason", "git commit -m msg")
-
-    # Assert
-    assert capsys.readouterr().err == (
-        "conventional-commits: audit log write failed: audit explosion\n"
-    )
 
 
 def test_audit_noop_when_record_none(

@@ -5,7 +5,6 @@ import os
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path("/Users/gufranco/.claude").resolve()
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 try:
@@ -33,12 +32,19 @@ def is_markdown_path(path: str) -> bool:
     return any(path.lower().endswith(ext) for ext in MARKDOWN_EXTENSIONS)
 
 
-def relative_to_repo(path: str) -> str | None:
+def find_repo_root(path: str) -> Path | None:
     try:
-        p = Path(path).resolve()
-        return str(p.relative_to(REPO_ROOT))
-    except (ValueError, OSError):
+        resolved = Path(path).resolve()
+    except OSError:
         return None
+    for candidate in resolved.parents:
+        if (candidate / ".git").exists():
+            return candidate
+    return None
+
+
+def relative_to_repo(path: str, repo_root: Path) -> str:
+    return str(Path(path).resolve().relative_to(repo_root))
 
 
 def derive_post_text(tool: str, tool_input: dict, pre_text: str) -> str:
@@ -91,9 +97,10 @@ def main() -> None:
     if not file_path or not is_markdown_path(file_path):
         sys.exit(0)
 
-    rel = relative_to_repo(file_path)
-    if rel is None:
+    repo_root = find_repo_root(file_path)
+    if repo_root is None:
         sys.exit(0)
+    rel = relative_to_repo(file_path, repo_root)
 
     if is_advisory_file(rel):
         sys.exit(0)
@@ -108,11 +115,11 @@ def main() -> None:
 
     post_text = derive_post_text(tool, tool_input, pre_text)
 
-    tracked = tracked_paths(REPO_ROOT)
+    tracked = tracked_paths(repo_root)
     pre_findings = (
-        detect_findings(pre_text, rel, REPO_ROOT, tracked=tracked) if pre_text else []
+        detect_findings(pre_text, rel, repo_root, tracked=tracked) if pre_text else []
     )
-    post_findings = detect_findings(post_text, rel, REPO_ROOT, tracked=tracked)
+    post_findings = detect_findings(post_text, rel, repo_root, tracked=tracked)
 
     pre_tokens = {f.token for f in pre_findings}
     new_findings = [f for f in post_findings if f.token not in pre_tokens]
