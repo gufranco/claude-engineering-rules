@@ -181,9 +181,7 @@
     }
   },
   "dedup-store-guard": {
-    "env": {
-      "DEDUP_STORE_ENFORCE": "1"
-    },
+    "env": {},
     "payload": {
       "hook_event_name": "PreToolUse",
       "tool_input": {
@@ -420,9 +418,7 @@
     }
   },
   "python-mutation-guard": {
-    "env": {
-      "PYTHON_MUTATION_ENFORCE": "1"
-    },
+    "env": {},
     "payload": {
       "hook_event_name": "PreToolUse",
       "tool_input": {

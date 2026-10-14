@@ -28,6 +28,15 @@ LINT_PATHS := hooks scripts tools .github/scripts tests
 TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/markdown-link-discipline.py \
                    $(sort $(wildcard hooks/_lib/mutation_*.py)) \
+                   $(sort $(wildcard hooks/_lib/polyglot_mutation_*.py)) \
+                   hooks/_lib/guard_runner.py \
+                   hooks/_lib/python_mutation_detectors.py \
+                   hooks/_lib/dedup_detectors.py \
+                   hooks/_lib/idempotency_detectors.py \
+                   hooks/python-mutation-guard.py \
+                   hooks/polyglot-immutability-guard.py \
+                   hooks/idempotency-guard.py \
+                   hooks/dedup-store-guard.py \
                    hooks/_lib/suppression.py \
                    hooks/_lib/audit_log.py \
                    hooks/_lib/project_workspace.py \
