@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 import pytest
 
@@ -12,6 +12,7 @@ pytest.register_assert_rewrite("_helpers.hook_assertions")
 from _helpers.cov_env import (  # noqa: E402
     AUDIT_DISABLE_VAR,
     BYPASS_STATE_VAR,
+    EMPTY_BYPASS_REGISTRY,
     apply_coverage_env,
 )
 from _helpers.hook_assertions import HookResult  # noqa: E402
@@ -62,6 +63,14 @@ def _run_hook(
         check=False,
     )
     return HookResult(proc.returncode, proc.stdout, proc.stderr)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolate_ambient_hook_state() -> Iterator[None]:
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv(AUDIT_DISABLE_VAR, "1")
+        patch.setenv(BYPASS_STATE_VAR, EMPTY_BYPASS_REGISTRY)
+        yield
 
 
 @pytest.fixture

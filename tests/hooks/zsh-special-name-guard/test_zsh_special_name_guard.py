@@ -131,7 +131,11 @@ def test_blocks_unreadable_input_with_a_message(hooks_dir):
         input="not json",
         capture_output=True,
         text=True,
-        env={"SHELL": "/bin/zsh", "PATH": "/usr/bin:/bin"},
+        env={
+            "SHELL": "/bin/zsh",
+            "PATH": "/usr/bin:/bin",
+            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+        },
         check=False,
         timeout=30,
     )
