@@ -216,45 +216,37 @@ def _audit(command: str, offenders: list[tuple[str, str]]) -> None:
     )
 
 
-def main() -> int:
-    if os.environ.get(ENV_DISABLE) == "1":
-        return 0
-    if not should_run(HOOK_NAME):
-        return 0
-    if is_bypassed(HOOK_NAME):
-        return 0
+def _candidates(command: str) -> list[str]:
+    staged = (
+        _staged_files()
+        if COMMIT_PATTERN.search(strip_git_global_options(command))
+        else []
+    )
+    return [*staged, *_explicit_add_paths(command)]
 
-    command = _read_command()
-    candidates: list[str] = []
-    if COMMIT_PATTERN.search(strip_git_global_options(command)):
-        candidates.extend(_staged_files())
-    candidates.extend(_explicit_add_paths(command))
-    if not candidates:
-        return 0
 
+def _offenders(candidates: list[str]) -> list[tuple[str, str]]:
     root = _repo_root()
     digests, sizes = _manifest_claims(root)
+    classified = [
+        (name, _classify(name, root, digests, sizes))
+        for name in dict.fromkeys(candidates)
+    ]
+    return [(name, reason) for name, reason in classified if reason is not None]
 
-    offenders: list[tuple[str, str]] = []
-    seen: set[str] = set()
-    for name in candidates:
-        if name in seen:
-            continue
-        seen.add(name)
-        reason = _classify(name, root, digests, sizes)
-        if reason is not None:
-            offenders.append((name, reason))
-    if not offenders:
-        return 0
 
-    detected = "\n".join(
+def _detected(offenders: list[tuple[str, str]]) -> str:
+    return "\n".join(
         [f"{len(offenders)} user-supplied artifact(s) about to enter git history:"]
         + [f"  {name}: {reason}" for name, reason in offenders]
     )
-    message = _block(
+
+
+def _block_message(offenders: list[tuple[str, str]]) -> str:
+    return _block(
         hook=HOOK_NAME,
         rule_anchor="standards/artifact-identity.md (Never Become a Distribution Channel)",
-        detected=detected,
+        detected=_detected(offenders),
         why=(
             "The project requires this file but may not distribute it. The user "
             "supplies their own copy. Committing it republishes someone else's "
@@ -277,7 +269,23 @@ def main() -> int:
         env_var=ENV_DISABLE,
         safety="further artifacts in the same session will not be blocked.",
     )
-    sys.stderr.write(message)
+
+
+def main() -> int:
+    if os.environ.get(ENV_DISABLE) == "1":
+        return 0
+    if not should_run(HOOK_NAME):
+        return 0
+    if is_bypassed(HOOK_NAME):
+        return 0
+    command = _read_command()
+    candidates = _candidates(command)
+    if not candidates:
+        return 0
+    offenders = _offenders(candidates)
+    if not offenders:
+        return 0
+    sys.stderr.write(_block_message(offenders))
     _audit(command, offenders)
     return 2
 

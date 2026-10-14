@@ -151,11 +151,7 @@ def _shortening_hint(subject: str) -> str:
     return f"  Dropping the scope fits: {unscoped}\n"
 
 
-def _validate(message: str, command: str) -> int:
-    lines = message.splitlines()
-    if not lines:
-        return 0
-    subject = lines[0]
+def _subject_violation(subject: str) -> tuple[str, str] | None:
     if not SUBJECT_RE.match(subject):
         body = (
             "BLOCKED: Commit message does not follow conventional commit format.\n\n"
@@ -164,7 +160,7 @@ def _validate(message: str, command: str) -> int:
             "  Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert\n"
             "  Example: feat(auth): add SSO login with Google provider\n"
         )
-        return _block(body, "subject not conventional format", command)
+        return body, "subject not conventional format"
     if len(subject) > 50:
         body = (
             f"BLOCKED: Commit subject line is {len(subject)} characters (max 50).\n\n"
@@ -174,39 +170,72 @@ def _validate(message: str, command: str) -> int:
             + _shortening_hint(subject)
             + "  Move the detail you cut into the commit body.\n"
         )
-        return _block(body, "subject too long", command)
+        return body, "subject too long"
+    return None
+
+
+def _is_exempt_body_line(line: str) -> bool:
+    return (
+        not line.strip()
+        or SKIP_BODY_LINE_RE.match(line) is not None
+        or INDENTED_OR_URL_RE.match(line) is not None
+    )
+
+
+def _body_violation(lines: list[str]) -> tuple[str, str] | None:
     for idx, line in enumerate(lines[1:], start=2):
-        if not line.strip():
+        if _is_exempt_body_line(line) or len(line) <= 72:
             continue
-        if SKIP_BODY_LINE_RE.match(line):
-            continue
-        if INDENTED_OR_URL_RE.match(line):
-            continue
-        if len(line) > 72:
-            body = (
-                f"BLOCKED: Commit body line {idx} is {len(line)} characters (max 72).\n\n"
-                f"  Got: {line}\n\n"
-                "  Wrap body lines at 72 characters.\n"
-            )
-            return _block(body, "body line too long", command)
+        body = (
+            f"BLOCKED: Commit body line {idx} is {len(line)} characters (max 72).\n\n"
+            f"  Got: {line}\n\n"
+            "  Wrap body lines at 72 characters.\n"
+        )
+        return body, "body line too long"
+    return None
+
+
+def _trailer_line_violation(line: str) -> tuple[str, str] | None:
+    if not TRAILER_VALID_RE.match(line):
+        body = (
+            "BLOCKED: Malformed decision trailer.\n\n"
+            f"  Got: {line}\n\n"
+            "  Expected: <Trailer>: <description>\n"
+        )
+        return body, "malformed decision trailer"
+    if line.startswith("Rejected:") and not REJECTED_PIPE_RE.match(line):
+        body = (
+            "BLOCKED: Rejected trailer must include reason after pipe.\n\n"
+            f"  Got: {line}\n\n"
+            "  Expected: Rejected: <alternative> | <reason>\n"
+        )
+        return body, "Rejected trailer missing pipe"
+    return None
+
+
+def _trailer_violation(lines: list[str]) -> tuple[str, str] | None:
     for line in lines:
         if not TRAILER_PREFIX_RE.match(line):
             continue
-        if not TRAILER_VALID_RE.match(line):
-            body = (
-                "BLOCKED: Malformed decision trailer.\n\n"
-                f"  Got: {line}\n\n"
-                "  Expected: <Trailer>: <description>\n"
-            )
-            return _block(body, "malformed decision trailer", command)
-        if line.startswith("Rejected:") and not REJECTED_PIPE_RE.match(line):
-            body = (
-                "BLOCKED: Rejected trailer must include reason after pipe.\n\n"
-                f"  Got: {line}\n\n"
-                "  Expected: Rejected: <alternative> | <reason>\n"
-            )
-            return _block(body, "Rejected trailer missing pipe", command)
-    return 0
+        violation = _trailer_line_violation(line)
+        if violation is not None:
+            return violation
+    return None
+
+
+def _validate(message: str, command: str) -> int:
+    lines = message.splitlines()
+    if not lines:
+        return 0
+    violation = (
+        _subject_violation(lines[0])
+        or _body_violation(lines)
+        or _trailer_violation(lines)
+    )
+    if violation is None:
+        return 0
+    body, reason = violation
+    return _block(body, reason, command)
 
 
 def main() -> int:
