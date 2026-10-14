@@ -19,6 +19,14 @@
 - Max 50 characters, counting the type and scope prefix
 - The scope is optional and is usually what overruns the limit. `fix(barcode):` spends 13 of the 50 before the sentence starts, so drop the scope whenever the subject already names the area. Write the subject first, then add a scope only if it still fits
 - Budget roughly 35 characters for the phrase itself. A subject that needs more than that is carrying detail the body should hold
+- Measure before committing, never by eye. Count the subject in its own call, then pass the same text to `git commit` as a literal. The `conventional-commits.py` hook reads the `-m` argument as written, so a subject passed through a variable such as `-m "$subject"` is rejected as malformed:
+
+  ```bash
+  s='fix(f5): name failed cache stores'; echo "${#s}"
+  git commit -m 'fix(f5): name failed cache stores' -m 'Body text.'
+  ```
+
+  Added 2026-10-14 after one session lost five commit attempts to the length check: each subject was judged short by eye.
 
 **Body:** Wrap at 72 characters. Explain WHAT and WHY, not HOW.
 
