@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -155,3 +156,24 @@ def test_every_omit_entry_matches_from_any_working_directory() -> None:
 
     # Assert
     assert [entry for entry in omit if not entry.startswith("*/")] == []
+
+
+def test_a_subprocess_built_from_raw_environ_inherits_the_isolation() -> None:
+    # Arrange
+    probe = (
+        "import os; print(os.environ.get('CLAUDE_HOOK_AUDIT_DISABLE'),"
+        " os.environ.get('CLAUDE_BYPASS_STATE'))"
+    )
+
+    # Act
+    proc = subprocess.run(
+        [sys.executable, "-c", probe],
+        env={**os.environ},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+    )
+
+    # Assert
+    assert proc.stdout.split() == ["1", os.devnull]
