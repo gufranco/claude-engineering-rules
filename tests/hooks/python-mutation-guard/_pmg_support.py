@@ -3,9 +3,6 @@ from __future__ import annotations
 HOOK = "python-mutation-guard"
 
 
-ENFORCE = {"PYTHON_MUTATION_ENFORCE": "1"}
-
-
 PARAM_MUTATION = (
     "def add_tag(items: list[str], tag: str) -> list[str]:\n"
     "    items.append(tag)\n"

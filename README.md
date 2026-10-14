@@ -15,7 +15,7 @@
 
 </div>
 
-**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **86** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **88** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-86 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+88 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -194,7 +194,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-86 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+88 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -272,9 +272,11 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | Forces atomic Redis sequences via Lua/MULTI, and flags locks taken without a TTL. A read and a write count as a race only on the same receiver, and never on a `Map`. No allow marker; only third-party tool directives are honored. |
 | [`check-then-act-blocker.py`](hooks/check-then-act-blocker.py) | PreToolUse Write/Edit/MultiEdit | Flags a read that decides a write followed by that write. Warns by default through `additionalContext`, which the model reads; blocks under `CHECK_THEN_ACT_ENFORCE=1` |
 | [`transaction-scope-guard.py`](hooks/transaction-scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Flags network I/O and timers inside a transaction, and array-mode transactions carrying dependent writes |
-| [`dedup-store-guard.py`](hooks/dedup-store-guard.py) | PreToolUse Write/Edit/MultiEdit | Flags in-memory deduplication ledgers that empty on restart |
+| [`dedup-store-guard.py`](hooks/dedup-store-guard.py) | PreToolUse Write/Edit/MultiEdit | Blocks in-memory deduplication ledgers that empty on restart, in TypeScript, JavaScript, Python, Go, Java, Kotlin, C#, Ruby, Dart, Rust, Elixir and Clojure |
 | [`concurrent-fanout-guard.py`](hooks/concurrent-fanout-guard.py) | PreToolUse Write/Edit/MultiEdit | Flags unbounded `Promise.all` over caller-supplied input |
-| [`python-mutation-guard.py`](hooks/python-mutation-guard.py) | PreToolUse Write/Edit/MultiEdit | AST-based Python immutability: mutable defaults and parameter mutation |
+| [`python-mutation-guard.py`](hooks/python-mutation-guard.py) | PreToolUse Write/Edit/MultiEdit | AST-based Python immutability: blocks mutable defaults, collection mutation through parameters, `global`, module and class level containers, and `object.__setattr__` escapes; warns on parameter attribute writes and non-frozen dataclasses |
+| [`polyglot-immutability-guard.py`](hooks/polyglot-immutability-guard.py) | PreToolUse Write/Edit/MultiEdit | Shared mutable state in Go, Rust, C, C++, Swift, Java, Kotlin, C#, Dart, Ruby and Lua |
+| [`idempotency-guard.py`](hooks/idempotency-guard.py) | PreToolUse Write/Edit/MultiEdit | Operations unsafe to repeat: bare `mkdir` and `ln -s`, unguarded rc-file appends, Terraform `timestamp()` and `uuid()`, a disabled Kafka idempotent producer |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated, shown to the user as a `systemMessage` |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
@@ -510,7 +512,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 86 runtime hooks
+  hooks/                 88 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   tests/                 Hook smoke tests and fixture trees
