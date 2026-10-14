@@ -152,6 +152,20 @@ def test_command_too_old_true_and_warns_when_minor_too_low(
     assert "rtk 0.20.0 is too old (need >= 0.23.0)" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("version", ["0.23.0", "1.0.0", "1.5.2"])
+def test_command_too_old_false_at_or_above_the_minimum(
+    hook: ModuleType, rtk_on_path: StubFactory, version: str
+) -> None:
+    # Arrange
+    rtk_on_path(version=version)
+
+    # Act
+    result = hook._command_too_old()
+
+    # Assert
+    assert result is False
+
+
 def test_command_too_old_false_when_version_unparseable(
     hook: ModuleType, rtk_on_path: StubFactory
 ) -> None:

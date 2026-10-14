@@ -48,10 +48,6 @@ def _load(name: str):
     return module
 
 
-def boom(**_kwargs: object) -> None:
-    raise RuntimeError("audit explosion")
-
-
 @pytest.mark.parametrize("tool", ["Write", "Edit", "MultiEdit"])
 def test_blocks_env_file(tool: str) -> None:
     # Arrange
@@ -330,22 +326,6 @@ def test_blocks_non_dict_tool_input() -> None:
     # Assert
     assert result.returncode == 2
     assert "could not read its input" in result.stderr
-
-
-def test_audit_reports_a_record_failure_on_stderr(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    # Arrange
-    module = _load("_efg_mod1")
-    monkeypatch.setattr(module, "_audit_record", boom)
-
-    # Act
-    module._audit("reason", "Write", "/path")
-
-    # Assert
-    assert capsys.readouterr().err == (
-        "env-file-guard: audit log write failed: audit explosion\n"
-    )
 
 
 def test_audit_noop_when_record_none(

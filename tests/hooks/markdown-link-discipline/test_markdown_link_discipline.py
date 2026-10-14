@@ -44,7 +44,6 @@ def hook(
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    monkeypatch.setattr(module, "REPO_ROOT", scratch_repo_root.resolve())
     monkeypatch.setattr("_lib.bypass.STATE_PATH", tmp_path / "bypass-state.json")
     return module
 
@@ -201,6 +200,20 @@ def test_allows_an_edit_that_keeps_a_pre_existing_bare_reference(
     assert (code, stderr) == (0, "")
 
 
+def test_allows_a_bare_reference_in_a_file_outside_any_repository(
+    tool_use, run_in_repo: Runner, tmp_path: Path
+):
+    # Arrange
+    target = tmp_path / "loose" / "notes.md"
+    payload = tool_use("Write", {"file_path": str(target), "content": BARE_MENTION})
+
+    # Act
+    code, stderr = run_in_repo(payload)
+
+    # Assert
+    assert (code, stderr) == (0, "")
+
+
 def test_invalid_json_stdin_blocks():
     # Arrange
     stdin = "not valid json"
@@ -219,3 +232,40 @@ def test_invalid_json_stdin_blocks():
     # Assert
     assert proc.returncode == 2
     assert "could not read its input" in proc.stderr
+
+
+def test_blocks_a_bare_reference_in_a_repository_outside_the_config_repo(
+    tool_use, scratch_repo_root: Path
+):
+    # Arrange
+    tracked = scratch_repo_root / TRACKED_TARGET
+    tracked.parent.mkdir(parents=True)
+    tracked.write_text("# Security\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(scratch_repo_root), "add", TRACKED_TARGET],
+        check=True,
+        timeout=TIMEOUT_S,
+    )
+    target = _doc(scratch_repo_root, "outside.md", "")
+    payload = tool_use("Write", {"file_path": str(target), "content": BARE_MENTION})
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key != "MARKDOWN_LINKS_DISABLE"
+    }
+    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+
+    # Act
+    proc = subprocess.run(
+        [sys.executable, str(HOOK_PATH)],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env(env),
+        timeout=TIMEOUT_S,
+        check=False,
+    )
+
+    # Assert
+    assert proc.returncode == 2
+    assert "The change to docs/outside.md introduces 1 new bare" in proc.stderr

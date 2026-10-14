@@ -206,17 +206,14 @@ def _classify(
 def _audit(command: str, offenders: list[tuple[str, str]]) -> None:
     if _audit_record is None:
         return
-    try:
-        _audit_record(
-            hook=HOOK_NAME,
-            decision="block",
-            decision_class="block",
-            reason=f"{len(offenders)} user-supplied artifact(s) about to enter git",
-            tool="Bash",
-            command_excerpt=command[:200],
-        )
-    except Exception as error:  # noqa: BLE001
-        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
+    _audit_record(
+        hook=HOOK_NAME,
+        decision="block",
+        decision_class="block",
+        reason=f"{len(offenders)} user-supplied artifact(s) about to enter git",
+        tool="Bash",
+        command_excerpt=command[:200],
+    )
 
 
 def main() -> int:

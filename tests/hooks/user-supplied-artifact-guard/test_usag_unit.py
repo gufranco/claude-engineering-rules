@@ -10,7 +10,6 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
-from _helpers.raising import raising
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK_PATH = ROOT / "hooks" / "user-supplied-artifact-guard.py"
@@ -519,24 +518,6 @@ def test_audit_noop_when_record_unavailable(
 
     # Assert
     assert capsys.readouterr().err == ""
-
-
-def test_audit_reports_a_record_exception_on_stderr(
-    hook: ModuleType,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    # Arrange
-    boom = raising(RuntimeError("audit explosion"))
-    monkeypatch.setattr(hook, "_audit_record", boom)
-
-    # Act
-    hook._audit("git commit -m x", [("game.gba", "reason")])
-
-    # Assert
-    assert capsys.readouterr().err == (
-        f"{HOOK_NAME}: audit log write failed: audit explosion\n"
-    )
 
 
 @pytest.fixture()
