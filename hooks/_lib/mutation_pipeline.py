@@ -40,6 +40,11 @@ from .mutation_detectors_builtins import (
     detect_reflect_mutations,
 )
 from .mutation_detectors_core import Match
+from .mutation_detectors_indirect import (
+    detect_destructuring_member_target,
+    detect_for_member_target,
+    detect_indirect_mutator_call,
+)
 from .mutation_detectors_methods import (
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
     detect_array_push,
@@ -138,6 +143,9 @@ DETECTORS: tuple[tuple[DetectorFn, Gate], ...] = (
     (detect_object_define_setprototype, Gate.ALWAYS),
     (detect_reflect_mutations, Gate.ALWAYS),
     (detect_delete_operator, Gate.ALWAYS),
+    (detect_indirect_mutator_call, Gate.ALWAYS),
+    (detect_destructuring_member_target, Gate.ALWAYS),
+    (detect_for_member_target, Gate.ALWAYS),
     (detect_global_assignment, Gate.ALWAYS),
     (detect_param_reassignment, Gate.ALWAYS),
     (detect_private_field_assignment, Gate.ALWAYS),
