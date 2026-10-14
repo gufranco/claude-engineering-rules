@@ -21,7 +21,7 @@ RTK_TIMEOUT_SECONDS = 5
 VERSION_RE = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 
 
-def _read_payload() -> dict:
+def _read_payload() -> dict[str, object]:
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):
@@ -52,7 +52,7 @@ def _command_too_old() -> bool:
     return False
 
 
-def _emit_allow(updated_input: dict) -> None:
+def _emit_allow(updated_input: dict[str, object]) -> None:
     sys.stdout.write(
         json.dumps(
             {
@@ -67,7 +67,7 @@ def _emit_allow(updated_input: dict) -> None:
     )
 
 
-def _emit_ask(updated_input: dict) -> None:
+def _emit_ask(updated_input: dict[str, object]) -> None:
     sys.stdout.write(
         json.dumps(
             {
@@ -80,51 +80,66 @@ def _emit_ask(updated_input: dict) -> None:
     )
 
 
-def main() -> int:
-    if os.environ.get(ENV_DISABLE) == "1":
-        return 0
-    if is_bypassed(HOOK_NAME):
-        return 0
+def _rtk_unavailable() -> bool:
     if shutil.which("rtk") is None:
         sys.stderr.write(
             "[rtk] WARNING: rtk is not installed or not in PATH. "
             "Hook cannot rewrite commands.\n"
         )
-        return 0
-    if _command_too_old():
-        return 0
+        return True
+    return _command_too_old()
+
+
+def _command_input() -> tuple[dict[str, object], str] | None:
     payload = _read_payload()
     tool_input = payload.get("tool_input") or {}
     if not isinstance(tool_input, dict):
-        return 0
+        return None
     command = tool_input.get("command", "")
     if not isinstance(command, str) or not command:
-        return 0
+        return None
+    return tool_input, command
+
+
+def _rewrite(command: str) -> subprocess.CompletedProcess[str] | None:
     try:
-        result = subprocess.run(
+        return subprocess.run(
             ["rtk", "rewrite", command],
             capture_output=True,
             text=True,
             timeout=RTK_TIMEOUT_SECONDS,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-        return 0
+        return None
+
+
+def _emit_result(
+    tool_input: dict[str, object],
+    command: str,
+    result: subprocess.CompletedProcess[str],
+) -> None:
     rewritten = result.stdout
-    exit_code = result.returncode
-    if exit_code == 0:
-        if rewritten == command:
-            return 0
-        updated = dict(tool_input)
-        updated["command"] = rewritten
+    updated = {**tool_input, "command": rewritten}
+    if result.returncode == 0 and rewritten != command:
         _emit_allow(updated)
-        return 0
-    if exit_code in (1, 2):
-        return 0
-    if exit_code == 3:
-        updated = dict(tool_input)
-        updated["command"] = rewritten
+    elif result.returncode == 3:
         _emit_ask(updated)
+
+
+def main() -> int:
+    if os.environ.get(ENV_DISABLE) == "1":
         return 0
+    if is_bypassed(HOOK_NAME):
+        return 0
+    if _rtk_unavailable():
+        return 0
+    command_input = _command_input()
+    if command_input is None:
+        return 0
+    tool_input, command = command_input
+    result = _rewrite(command)
+    if result is not None:
+        _emit_result(tool_input, command, result)
     return 0
 
 

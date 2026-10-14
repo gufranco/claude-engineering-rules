@@ -126,22 +126,12 @@ def _audit(command: str) -> None:
     )
 
 
-def main() -> int:
-    if os.environ.get(ENV_DISABLE) == "1":
-        return 0
-    if is_bypassed(HOOK_NAME):
-        return 0
-    command, cwd = _read_command()
-    if not COMMIT_PATTERN.search(strip_git_global_options(command)):
-        return 0
-    offenders = _offenders(command, cwd)
-    if not offenders:
-        return 0
+def _block_message(offenders: list[tuple[str, int]]) -> str:
     detected = "\n".join(
         [f"{MAX_SIZE_KB}KB threshold exceeded by {len(offenders)} staged file(s):"]
         + [f"  {name} ({size_kb / 1024:.1f} MB)" for name, size_kb in offenders]
     )
-    message = _block(
+    return _block(
         hook=HOOK_NAME,
         rule_anchor="standards/git-workflow.md (Ignored Artifacts)",
         detected=detected,
@@ -160,7 +150,20 @@ def main() -> int:
         env_var=ENV_DISABLE,
         safety="future large files in the same session will not be blocked.",
     )
-    sys.stderr.write(message)
+
+
+def main() -> int:
+    if os.environ.get(ENV_DISABLE) == "1":
+        return 0
+    if is_bypassed(HOOK_NAME):
+        return 0
+    command, cwd = _read_command()
+    if not COMMIT_PATTERN.search(strip_git_global_options(command)):
+        return 0
+    offenders = _offenders(command, cwd)
+    if not offenders:
+        return 0
+    sys.stderr.write(_block_message(offenders))
     _audit(command)
     return 2
 

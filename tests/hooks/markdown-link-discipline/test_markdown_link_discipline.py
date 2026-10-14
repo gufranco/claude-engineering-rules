@@ -234,26 +234,34 @@ def test_invalid_json_stdin_blocks():
     assert "could not read its input" in proc.stderr
 
 
-def test_blocks_a_bare_reference_in_a_repository_outside_the_config_repo(
-    tool_use, scratch_repo_root: Path
-):
-    # Arrange
-    tracked = scratch_repo_root / TRACKED_TARGET
+def _track_security_target(root: Path) -> None:
+    tracked = root / TRACKED_TARGET
     tracked.parent.mkdir(parents=True)
     tracked.write_text("# Security\n", encoding="utf-8")
     subprocess.run(
-        ["git", "-C", str(scratch_repo_root), "add", TRACKED_TARGET],
+        ["git", "-C", str(root), "add", TRACKED_TARGET],
         check=True,
         timeout=TIMEOUT_S,
     )
-    target = _doc(scratch_repo_root, "outside.md", "")
-    payload = tool_use("Write", {"file_path": str(target), "content": BARE_MENTION})
-    env = {
+
+
+def _enabled_hook_env() -> dict[str, str]:
+    inherited = {
         key: value
         for key, value in os.environ.items()
         if key != "MARKDOWN_LINKS_DISABLE"
     }
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
+    return {**inherited, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
+
+
+def test_blocks_a_bare_reference_in_a_repository_outside_the_config_repo(
+    tool_use, scratch_repo_root: Path
+):
+    # Arrange
+    _track_security_target(scratch_repo_root)
+    target = _doc(scratch_repo_root, "outside.md", "")
+    payload = tool_use("Write", {"file_path": str(target), "content": BARE_MENTION})
+    env = _enabled_hook_env()
 
     # Act
     proc = subprocess.run(
