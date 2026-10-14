@@ -207,6 +207,58 @@ def _script_names(cwd: Path, ref: str) -> set[str] | None:
     return {str(key) for key in scripts}
 
 
+def _diff_sections(diff: str) -> list[list[str]]:
+    lines = diff.splitlines()
+    starts = [i for i, line in enumerate(lines) if line.startswith("diff --git ")]
+    return [lines[a:b] for a, b in zip(starts, [*starts[1:], len(lines)])]
+
+
+def _deleted_file_removals(diff: str) -> list[tuple[str, list[str]]]:
+    return [
+        (
+            section[0].rsplit(" b/", 1)[-1],
+            [
+                line[1:]
+                for line in section
+                if line.startswith("-") and not line.startswith("---")
+            ],
+        )
+        for section in _diff_sections(diff)
+        if any(line.startswith("deleted file mode") for line in section[1:4])
+    ]
+
+
+def _deletion_only_names(
+    code_diff: str, patterns: tuple[re.Pattern[str], ...], removed: list[str]
+) -> dict[str, frozenset[str]]:
+    deleted = _deleted_file_removals(code_diff)
+    deleted_lines = {line for _, lines in deleted for line in lines}
+    elsewhere = _matches(
+        patterns, [line for line in removed if line not in deleted_lines]
+    )
+    stems: dict[str, frozenset[str]] = {}
+    for path, lines in deleted:
+        for name in _matches(patterns, lines) - elsewhere:
+            stems = {**stems, name: stems.get(name, frozenset()) | {Path(path).stem}}
+    return stems
+
+
+def _docs_naming_with_context(
+    cwd: Path, docs: list[str], needle: str, context: frozenset[str]
+) -> list[str]:
+    hits = _docs_naming(cwd, docs, needle)
+    if not context:
+        return hits
+    return [
+        doc
+        for doc in hits
+        if any(
+            stem in (cwd / doc).read_text(encoding="utf-8", errors="replace")
+            for stem in context
+        )
+    ]
+
+
 def _surviving_definitions(
     cwd: Path,
     base: str,
@@ -241,32 +293,41 @@ def _env_findings(
 
 
 def _export_findings(
-    cwd: Path, base: str, removed: list[str], unstaged_docs: list[str]
+    cwd: Path, base: str, code_diff: str, unstaged_docs: list[str]
 ) -> list[str]:
+    removed = _removed_lines(code_diff)
     dropped_exports = _matches(EXPORT_PATTERNS, removed) - _surviving_definitions(
         cwd, base, EXPORT_PATTERNS, EXPORT_ANCHORS
     )
+    context = _deletion_only_names(code_diff, EXPORT_PATTERNS, removed)
     return [
         f"export {name} was removed but {doc} still names it"
         for name in sorted(dropped_exports)
-        for doc in _docs_naming(cwd, unstaged_docs, name)
+        for doc in _docs_naming_with_context(
+            cwd, unstaged_docs, name, context.get(name, frozenset())
+        )
     ]
 
 
 def _flag_findings(
-    cwd: Path, base: str, removed: list[str], unstaged_docs: list[str]
+    cwd: Path, base: str, code_diff: str, unstaged_docs: list[str]
 ) -> list[str]:
+    removed = _removed_lines(code_diff)
     dropped_flags = _matches(FLAG_PATTERNS, removed) - _surviving_definitions(
         cwd, base, FLAG_PATTERNS, FLAG_ANCHORS
     )
-    needles = [
-        flag if flag.startswith("--") else f"--{flag}" for flag in sorted(dropped_flags)
-    ]
+    context = _deletion_only_names(code_diff, FLAG_PATTERNS, removed)
     return [
-        f"flag {needle} was removed but {doc} still names it"
-        for needle in needles
-        for doc in _docs_naming(cwd, unstaged_docs, needle)
+        f"flag {_flag_needle(flag)} was removed but {doc} still names it"
+        for flag in sorted(dropped_flags)
+        for doc in _docs_naming_with_context(
+            cwd, unstaged_docs, _flag_needle(flag), context.get(flag, frozenset())
+        )
     ]
+
+
+def _flag_needle(flag: str) -> str:
+    return flag if flag.startswith("--") else f"--{flag}"
 
 
 def _script_findings(
@@ -307,8 +368,8 @@ def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
     unstaged_docs = [doc for doc in docs if doc not in staged]
     return [
         *env_findings,
-        *_export_findings(cwd, base, removed, unstaged_docs),
-        *_flag_findings(cwd, base, removed, unstaged_docs),
+        *_export_findings(cwd, base, code_diff, unstaged_docs),
+        *_flag_findings(cwd, base, code_diff, unstaged_docs),
         *_script_findings(cwd, staged, unstaged_docs),
     ]
 
