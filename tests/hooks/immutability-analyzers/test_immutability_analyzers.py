@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -13,6 +13,7 @@ from _helpers.hook_assertions import assert_allowed, assert_blocked
 HOOK = "immutability-analyzers"
 CLEAN_PY = "def f(items=None):\n    return list(items or [])\n"
 DIRTY_PY = "def f(items=[]):\n    return items\n"
+FULL_BATCH_STOP_TIMEOUT_S = 30.0
 
 
 def _git(repo: Path, *args: str) -> None:
@@ -41,7 +42,7 @@ def workspace(tmp_path: Path) -> dict[str, object]:
         "#!/bin/sh\necho '{\"generalDiagnostics\": []}'\n", encoding="utf-8"
     )
     pyright.chmod(0o755)
-    ruff_dir = str(Path(shutil.which("ruff") or "ruff").parent)
+    ruff_dir = str(Path(sys.executable).parent)
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
@@ -62,13 +63,19 @@ def _record(run_hook, env: dict[str, str], path: Path) -> None:
     assert_allowed(run_hook(HOOK, payload, env=env))
 
 
-def _stop(run_hook, env: dict[str, str], *, active: bool = False):
+def _stop(
+    run_hook,
+    env: dict[str, str],
+    *,
+    active: bool = False,
+    **run_options: float,
+):
     payload = {
         "hook_event_name": "Stop",
         "session_id": "s1",
         "stop_hook_active": active,
     }
-    return run_hook(HOOK, payload, env=env)
+    return run_hook(HOOK, payload, env=env, **run_options)
 
 
 def test_stop_blocks_a_new_file_with_a_finding(run_hook, workspace):
@@ -248,13 +255,16 @@ def test_rules_outside_the_catalog_are_ignored(run_hook, workspace, tmp_path):
 
 def test_files_past_the_per_turn_cap_stay_queued(run_hook, workspace):
     # Arrange
+    ruff = Path(workspace["env"]["PATH"].split(os.pathsep)[0]) / "ruff"
+    ruff.write_text("#!/bin/sh\necho '[]'\n", encoding="utf-8")
+    ruff.chmod(0o755)
     sources = [workspace["repo"] / f"m{index}.py" for index in range(41)]
     for source in sources:
         source.write_text(CLEAN_PY, encoding="utf-8")
         _record(run_hook, workspace["env"], source)
 
     # Act
-    result = _stop(run_hook, workspace["env"])
+    result = _stop(run_hook, workspace["env"], timeout=FULL_BATCH_STOP_TIMEOUT_S)
 
     # Assert
     message = json.loads(result.stdout)
