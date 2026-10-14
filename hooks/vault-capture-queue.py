@@ -143,6 +143,32 @@ def _enqueue(root: str, entry: dict) -> bool:
     return True
 
 
+def _read_payload() -> dict | None:
+    try:
+        data = json.load(sys.stdin)
+    except (ValueError, OSError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _inside_vault(cwd: str, root: str) -> bool:
+    try:
+        return os.path.realpath(cwd) == os.path.realpath(root)
+    except OSError:
+        return True
+
+
+def _queue_entry(session: str, cwd: str, transcript: str, signals: list[str]) -> dict:
+    return {
+        "ts": int(time.time()),
+        "status": "pending",
+        "session": session,
+        "cwd": cwd,
+        "transcript": transcript,
+        "signals": signals,
+    }
+
+
 def main() -> int:
     if os.environ.get("VAULT_CAPTURE_QUEUE_DISABLE") == "1":
         return 0
@@ -153,20 +179,13 @@ def main() -> int:
     if not root:
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (ValueError, OSError):
-        return 0
-    if not isinstance(data, dict):
+    data = _read_payload()
+    if data is None:
         return 0
 
     transcript = data.get("transcript_path", "") or ""
     cwd = data.get("cwd", "") or os.getcwd()
-
-    try:
-        if os.path.realpath(cwd) == os.path.realpath(root):
-            return 0
-    except OSError:
+    if _inside_vault(cwd, root):
         return 0
 
     signals = _signals(_tail(transcript))
@@ -178,17 +197,7 @@ def main() -> int:
         return 0
 
     _stamp(session)
-    _enqueue(
-        root,
-        {
-            "ts": int(time.time()),
-            "status": "pending",
-            "session": session,
-            "cwd": cwd,
-            "transcript": transcript,
-            "signals": signals,
-        },
-    )
+    _enqueue(root, _queue_entry(session, cwd, transcript, signals))
     return 0
 
 

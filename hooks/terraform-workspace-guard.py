@@ -30,13 +30,41 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
 
-def main() -> None:
+def _exit_when_disabled() -> None:
     if os.environ.get("TERRAFORM_WORKSPACE_GUARD_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("terraform-workspace-guard"):
         sys.exit(0)
     if not should_run("terraform-workspace-guard"):
         sys.exit(0)
+
+
+def _block(command: str) -> None:
+    print(
+        "BLOCKED: `terraform workspace select|new <name>` writes the "
+        "active workspace to `.terraform/environment` and affects "
+        "every shell running terraform in this directory.\n"
+        "Use the per-command form: "
+        "`TF_WORKSPACE=<name> terraform plan|apply ...`\n"
+        "TF_WORKSPACE keeps `.terraform/environment` untouched, so "
+        "parallel shells targeting different workspaces stay "
+        "isolated.\n"
+        "See: standards/multi-account-cli.md\n"
+        f"Command: {command}",
+        file=sys.stderr,
+    )
+    _audit(
+        hook="terraform-workspace-guard",
+        decision="block",
+        tool="Bash",
+        reason="terraform workspace global switch",
+        command_excerpt=command[:240],
+    )
+    sys.exit(2)
+
+
+def main() -> None:
+    _exit_when_disabled()
     data = read_hook_payload("terraform-workspace-guard")
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
@@ -44,27 +72,7 @@ def main() -> None:
         sys.exit(0)
 
     if TF_WORKSPACE_SELECT.search(command) or TF_WORKSPACE_NEW.search(command):
-        print(
-            "BLOCKED: `terraform workspace select|new <name>` writes the "
-            "active workspace to `.terraform/environment` and affects "
-            "every shell running terraform in this directory.\n"
-            "Use the per-command form: "
-            "`TF_WORKSPACE=<name> terraform plan|apply ...`\n"
-            "TF_WORKSPACE keeps `.terraform/environment` untouched, so "
-            "parallel shells targeting different workspaces stay "
-            "isolated.\n"
-            "See: standards/multi-account-cli.md\n"
-            f"Command: {command}",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="terraform-workspace-guard",
-            decision="block",
-            tool="Bash",
-            reason="terraform workspace global switch",
-            command_excerpt=command[:240],
-        )
-        sys.exit(2)
+        _block(command)
 
     sys.exit(0)
 

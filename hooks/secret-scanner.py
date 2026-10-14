@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+from typing import NoReturn
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 try:
@@ -225,6 +226,40 @@ def scan_command(command: str, cwd: str) -> list[tuple[str, int, str]]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
+def _commit_command(data: dict) -> str:
+    command = data.get("tool_input", data.get("input", {})).get("command", "")
+    if not command or not COMMIT_PATTERN.search(strip_git_global_options(command)):
+        return ""
+    return command
+
+
+def _block_scan_failure(error: Exception) -> NoReturn:
+    print(
+        "BLOCKED: secret-scanner could not read what this commit would record, "
+        f"so it was not checked: {error}",
+        file=sys.stderr,
+    )
+    _audit(
+        hook="secret-scanner",
+        decision="block",
+        tool="Bash",
+        reason="scan failed",
+        command_excerpt=None,
+    )
+    sys.exit(2)
+
+
+def _findings_report(findings: list[tuple[str, int, str]]) -> str:
+    report = [
+        "BLOCKED: Potential secrets detected in what this commit would record.\n",
+        *(f"  {path}:{number}: {name}" for path, number, name in findings),
+        "\nThe matched text is not shown, so it stays out of the session.",
+        "Remove the secrets and try again.",
+        "If these are false positives, commit manually outside Claude Code.",
+    ]
+    return "\n".join(report)
+
+
 def main():
     if os.environ.get("SECRET_SCANNER_DISABLE") == "1":
         return 0
@@ -234,39 +269,19 @@ def main():
         sys.exit(0)
     data = read_hook_payload("secret-scanner")
 
-    command = data.get("tool_input", data.get("input", {})).get("command", "")
-    if not command or not COMMIT_PATTERN.search(strip_git_global_options(command)):
+    command = _commit_command(data)
+    if not command:
         sys.exit(0)
 
     cwd = data.get("cwd") if isinstance(data.get("cwd"), str) else ""
     try:
         findings = scan_command(command, cwd)
     except (ScanError, OSError) as error:
-        print(
-            "BLOCKED: secret-scanner could not read what this commit would record, "
-            f"so it was not checked: {error}",
-            file=sys.stderr,
-        )
-        _audit(
-            hook="secret-scanner",
-            decision="block",
-            tool="Bash",
-            reason="scan failed",
-            command_excerpt=None,
-        )
-        sys.exit(2)
+        _block_scan_failure(error)
     if not findings:
         sys.exit(0)
 
-    report = ["BLOCKED: Potential secrets detected in what this commit would record.\n"]
-    report = [
-        *report,
-        *(f"  {path}:{number}: {name}" for path, number, name in findings),
-    ]
-    report.append("\nThe matched text is not shown, so it stays out of the session.")
-    report.append("Remove the secrets and try again.")
-    report.append("If these are false positives, commit manually outside Claude Code.")
-    print("\n".join(report), file=sys.stderr)
+    print(_findings_report(findings), file=sys.stderr)
     _audit(
         hook="secret-scanner",
         decision="block",

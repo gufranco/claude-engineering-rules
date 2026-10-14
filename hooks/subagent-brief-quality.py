@@ -145,7 +145,7 @@ def failure_messages(checks: dict[str, bool]) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("subagent-brief-quality"):
         sys.exit(0)
     if os.environ.get("SUBAGENT_BRIEF_DISABLE") == "1":
@@ -154,38 +154,22 @@ def main() -> int:
             decision="bypass",
             bypass_env="SUBAGENT_BRIEF_DISABLE",
         )
-        return 0
-    if is_bypassed("subagent-brief-quality"):
-        return 0
+        return True
+    return is_bypassed("subagent-brief-quality")
 
-    payload = read_hook_payload("subagent-brief-quality")
 
-    tool = payload.get("tool_name", "")
-    if tool not in AGENT_TOOL_NAMES:
-        return 0
-
+def _agent_prompt(payload: dict) -> str:
+    if payload.get("tool_name", "") not in AGENT_TOOL_NAMES:
+        return ""
     tool_input = payload.get("tool_input", {}) or {}
     prompt = tool_input.get("prompt", "")
     if not isinstance(prompt, str) or not prompt.strip():
-        return 0
+        return ""
+    return prompt
 
-    checks = evaluate(prompt)
-    failures = failure_messages(checks)
 
-    if not failures:
-        return 0
-
-    if len(failures) == 1:
-        _audit(
-            hook="subagent-brief-quality",
-            decision="advise",
-            tool=tool,
-            reason="one heuristic failed",
-            command_excerpt=failures[0][:240],
-        )
-        return 0
-
-    print(
+def _block_message(failures: list[str]) -> str:
+    return (
         "Blocked: subagent prompt fails "
         f"{len(failures)} of 4 quality heuristics. "
         'Rule: ~/.claude/standards/smart-questions.md "Briefing Subagents".\n'
@@ -195,9 +179,39 @@ def main() -> int:
         "and a response-length cap. Example: 'Find callers of createUser at "
         "services/userService.ts:42. Report file:line. Under 200 words.'\n"
         "Bypass (rare; only when the prompt format is intentional): "
-        "SUBAGENT_BRIEF_DISABLE=1.",
-        file=sys.stderr,
+        "SUBAGENT_BRIEF_DISABLE=1."
     )
+
+
+def _advise(tool: str, failure: str) -> int:
+    _audit(
+        hook="subagent-brief-quality",
+        decision="advise",
+        tool=tool,
+        reason="one heuristic failed",
+        command_excerpt=failure[:240],
+    )
+    return 0
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+
+    payload = read_hook_payload("subagent-brief-quality")
+
+    prompt = _agent_prompt(payload)
+    if not prompt:
+        return 0
+    tool = payload.get("tool_name", "")
+
+    failures = failure_messages(evaluate(prompt))
+    if not failures:
+        return 0
+    if len(failures) == 1:
+        return _advise(tool, failures[0])
+
+    print(_block_message(failures), file=sys.stderr)
     _audit(
         hook="subagent-brief-quality",
         decision="block",

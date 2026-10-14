@@ -199,52 +199,60 @@ def names_the_source(candidate: Path, variants: set[str]) -> bool:
     return stem in variants or stem.replace("-", "_") in variants
 
 
-def find_companion_test(path: Path) -> Path | None:
-    stem = path.stem
-    suffix = path.suffix
-    parent = path.parent
-    variants = stem_variants(stem)
-
-    for v in variants:
-        sibling_candidates = [
-            parent / f"{v}.test{suffix}",
-            parent / f"{v}.spec{suffix}",
-            parent / f"{v}_test{suffix}",
-            parent / f"test_{v}{suffix}",
-        ]
-        for cand in sibling_candidates:
-            if cand.exists():
+def _sibling_test(parent: Path, variant: str, suffix: str) -> Path | None:
+    sibling_candidates = [
+        parent / f"{variant}.test{suffix}",
+        parent / f"{variant}.spec{suffix}",
+        parent / f"{variant}_test{suffix}",
+        parent / f"test_{variant}{suffix}",
+    ]
+    for cand in sibling_candidates:
+        if cand.exists():
+            return cand
+    for kind in ("test", "spec"):
+        for cand in parent.glob(f"{glob.escape(variant)}.*.{kind}{suffix}"):
+            if cand.is_file():
                 return cand
-        for kind in ("test", "spec"):
-            for cand in parent.glob(f"{glob.escape(v)}.*.{kind}{suffix}"):
-                if cand.is_file():
-                    return cand
+    return None
 
+
+def _is_named_test(cand: Path, variants: set[str]) -> bool:
+    return cand.is_file() and is_test_file(cand) and names_the_source(cand, variants)
+
+
+def _nested_test(parent: Path, variants: set[str]) -> Path | None:
     for testdir_name in ("__tests__", "tests", "test"):
         td = parent / testdir_name
         if td.is_dir():
             for cand in td.iterdir():
-                if (
-                    cand.is_file()
-                    and is_test_file(cand)
-                    and names_the_source(cand, variants)
-                ):
+                if _is_named_test(cand, variants):
                     return cand
+    return None
 
+
+def _ancestor_test(parent: Path, variants: set[str]) -> Path | None:
     for cursor in walk_up(parent, limit=6):
         for testdir_name in ("tests", "__tests__", "test"):
             td = cursor / testdir_name
-            if td.is_dir():
-                for v in variants:
-                    for cand in td.rglob(f"*{v}*"):
-                        if (
-                            cand.is_file()
-                            and is_test_file(cand)
-                            and names_the_source(cand, variants)
-                        ):
-                            return cand
-
+            if not td.is_dir():
+                continue
+            for v in variants:
+                for cand in td.rglob(f"*{v}*"):
+                    if _is_named_test(cand, variants):
+                        return cand
     return None
+
+
+def find_companion_test(path: Path) -> Path | None:
+    variants = stem_variants(path.stem)
+    for v in variants:
+        sibling = _sibling_test(path.parent, v, path.suffix)
+        if sibling is not None:
+            return sibling
+    nested = _nested_test(path.parent, variants)
+    if nested is not None:
+        return nested
+    return _ancestor_test(path.parent, variants)
 
 
 def emit_block(reason: str, file_path: str) -> None:
@@ -268,42 +276,26 @@ def emit_block(reason: str, file_path: str) -> None:
     sys.exit(2)
 
 
-def main() -> int:
-    if os.environ.get("TDD_GATE_DISABLE") == "1":
-        return 0
-    if is_bypassed("tdd-gate"):
-        return 0
-
-    data = read_hook_payload("tdd-gate")
-
+def _new_source_target(data: dict) -> Path | None:
     tool_name = data.get("tool_name", "")
     if tool_name not in {"Write", "Edit", "MultiEdit"}:
-        return 0
-
+        return None
     tool_input = data.get("tool_input") or {}
     file_path_str = tool_input.get("file_path", "")
     if not file_path_str:
-        return 0
-
+        return None
     target = Path(file_path_str)
-
     if not is_production_source(target):
-        return 0
-
+        return None
     if target.stem == "index" and is_barrel(tool_input.get("content", "")):
-        return 0
+        return None
+    if target.exists():
+        return None
+    return target
 
-    if tool_name in {"Edit", "MultiEdit"} and target.exists():
-        return 0
 
-    if tool_name == "Write" and target.exists():
-        return 0
-
-    companion = find_companion_test(target)
-    if companion is not None:
-        return 0
-
-    reason = (
+def _block_reason(target: Path) -> str:
+    return (
         f"BLOCKED: creating production source `{target.name}` without a "
         f"companion test.\n"
         f"Rule: ~/.claude/rules/testing.md.\n"
@@ -314,7 +306,24 @@ def main() -> int:
         f"Then write the production code to make it pass.\n"
         f"Bypass (one-off): set TDD_GATE_DISABLE=1 in parent shell."
     )
-    emit_block(reason, str(target))
+
+
+def main() -> int:
+    if os.environ.get("TDD_GATE_DISABLE") == "1":
+        return 0
+    if is_bypassed("tdd-gate"):
+        return 0
+
+    data = read_hook_payload("tdd-gate")
+
+    target = _new_source_target(data)
+    if target is None:
+        return 0
+
+    if find_companion_test(target) is not None:
+        return 0
+
+    emit_block(_block_reason(target), str(target))
     return 2
 
 
