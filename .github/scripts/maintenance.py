@@ -127,9 +127,9 @@ def _quarterly_message(today: _dt.date) -> str:
         "Review the TC39 finished-proposals list for new shipped features "
         f"that may need fix-suggestion entries: {_TC39_FINISHED_URL}. "
         "On promotion of a Stage 3 proposal to Stage 4, evaluate adding "
-        "an entry to hooks/mutation_fix_suggestions.json with the matching "
-        'MMB code and a `"stage": 4` field; remove or update any pre-Stage-4 '
-        "draft entry that referenced the same feature. "
+        "an entry to hooks/mutation_fix_suggestions.json, the catalog "
+        "--print-detectors prints, with the matching MMB code; remove or "
+        "update any pre-Stage-4 draft entry that referenced the same feature. "
         "Run: python3 .github/scripts/maintenance.py watch-list"
     )
 
