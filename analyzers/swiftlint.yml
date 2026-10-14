@@ -1,0 +1,15 @@
+only_rules:
+  - custom_rules
+custom_rules:
+  shared_static_var:
+    name: Shared static var
+    regex: '^\s*(?:(?:public|internal|private|fileprivate|open)\s+)?static\s+var\b'
+    match_kinds: [keyword]
+    message: "static var is shared mutable state; prefer static let"
+    severity: error
+  top_level_var:
+    name: Top-level var
+    regex: '^var\s'
+    match_kinds: [keyword]
+    message: "top-level var is global mutable state; prefer let"
+    severity: error

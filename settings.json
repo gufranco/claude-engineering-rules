@@ -139,6 +139,15 @@
         ]
       },
       {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/immutability-analyzers.py"
+          }
+        ]
+      },
+      {
         "matcher": "mcp__.*",
         "hooks": [
           {
@@ -1603,6 +1612,11 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/stop-format-typecheck.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/immutability-analyzers.py",
+            "timeout": 900
           },
           {
             "type": "command",

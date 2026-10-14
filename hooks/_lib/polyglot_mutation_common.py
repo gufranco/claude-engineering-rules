@@ -152,3 +152,33 @@ def scan_named(
 def suppressed_filter(text: str, findings: Sequence[Finding]) -> tuple[Finding, ...]:
     raw = text.splitlines()
     return tuple(hit for hit in findings if not is_suppressed(raw, hit.line - 1))
+
+
+VAR_DECLARATION = re.compile(
+    r"^\s*(?:(?:private|public|internal|fileprivate|lateinit)\s+)*var\s+(?P<name>[A-Za-z_]\w*)\b"
+)
+
+
+def _reassigns(line: str, name: str, member_calls_mutate: bool) -> bool:
+    escaped = re.escape(name)
+    pattern = (
+        rf"(?<![\w.]){escaped}\s*(?:[-+*/%&|^]|<<|>>)?=(?!=)|(?<![\w.]){escaped}\s*(?:\+\+|--)"
+        rf"|(?:\+\+|--)\s*{escaped}\b|&{escaped}\b"
+    )
+    member = rf"|(?<![\w.]){escaped}\s*(?:\.\s*\w+\s*\(|\[[^\]]*\]\s*=(?!=))"
+    return bool(re.search(pattern + (member if member_calls_mutate else ""), line))
+
+
+def var_could_be_constant(
+    masked: Sequence[str], function_header: re.Pattern[str], member_calls_mutate: bool
+) -> Iterator[tuple[int, str]]:
+    for start, end in body_line_ranges(masked, function_header):
+        body = range(start + 1, end + 1)
+        for index in body:
+            declared = VAR_DECLARATION.match(masked[index])
+            name = declared.group("name") if declared else ""
+            others = (masked[other] for other in body if other != index)
+            if name and not any(
+                _reassigns(line, name, member_calls_mutate) for line in others
+            ):
+                yield index, name

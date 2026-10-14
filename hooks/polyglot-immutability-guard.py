@@ -11,47 +11,9 @@ from _lib.guard_runner import Edit, Finding, GuardSpec, run_guard  # noqa: E402
 from _lib.polyglot_mutation_jvm import JVM_FINDERS  # noqa: E402
 from _lib.polyglot_mutation_native import NATIVE_FINDERS  # noqa: E402
 from _lib.polyglot_mutation_scripting import find_lua, find_ruby  # noqa: E402
+from _lib.source_scope import in_scope  # noqa: E402
 
 FINDERS = {**NATIVE_FINDERS, **JVM_FINDERS, ".rb": find_ruby, ".lua": find_lua}
-
-SKIP_SEGMENTS = (
-    "/test/",
-    "/tests/",
-    "/spec/",
-    "/__tests__/",
-    "/testdata/",
-    "/fixtures/",
-    "/vendor/",
-    "/node_modules/",
-    "/third_party/",
-    "/external/",
-    "/build/",
-    "/.dart_tool/",
-    "/target/",
-    "/bin/",
-    "/obj/",
-    "/.claude/hooks/",
-)
-SKIP_SUFFIXES = (
-    "_test.go",
-    ".pb.go",
-    "_gen.go",
-    "test.java",
-    "tests.java",
-    "test.kt",
-    "tests.kt",
-    "tests.cs",
-    "test.cs",
-    ".g.dart",
-    ".freezed.dart",
-    "_test.dart",
-    "_spec.rb",
-    "_test.rb",
-    ".g.cs",
-    ".designer.cs",
-    "_spec.lua",
-    "_test.lua",
-)
 
 WHY = (
     "Shared mutable state is the source of aliasing bugs and data races: a value one\n"
@@ -80,12 +42,7 @@ BYPASS_WHEN = (
 
 
 def applies_to(path: str) -> bool:
-    lowered = path.lower()
-    if PurePosixPath(lowered).suffix not in FINDERS:
-        return False
-    if lowered.endswith(SKIP_SUFFIXES):
-        return False
-    return not any(segment in lowered for segment in SKIP_SEGMENTS)
+    return PurePosixPath(path.lower()).suffix in FINDERS and in_scope(path)
 
 
 def find(edit: Edit) -> tuple[Finding, ...]:

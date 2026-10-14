@@ -15,7 +15,7 @@
 
 </div>
 
-**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **88** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **89** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-88 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+89 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -194,7 +194,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-88 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+89 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -277,6 +277,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`python-mutation-guard.py`](hooks/python-mutation-guard.py) | PreToolUse Write/Edit/MultiEdit | AST-based Python immutability: blocks mutable defaults, collection mutation through parameters, `global`, module and class level containers, and `object.__setattr__` escapes; warns on parameter attribute writes and non-frozen dataclasses |
 | [`polyglot-immutability-guard.py`](hooks/polyglot-immutability-guard.py) | PreToolUse Write/Edit/MultiEdit | Shared mutable state in Go, Rust, C, C++, Swift, Java, Kotlin, C#, Dart, Ruby and Lua |
 | [`idempotency-guard.py`](hooks/idempotency-guard.py) | PreToolUse Write/Edit/MultiEdit | Operations unsafe to repeat: bare `mkdir` and `ln -s`, unguarded rc-file appends, Terraform `timestamp()` and `uuid()`, a disabled Kafka idempotent producer |
+| [`immutability-analyzers.py`](hooks/immutability-analyzers.py) | PostToolUse Write/Edit/MultiEdit, Stop | Runs clang-tidy, golangci-lint, ruff, pyright, rubocop, luacheck, detekt, PMD, swiftlint and the Dart analyzer on files edited in the turn with the configs in [`analyzers/`](analyzers/); findings on changed lines block, a missing analyzer blocks |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | One-line summary at session end when blocks accumulated, shown to the user as a `systemMessage` |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | Blocks accidental REQUEST_CHANGES, DISMISS, or DELETE on reviews not authored by the user |
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
@@ -512,9 +513,10 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 88 runtime hooks
+  hooks/                 89 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
+  analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
   tests/                 Hook smoke tests and fixture trees
   .github/workflows/     Lint, validation, hook tests
 ```

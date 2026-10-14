@@ -1,0 +1,22 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - reassign
+    - gocritic
+    - revive
+    - gochecknoglobals
+  settings:
+    reassign:
+      patterns:
+        - ".*"
+    gocritic:
+      disable-all: true
+      enabled-checks:
+        - appendAssign
+    revive:
+      rules:
+        - name: modifies-value-receiver
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
