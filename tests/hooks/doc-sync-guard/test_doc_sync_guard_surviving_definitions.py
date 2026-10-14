@@ -31,7 +31,8 @@ def repo(tmp_path: Path, faker: Faker) -> Path:
     (root / "lib.ts").write_text("export function render() {}\n", encoding="utf-8")
     (root / "old.ts").write_text("export function render() {}\n", encoding="utf-8")
     (root / "README.md").write_text(
-        "Pass `--json` to get rows; call render to draw.\n", encoding="utf-8"
+        "Run old.py or keep.py with `--json` to get rows; call render to draw.\n",
+        encoding="utf-8",
     )
     _git(root, "add", "-A")
     _git(root, "commit", "-qm", "chore: baseline")
