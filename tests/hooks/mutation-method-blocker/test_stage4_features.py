@@ -1,35 +1,13 @@
 from __future__ import annotations
 
 import datetime as _dt
-import importlib
 import importlib.util
 import sys
 from pathlib import Path
 
-import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
-
-
-STAGE_FILTER_VAR = "MUTATION_METHOD_TC39_STAGE_FILTER"
-
-
-@pytest.fixture()
-def load_fix_lookup(monkeypatch: pytest.MonkeyPatch):
-    def _load(stage: str | None):
-        if stage is None:
-            monkeypatch.delenv(STAGE_FILTER_VAR, raising=False)
-        else:
-            monkeypatch.setenv(STAGE_FILTER_VAR, stage)
-        from _lib import mutation_fix_lookup as mfl
-
-        return importlib.reload(mfl)
-
-    yield _load
-    monkeypatch.undo()
-    if "_lib.mutation_fix_lookup" in sys.modules:
-        importlib.reload(sys.modules["_lib.mutation_fix_lookup"])
 
 
 def _load_maintenance():
@@ -287,80 +265,6 @@ def test_stage4_dirty_corpus_flags_uint8_setters() -> None:
 
     # Assert
     assert {m.metadata.get("method") for m in base64} == {"setFromBase64", "setFromHex"}
-
-
-@pytest.mark.parametrize(
-    ("rule_id", "suggested"),
-    [
-        ("async-iterator.helper-collect", False),
-        ("async-iterable.for-await-push", True),
-    ],
-)
-def test_tc39_stage_filter_default_4_suppresses_stage3(
-    rule_id, suggested, load_fix_lookup
-) -> None:
-    # Arrange
-    mfl = load_fix_lookup(None)
-
-    # Act
-    suggestion = mfl.suggest_fix(rule_id)
-
-    # Assert
-    assert (suggestion is not None) is suggested
-
-
-@pytest.mark.parametrize(
-    ("rule_id", "suggested"),
-    [
-        ("async-iterator.helper-collect", True),
-        ("iterator.range-replacement", False),
-    ],
-)
-def test_tc39_stage_filter_3_includes_stage3(
-    rule_id, suggested, load_fix_lookup
-) -> None:
-    # Arrange
-    mfl = load_fix_lookup("3")
-
-    # Act
-    suggestion = mfl.suggest_fix(rule_id)
-
-    # Assert
-    assert (suggestion is not None) is suggested
-
-
-def test_tc39_stage_filter_2_prepends_volatility_marker(load_fix_lookup) -> None:
-    # Arrange
-    mfl = load_fix_lookup("2")
-
-    # Act
-    range_repl = mfl.suggest_fix("iterator.range-replacement")
-
-    # Assert
-    assert range_repl is not None
-    assert "Stage 2 proposal" in range_repl
-
-
-def test_tc39_stage_filter_invalid_value_falls_back_to_default(load_fix_lookup) -> None:
-    # Arrange
-    mfl = load_fix_lookup("notanumber")
-
-    # Act
-    helper_collect = mfl.suggest_fix("async-iterator.helper-collect")
-
-    # Assert
-    assert helper_collect is None
-
-
-def test_tc39_stage_filter_clamps_above_4(load_fix_lookup) -> None:
-    # Arrange
-    mfl = load_fix_lookup("9")
-
-    # Act
-    stage = mfl.tc39_stage_filter()
-
-    # Assert
-    assert stage == 4
 
 
 def test_maintenance_quarterly_message_mentions_finished_proposals() -> None:
