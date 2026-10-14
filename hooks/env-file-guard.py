@@ -4,6 +4,7 @@ from __future__ import annotations
 import fnmatch
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -64,71 +65,114 @@ def _match_any(name: str, patterns: tuple[str, ...]) -> bool:
     return any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns)
 
 
+def _is_env_file(basename: str, posix: str) -> bool:
+    return basename == ".env" or basename.startswith(".env.")
+
+
+def _in_secrets_dir(basename: str, posix: str) -> bool:
+    return "/secrets/" in posix or "/credentials/" in posix
+
+
+def _is_private_key(basename: str, posix: str) -> bool:
+    return basename in PRIVATE_KEY_NAMES or _match_any(basename, PRIVATE_KEY_GLOBS)
+
+
+def _is_cloud_credential(basename: str, posix: str) -> bool:
+    return posix.endswith("/.aws/credentials") or posix.endswith("/.docker/config.json")
+
+
+def _is_credential_config(basename: str, posix: str) -> bool:
+    return basename in CRED_CONFIG_NAMES
+
+
+def _is_kube_config(basename: str, posix: str) -> bool:
+    return posix.endswith("/.kube/config")
+
+
+def _is_tfstate(basename: str, posix: str) -> bool:
+    return _match_any(basename, TFSTATE_GLOBS)
+
+
+def _is_tfvars(basename: str, posix: str) -> bool:
+    return _match_any(basename, TFVARS_GLOBS)
+
+
+def _is_credential_json(basename: str, posix: str) -> bool:
+    return _match_any(basename, CREDENTIAL_JSON_GLOBS)
+
+
+def _in_ssh_or_gnupg(basename: str, posix: str) -> bool:
+    return "/.ssh/" in posix or "/.gnupg/" in posix
+
+
+RULES: tuple[tuple[Callable[[str, str], bool], str, str], ...] = (
+    (
+        _is_env_file,
+        "env file write blocked",
+        "BLOCKED: Cannot modify {basename}. Environment files may contain secrets.\n"
+        "  File: {file_path}\n\n"
+        "  If you need to document a new env var, update .env.example instead.\n",
+    ),
+    (
+        _in_secrets_dir,
+        "secrets directory write blocked",
+        "BLOCKED: Cannot modify files in secrets directory.\n  File: {file_path}\n",
+    ),
+    (
+        _is_private_key,
+        "private key write blocked",
+        "BLOCKED: Cannot modify private key files.\n  File: {file_path}\n",
+    ),
+    (
+        _is_cloud_credential,
+        "cloud credential file blocked",
+        "BLOCKED: Cannot modify cloud/tool credential files.\n  File: {file_path}\n",
+    ),
+    (
+        _is_credential_config,
+        "credential config blocked",
+        "BLOCKED: Cannot modify credential/auth config files.\n  File: {file_path}\n",
+    ),
+    (
+        _is_kube_config,
+        "kube config blocked",
+        "BLOCKED: Cannot modify Kubernetes config (contains cluster credentials).\n"
+        "  File: {file_path}\n",
+    ),
+    (
+        _is_tfstate,
+        "tfstate blocked",
+        "BLOCKED: Cannot modify Terraform state files (contain infrastructure secrets).\n"
+        "  File: {file_path}\n",
+    ),
+    (
+        _is_tfvars,
+        "tfvars blocked",
+        "BLOCKED: Cannot modify Terraform variable files (may contain secrets).\n"
+        "  File: {file_path}\n\n"
+        "  Use terraform.tfvars.example for documentation instead.\n",
+    ),
+    (
+        _is_credential_json,
+        "credential json blocked",
+        "BLOCKED: Cannot modify credential JSON files.\n  File: {file_path}\n",
+    ),
+    (
+        _in_ssh_or_gnupg,
+        "ssh/gpg blocked",
+        "BLOCKED: Cannot modify SSH/GPG configuration and keys.\n  File: {file_path}\n",
+    ),
+)
+
+
 def _classify(file_path: str) -> tuple[str, str] | None:
     basename = os.path.basename(file_path)
     posix = file_path.replace("\\", "/")
     if basename in ALLOWED_ENV_BASENAMES:
         return None
-    if basename == ".env" or basename.startswith(".env."):
-        return (
-            "env file write blocked",
-            f"BLOCKED: Cannot modify {basename}. Environment files may contain secrets.\n"
-            f"  File: {file_path}\n\n"
-            "  If you need to document a new env var, update .env.example instead.\n",
-        )
-    if "/secrets/" in posix or "/credentials/" in posix:
-        return (
-            "secrets directory write blocked",
-            "BLOCKED: Cannot modify files in secrets directory.\n"
-            f"  File: {file_path}\n",
-        )
-    if basename in PRIVATE_KEY_NAMES or _match_any(basename, PRIVATE_KEY_GLOBS):
-        return (
-            "private key write blocked",
-            f"BLOCKED: Cannot modify private key files.\n  File: {file_path}\n",
-        )
-    if posix.endswith("/.aws/credentials") or posix.endswith("/.docker/config.json"):
-        return (
-            "cloud credential file blocked",
-            "BLOCKED: Cannot modify cloud/tool credential files.\n"
-            f"  File: {file_path}\n",
-        )
-    if basename in CRED_CONFIG_NAMES:
-        return (
-            "credential config blocked",
-            "BLOCKED: Cannot modify credential/auth config files.\n"
-            f"  File: {file_path}\n",
-        )
-    if posix.endswith("/.kube/config"):
-        return (
-            "kube config blocked",
-            "BLOCKED: Cannot modify Kubernetes config (contains cluster credentials).\n"
-            f"  File: {file_path}\n",
-        )
-    if _match_any(basename, TFSTATE_GLOBS):
-        return (
-            "tfstate blocked",
-            "BLOCKED: Cannot modify Terraform state files (contain infrastructure secrets).\n"
-            f"  File: {file_path}\n",
-        )
-    if _match_any(basename, TFVARS_GLOBS):
-        return (
-            "tfvars blocked",
-            "BLOCKED: Cannot modify Terraform variable files (may contain secrets).\n"
-            f"  File: {file_path}\n\n"
-            "  Use terraform.tfvars.example for documentation instead.\n",
-        )
-    if _match_any(basename, CREDENTIAL_JSON_GLOBS):
-        return (
-            "credential json blocked",
-            f"BLOCKED: Cannot modify credential JSON files.\n  File: {file_path}\n",
-        )
-    if "/.ssh/" in posix or "/.gnupg/" in posix:
-        return (
-            "ssh/gpg blocked",
-            "BLOCKED: Cannot modify SSH/GPG configuration and keys.\n"
-            f"  File: {file_path}\n",
-        )
+    for matches, reason, template in RULES:
+        if matches(basename, posix):
+            return reason, template.format(basename=basename, file_path=file_path)
     return None
 
 

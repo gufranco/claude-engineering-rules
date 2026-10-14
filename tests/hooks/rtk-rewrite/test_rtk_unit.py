@@ -35,6 +35,35 @@ def hook(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     return module
 
 
+def _stub_script(
+    *,
+    log: Path,
+    version: str,
+    rewrite_exit: int,
+    rewrite_stdout: str,
+    break_after_version: bool,
+) -> str:
+    corrupt = (
+        "printf '#!/nonexistent/interpreter\\n' > \"$0\"\n"
+        if break_after_version
+        else ""
+    )
+    return (
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$*\" >> '{log}'\n"
+        'if [ "$1" = "--version" ]; then\n'
+        f"  printf 'rtk %s\\n' '{version}'\n"
+        f"  {corrupt}"
+        "  exit 0\n"
+        "fi\n"
+        'if [ "$1" = "rewrite" ]; then\n'
+        f"  printf '%s' '{rewrite_stdout}'\n"
+        f"  exit {rewrite_exit}\n"
+        "fi\n"
+        "exit 0\n"
+    )
+
+
 @pytest.fixture()
 def rtk_on_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> StubFactory:
     def _install(
@@ -47,25 +76,15 @@ def rtk_on_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> StubFactory:
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
         log = tmp_path / "rtk-calls.log"
-        corrupt = (
-            "printf '#!/nonexistent/interpreter\\n' > \"$0\"\n"
-            if break_after_version
-            else ""
-        )
         stub = bin_dir / "rtk"
         stub.write_text(
-            "#!/bin/sh\n"
-            f"printf '%s\\n' \"$*\" >> '{log}'\n"
-            'if [ "$1" = "--version" ]; then\n'
-            f"  printf 'rtk %s\\n' '{version}'\n"
-            f"  {corrupt}"
-            "  exit 0\n"
-            "fi\n"
-            'if [ "$1" = "rewrite" ]; then\n'
-            f"  printf '%s' '{rewrite_stdout}'\n"
-            f"  exit {rewrite_exit}\n"
-            "fi\n"
-            "exit 0\n",
+            _stub_script(
+                log=log,
+                version=version,
+                rewrite_exit=rewrite_exit,
+                rewrite_stdout=rewrite_stdout,
+                break_after_version=break_after_version,
+            ),
             encoding="utf-8",
         )
         stub.chmod(0o755)
