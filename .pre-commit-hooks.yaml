@@ -3,7 +3,7 @@
   description: |
     Block in-place mutations (Array, Map/Set, TypedArray, Date setters, Object
     utilities, parameter reassignment, let-could-be-const) in JavaScript and
-    TypeScript files. Honors the built-in and per-project allowlists and
+    TypeScript files. Honors the built-in allowlists and
     third-party tool directives such as eslint-disable; it has no allow
     marker of its own. The --batch argument reads the file paths pre-commit passes.
   entry: hooks/mutation-method-blocker.py

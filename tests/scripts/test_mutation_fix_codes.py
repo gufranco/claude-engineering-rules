@@ -22,3 +22,33 @@ def test_each_category_code_belongs_to_an_exact_entry_of_that_category():
 
     # Assert
     assert mismatched == {}
+
+
+def test_exact_entries_have_unique_codes() -> None:
+    # Arrange
+    data = json.loads(SUGGESTIONS.read_text(encoding="utf-8"))
+
+    # Act
+    codes = [entry["code"] for entry in data["exact"].values()]
+
+    # Assert
+    assert len(codes) == len(set(codes))
+
+
+def test_every_exact_entry_has_code_category_and_fix() -> None:
+    # Arrange
+    data = json.loads(SUGGESTIONS.read_text(encoding="utf-8"))
+
+    # Act
+    malformed = [
+        tag
+        for tag, entry in data["exact"].items()
+        if not (
+            entry.get("code", "").startswith("MMB")
+            and "category" in entry
+            and len(entry.get("fix", "")) > 20
+        )
+    ]
+
+    # Assert
+    assert malformed == []

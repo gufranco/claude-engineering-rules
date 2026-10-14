@@ -311,18 +311,6 @@ def test_handle_cli_flags_print_detectors_oserror(monkeypatch, capsys) -> None:
     assert "failed to read detector catalog" in capsys.readouterr().err
 
 
-def test_apply_ts_project_service_disabled_returns_unchanged() -> None:
-    # Arrange
-    matches: list = []
-
-    # Act
-    survived, dropped = hook._apply_ts_project_service("a.ts", matches)
-
-    # Assert
-    assert survived == matches
-    assert dropped == 0
-
-
 def test_remap_via_source_map_passthrough_for_non_transpiled() -> None:
     # Arrange
     matches: list = []

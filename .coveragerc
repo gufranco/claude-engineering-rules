@@ -20,13 +20,9 @@ omit =
     */hooks/config-protection.py
     */hooks/gateguard-fact-force.py
     */hooks/mcp-health-check.py
-    # markdown-link-discipline.py hardcodes REPO_ROOT and the detector
-    # skip-list excludes tests/, so the BLOCK output path is unreachable
-    # from pytest fixtures without polluting repo-root markdown.
     */hooks/markdown-link-discipline.py
     # Lib modules not yet under test.
     */hooks/_lib/mutation_source_map.py
-    */hooks/_lib/mutation_ts_project_service.py
     # CLI tools not yet under test.
     */.github/scripts/context-monitor.py
     */.github/scripts/stale-memory-detector.py
@@ -60,7 +56,6 @@ omit =
     */hooks/gh-token-guard.py
     */hooks/glab-token-guard.py
     */hooks/review-state-guard.py
-    */hooks/_lib/mutation_fix_lookup.py
     */hooks/_lib/hook_profile.py
 disable_warnings = include-ignored
 

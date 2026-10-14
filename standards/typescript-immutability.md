@@ -29,7 +29,7 @@ Make the compiler catch mutations instead of relying on discipline alone. `reado
 
 ## Mutation Surface
 
-Every name below is rejected by `~/.claude/hooks/mutation-method-blocker.py` unless the file matches an auto-allowed scope (see "Auto-allowed scopes" further down). The hook maps 102 detector codes, MMB001 through MMB108 with MMB056 to MMB059 unassigned, plus one fallback code per category prefix, in [`mutation_fix_suggestions.json`](../hooks/mutation_fix_suggestions.json). The table below groups the core JavaScript surface into 17 categories; the same file also holds framework-specific detectors such as MobX, Vue, and Svelte stores.
+Every name below is rejected by `~/.claude/hooks/mutation-method-blocker.py` unless the file matches an auto-allowed scope (see "Auto-allowed scopes" further down). The detector catalog in [`mutation_fix_suggestions.json`](../hooks/mutation_fix_suggestions.json) lists 102 detector codes, MMB001 through MMB108 with MMB056 to MMB059 unassigned, plus one fallback code per category prefix; `mutation-method-blocker.py --print-detectors` prints them. The table below groups the core JavaScript surface into 17 categories; the same file also holds framework-specific detectors such as MobX, Vue, and Svelte stores.
 
 | Category | Methods or operators |
 |----------|----------------------|
@@ -160,7 +160,7 @@ These ES2024+ primitives are non-mutating and never trigger the hook:
 
 ### Post-ES2024 Stage 3 / Stage 4 features (recognized, as of 2026-05-10)
 
-The hook recognizes the following advanced proposals and emits Stage-aware fix suggestions. Use the env var `MUTATION_METHOD_TC39_STAGE_FILTER` to opt into pre-Stage-4 suggestions (default `4`; set to `3` for Stage 3, `2` for Stage 2 with proposal-volatility warnings).
+The table below maps advanced proposals to their immutable replacements. The env var `MUTATION_METHOD_TC39_STAGE_FILTER` (default `4`) gates one detector: set it to `3` or `2` to also flag `.return()` and `.throw()` calls on an `AsyncIterator`. Values below `2` clamp to `2`, values above `4` clamp to `4`, and a non-integer falls back to `4`.
 
 | Feature | Stage | Use instead of |
 |---------|-------|----------------|
