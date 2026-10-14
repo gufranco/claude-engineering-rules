@@ -1,6 +1,6 @@
 # AI Bot Triage
 
-Reference for `/respond` when `--include-bots` is set. AI bot threads are handed to `/ship --pipeline` by default. This file documents the per-tool false-positive catalog and the command grammar for the major reviewers.
+Reference for `/respond`, which triages AI bot threads by default. With `--humans-only`, bot threads are handed to `/ship --pipeline` instead. This file documents the per-tool false-positive catalog and the command grammar for the major reviewers.
 
 **A bot thread receives no reply.** Read it, apply the failure-scenario gate, fix what survives, resolve the thread. [`../../rules/pr-comment-discipline.md`](../../rules/pr-comment-discipline.md) is the rule, and the "How to dismiss" column below is a note to yourself about why the finding fails, never text to publish.
 
@@ -149,13 +149,13 @@ The Cursor IDE offers a separate review workflow that runs locally. When the use
 
 | Tool | Default strategy in /respond |
 |------|------------------------------|
-| CodeRabbit | Skip by default. With `--include-bots`, verify each finding, fix what holds, resolve the rest |
-| Greptile | Skip by default. With `--include-bots`, expect higher false-positive rate; verify each finding before implementing |
-| Copilot | Skip by default. With `--include-bots`, trust High severity, scrutinize Medium and Low |
-| Cursor BugBot | Skip by default. With `--include-bots`, verify and resolve. No reply, to BugBot or to the thread |
-| Sourcery | Skip by default. With `--include-bots`, focus on refactor suggestions; resolve style findings that contradict the project lint config |
-| Qodo Merge | Skip by default. With `--include-bots`, focus on test gap findings |
-| Korbit | Skip by default. With `--include-bots`, treat as standard threads |
+| CodeRabbit | Verify each finding, fix what holds, resolve the rest |
+| Greptile | Expect a higher false-positive rate; verify each finding before implementing |
+| Copilot | Trust High severity, scrutinize Medium and Low |
+| Cursor BugBot | Verify and resolve. No reply, to BugBot or to the thread |
+| Sourcery | Focus on refactor suggestions; resolve style findings that contradict the project lint config |
+| Qodo Merge | Focus on test gap findings |
+| Korbit | Treat as standard threads |
 | `dependabot[bot]`, `renovate[bot]`, `github-actions[bot]` | Always skip. These are not review bots; they are dependency or CI bots. Handled by `/ship --pipeline` or by manual `gh` workflow |
 
 ## Never Credit a Bot

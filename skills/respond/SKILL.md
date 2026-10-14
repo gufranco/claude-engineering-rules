@@ -40,8 +40,8 @@ If no subcommand is given, default to the full workflow.
 |------|--------|
 | No args | Use the current branch's PR |
 | `<PR number or URL>` | Target that PR |
-| `--humans-only` | Default. Skip threads whose first comment is from a bot |
-| `--include-bots` | Include AI bot threads in the workflow, for fixing and closing. Bot threads never receive a reply |
+| `--include-bots` | Default. AI bot threads are in the workflow, for fixing and closing. Bot threads never receive a reply. Accepted for compatibility; passing it changes nothing |
+| `--humans-only` | Skip threads whose first comment is from a bot |
 | `--auto` | Execute the approved batch without per-batch confirmation. Requires `RESPOND_AUTO_ACK=1` env var to take effect |
 | `--interactive` | Confirm per thread instead of per batch |
 | `--filter <pattern>` | Filter threads by file path glob or author login |
@@ -88,7 +88,7 @@ Filter rules.
 - Drop only what the standard's Terminal States table marks terminal. Everything else is in scope.
 - Never drop on `isOutdated` or `isCollapsed` alone. An outdated comment can still name a live bug.
 - Honor `isMinimized == true`. It is the closest thing the three non-resolvable channels have to a resolve action, on any of the seven `minimizedReason` values.
-- Apply `--humans-only` unless `--include-bots` is set. The human filter keeps items whose first comment is from `author.type == "User"` AND login is not in the AI bot allowlist.
+- Keep bot items by default. Apply the human filter only when `--humans-only` is set. The human filter keeps items whose first comment classifies as `human` in Axis 1.
 - Group inline threads by file path, then sort by line number within file. Group the other three buckets separately.
 - Review bodies, PR-level comments, and commit comments get no reply. They are answered by the code change and closed by minimizing, per the standard's "Answering Each Channel" table.
 - Filter out PR-level comments whose body starts with auto-generated markers such as `<!-- LEAD_APPROVAL -->`, `<!-- linear-linkback -->`, or `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->`, since these are tracker or bot signals, not actionable.
@@ -96,7 +96,7 @@ Filter rules.
 
 Cross-check after fetch. Run the Completeness Cross-Check from the standard. Report per-channel counts in Phase 5, never a single total. The skill must never report "nothing to respond to" while a substantive comment in any channel is still unanswered.
 
-AI bot allowlist for classification: `coderabbitai[bot]`, `copilot-pull-request-reviewer[bot]`, `greptile-apps[bot]`, `sourcery-ai[bot]`, `korbit-ai[bot]`, `cursor[bot]`, `qodo-merge-pro[bot]`, `bito-pr-review[bot]`, `gemini-code-assist[bot]`, `claude[bot]`, `tabnine-ai[bot]`. Auxiliary lint or dependency bots: `github-actions[bot]`, `dependabot[bot]`, `renovate[bot]`, `pre-commit-ci[bot]`, `lefthook[bot]`.
+Classify by login, because the canonical fetch returns `author { login }` and no author type. Match case-insensitively on a substring, with or without the `[bot]` suffix, since the GraphQL API omits it. AI bot allowlist, the same list `/ship` uses in its 6a step: `coderabbit`, `copilot`, `greptile`, `sourcery`, `korbit`, `bito`, `qodo`, `codium`, `cursor`, `tabnine`, `gemini-code-assist`, `chatgpt-codex-connector`, `claude`. Auxiliary lint or dependency bots: `github-actions`, `dependabot`, `renovate`, `pre-commit-ci`, `lefthook`.
 
 ## Phase 3: Classify and Verify
 
@@ -106,11 +106,11 @@ For each thread, classify on three axes.
 
 | Value | Detection |
 |-------|-----------|
-| `human` | `author.type == "User"` AND login is not in the AI bot allowlist |
-| `bot:ai` | `author.type == "Bot"` AND login matches the AI bot allowlist |
-| `bot:lint` | `author.type == "Bot"` AND login matches an auxiliary lint or dependency bot |
-| `bot:other` | `author.type == "Bot"` AND no other category matches |
 | `self` | Author login matches the resolved account |
+| `bot:ai` | Login matches the AI bot allowlist |
+| `bot:lint` | Login matches an auxiliary lint or dependency bot |
+| `bot:other` | Login ends in `[bot]` or `-bot` and matches neither list. Report it; never treat it as human |
+| `human` | No other row matches |
 
 ### Axis 2: Comment intent
 
@@ -249,7 +249,7 @@ Every template passes the no-internal-config-leakage check before posting.
 
 For `implement` and `accept-with-modification` decisions, draft the change at the line level. Record: the file path, the lines to modify, the new content, and the validation tests that must pass after.
 
-For `issue:blocking-*` decisions, plan a named regression test like `it('rejects empty companyId per PR #4521')`. Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
+For `issue:blocking-*` decisions, plan a named regression test like `it('rejects an empty companyId')`; the name states the behavior, never a ticket or PR number. Apply when the bug has a specific reproducer, the fix is a one-line guard whose absence could regress invisibly, or the bug was filed by a user or downstream team. Skip when the regression would be loud, like a compile error or a type error.
 
 ## Phase 5: Present and Approve
 
@@ -384,7 +384,7 @@ rm /tmp/respond-reply-*.json /tmp/respond-query-*.graphql
 
 ## Phase 7: Monitor and Close
 
-After every push triggered by the batch, enter the Pipeline Monitoring loop from `/ship`. Reuse the same loop as a shared procedure. Loop until CI is green on the latest SHA AND no new threads have appeared since the last fetch. Bot threads that appear after the push are deferred to `/ship --pipeline` unless `--include-bots` was set.
+After every push triggered by the batch, enter the Pipeline Monitoring loop from `/ship`. Reuse the same loop as a shared procedure. Loop until CI is green on the latest SHA AND no new threads have appeared since the last fetch. Bot threads that appear after the push go through the same triage, unless `--humans-only` was set, in which case they are deferred to `/ship --pipeline`.
 
 Final output:
 
@@ -419,7 +419,7 @@ The skill enforces these by surfacing reminders, never by acting unilaterally. W
 
 ## AI Bot Triage Tactics
 
-Full pattern catalog with per-tool false positives lives in [`bot-triage.md`](bot-triage.md). The summary below is the operational ruleset when `--include-bots` is set.
+Full pattern catalog with per-tool false positives lives in [`bot-triage.md`](bot-triage.md). The summary below is the operational ruleset for bot threads, which are in scope unless `--humans-only` is set.
 
 ### Severity baseline
 
@@ -516,7 +516,7 @@ The skill prompts before adding any credit trailer. The default is no trailer un
 - Bulk resolve is forbidden. Each thread is resolved individually after its action completes. The `bulk-resolve-blocker.py` hook backs this rule at runtime.
 - `--auto` is the only path that skips per-batch approval. It additionally requires `RESPOND_AUTO_ACK=1` to take effect. Two locks reduce accidental triggers.
 - Nothing is deferred and no tracker item is created. The fix lands in this change or the reply names the external blocker.
-- AI bot threads are out of scope by default. `--include-bots` is opt-in, and even then they receive no reply.
+- AI bot threads are in scope by default and `--humans-only` excludes them. In scope or not, they receive no reply.
 - Account safety: every `gh` call uses `GH_TOKEN=$(gh auth token --user <account>)` inline.
 - Never `git push --no-verify`. Never bypass hooks without an explicit user-confirmed env var.
 - Force-push is blocked during open CHANGES_REQUESTED reviews unless `--force-during-review` is passed.
