@@ -75,12 +75,6 @@ from _lib.mutation_source_map import (
     load_source_map,
     map_to_original,
 )
-from _lib.mutation_ts_project_service import (
-    is_available as ts_ps_available,
-    is_enabled as ts_ps_enabled,
-    query_receiver_type as ts_ps_query,
-    shutdown as ts_ps_shutdown,
-)
 from _lib.mutation_detectors_methods import (
     detect_array_pop_shift_unshift_splice_reverse_fill_copywithin,
     detect_array_push,
@@ -422,38 +416,6 @@ def _filter_matches(
     return survived, allow_reasons
 
 
-_TS_PS_DROPPABLE_KINDS: frozenset[str] = frozenset({"array", "map", "set"})
-
-
-def _apply_ts_project_service(
-    file_path: str, matches: list[Match]
-) -> tuple[list[Match], int]:
-    import dataclasses
-
-    if not (ts_ps_enabled() and ts_ps_available()):
-        return matches, 0
-    if not file_path.endswith((".ts", ".tsx", ".mts", ".cts")):  # pragma: no cover
-        return matches, 0
-    survived: list[Match] = []  # pragma: no cover
-    dropped = 0  # pragma: no cover
-    for m in matches:  # pragma: no cover
-        info = ts_ps_query(file_path, m.line, max(0, m.col))
-        if info is None:
-            survived.append(m)
-            continue
-        new_metadata = {
-            **(m.metadata or {}),
-            "ts_receiver_type": info.get("type", ""),
-            "ts_receiver_kind": info.get("kind", ""),
-            "ts_receiver_readonly": "1" if info.get("readonly") else "0",
-        }
-        if info.get("readonly") and info.get("kind") in _TS_PS_DROPPABLE_KINDS:
-            dropped += 1
-            continue
-        survived.append(dataclasses.replace(m, metadata=new_metadata))
-    return survived, dropped
-
-
 def _remap_via_source_map(
     file_path: str, matches: list[Match]
 ) -> tuple[str, list[Match]]:
@@ -714,13 +676,6 @@ def main() -> int:
         if not survived:
             continue
         survived = _enrich_with_confidence(survived, path)
-        survived, ts_dropped = _apply_ts_project_service(path, survived)
-        if ts_dropped:
-            allow_counts["ts-readonly"] = (
-                allow_counts.get("ts-readonly", 0) + ts_dropped
-            )
-        if not survived:
-            continue
         for m in survived:
             detector_counts[m.detector] = detector_counts.get(m.detector, 0) + 1
             raw_confidence = str(m.metadata.get("confidence", "0"))
@@ -792,31 +747,26 @@ def main() -> int:
 
 
 def _entrypoint() -> int:
-    try:
-        if not _profile_mode():
-            return main()
-        import cProfile
-        import pstats
+    if not _profile_mode():
+        return main()
+    import cProfile
+    import pstats
 
-        profiler = cProfile.Profile()
-        code = profiler.runcall(main)
-        log_dir = os.path.join(os.path.expanduser("~"), ".claude", "logs")
-        try:
-            os.makedirs(log_dir, exist_ok=True)
-            with open(
-                os.path.join(log_dir, "mutation_blocker_profile.txt"),
-                "w",
-                encoding="utf-8",
-            ) as fh:
-                stats = pstats.Stats(profiler, stream=fh).sort_stats("cumulative")
-                stats.print_stats(30)
-        except OSError as error:
-            sys.stderr.write(
-                f"mutation-method-blocker: profile write failed: {error}\n"
-            )
-        return code
-    finally:
-        ts_ps_shutdown()
+    profiler = cProfile.Profile()
+    code = profiler.runcall(main)
+    log_dir = os.path.join(os.path.expanduser("~"), ".claude", "logs")
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        with open(
+            os.path.join(log_dir, "mutation_blocker_profile.txt"),
+            "w",
+            encoding="utf-8",
+        ) as fh:
+            stats = pstats.Stats(profiler, stream=fh).sort_stats("cumulative")
+            stats.print_stats(30)
+    except OSError as error:
+        sys.stderr.write(f"mutation-method-blocker: profile write failed: {error}\n")
+    return code
 
 
 if __name__ == "__main__":
