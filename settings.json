@@ -1,6 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "cleanupPeriodDays": 180,
+  "env": {
+    "VAULT_AUTO_CAPTURE": "1"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
@@ -84,10 +87,7 @@
       "Read(**/node_modules/**)"
     ]
   },
-  "model": "opus[1m]",
-  "env": {
-    "VAULT_AUTO_CAPTURE": "1"
-  },
+  "model": "opus",
   "hooks": {
     "PostCompact": [
       {
@@ -1582,6 +1582,9 @@
   "statusLine": {
     "type": "command",
     "command": "python3 ~/.claude/scripts/statusline.py"
+  },
+  "enabledPlugins": {
+    "cc-plugin-you-should-know@builtin": true
   },
   "outputStyle": "Concise",
   "language": "english",
