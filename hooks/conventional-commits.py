@@ -123,17 +123,14 @@ def _extract_message(command: str, cwd: str = "") -> str:
 def _audit(reason: str, command: str) -> None:
     if _audit_record is None:
         return
-    try:
-        _audit_record(
-            hook=HOOK_NAME,
-            decision="block",
-            decision_class="block",
-            reason=reason,
-            tool="Bash",
-            command_excerpt=command[:200],
-        )
-    except Exception as error:  # noqa: BLE001
-        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
+    _audit_record(
+        hook=HOOK_NAME,
+        decision="block",
+        decision_class="block",
+        reason=reason,
+        tool="Bash",
+        command_excerpt=command[:200],
+    )
 
 
 def _block(message: str, reason: str, command: str) -> int:

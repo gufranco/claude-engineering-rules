@@ -43,8 +43,6 @@ def _command_too_old() -> bool:
     if not match:
         return False
     major, minor = int(match.group(1)), int(match.group(2))
-    if major < MIN_MAJOR:
-        return True
     if major == MIN_MAJOR and minor < MIN_MINOR:
         sys.stderr.write(
             f"[rtk] WARNING: rtk {match.group(0)} is too old (need >= {MIN_MAJOR}.{MIN_MINOR}.0). "

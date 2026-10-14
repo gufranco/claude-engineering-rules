@@ -50,17 +50,14 @@ def _read_payload() -> tuple[str, str]:
 def _audit(reason: str, tool: str, file_path: str) -> None:
     if _audit_record is None:
         return
-    try:
-        _audit_record(
-            hook=HOOK_NAME,
-            decision="block",
-            decision_class="block",
-            reason=reason,
-            tool=tool,
-            command_excerpt=file_path[:200],
-        )
-    except Exception as error:  # noqa: BLE001
-        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
+    _audit_record(
+        hook=HOOK_NAME,
+        decision="block",
+        decision_class="block",
+        reason=reason,
+        tool=tool,
+        command_excerpt=file_path[:200],
+    )
 
 
 def _match_any(name: str, patterns: tuple[str, ...]) -> bool:

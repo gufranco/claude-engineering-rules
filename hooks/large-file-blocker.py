@@ -116,17 +116,14 @@ def _offenders(command: str, cwd: str) -> list[tuple[str, int]]:
 def _audit(command: str) -> None:
     if _audit_record is None:
         return
-    try:
-        _audit_record(
-            hook=HOOK_NAME,
-            decision="block",
-            decision_class="block",
-            reason="staged file exceeds size limit",
-            tool="Bash",
-            command_excerpt=command[:200],
-        )
-    except Exception as error:  # noqa: BLE001
-        sys.stderr.write(f"{HOOK_NAME}: audit log write failed: {error}\n")
+    _audit_record(
+        hook=HOOK_NAME,
+        decision="block",
+        decision_class="block",
+        reason="staged file exceeds size limit",
+        tool="Bash",
+        command_excerpt=command[:200],
+    )
 
 
 def main() -> int:

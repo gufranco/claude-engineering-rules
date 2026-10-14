@@ -30,10 +30,6 @@ def _stdin_with(payload: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
 
 
-def boom(**_kwargs: object) -> None:
-    raise RuntimeError("audit explosion")
-
-
 def test_read_command_blocks_on_malformed_json(
     hook, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
@@ -118,18 +114,3 @@ def test_audit_noop_when_record_unavailable(
 
     # Assert
     assert capsys.readouterr().err == ""
-
-
-def test_audit_reports_a_record_failure(
-    hook, monkeypatch: pytest.MonkeyPatch, capsys
-) -> None:
-    # Arrange
-    monkeypatch.setattr(hook, "_audit_record", boom)
-
-    # Act
-    hook._audit("git commit -m x")
-
-    # Assert
-    assert capsys.readouterr().err == (
-        "large-file-blocker: audit log write failed: audit explosion\n"
-    )
