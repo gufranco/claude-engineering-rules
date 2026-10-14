@@ -49,6 +49,7 @@ def _run_hook(
     hook: str | Path,
     payload: Payload,
     env: dict[str, str] | None = None,
+    timeout: float = SUBPROCESS_TIMEOUT_S,
 ) -> HookResult:
     path = hook if isinstance(hook, Path) else _hook_path(hook)
     proc = subprocess.run(
@@ -57,7 +58,7 @@ def _run_hook(
         capture_output=True,
         text=True,
         env=_build_env(env),
-        timeout=SUBPROCESS_TIMEOUT_S,
+        timeout=timeout,
         check=False,
     )
     return HookResult(proc.returncode, proc.stdout, proc.stderr)
@@ -100,8 +101,9 @@ def run_hook() -> Callable[..., HookResult]:
         payload: Payload,
         *,
         env: dict[str, str] | None = None,
+        timeout: float = SUBPROCESS_TIMEOUT_S,
     ) -> HookResult:
-        return _run_hook(hook, payload, env=env)
+        return _run_hook(hook, payload, env=env, timeout=timeout)
 
     return _runner
 

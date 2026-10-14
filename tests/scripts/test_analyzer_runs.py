@@ -106,8 +106,9 @@ def test_timeout_is_a_failure(tmp_path, monkeypatch):
     assert result.failure == "luacheck did not finish within 1 seconds"
 
 
-def test_ruff_reports_a_mutable_default(tmp_path):
+def test_ruff_reports_a_mutable_default(tmp_path, monkeypatch):
     # Arrange
+    monkeypatch.setenv("PATH", f"{Path(sys.executable).parent}:/usr/bin:/bin")
     source = tmp_path / "a.py"
     source.write_text("def f(items=[]):\n    return items\n", encoding="utf-8")
 
