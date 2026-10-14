@@ -15,7 +15,7 @@
 
 </div>
 
-**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **89** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-89 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+90 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -194,7 +194,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-89 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+90 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -244,6 +244,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget, including `glab ci view --live` and `glab ci status --wait` or `--live`. Text in single quotes or a quoted heredoc body is not read as a command. Bypass `GH_RUN_WATCH_DISABLE=1` |
+| [`gh-short-sha-guard.py`](hooks/gh-short-sha-guard.py) | PreToolUse Bash | Blocks `gh run list --commit` with a SHA shorter than 40 characters, which matches no runs and exits 0, so a CI wait built on it reports done or not started |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch`. Exempts `gh auth` plus invocations that reach no API (`--version`, `--help` or `-h` anywhere in the call, `config`, `alias`, `completion`). Reads commands on every line, and ignores `gh` text inside single quotes or a quoted heredoc body |
 | [`knowledge-note-guard.py`](hooks/knowledge-note-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | Enforces the knowledge-note specification inside the second brain: missing frontmatter, missing `## For future agent` preamble, an undated volatile claim, a wikilink to a note that does not exist, a pointer with no resolvable target (FRESH-3), a write into the immutable raw folder, a removal outside trash. Skips `specs/`, `eval/` and [`tests/`](tests/), which hold plan artifacts rather than notes. Bypass `KNOWLEDGE_NOTE_DISABLE=1` |
 | [`memory-write-guard.py`](hooks/memory-write-guard.py) | PreToolUse Write/Edit/MultiEdit | Keeps the session memory directory a generated artifact while a second brain vault is configured: every Write or Edit into the memory directory is blocked, since `/brain compile` writes it as a script, and an edit to `MEMORY.md` passes only when it leaves the compiled block unchanged. Completely inert when `SECOND_BRAIN_VAULT` is unset or does not resolve, so a clone without a vault keeps the harness default. Bypass `MEMORY_WRITE_GUARD_DISABLE=1` |
@@ -513,7 +514,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 89 runtime hooks
+  hooks/                 90 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
