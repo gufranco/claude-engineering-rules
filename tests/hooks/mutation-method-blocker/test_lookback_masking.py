@@ -6,7 +6,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
-from _lib.mutation_detectors_assignments import (  # noqa: E402
+from _lib.mutation_detectors_transactions import (  # noqa: E402
     detect_mobx_observable_outside_action,
 )
 

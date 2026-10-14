@@ -5,17 +5,20 @@ import subprocess
 import sys
 from pathlib import Path
 
+from _helpers.cov_env import apply_coverage_env
+
 HOOK = Path(__file__).resolve().parents[3] / "hooks" / "mutation-method-blocker.py"
 
 
 def _run(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    env = {
+    inherited = {
         key: value
         for key, value in os.environ.items()
         if key != "MUTATION_METHOD_BATCH_MODE"
     }
-    env["CLAUDE_HOOK_AUDIT_DISABLE"] = "1"
-    env["CLAUDE_BYPASS_STATE"] = str(tmp_path / "bypass.json")
+    env = apply_coverage_env(
+        {**inherited, "CLAUDE_BYPASS_STATE": str(tmp_path / "bypass.json")}
+    )
     return subprocess.run(
         [sys.executable, str(HOOK), *args],
         input="",

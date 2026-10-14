@@ -11,6 +11,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from _lib import mutation_detectors_methods as mdm  # noqa: E402
+from _lib import mutation_detectors_webapi as mdw  # noqa: E402
 
 
 def _source_path(faker: Faker) -> str:
@@ -164,7 +165,7 @@ def test_url_search_params_skips_unanchored_owner(faker: Faker) -> None:
     )
 
     # Act
-    hits = mdm.detect_url_search_params_mutations(text, "ts", _source_path(faker))
+    hits = mdw.detect_url_search_params_mutations(text, "ts", _source_path(faker))
 
     # Assert
     assert hits == []
@@ -178,7 +179,7 @@ def test_url_search_params_flags_the_anchored_owner(faker: Faker) -> None:
     )
 
     # Act
-    hits = mdm.detect_url_search_params_mutations(text, "ts", _source_path(faker))
+    hits = mdw.detect_url_search_params_mutations(text, "ts", _source_path(faker))
 
     # Assert
     assert [(hit.detector, hit.line) for hit in hits] == [
@@ -193,7 +194,7 @@ def test_headers_skips_when_no_strong_signal(faker: Faker) -> None:
     )
 
     # Act
-    hits = mdm.detect_headers_mutations(text, "ts", _source_path(faker))
+    hits = mdw.detect_headers_mutations(text, "ts", _source_path(faker))
 
     # Assert
     assert hits == []

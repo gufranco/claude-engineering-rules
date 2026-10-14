@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Iterator
@@ -15,6 +16,7 @@ HOOK_PATH = HOOKS_DIR / "mutation-method-blocker.py"
 AS_ANY_HOOK = HOOKS_DIR / "as-any-blocker.py"
 CONSOLE_LOG_HOOK = HOOKS_DIR / "console-log-blocker.py"
 SUBPROCESS_TIMEOUT_S = 6.0
+FINDING_TAG = re.compile(r"^\s+L\d+:\d+ \[([\w.-]+)\]", re.MULTILINE)
 SUBPROCESS_COV_DIR = REPO_ROOT / "tests" / "_subprocess_cov"
 COVERAGERC_PATH = REPO_ROOT / ".coveragerc"
 
