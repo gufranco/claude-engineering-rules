@@ -73,7 +73,7 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("typeorm-raw-sql-blocker"):
         sys.exit(0)
     if os.environ.get("TYPEORM_RAW_SQL_DISABLE") == "1":
@@ -82,8 +82,38 @@ def main() -> int:
             decision="bypass",
             bypass_env="TYPEORM_RAW_SQL_DISABLE",
         )
-        return 0
-    if is_bypassed("typeorm-raw-sql-blocker"):
+        return True
+    return is_bypassed("typeorm-raw-sql-blocker")
+
+
+def _collect_findings(items: list[tuple[str, str, str]]) -> list[str]:
+    findings: list[str] = []
+    for path, field, text in items:
+        if is_skipped_path(path):
+            continue
+        hits = find(text)
+        if hits:
+            findings.append(
+                f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
+            )
+    return findings
+
+
+def _block_message(findings: list[str]) -> str:
+    return (
+        "Blocked: TypeORM raw .query() is banned in application code. "
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
+        + "\n".join(findings)
+        + "\n\nFix: express the query using TypeORM's query builder "
+        "(repository.createQueryBuilder(), find(), findOne(), update(), delete()). "
+        "Raw .query() is only allowed in migration files and operational scripts.\n"
+        "Bypass (when there is genuinely no query builder equivalent): "
+        "set TYPEORM_RAW_SQL_DISABLE=1."
+    )
+
+
+def main() -> int:
+    if _disabled():
         return 0
 
     payload = read_hook_payload("typeorm-raw-sql-blocker")
@@ -95,30 +125,11 @@ def main() -> int:
     if not items:
         return 0
 
-    findings: list[str] = []
-    for path, field, text in items:
-        if is_skipped_path(path):
-            continue
-        hits = find(text)
-        if hits:
-            findings.append(
-                f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
-            )
-
+    findings = _collect_findings(items)
     if not findings:
         return 0
 
-    print(
-        "Blocked: TypeORM raw .query() is banned in application code. "
-        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
-        + "\n".join(findings)
-        + "\n\nFix: express the query using TypeORM's query builder "
-        "(repository.createQueryBuilder(), find(), findOne(), update(), delete()). "
-        "Raw .query() is only allowed in migration files and operational scripts.\n"
-        "Bypass (when there is genuinely no query builder equivalent): "
-        "set TYPEORM_RAW_SQL_DISABLE=1.",
-        file=sys.stderr,
-    )
+    print(_block_message(findings), file=sys.stderr)
     _audit(
         hook="typeorm-raw-sql-blocker",
         decision="block",

@@ -62,6 +62,17 @@ def no_subprocess(monkeypatch):
     monkeypatch.setattr("os.system", forbidden)
 
 
+def stop_payload(cwd, session: str, transcript_path) -> str:
+    return json.dumps(
+        {
+            "hook_event_name": "Stop",
+            "cwd": str(cwd),
+            "session_id": session,
+            "transcript_path": str(transcript_path) if transcript_path else "",
+        }
+    )
+
+
 def run(
     monkeypatch,
     tmp_path,
@@ -79,18 +90,7 @@ def run(
     monkeypatch.delenv("VAULT_CAPTURE_QUEUE_DISABLE", raising=False)
     for key, value in (env or {}).items():
         monkeypatch.setenv(key, value)
-    payload = (
-        stdin
-        if stdin is not None
-        else json.dumps(
-            {
-                "hook_event_name": "Stop",
-                "cwd": str(cwd),
-                "session_id": session,
-                "transcript_path": str(transcript_path) if transcript_path else "",
-            }
-        )
-    )
+    payload = stop_payload(cwd, session, transcript_path) if stdin is None else stdin
     monkeypatch.setattr("sys.stdin", io.StringIO(payload))
     return module.main()
 

@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 import time
+from collections import Counter
 
 LOG_PATH = os.path.expanduser("~/.claude/logs/hooks.log")
 TAIL_BYTES = 64 * 1024
@@ -91,7 +92,20 @@ def _summarise() -> tuple[int, int, list[str]]:
     return blocks, bypasses, hooks
 
 
-def _transcript_patterns(transcript_path: str) -> list[str]:
+CORRECTION_PHRASES = (
+    "no, not that",
+    "stop doing that",
+    "don't",
+    "wrong direction",
+    "i said",
+    "again,",
+)
+ERROR_MARKERS = ("ERROR:", "Error:", "Traceback", "FAILED")
+TRANSCRIPT_TAIL_BYTES = 256 * 1024
+TRANSCRIPT_TAIL_LINES = 200
+
+
+def _read_transcript_tail(transcript_path: str) -> list[str]:
     if not transcript_path or not os.path.exists(transcript_path):
         return []
     try:
@@ -100,106 +114,116 @@ def _transcript_patterns(transcript_path: str) -> list[str]:
         return []
     try:
         with open(transcript_path, "rb") as fh:
-            if size > 256 * 1024:
-                fh.seek(-256 * 1024, os.SEEK_END)
+            if size > TRANSCRIPT_TAIL_BYTES:
+                fh.seek(-TRANSCRIPT_TAIL_BYTES, os.SEEK_END)
                 fh.readline()
-            tail = fh.read().decode("utf-8", errors="replace").splitlines()
+            return fh.read().decode("utf-8", errors="replace").splitlines()
     except OSError:
         return []
 
-    user_corrections = 0
-    repeated_errors: dict[str, int] = {}
-    failed_attempts = 0
 
-    for line in tail[-200:]:
-        line_lower = line.lower()
-        if any(
-            phrase in line_lower
-            for phrase in (
-                "no, not that",
-                "stop doing that",
-                "don't",
-                "wrong direction",
-                "i said",
-                "again,",
-            )
-        ):
-            user_corrections += 1
-        for err_marker in ("ERROR:", "Error:", "Traceback", "FAILED"):
-            if err_marker in line:
-                fragment = line.split(err_marker, 1)[-1][:80].strip()
-                if fragment:
-                    repeated_errors[fragment] = repeated_errors.get(fragment, 0) + 1
-        if "blocked" in line_lower or "exit code 2" in line_lower:
-            failed_attempts += 1
+def _error_fragments(line: str) -> list[str]:
+    fragments = (
+        line.split(marker, 1)[-1][:80].strip()
+        for marker in ERROR_MARKERS
+        if marker in line
+    )
+    return [fragment for fragment in fragments if fragment]
 
-    patterns: list[str] = []
-    if user_corrections >= 2:
-        patterns.append(f"user corrections ({user_corrections})")
+
+def _patterns_from_lines(lines: list[str]) -> list[str]:
+    lowered = [line.lower() for line in lines]
+    user_corrections = sum(
+        1 for low in lowered if any(phrase in low for phrase in CORRECTION_PHRASES)
+    )
+    failed_attempts = sum(
+        1 for low in lowered if "blocked" in low or "exit code 2" in low
+    )
+    repeated_errors = Counter(
+        fragment for line in lines for fragment in _error_fragments(line)
+    )
     repeats = [k for k, v in repeated_errors.items() if v >= 3]
-    if repeats:
-        patterns.append(f"repeated error: `{repeats[0][:40]}`")
-    if failed_attempts >= 4:
-        patterns.append(f"hook blocks ({failed_attempts})")
-    return patterns
+    candidates = (
+        (user_corrections >= 2, f"user corrections ({user_corrections})"),
+        (bool(repeats), f"repeated error: `{repeats[0][:40]}`" if repeats else ""),
+        (failed_attempts >= 4, f"hook blocks ({failed_attempts})"),
+    )
+    return [text for hit, text in candidates if hit]
+
+
+def _transcript_patterns(transcript_path: str) -> list[str]:
+    tail = _read_transcript_tail(transcript_path)
+    return _patterns_from_lines(tail[-TRANSCRIPT_TAIL_LINES:])
 
 
 from _lib.hook_profile import should_run  # noqa: E402
 
 
+def _disabled() -> bool:
+    return (
+        os.environ.get("RETRO_POINTER_DISABLE") == "1"
+        or is_bypassed("retro-pointer")
+        or not should_run("retro-pointer")
+    )
+
+
+def _payload_transcript_path() -> str:
+    try:
+        data = json.load(sys.stdin)
+        return data.get("transcript_path", "")
+    except (ValueError, json.JSONDecodeError, OSError) as error:
+        sys.stderr.write(f"retro-pointer: unreadable payload: {error}\n")
+        return ""
+
+
+def _block_notices(blocks: int, bypasses: int, hooks: list[str]) -> list[str]:
+    counts = ((blocks, f"{blocks} block(s)"), (bypasses, f"{bypasses} bypass(es)"))
+    parts = [text for count, text in counts if count]
+    if not parts:
+        return []
+    top = ", ".join(hooks[:3]) if hooks else ""
+    suffix = f" (top: {top})" if top else ""
+    return [
+        "[retro] "
+        + " and ".join(parts)
+        + " this session"
+        + suffix
+        + ". Run /retro to propose upstream fixes."
+    ]
+
+
+def _instinct_notices(instinct_patterns: list[str]) -> list[str]:
+    if not instinct_patterns:
+        return []
+    return [
+        "[retro instinct] session patterns worth capturing: "
+        + "; ".join(instinct_patterns)
+        + ". Run /retro instinct to record."
+    ]
+
+
+def _report() -> int:
+    if _already_shown():
+        return 0
+    blocks, bypasses, hooks = _summarise()
+    instinct_patterns = _transcript_patterns(_payload_transcript_path())
+    if blocks == 0 and bypasses == 0 and not instinct_patterns:
+        return 0
+    notices = [
+        *_block_notices(blocks, bypasses, hooks),
+        *_instinct_notices(instinct_patterns),
+    ]
+    if notices:
+        emit_user_notice("\n".join(notices))
+    _mark_shown()
+    return 0
+
+
 def main() -> int:
-    if os.environ.get("RETRO_POINTER_DISABLE") == "1":
-        sys.exit(0)
-    if is_bypassed("retro-pointer"):
-        sys.exit(0)
-    if not should_run("retro-pointer"):
+    if _disabled():
         sys.exit(0)
     try:
-        if _already_shown():
-            return 0
-        blocks, bypasses, hooks = _summarise()
-
-        transcript_path = ""
-        try:
-            data = json.load(sys.stdin)
-            transcript_path = data.get("transcript_path", "")
-        except (ValueError, json.JSONDecodeError, OSError) as error:
-            sys.stderr.write(f"retro-pointer: unreadable payload: {error}\n")
-        instinct_patterns = _transcript_patterns(transcript_path)
-
-        if blocks == 0 and bypasses == 0 and not instinct_patterns:
-            return 0
-
-        parts = []
-        if blocks:
-            parts.append(f"{blocks} block(s)")
-        if bypasses:
-            parts.append(f"{bypasses} bypass(es)")
-
-        notices: list[str] = []
-        if parts:
-            top = ", ".join(hooks[:3]) if hooks else ""
-            suffix = f" (top: {top})" if top else ""
-            notices = [
-                "[retro] "
-                + " and ".join(parts)
-                + " this session"
-                + suffix
-                + ". Run /retro to propose upstream fixes."
-            ]
-
-        if instinct_patterns:
-            notices = [
-                *notices,
-                "[retro instinct] session patterns worth capturing: "
-                + "; ".join(instinct_patterns)
-                + ". Run /retro instinct to record.",
-            ]
-        if notices:
-            emit_user_notice("\n".join(notices))
-
-        _mark_shown()
-        return 0
+        return _report()
     except Exception as error:
         sys.stderr.write(f"retro-pointer: summary failed: {error}\n")
         return 0

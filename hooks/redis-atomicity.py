@@ -173,7 +173,7 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("redis-atomicity"):
         sys.exit(0)
     if os.environ.get("REDIS_ATOMICITY_DISABLE") == "1":
@@ -182,32 +182,24 @@ def main() -> int:
             decision="bypass",
             bypass_env="REDIS_ATOMICITY_DISABLE",
         )
-        return 0
-    if is_bypassed("redis-atomicity"):
-        return 0
+        return True
+    return is_bypassed("redis-atomicity")
 
-    payload = read_hook_payload("redis-atomicity")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _collect_findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
-    for path, field, text in items:
+    for path, _field, text in items:
         if is_skipped(path):
             continue
         hits = find(text)
         if hits:
             findings.append(f"  - {path}:")
             findings.extend(f"      {h}" for h in hits[:5])
+    return findings
 
-    if not findings:
-        return 0
 
-    print(
+def _block_message(findings: list[str]) -> str:
+    return (
         "Blocked: non-atomic Redis sequence detected. "
         "Rule: ~/.claude/standards/redis.md + checklist.md cat 4.\n"
         + "\n".join(findings)
@@ -218,9 +210,24 @@ def main() -> int:
         "  - Replace `GET` then `SET` with a Lua script or a `WATCH/MULTI/EXEC` transaction.\n"
         "  - Give every lock a TTL: `SET lock token NX EX <seconds>`, with the TTL above\n"
         "    the p99 of the protected operation, and check a fencing token at the write.\n"
-        "Bypass (when sequencing is intentional and safe): set REDIS_ATOMICITY_DISABLE=1.",
-        file=sys.stderr,
+        "Bypass (when sequencing is intentional and safe): set REDIS_ATOMICITY_DISABLE=1."
     )
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+
+    payload = read_hook_payload("redis-atomicity")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _collect_findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+
+    print(_block_message(findings), file=sys.stderr)
     _audit(
         hook="redis-atomicity",
         decision="block",

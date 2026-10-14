@@ -174,6 +174,50 @@ def emit_block(reason: str, file_path: str) -> NoReturn:
     sys.exit(2)
 
 
+def _edit_target(data: dict) -> tuple[Path, Path] | None:
+    if data.get("tool_name", "") not in {"Write", "Edit", "MultiEdit"}:
+        return None
+    tool_input = data.get("tool_input") or {}
+    file_path_str = tool_input.get("file_path", "")
+    if not file_path_str:
+        return None
+    return Path(file_path_str), Path(data.get("cwd", os.getcwd()))
+
+
+def _active_plan(cwd: Path) -> tuple[Path, set[str]] | None:
+    plan_path = find_active_plan(cwd)
+    if plan_path is None:
+        return None
+    try:
+        plan_text = plan_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    declared = extract_declared_paths(plan_text)
+    if not declared:
+        return None
+    return plan_path, declared
+
+
+def _allowed(plan_path: Path, target: Path, declared: set[str]) -> bool:
+    return (
+        not governs(plan_path, target)
+        or in_workspace(target)
+        or is_in_scope(target, declared)
+        or str(plan_path.parent) in str(target)
+    )
+
+
+def _block_reason(plan_path: Path, target: Path) -> str:
+    return (
+        f"BLOCKED: editing `{target.name}` which is not listed in the active "
+        f"plan `{plan_path}`.\n"
+        f"Rule: ~/.claude/rules/surgical-edits.md.\n"
+        f"If this edit is necessary, add its path to the plan in backticks, "
+        f"then retry; a retry alone is blocked again. To suppress this gate: set "
+        f"SCOPE_GUARD_DISABLE=1."
+    )
+
+
 def main() -> int:
     if os.environ.get("SCOPE_GUARD_DISABLE") == "1":
         return 0
@@ -182,51 +226,20 @@ def main() -> int:
 
     data = read_hook_payload("scope-guard")
 
-    tool_name = data.get("tool_name", "")
-    if tool_name not in {"Write", "Edit", "MultiEdit"}:
+    edit = _edit_target(data)
+    if edit is None:
+        return 0
+    target, cwd = edit
+
+    plan = _active_plan(cwd)
+    if plan is None:
+        return 0
+    plan_path, declared = plan
+
+    if _allowed(plan_path, target, declared):
         return 0
 
-    tool_input = data.get("tool_input") or {}
-    file_path_str = tool_input.get("file_path", "")
-    if not file_path_str:
-        return 0
-
-    cwd_str = data.get("cwd", os.getcwd())
-    cwd = Path(cwd_str)
-
-    plan_path = find_active_plan(cwd)
-    if plan_path is None:
-        return 0
-
-    try:
-        plan_text = plan_path.read_text(encoding="utf-8")
-    except OSError:
-        return 0
-
-    declared = extract_declared_paths(plan_text)
-    if not declared:
-        return 0
-
-    target = Path(file_path_str)
-    if not governs(plan_path, target):
-        return 0
-    if in_workspace(target):
-        return 0
-    if is_in_scope(target, declared):
-        return 0
-
-    if str(plan_path.parent) in str(target):
-        return 0
-
-    reason = (
-        f"BLOCKED: editing `{target.name}` which is not listed in the active "
-        f"plan `{plan_path}`.\n"
-        f"Rule: ~/.claude/rules/surgical-edits.md.\n"
-        f"If this edit is necessary, add its path to the plan in backticks, "
-        f"then retry; a retry alone is blocked again. To suppress this gate: set "
-        f"SCOPE_GUARD_DISABLE=1."
-    )
-    emit_block(reason, str(target))
+    emit_block(_block_reason(plan_path, target), str(target))
 
 
 if __name__ == "__main__":

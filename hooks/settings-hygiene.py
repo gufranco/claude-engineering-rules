@@ -105,162 +105,107 @@ def _check_string(s: str, blocklist: list[str]) -> str | None:
     return None
 
 
-KNOWN_HOOK_EVENTS = {
-    "PreToolUse",
-    "PostToolUse",
-    "Stop",
-    "SubagentStop",
-    "PreCompact",
-    "PostCompact",
-    "UserPromptSubmit",
-    "SessionStart",
-    "SessionEnd",
-    "Notification",
-}
-
-
-def _check_structure(parsed: object) -> list[str]:
-    findings: list[str] = []
-    if not isinstance(parsed, dict):
-        return findings
-
-    hooks = parsed.get("hooks")
-    if hooks is not None:
-        if not isinstance(hooks, dict):
-            findings.append("`hooks` must be an object keyed by event name.")
-        else:
-            for event, entries in hooks.items():
-                if event not in KNOWN_HOOK_EVENTS:
-                    findings.append(
-                        f"unknown hook event `{event}`. Known events: {', '.join(sorted(KNOWN_HOOK_EVENTS))}."
-                    )
-                    continue
-                if not isinstance(entries, list):
-                    findings.append(f"hooks.{event} must be a list of matcher groups.")
-                    continue
-                for i, group in enumerate(entries):
-                    if not isinstance(group, dict):
-                        findings.append(f"hooks.{event}[{i}] must be an object.")
-                        continue
-                    inner = group.get("hooks")
-                    if inner is not None and not isinstance(inner, list):
-                        findings.append(f"hooks.{event}[{i}].hooks must be a list.")
-                    if isinstance(inner, list):
-                        for j, h in enumerate(inner):
-                            if not isinstance(h, dict):
-                                findings.append(
-                                    f"hooks.{event}[{i}].hooks[{j}] must be an object."
-                                )
-                                continue
-                            htype = h.get("type")
-                            if htype != "command":
-                                findings.append(
-                                    f"hooks.{event}[{i}].hooks[{j}].type must be `command`, got `{htype}`."
-                                )
-                            if not h.get("command"):
-                                findings.append(
-                                    f"hooks.{event}[{i}].hooks[{j}].command must be a non-empty string."
-                                )
-
-    mcp = parsed.get("mcpServers")
-    if mcp is not None:
-        if not isinstance(mcp, dict):
-            findings.append("`mcpServers` must be an object keyed by server name.")
-        else:
-            for name, cfg in mcp.items():
-                if not isinstance(cfg, dict):
-                    findings.append(f"mcpServers.{name} must be an object.")
-                    continue
-                has_command = "command" in cfg
-                has_url = "url" in cfg
-                if has_command and has_url:
-                    findings.append(
-                        f"mcpServers.{name} has both `command` and `url`. Pick one transport."
-                    )
-                if not has_command and not has_url:
-                    findings.append(
-                        f"mcpServers.{name} needs either `command` (stdio) or `url` (http)."
-                    )
-    return findings
-
-
+from _lib.settings_hygiene_structure import check_structure  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> None:
+PORTABILITY_GUIDANCE = (
+    "\nKeep ~/.claude/settings.json portable across machines and projects.\n"
+    "Use `${ENV_VAR}` placeholders, `~` for home, and add per-project tokens to\n"
+    "~/.claude/.settings-hygiene-blocklist if you want them flagged on future edits.\n"
+    "Bypass once: set SETTINGS_HYGIENE_DISABLE=1 in the environment."
+)
+
+
+def _exit_when_disabled() -> None:
     if not should_run("settings-hygiene"):
         sys.exit(0)
     if os.environ.get("SETTINGS_HYGIENE_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("settings-hygiene"):
         sys.exit(0)
-    data = read_hook_payload("settings-hygiene")
 
-    tool_input = data.get("tool_input", data.get("input", {}))
+
+def _scan_target(proposed: str) -> object:
+    try:
+        return json.loads(proposed)
+    except json.JSONDecodeError:
+        return proposed
+
+
+def _string_findings(scan_target: object) -> list[tuple[str, str]]:
+    blocklist = _load_blocklist()
+    checked = ((s, _check_string(s, blocklist)) for s in _walk_strings(scan_target))
+    return [(s[:120], reason) for s, reason in checked if reason]
+
+
+def _print_string_findings(findings: list[tuple[str, str]]) -> None:
+    if not findings:
+        return
+    print(
+        "BLOCKED: settings.json contains project- or machine-specific data.\n",
+        file=sys.stderr,
+    )
+    for value, reason in findings[:10]:
+        print(f"  - {reason}\n    value: {_masked(value)}", file=sys.stderr)
+
+
+def _print_structure_findings(
+    structure_findings: list[str], after_strings: bool
+) -> None:
+    if not structure_findings:
+        return
+    if after_strings:
+        print("", file=sys.stderr)
+    print(
+        "BLOCKED: settings.json has structural problems.\n",
+        file=sys.stderr,
+    )
+    for reason in structure_findings[:10]:
+        print(f"  - {reason}", file=sys.stderr)
+
+
+def _first_reason(
+    findings: list[tuple[str, str]], structure_findings: list[str]
+) -> str:
+    if findings:
+        return findings[0][1]
+    return structure_findings[0] if structure_findings else "unknown"
+
+
+def _settings_path(tool_input: dict) -> str:
     file_path = tool_input.get("file_path") or tool_input.get("path") or ""
     if not file_path or not _is_settings_target(file_path):
         sys.exit(0)
+    return file_path
+
+
+def main() -> None:
+    _exit_when_disabled()
+    data = read_hook_payload("settings-hygiene")
+
+    tool_input = data.get("tool_input", data.get("input", {}))
+    file_path = _settings_path(tool_input)
 
     proposed = _proposed_content(tool_input)
     if not proposed:
         sys.exit(0)
 
-    try:
-        parsed = json.loads(proposed)
-    except json.JSONDecodeError:
-        scan_target: object = proposed
-    else:
-        scan_target = parsed
-
-    blocklist = _load_blocklist()
-    findings: list[tuple[str, str]] = []
-    for s in _walk_strings(scan_target):
-        reason = _check_string(s, blocklist)
-        if reason:
-            findings.append((s[:120], reason))
-
-    structure_findings = _check_structure(scan_target)
+    scan_target = _scan_target(proposed)
+    findings = _string_findings(scan_target)
+    structure_findings = check_structure(scan_target)
 
     if not findings and not structure_findings:
         sys.exit(0)
 
-    if findings:
-        print(
-            "BLOCKED: settings.json contains project- or machine-specific data.\n",
-            file=sys.stderr,
-        )
-        for value, reason in findings[:10]:
-            print(f"  - {reason}\n    value: {_masked(value)}", file=sys.stderr)
-
-    if structure_findings:
-        if findings:
-            print("", file=sys.stderr)
-        print(
-            "BLOCKED: settings.json has structural problems.\n",
-            file=sys.stderr,
-        )
-        for reason in structure_findings[:10]:
-            print(f"  - {reason}", file=sys.stderr)
-
-    print(
-        "\nKeep ~/.claude/settings.json portable across machines and projects.\n"
-        "Use `${ENV_VAR}` placeholders, `~` for home, and add per-project tokens to\n"
-        "~/.claude/.settings-hygiene-blocklist if you want them flagged on future edits.\n"
-        "Bypass once: set SETTINGS_HYGIENE_DISABLE=1 in the environment.",
-        file=sys.stderr,
-    )
-    first_reason = (
-        findings[0][1]
-        if findings
-        else structure_findings[0]
-        if structure_findings
-        else "unknown"
-    )
+    _print_string_findings(findings)
+    _print_structure_findings(structure_findings, bool(findings))
+    print(PORTABILITY_GUIDANCE, file=sys.stderr)
     _audit(
         hook="settings-hygiene",
         decision="block",
         tool=data.get("tool_name", "Write"),
-        reason=first_reason,
+        reason=_first_reason(findings, structure_findings),
         file_path=file_path,
     )
     sys.exit(2)

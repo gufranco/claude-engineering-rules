@@ -72,7 +72,7 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("sequelize-raw-sql-blocker"):
         sys.exit(0)
     if os.environ.get("SEQUELIZE_RAW_SQL_DISABLE") == "1":
@@ -81,8 +81,38 @@ def main() -> int:
             decision="bypass",
             bypass_env="SEQUELIZE_RAW_SQL_DISABLE",
         )
-        return 0
-    if is_bypassed("sequelize-raw-sql-blocker"):
+        return True
+    return is_bypassed("sequelize-raw-sql-blocker")
+
+
+def _collect_findings(items: list[tuple[str, str, str]]) -> list[str]:
+    findings: list[str] = []
+    for path, field, text in items:
+        if is_skipped_path(path):
+            continue
+        hits = find(text)
+        if hits:
+            findings.append(
+                f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
+            )
+    return findings
+
+
+def _block_message(findings: list[str]) -> str:
+    return (
+        "Blocked: Sequelize raw .query() is banned in application code. "
+        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
+        + "\n".join(findings)
+        + "\n\nFix: express the query using Sequelize's model methods "
+        "(findAll, findOne, update, destroy, bulkCreate). Raw .query() is only "
+        "allowed in migration files and operational scripts.\n"
+        "Bypass (when there is genuinely no model-method equivalent): "
+        "set SEQUELIZE_RAW_SQL_DISABLE=1."
+    )
+
+
+def main() -> int:
+    if _disabled():
         return 0
 
     payload = read_hook_payload("sequelize-raw-sql-blocker")
@@ -94,30 +124,11 @@ def main() -> int:
     if not items:
         return 0
 
-    findings: list[str] = []
-    for path, field, text in items:
-        if is_skipped_path(path):
-            continue
-        hits = find(text)
-        if hits:
-            findings.append(
-                f"  - {field} ({path or 'unknown'}): {', '.join(sorted(set(hits)))}"
-            )
-
+    findings = _collect_findings(items)
     if not findings:
         return 0
 
-    print(
-        "Blocked: Sequelize raw .query() is banned in application code. "
-        'Rule: ~/.claude/standards/code-style.md "Fundamentals".\n'
-        + "\n".join(findings)
-        + "\n\nFix: express the query using Sequelize's model methods "
-        "(findAll, findOne, update, destroy, bulkCreate). Raw .query() is only "
-        "allowed in migration files and operational scripts.\n"
-        "Bypass (when there is genuinely no model-method equivalent): "
-        "set SEQUELIZE_RAW_SQL_DISABLE=1.",
-        file=sys.stderr,
-    )
+    print(_block_message(findings), file=sys.stderr)
     _audit(
         hook="sequelize-raw-sql-blocker",
         decision="block",

@@ -136,7 +136,7 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("sequelize-schema-sync"):
         sys.exit(0)
     if os.environ.get("SEQUELIZE_SCHEMA_SYNC_DISABLE") == "1":
@@ -145,8 +145,35 @@ def main() -> int:
             decision="bypass",
             bypass_env="SEQUELIZE_SCHEMA_SYNC_DISABLE",
         )
-        return 0
-    if is_bypassed("sequelize-schema-sync"):
+        return True
+    return is_bypassed("sequelize-schema-sync")
+
+
+def _collect_findings(items: list[tuple[str, str, str]]) -> list[str]:
+    all_findings: list[str] = []
+    for path, field, text in items:
+        hits = find(text)
+        if hits:
+            all_findings.append(f"  - {field} ({path or 'unknown'}):")
+            for h in hits:
+                all_findings.append(f"      {h}")
+    return all_findings
+
+
+def _block_message(all_findings: list[str]) -> str:
+    return (
+        "Blocked: Sequelize schema-sync defect. "
+        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
+        + "\n".join(all_findings)
+        + "\n\nFix: remove sync({ force/alter: true }) from application code, "
+        "use migrations (sequelize-cli or umzug). Add an explicit `name` to every "
+        "indexes entry. Use a real Umzug storage backend, not 'none'.\n"
+        "Bypass (test fixtures only): set SEQUELIZE_SCHEMA_SYNC_DISABLE=1."
+    )
+
+
+def main() -> int:
+    if _disabled():
         return 0
 
     payload = read_hook_payload("sequelize-schema-sync")
@@ -158,27 +185,11 @@ def main() -> int:
     if not items:
         return 0
 
-    all_findings: list[str] = []
-    for path, field, text in items:
-        hits = find(text)
-        if hits:
-            all_findings.append(f"  - {field} ({path or 'unknown'}):")
-            for h in hits:
-                all_findings.append(f"      {h}")
-
+    all_findings = _collect_findings(items)
     if not all_findings:
         return 0
 
-    print(
-        "Blocked: Sequelize schema-sync defect. "
-        "Rule: ~/.claude/rules/lang/orm-migrations.md.\n"
-        + "\n".join(all_findings)
-        + "\n\nFix: remove sync({ force/alter: true }) from application code, "
-        "use migrations (sequelize-cli or umzug). Add an explicit `name` to every "
-        "indexes entry. Use a real Umzug storage backend, not 'none'.\n"
-        "Bypass (test fixtures only): set SEQUELIZE_SCHEMA_SYNC_DISABLE=1.",
-        file=sys.stderr,
-    )
+    print(_block_message(all_findings), file=sys.stderr)
     _audit(
         hook="sequelize-schema-sync",
         decision="block",

@@ -145,10 +145,8 @@ def line_of(text: str, index: int) -> int:
     return text.count("\n", 0, index) + 1
 
 
-def find_io_in_transactions(text: str) -> list[str]:
-    hits: list[str] = []
-    lines = text.splitlines()
-
+def _callback_bodies(text: str) -> list[tuple[int, str]]:
+    bodies: list[tuple[int, str]] = []
     for match in TX_CALLBACK_OPEN.finditer(text):
         open_paren = text.index("(", match.start())
         span = span_of_call(text, open_paren)
@@ -158,28 +156,40 @@ def find_io_in_transactions(text: str) -> list[str]:
         body = text[start:end]
         if body.lstrip("( \n\t").startswith("["):
             continue
+        bodies = [*bodies, (start, body)]
+    return bodies
 
-        for io_match in IO_CALLS.finditer(body):
-            absolute = start + io_match.start()
-            line_no = line_of(text, absolute)
-            if line_or_prev_has_suppression(lines, line_no - 1):
-                continue
-            snippet = (
-                lines[line_no - 1].strip()[:80] if line_no - 1 < len(lines) else ""
-            )
-            hits.append(f"L{line_no}: I/O inside a transaction: {snippet}")
 
-        for sleep_match in SLEEP_CALLS.finditer(body):
-            absolute = start + sleep_match.start()
-            line_no = line_of(text, absolute)
-            if line_or_prev_has_suppression(lines, line_no - 1):
-                continue
-            snippet = (
-                lines[line_no - 1].strip()[:80] if line_no - 1 < len(lines) else ""
-            )
-            hits.append(f"L{line_no}: a timer holds the transaction open: {snippet}")
-
+def _pattern_hits(
+    text: str,
+    lines: list[str],
+    region: tuple[int, str],
+    pattern: re.Pattern[str],
+    label: str,
+) -> list[str]:
+    start, body = region
+    hits: list[str] = []
+    for found in pattern.finditer(body):
+        line_no = line_of(text, start + found.start())
+        if line_or_prev_has_suppression(lines, line_no - 1):
+            continue
+        snippet = lines[line_no - 1].strip()[:80] if line_no - 1 < len(lines) else ""
+        hits = [*hits, f"L{line_no}: {label}: {snippet}"]
     return hits
+
+
+def find_io_in_transactions(text: str) -> list[str]:
+    lines = text.splitlines()
+    return [
+        hit
+        for region in _callback_bodies(text)
+        for hit in (
+            *_pattern_hits(text, lines, region, IO_CALLS, "I/O inside a transaction"),
+            *_pattern_hits(
+                text, lines, region, SLEEP_CALLS, "a timer holds the transaction open"
+            ),
+        )
+    ]
 
 
 def find_array_mode_transactions(text: str) -> list[str]:
@@ -243,53 +253,48 @@ def render_findings(findings: list[tuple[str, list[str]]]) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run(HOOK_ID):
-        return 0
+        return True
     if os.environ.get(ENV_DISABLE) == "1":
         _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_DISABLE)
-        return 0
-    if is_bypassed(HOOK_ID):
-        return 0
+        return True
+    return is_bypassed(HOOK_ID)
 
-    payload = read_hook_payload("transaction-scope-guard")
 
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-
+def _collect_findings(items: list[tuple[str, str]]) -> list[tuple[str, list[str]]]:
     findings: list[tuple[str, list[str]]] = []
-    for path, text in collect(tool, tool_input):
+    for path, text in items:
         if is_skipped(path):
             continue
         hits = find(text)
         if hits:
-            findings.append((path, hits))
+            findings = [*findings, (path, hits)]
+    return findings
 
-    if not findings:
-        return 0
 
-    detected = render_findings(findings)
-
-    if os.environ.get(ENV_ENFORCE) != "1":
-        emit_warning(
-            warn(
-                hook=HOOK_ID,
-                purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
-                next_action=(
-                    "Shrink the transaction to database work only. Set "
-                    f"{ENV_ENFORCE}=1 to make this a blocking check."
-                ),
-            )
-        )
-        _audit(
+def _warn(tool: str, detected: str) -> int:
+    emit_warning(
+        warn(
             hook=HOOK_ID,
-            decision="warn",
-            tool=tool,
-            reason="transaction scope",
-            command_excerpt=detected[:240],
+            purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
+            next_action=(
+                "Shrink the transaction to database work only. Set "
+                f"{ENV_ENFORCE}=1 to make this a blocking check."
+            ),
         )
-        return 0
+    )
+    _audit(
+        hook=HOOK_ID,
+        decision="warn",
+        tool=tool,
+        reason="transaction scope",
+        command_excerpt=detected[:240],
+    )
+    return 0
 
+
+def _block(tool: str, detected: str) -> int:
     print(
         block(
             hook=HOOK_ID,
@@ -312,6 +317,25 @@ def main() -> int:
         command_excerpt=detected[:240],
     )
     return 2
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+
+    payload = read_hook_payload("transaction-scope-guard")
+
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input", {}) or {}
+
+    findings = _collect_findings(collect(tool, tool_input))
+    if not findings:
+        return 0
+
+    detected = render_findings(findings)
+    if os.environ.get(ENV_ENFORCE) != "1":
+        return _warn(tool, detected)
+    return _block(tool, detected)
 
 
 if __name__ == "__main__":

@@ -87,13 +87,27 @@ def detect_violation(command: str) -> tuple[str, str] | None:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> None:
+def _exit_when_disabled() -> None:
     if not should_run("review-state-guard"):
         sys.exit(0)
     if os.environ.get("REVIEW_STATE_GUARD_DISABLE") == "1":
         sys.exit(0)
     if is_bypassed("review-state-guard"):
         sys.exit(0)
+
+
+def _block_message(kind: str, explanation: str, command: str) -> str:
+    return (
+        f"BLOCKED: review-state mutation ({kind}).\n"
+        f"{explanation}\n"
+        "If the action is intentional and you have user approval, set "
+        "REVIEW_STATE_GUARD_DISABLE=1 in the environment.\n"
+        f"Command: {command[:240]}"
+    )
+
+
+def main() -> None:
+    _exit_when_disabled()
 
     data = read_hook_payload("review-state-guard")
 
@@ -107,14 +121,7 @@ def main() -> None:
         sys.exit(0)
 
     kind, explanation = result
-    print(
-        f"BLOCKED: review-state mutation ({kind}).\n"
-        f"{explanation}\n"
-        "If the action is intentional and you have user approval, set "
-        "REVIEW_STATE_GUARD_DISABLE=1 in the environment.\n"
-        f"Command: {command[:240]}",
-        file=sys.stderr,
-    )
+    print(_block_message(kind, explanation, command), file=sys.stderr)
     _audit(
         hook="review-state-guard",
         decision="block",

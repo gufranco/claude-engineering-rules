@@ -100,6 +100,55 @@ def workspace_note(workspace: Path | None) -> list[str]:
     ]
 
 
+RESUME_INTRO = (
+    "",
+    "The previous session left these artifacts behind. Read them",
+    "before starting new work so you do not duplicate or override",
+    "in-progress changes.",
+    "",
+)
+
+
+def _primary_artifact(
+    prompt: Path | None,
+    checkpoints: list[Path],
+    specs: list[Path],
+    sessions: list[Path],
+) -> tuple[Path, str]:
+    if prompt is not None:
+        return prompt, f"Continuation prompt: `{prompt}`"
+    if checkpoints:
+        return checkpoints[0], f"Most recent checkpoint: `{checkpoints[0]}`"
+    if specs:
+        return specs[0], f"Most recent active plan: `{specs[0]}`"
+    return sessions[0], f"Most recent session log: `{sessions[0]}`"
+
+
+def _checkpoint_lines(prompt: Path | None, checkpoints: list[Path]) -> list[str]:
+    if prompt is not None and checkpoints:
+        return ["", "Recent checkpoints:", *(f"  - `{c}`" for c in checkpoints[:5])]
+    if len(checkpoints) > 1:
+        return [
+            "",
+            "Other recent checkpoints:",
+            *(f"  - `{c}`" for c in checkpoints[1:5]),
+        ]
+    return []
+
+
+def _spec_lines(specs: list[Path], primary: Path) -> list[str]:
+    if not specs or primary in specs:
+        return []
+    return ["", "Recent active plans:", *(f"  - `{s}`" for s in specs[:5])]
+
+
+def _preview_lines(primary: Path, prompt: Path | None) -> list[str]:
+    excerpt = preview(primary, PROMPT_MAX_LINES if prompt else MAX_PREVIEW_LINES)
+    if not excerpt:
+        return []
+    return ["", f"Preview of `{primary.name}`:", "```", excerpt, "```"]
+
+
 def build_context(cwd: Path, source: str) -> str | None:
     workspace = workspace_dir(cwd)
     prompt = prompt_file(workspace)
@@ -113,54 +162,16 @@ def build_context(cwd: Path, source: str) -> str | None:
             return None
         return "\n".join([f"WORKSPACE (SessionStart: {source})", *note]).rstrip()
 
-    lines: list[str] = []
-    lines.append(f"RESUME CONTEXT (SessionStart: {source})")
-    lines.append("")
-    lines.append("The previous session left these artifacts behind. Read them")
-    lines.append("before starting new work so you do not duplicate or override")
-    lines.append("in-progress changes.")
-    lines.append("")
-    lines.extend(workspace_note(workspace))
-
-    primary: Path
-    if prompt is not None:
-        primary = prompt
-        lines.append(f"Continuation prompt: `{primary}`")
-    elif checkpoints:
-        primary = checkpoints[0]
-        lines.append(f"Most recent checkpoint: `{primary}`")
-    elif specs:
-        primary = specs[0]
-        lines.append(f"Most recent active plan: `{primary}`")
-    else:
-        primary = sessions[0]
-        lines.append(f"Most recent session log: `{primary}`")
-
-    if prompt is not None and checkpoints:
-        lines.append("")
-        lines.append("Recent checkpoints:")
-        for c in checkpoints[:5]:
-            lines.append(f"  - `{c}`")
-    elif len(checkpoints) > 1:
-        lines.append("")
-        lines.append("Other recent checkpoints:")
-        for c in checkpoints[1:5]:
-            lines.append(f"  - `{c}`")
-
-    if specs and primary not in specs:
-        lines.append("")
-        lines.append("Recent active plans:")
-        for s in specs[:5]:
-            lines.append(f"  - `{s}`")
-
-    excerpt = preview(primary, PROMPT_MAX_LINES if prompt else MAX_PREVIEW_LINES)
-    if excerpt:
-        lines.append("")
-        lines.append(f"Preview of `{primary.name}`:")
-        lines.append("```")
-        lines.append(excerpt)
-        lines.append("```")
-
+    primary, primary_line = _primary_artifact(prompt, checkpoints, specs, sessions)
+    lines = [
+        f"RESUME CONTEXT (SessionStart: {source})",
+        *RESUME_INTRO,
+        *workspace_note(workspace),
+        primary_line,
+        *_checkpoint_lines(prompt, checkpoints),
+        *_spec_lines(specs, primary),
+        *_preview_lines(primary, prompt),
+    ]
     return "\n".join(lines)
 
 

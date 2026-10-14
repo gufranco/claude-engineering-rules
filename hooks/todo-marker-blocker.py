@@ -162,7 +162,7 @@ def find(text: str) -> list[str]:
 from _lib.hook_profile import should_run  # noqa: E402
 
 
-def main() -> int:
+def _disabled() -> bool:
     if not should_run("todo-marker-blocker"):
         sys.exit(0)
     if os.environ.get("TODO_MARKER_DISABLE") == "1":
@@ -171,19 +171,11 @@ def main() -> int:
             decision="bypass",
             bypass_env="TODO_MARKER_DISABLE",
         )
-        return 0
-    if is_bypassed("todo-marker-blocker"):
-        return 0
+        return True
+    return is_bypassed("todo-marker-blocker")
 
-    payload = read_hook_payload("todo-marker-blocker")
 
-    tool = payload.get("tool_name", "") or ""
-    tool_input = payload.get("tool_input", {}) or {}
-
-    items = collect(tool, tool_input)
-    if not items:
-        return 0
-
+def _collect_findings(items: list[tuple[str, str, str]]) -> list[str]:
     findings: list[str] = []
     for path, field, text in items:
         if is_skipped(path):
@@ -191,11 +183,11 @@ def main() -> int:
         hits = find(text)
         if hits:
             findings.append(f"  - {field} ({path}): {', '.join(sorted(set(hits)))}")
+    return findings
 
-    if not findings:
-        return 0
 
-    print(
+def _block_message(findings: list[str]) -> str:
+    return (
         "Blocked: tactical-debt marker in source code. "
         'Rule: ~/.claude/rules/code-style.md "Completeness" and '
         "~/.claude/rules/found-fix.md, which says a code marker is never a fix.\n"
@@ -208,9 +200,28 @@ def main() -> int:
         "Third-party tool directives (eslint-disable, @ts-expect-error) are honored.\n"
         "Bypass (rare): set TODO_MARKER_DISABLE=1, "
         "or register a TTL-bound pass with `python3 ~/.claude/scripts/bypass.py "
-        "set todo-marker-blocker`.",
-        file=sys.stderr,
+        "set todo-marker-blocker`."
     )
+
+
+def main() -> int:
+    if _disabled():
+        return 0
+
+    payload = read_hook_payload("todo-marker-blocker")
+
+    tool = payload.get("tool_name", "") or ""
+    tool_input = payload.get("tool_input", {}) or {}
+
+    items = collect(tool, tool_input)
+    if not items:
+        return 0
+
+    findings = _collect_findings(items)
+    if not findings:
+        return 0
+
+    print(_block_message(findings), file=sys.stderr)
     _audit(
         hook="todo-marker-blocker",
         decision="block",

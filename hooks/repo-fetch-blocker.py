@@ -57,29 +57,37 @@ def find_offender(command: str) -> tuple[str, str] | None:
     return None
 
 
-def emit_block(label: str, why: str, command: str) -> None:
-    reason = (
+_FIX_GUIDANCE = (
+    "\n"
+    "Fix: clone the repo to a temp dir and analyze locally.\n"
+    "  WORKDIR=$(mktemp -d -t repo-analysis-XXXXXX)\n"
+    '  git clone --depth=1 <repo-url> "$WORKDIR/repo"\n'
+    "  # then use Read, Grep, Glob against $WORKDIR/repo\n"
+    "\n"
+    "Carve-outs that stay allowed: `gh issue list`, `gh pr list`,\n"
+    "`gh pr diff <n>`, `gh search code`, single README probe via\n"
+    "`gh api repos/<o>/<r>/readme`, repo metadata `gh repo view <o>/<r>`.\n"
+    "\n"
+    "Private repo auth, token read at call time and never stored in the URL:\n"
+    '  git -c credential."https://github.com".helper= \\\n'
+    '      -c credential."https://github.com".helper=\'!f(){ echo username=x-access-token; '
+    'echo "password=$(gh auth token --user <account>)"; }; f\' \\\n'
+    '      clone --depth=1 https://github.com/<owner>/<repo>.git "$WORKDIR/repo"\n'
+    "\n"
+    "Bypass (one-off, export in parent shell): REPO_FETCH_DISABLE=1"
+)
+
+
+def _block_reason(label: str, why: str) -> str:
+    return (
         f"BLOCKED: {label}.\n"
         f"{why}\n"
-        f"Rule: ~/.claude/rules/repo-analysis.md.\n"
-        f"\n"
-        f"Fix: clone the repo to a temp dir and analyze locally.\n"
-        f"  WORKDIR=$(mktemp -d -t repo-analysis-XXXXXX)\n"
-        f'  git clone --depth=1 <repo-url> "$WORKDIR/repo"\n'
-        f"  # then use Read, Grep, Glob against $WORKDIR/repo\n"
-        f"\n"
-        f"Carve-outs that stay allowed: `gh issue list`, `gh pr list`,\n"
-        f"`gh pr diff <n>`, `gh search code`, single README probe via\n"
-        f"`gh api repos/<o>/<r>/readme`, repo metadata `gh repo view <o>/<r>`.\n"
-        f"\n"
-        f"Private repo auth, token read at call time and never stored in the URL:\n"
-        f'  git -c credential."https://github.com".helper= \\\n'
-        f'      -c credential."https://github.com".helper=\'!f(){{ echo username=x-access-token; '
-        f'echo "password=$(gh auth token --user <account>)"; }}; f\' \\\n'
-        f'      clone --depth=1 https://github.com/<owner>/<repo>.git "$WORKDIR/repo"\n'
-        f"\n"
-        f"Bypass (one-off, export in parent shell): REPO_FETCH_DISABLE=1"
+        f"Rule: ~/.claude/rules/repo-analysis.md.\n" + _FIX_GUIDANCE
     )
+
+
+def emit_block(label: str, why: str, command: str) -> None:
+    reason = _block_reason(label, why)
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
