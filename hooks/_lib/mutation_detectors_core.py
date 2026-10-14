@@ -18,6 +18,8 @@ EXT_TO_LANG: dict[str, str] = {
 }
 
 AST_SUPPORTED_LANGS: frozenset[str] = frozenset({"js", "jsx", "ts", "tsx"})
+AST_GREP_TIMEOUT_S = 2.0
+AST_GREP_TEXT_LIMIT = 200
 
 _AST_GREP_PATH: str | None = None
 _AST_GREP_RESOLVED: bool = False
@@ -48,52 +50,67 @@ def supports_ast(lang: str | None) -> bool:
     return lang is not None and lang in AST_SUPPORTED_LANGS
 
 
+def _skip_interpolation(line: str, j: int) -> int:
+    n = len(line)
+    depth = 1
+    while j < n and depth > 0:
+        if line[j] == "{":
+            depth += 1
+        elif line[j] == "}":
+            depth -= 1
+        j += 1
+    return j
+
+
+def _quoted_scan_end(line: str, j: int, quote: str) -> int:
+    n = len(line)
+    while j < n and line[j] != quote:
+        if line[j] == "\\" and j + 1 < n:
+            j += 2
+        elif quote == "`" and line.startswith("${", j):
+            j = _skip_interpolation(line, j + 2)
+        else:
+            j += 1
+    return j
+
+
+def _strip_quoted(line: str, i: int) -> tuple[str, int]:
+    n = len(line)
+    quote = line[i]
+    j = _quoted_scan_end(line, i + 1, quote)
+    span = j - i + 1 if j < n else n - i
+    return quote + " " * max(0, span - 2) + (quote if j < n else ""), i + span
+
+
+def _strip_block_comment(line: str, i: int) -> tuple[str, int]:
+    n = len(line)
+    j = i + 2
+    while j < n - 1 and not (line[j] == "*" and line[j + 1] == "/"):
+        j += 1
+    if j < n - 1:
+        return " " * (j - i + 2), j + 2
+    return " " * (n - i), n
+
+
+def _strip_step(line: str, i: int) -> tuple[str, int]:
+    if line.startswith("//", i):
+        return " " * (len(line) - i), len(line)
+    if line.startswith("/*", i):
+        return _strip_block_comment(line, i)
+    if line[i] in ("'", '"', "`"):
+        return _strip_quoted(line, i)
+    return line[i], i + 1
+
+
 def strip_strings_comments(line: str) -> str:
     if not line:
         return line
-    out: list[str] = []
+    pieces: list[str] = []
     i = 0
-    n = len(line)
-    while i < n:
-        ch = line[i]
-        if ch == "/" and i + 1 < n and line[i + 1] == "/":
-            out.append(" " * (n - i))
-            break
-        if ch == "/" and i + 1 < n and line[i + 1] == "*":
-            j = i + 2
-            while j < n - 1 and not (line[j] == "*" and line[j + 1] == "/"):
-                j += 1
-            if j < n - 1:
-                out.append(" " * (j - i + 2))
-                i = j + 2
-                continue
-            out.append(" " * (n - i))
-            break
-        if ch in ("'", '"', "`"):
-            quote = ch
-            j = i + 1
-            while j < n and line[j] != quote:
-                if line[j] == "\\" and j + 1 < n:
-                    j += 2
-                    continue
-                if quote == "`" and line[j] == "$" and j + 1 < n and line[j + 1] == "{":
-                    depth = 1
-                    j += 2
-                    while j < n and depth > 0:
-                        if line[j] == "{":
-                            depth += 1
-                        elif line[j] == "}":
-                            depth -= 1
-                        j += 1
-                    continue
-                j += 1
-            span = j - i + 1 if j < n else n - i
-            out.append(quote + " " * max(0, span - 2) + (quote if j < n else ""))
-            i = i + span
-            continue
-        out.append(ch)
-        i += 1
-    return "".join(out)
+    while i < len(line):
+        piece, i = _strip_step(line, i)
+        pieces.append(piece)
+    return "".join(pieces)
 
 
 LINE_BREAKS = frozenset("\n\r\v\f\x1c\x1d\x1e\x85  ")
@@ -192,44 +209,50 @@ def ast_grep_path() -> str | None:
     return found
 
 
-def run_ast_grep(pattern: str, source: str, lang: str) -> list[Match]:
-    binary = ast_grep_path()
-    if not binary or not source or not pattern or lang not in AST_SUPPORTED_LANGS:
-        return []
+def _invoke_ast_grep(binary: str, pattern: str, source: str, lang: str) -> str | None:
     try:
         proc = subprocess.run(
             [binary, "run", "--pattern", pattern, "--lang", lang, "--json=stream", "-"],
             input=source,
             capture_output=True,
             text=True,
-            timeout=2.0,
+            timeout=AST_GREP_TIMEOUT_S,
             check=False,
         )
     except (subprocess.TimeoutExpired, OSError, ValueError):
-        return []
+        return None
     if proc.returncode not in (0, 1):
+        return None
+    return proc.stdout
+
+
+def _parse_ast_grep_line(raw: str) -> Match | None:
+    if not raw:
+        return None
+    try:
+        obj = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    start = (obj.get("range") or {}).get("start") or {}
+    text = (obj.get("text") or "").strip()
+    return Match(
+        line=int(start.get("line", 0)) + 1,
+        col=int(start.get("column", 0)) + 1,
+        text=text[:AST_GREP_TEXT_LIMIT],
+        detector="ast",
+        node_type=obj.get("kind") or "",
+    )
+
+
+def run_ast_grep(pattern: str, source: str, lang: str) -> list[Match]:
+    binary = ast_grep_path()
+    if not binary or not source or not pattern or lang not in AST_SUPPORTED_LANGS:
         return []
-    matches: list[Match] = []
-    for raw in proc.stdout.splitlines():
-        raw = raw.strip()
-        if not raw:
-            continue
-        try:
-            obj = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        rng = obj.get("range") or {}
-        start = rng.get("start") or {}
-        line = int(start.get("line", 0)) + 1
-        col = int(start.get("column", 0)) + 1
-        text = (obj.get("text") or "").strip()
-        node_type = obj.get("kind") or ""
-        matches.append(
-            Match(
-                line=line, col=col, text=text[:200], detector="ast", node_type=node_type
-            )
-        )
-    return matches
+    stdout = _invoke_ast_grep(binary, pattern, source, lang)
+    if stdout is None:
+        return []
+    parsed = (_parse_ast_grep_line(raw.strip()) for raw in stdout.splitlines())
+    return [match for match in parsed if match is not None]
 
 
 def truncate_excerpt(line: str, limit: int = 120) -> str:

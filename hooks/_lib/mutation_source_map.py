@@ -101,37 +101,44 @@ def load_source_map(file_path: str) -> dict[str, Any] | None:
     return bundle
 
 
+_ABSOLUTE_SOURCE_PREFIXES = ("/", "http://", "https://", "file://")
+_MIN_SEGMENT_FIELDS = 4
+
+
+def _segment_at(segments: list[list[int]], col: int) -> list[int] | None:
+    best = None
+    for seg in segments:
+        if len(seg) < _MIN_SEGMENT_FIELDS:
+            continue
+        if seg[0] > col:
+            break
+        best = seg
+    return best
+
+
+def _resolve_source(
+    sources: list[str], source_root: str, source_idx: int
+) -> str | None:
+    if source_idx < 0 or source_idx >= len(sources):
+        return None
+    source_path = sources[source_idx]
+    if source_root and not source_path.startswith(_ABSOLUTE_SOURCE_PREFIXES):
+        return source_root.rstrip("/") + "/" + source_path
+    return source_path
+
+
 def map_to_original(
     source_map: dict[str, Any], line: int, col: int
 ) -> tuple[str, int, int] | None:
     decoded = source_map.get("decoded") or []
     if line < 1 or line > len(decoded):
         return None
-    segments = decoded[line - 1]
-    if not segments:
-        return None
-    best = None
-    for seg in segments:
-        if len(seg) < 4:
-            continue
-        if seg[0] <= col:
-            best = seg
-        else:
-            break
+    best = _segment_at(decoded[line - 1], col)
     if best is None:
         return None
-    source_idx = best[1]
-    orig_line = best[2] + 1
-    orig_col = best[3]
-    sources = source_map.get("sources") or []
-    if source_idx < 0 or source_idx >= len(sources):
+    joined = _resolve_source(
+        source_map.get("sources") or [], source_map.get("sourceRoot") or "", best[1]
+    )
+    if joined is None:
         return None
-    source_root = source_map.get("sourceRoot") or ""
-    source_path = sources[source_idx]
-    if source_root and not source_path.startswith(
-        ("/", "http://", "https://", "file://")
-    ):
-        joined = source_root.rstrip("/") + "/" + source_path
-    else:
-        joined = source_path
-    return joined, orig_line, orig_col
+    return joined, best[2] + 1, best[3]

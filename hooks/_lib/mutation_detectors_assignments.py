@@ -1,23 +1,13 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 
 from .mutation_allowlists import is_dom_assignment, is_dom_receiver
-from .mutation_detectors_core import (
-    Match,
-    mask_lines,
-    mask_text,
-    truncate_excerpt,
-)
-from .mutation_fix_lookup import tc39_stage_filter
-
-
-def _split_chain(chain: str) -> tuple[str, str]:
-    if "." not in chain:
-        return "", chain
-    parent, _, last = chain.rpartition(".")
-    return parent, last
-
+from .mutation_detectors_core import Match
+from .mutation_scan_helpers import iter_masked_lines as _iter_lines
+from .mutation_scan_helpers import looks_like_declaration as _looks_like_declaration
+from .mutation_scan_helpers import make_match as _make_match
 
 PROPERTY_ASSIGN_PATTERN = re.compile(
     r"(?P<receiver>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)\s*\.(?P<prop>[a-zA-Z_$][\w$]*)\s*(?P<op>=)(?!=)"
@@ -65,547 +55,9 @@ UPDATE_PREFIX_PATTERN = re.compile(
     r"(?P<op>\+\+|--)\s*(?P<receiver>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)+)"
 )
 
-OBJECT_ASSIGN_PATTERN = re.compile(r"\bObject\.assign\s*\(")
-
-
-def _extract_first_arg(masked: str, paren_idx: int) -> str | None:
-    depth = 0
-    start = paren_idx + 1
-    end = -1
-    for i in range(paren_idx, len(masked)):
-        ch = masked[i]
-        if ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-            if depth == 0:
-                end = i
-                break
-        elif ch == "," and depth == 1:
-            end = i
-            break
-    if end < 0:
-        return None
-    return masked[start:end].strip()
-
-
-OBJECT_DEFINE_PROPERTY_PATTERN = re.compile(r"\bObject\.defineProperty\s*\(")
-OBJECT_DEFINE_PROPERTIES_PATTERN = re.compile(r"\bObject\.defineProperties\s*\(")
-OBJECT_SET_PROTOTYPE_OF_PATTERN = re.compile(r"\bObject\.setPrototypeOf\s*\(")
-
-REFLECT_SET_PATTERN = re.compile(r"\bReflect\.set\s*\(")
-REFLECT_DELETE_PROPERTY_PATTERN = re.compile(r"\bReflect\.deleteProperty\s*\(")
-REFLECT_DEFINE_PROPERTY_PATTERN = re.compile(r"\bReflect\.defineProperty\s*\(")
-REFLECT_SET_PROTOTYPE_OF_PATTERN = re.compile(r"\bReflect\.setPrototypeOf\s*\(")
-
-DELETE_PATTERN = re.compile(
-    r"\bdelete\s+(?P<target>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*|\s*\[[^\]]+\])+)"
-)
-
-GLOBAL_ASSIGN_PATTERN = re.compile(
-    r"\b(?:globalThis|process\.env)\.[a-zA-Z_$][\w$]*\s*=(?!=)"
-)
-
-LET_DECL_PATTERN = re.compile(
-    r"^\s*(?:export\s+)?let\s+(?P<name>[a-zA-Z_$][\w$]*)(?:\s*:\s*[^=;]+)?\s*=\s*"
-)
-
-LET_NO_INIT_PATTERN = re.compile(
-    r"^\s*(?:export\s+)?let\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=;]+)?\s*;\s*$"
-)
-
-LET_FOR_HEAD_PATTERN = re.compile(r"\bfor\s*\(\s*let\s+")
-
-PARAM_REASSIGN_FN_PATTERN = re.compile(
-    r"\bfunction\s+[a-zA-Z_$][\w$]*\s*\(\s*(?P<params>[^)]*)\)|"
-    r"\(\s*(?P<arrow_params>[^)]*)\)\s*=>"
-)
-
-NEW_INSTANCE_TARGETS = re.compile(
-    r"^\s*\{\s*\}|\bnew\s+Object\s*\(\s*\)|^\s*Object\.create\s*\("
-)
-
-KNOWN_PROP_REASSIGN_PARAM_NAMES: frozenset[str] = frozenset(
-    {
-        "acc",
-        "accumulator",
-        "result",
-        "ctx",
-        "context",
-        "req",
-        "request",
-        "res",
-        "response",
-        "next",
-        "e",
-        "event",
-        "draft",
-    }
-)
-
-
-def _iter_lines(text: str) -> list[tuple[int, str, str]]:
-    out: list[tuple[int, str, str]] = []
-    for idx, (line, masked) in enumerate(
-        zip(text.splitlines(), mask_lines(text)), start=1
-    ):
-        if not line.strip():
-            continue
-        out.append((idx, line, masked))
-    return out
-
-
-def _make_match(
-    detector: str,
-    lineno: int,
-    col: int,
-    raw: str,
-    fix_hint: str,
-    metadata: dict[str, str] | None = None,
-) -> Match:
-    return Match(
-        line=lineno,
-        col=col + 1,
-        text=truncate_excerpt(raw, 120),
-        detector=detector,
-        fix_hint=fix_hint,
-        metadata=metadata or {},
-    )
-
-
-def _looks_like_declaration(line: str, masked: str) -> bool:
-    stripped = masked.strip()
-    if stripped.startswith(
-        ("const ", "let ", "var ", "export const ", "export let ", "export var ")
-    ):
-        return True
-    if stripped.startswith(
-        ("public ", "private ", "protected ", "readonly ", "static ")
-    ):
-        return True
-    if re.match(r"^\s*[a-zA-Z_$][\w$]*\s*[?!]?\s*:\s*[^=]+$", line):
-        return True
-    return False
-
-
-def detect_property_assignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Replace `obj.prop = value` with `obj = { ...obj, prop: value }` or return a copy. "
-        "Mark parameters as `Readonly<T>` to enforce at the type level."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        if _looks_like_declaration(raw, masked):
-            continue
-        for m in PROPERTY_ASSIGN_PATTERN.finditer(masked):
-            full = m.group(0)
-            if "==" in full or "===" in full or "=>" in full:
-                continue
-            receiver = m.group("receiver") or ""
-            prop = m.group("prop") or ""
-            if is_dom_assignment(receiver, prop):
-                continue
-            results.append(
-                _make_match(
-                    "property.assignment",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"receiver": receiver, "prop": prop},
-                )
-            )
-    return results
-
-
-def detect_computed_or_index_assignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "For arrays use `arr.with(i, value)` (ES2023) or `arr.map((v, j) => j === i ? value : v)`. "
-        "For objects use `{ ...obj, [key]: value }`."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        if _looks_like_declaration(raw, masked):
-            continue
-        for m in COMPUTED_PROPERTY_PATTERN.finditer(masked):
-            full = m.group(0)
-            if "==" in full or "===" in full:
-                continue
-            receiver = m.group("receiver") or ""
-            if is_dom_receiver(receiver):
-                continue
-            results.append(
-                _make_match(
-                    "property.computed",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {
-                        "receiver": receiver,
-                        "key": (m.group("key") or "").strip()[:60],
-                    },
-                )
-            )
-    return results
-
-
-def detect_compound_assignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Compound assignments mutate the receiver. Replace `obj.prop += value` with "
-        "`obj = { ...obj, prop: obj.prop + value }` or compute a new value separately."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in COMPOUND_PATTERN.finditer(masked):
-            chain = m.group("receiver") or ""
-            parent, last = _split_chain(chain)
-            if is_dom_assignment(parent, last):
-                continue
-            results.append(
-                _make_match(
-                    "property.compound",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"receiver": chain, "op": m.group("op") or ""},
-                )
-            )
-        for m in COMPOUND_INDEX_PATTERN.finditer(masked):
-            chain = m.group("receiver") or ""
-            head = chain.split("[", 1)[0].strip()
-            if is_dom_receiver(head):
-                continue
-            results.append(
-                _make_match(
-                    "property.compound-index",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"receiver": chain, "op": m.group("op") or ""},
-                )
-            )
-    return results
-
-
-def detect_increment_decrement(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Increment / decrement on a member mutates the receiver. Replace `obj.prop++` with "
-        "`obj = { ...obj, prop: obj.prop + 1 }`."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in UPDATE_POSTFIX_PATTERN.finditer(masked):
-            chain = m.group("receiver") or ""
-            parent, last = _split_chain(chain)
-            if is_dom_assignment(parent, last):
-                continue
-            results.append(
-                _make_match(
-                    "property.increment",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"receiver": chain, "op": m.group("op") or ""},
-                )
-            )
-        for m in UPDATE_PREFIX_PATTERN.finditer(masked):
-            chain = m.group("receiver") or ""
-            parent, last = _split_chain(chain)
-            if is_dom_assignment(parent, last):
-                continue
-            results.append(
-                _make_match(
-                    "property.increment-prefix",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"receiver": chain, "op": m.group("op") or ""},
-                )
-            )
-    return results
-
-
-def detect_object_assign_target_mutation(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "`Object.assign(target, source)` mutates `target`. Use `Object.assign({}, target, source)` "
-        "or `{ ...target, ...source }` to produce a new object. When the target is dynamic, "
-        "wrap with a fresh `{}` literal first."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in OBJECT_ASSIGN_PATTERN.finditer(masked):
-            paren_idx = masked.find("(", m.start())
-            first = _extract_first_arg(masked, paren_idx) if paren_idx >= 0 else None
-            if first is None:
-                continue
-            if NEW_INSTANCE_TARGETS.match(first):
-                continue
-            results.append(
-                _make_match(
-                    "object.assign",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {
-                        "first_arg": first[:60],
-                    },
-                )
-            )
-    return results
-
-
-def detect_object_define_setprototype(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    define_fix = (
-        "`Object.defineProperty` rewrites the descriptor. For static shapes declare the property "
-        "in the type and the literal. For dynamic computed keys use `{ ...obj, [key]: value }`."
-    )
-    proto_fix = (
-        "`Object.setPrototypeOf` is slow on V8 and breaks shape inference. Use class inheritance, "
-        "a factory function, or `Object.create(proto, descriptors)` to produce a fresh object."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in OBJECT_DEFINE_PROPERTY_PATTERN.finditer(masked):
-            results.append(
-                _make_match("object.defineProperty", lineno, m.start(), raw, define_fix)
-            )
-        for m in OBJECT_DEFINE_PROPERTIES_PATTERN.finditer(masked):
-            results.append(
-                _make_match(
-                    "object.defineProperties", lineno, m.start(), raw, define_fix
-                )
-            )
-        for m in OBJECT_SET_PROTOTYPE_OF_PATTERN.finditer(masked):
-            results.append(
-                _make_match("object.setPrototypeOf", lineno, m.start(), raw, proto_fix)
-            )
-    return results
-
-
-def detect_reflect_mutations(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    set_fix = "Replace `Reflect.set(obj, key, value)` with `{ ...obj, [key]: value }`."
-    delete_fix = (
-        "Replace `Reflect.deleteProperty(obj, key)` with destructured rest: "
-        "`const { [key]: _omit, ...rest } = obj`."
-    )
-    define_fix = (
-        "`Reflect.defineProperty` rewrites the descriptor. Declare the property in the type and "
-        "the object literal instead."
-    )
-    proto_fix = (
-        "`Reflect.setPrototypeOf` mutates the prototype chain at runtime. Use class inheritance "
-        "or a factory function."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in REFLECT_SET_PATTERN.finditer(masked):
-            results.append(_make_match("reflect.set", lineno, m.start(), raw, set_fix))
-        for m in REFLECT_DELETE_PROPERTY_PATTERN.finditer(masked):
-            results.append(
-                _make_match(
-                    "reflect.deleteProperty", lineno, m.start(), raw, delete_fix
-                )
-            )
-        for m in REFLECT_DEFINE_PROPERTY_PATTERN.finditer(masked):
-            results.append(
-                _make_match(
-                    "reflect.defineProperty", lineno, m.start(), raw, define_fix
-                )
-            )
-        for m in REFLECT_SET_PROTOTYPE_OF_PATTERN.finditer(masked):
-            results.append(
-                _make_match("reflect.setPrototypeOf", lineno, m.start(), raw, proto_fix)
-            )
-    return results
-
-
-def detect_delete_operator(text: str, lang: str | None, file_path: str) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "For objects use destructured rest to omit a key: "
-        "`const { [key]: _omit, ...rest } = obj; return rest;`. "
-        "For arrays use `arr.toSpliced(i, 1)` (ES2023) or `arr.filter((_, j) => j !== i)`."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in DELETE_PATTERN.finditer(masked):
-            target = (m.group("target") or "").strip()
-            results.append(
-                _make_match(
-                    "delete-operator",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"target": target[:60]},
-                )
-            )
-    return results
-
-
-def detect_global_assignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Mutating `globalThis`, `window`, `process.env`, or similar global objects is module-scope "
-        "side effect. Use a typed module export or a configuration object passed by argument. "
-        'Rule: ~/.claude/standards/code-style.md "Fundamentals".'
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        for m in GLOBAL_ASSIGN_PATTERN.finditer(masked):
-            results.append(
-                _make_match("global.assignment", lineno, m.start(), raw, fix_hint)
-            )
-    return results
-
-
-def detect_param_reassignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    params = _collect_param_names(text)
-    if not params:
-        return results
-    fix_hint = (
-        "Never mutate function arguments. Copy at function entry: "
-        "`const localOpts = { ...opts };`. Or accept the parameter as `Readonly<T>` and "
-        'return a new object. Rule: ~/.claude/standards/code-style.md "Immutability".'
-    )
-    pattern = re.compile(
-        r"\b(?P<name>" + "|".join(re.escape(p) for p in params) + r")\b"
-        r"(?:\s*=(?!=)|\s*\+=|\s*-=|\s*\*=|\s*/=|\s*%=|\s*\.[a-zA-Z_$][\w$]*\s*=(?!=)|\s*\[[^\]]+\]\s*=(?!=))"
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        if _looks_like_declaration(raw, masked):
-            continue
-        if (
-            "=>" in masked
-            or re.match(r"^\s*function\b", masked)
-            or re.match(r"^\s*[a-zA-Z_$][\w$]*\s*\(", masked)
-        ):
-            continue
-        for m in pattern.finditer(masked):
-            name = m.group("name") or ""
-            if name in KNOWN_PROP_REASSIGN_PARAM_NAMES:
-                continue
-            results.append(
-                _make_match(
-                    "param.reassign", lineno, m.start(), raw, fix_hint, {"name": name}
-                )
-            )
-    return results
-
-
-def _collect_param_names(text: str) -> set[str]:
-    found: set[str] = set()
-    for masked in mask_lines(text):
-        for m in PARAM_REASSIGN_FN_PATTERN.finditer(masked):
-            params_text = m.group("params") or m.group("arrow_params") or ""
-            for token in params_text.split(","):
-                token = token.strip()
-                if not token or token.startswith(("{", "[", "...")):
-                    continue
-                name_match = re.match(r"^([a-zA-Z_$][\w$]*)\s*[?:]?", token)
-                if name_match:
-                    name = name_match.group(1)
-                    if name not in ("function", "async", "static", "return", "this"):
-                        found.add(name)
-    return found
-
-
-def detect_let_could_be_const(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "`let` that is never reassigned must be `const`. Rule: "
-        '~/.claude/standards/typescript-immutability.md "Behavioral Rules".'
-    )
-    lines = text.splitlines()
-    masks = mask_lines(text)
-    declared: list[tuple[int, str, str]] = []
-    for idx, (raw, masked) in enumerate(zip(lines, masks), start=1):
-        if LET_FOR_HEAD_PATTERN.search(masked):
-            continue
-        m = LET_DECL_PATTERN.match(masked)
-        if not m:
-            continue
-        name = m.group("name")
-        if not name:
-            continue
-        declared.append((idx, raw, name))
-
-    if not declared:
-        return results
-
-    body = "\n".join(masks)
-    for lineno, raw, name in declared:
-        reassign_pattern = re.compile(
-            rf"\b{re.escape(name)}\b\s*(?:=(?!=)|\+=|-=|\*=|/=|%=|\+\+|--|\.[a-zA-Z_$][\w$]*\s*=(?!=)|\[[^\]]+\]\s*=(?!=))"
-        )
-        first_decl_idx = body.find(raw)
-        scan_from = first_decl_idx + len(raw) if first_decl_idx >= 0 else 0
-        if not reassign_pattern.search(body[scan_from:]):
-            results.append(
-                _make_match(
-                    "let.could-be-const", lineno, 0, raw, fix_hint, {"name": name}
-                )
-            )
-    return results
-
-
 OPTIONAL_CHAIN_ASSIGN_PATTERN = re.compile(
     r"(?P<receiver>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)\s*\?\.(?P<prop>[a-zA-Z_$][\w$]*)\s*(?P<op>=)(?!=)"
 )
-
-
-def detect_optional_chain_assignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Optional-chain assignment is not allowed by the ECMAScript spec. "
-        "Replace with an explicit guard: `if (obj) { obj = { ...obj, prop: v } }` "
-        "or restructure to avoid the assignment."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        if _looks_like_declaration(raw, masked):
-            continue
-        for m in OPTIONAL_CHAIN_ASSIGN_PATTERN.finditer(masked):
-            receiver = m.group("receiver") or ""
-            prop = m.group("prop") or ""
-            results.append(
-                _make_match(
-                    "experimental.optional-chain-assignment",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {"receiver": receiver, "prop": prop},
-                )
-            )
-    return results
-
 
 PRIVATE_FIELD_ASSIGN_PATTERN = re.compile(
     r"(?P<receiver>(?:this|[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*))\."
@@ -623,849 +75,234 @@ PRIVATE_FIELD_UPDATE_PREFIX_PATTERN = re.compile(
     r"(?P<field>#[a-zA-Z_$][\w$]*)"
 )
 
-
-def detect_private_field_assignment(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Private fields are mutable by default. Prefer immutable patterns: "
-        "return a new instance from the method that needs to change state, or expose "
-        "a `with*` method that constructs a fresh class instance. When mutation is "
-        "intentional, confine the mutation to the module that owns the value."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        if _looks_like_declaration(raw, masked):
-            continue
-        for m in PRIVATE_FIELD_ASSIGN_PATTERN.finditer(masked):
-            full = m.group(0)
-            if "==" in full or "===" in full:
-                continue
-            results.append(
-                _make_match(
-                    "private-field.assignment",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {
-                        "receiver": m.group("receiver") or "",
-                        "field": m.group("field") or "",
-                        "op": m.group("op") or "=",
-                    },
-                )
-            )
-        for m in PRIVATE_FIELD_UPDATE_POSTFIX_PATTERN.finditer(masked):
-            results.append(
-                _make_match(
-                    "private-field.update",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {
-                        "receiver": m.group("receiver") or "",
-                        "field": m.group("field") or "",
-                        "op": m.group("op") or "++",
-                    },
-                )
-            )
-        for m in PRIVATE_FIELD_UPDATE_PREFIX_PATTERN.finditer(masked):
-            results.append(
-                _make_match(
-                    "private-field.update",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {
-                        "receiver": m.group("receiver") or "",
-                        "field": m.group("field") or "",
-                        "op": m.group("op") or "++",
-                    },
-                )
-            )
-    return results
-
-
 SYMBOL_KEY_ASSIGN_PATTERN = re.compile(
     r"(?P<receiver>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*)*)\s*\[\s*"
     r"(?P<key>Symbol\.[a-zA-Z_$][\w$]*|[a-zA-Z_$][\w$]*Symbol|"
     r"[a-zA-Z_$][\w$]*\.[a-zA-Z_$]*[Ss]ymbol[\w$]*)\s*\]\s*(?P<op>=(?!=))"
 )
 
+_KEY_EXCERPT_LIMIT = 60
+
+_PROPERTY_FIX = (
+    "Replace `obj.prop = value` with `obj = { ...obj, prop: value }` or return a copy. "
+    "Mark parameters as `Readonly<T>` to enforce at the type level."
+)
+_COMPUTED_FIX = (
+    "For arrays use `arr.with(i, value)` (ES2023) or `arr.map((v, j) => j === i ? value : v)`. "
+    "For objects use `{ ...obj, [key]: value }`."
+)
+_COMPOUND_FIX = (
+    "Compound assignments mutate the receiver. Replace `obj.prop += value` with "
+    "`obj = { ...obj, prop: obj.prop + value }` or compute a new value separately."
+)
+_INCREMENT_FIX = (
+    "Increment / decrement on a member mutates the receiver. Replace `obj.prop++` with "
+    "`obj = { ...obj, prop: obj.prop + 1 }`."
+)
+_OPTIONAL_CHAIN_FIX = (
+    "Optional-chain assignment is not allowed by the ECMAScript spec. "
+    "Replace with an explicit guard: `if (obj) { obj = { ...obj, prop: v } }` "
+    "or restructure to avoid the assignment."
+)
+_PRIVATE_FIELD_FIX = (
+    "Private fields are mutable by default. Prefer immutable patterns: "
+    "return a new instance from the method that needs to change state, or expose "
+    "a `with*` method that constructs a fresh class instance. When mutation is "
+    "intentional, confine the mutation to the module that owns the value."
+)
+_SYMBOL_KEY_FIX = (
+    "Symbol-keyed property assignment mutates the receiver. Build a fresh object "
+    "with the symbol in the literal: `{ ...obj, [Symbol.iterator]: fn }`. For "
+    "classes, declare the symbol property in the class body or in a factory."
+)
+
+_PRIVATE_FIELD_DETECTORS: tuple[tuple[str, re.Pattern[str], str], ...] = (
+    ("private-field.assignment", PRIVATE_FIELD_ASSIGN_PATTERN, "="),
+    ("private-field.update", PRIVATE_FIELD_UPDATE_POSTFIX_PATTERN, "++"),
+    ("private-field.update", PRIVATE_FIELD_UPDATE_PREFIX_PATTERN, "++"),
+)
+
+
+def _split_chain(chain: str) -> tuple[str, str]:
+    parent, _, last = chain.rpartition(".")
+    return parent, last
+
+
+def _is_comparison(full: str) -> bool:
+    return "==" in full or "===" in full
+
+
+def _is_dom_chain(chain: str) -> bool:
+    parent, last = _split_chain(chain)
+    return is_dom_assignment(parent, last)
+
+
+def _is_dom_index_chain(chain: str) -> bool:
+    return is_dom_receiver(chain.split("[", 1)[0].strip())
+
+
+def _undeclared_lines(text: str) -> list[tuple[int, str, str]]:
+    return [
+        (lineno, raw, masked)
+        for lineno, raw, masked in _iter_lines(text)
+        if not _looks_like_declaration(raw, masked)
+    ]
+
+
+def _is_property_write(m: re.Match[str]) -> bool:
+    return not is_dom_assignment(m.group("receiver") or "", m.group("prop") or "")
+
+
+def detect_property_assignment(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    return [
+        _make_match(
+            "property.assignment",
+            lineno,
+            m.start(),
+            raw,
+            _PROPERTY_FIX,
+            {"receiver": m.group("receiver") or "", "prop": m.group("prop") or ""},
+        )
+        for lineno, raw, masked in _undeclared_lines(text)
+        for m in PROPERTY_ASSIGN_PATTERN.finditer(masked)
+        if _is_property_write(m)
+    ]
+
+
+def detect_computed_or_index_assignment(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    return [
+        _make_match(
+            "property.computed",
+            lineno,
+            m.start(),
+            raw,
+            _COMPUTED_FIX,
+            {
+                "receiver": m.group("receiver") or "",
+                "key": (m.group("key") or "").strip()[:_KEY_EXCERPT_LIMIT],
+            },
+        )
+        for lineno, raw, masked in _undeclared_lines(text)
+        for m in COMPUTED_PROPERTY_PATTERN.finditer(masked)
+        if not _is_comparison(m.group(0))
+        and not is_dom_receiver(m.group("receiver") or "")
+    ]
+
+
+_ChainDetector = tuple[str, re.Pattern[str], Callable[[str], bool]]
+
+_COMPOUND_DETECTORS: tuple[_ChainDetector, ...] = (
+    ("property.compound", COMPOUND_PATTERN, _is_dom_chain),
+    ("property.compound-index", COMPOUND_INDEX_PATTERN, _is_dom_index_chain),
+)
+_INCREMENT_DETECTORS: tuple[_ChainDetector, ...] = (
+    ("property.increment", UPDATE_POSTFIX_PATTERN, _is_dom_chain),
+    ("property.increment-prefix", UPDATE_PREFIX_PATTERN, _is_dom_chain),
+)
+
+
+def _chain_hits(
+    line: tuple[int, str, str], chain_detector: _ChainDetector, fix_hint: str
+) -> list[Match]:
+    lineno, raw, masked = line
+    detector, pattern, is_dom = chain_detector
+    return [
+        _make_match(
+            detector,
+            lineno,
+            m.start(),
+            raw,
+            fix_hint,
+            {"receiver": m.group("receiver") or "", "op": m.group("op") or ""},
+        )
+        for m in pattern.finditer(masked)
+        if not is_dom(m.group("receiver") or "")
+    ]
+
+
+def detect_compound_assignment(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    return [
+        match
+        for line in _iter_lines(text)
+        for chain_detector in _COMPOUND_DETECTORS
+        for match in _chain_hits(line, chain_detector, _COMPOUND_FIX)
+    ]
+
+
+def detect_increment_decrement(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    return [
+        match
+        for line in _iter_lines(text)
+        for chain_detector in _INCREMENT_DETECTORS
+        for match in _chain_hits(line, chain_detector, _INCREMENT_FIX)
+    ]
+
+
+def detect_optional_chain_assignment(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    return [
+        _make_match(
+            "experimental.optional-chain-assignment",
+            lineno,
+            m.start(),
+            raw,
+            _OPTIONAL_CHAIN_FIX,
+            {"receiver": m.group("receiver") or "", "prop": m.group("prop") or ""},
+        )
+        for lineno, raw, masked in _undeclared_lines(text)
+        for m in OPTIONAL_CHAIN_ASSIGN_PATTERN.finditer(masked)
+    ]
+
+
+def detect_private_field_assignment(
+    text: str, lang: str | None, file_path: str
+) -> list[Match]:
+    return [
+        _make_match(
+            detector,
+            lineno,
+            m.start(),
+            raw,
+            _PRIVATE_FIELD_FIX,
+            {
+                "receiver": m.group("receiver") or "",
+                "field": m.group("field") or "",
+                "op": m.group("op") or default_op,
+            },
+        )
+        for lineno, raw, masked in _undeclared_lines(text)
+        for detector, pattern, default_op in _PRIVATE_FIELD_DETECTORS
+        for m in pattern.finditer(masked)
+        if not _is_comparison(m.group(0))
+    ]
+
 
 def detect_symbol_key_assignment(
     text: str, lang: str | None, file_path: str
 ) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Symbol-keyed property assignment mutates the receiver. Build a fresh object "
-        "with the symbol in the literal: `{ ...obj, [Symbol.iterator]: fn }`. For "
-        "classes, declare the symbol property in the class body or in a factory."
-    )
-    for lineno, raw, masked in _iter_lines(text):
-        if _looks_like_declaration(raw, masked):
-            continue
-        for m in SYMBOL_KEY_ASSIGN_PATTERN.finditer(masked):
-            full = m.group(0)
-            if "==" in full or "===" in full:
-                continue
-            receiver = m.group("receiver") or ""
-            if is_dom_receiver(receiver):
-                continue
-            results.append(
-                _make_match(
-                    "symbol-key.assignment",
-                    lineno,
-                    m.start(),
-                    raw,
-                    fix_hint,
-                    {
-                        "receiver": receiver,
-                        "key": (m.group("key") or "").strip(),
-                    },
-                )
-            )
-    return results
-
-
-STATIC_BLOCK_OPEN_PATTERN = re.compile(r"\bstatic\s*\{")
-
-
-def canonical_static_block_line_ranges(text: str) -> list[tuple[int, int]]:
-    ranges: list[tuple[int, int]] = []
-    in_block = False
-    depth = 0
-    start = 0
-    branched = False
-    class_depth = 0
-    class_block_seen = 0
-    pending: list[tuple[int, int, bool, int]] = []
-    for idx, masked in enumerate(mask_lines(text), start=1):
-        if re.search(r"\bclass\s+[A-Z][\w$]*", masked):
-            class_depth = class_depth + 1
-            class_block_seen = 0
-        if not in_block and STATIC_BLOCK_OPEN_PATTERN.search(masked):
-            in_block = True
-            depth = masked.count("{") - masked.count("}")
-            start = idx
-            branched = False
-            class_block_seen = class_block_seen + 1
-            continue
-        if in_block:
-            depth = depth + masked.count("{") - masked.count("}")
-            if re.search(r"\b(if|else|switch|for|while|try|catch)\b", masked):
-                branched = True
-            if depth <= 0:
-                pending.append((start, idx, branched, class_block_seen))
-                in_block = False
-                depth = 0
-    canonical_counts: dict[int, int] = {}
-    for _, _, _, count in pending:
-        canonical_counts[count] = canonical_counts.get(count, 0) + 1
-    for start_l, end_l, branched_flag, seen_count in pending:
-        if branched_flag:
-            continue
-        if seen_count != 1:
-            continue
-        ranges.append((start_l, end_l))
-    return ranges
-
-
-def filter_matches_in_canonical_static_blocks(
-    matches: list[Match], text: str
-) -> list[Match]:
-    ranges = canonical_static_block_line_ranges(text)
-    if not ranges:
-        return matches
-    filtered_detectors = {
-        "property.assignment",
-        "property.computed",
-        "property.compound",
-        "property.compound-index",
-        "property.increment",
-        "property.increment-prefix",
-        "delete-operator",
-        "object.assign",
-        "reflect.set",
-        "reflect.setPrototypeOf",
-    }
-    result: list[Match] = []
-    for m in matches:
-        if m.detector in filtered_detectors:
-            inside = any(start <= m.line <= end for start, end in ranges)
-            if inside:
-                continue
-        result.append(m)
-    return result
-
-
-def detect_static_block_mutation(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    results: list[Match] = []
-    fix_hint = (
-        "Class `static {}` blocks should perform one-time initialization in a single "
-        "sequential block. If the logic needs branching, extract a factory function "
-        "and assign its result to a static class field. Multiple static blocks per "
-        "class are flagged."
-    )
-    lines = text.splitlines()
-    in_static_block = False
-    block_depth = 0
-    block_start_line = 0
-    block_has_branch = False
-    block_count_by_class: list[int] = []
-    class_depth = 0
-    class_block_count = 0
-    for idx, masked in enumerate(mask_lines(text), start=1):
-        if re.search(r"\bclass\s+[A-Z][\w$]*", masked):
-            class_depth = class_depth + 1
-            class_block_count = 0
-        if not in_static_block and STATIC_BLOCK_OPEN_PATTERN.search(masked):
-            in_static_block = True
-            block_depth = masked.count("{") - masked.count("}")
-            block_start_line = idx
-            block_has_branch = False
-            class_block_count = class_block_count + 1
-            continue
-        if in_static_block:
-            block_depth = block_depth + masked.count("{") - masked.count("}")
-            if re.search(r"\b(if|else|switch|for|while|try|catch)\b", masked):
-                block_has_branch = True
-            if block_depth <= 0:
-                if block_has_branch or class_block_count > 1:
-                    excerpt = (
-                        lines[block_start_line - 1]
-                        if block_start_line - 1 < len(lines)
-                        else ""
-                    )
-                    results.append(
-                        _make_match(
-                            "static-block.mutation",
-                            block_start_line,
-                            0,
-                            excerpt,
-                            fix_hint,
-                            {
-                                "reason": "branching inside static block"
-                                if block_has_branch
-                                else "multiple static blocks per class",
-                            },
-                        )
-                    )
-                in_static_block = False
-                block_depth = 0
-        if "}" in masked and class_depth > 0 and not in_static_block:
-            block_count_by_class.append(class_block_count)
-    return results
-
-
-SVELTE_DERIVED_DECL_PATTERN = re.compile(
-    r"\b(?:let|const|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*\$derived\s*[(<]"
-)
-
-
-def detect_svelte_derived_reassign(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    derived_names = {
-        m.group("name") for m in SVELTE_DERIVED_DECL_PATTERN.finditer(text)
-    }
-    if not derived_names:
-        return []
-    fix_hint = (
-        "`$derived(...)` bindings are read-only. Reassigning them throws "
-        "`state_unsafe_mutation` at runtime. Move the source of truth into a "
-        "`$state(...)` binding and let `$derived` recompute, or wrap the "
-        "computation in a function. See "
-        "https://svelte.dev/docs/svelte/$derived for the reactive contract."
-    )
-    pattern = re.compile(
-        r"^(?P<lead>\s*)(?P<name>"
-        + "|".join(re.escape(n) for n in derived_names)
-        + r")\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if SVELTE_DERIVED_DECL_PATTERN.search(masked):
-            continue
-        m = pattern.match(masked)
-        if not m:
-            continue
-        name = m.group("name")
-        results.append(
-            _make_match(
-                "svelte.derived-reassign",
-                lineno,
-                m.start("name"),
-                raw,
-                fix_hint,
-                {"name": name, "confidence": "4"},
-            )
+    return [
+        _make_match(
+            "symbol-key.assignment",
+            lineno,
+            m.start(),
+            raw,
+            _SYMBOL_KEY_FIX,
+            {
+                "receiver": m.group("receiver") or "",
+                "key": (m.group("key") or "").strip(),
+            },
         )
-    return results
-
-
-XSTATE_CONTEXT_ASSIGN_PATTERN = re.compile(
-    r"(?<![\w$.])context\."
-    r"(?P<chain>[a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])*)"
-    r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
-)
-XSTATE_ASSIGN_OPENER_PATTERN = re.compile(r"\bassign\s*\(")
-
-
-def detect_xstate_non_assign_context_write(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "xstate" not in text:
-        return []
-    if not re.search(r"['\"]xstate(?:/[\w/-]+)?['\"]", text):
-        return []
-    if "context." not in text:
-        return []
-    lines = text.splitlines()
-    if not lines:
-        return []
-    fix_hint = (
-        "XState v5 enforces `assign(...)` as the only context mutation "
-        "primitive. Direct writes like `context.x = v` from a non-assign "
-        "action silently no-op because the callback receives an immutable "
-        "snapshot. Wrap the update in `assign({ x: ({ context }) => v })` "
-        "or `assign(({ context }) => ({ x: v }))`. See "
-        "https://stately.ai/docs/actions#assign-action."
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        m = XSTATE_CONTEXT_ASSIGN_PATTERN.search(masked)
-        if not m:
-            continue
-        lookback_start = max(0, lineno - 61)
-        between_lines = lines[lookback_start:lineno]
-        between = "\n".join(between_lines)
-        between_masked = mask_text(between) if between else ""
-        inside_assign = False
-        if between_masked:
-            last_assign = between_masked.rfind("assign(")
-            if last_assign >= 0:
-                scope_text = between_masked[last_assign:]
-                paren_opens = scope_text.count("(")
-                paren_closes = scope_text.count(")")
-                if paren_opens > paren_closes:
-                    inside_assign = True
-        if inside_assign:
-            continue
-        results.append(
-            _make_match(
-                "xstate.non-assign-context-write",
-                lineno,
-                m.start(),
-                raw,
-                fix_hint,
-                {"chain": m.group("chain"), "confidence": "3"},
-            )
-        )
-    return results
-
-
-EFFECT_TS_REF_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
-    r"(?:yield\*?\s+)?"
-    r"(?:Ref|SubscriptionRef|SynchronizedRef)\.make\s*\("
-)
-
-
-def detect_effect_ts_ref_value_assign(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "effect" not in text:
-        return []
-    if not re.search(
-        r"['\"](?:effect|@effect/(?:io|core|data|stm)(?:/[\w/-]+)?)['\"]", text
-    ):
-        return []
-    names = {m.group("name") for m in EFFECT_TS_REF_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    fix_hint = (
-        "Effect-TS Ref bindings have no `.value` property. Updates go "
-        "through `Ref.update`, `Ref.set`, or `Ref.modify` and must be "
-        "`yield*`-ed inside an `Effect.gen` generator: "
-        "`yield* Ref.set(ref, next)`. See "
-        "https://effect.website/docs/state-management/ref."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")\.value"
-        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if EFFECT_TS_REF_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            results.append(
-                _make_match(
-                    "effect-ts.ref-value-assign",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {"name": m.group("name"), "confidence": "4"},
-                )
-            )
-    return results
-
-
-NANOSTORES_COMPUTED_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*computed\s*\("
-)
-
-
-def detect_nanostores_computed_write(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "nanostores" not in text:
-        return []
-    if not re.search(r"['\"]nanostores(?:/[\w/-]+)?['\"]", text):
-        return []
-    names = {m.group("name") for m in NANOSTORES_COMPUTED_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    fix_hint = (
-        "Nanostores computed stores are read-only derived values. Only the "
-        "read accessors and subscription methods are public. Mutating "
-        "methods such as setKey or the value setter bypass the recompute "
-        "contract. Move the source-of-truth into an atom or map binding "
-        "and let computed recompute. See "
-        "https://github.com/nanostores/nanostores#computed-stores."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")\."
-        r"(?P<method>set|setKey|notify)\s*\("
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if NANOSTORES_COMPUTED_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            results.append(
-                _make_match(
-                    "nanostores.computed-write",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "method": m.group("method"),
-                        "confidence": "4",
-                    },
-                )
-            )
-    return results
-
-
-TANSTACK_STORE_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*"
-    r"(?:new\s+Store\s*\(|createStore\s*\()"
-)
-
-
-def detect_tanstack_store_state_write(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "@tanstack/" not in text:
-        return []
-    if not re.search(r"['\"]@tanstack/(?:store|react-store|solid-store)['\"]", text):
-        return []
-    names = {m.group("name") for m in TANSTACK_STORE_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    fix_hint = (
-        "TanStack `Store.state` is a read-only snapshot. Direct writes "
-        "(`store.state.x = v`) bypass subscribers and break reactivity. "
-        "Use `store.setState((prev) => ({ ...prev, x: v }))` so the "
-        "subscription system observes the change. See "
-        "https://tanstack.com/store/latest/docs/reference/store#setstate."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")\.state"
-        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])*)"
-        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if TANSTACK_STORE_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            results.append(
-                _make_match(
-                    "tanstack.store-state-write",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "chain": m.group("chain"),
-                        "confidence": "4",
-                    },
-                )
-            )
-    return results
-
-
-VUE_SHALLOW_READONLY_DECL_PATTERN = re.compile(
-    r"\b(?:let|const|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*(?::\s*[^=]+)?\s*=\s*shallowReadonly\s*\("
-)
-
-
-def detect_vue_shallow_readonly_nested_write(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    names = {m.group("name") for m in VUE_SHALLOW_READONLY_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    fix_hint = (
-        "`shallowReadonly(obj)` only freezes the top level. Nested writes "
-        "(`x.a.b = v`) silently mutate the underlying reactive object. Use "
-        "`readonly(obj)` for deep immutability, or rebuild the nested branch "
-        "with spread (`{ ...x, a: { ...x.a, b: v } }`) and assign the result "
-        "to a fresh ref. See https://vuejs.org/api/reactivity-advanced.html#shallowreadonly"
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")"
-        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])+)"
-        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=)"
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if VUE_SHALLOW_READONLY_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            chain = m.group("chain")
-            access_count = chain.count(".") + chain.count("[")
-            if access_count < 2:
-                continue
-            results.append(
-                _make_match(
-                    "vue.shallow-readonly-nested-write",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "chain": chain,
-                        "confidence": "4",
-                    },
-                )
-            )
-    return results
-
-
-YJS_CRDT_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
-    r"(?::\s*[^=]+)?\s*=\s*"
-    r"(?:new\s+Y\.(?:Array|Map|Text|XmlElement|XmlFragment|XmlText)\s*\(|"
-    r"[a-zA-Z_$][\w$]*\.get(?:Map|Array|Text|XmlFragment|XmlElement)\s*\()"
-)
-
-YJS_MUTATING_METHODS: tuple[str, ...] = (
-    "set",
-    "delete",
-    "clear",
-    "push",
-    "unshift",
-    "insert",
-    "applyDelta",
-    "format",
-)
-
-
-def detect_yjs_mutation_outside_transact(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "yjs" not in text and "Y." not in text:
-        return []
-    names = {m.group("name") for m in YJS_CRDT_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    lines = text.splitlines()
-    if not lines:
-        return []
-    fix_hint = (
-        "Yjs CRDT mutations belong inside a transaction. Wrap the write in "
-        "`doc.transact(() => { ymap.set(key, value) })` so observers receive "
-        "a single consolidated update and remote peers replicate the change "
-        "atomically. See "
-        "https://docs.yjs.dev/api/transactions for the transaction contract."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    method_alt = "|".join(re.escape(m) for m in YJS_MUTATING_METHODS)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")\."
-        r"(?P<method>" + method_alt + r")\s*\("
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if YJS_CRDT_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            lookback_start = max(0, lineno - 61)
-            between_lines = lines[lookback_start:lineno]
-            between = "\n".join(between_lines)
-            between_masked = mask_text(between) if between else ""
-            inside_transact = False
-            if between_masked:
-                idx = between_masked.rfind(".transact(")
-                if idx < 0:
-                    idx = between_masked.rfind("Y.transact(")
-                if idx >= 0:
-                    scope_text = between_masked[idx:]
-                    opens = scope_text.count("(")
-                    closes = scope_text.count(")")
-                    if opens > closes:
-                        inside_transact = True
-            if inside_transact:
-                continue
-            results.append(
-                _make_match(
-                    "yjs.mutation-outside-transact",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "method": m.group("method"),
-                        "confidence": "4",
-                    },
-                )
-            )
-    return results
-
-
-RECOIL_IMPORT_LINE_PATTERN = re.compile(r"^\s*import\b[^;]*\bfrom\s+['\"]recoil['\"]")
-
-
-def detect_recoil_deprecation_pointer(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "recoil" not in text:
-        return []
-    fix_hint = (
-        "Recoil is unmaintained as of 2024. Migrate to Jotai (atom-based, "
-        "closest API), Zustand (store-based with simpler boilerplate), or "
-        "Nanostores (tiny, framework-agnostic). See "
-        "https://github.com/facebookexperimental/Recoil/issues for context "
-        "and https://jotai.org/docs/migrations/from-recoil for a "
-        "Recoil-to-Jotai mapping."
-    )
-    for lineno, raw, _masked in _iter_lines(text):
-        if RECOIL_IMPORT_LINE_PATTERN.match(raw):
-            return [
-                _make_match(
-                    "recoil.deprecation-pointer",
-                    lineno,
-                    0,
-                    raw,
-                    fix_hint,
-                    {"confidence": "1", "severity": "info"},
-                )
-            ]
-    return []
-
-
-MOBX_ENFORCE_ACTIONS_PATTERN = re.compile(r"enforceActions\s*:\s*['\"]always['\"]")
-MOBX_OBSERVABLE_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
-    r"(?::\s*[^=]+)?\s*=\s*"
-    r"(?:observable|makeAutoObservable|makeObservable)\s*\("
-)
-
-
-def detect_mobx_observable_outside_action(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "mobx" not in text:
-        return []
-    if not re.search(r"['\"]mobx(?:-[\w/-]+)?['\"]", text):
-        return []
-    if not MOBX_ENFORCE_ACTIONS_PATTERN.search(text):
-        return []
-    names = {m.group("name") for m in MOBX_OBSERVABLE_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    lines = text.splitlines()
-    if not lines:
-        return []
-    fix_hint = (
-        "MobX strict mode (`enforceActions: 'always'`) requires every "
-        "observable mutation to flow through an action. Wrap the write in "
-        "`runInAction(() => { store.count = 1 })` or call an `action`-decorated "
-        "method. See "
-        "https://mobx.js.org/configuration.html#enforceactions for the strict "
-        "mode contract."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")"
-        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])+)"
-        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=|\+\+|--)"
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if MOBX_OBSERVABLE_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            lookback_start = max(0, lineno - 61)
-            between_lines = lines[lookback_start:lineno]
-            between = "\n".join(between_lines)
-            between_masked = mask_text(between) if between else ""
-            inside_action = False
-            if between_masked:
-                for opener in ("runInAction(", "action(", "flow("):
-                    idx = between_masked.rfind(opener)
-                    if idx < 0:
-                        continue
-                    scope_text = between_masked[idx:]
-                    opens = scope_text.count("(")
-                    closes = scope_text.count(")")
-                    if opens > closes:
-                        inside_action = True
-                        break
-            if inside_action:
-                continue
-            results.append(
-                _make_match(
-                    "mobx.observable-outside-action",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "chain": m.group("chain"),
-                        "confidence": "4",
-                    },
-                )
-            )
-    return results
-
-
-AUTOMERGE_DOC_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*"
-    r"(?::\s*[^=]+)?\s*=\s*"
-    r"(?:await\s+)?Automerge\."
-    r"(?:init|from|load|clone|change|emptyChange|applyChanges|merge)\s*\("
-)
-
-
-def detect_automerge_direct_mutation(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if "Automerge" not in text and "automerge" not in text:
-        return []
-    if not re.search(r"['\"]@?automerge(?:/[\w-]+)?['\"]", text):
-        return []
-    names = {m.group("name") for m in AUTOMERGE_DOC_DECL_PATTERN.finditer(text)}
-    if not names:
-        return []
-    fix_hint = (
-        "Automerge documents are frozen outside `Automerge.change`. Wrap the "
-        "write in `doc = Automerge.change(doc, draft => { draft.foo = 1 })` "
-        "so the mutation flows through the CRDT history and remote peers "
-        "replicate the change. See "
-        "https://automerge.org/docs/hello/ for the change-callback contract."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")"
-        r"(?P<chain>(?:\.[a-zA-Z_$][\w$]*|\[[^\]]+\])+)"
-        r"\s*(?P<op>=(?!=)|\+=|-=|\*=|/=|%=|\*\*=|<<=|>>=|>>>=|&=|\|=|\^=|&&=|\|\|=|\?\?=|\+\+|--)"
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        if AUTOMERGE_DOC_DECL_PATTERN.search(masked):
-            continue
-        for m in pattern.finditer(masked):
-            results.append(
-                _make_match(
-                    "automerge.direct-mutation",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "chain": m.group("chain"),
-                        "confidence": "4",
-                    },
-                )
-            )
-    return results
-
-
-ASYNC_ITERATOR_DECL_PATTERN = re.compile(
-    r"(?:\b(?:const|let|var)\s+|[(,]\s*)"
-    r"(?P<name>[a-zA-Z_$][\w$]*)\s*"
-    r":\s*AsyncIterator(?:Object)?\b"
-)
-ASYNC_ITERATOR_SYMBOL_DECL_PATTERN = re.compile(
-    r"\b(?:const|let|var)\s+(?P<name>[a-zA-Z_$][\w$]*)\s*="
-    r"\s*[a-zA-Z_$][\w$]*\s*\[\s*Symbol\.asyncIterator\s*\]\s*\(\s*\)"
-)
-
-
-def detect_async_iterator_return_throw(
-    text: str, lang: str | None, file_path: str
-) -> list[Match]:
-    if tc39_stage_filter() > 3:
-        return []
-    if "AsyncIterator" not in text and "Symbol.asyncIterator" not in text:
-        return []
-    names: set[str] = set()
-    for m in ASYNC_ITERATOR_DECL_PATTERN.finditer(text):
-        names.add(m.group("name"))
-    for m in ASYNC_ITERATOR_SYMBOL_DECL_PATTERN.finditer(text):
-        names.add(m.group("name"))
-    if not names:
-        return []
-    fix_hint = (
-        "AsyncIterator `.return()` and `.throw()` terminate the iterator "
-        "and mutate its internal state. Prefer a `break` inside the "
-        "`for await` loop or a try/finally that lets the runtime call the "
-        "cleanup hooks. See "
-        "https://github.com/tc39/proposal-async-iterator-helpers for the "
-        "Stage 3 contract."
-    )
-    name_alt = "|".join(re.escape(n) for n in names)
-    pattern = re.compile(
-        r"(?<![\w$.])(?P<name>" + name_alt + r")\."
-        r"(?P<method>return|throw)\s*\("
-    )
-    results: list[Match] = []
-    for lineno, raw, masked in _iter_lines(text):
-        for m in pattern.finditer(masked):
-            results.append(
-                _make_match(
-                    "async-iterator.return-throw",
-                    lineno,
-                    m.start("name"),
-                    raw,
-                    fix_hint,
-                    {
-                        "name": m.group("name"),
-                        "method": m.group("method"),
-                        "confidence": "3",
-                        "tc39_stage": "3",
-                    },
-                )
-            )
-    return results
+        for lineno, raw, masked in _undeclared_lines(text)
+        for m in SYMBOL_KEY_ASSIGN_PATTERN.finditer(masked)
+        if not _is_comparison(m.group(0))
+        and not is_dom_receiver(m.group("receiver") or "")
+    ]

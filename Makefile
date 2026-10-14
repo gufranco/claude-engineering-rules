@@ -26,9 +26,7 @@ LINT_PATHS := hooks scripts tools .github/scripts tests
 # widening this list is a deliberate change that comes with the fixes. CI calls
 # `make typecheck` rather than repeating the list, so the two cannot drift.
 TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
-                   hooks/_lib/mutation_detectors_core.py \
-                   hooks/_lib/mutation_detectors_methods.py \
-                   hooks/_lib/mutation_detectors_assignments.py \
+                   $(sort $(wildcard hooks/_lib/mutation_*.py)) \
                    hooks/_lib/suppression.py \
                    hooks/_lib/audit_log.py \
                    hooks/_lib/project_workspace.py \
