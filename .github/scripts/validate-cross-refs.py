@@ -8,47 +8,34 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 ERRORS = []
 
 
+def _parse_index_value(value: str) -> str | list[str]:
+    if value.startswith("[") and value.endswith("]"):
+        return [v.strip() for v in value[1:-1].split(",") if v.strip()]
+    return value
+
+
 def parse_index_yml(path: str) -> dict:
     with open(path) as f:
         lines = f.readlines()
-
     result: dict = {}
     section: dict | None = None
     entry: dict | None = None
-    section_name = ""
-    entry_name = ""
-
     for raw_line in lines:
         line = raw_line.rstrip("\n")
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-
         indent = len(line) - len(line.lstrip(" "))
-
         if indent == 0 and stripped.endswith(":"):
-            section_name = stripped[:-1].strip()
             section = {}
-            result[section_name] = section
+            result[stripped[:-1].strip()] = section
             entry = None
-            continue
-
-        if indent == 2 and stripped.endswith(":") and section is not None:
-            entry_name = stripped[:-1].strip()
+        elif indent == 2 and stripped.endswith(":") and section is not None:
             entry = {}
-            section[entry_name] = entry
-            continue
-
-        if indent >= 4 and ":" in stripped and entry is not None:
+            section[stripped[:-1].strip()] = entry
+        elif indent >= 4 and ":" in stripped and entry is not None:
             key, _, value = stripped.partition(":")
-            key = key.strip()
-            value = value.strip()
-            if value.startswith("[") and value.endswith("]"):
-                items = [v.strip() for v in value[1:-1].split(",") if v.strip()]
-                entry[key] = items
-            else:
-                entry[key] = value
-
+            entry[key.strip()] = _parse_index_value(value.strip())
     return result
 
 

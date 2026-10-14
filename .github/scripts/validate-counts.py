@@ -93,6 +93,107 @@ def derive_counts():
     }
 
 
+COUNT_CHECKS = [
+    (
+        r"\*\*(\d+)\*\*\s*(?:always-on|universal)\s+rules\b",
+        "always_on_rules",
+        "always-on rules count in bold",
+    ),
+    (r"\*\*(\d+)\*\*\s*rules\b", "rules", "rules count in bold"),
+    (
+        r"(?<!\d[-])(\d+)\s+(?:always-on|universal)\s+rules\b",
+        "always_on_rules",
+        "always-on rules count",
+    ),
+    (
+        r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?standards\b",
+        "standards",
+        "standards count in bold",
+    ),
+    (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?skills\b", "skills", "skills count in bold"),
+    (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count in bold"),
+    (r"^(\d+) (?:[a-z-]+\s+)?skills\b", "skills", "skills count leading a line"),
+    (r"^(\d+) (?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count leading a line"),
+    (r"(?<=\s)(\d+) skills in\b", "skills", "skills count in prose"),
+    (r"(?<=\s)(\d+) hooks in\b", "hooks", "hooks count in prose"),
+    (r"^(\d+) standards in\b", "standards", "standards count leading a line"),
+    (r"^(\d+) rules in \[", "rules", "rules count leading a line"),
+    (r"plus (\d+) in \[`rules/lang/`\]", "lang_rules", "language rules count"),
+    (r"Plus (\d+) language-specific files", "lang_rules", "language files count"),
+    (r"(\d+) language-specific cores", "lang_rules", "language cores count"),
+    (r"(\d+) specialized subagents", "agents", "agents count in prose"),
+    (r"\*\*(\d+)\*\*\s*custom agents", "agents", "agents count in bold"),
+    (r"^(\d+) MCP servers\b", "mcp_servers", "MCP servers count"),
+    (r"The (\d+) standards total", "standards", "standards total in prose"),
+    (r"(\d+) short rule cores", "rules", "rule cores count"),
+    (r"(?<=  )(\d+) slash-command skills", "skills", "skills count in tree"),
+    (r"(?<=  )(\d+) runtime hooks", "hooks", "hooks count in tree"),
+    (
+        r"\*\*(\d+)\*\*\s*checklist items",
+        "checklist_items",
+        "checklist items count in bold",
+    ),
+    (
+        r"\*\*(\d+)\*\*\s*categories\b",
+        "checklist_categories",
+        "categories count in bold",
+    ),
+    (r"(?<!\d[-])(\d+) on-demand standards", "standards", "standards count"),
+    (r"(\d+) checklist items", "checklist_items", "checklist items count"),
+    (
+        r"(\d+) categories,\s*(\d+) items",
+        None,
+        "categories and items",
+    ),
+    (r"(\d+)-item\b", "checklist_items", "N-item reference"),
+    (r"(\d+)-category\b", "checklist_categories", "N-category reference"),
+    (r"Hook smoke tests \((\d+) cases\)", "test_cases", "test case count"),
+    (
+        r"These (\d+) standards\b",
+        "standards",
+        "standards count in prose",
+    ),
+    (
+        r"These (\d+) rules\b",
+        "rules",
+        "rules count in prose",
+    ),
+    (r"all (\d+) quality categories", "checklist_categories", "quality categories"),
+    (r"(?:all|full) (\d+) categories\b", "checklist_categories", "all categories"),
+    (r"(\d+) checklist categories", "checklist_categories", "checklist categories"),
+    (
+        r"(\d+) categories (?:covering|from|spanning|across)",
+        "checklist_categories",
+        "categories in context",
+    ),
+]
+
+
+def _pair_mismatches(prefix, match, counts):
+    found_cats = int(match.group(1))
+    found_items = int(match.group(2))
+    mismatches = []
+    if found_cats != counts["checklist_categories"]:
+        mismatches.append(
+            f"{prefix}found {found_cats} categories, expected {counts['checklist_categories']}"
+        )
+    if found_items != counts["checklist_items"]:
+        mismatches.append(
+            f"{prefix}found {found_items} items, expected {counts['checklist_items']}"
+        )
+    return mismatches
+
+
+def _match_mismatches(prefix, count_key, match, counts):
+    if count_key is None:
+        return _pair_mismatches(prefix, match, counts)
+    found = int(match.group(1))
+    expected = counts[count_key]
+    if found == expected:
+        return []
+    return [f"{prefix}found {found}, expected {expected}"]
+
+
 def scan_file(filepath, counts):
     mismatches = []
     matched_labels = set()
@@ -101,110 +202,13 @@ def scan_file(filepath, counts):
             content = f.read()
     except (OSError, UnicodeDecodeError) as error:
         return [f"  {filepath}: unreadable: {error}"], matched_labels
-
     rel_path = os.path.relpath(filepath, CLAUDE_DIR)
-
-    checks = [
-        (
-            r"\*\*(\d+)\*\*\s*(?:always-on|universal)\s+rules\b",
-            "always_on_rules",
-            "always-on rules count in bold",
-        ),
-        (r"\*\*(\d+)\*\*\s*rules\b", "rules", "rules count in bold"),
-        (
-            r"(?<!\d[-])(\d+)\s+(?:always-on|universal)\s+rules\b",
-            "always_on_rules",
-            "always-on rules count",
-        ),
-        (
-            r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?standards\b",
-            "standards",
-            "standards count in bold",
-        ),
-        (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?skills\b", "skills", "skills count in bold"),
-        (r"\*\*(\d+)\*\*\s*(?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count in bold"),
-        (r"^(\d+) (?:[a-z-]+\s+)?skills\b", "skills", "skills count leading a line"),
-        (r"^(\d+) (?:[a-z-]+\s+)?hooks\b", "hooks", "hooks count leading a line"),
-        (r"(?<=\s)(\d+) skills in\b", "skills", "skills count in prose"),
-        (r"(?<=\s)(\d+) hooks in\b", "hooks", "hooks count in prose"),
-        (r"^(\d+) standards in\b", "standards", "standards count leading a line"),
-        (r"^(\d+) rules in \[", "rules", "rules count leading a line"),
-        (r"plus (\d+) in \[`rules/lang/`\]", "lang_rules", "language rules count"),
-        (r"Plus (\d+) language-specific files", "lang_rules", "language files count"),
-        (r"(\d+) language-specific cores", "lang_rules", "language cores count"),
-        (r"(\d+) specialized subagents", "agents", "agents count in prose"),
-        (r"\*\*(\d+)\*\*\s*custom agents", "agents", "agents count in bold"),
-        (r"^(\d+) MCP servers\b", "mcp_servers", "MCP servers count"),
-        (r"The (\d+) standards total", "standards", "standards total in prose"),
-        (r"(\d+) short rule cores", "rules", "rule cores count"),
-        (r"(?<=  )(\d+) slash-command skills", "skills", "skills count in tree"),
-        (r"(?<=  )(\d+) runtime hooks", "hooks", "hooks count in tree"),
-        (
-            r"\*\*(\d+)\*\*\s*checklist items",
-            "checklist_items",
-            "checklist items count in bold",
-        ),
-        (
-            r"\*\*(\d+)\*\*\s*categories\b",
-            "checklist_categories",
-            "categories count in bold",
-        ),
-        (r"(?<!\d[-])(\d+) on-demand standards", "standards", "standards count"),
-        (r"(\d+) checklist items", "checklist_items", "checklist items count"),
-        (
-            r"(\d+) categories,\s*(\d+) items",
-            None,
-            "categories and items",
-        ),
-        (r"(\d+)-item\b", "checklist_items", "N-item reference"),
-        (r"(\d+)-category\b", "checklist_categories", "N-category reference"),
-        (r"Hook smoke tests \((\d+) cases\)", "test_cases", "test case count"),
-        (
-            r"These (\d+) standards\b",
-            "standards",
-            "standards count in prose",
-        ),
-        (
-            r"These (\d+) rules\b",
-            "rules",
-            "rules count in prose",
-        ),
-        (r"all (\d+) quality categories", "checklist_categories", "quality categories"),
-        (r"(?:all|full) (\d+) categories\b", "checklist_categories", "all categories"),
-        (r"(\d+) checklist categories", "checklist_categories", "checklist categories"),
-        (
-            r"(\d+) categories (?:covering|from|spanning|across)",
-            "checklist_categories",
-            "categories in context",
-        ),
-    ]
-
     for line_num, line in enumerate(content.splitlines(), 1):
-        for pattern, count_key, desc in checks:
+        for pattern, count_key, desc in COUNT_CHECKS:
+            prefix = f"  {rel_path}:{line_num}: {desc}: "
             for match in re.finditer(pattern, line):
                 matched_labels.add(desc)
-                if count_key is None:
-                    found_cats = int(match.group(1))
-                    found_items = int(match.group(2))
-                    if found_cats != counts["checklist_categories"]:
-                        mismatches.append(
-                            f"  {rel_path}:{line_num}: {desc}: "
-                            f"found {found_cats} categories, expected {counts['checklist_categories']}"
-                        )
-                    if found_items != counts["checklist_items"]:
-                        mismatches.append(
-                            f"  {rel_path}:{line_num}: {desc}: "
-                            f"found {found_items} items, expected {counts['checklist_items']}"
-                        )
-                else:
-                    found = int(match.group(1))
-                    expected = counts[count_key]
-                    if found != expected:
-                        mismatches.append(
-                            f"  {rel_path}:{line_num}: {desc}: "
-                            f"found {found}, expected {expected}"
-                        )
-
+                mismatches.extend(_match_mismatches(prefix, count_key, match, counts))
     return mismatches, matched_labels
 
 
@@ -240,39 +244,42 @@ def files_to_scan():
     return sorted(set(paths))
 
 
-def main():
-    counts = derive_counts()
-
+def _print_counts(counts):
     print("Derived counts from source:")
     for key, value in sorted(counts.items()):
         print(f"  {key}: {value}")
     print()
 
+
+def _print_failures(all_mismatches, dead):
+    if all_mismatches:
+        print(f"FAILED: {len(all_mismatches)} stale reference(s) found:\n")
+        for m in all_mismatches:
+            print(m)
+        print("\nUpdate these references to match the derived counts above.")
+    if dead:
+        print(f"\nFAILED: {len(dead)} check(s) matched nothing:\n")
+        for d in dead:
+            print(d)
+        print("\nRestore the prose the check expects, or update the check.")
+
+
+def main():
+    counts = derive_counts()
+    _print_counts(counts)
     all_mismatches = []
     matched_labels = set()
     for filepath in files_to_scan():
         mismatches, labels = scan_file(filepath, counts)
         all_mismatches.extend(mismatches)
         matched_labels |= labels
-
     dead = dead_patterns(matched_labels)
-
     if all_mismatches or dead:
-        if all_mismatches:
-            print(f"FAILED: {len(all_mismatches)} stale reference(s) found:\n")
-            for m in all_mismatches:
-                print(m)
-            print("\nUpdate these references to match the derived counts above.")
-        if dead:
-            print(f"\nFAILED: {len(dead)} check(s) matched nothing:\n")
-            for d in dead:
-                print(d)
-            print("\nRestore the prose the check expects, or update the check.")
+        _print_failures(all_mismatches, dead)
         sys.exit(1)
-    else:
-        print("PASSED: All count references match source, and every required")
-        print("check matched at least once.")
-        sys.exit(0)
+    print("PASSED: All count references match source, and every required")
+    print("check matched at least once.")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

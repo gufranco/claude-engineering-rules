@@ -42,50 +42,50 @@ def parse_frontmatter(content):
     return fields
 
 
-def validate_agent(filepath):
-    errors = []
-    rel_path = os.path.relpath(filepath, CLAUDE_DIR)
-
-    with open(filepath) as f:
-        content = f.read()
-
-    fields = parse_frontmatter(content)
-    if fields is None:
-        errors.append(f"  {rel_path}: missing YAML frontmatter (--- delimiters)")
-        return errors
-
-    for field in REQUIRED_FIELDS:
-        if field not in fields:
-            errors.append(f"  {rel_path}: missing required field '{field}'")
-
+def _field_errors(rel_path: str, fields: dict[str, str | list[str]]) -> list[str]:
+    errors = [
+        f"  {rel_path}: missing required field '{field}'"
+        for field in REQUIRED_FIELDS
+        if field not in fields
+    ]
     model = fields.get("model", "")
     if model and model not in VALID_MODELS:
         errors.append(
             f"  {rel_path}: invalid model '{model}', must be one of: {', '.join(sorted(VALID_MODELS))}"
         )
-
     tools = fields.get("tools")
     if tools is not None and not isinstance(tools, list):
         errors.append(f"  {rel_path}: 'tools' must be a list")
     elif isinstance(tools, list) and len(tools) == 0:
         errors.append(f"  {rel_path}: 'tools' list is empty")
+    return errors
 
+
+def _body_errors(rel_path: str, content: str) -> list[str]:
     body = content.split("---", 2)[-1] if content.count("---") >= 2 else ""
     body_offset = content.find(body) if body else 0
     body_line_start = content[:body_offset].count("\n") + 1
-
+    errors: list[str] = []
     if "Do not spawn subagents" not in body:
         errors.append(
             f"  {rel_path}:{body_line_start}: body missing 'Do not spawn subagents' constraint"
         )
-
     if not re.search(r"do not push", body, re.IGNORECASE):
         errors.append(
             f"  {rel_path}:{body_line_start}: body missing 'Do not push' prohibition "
             f"(orchestrator pushes; agents must not)"
         )
-
     return errors
+
+
+def validate_agent(filepath):
+    rel_path = os.path.relpath(filepath, CLAUDE_DIR)
+    with open(filepath) as f:
+        content = f.read()
+    fields = parse_frontmatter(content)
+    if fields is None:
+        return [f"  {rel_path}: missing YAML frontmatter (--- delimiters)"]
+    return [*_field_errors(rel_path, fields), *_body_errors(rel_path, content)]
 
 
 def main():

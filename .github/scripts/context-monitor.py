@@ -110,43 +110,37 @@ def _field(value, keys, default):
     return str(value) if value else default
 
 
-def main():
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, EOFError):
-        print("")
-        return
+def _context_part(transcript_path: str, model: str) -> str:
+    pct = get_context_percentage(transcript_path, model)
+    level = get_level(pct)
+    suffix = f" {level}" if level else ""
+    return f"ctx:{build_bar(pct)} {pct}%{suffix}"
 
+
+def _status_parts(data: dict[str, object]) -> list[str]:
     model = _field(data.get("model"), ("id", "display_name"), "sonnet")
     workspace = _field(
         data.get("workspace"), ("current_dir", "project_dir"), os.getcwd()
     )
     transcript_path = str(data.get("transcript_path") or "")
     cost = _field(data.get("cost"), ("total_cost_usd",), "0")
+    context = _context_part(transcript_path, model)
+    optional = (
+        get_git_info(workspace),
+        format_duration(transcript_path),
+        format_cost(cost),
+    )
+    return [context, *(part for part in optional if part)]
 
-    parts = []
 
-    pct = get_context_percentage(transcript_path, model)
-    bar = build_bar(pct)
-    level = get_level(pct)
-    ctx_str = f"ctx:{bar} {pct}%"
-    if level:
-        ctx_str += f" {level}"
-    parts.append(ctx_str)
+def main() -> None:
+    try:
+        data = json.load(sys.stdin)
+    except (json.JSONDecodeError, EOFError):
+        print("")
+        return
 
-    git_info = get_git_info(workspace)
-    if git_info:
-        parts.append(git_info)
-
-    dur_str = format_duration(transcript_path)
-    if dur_str:
-        parts.append(dur_str)
-
-    cost_str = format_cost(cost)
-    if cost_str:
-        parts.append(cost_str)
-
-    print(" | ".join(parts))
+    print(" | ".join(_status_parts(data)))
 
 
 if __name__ == "__main__":

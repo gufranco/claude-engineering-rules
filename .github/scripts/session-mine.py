@@ -59,59 +59,74 @@ def note_name(summary: Summary, taken: set[str] | None = None) -> str:
     return f"{base} {suffix}"
 
 
+def _absorb_stamp(summary: Summary, stamp: str | None) -> None:
+    if not stamp or len(stamp) < 10:
+        return
+    day = stamp[:10]
+    if not summary.first or day < summary.first:
+        summary.first = day
+    if not summary.last or day > summary.last:
+        summary.last = day
+
+
+def _absorb_entry(summary: Summary, entry: dict[str, str]) -> None:
+    title = entry.get("aiTitle")
+    if title:
+        summary.title_set.add(title.strip())
+    cwd = entry.get("cwd")
+    if cwd:
+        summary.cwds.add(cwd)
+    branch = entry.get("gitBranch")
+    if branch:
+        summary.branch_set.add(branch)
+    _absorb_stamp(summary, entry.get("timestamp"))
+
+
+def _parse_entry(line: str) -> dict[str, str] | None:
+    try:
+        entry = json.loads(line)
+    except ValueError:
+        return None
+    if not isinstance(entry, dict):  # pragma: no cover
+        return None
+    return entry
+
+
+def _absorb_transcript(summary: Summary, transcript: Path) -> None:
+    summary.sessions += 1
+    try:
+        handle = transcript.open(encoding="utf-8", errors="replace")
+    except OSError:  # pragma: no cover
+        return
+    with handle:
+        for line in handle:
+            entry = _parse_entry(line)
+            if entry is not None:
+                _absorb_entry(summary, entry)
+
+
+def _summarize(directory: Path, transcripts: list[Path]) -> Summary:
+    summary = Summary(directory=directory.name)
+    for transcript in transcripts:
+        _absorb_transcript(summary, transcript)
+    if summary.cwds:
+        summary.name = Path(sorted(summary.cwds)[0]).name
+    if not summary.name:
+        summary.name = summary.directory.strip("-").split("-")[-1]
+    return summary
+
+
 def scan(projects: Path) -> dict[str, Summary]:
     found: dict[str, Summary] = {}
     for directory in sorted(p for p in projects.iterdir() if p.is_dir()):
         transcripts = sorted(directory.glob("*.jsonl"))
-        if not transcripts:
-            continue
-        summary = Summary(directory=directory.name)
-        for transcript in transcripts:
-            summary.sessions += 1
-            try:
-                handle = transcript.open(encoding="utf-8", errors="replace")
-            except OSError:  # pragma: no cover
-                continue
-            with handle:
-                for line in handle:
-                    try:
-                        entry = json.loads(line)
-                    except ValueError:
-                        continue
-                    if not isinstance(entry, dict):  # pragma: no cover
-                        continue
-                    title = entry.get("aiTitle")
-                    if title:
-                        summary.title_set.add(title.strip())
-                    cwd = entry.get("cwd")
-                    if cwd:
-                        summary.cwds.add(cwd)
-                    branch = entry.get("gitBranch")
-                    if branch:
-                        summary.branch_set.add(branch)
-                    stamp = entry.get("timestamp")
-                    if stamp and len(stamp) >= 10:
-                        day = stamp[:10]
-                        if not summary.first or day < summary.first:
-                            summary.first = day
-                        if not summary.last or day > summary.last:
-                            summary.last = day
-        if summary.cwds:
-            summary.name = Path(sorted(summary.cwds)[0]).name
-        if not summary.name:
-            summary.name = summary.directory.strip("-").split("-")[-1]
-        found[directory.name] = summary
+        if transcripts:
+            found[directory.name] = _summarize(directory, transcripts)
     return found
 
 
-def render(summary: Summary) -> str:
-    today = date.today().isoformat()
-    span = (
-        f"{summary.first} to {summary.last}"
-        if summary.first and summary.last
-        else "dates not recorded"
-    )
-    lines = [
+def _header_lines(summary: Summary, today: str) -> list[str]:
+    return [
         "---",
         f"date: {today}",
         "type: project",
@@ -130,33 +145,55 @@ def render(summary: Summary) -> str:
         "was about and never what any session concluded, so treat it as an index into the work "
         "rather than as the knowledge produced by it. Anything durable here deserves its own note.",
         "",
+    ]
+
+
+def _where_when_lines(summary: Summary, today: str) -> list[str]:
+    span = (
+        f"{summary.first} to {summary.last}"
+        if summary.first and summary.last
+        else "dates not recorded"
+    )
+    return [
         "## Where",
         "",
-    ]
-    for cwd in sorted(summary.cwds) or ["not recorded"]:
-        lines.append(f"- `{cwd}`")
-    lines += [
+        *(f"- `{cwd}`" for cwd in sorted(summary.cwds) or ["not recorded"]),
         "",
         "## When",
         "",
         f"- Active {span}",
         f"- {summary.sessions} recorded session(s) (as of {today})",
     ]
-    if summary.branches:
-        lines += ["", "## Branches", ""]
-        for branch in summary.branches:
-            lines.append(f"- `{branch}`")
-    lines += ["", "## Sessions", ""]
-    if summary.titles:
-        for title in summary.titles[:MAX_TITLES]:
-            lines.append(f"- {title}")
-        if len(summary.titles) > MAX_TITLES:
-            lines.append(f"- and {len(summary.titles) - MAX_TITLES} more not listed")
-    else:
-        lines.append(
-            "- No session titles were recorded. TBD until one is written by hand."
-        )
-    lines.append("")
+
+
+def _branch_lines(summary: Summary) -> list[str]:
+    if not summary.branches:
+        return []
+    return ["", "## Branches", "", *(f"- `{b}`" for b in summary.branches)]
+
+
+def _session_lines(summary: Summary) -> list[str]:
+    titles = summary.titles
+    if not titles:
+        return ["- No session titles were recorded. TBD until one is written by hand."]
+    listed = [f"- {title}" for title in titles[:MAX_TITLES]]
+    if len(titles) > MAX_TITLES:
+        return [*listed, f"- and {len(titles) - MAX_TITLES} more not listed"]
+    return listed
+
+
+def render(summary: Summary) -> str:
+    today = date.today().isoformat()
+    lines = [
+        *_header_lines(summary, today),
+        *_where_when_lines(summary, today),
+        *_branch_lines(summary),
+        "",
+        "## Sessions",
+        "",
+        *_session_lines(summary),
+        "",
+    ]
     return "\n".join(lines)
 
 
@@ -177,7 +214,7 @@ def apply(found: dict[str, Summary], root: Path, dry_run: bool) -> list[str]:
     return written
 
 
-def main(argv: list[str] | None = None) -> int:
+def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Mine transcript metadata into vault notes."
     )
@@ -185,14 +222,37 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--path", default=None)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--json", action="store_true")
-    args = parser.parse_args(argv)
+    return parser.parse_args(argv)
 
+
+def _print_json(found: dict[str, Summary], written: list[str], applied: bool) -> None:
+    report = {
+        "projects": len(found),
+        "sessions": sum(s.sessions for s in found.values()),
+        "titles": sum(len(s.title_set) for s in found.values()),
+        "notes": written,
+        "applied": applied,
+    }
+    print(json.dumps(report, indent=2))
+
+
+def _print_table(found: dict[str, Summary], written: list[str], applied: bool) -> None:
+    for summary in sorted(found.values(), key=lambda s: -s.sessions):
+        print(
+            f"{summary.sessions:>4} session(s)  {summary.first or '?'}..{summary.last or '?'}  "
+            f"{note_name(summary)}"
+        )
+    verb = "wrote" if applied else "would write"
+    print(f"\n{verb} {len(written)} note(s)")
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
     root = kn.vault_root(args.path)
     if root is None:
         target = args.path or "SECOND_BRAIN_VAULT"
         print(f"session-mine: {target} is not a directory", file=sys.stderr)
         return 2
-
     projects = Path(args.projects)
     if not projects.is_dir():
         print(
@@ -200,31 +260,10 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-
     found = scan(projects)
     written = apply(found, root, dry_run=not args.apply)
-
-    if args.json:
-        print(
-            json.dumps(
-                {
-                    "projects": len(found),
-                    "sessions": sum(s.sessions for s in found.values()),
-                    "titles": sum(len(s.title_set) for s in found.values()),
-                    "notes": written,
-                    "applied": args.apply,
-                },
-                indent=2,
-            )
-        )
-    else:
-        for summary in sorted(found.values(), key=lambda s: -s.sessions):
-            print(
-                f"{summary.sessions:>4} session(s)  {summary.first or '?'}..{summary.last or '?'}  "
-                f"{note_name(summary)}"
-            )
-        verb = "wrote" if args.apply else "would write"
-        print(f"\n{verb} {len(written)} note(s)")
+    report = _print_json if args.json else _print_table
+    report(found, written, args.apply)
     return 0
 
 
