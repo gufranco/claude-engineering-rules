@@ -33,42 +33,42 @@ def parse_frontmatter(content: str):
     return fields, body
 
 
+def _sensitive_errors(
+    rel: str, content: str, fields: dict[str, str], body: str
+) -> list[str]:
+    sensitive_match = SENSITIVE_TERMS.search(body)
+    declared = fields.get("sensitive", "false").lower() in {"true", "yes", "1"}
+    if not sensitive_match or declared:
+        return []
+    line_num = body[: sensitive_match.start()].count("\n") + 1
+    absolute_line = content[: content.find(body)].count("\n") + line_num
+    return [
+        f"  {rel}/SKILL.md:{absolute_line}: body mentions irreversible action "
+        f"'{sensitive_match.group(0)}' but frontmatter is missing 'sensitive: true'"
+    ]
+
+
 def validate_skill(skill_dir: str) -> list[str]:
-    errors: list[str] = []
     rel = os.path.relpath(skill_dir, CLAUDE_DIR)
     skill_file = os.path.join(skill_dir, "SKILL.md")
     if not os.path.exists(skill_file):
         return [f"  {rel}: missing SKILL.md"]
-
     with open(skill_file) as f:
         content = f.read()
-
     if not content.strip():
         return [f"  {rel}/SKILL.md: empty"]
-
+    errors: list[str] = []
     if len(content) < 100:
         errors.append(f"  {rel}/SKILL.md: suspiciously short ({len(content)} chars)")
-
     fields, body = parse_frontmatter(content)
     if fields is None:
-        errors.append(f"  {rel}/SKILL.md: missing YAML frontmatter")
-        return errors
-
-    for field in REQUIRED_FIELDS:
-        if field not in fields:
-            errors.append(f"  {rel}/SKILL.md: missing required field '{field}'")
-
-    sensitive_match = SENSITIVE_TERMS.search(body)
-    declared = fields.get("sensitive", "false").lower() in {"true", "yes", "1"}
-    if sensitive_match and not declared:
-        line_num = body[: sensitive_match.start()].count("\n") + 1
-        absolute_line = content[: content.find(body)].count("\n") + line_num
-        errors.append(
-            f"  {rel}/SKILL.md:{absolute_line}: body mentions irreversible action "
-            f"'{sensitive_match.group(0)}' but frontmatter is missing 'sensitive: true'"
-        )
-
-    return errors
+        return [*errors, f"  {rel}/SKILL.md: missing YAML frontmatter"]
+    missing = [
+        f"  {rel}/SKILL.md: missing required field '{field}'"
+        for field in REQUIRED_FIELDS
+        if field not in fields
+    ]
+    return [*errors, *missing, *_sensitive_errors(rel, content, fields, body)]
 
 
 def skill_dirs(skills_dir: str) -> list[str]:

@@ -7,7 +7,7 @@ import os
 import re
 import sys
 import time
-from typing import Any
+from typing import Any, SupportsInt, cast
 
 LOG_DIR = os.path.expanduser("~/.claude/logs")
 LOG_PATH = os.path.join(LOG_DIR, "hooks.log")
@@ -78,39 +78,56 @@ def _rotate_if_needed() -> None:
         return
 
 
-def _normalize_schema(fields: dict[str, Any]) -> dict[str, Any]:
-    out = dict(fields)
+_DROP: object = object()
 
-    if "decision_class" in out:
-        dc = out["decision_class"]
-        if isinstance(dc, str) and dc in ALLOWED_DECISION_CLASSES:
-            pass
-        else:
-            out["original_decision_class"] = dc
-            out["decision_class"] = "warn"
+_TAG_LIMITS: tuple[tuple[str, int], ...] = (
+    ("detector_tag", MAX_DETECTOR_TAG),
+    ("defect_pattern_tag", MAX_DEFECT_PATTERN_TAG),
+)
 
-    if "confidence_score" in out:
-        try:
-            value = int(out["confidence_score"])
-            out["confidence_score"] = max(1, min(10, value))
-        except (TypeError, ValueError):
-            del out["confidence_score"]
 
-    if "detector_tag" in out:
-        dt = out["detector_tag"]
-        if isinstance(dt, str):
-            out["detector_tag"] = dt[:MAX_DETECTOR_TAG]
-        else:
-            del out["detector_tag"]
+def _decision_updates(fields: dict[str, object]) -> dict[str, object]:
+    if "decision_class" not in fields:
+        return {}
+    dc = fields["decision_class"]
+    if isinstance(dc, str) and dc in ALLOWED_DECISION_CLASSES:
+        return {}
+    return {"original_decision_class": dc, "decision_class": "warn"}
 
-    if "defect_pattern_tag" in out:
-        dpt = out["defect_pattern_tag"]
-        if isinstance(dpt, str):
-            out["defect_pattern_tag"] = dpt[:MAX_DEFECT_PATTERN_TAG]
-        else:
-            del out["defect_pattern_tag"]
 
-    return out
+def _confidence_updates(fields: dict[str, object]) -> dict[str, object]:
+    if "confidence_score" not in fields:
+        return {}
+    try:
+        value = int(cast("SupportsInt | str", fields["confidence_score"]))
+    except (TypeError, ValueError):
+        return {"confidence_score": _DROP}
+    return {"confidence_score": max(1, min(10, value))}
+
+
+def _truncated_tag(value: object, limit: int) -> object:
+    return value[:limit] if isinstance(value, str) else _DROP
+
+
+def _tag_updates(fields: dict[str, object]) -> dict[str, object]:
+    return {
+        key: _truncated_tag(fields[key], limit)
+        for key, limit in _TAG_LIMITS
+        if key in fields
+    }
+
+
+def _normalize_schema(fields: dict[str, object]) -> dict[str, object]:
+    updates = {
+        **_decision_updates(fields),
+        **_confidence_updates(fields),
+        **_tag_updates(fields),
+    }
+    merged = {key: updates.get(key, value) for key, value in fields.items()}
+    added = {key: value for key, value in updates.items() if key not in fields}
+    return {
+        key: value for key, value in {**merged, **added}.items() if value is not _DROP
+    }
 
 
 def record(**fields: Any) -> None:
@@ -145,7 +162,16 @@ def record(**fields: Any) -> None:
         sys.stderr.write(f"audit log: write failed: {error}\n")
 
 
-def _cli(argv: list[str]) -> int:
+def _add_text_flags(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--level", default=None)
+    parser.add_argument("--tool", default=None)
+    parser.add_argument("--reason", default=None)
+    parser.add_argument("--command", dest="command_excerpt", default=None)
+    parser.add_argument("--bypass-env", dest="bypass_env", default=None)
+    parser.add_argument("--session-id", dest="session_id", default=None)
+
+
+def _build_cli_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Append a record to ~/.claude/logs/hooks.log"
     )
@@ -153,12 +179,7 @@ def _cli(argv: list[str]) -> int:
     parser.add_argument(
         "--decision", required=True, choices=["block", "bypass", "warn", "allow"]
     )
-    parser.add_argument("--level", default=None)
-    parser.add_argument("--tool", default=None)
-    parser.add_argument("--reason", default=None)
-    parser.add_argument("--command", dest="command_excerpt", default=None)
-    parser.add_argument("--bypass-env", dest="bypass_env", default=None)
-    parser.add_argument("--session-id", dest="session_id", default=None)
+    _add_text_flags(parser)
     parser.add_argument(
         "--decision-class",
         dest="decision_class",
@@ -175,7 +196,11 @@ def _cli(argv: list[str]) -> int:
     )
     parser.add_argument("--file-path", dest="file_path", default=None)
     parser.add_argument("--latency-ms", dest="latency_ms", type=int, default=None)
-    args = parser.parse_args(argv)
+    return parser
+
+
+def _cli(argv: list[str]) -> int:
+    args = _build_cli_parser().parse_args(argv)
     payload = {k: v for k, v in vars(args).items() if v is not None}
     record(**payload)
     return 0
