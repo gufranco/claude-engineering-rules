@@ -272,6 +272,16 @@
       "tool_name": "Bash"
     }
   },
+  "gh-short-sha-guard": {
+    "env": {},
+    "payload": {
+      "hook_event_name": "PreToolUse",
+      "tool_input": {
+        "command": "gh run list --commit abc1234"
+      },
+      "tool_name": "Bash"
+    }
+  },
   "gh-token-guard": {
     "env": {},
     "payload": {

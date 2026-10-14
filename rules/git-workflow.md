@@ -32,10 +32,11 @@ Enforced by: [`hooks/conventional-commits.py`](../hooks/conventional-commits.py)
 Enforced by: [`hooks/doc-sync-guard.py`](../hooks/doc-sync-guard.py).
 Enforced by: [`hooks/force-push-during-review.py`](../hooks/force-push-during-review.py).
 Enforced by: [`hooks/gh-run-watch-blocker.py`](../hooks/gh-run-watch-blocker.py).
+Enforced by: [`hooks/gh-short-sha-guard.py`](../hooks/gh-short-sha-guard.py).
 Enforced by: [`hooks/git-author-guard.py`](../hooks/git-author-guard.py).
 Enforced by: [`hooks/large-file-blocker.py`](../hooks/large-file-blocker.py).
 Enforced by: [`hooks/review-state-guard.py`](../hooks/review-state-guard.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-14, recurrence 5 in one session: subjects judged by eye overran the 50-character limit and each cost a blocked commit, so the core now requires measuring the length first.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-14, recurrence 5 in one session: subjects judged by eye overran the 50-character limit and each cost a blocked commit, so the core now requires measuring the length first. Amended again 2026-10-14, recurrence 3 since 2026-09-30: CI watchers filtered `gh run list --commit` by a short SHA, got zero runs with exit 0, and reported done; [`hooks/gh-short-sha-guard.py`](../hooks/gh-short-sha-guard.py) now blocks it.

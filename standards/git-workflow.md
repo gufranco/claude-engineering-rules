@@ -355,6 +355,7 @@ Enforced by: [`hooks/conventional-commits.py`](../hooks/conventional-commits.py)
 Enforced by: [`hooks/doc-sync-guard.py`](../hooks/doc-sync-guard.py).
 Enforced by: [`hooks/force-push-during-review.py`](../hooks/force-push-during-review.py).
 Enforced by: [`hooks/gh-run-watch-blocker.py`](../hooks/gh-run-watch-blocker.py).
+Enforced by: [`hooks/gh-short-sha-guard.py`](../hooks/gh-short-sha-guard.py).
 Enforced by: [`hooks/git-author-guard.py`](../hooks/git-author-guard.py).
 Enforced by: [`hooks/large-file-blocker.py`](../hooks/large-file-blocker.py).
 Enforced by: [`hooks/review-state-guard.py`](../hooks/review-state-guard.py).
