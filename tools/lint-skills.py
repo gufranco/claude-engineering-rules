@@ -238,63 +238,50 @@ def matches_canonical(observed: str, canonical: str) -> bool:
     return False
 
 
-def lint_file(path: Path) -> Report:
-    report = Report(path=path)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        report.findings.append(Finding("error", "io-error", f"cannot read file: {exc}"))
-        return report
+MISSING_FRONTMATTER = Finding(
+    "error",
+    "missing-frontmatter",
+    "no YAML frontmatter found at top of file",
+    fix_hint="Add at line 1:\n---\nname: <name>\ndescription: <one-line summary>\n---",
+)
 
-    fields, body = parse_frontmatter(text)
-    if not fields:
-        report.findings.append(
-            Finding(
-                "error",
-                "missing-frontmatter",
-                "no YAML frontmatter found at top of file",
-                fix_hint="Add at line 1:\n---\nname: <name>\ndescription: <one-line summary>\n---",
-            )
-        )
-        return report
 
-    report.findings.extend(yaml_findings(text))
-    report.findings.extend(invocation_findings(fields))
-
-    expected_name = path.parent.name
-    name = fields.get("name", "").strip()
-    description = fields.get("description", "").strip()
-
+def name_findings(name: str, expected_name: str) -> list[Finding]:
     if not name:
-        report.findings.append(
-            Finding("error", "missing-name", "frontmatter `name` is required")
-        )
-    elif name != expected_name:
-        report.findings.append(
+        return [Finding("error", "missing-name", "frontmatter `name` is required")]
+    if name != expected_name:
+        return [
             Finding(
                 "error",
                 "name-mismatch",
                 f"frontmatter `name: {name}` does not match dir `{expected_name}`",
             )
-        )
+        ]
+    return []
 
+
+def description_findings(description: str) -> list[Finding]:
     if not description:
-        report.findings.append(
+        return [
             Finding(
                 "error", "missing-description", "frontmatter `description` is required"
             )
-        )
-    elif len(description) < 30:
-        report.findings.append(
+        ]
+    if len(description) < 30:
+        return [
             Finding(
                 "warning",
                 "short-description",
                 f"description is only {len(description)} chars; aim for 50+",
             )
-        )
+        ]
+    return []
 
+
+def metadata_findings(fields: dict) -> list[Finding]:
+    findings: list[Finding] = []
     if "argument-hint" not in fields:
-        report.findings.append(
+        findings.append(
             Finding(
                 "warning",
                 "missing-argument-hint",
@@ -302,9 +289,8 @@ def lint_file(path: Path) -> Report:
                 fix_hint='Add: argument-hint: "<example invocation>"',
             )
         )
-
     if "allowed-tools" not in fields and "disallowed-tools" not in fields:
-        report.findings.append(
+        findings.append(
             Finding(
                 "warning",
                 "missing-tool-scope",
@@ -312,30 +298,47 @@ def lint_file(path: Path) -> Report:
                 fix_hint='Add one of: allowed-tools: "Read, Edit, Bash"  or  disallowed-tools: "Write, Edit"',
             )
         )
+    return findings
 
+
+def section_findings(body: str) -> list[Finding]:
     sections = find_sections(body)
     if not sections:
-        report.findings.append(
-            Finding("error", "no-sections", "no `## ` body sections found")
+        return [Finding("error", "no-sections", "no `## ` body sections found")]
+    missing_sections = [
+        required
+        for required in REQUIRED_SECTIONS
+        if not any(matches_canonical(obs, required) for obs in sections)
+    ]
+    if not missing_sections:
+        return []
+    return [
+        Finding(
+            "warning",
+            "missing-sections",
+            f"missing recommended sections: {', '.join(missing_sections)}",
+            fix_hint="Add `## <name>` headings for each missing section.",
         )
-        return report
+    ]
 
-    missing_sections: list[str] = []
-    for required in REQUIRED_SECTIONS:
-        if not any(matches_canonical(obs, required) for obs in sections):
-            missing_sections.append(required)
 
-    if missing_sections:
-        report.findings.append(
-            Finding(
-                "warning",
-                "missing-sections",
-                f"missing recommended sections: {', '.join(missing_sections)}",
-                fix_hint="Add `## <name>` headings for each missing section.",
-            )
-        )
-
-    return report
+def lint_file(path: Path) -> Report:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return Report(path, [Finding("error", "io-error", f"cannot read file: {exc}")])
+    fields, body = parse_frontmatter(text)
+    if not fields:
+        return Report(path, [MISSING_FRONTMATTER])
+    findings = [
+        *yaml_findings(text),
+        *invocation_findings(fields),
+        *name_findings(fields.get("name", "").strip(), path.parent.name),
+        *description_findings(fields.get("description", "").strip()),
+        *metadata_findings(fields),
+        *section_findings(body),
+    ]
+    return Report(path, findings)
 
 
 def is_skill_dir(path: Path) -> bool:

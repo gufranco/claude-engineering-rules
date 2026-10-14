@@ -107,6 +107,17 @@ def validate_hooks(data):
     return errors
 
 
+def _summary_line(data):
+    deny_count = len(data.get("permissions", {}).get("deny", []))
+    hook_count = sum(
+        len(hg.get("hooks", []))
+        for phase in KNOWN_HOOK_PHASES
+        for hg in data.get("hooks", {}).get(phase, [])
+    )
+    mcp_count = len(data.get("mcpServers", {}))
+    return f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands, {mcp_count} MCP servers"
+
+
 def main():
     if not os.path.exists(SETTINGS_PATH):
         print("settings.json not found")
@@ -115,31 +126,20 @@ def main():
     with open(SETTINGS_PATH) as f:
         data = json.load(f)
 
-    all_errors = []
-    all_errors.extend(validate_deny_rules(data))
-    all_errors.extend(validate_hooks(data))
-    all_errors.extend(validate_mcpservers(data))
-
-    deny_count = len(data.get("permissions", {}).get("deny", []))
-    hook_count = sum(
-        len(hg.get("hooks", []))
-        for phase in KNOWN_HOOK_PHASES
-        for hg in data.get("hooks", {}).get(phase, [])
-    )
-    mcp_count = len(data.get("mcpServers", {}))
-
-    print(
-        f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands, {mcp_count} MCP servers"
-    )
+    all_errors = [
+        *validate_deny_rules(data),
+        *validate_hooks(data),
+        *validate_mcpservers(data),
+    ]
+    print(_summary_line(data))
 
     if all_errors:
         print(f"\nFAILED: {len(all_errors)} error(s) found:\n")
         for e in all_errors:
             print(e)
         sys.exit(1)
-    else:
-        print("PASSED: settings.json valid")
-        sys.exit(0)
+    print("PASSED: settings.json valid")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

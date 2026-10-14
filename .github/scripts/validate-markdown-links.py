@@ -4,7 +4,9 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import TypeVar
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
@@ -48,7 +50,10 @@ def collect_findings(
     return bare, broken
 
 
-def main() -> int:
+LinkFinding = TypeVar("LinkFinding", Finding, BrokenLinkFinding)
+
+
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Validate markdown link discipline across the repo.",
     )
@@ -62,76 +67,100 @@ def main() -> int:
         action="store_true",
         help="Treat advisory findings (specs/) as blocking too.",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def _repo_relative(name: str) -> str:
+    resolved = Path(name).resolve()
+    try:
+        return str(resolved.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(resolved)
+
+
+def _split_advisory(
+    findings: list[LinkFinding], include_advisory: bool
+) -> tuple[list[LinkFinding], list[LinkFinding]]:
+    advisory = [
+        f for f in findings if is_advisory_file(f.file) and not include_advisory
+    ]
+    blocking = [
+        f for f in findings if not (is_advisory_file(f.file) and not include_advisory)
+    ]
+    return blocking, advisory
+
+
+def _print_advisory(
+    header: str, findings: Sequence[Finding | BrokenLinkFinding]
+) -> None:
+    if not findings:
+        return
+    print(header)
+    for f in findings:
+        print(f"  {f.render()}")
+    print()
+
+
+def _print_blocking(
+    header: str, findings: Sequence[Finding | BrokenLinkFinding], hints: tuple[str, ...]
+) -> None:
+    if not findings:
+        return
+    print(header)
+    print()
+    for f in findings:
+        print(f"  {f.render()}")
+    print()
+    for hint in hints:
+        print(hint)
+    print()
+
+
+def _report_blocking(
+    blocking_bare: list[Finding], blocking_broken: list[BrokenLinkFinding]
+) -> None:
+    _print_blocking(
+        f"FAILED: {len(blocking_bare)} bare file reference(s) found",
+        blocking_bare,
+        ("Wrap each reference as: [`<name>`](<path>) or [<name>](<path>)",),
+    )
+    _print_blocking(
+        f"FAILED: {len(blocking_broken)} broken link target(s) found",
+        blocking_broken,
+        (
+            "Rewrite each link target as a path relative to the document.",
+            "Auto-fix: python3 .github/scripts/fix-markdown-links.py",
+        ),
+    )
+    print("Rule: rules/markdown-links.md")
+
+
+def main() -> int:
+    args = _parse_args()
     if args.files:
-        files = []
-        for f in args.files:
-            resolved = Path(f).resolve()
-            try:
-                files.append(str(resolved.relative_to(REPO_ROOT)))
-            except ValueError:
-                files.append(str(resolved))
+        files = [_repo_relative(f) for f in args.files]
     else:
         files = tracked_markdown_files(REPO_ROOT)
-
     bare_findings, broken_findings = collect_findings(files, REPO_ROOT)
-    blocking_bare: list[Finding] = []
-    advisory_bare: list[Finding] = []
-    blocking_broken: list[BrokenLinkFinding] = []
-    advisory_broken: list[BrokenLinkFinding] = []
-
-    for f in bare_findings:
-        if is_advisory_file(f.file) and not args.include_advisory:
-            advisory_bare.append(f)
-        else:
-            blocking_bare.append(f)
-
-    for bf in broken_findings:
-        if is_advisory_file(bf.file) and not args.include_advisory:
-            advisory_broken.append(bf)
-        else:
-            blocking_broken.append(bf)
-
-    if advisory_bare:
-        print(f"Advisory: {len(advisory_bare)} bare file reference(s) in specs/")
-        for f in advisory_bare:
-            print(f"  {f.render()}")
-        print()
-
-    if advisory_broken:
-        print(f"Advisory: {len(advisory_broken)} broken link target(s) in specs/")
-        for bf in advisory_broken:
-            print(f"  {bf.render()}")
-        print()
-
+    blocking_bare, advisory_bare = _split_advisory(bare_findings, args.include_advisory)
+    blocking_broken, advisory_broken = _split_advisory(
+        broken_findings, args.include_advisory
+    )
+    _print_advisory(
+        f"Advisory: {len(advisory_bare)} bare file reference(s) in specs/",
+        advisory_bare,
+    )
+    _print_advisory(
+        f"Advisory: {len(advisory_broken)} broken link target(s) in specs/",
+        advisory_broken,
+    )
     if not blocking_bare and not blocking_broken:
         print(
             f"PASSED: 0 blocking findings across {len(files)} markdown files "
             "(bare references + broken link targets)."
         )
         return 0
-
-    if blocking_bare:
-        print(f"FAILED: {len(blocking_bare)} bare file reference(s) found")
-        print()
-        for f in blocking_bare:
-            print(f"  {f.render()}")
-        print()
-        print("Wrap each reference as: [`<name>`](<path>) or [<name>](<path>)")
-        print()
-
-    if blocking_broken:
-        print(f"FAILED: {len(blocking_broken)} broken link target(s) found")
-        print()
-        for bf in blocking_broken:
-            print(f"  {bf.render()}")
-        print()
-        print("Rewrite each link target as a path relative to the document.")
-        print("Auto-fix: python3 .github/scripts/fix-markdown-links.py")
-        print()
-
-    print("Rule: rules/markdown-links.md")
+    _report_blocking(blocking_bare, blocking_broken)
     return 1
 
 

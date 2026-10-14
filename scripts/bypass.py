@@ -56,12 +56,7 @@ def _cmd_list(_args: argparse.Namespace) -> int:
     return 0
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="manage the in-session hook bypass registry"
-    )
-    sub = parser.add_subparsers(dest="cmd", required=True)
-
+def _add_set_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     set_p = sub.add_parser("set", help="engage a bypass entry for a hook")
     set_p.add_argument("hook", help='hook name or "*" for wildcard')
     set_p.add_argument(
@@ -76,6 +71,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="free-text justification stored alongside the entry",
     )
     set_p.set_defaults(func=_cmd_set)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="manage the in-session hook bypass registry"
+    )
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    _add_set_parser(sub)
 
     clear_p = sub.add_parser("clear", help="remove one entry or all entries")
     clear_p.add_argument(

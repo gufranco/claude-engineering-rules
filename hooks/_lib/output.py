@@ -31,6 +31,16 @@ def _indent(body: str, prefix: str = "  ") -> str:
     return "\n".join(prefix + line if line else line for line in body.splitlines())
 
 
+def _bypass_block(hook: str, bypass_when: str, env_var: str, safety: str | None) -> str:
+    safety_line = safety or "subsequent runs of the same payload will not be checked."
+    return (
+        f"{bypass_when}\n"
+        f"env: {env_var}=1 (parent shell)\n"
+        f'file: python scripts/bypass.py set {hook} --ttl 600 --reason "<why>"\n'
+        f"safety: {safety_line}"
+    )
+
+
 def block(
     *,
     hook: str,
@@ -47,37 +57,19 @@ def block(
         raise ValueError(
             f"unknown decision verb {decision!r}; expected one of {sorted(DECISION_VERBS)}"
         )
-    detected = _cap(detected)
-    why = _cap(why)
-    fix = _cap(fix)
-    bypass_when = _cap(bypass_when)
-    safety_line = safety or "subsequent runs of the same payload will not be checked."
-    bypass_block = (
-        f"{bypass_when}\n"
-        f"env: {env_var}=1 (parent shell)\n"
-        f'file: python scripts/bypass.py set {hook} --ttl 600 --reason "<why>"\n'
-        f"safety: {safety_line}"
+    bodies = (
+        _cap(detected),
+        _cap(why),
+        _cap(fix),
+        _bypass_block(hook, _cap(bypass_when), env_var, safety),
+        decision,
     )
-    parts = [
-        f"BLOCKED by {hook} ({rule_anchor})",
-        "",
-        "What was detected:",
-        _indent(detected),
-        "",
-        "Why this rule exists:",
-        _indent(why),
-        "",
-        "How to fix:",
-        _indent(fix),
-        "",
-        "If the rule does not apply here:",
-        _indent(bypass_block),
-        "",
-        "Decision guidance for Claude:",
-        _indent(decision),
-        "",
-    ]
-    return "\n".join(parts)
+    sections = (
+        line
+        for label, body in zip(_SECTION_ORDER, bodies, strict=True)
+        for line in (label, _indent(body), "")
+    )
+    return "\n".join([f"BLOCKED by {hook} ({rule_anchor})", "", *sections])
 
 
 def warn(
@@ -96,10 +88,12 @@ def warn(
     return "\n".join(parts)
 
 
-def validate_block_message(message: str) -> list[str]:
+_DECISION_MARKER: Final = "Decision guidance for Claude:"
+_BYPASS_MARKER: Final = "If the rule does not apply here:"
+
+
+def _order_issues(message: str) -> list[str]:
     issues: list[str] = []
-    if not message.lstrip().startswith("BLOCKED by "):
-        issues.append("missing 'BLOCKED by <hook>' header on first line")
     last_pos = -1
     for label in _SECTION_ORDER:
         pos = message.find(label)
@@ -109,27 +103,46 @@ def validate_block_message(message: str) -> list[str]:
             issues.append(f"section '{label}' appears out of order")
         else:
             last_pos = pos
-    decision_marker = "Decision guidance for Claude:"
-    decision_pos = message.find(decision_marker)
-    if decision_pos != -1:
-        tail = message[decision_pos + len(decision_marker) :].strip().splitlines()
-        first_line = tail[0].strip() if tail else ""
-        if first_line not in DECISION_VERBS:
-            issues.append(
-                f"decision verb {first_line!r} is not one of {sorted(DECISION_VERBS)}"
-            )
-    bypass_marker = "If the rule does not apply here:"
-    bypass_pos = message.find(bypass_marker)
-    if bypass_pos != -1:
-        block_body = (
-            message[bypass_pos:decision_pos]
-            if decision_pos > bypass_pos
-            else message[bypass_pos:]
-        )
-        if "env:" not in block_body and "_DISABLE" not in block_body:
-            issues.append("bypass section is missing the env-var channel reference")
-        if "file:" not in block_body and "scripts/bypass.py" not in block_body:
-            issues.append(
-                "bypass section is missing the file-registry channel reference"
-            )
     return issues
+
+
+def _decision_issues(message: str, decision_pos: int) -> list[str]:
+    if decision_pos == -1:
+        return []
+    tail = message[decision_pos + len(_DECISION_MARKER) :].strip().splitlines()
+    first_line = tail[0].strip() if tail else ""
+    if first_line in DECISION_VERBS:
+        return []
+    return [f"decision verb {first_line!r} is not one of {sorted(DECISION_VERBS)}"]
+
+
+def _bypass_issues(message: str, decision_pos: int) -> list[str]:
+    bypass_pos = message.find(_BYPASS_MARKER)
+    if bypass_pos == -1:
+        return []
+    block_body = (
+        message[bypass_pos:decision_pos]
+        if decision_pos > bypass_pos
+        else message[bypass_pos:]
+    )
+    issues: list[str] = []
+    if "env:" not in block_body and "_DISABLE" not in block_body:
+        issues.append("bypass section is missing the env-var channel reference")
+    if "file:" not in block_body and "scripts/bypass.py" not in block_body:
+        issues.append("bypass section is missing the file-registry channel reference")
+    return issues
+
+
+def validate_block_message(message: str) -> list[str]:
+    header = (
+        []
+        if message.lstrip().startswith("BLOCKED by ")
+        else ["missing 'BLOCKED by <hook>' header on first line"]
+    )
+    decision_pos = message.find(_DECISION_MARKER)
+    return [
+        *header,
+        *_order_issues(message),
+        *_decision_issues(message, decision_pos),
+        *_bypass_issues(message, decision_pos),
+    ]

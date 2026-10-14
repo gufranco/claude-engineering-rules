@@ -92,41 +92,41 @@ def is_self_reference(rel: str) -> bool:
     return any(rel == p for p in SELF_REFERENCE_FILES)
 
 
-def scan(path: Path, rel: str) -> list[tuple[int, str, str]]:
-    findings: list[tuple[int, str, str]] = []
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError) as error:
-        return [(0, "unreadable", f"cannot read: {error}")]
-
-    if is_self_reference(rel):
-        skip_phrases = True
-    else:
-        skip_phrases = False
-
-    lines = text.splitlines()
+def _prose_lines(lines: list[str]) -> list[tuple[int, str]]:
+    prose: list[tuple[int, str]] = []
     in_code_fence = False
-
     for i, line in enumerate(lines, start=1):
         stripped = line.strip()
         if stripped.startswith("```") or stripped.startswith("~~~"):
             in_code_fence = not in_code_fence
             continue
-        if in_code_fence:
-            continue
+        if not in_code_fence:
+            prose.append((i, line))
+    return prose
 
-        if BULLET_SHOULD_RE.match(line):
-            findings.append((i, "should-bullet", line.strip()[:120]))
 
-        if skip_phrases:
-            continue
+def _line_findings(i: int, line: str, skip_phrases: bool) -> list[tuple[int, str, str]]:
+    snippet = line.strip()[:120]
+    should = [(i, "should-bullet", snippet)] if BULLET_SHOULD_RE.match(line) else []
+    if skip_phrases:
+        return should
+    phrases = [
+        (i, label, snippet) for label, pat in PHRASE_CATEGORIES if pat.search(line)
+    ]
+    return [*should, *phrases]
 
-        for label, pat in PHRASE_CATEGORIES:
-            m = pat.search(line)
-            if m:
-                findings.append((i, label, line.strip()[:120]))
 
-    return findings
+def scan(path: Path, rel: str) -> list[tuple[int, str, str]]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError) as error:
+        return [(0, "unreadable", f"cannot read: {error}")]
+    skip_phrases = is_self_reference(rel)
+    return [
+        finding
+        for i, line in _prose_lines(text.splitlines())
+        for finding in _line_findings(i, line, skip_phrases)
+    ]
 
 
 def main() -> int:

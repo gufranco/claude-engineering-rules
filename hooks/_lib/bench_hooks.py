@@ -288,10 +288,7 @@ def _filter_hooks(paths: list[str], include: Iterable[str] | None) -> list[str]:
     return out
 
 
-def _cli(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(
-        description="Benchmark Claude Code Python hooks for regression detection."
-    )
+def _add_selection_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--hooks-dir",
         default=DEFAULT_HOOKS_DIR,
@@ -303,6 +300,9 @@ def _cli(argv: list[str]) -> int:
         default=None,
         help="Limit benchmark to these hook basenames (repeatable).",
     )
+
+
+def _add_run_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--iterations",
         type=int,
@@ -321,6 +321,9 @@ def _cli(argv: list[str]) -> int:
         default=1,
         help="Warmup iterations per hook before recording (default: 1).",
     )
+
+
+def _add_output_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--format",
         choices=["table", "json", "markdown"],
@@ -333,6 +336,9 @@ def _cli(argv: list[str]) -> int:
         help="Benchmark only the hooks this settings file registers for --event.",
     )
     parser.add_argument("--event", default="PreToolUse")
+
+
+def _add_gate_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--threshold-ms",
         type=float,
@@ -344,15 +350,50 @@ def _cli(argv: list[str]) -> int:
         default=None,
         help="Write markdown report to this path (e.g., notes/perf-baseline.md).",
     )
-    args = parser.parse_args(argv)
-    iterations = max(1, args.iterations)
-    warmup = max(0, args.warmup)
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Benchmark Claude Code Python hooks for regression detection."
+    )
+    _add_selection_args(parser)
+    _add_run_args(parser)
+    _add_output_args(parser)
+    _add_gate_args(parser)
+    return parser
+
+
+def _selected_hooks(args: argparse.Namespace) -> list[str]:
     selected = (
         registered_hooks(args.settings, args.hooks_dir, args.event)
         if args.settings
         else discover_hooks(args.hooks_dir)
     )
-    selected = _filter_hooks(selected, args.hook)
+    return _filter_hooks(selected, args.hook)
+
+
+def _write_baseline(target: str, stats: list[HookStats], iterations: int) -> None:
+    markdown = _format_markdown(stats, iterations=iterations, payloads=sorted(PAYLOADS))
+    baseline_path = os.path.expanduser(target)
+    os.makedirs(os.path.dirname(baseline_path) or ".", exist_ok=True)
+    with open(baseline_path, "w", encoding="utf-8") as fh:
+        fh.write(markdown)
+    sys.stdout.write(f"Wrote baseline to {baseline_path}\n")
+
+
+def _render(output_format: str, stats: list[HookStats], iterations: int) -> str:
+    if output_format == "json":
+        return _format_json(stats)
+    if output_format == "markdown":
+        return _format_markdown(stats, iterations=iterations, payloads=sorted(PAYLOADS))
+    return _format_table(stats)
+
+
+def _cli(argv: list[str]) -> int:
+    args = _build_parser().parse_args(argv)
+    iterations = max(1, args.iterations)
+    warmup = max(0, args.warmup)
+    selected = _selected_hooks(args)
     if not selected:
         sys.stderr.write("No hooks selected.\n")
         return 1
@@ -369,22 +410,8 @@ def _cli(argv: list[str]) -> int:
     )
     stats = aggregate(samples)
     if args.write_baseline:
-        markdown = _format_markdown(
-            stats, iterations=iterations, payloads=sorted(PAYLOADS)
-        )
-        baseline_path = os.path.expanduser(args.write_baseline)
-        os.makedirs(os.path.dirname(baseline_path) or ".", exist_ok=True)
-        with open(baseline_path, "w", encoding="utf-8") as fh:
-            fh.write(markdown)
-        sys.stdout.write(f"Wrote baseline to {baseline_path}\n")
-    if args.format == "json":
-        sys.stdout.write(_format_json(stats))
-    elif args.format == "markdown":
-        sys.stdout.write(
-            _format_markdown(stats, iterations=iterations, payloads=sorted(PAYLOADS))
-        )
-    else:
-        sys.stdout.write(_format_table(stats))
+        _write_baseline(args.write_baseline, stats, iterations)
+    sys.stdout.write(_render(args.format, stats, iterations))
     if args.threshold_ms is None:
         return 0
     return _report_gate(gate_violations(stats, missing, args.threshold_ms))

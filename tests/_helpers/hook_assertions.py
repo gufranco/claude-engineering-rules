@@ -31,9 +31,7 @@ def assert_allowed(result: HookResult) -> tuple[int, str]:
     return result.code, result.stderr
 
 
-def assert_modified(
-    result: HookResult, expected_diff: dict[str, object]
-) -> dict[str, object]:
+def _parse_envelope(result: HookResult) -> dict[str, object]:
     assert result.code == ALLOW_EXIT_CODE, (
         f"expected hook to allow with modified input (exit 0) "
         f"but got exit {result.code}.\nstderr:\n{result.stderr}"
@@ -45,6 +43,10 @@ def assert_modified(
     assert isinstance(parsed, dict), (
         f"expected a JSON object on stdout, got {type(parsed).__name__}"
     )
+    return parsed
+
+
+def _modified_input(parsed: dict[str, object]) -> dict[str, object]:
     spec: object = parsed.get("hookSpecificOutput") or {}
     assert isinstance(spec, dict), (
         f"expected hookSpecificOutput to be a dict, got {type(spec).__name__}"
@@ -56,6 +58,14 @@ def assert_modified(
     assert isinstance(modified, dict), (
         f"expected modifiedInput to be a dict, got {type(modified).__name__}"
     )
+    return modified
+
+
+def assert_modified(
+    result: HookResult, expected_diff: dict[str, object]
+) -> dict[str, object]:
+    parsed = _parse_envelope(result)
+    modified = _modified_input(parsed)
     for key, value in expected_diff.items():
         assert key in modified, f"expected modifiedInput to include key {key!r}"
         assert modified[key] == value, (

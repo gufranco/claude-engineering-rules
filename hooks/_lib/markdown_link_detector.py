@@ -89,45 +89,46 @@ def file_relative_path(target: Path, doc_dir: Path) -> str:
     return rel.replace(os.sep, "/")
 
 
-def find_code_block_ranges(text: str) -> list[tuple[int, int]]:
+FENCE_OPEN = re.compile(r"^\s*(`{3,}|~{3,})")
+
+
+def _closes_fence(line: str, m: re.Match[str], open_fence: str) -> bool:
+    fence = m.group(1)
+    if fence[0] != open_fence[0] or len(fence) < len(open_fence):
+        return False
+    return not line[m.end() :].strip()
+
+
+def _fence_ranges(lines: list[str]) -> list[tuple[int, int]]:
     ranges: list[tuple[int, int]] = []
-    lines = text.split("\n")
-    fence_open = re.compile(r"^\s*(`{3,}|~{3,})")
-
-    in_block = False
+    open_fence = ""
     block_start = 0
-    open_char = ""
-    open_len = 0
-
     for i, line in enumerate(lines, 1):
-        m = fence_open.match(line)
+        m = FENCE_OPEN.match(line)
         if not m:
             continue
-        fence = m.group(1)
-        if in_block:
-            if fence[0] == open_char and len(fence) >= open_len:
-                rest = line[m.end() :].strip()
-                if not rest:
-                    ranges.append((block_start, i))
-                    in_block = False
-                    open_char = ""
-                    open_len = 0
-        else:
-            in_block = True
-            block_start = i
-            open_char = fence[0]
-            open_len = len(fence)
-
-    if in_block:
+        if not open_fence:
+            open_fence, block_start = m.group(1), i
+        elif _closes_fence(line, m, open_fence):
+            ranges.append((block_start, i))
+            open_fence = ""
+    if open_fence:
         ranges.append((block_start, len(lines)))
-
-    if lines and lines[0].strip() == "---":
-        for i in range(1, len(lines)):
-            if lines[i].strip() == "---":
-                ranges.append((1, i + 1))
-                break
-
     return ranges
+
+
+def _frontmatter_range(lines: list[str]) -> list[tuple[int, int]]:
+    if not lines or lines[0].strip() != "---":
+        return []
+    for i in range(1, len(lines)):
+        if lines[i].strip() == "---":
+            return [(1, i + 1)]
+    return []
+
+
+def find_code_block_ranges(text: str) -> list[tuple[int, int]]:
+    lines = text.split("\n")
+    return [*_fence_ranges(lines), *_frontmatter_range(lines)]
 
 
 def line_is_inside_ranges(line_no: int, ranges: list[tuple[int, int]]) -> bool:
@@ -197,6 +198,71 @@ def resolve_path(token: str, doc_dir: Path, repo_root: Path) -> Path | None:
     return None
 
 
+@dataclass(frozen=True)
+class _DocContext:
+    rel: str
+    doc_dir: Path
+    repo_root: Path
+    tracked: set[str] | None
+
+
+def _is_out_of_scope(rel: str) -> bool:
+    return rel in EXEMPT_FILES or any(rel.startswith(p) for p in SKIP_DIR_PREFIXES)
+
+
+def _doc_context(
+    file_path: str, repo_root: Path, tracked: set[str] | None
+) -> _DocContext:
+    path = Path(file_path)
+    base = path if path.is_absolute() else repo_root / file_path
+    return _DocContext(file_path, base.parent.resolve(), repo_root, tracked)
+
+
+def _prose_lines(text: str) -> list[tuple[int, str]]:
+    code_ranges = find_code_block_ranges(text)
+    return [
+        (i, line)
+        for i, line in enumerate(text.split("\n"), 1)
+        if not line_is_inside_ranges(i, code_ranges)
+    ]
+
+
+def _is_candidate_token(
+    inner: str, span_start: int, url_ranges: list[tuple[int, int]]
+) -> bool:
+    if column_inside_ranges(span_start, url_ranges):
+        return False
+    return is_file_path_token(inner) and inner not in GENERIC_FILENAME_TOKENS
+
+
+def _span_finding(
+    ctx: _DocContext,
+    line: str,
+    line_no: int,
+    m: re.Match[str],
+    url_ranges: list[tuple[int, int]],
+) -> Finding | None:
+    inner = m.group(1)
+    if not _is_candidate_token(inner, m.start(), url_ranges):
+        return None
+    resolved = resolve_path(inner, ctx.doc_dir, ctx.repo_root)
+    if resolved is None:
+        return None
+    if ctx.tracked is not None and not _target_exists(
+        resolved, ctx.repo_root, ctx.tracked
+    ):
+        return None
+    if is_already_linked(line, m.start(), m.end()):
+        return None
+    return Finding(
+        file=ctx.rel,
+        line=line_no,
+        column=m.start() + 1,
+        token=inner,
+        resolved_path=file_relative_path(resolved, ctx.doc_dir),
+    )
+
+
 def detect_findings(
     text: str,
     file_path: str,
@@ -204,50 +270,17 @@ def detect_findings(
     *,
     tracked: set[str] | None = None,
 ) -> list[Finding]:
-    rel = file_path
-    if rel in EXEMPT_FILES:
+    if _is_out_of_scope(file_path):
         return []
-    if any(rel.startswith(p) for p in SKIP_DIR_PREFIXES):
-        return []
-
-    if Path(file_path).is_absolute():
-        doc_dir = Path(file_path).parent.resolve()
-    else:
-        doc_dir = (repo_root / file_path).parent.resolve()
-    code_ranges = find_code_block_ranges(text)
+    ctx = _doc_context(file_path, repo_root, tracked)
     findings: list[Finding] = []
-
-    for i, line in enumerate(text.split("\n"), 1):
-        if line_is_inside_ranges(i, code_ranges):
-            continue
-        link_url_ranges = find_link_url_ranges(line)
-        for m in INLINE_CODE_SPAN.finditer(line):
-            inner = m.group(1)
-            span_start = m.start()
-            span_end = m.end()
-            if column_inside_ranges(span_start, link_url_ranges):
-                continue
-            if not is_file_path_token(inner):
-                continue
-            if inner in GENERIC_FILENAME_TOKENS:
-                continue
-            resolved = resolve_path(inner, doc_dir, repo_root)
-            if resolved is None:
-                continue
-            if tracked is not None and not _target_exists(resolved, repo_root, tracked):
-                continue
-            if is_already_linked(line, span_start, span_end):
-                continue
-            findings.append(
-                Finding(
-                    file=rel,
-                    line=i,
-                    column=span_start + 1,
-                    token=inner,
-                    resolved_path=file_relative_path(resolved, doc_dir),
-                )
-            )
-
+    for i, line in _prose_lines(text):
+        url_ranges = find_link_url_ranges(line)
+        candidates = (
+            _span_finding(ctx, line, i, m, url_ranges)
+            for m in INLINE_CODE_SPAN.finditer(line)
+        )
+        findings.extend(f for f in candidates if f is not None)
     return findings
 
 
@@ -298,6 +331,49 @@ def _inline_code_span_ranges(line: str) -> list[tuple[int, int]]:
     return ranges
 
 
+def _relative_link_target(url: str) -> str | None:
+    if not url or url.startswith(_LINK_TARGET_SKIP_PREFIXES):
+        return None
+    target_no_frag = url.split("#", 1)[0]
+    if not target_no_frag:
+        return None
+    cleaned = target_no_frag[2:] if target_no_frag.startswith("./") else target_no_frag
+    return None if cleaned.startswith("/") else cleaned
+
+
+def _suggested_path(cleaned: str, ctx: _DocContext) -> str | None:
+    repo_root_target = (ctx.repo_root / cleaned).resolve()
+    if not repo_root_target.is_relative_to(ctx.repo_root):
+        return None
+    if not _target_exists(repo_root_target, ctx.repo_root, ctx.tracked):
+        return None
+    return file_relative_path(repo_root_target, ctx.doc_dir)
+
+
+def _link_finding(
+    ctx: _DocContext,
+    line_no: int,
+    m: re.Match[str],
+    code_ranges: list[tuple[int, int]],
+) -> BrokenLinkFinding | None:
+    if column_inside_ranges(m.start(), code_ranges):
+        return None
+    url = m.group("url").strip()
+    cleaned = _relative_link_target(url)
+    if cleaned is None:
+        return None
+    if _target_exists((ctx.doc_dir / cleaned).resolve(), ctx.repo_root, ctx.tracked):
+        return None
+    return BrokenLinkFinding(
+        file=ctx.rel,
+        line=line_no,
+        column=m.start("url") + 1,
+        link_text=m.group("text"),
+        link_target=url,
+        correct_path=_suggested_path(cleaned, ctx),
+    )
+
+
 def detect_broken_link_targets(
     text: str,
     file_path: str,
@@ -305,61 +381,16 @@ def detect_broken_link_targets(
     *,
     tracked: set[str] | None = None,
 ) -> list[BrokenLinkFinding]:
-    rel = file_path
-    if rel in EXEMPT_FILES:
+    if _is_out_of_scope(file_path):
         return []
-    if any(rel.startswith(p) for p in SKIP_DIR_PREFIXES):
-        return []
-
-    if Path(file_path).is_absolute():
-        doc_dir = Path(file_path).parent.resolve()
-    else:
-        doc_dir = (repo_root / file_path).parent.resolve()
-    code_ranges = find_code_block_ranges(text)
+    ctx = _doc_context(file_path, repo_root, tracked)
     findings: list[BrokenLinkFinding] = []
-
-    for i, line in enumerate(text.split("\n"), 1):
-        if line_is_inside_ranges(i, code_ranges):
-            continue
-        inline_code_ranges = _inline_code_span_ranges(line)
-        for m in MARKDOWN_LINK.finditer(line):
-            if column_inside_ranges(m.start(), inline_code_ranges):
-                continue
-            link_text = m.group("text")
-            url = m.group("url").strip()
-            if not url or url.startswith(_LINK_TARGET_SKIP_PREFIXES):
-                continue
-            target_no_frag = url.split("#", 1)[0]
-            if not target_no_frag:
-                continue
-            cleaned = (
-                target_no_frag[2:]
-                if target_no_frag.startswith("./")
-                else target_no_frag
-            )
-            if cleaned.startswith("/"):
-                continue
-
-            file_relative_target = (doc_dir / cleaned).resolve()
-            if _target_exists(file_relative_target, repo_root, tracked):
-                continue
-
-            correct_path: str | None = None
-            repo_root_target = (repo_root / cleaned).resolve()
-            if repo_root_target.is_relative_to(repo_root) and _target_exists(
-                repo_root_target, repo_root, tracked
-            ):
-                correct_path = file_relative_path(repo_root_target, doc_dir)
-            findings.append(
-                BrokenLinkFinding(
-                    file=rel,
-                    line=i,
-                    column=m.start("url") + 1,
-                    link_text=link_text,
-                    link_target=url,
-                    correct_path=correct_path,
-                )
-            )
+    for i, line in _prose_lines(text):
+        code_ranges = _inline_code_span_ranges(line)
+        candidates = (
+            _link_finding(ctx, i, m, code_ranges) for m in MARKDOWN_LINK.finditer(line)
+        )
+        findings.extend(f for f in candidates if f is not None)
     return findings
 
 

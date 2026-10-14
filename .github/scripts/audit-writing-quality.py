@@ -11,6 +11,17 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from writing_quality_phrases import (  # noqa: E402
+    CLOSERS,
+    FLUFF,
+    HEDGES,
+    OPENERS,
+    TACTICAL,
+    TRANSITIONS,
+    VAGUE_QUANTIFIERS,
+)
 
 CLAUDE_ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,84 +60,12 @@ BULLET_SHOULD_RE = re.compile(
     re.MULTILINE,
 )
 
-VAGUE_QUANTIFIERS = [
-    "often",
-    "usually",
-    "sometimes",
-    "a few",
-    "several",
-]
 VAGUE_RE = re.compile(
     r"^\s*(?:[-*]|\d+\.)\s+(?:"
     + "|".join(re.escape(p) for p in VAGUE_QUANTIFIERS)
     + r")\b",
     re.IGNORECASE,
 )
-
-OPENERS = [
-    "Great question!",
-    "Sure!",
-    "Absolutely!",
-    "Of course!",
-    "That's a great point",
-    "That is a great point",
-    "Perfect!",
-    "Excellent!",
-    "Wonderful!",
-]
-CLOSERS = [
-    "Let me know if you need anything else",
-    "Let me know if you have any questions",
-    "Hope this helps",
-    "Hope that helps",
-    "Feel free to ask",
-    "Feel free to reach out",
-    "Happy to help",
-]
-HEDGES = [
-    "It's worth noting",
-    "It is worth noting",
-    "It should be noted",
-    "It's important to mention",
-    "It is important to mention",
-    "It is important to note",
-    "Keep in mind that",
-]
-TRANSITIONS = [
-    "That said,",
-    "With that in mind,",
-    "Having said that,",
-    "On that note,",
-]
-FLUFF = [
-    "robust",
-    "comprehensive",
-    "seamless",
-    "elegant",
-    "powerful",
-    "streamlined",
-    "cutting-edge",
-    "leverage",
-    "best-in-class",
-    "world-class",
-    "game-changing",
-    "synergy",
-    "synergies",
-]
-TACTICAL = [
-    "quick fix",
-    "quick win",
-    "temporary fix",
-    "temporary workaround",
-    "temporary hack",
-    "band-aid",
-    "bandaid",
-    "we'll fix later",
-    "we will fix later",
-    "cleanup later",
-    "clean up later",
-    "fix it later",
-]
 
 
 def _build_phrase_re(phrases: list[str], word_boundary: bool) -> re.Pattern[str]:
@@ -211,135 +150,123 @@ def snippet_of(line: str, length: int = 100) -> str:
     return text
 
 
+PHRASE_DOC_RE = re.compile(
+    r"^\s*-\s*\*\*(Openers|Closers|Hedges|Transitions|Fluff(?:\s+adjectives)?|Tactical(?:\s+hyperbole)?|Echoing|Banned)",
+    re.IGNORECASE,
+)
+
+CHAR_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("banned-box-drawing", BOX_DRAWING_RE),
+    ("banned-emoji", EMOJI_RE),
+)
+
+VAGUE_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (("vague-quantifier", VAGUE_RE),)
+
+
+@dataclass(frozen=True)
+class _MaskState:
+    in_frontmatter: bool
+    fence: str
+
+
+def _fence_after(fence: str, marker: str, can_close: bool) -> str:
+    if not fence:
+        return marker
+    closes = can_close and marker[0] == fence[0] and len(marker) >= len(fence)
+    return "" if closes else fence
+
+
+def _next_mask_state(
+    state: _MaskState, stripped: str, first: bool
+) -> tuple[_MaskState, bool]:
+    if state.in_frontmatter:
+        closes = not first and stripped == "---"
+        return _MaskState(not closes, state.fence), True
+    marker, can_close = _fence_match(stripped)
+    if marker:
+        return _MaskState(False, _fence_after(state.fence, marker, can_close)), True
+    return state, bool(state.fence)
+
+
+def _code_line_mask(lines: list[str]) -> list[bool]:
+    state = _MaskState(bool(lines) and lines[0].strip() == "---", "")
+    mask: list[bool] = []
+    for idx, line in enumerate(lines):
+        state, masked = _next_mask_state(state, line.strip(), idx == 0)
+        mask.append(masked)
+    return mask
+
+
+def _regex_hits(
+    prose: str, rules: Iterable[tuple[str, re.Pattern[str]]]
+) -> list[tuple[str, str]]:
+    return [
+        (label, repr(m.group(0))) for label, pat in rules if (m := pat.search(prose))
+    ]
+
+
+def _char_hits(prose: str) -> list[tuple[str, str]]:
+    em_dash = [("banned-em-dash", "U+2014")] if EM_DASH in prose else []
+    return [*em_dash, *_regex_hits(prose, CHAR_RULES)]
+
+
+def _paren_hits(stripped: str, prose: str) -> list[tuple[str, str]]:
+    if stripped.startswith("|") or stripped.startswith("#"):
+        return []
+    for pm in PAREN_RE.finditer(prose):
+        inner = pm.group(1).strip()
+        if inner and not _is_paren_carveout(inner):
+            return [("parens-in-prose", inner[:60])]
+    return []
+
+
+def _phrase_hits(line: str, prose: str) -> list[tuple[str, str]]:
+    if PHRASE_DOC_RE.match(line):
+        return []
+    return _regex_hits(prose, PHRASE_CATEGORIES)
+
+
+def _should_hits(line: str) -> list[tuple[str, str]]:
+    if BULLET_SHOULD_RE.match(line):
+        return [("should-bullet", "ambiguous obligation")]
+    return []
+
+
+def _scan_line(rel_path: str, line_no: int, line: str) -> list[Finding]:
+    line_no_badges = MD_IMAGE_BADGE_RE.sub("", line)
+    prose = INLINE_CODE_RE.sub("", MD_LINK_RE.sub("", line_no_badges))
+    hits = [
+        *_char_hits(prose),
+        *_paren_hits(line.strip(), prose),
+        *_phrase_hits(line, prose),
+        *_should_hits(line),
+        *_regex_hits(prose, VAGUE_RULES),
+    ]
+    return [
+        Finding(rel_path, line_no, category, detail, snippet_of(line))
+        for category, detail in hits
+    ]
+
+
 def scan_text(rel_path: str, text: str) -> list[Finding]:
-    findings: list[Finding] = []
     lines = text.splitlines()
-    in_code_fence = False
-    fence_marker = ""
-    in_frontmatter = False
+    mask = _code_line_mask(lines)
+    return [
+        finding
+        for line_no, (line, masked) in enumerate(zip(lines, mask), start=1)
+        if not masked
+        for finding in _scan_line(rel_path, line_no, line)
+    ]
 
-    if lines and lines[0].strip() == "---":
-        in_frontmatter = True
 
-    for i, line in enumerate(lines, start=1):
-        stripped = line.strip()
-        if in_frontmatter:
-            if i > 1 and stripped == "---":
-                in_frontmatter = False
-            continue
-        marker, can_close = _fence_match(stripped)
-        if marker:
-            if not in_code_fence:
-                in_code_fence = True
-                fence_marker = marker
-                continue
-            if (
-                can_close
-                and marker[0] == fence_marker[0]
-                and len(marker) >= len(fence_marker)
-            ):
-                in_code_fence = False
-                fence_marker = ""
-            continue
-        if in_code_fence:
-            continue
+def _is_external_target(target: str) -> bool:
+    return target.startswith(("http://", "https://", "#", "mailto:"))
 
-        line_no_badges = MD_IMAGE_BADGE_RE.sub("", line)
-        line_no_links_only = MD_LINK_RE.sub("", line_no_badges)
-        line_no_code = INLINE_CODE_RE.sub("", line_no_links_only)
 
-        if EM_DASH in line_no_code:
-            findings.append(
-                Finding(rel_path, i, "banned-em-dash", "U+2014", snippet_of(line))
-            )
-
-        m = BOX_DRAWING_RE.search(line_no_code)
-        if m:
-            findings.append(
-                Finding(
-                    rel_path,
-                    i,
-                    "banned-box-drawing",
-                    repr(m.group(0)),
-                    snippet_of(line),
-                )
-            )
-
-        m = EMOJI_RE.search(line_no_code)
-        if m:
-            findings.append(
-                Finding(
-                    rel_path,
-                    i,
-                    "banned-emoji",
-                    repr(m.group(0)),
-                    snippet_of(line),
-                )
-            )
-
-        if not stripped.startswith("|") and not stripped.startswith("#"):
-            for pm in PAREN_RE.finditer(line_no_code):
-                inner = pm.group(1).strip()
-                if not inner:
-                    continue
-                if _is_paren_carveout(inner):
-                    continue
-                findings.append(
-                    Finding(
-                        rel_path,
-                        i,
-                        "parens-in-prose",
-                        inner[:60],
-                        snippet_of(line),
-                    )
-                )
-                break
-
-        is_phrase_doc = bool(
-            re.match(
-                r"^\s*-\s*\*\*(Openers|Closers|Hedges|Transitions|Fluff(?:\s+adjectives)?|Tactical(?:\s+hyperbole)?|Echoing|Banned)",
-                line,
-                re.IGNORECASE,
-            )
-        )
-        if not is_phrase_doc:
-            for label, pat in PHRASE_CATEGORIES:
-                m = pat.search(line_no_code)
-                if m:
-                    findings.append(
-                        Finding(
-                            rel_path,
-                            i,
-                            label,
-                            repr(m.group(0)),
-                            snippet_of(line),
-                        )
-                    )
-
-        if BULLET_SHOULD_RE.match(line):
-            findings.append(
-                Finding(
-                    rel_path,
-                    i,
-                    "should-bullet",
-                    "ambiguous obligation",
-                    snippet_of(line),
-                )
-            )
-
-        m = VAGUE_RE.search(line_no_code)
-        if m:
-            findings.append(
-                Finding(
-                    rel_path,
-                    i,
-                    "vague-quantifier",
-                    repr(m.group(0)),
-                    snippet_of(line),
-                )
-            )
-
-    return findings
+def _target_exists(clean_target: str, path: Path, repo_root: Path | None) -> bool:
+    if (path.parent / clean_target).resolve().exists():
+        return True
+    return repo_root is not None and (repo_root / clean_target).resolve().exists()
 
 
 def scan_links(
@@ -352,69 +279,27 @@ def scan_links(
     masked = _mask_code_regions(text)
     for m in MD_LINK_RE.finditer(masked):
         target = m.group(1)
-        if target.startswith("http://") or target.startswith("https://"):
-            continue
-        if target.startswith("#") or target.startswith("mailto:"):
-            continue
         clean_target = target.split("#")[0]
-        if not clean_target:
+        if _is_external_target(target) or not clean_target:
             continue
-        resolved = (path.parent / clean_target).resolve()
-        if resolved.exists():
+        if _target_exists(clean_target, path, repo_root):
             continue
-        if repo_root is not None:
-            root_resolved = (repo_root / clean_target).resolve()
-            if root_resolved.exists():
-                continue
         line_no = text[: m.start()].count("\n") + 1
-        findings.append(
-            Finding(
-                rel_path,
-                line_no,
-                "stale-link",
-                target,
-                m.group(0),
-            )
-        )
+        findings.append(Finding(rel_path, line_no, "stale-link", target, m.group(0)))
     return findings
 
 
+def _blank_match(m: re.Match[str]) -> str:
+    return " " * len(m.group(0))
+
+
 def _mask_code_regions(text: str) -> str:
-    result: list[str] = []
-    in_fence = False
-    fence_marker = ""
-    in_frontmatter = False
     raw_lines = text.splitlines(keepends=True)
-    if raw_lines and raw_lines[0].strip() == "---":
-        in_frontmatter = True
-    for idx, line in enumerate(raw_lines):
-        stripped = line.strip()
-        if in_frontmatter:
-            result.append(" " * len(line))
-            if idx > 0 and stripped == "---":
-                in_frontmatter = False
-            continue
-        marker, can_close = _fence_match(stripped)
-        if marker:
-            if not in_fence:
-                in_fence = True
-                fence_marker = marker
-                result.append(" " * len(line))
-                continue
-            if (
-                can_close
-                and marker[0] == fence_marker[0]
-                and len(marker) >= len(fence_marker)
-            ):
-                in_fence = False
-                fence_marker = ""
-            result.append(" " * len(line))
-            continue
-        if in_fence:
-            result.append(" " * len(line))
-            continue
-        result.append(INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line))
-    return "".join(result)
+    mask = _code_line_mask(raw_lines)
+    return "".join(
+        " " * len(line) if masked else INLINE_CODE_RE.sub(_blank_match, line)
+        for line, masked in zip(raw_lines, mask)
+    )
 
 
 def walk_markdown(root: Path) -> Iterable[Path]:
@@ -433,46 +318,60 @@ def write_jsonl(findings: list[Finding], out: Path) -> None:
             f.write(json.dumps(asdict(finding)) + "\n")
 
 
+def _summary_lines(findings: list[Finding], file_count: int) -> list[str]:
+    cat_counts = Counter(f.category for f in findings)
+    rows = [
+        f"| {cat} | {n} |"
+        for cat, n in sorted(cat_counts.items(), key=lambda kv: -kv[1])
+    ]
+    return [
+        "# Audit Findings",
+        "",
+        f"Total: {len(findings)} findings across {file_count} files.",
+        "",
+        "## Summary by Category",
+        "",
+        "| Category | Count |",
+        "|----------|-------|",
+        *rows,
+        "",
+        "## Per-File Findings",
+        "",
+    ]
+
+
+def _finding_row(finding: Finding) -> str:
+    snip = finding.snippet.replace("|", r"\|")
+    detail = finding.detail.replace("|", r"\|")
+    return f"| {finding.line} | {finding.category} | {detail} | {snip} |"
+
+
+def _file_section(filename: str, items: list[Finding]) -> list[str]:
+    return [
+        f"### {filename}",
+        "",
+        f"{len(items)} findings.",
+        "",
+        "| Line | Category | Detail | Snippet |",
+        "|------|----------|--------|---------|",
+        *(_finding_row(f) for f in sorted(items, key=lambda f: f.line)),
+        "",
+    ]
+
+
 def write_markdown(findings: list[Finding], out: Path) -> None:
     by_file: dict[str, list[Finding]] = defaultdict(list)
     for finding in findings:
         by_file[finding.file].append(finding)
-
     sorted_files = sorted(by_file.items(), key=lambda kv: -len(kv[1]))
-    total = len(findings)
-    cat_counts = Counter(f.category for f in findings)
-
-    lines: list[str] = []
-    lines.append("# Audit Findings")
-    lines.append("")
-    lines.append(f"Total: {total} findings across {len(by_file)} files.")
-    lines.append("")
-    lines.append("## Summary by Category")
-    lines.append("")
-    lines.append("| Category | Count |")
-    lines.append("|----------|-------|")
-    for cat, n in sorted(cat_counts.items(), key=lambda kv: -kv[1]):
-        lines.append(f"| {cat} | {n} |")
-    lines.append("")
-    lines.append("## Per-File Findings")
-    lines.append("")
-    for filename, items in sorted_files:
-        lines.append(f"### {filename}")
-        lines.append("")
-        lines.append(f"{len(items)} findings.")
-        lines.append("")
-        lines.append("| Line | Category | Detail | Snippet |")
-        lines.append("|------|----------|--------|---------|")
-        for finding in sorted(items, key=lambda f: f.line):
-            snip = finding.snippet.replace("|", r"\|")
-            detail = finding.detail.replace("|", r"\|")
-            lines.append(f"| {finding.line} | {finding.category} | {detail} | {snip} |")
-        lines.append("")
-
+    lines = [
+        *_summary_lines(findings, len(by_file)),
+        *(line for name, items in sorted_files for line in _file_section(name, items)),
+    ]
     out.write_text("\n".join(lines), encoding="utf-8")
 
 
-def main() -> int:
+def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Audit writing quality drift.")
     parser.add_argument(
         "--out-dir",
@@ -484,14 +383,10 @@ def main() -> int:
         default=str(CLAUDE_ROOT),
         help="Root directory to scan.",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    root = Path(args.root).resolve()
-    out_dir = Path(args.out_dir)
-    if not out_dir.is_absolute():
-        out_dir = root / out_dir
-    out_dir.mkdir(parents=True, exist_ok=True)
 
+def _collect_findings(root: Path) -> list[Finding]:
     findings: list[Finding] = []
     for path in walk_markdown(root):
         rel = str(path.relative_to(root))
@@ -502,12 +397,21 @@ def main() -> int:
             continue
         findings.extend(scan_text(rel, text))
         findings.extend(scan_links(rel, path, text, root))
+    return findings
 
+
+def main() -> int:
+    args = _parse_args()
+    root = Path(args.root).resolve()
+    out_dir = Path(args.out_dir)
+    if not out_dir.is_absolute():
+        out_dir = root / out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    findings = _collect_findings(root)
     jsonl_path = out_dir / "audit-findings.jsonl"
     md_path = out_dir / "audit-findings.md"
     write_jsonl(findings, jsonl_path)
     write_markdown(findings, md_path)
-
     print(
         f"Wrote {len(findings)} findings to {md_path} and {jsonl_path}",
         file=sys.stderr,

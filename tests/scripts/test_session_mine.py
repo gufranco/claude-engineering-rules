@@ -52,55 +52,51 @@ def write_titled_transcripts_sharing_a_basename(
         )
 
 
+def _first_session_lines() -> list[str]:
+    return [
+        record(
+            type="user",
+            cwd="/Users/someone/work/widget",
+            gitBranch="main",
+            timestamp="2026-05-01T10:00:00Z",
+            sessionId="s1",
+        ),
+        record(type="ai-title", aiTitle="Fix the widget parser", sessionId="s1"),
+        record(
+            type="assistant",
+            cwd="/Users/someone/work/widget",
+            gitBranch="main",
+            timestamp="2026-05-01T11:00:00Z",
+            sessionId="s1",
+        ),
+    ]
+
+
+def _second_session_lines() -> list[str]:
+    return [
+        record(
+            type="user",
+            cwd="/Users/someone/work/widget",
+            gitBranch="feature/x",
+            timestamp="2026-06-15T09:00:00Z",
+            sessionId="s2",
+        ),
+        record(
+            type="ai-title",
+            aiTitle="Add retries to the widget client",
+            sessionId="s2",
+        ),
+        "not valid json",
+    ]
+
+
 @pytest.fixture
 def projects(tmp_path: Path) -> Path:
     root = tmp_path / "projects"
     d = root / "-Users-someone-work-widget"
     d.mkdir(parents=True)
-    (d / "s1.jsonl").write_text(
-        "\n".join(
-            [
-                record(
-                    type="user",
-                    cwd="/Users/someone/work/widget",
-                    gitBranch="main",
-                    timestamp="2026-05-01T10:00:00Z",
-                    sessionId="s1",
-                ),
-                record(
-                    type="ai-title", aiTitle="Fix the widget parser", sessionId="s1"
-                ),
-                record(
-                    type="assistant",
-                    cwd="/Users/someone/work/widget",
-                    gitBranch="main",
-                    timestamp="2026-05-01T11:00:00Z",
-                    sessionId="s1",
-                ),
-            ]
-        )
-        + "\n"
-    )
-    (d / "s2.jsonl").write_text(
-        "\n".join(
-            [
-                record(
-                    type="user",
-                    cwd="/Users/someone/work/widget",
-                    gitBranch="feature/x",
-                    timestamp="2026-06-15T09:00:00Z",
-                    sessionId="s2",
-                ),
-                record(
-                    type="ai-title",
-                    aiTitle="Add retries to the widget client",
-                    sessionId="s2",
-                ),
-                "not valid json",
-            ]
-        )
-        + "\n"
-    )
+    (d / "s1.jsonl").write_text("\n".join(_first_session_lines()) + "\n")
+    (d / "s2.jsonl").write_text("\n".join(_second_session_lines()) + "\n")
     return root
 
 

@@ -104,6 +104,27 @@ def _duplicate_errors(all_patterns):
     return errors
 
 
+def _list_errors(patterns):
+    errors = []
+    all_patterns = []
+    for list_name in sorted(patterns):
+        pats = patterns[list_name]
+        print(f"  {list_name}: {len(pats)} patterns")
+        for pat in pats:
+            errors.extend(_compile_errors(list_name, pat))
+            all_patterns.append((list_name, pat))
+    return errors, all_patterns
+
+
+def _lib_constant_errors(names):
+    print(f"  {LIB_LABEL} constants: {len(names)} patterns")
+    return [
+        error
+        for name, value in sorted(names.items())
+        for error in _compile_errors(f"{LIB_LABEL}.{name}", value)
+    ]
+
+
 def validate(blocker_path, lib_path):
     try:
         names = load_lib_constants(lib_path)
@@ -122,20 +143,9 @@ def validate(blocker_path, lib_path):
         errors.append(
             f"  Required pattern list(s) missing from blocker: {sorted(missing_required)}"
         )
-
-    all_patterns = []
-    for list_name in sorted(patterns):
-        pats = patterns[list_name]
-        print(f"  {list_name}: {len(pats)} patterns")
-        for pat in pats:
-            errors.extend(_compile_errors(list_name, pat))
-            all_patterns.append((list_name, pat))
-
-    print(f"  {LIB_LABEL} constants: {len(names)} patterns")
-    for name, value in sorted(names.items()):
-        errors.extend(_compile_errors(f"{LIB_LABEL}.{name}", value))
-
-    errors.extend(_duplicate_errors(all_patterns))
+    list_errors, all_patterns = _list_errors(patterns)
+    lib_errors = _lib_constant_errors(names)
+    errors = [*errors, *list_errors, *lib_errors, *_duplicate_errors(all_patterns)]
     return errors, len(all_patterns)
 
 
