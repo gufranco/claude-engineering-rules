@@ -45,6 +45,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "python-mutation-guard",
         "polyglot-immutability-guard",
         "idempotency-guard",
+        "immutability-analyzers",
         "redis-atomicity",
         "check-then-act-blocker",
         "transaction-scope-guard",

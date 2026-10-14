@@ -1,0 +1,13 @@
+AllCops:
+  NewCops: disable
+  SuggestExtensions: false
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always_true
+Style/MutableConstant:
+  Enabled: true
+  EnforcedStyle: literals
+Style/GlobalVars:
+  Enabled: true
+Style/ClassVars:
+  Enabled: true
