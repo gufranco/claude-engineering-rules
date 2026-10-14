@@ -10,6 +10,7 @@ Immutable by default, mutable by exception, in every language the project uses. 
 | The TypeScript mutation surface, ES2024 replacements, framework allowlists, the hook | [`../rules/lang/typescript-immutability.md`](../rules/lang/typescript-immutability.md) |
 | Python typing and dataclass specifics | [`../rules/lang/python.md`](../rules/lang/python.md) |
 | Rust ownership, JVM records, Go idiom | [`rust.md`](rust.md), [`jvm.md`](jvm.md), [`go.md`](go.md) |
+| Write-time enforcement for every language above | The hooks in the Enforcement section |
 | Races that immutability does not remove | [`concurrency.md`](concurrency.md) |
 
 ## Why
@@ -33,13 +34,24 @@ Every value starts readonly. Mutability is a decision with a reason, written whe
 
 | Language | Declare immutable | Copy with change | Enforced by | Escape hatch to avoid |
 |----------|-------------------|------------------|-------------|-----------------------|
-| TypeScript | `readonly` fields, `readonly T[]`, `ReadonlyMap`, `as const` | `{ ...obj, k: v }`, `arr.with(i, v)`, `arr.toSorted()` | Compiler at compile time, plus the mutation hook at write time | `as any`, `Object.freeze` used as a substitute for types |
-| Python | `@dataclass(frozen=True, slots=True)`, `Final`, `tuple`, `Mapping` parameters | `dataclasses.replace(obj, k=v)`, `(*items, new)` | `mypy --strict` or `pyright`, plus the mutation hook's Python detectors | `object.__setattr__` on a frozen instance |
-| Go | Unexported fields with value receivers, returning copies | Struct copy then field assignment on the copy | Convention and review. `go vet` catches some cases | Returning a slice or map that aliases internal state |
-| Rust | Bindings are immutable unless `mut`, shared references are readonly | `Clone` then mutate the clone, or a struct update expression | The compiler, by ownership and borrowing | `unsafe`, interior mutability without a documented reason |
-| Java | `record`, `final` fields, `List.copyOf` and friends | Canonical constructor, or a `with`-style builder | The compiler for `final`, tests for the rest | Returning the backing collection from a getter |
-| Kotlin | `val`, `data class`, read-only `List` interfaces | `copy(k = v)` | The compiler | Casting a read-only `List` to `MutableList` |
-| C# | `record`, `init`-only setters, `ImmutableArray` | `with { K = v }` | The compiler | Exposing a `List<T>` field as a property |
+| TypeScript | `readonly` fields, `readonly T[]`, `ReadonlyMap`, `as const` | `{ ...obj, k: v }`, `arr.with(i, v)`, `arr.toSorted()` | Compiler, plus [`../hooks/mutation-method-blocker.py`](../hooks/mutation-method-blocker.py) | `as any`, `Object.freeze` used as a substitute for types |
+| Python | `@dataclass(frozen=True, slots=True)`, `Final`, `tuple`, `Mapping` parameters | `dataclasses.replace(obj, k=v)`, `(*items, new)` | `mypy --strict` or `pyright`, plus [`../hooks/python-mutation-guard.py`](../hooks/python-mutation-guard.py) | `object.__setattr__` on a frozen instance |
+| Go | Unexported fields with value receivers, returning copies | `slices.Clone`, `maps.Clone`, struct copy | [`../hooks/polyglot-immutability-guard.py`](../hooks/polyglot-immutability-guard.py) for package-level state; `golangci-lint` with `reassign` and `gocritic` | Returning a slice or map that aliases internal state |
+| Rust | Bindings are immutable unless `mut`, shared references are readonly | `Clone` then mutate the clone, or a struct update expression | The compiler; the polyglot hook blocks `static mut` | `unsafe`, `static mut`, interior mutability without a stated reason |
+| C and C++ | `static const` and `constexpr` tables, `const` pointers and parameters | Copy into a local, return by value | The polyglot hook for file-scope tables; `clang-tidy` `misc-const-correctness` for the rest | A writable table that never changes, which also costs RAM on embedded targets |
+| Java | `record`, `final` fields, `List.copyOf` and friends | Canonical constructor, or a `with`-style builder | The polyglot hook for static state; Error Prone `@Immutable`, PMD | Returning the backing collection from a getter |
+| Kotlin | `val`, `data class`, read-only `List` interfaces | `copy(k = v)` | The polyglot hook; detekt `DataClassShouldBeImmutable` | Casting a read-only `List` to `MutableList` |
+| C# | `record`, `readonly record struct`, `init` accessors, `ImmutableArray`, `FrozenDictionary` | `with { K = v }` | The polyglot hook; analyzers IDE0044 and CA2227 | Exposing a `List<T>` field as a property |
+| Swift | `let`, `struct` value semantics | `var copy = value` then mutate the copy | Compiler warnings as errors; the polyglot hook warns on `static var` | Shared `static var` and top-level `var` |
+| Dart | `final`, `const` constructors, `@immutable`, `@freezed` | `copyWith` | The analyzer with `must_be_immutable` and `prefer_final_fields`; the polyglot hook for widget fields | `@unfreezed`, `makeCollectionsUnmodifiable: false` |
+| Ruby | `# frozen_string_literal: true`, `.freeze` on constants, `Ractor.make_shareable` | `dup` then change, or `merge` | The polyglot hook; RuboCop `Style/MutableConstant` | A constant holding a mutable array or hash |
+| Lua | `local`, `local x <const>` in Lua 5.4 | Build a new table | luacheck; the polyglot hook warns on implicit globals | `rawset` on a read-only table |
+| Shell | `readonly`, `declare -r`, `local -r`, zsh `typeset -r` | Assign a new name | ShellCheck | Reassigning an exported variable another script reads |
+| Elixir and Clojure | Immutable by default | Every update returns a new value | The language | ETS tables, process state, atoms; see [`idempotency.md`](idempotency.md) |
+
+### Severity: collections block, attributes warn
+
+Decided 2026-10-14. Collection mutation through a parameter blocks in every guard: a method mutator such as `append` or `push`, item assignment, `del`, and in-place `+=` on a collection. A plain attribute write on a parameter object, such as `cpu.registers.de = value` or `setattr(obj, ...)`, is advisory. Emulator and hardware-model code mutates state objects by design, and 107 of 173 Python parameter hits across the Workspace on that date were attribute writes in those repositories. Shared state at module, package, class, or static level blocks in every language.
 
 Two cross-cutting notes. A read-only interface over a mutable object is not immutability; the holder of the concrete type can still change it under you. And shallow immutability stops at the first nested reference, so a frozen object holding a mutable array is mutable where it matters.
 
@@ -137,11 +149,14 @@ Immutability costs allocations. The cost matters in a narrow set of places and i
 
 | Layer | Coverage |
 |-------|----------|
-| [`../hooks/mutation-method-blocker.py`](../hooks/mutation-method-blocker.py) | TypeScript and JavaScript, 90+ patterns across 16 categories |
-| [`../hooks/python-mutation-guard.py`](../hooks/python-mutation-guard.py) | Python, parsed with `ast`: mutable default arguments and parameter mutation, including the read-only annotation case |
-| Type checkers | `tsc` with the strict flag set, `mypy --strict` or `pyright`, the Rust and Java compilers |
-| Linters | `@typescript-eslint/prefer-readonly-parameter-types`, `ruff` rules for mutable defaults, `golangci-lint` for aliasing patterns |
+| [`../hooks/mutation-method-blocker.py`](../hooks/mutation-method-blocker.py) | TypeScript and JavaScript: array, collection, property, prototype, destructuring and loop-target writes, plus framework state rules |
+| [`../hooks/python-mutation-guard.py`](../hooks/python-mutation-guard.py) | Python, parsed with `ast`: mutable defaults, parameter mutation, `object.__setattr__` outside init hooks, `global`, module-level and class-level containers, and dataclasses without `frozen=True` as advisory |
+| [`../hooks/polyglot-immutability-guard.py`](../hooks/polyglot-immutability-guard.py) | Go, Rust, C, C++, Swift, Java, Kotlin, C#, Dart, Ruby, Lua |
+| Type checkers | `tsc` with the strict flag set, `mypy --strict` or `pyright`, the Rust, Swift, Kotlin and Java compilers |
+| Linters | `@typescript-eslint/prefer-readonly-parameter-types`, `ruff` B006 and RUF012, `golangci-lint`, `clang-tidy`, detekt, RuboCop, luacheck, the Dart analyzer |
 | Review | [`../checklists/checklist.md`](../checklists/checklist.md) categories 1 and 5 |
+
+Checks that need type information stay with the real tool: aliasing returns in Go, needless `&mut` in Rust, const correctness in C and C++, `ImmutableField` in Java, and IDE0044 in C#. A text hook cannot see the types those rules depend on.
 
 ## Related Standards
 

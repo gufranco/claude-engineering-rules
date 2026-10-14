@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import json
-
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 from _pmg_support import (
-    ENFORCE,
     HOOK,
     PARAM_MUTATION,
 )
@@ -17,7 +14,7 @@ def test_blocks_parameter_mutation(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_blocked(result, "parameter `items` is mutated")
@@ -25,7 +22,7 @@ def test_blocks_parameter_mutation(tool_use, run_hook):
     assert "L2" in stderr
 
 
-def test_warns_without_blocking_by_default(tool_use, run_hook):
+def test_blocks_by_default_without_an_opt_in(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write", {"file_path": "/repo/app/services/tags.py", "content": PARAM_MUTATION}
@@ -35,12 +32,8 @@ def test_warns_without_blocking_by_default(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
-    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert (
-        "INFO from python-mutation-guard" in context,
-        "PYTHON_MUTATION_ENFORCE=1" in context,
-    ) == (True, True)
+    _code, stderr = assert_blocked(result, "parameter `items` is mutated")
+    assert "PYTHON_MUTATION_DISABLE" in stderr
 
 
 def test_blocks_mutable_default_list(tool_use, run_hook):
@@ -51,7 +44,7 @@ def test_blocks_mutable_default_list(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "mutable default")
@@ -65,7 +58,7 @@ def test_blocks_mutable_default_dict_call(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "mutable default")
@@ -83,7 +76,7 @@ def test_blocks_item_assignment_on_a_parameter(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "parameter `payload` is mutated")
@@ -102,7 +95,7 @@ def test_blocks_mutation_of_a_read_only_annotation(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_blocked(result, "parameter `values` is mutated")
@@ -122,7 +115,7 @@ def test_allows_a_fresh_list(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_allowed(result)
@@ -143,7 +136,7 @@ def test_allows_mutation_of_a_local_accumulator(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -160,7 +153,7 @@ def test_allows_none_default(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -181,7 +174,7 @@ def test_allows_self_mutation_in_a_method(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -200,7 +193,7 @@ def test_reports_every_offending_parameter(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_blocked(result, "parameter `left` is mutated")
@@ -219,7 +212,7 @@ def test_flags_edits_with_a_parsable_fragment(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "parameter `items` is mutated")
@@ -238,7 +231,7 @@ def test_falls_back_to_regex_on_unparsable_fragments(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "mutable default")
@@ -251,7 +244,7 @@ def test_skips_non_python_files(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -264,7 +257,7 @@ def test_skips_test_files(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -277,7 +270,7 @@ def test_disable_env_short_circuits(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env={"PYTHON_MUTATION_DISABLE": "1", **ENFORCE})
+    result = run_hook(HOOK, payload, env={"PYTHON_MUTATION_DISABLE": "1"})
 
     # Assert
     _code, stderr = assert_allowed(result)
@@ -289,7 +282,7 @@ def test_ignores_unrelated_tools(tool_use, run_hook):
     payload = tool_use("Bash", {"command": "true"})
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)

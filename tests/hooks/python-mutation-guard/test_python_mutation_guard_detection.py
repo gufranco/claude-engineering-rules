@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 from _pmg_support import (
-    ENFORCE,
     HOOK,
     PARAM_MUTATION,
 )
@@ -15,7 +14,7 @@ def test_skips_stub_files(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -28,7 +27,7 @@ def test_skips_files_named_with_the_test_prefix(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -48,7 +47,7 @@ def test_flags_multiedit_fragments(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "parameter `items` is mutated")
@@ -67,7 +66,7 @@ def test_reads_dotted_annotations(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_blocked(result, "parameter `values` is mutated")
@@ -85,7 +84,7 @@ def test_handles_unnamed_annotation_forms(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "parameter `handlers` is mutated")
@@ -103,7 +102,7 @@ def test_flags_mutation_of_varargs_and_kwargs(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_blocked(result, "parameter `rows` is mutated")
@@ -122,7 +121,7 @@ def test_flags_del_on_a_parameter_key(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "parameter `payload` is mutated")
@@ -141,7 +140,7 @@ def test_honors_a_suppression_directive_on_the_mutation(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -155,7 +154,7 @@ def test_honors_a_suppression_directive_on_a_mutable_default(tool_use, run_hook)
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)

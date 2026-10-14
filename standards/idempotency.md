@@ -57,8 +57,11 @@ Hash the semantic content of the request: the normalized body, the path paramete
 |-----------|----------|
 | Same key, same fingerprint, completed | Replay the stored response |
 | Same key, same fingerprint, still running | 409, or wait and replay. See the concurrency section |
-| Same key, different fingerprint | 409 with an `idempotency_key_reused_with_different_body` error. The client reused a key for different content, which is a client bug |
+| Same key, different fingerprint | 422 with an `idempotency_key_reused_with_different_body` error. The client reused a key for different content, which is a client bug |
+| Key missing on an endpoint that requires one | 400 |
 | New key | Execute |
+
+The status codes follow the IETF draft [The Idempotency-Key HTTP Header Field](https://www.ietf.org/archive/id/draft-ietf-httpapi-idempotency-key-header-07.html): 400 for a missing key, 422 for a reused key with a different payload, 409 while the first request is still in flight. Draft-07 expired on 2026-04-18 without becoming an RFC.
 
 Returning the stored response for a mismatched fingerprint is the worst available outcome, because the caller receives a success for an operation that never ran.
 
@@ -114,7 +117,7 @@ export async function withIdempotency<T>(
   const claim = await claimKey(ctx, fingerprint);
 
   if (claim.kind === 'FingerprintMismatch') {
-    return { status: 409, body: { error: 'idempotency_key_reused_with_different_body' } };
+    return { status: 422, body: { error: 'idempotency_key_reused_with_different_body' } };
   }
 
   if (claim.kind === 'Replay') {
@@ -200,6 +203,28 @@ A unique violation on `processedMessage` means this message was already handled,
 
 The outbox row is the dedup record. Publish, then mark published, and accept that a crash between the two produces a duplicate delivery. That is why consumers dedup. Full mechanics in [`distributed-systems.md`](distributed-systems.md).
 
+## Per-Language Checks
+
+The mechanism is always the same: a unique constraint or an atomic conditional write in a durable store. Each ecosystem has its own trap that looks like dedup and is not.
+
+| Ecosystem | Durable form | Trap |
+|-----------|--------------|------|
+| PostgreSQL | `INSERT ... ON CONFLICT DO NOTHING` or `DO UPDATE` against a named unique index; DO UPDATE is atomic under concurrency, per the [INSERT docs](https://www.postgresql.org/docs/current/sql-insert.html) | A batch that hits the same row twice raises a cardinality violation; dedupe the batch first |
+| Node, Prisma, Drizzle | `upsert` with a P2002 retry, `onConflictDoNothing({ target })` | `findFirst` then `create` outside a transaction is check-then-act |
+| BullMQ | `jobId` from the business key | A duplicate id is ignored only while the job exists; `removeOnComplete` reopens the window, per [Job Ids](https://docs.bullmq.io/guide/jobs/job-ids). Ids must not contain `:` or be all digits |
+| SQS FIFO | `MessageDeduplicationId` | The window is 5 minutes, per the [SQS guide](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagededuplicationid-property.html); consumers still need their own dedup |
+| Kafka | Idempotent producer: `acks=all`, `retries > 0`, `max.in.flight.requests.per.connection <= 5` | A conflicting setting silently disables idempotence unless `enable.idempotence=true` is set explicitly, per the [producer configs](https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html). Set it explicitly so a conflict fails at startup |
+| Python | SQLAlchemy `on_conflict_do_nothing`, Django `get_or_create` backed by a unique constraint, Redis `SET NX EX` | `functools.cache` and a module-level `set` die with the process |
+| Go | `ON CONFLICT` in SQL, Redis `SetNX` with a TTL | `singleflight` only merges calls in flight; `sync.Map` and package-level maps die with the process |
+| Rails | `create_or_find_by` on a column with a unique constraint and no uniqueness validation, `upsert_all` with `unique_by` | `find_or_create_by` runs a SELECT then an INSERT and is not atomic, per the [Relation docs](https://api.rubyonrails.org/classes/ActiveRecord/Relation.html) |
+| Spring | `IdempotentReceiverInterceptor` with a persistent `ConcurrentMetadataStore` | The default `SimpleMetadataStore` does not keep state across application executions, per [Idempotent Receiver](https://docs.spring.io/spring-integration/reference/handler-advice/idempotent-receiver.html) |
+| Elixir | A unique index in Ecto, `on_conflict: :nothing` | An ETS table is destroyed when its owner process terminates, per the [ets docs](https://www.erlang.org/doc/apps/stdlib/ets.html) |
+| Clojure | A unique constraint in the database | The function passed to `swap!` may run more than once and must be free of side effects, per [Atoms](https://clojure.org/reference/atoms) |
+| Shell | `mkdir -p`, `ln -sfn`, `grep -qxF line file \|\| echo line >> file`, `typeset -U path` in zsh | A bare `mkdir` or `ln -s` fails on the second run; an unguarded `>>` grows the file every run |
+| Terraform | `plantimestamp()`, `time_static`, `random_uuid` | `timestamp()` and `uuid()` change on every run, so the plan never converges |
+
+Enforced at write time by [`../hooks/idempotency-guard.py`](../hooks/idempotency-guard.py) for shell, Terraform, Kafka and BullMQ, by [`../hooks/dedup-store-guard.py`](../hooks/dedup-store-guard.py) for in-memory dedup stores in every language above, by [`../hooks/redis-atomicity.py`](../hooks/redis-atomicity.py) for Redis locks without a TTL, and by [`../hooks/migration-idempotency.py`](../hooks/migration-idempotency.py) for DDL.
+
 ## TTL Selection
 
 | Caller | Minimum window |
@@ -251,7 +276,7 @@ it('creates one order and replays the response when called twice with the same k
 Also required:
 
 - Ten parallel calls with the same key produce one row, and every caller receives either the response or a 409.
-- The same key with a changed body returns 409 with the `idempotency_key_reused_with_different_body` error.
+- The same key with a changed body returns 422 with the `idempotency_key_reused_with_different_body` error.
 - A restart between the two calls does not produce a second row. This is the test that catches an in-memory store.
 - A permanent failure replays the failure rather than re-executing.
 - A key past its TTL is treated as new.

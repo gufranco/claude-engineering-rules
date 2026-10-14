@@ -4,7 +4,6 @@ import json
 from datetime import datetime, timedelta, timezone
 
 HOOK = "dedup-store-guard"
-ENFORCE = {"DEDUP_STORE_ENFORCE": "1"}
 
 IN_MEMORY_SET = (
     "const processedEvents = new Set<string>();\n"
@@ -26,7 +25,7 @@ def test_blocks_module_level_set_used_for_dedup(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_blocked(result, "in-memory deduplication store")
@@ -34,7 +33,7 @@ def test_blocks_module_level_set_used_for_dedup(tool_use, run_hook):
     assert "processedEvents" in stderr
 
 
-def test_warns_without_blocking_by_default(tool_use, run_hook):
+def test_blocks_by_default_without_an_opt_in(tool_use, run_hook):
     # Arrange
     payload = tool_use(
         "Write", {"file_path": "/repo/src/webhooks/stripe.ts", "content": IN_MEMORY_SET}
@@ -44,12 +43,8 @@ def test_warns_without_blocking_by_default(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    assert_allowed(result)
-    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert (
-        "INFO from dedup-store-guard" in context,
-        "DEDUP_STORE_ENFORCE=1" in context,
-    ) == (True, True)
+    _code, stderr = assert_blocked(result, "processedEvents")
+    assert "DEDUP_STORE_DISABLE" in stderr
 
 
 def test_blocks_map_named_for_deduplication(tool_use, run_hook):
@@ -67,7 +62,7 @@ def test_blocks_map_named_for_deduplication(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "in-memory deduplication store")
@@ -88,7 +83,7 @@ def test_blocks_python_module_level_set(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "in-memory deduplication store")
@@ -108,7 +103,7 @@ def test_blocks_array_used_as_a_dedup_log(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "in-memory deduplication store")
@@ -127,7 +122,7 @@ def test_allows_a_durable_dedup_store(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     _code, stderr = assert_allowed(result)
@@ -151,7 +146,7 @@ def test_allows_a_single_flight_map(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -170,7 +165,7 @@ def test_allows_a_function_local_set(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -190,7 +185,7 @@ def test_allows_a_redis_backed_store(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -208,7 +203,7 @@ def test_flags_edits(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "in-memory deduplication store")
@@ -228,7 +223,7 @@ def test_flags_multiedit(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(result, "in-memory deduplication store")
@@ -242,7 +237,7 @@ def test_skips_test_files(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -255,7 +250,7 @@ def test_skips_non_source_files(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -268,7 +263,7 @@ def test_disable_env_short_circuits(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env={"DEDUP_STORE_DISABLE": "1", **ENFORCE})
+    result = run_hook(HOOK, payload, env={"DEDUP_STORE_DISABLE": "1"})
 
     # Assert
     _code, stderr = assert_allowed(result)
@@ -280,7 +275,7 @@ def test_ignores_unrelated_tools(tool_use, run_hook):
     payload = tool_use("Bash", {"command": "true"})
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -342,7 +337,7 @@ def test_empty_file_path_is_ignored(tool_use, run_hook):
     payload = tool_use("Write", {"file_path": "", "content": OFFENDING})
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -353,7 +348,7 @@ def test_non_string_content_blocks(tool_use, run_hook):
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": 42})
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -369,7 +364,7 @@ def test_non_string_new_string_blocks(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -385,7 +380,7 @@ def test_non_dict_edits_block(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -402,7 +397,7 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -416,7 +411,7 @@ def test_profile_disable_short_circuits(tool_use, run_hook):
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": OFFENDING})
 
     # Act
-    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK, **ENFORCE})
+    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK})
 
     # Assert
     _code, stderr = assert_allowed(result)
@@ -435,7 +430,7 @@ def test_live_bypass_entry_short_circuits(tmp_path, tool_use, run_hook):
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": OFFENDING})
 
     # Act
-    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state), **ENFORCE})
+    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state)})
 
     # Assert
     _code, stderr = assert_allowed(result)

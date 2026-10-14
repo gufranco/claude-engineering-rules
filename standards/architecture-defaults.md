@@ -80,7 +80,7 @@ For every write endpoint, message consumer, or scheduled job:
 | Idempotency key | Required on every write. Header `Idempotency-Key`, message attribute, or job ID |
 | Storage | Durable store with TTL matching expected retry window. Redis with TTL or DB table |
 | Scope | Per-tenant, per-user, or global based on the resource. Document the scope |
-| Retry semantics | Same key with same payload returns the stored result. Same key with different payload returns 409 |
+| Retry semantics | Same key with same payload returns the stored result. Same key with different payload returns 422; a retry while the first is still running returns 409 |
 | Constraint match | Database unique constraint matches the validator's idempotency check. No daydream consistency |
 
 For multi-step flows: each step is independently idempotent. Failure in step 3 of 5 must not corrupt steps 1 to 2 nor block re-running.

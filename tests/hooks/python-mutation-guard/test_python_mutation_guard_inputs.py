@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 from _pmg_support import (
-    ENFORCE,
     HOOK,
     OFFENDING,
     OFFENDING_PATH,
@@ -29,7 +28,7 @@ def test_empty_file_path_is_ignored(tool_use, run_hook):
     payload = tool_use("Write", {"file_path": "", "content": OFFENDING})
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_allowed(result)
@@ -40,7 +39,7 @@ def test_non_string_content_blocks(tool_use, run_hook):
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": 42})
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -56,7 +55,7 @@ def test_non_string_new_string_blocks(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -72,7 +71,7 @@ def test_non_dict_edits_block(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -89,7 +88,7 @@ def test_multiedit_non_string_new_string_blocks(tool_use, run_hook):
     )
 
     # Act
-    result = run_hook(HOOK, payload, env=ENFORCE)
+    result = run_hook(HOOK, payload)
 
     # Assert
     assert_blocked(
@@ -103,7 +102,7 @@ def test_profile_disable_short_circuits(tool_use, run_hook):
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": OFFENDING})
 
     # Act
-    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK, **ENFORCE})
+    result = run_hook(HOOK, payload, env={"CLAUDE_DISABLED_HOOKS": HOOK})
 
     # Assert
     _code, stderr = assert_allowed(result)
@@ -122,7 +121,7 @@ def test_live_bypass_entry_short_circuits(tmp_path, tool_use, run_hook):
     payload = tool_use("Write", {"file_path": OFFENDING_PATH, "content": OFFENDING})
 
     # Act
-    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state), **ENFORCE})
+    result = run_hook(HOOK, payload, env={"CLAUDE_BYPASS_STATE": str(state)})
 
     # Assert
     _code, stderr = assert_allowed(result)

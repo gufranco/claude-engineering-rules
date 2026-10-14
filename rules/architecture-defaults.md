@@ -34,7 +34,7 @@ Two or more yes answers means non-trivial: run `/plan` first. The concurrency qu
 
 - Domain layer imports no adapters, framework decorators, or I/O libraries; one repository per aggregate root, IDs across aggregates, eventual consistency between them
 - Application services are flat sequential calls: no conditionals, loops, or try/catch
-- Every write carries an idempotency key in a durable store with a TTL; same key and payload replays, same key with a different payload returns 409; a DB unique constraint matches the check
+- Every write carries an idempotency key in a durable store with a TTL; same key and payload replays, same key with a different payload returns 422, and a retry while the first is in flight returns 409; a DB unique constraint matches the check
 - Consumers extract a dedup key with an explicit window; first write wins; log dedup hits at info
 - Correctness ladder, in order: constraint, conditional write or upsert, row lock, version column, distributed lock with fencing token, in-process mutex only for a single process
 - The guard must span the read and the write it decides; name what the race loser receives; lock TTL and transaction timeout exceed p99, caller timeout exceeds both

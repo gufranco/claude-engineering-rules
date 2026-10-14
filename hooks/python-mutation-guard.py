@@ -1,400 +1,58 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import ast
 import os
-import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-from _lib.hook_input import read_hook_payload  # noqa: E402
-from _lib.hook_warning import emit_warning  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
-
-
-try:
-    from _lib.suppression import line_or_prev_has_suppression  # type: ignore
-except Exception:  # pragma: no cover
-
-    def line_or_prev_has_suppression(lines, line_no):  # type: ignore
-        return False
-
-
-try:
-    from _lib.bypass import is_bypassed  # type: ignore
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_hook: str) -> bool:  # type: ignore
-        return False
-
-
-try:
-    from _lib.hook_profile import should_run  # type: ignore
-except Exception:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
-
-
-from _lib.output import block, warn  # noqa: E402
-
-HOOK_ID = "python-mutation-guard"
-ENV_DISABLE = "PYTHON_MUTATION_DISABLE"
-ENV_ENFORCE = "PYTHON_MUTATION_ENFORCE"
-
-SKIP_SUFFIXES = ("_test.py", "_tests.py", ".pyi")
-SKIP_PREFIXES = ("test_",)
-SKIP_SEGMENTS = (
-    "/tests/",
-    "/test/",
-    "/__tests__/",
-    "/migrations/",
-    "/migration/",
-    "/fixtures/",
-    "/.claude/hooks/",
-    "/site-packages/",
-)
-
-MUTATING_METHODS = frozenset(
-    {
-        "append",
-        "extend",
-        "insert",
-        "remove",
-        "pop",
-        "clear",
-        "sort",
-        "reverse",
-        "update",
-        "add",
-        "discard",
-        "setdefault",
-        "popitem",
-        "appendleft",
-        "extendleft",
-    }
-)
-
-READ_ONLY_ANNOTATIONS = frozenset(
-    {
-        "Sequence",
-        "Mapping",
-        "AbstractSet",
-        "Collection",
-        "Iterable",
-        "FrozenSet",
-        "frozenset",
-        "tuple",
-        "Tuple",
-    }
-)
-
-EXEMPT_PARAMS = frozenset({"self", "cls"})
-
-MUTABLE_DEFAULT_CALLS = frozenset({"list", "dict", "set", "bytearray", "defaultdict"})
-
-MUTABLE_DEFAULT_REGEX = re.compile(
-    r"def\s+\w+\s*\([^)]*?=\s*(?:\[\s*\]|\{\s*\}|set\s*\(\s*\)|list\s*\(\s*\)|dict\s*\(\s*\))",
-    re.DOTALL,
-)
-
-MAX_FINDINGS = 8
-
-
-def is_skipped(path: str) -> bool:
-    if not path:
-        return True
-    lowered = path.lower()
-    if not lowered.endswith(".py"):
-        return True
-    if any(lowered.endswith(suffix) for suffix in SKIP_SUFFIXES):
-        return True
-    if any(segment in lowered for segment in SKIP_SEGMENTS):
-        return True
-    basename = lowered.rsplit("/", 1)[-1]
-    if any(basename.startswith(prefix) for prefix in SKIP_PREFIXES):
-        return True
-    return False
-
-
-def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
-    path = tool_input.get("file_path", "") or ""
-    items: list[tuple[str, str]] = []
-    if tool == "Write":
-        content = tool_input.get("content", "")
-        if isinstance(content, str):
-            items.append((path, content))
-    elif tool == "Edit":
-        content = tool_input.get("new_string", "")
-        if isinstance(content, str):
-            items.append((path, content))
-    elif tool == "MultiEdit":
-        for edit in tool_input.get("edits", []) or []:
-            if isinstance(edit, dict):
-                content = edit.get("new_string", "")
-                if isinstance(content, str):
-                    items.append((path, content))
-    return items
-
-
-def annotation_name(node: ast.expr | None) -> str:
-    if node is None:
-        return ""
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute):
-        return node.attr
-    if isinstance(node, ast.Subscript):
-        return annotation_name(node.value)
-    if isinstance(node, ast.BinOp):
-        return annotation_name(node.left) or annotation_name(node.right)
-    return ""
-
-
-def is_mutable_default(node: ast.expr) -> bool:
-    if isinstance(node, (ast.List, ast.Dict, ast.Set)):
-        return True
-    if isinstance(node, ast.Call):
-        return annotation_name(node.func) in MUTABLE_DEFAULT_CALLS
-    return False
-
-
-def parameters_of(func: ast.FunctionDef | ast.AsyncFunctionDef) -> dict[str, str]:
-    args = func.args
-    everything = [
-        *args.posonlyargs,
-        *args.args,
-        *args.kwonlyargs,
-    ]
-    if args.vararg:
-        everything.append(args.vararg)
-    if args.kwarg:
-        everything.append(args.kwarg)
-    return {
-        arg.arg: annotation_name(arg.annotation)
-        for arg in everything
-        if arg.arg not in EXEMPT_PARAMS
-    }
-
-
-def defaults_of(func: ast.FunctionDef | ast.AsyncFunctionDef) -> list[ast.expr]:
-    args = func.args
-    return [node for node in [*args.defaults, *args.kw_defaults] if node is not None]
-
-
-def _subscript_name(targets: list[ast.expr]) -> str:
-    names = [
-        target.value.id
-        for target in targets
-        if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name)
-    ]
-    return names[-1] if names else ""
-
-
-def _mutated_name(node: ast.AST) -> str:
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-        func = node.func
-        if func.attr in MUTATING_METHODS and isinstance(func.value, ast.Name):
-            return func.value.id
-        return ""
-    if isinstance(node, ast.Assign):
-        return _subscript_name(node.targets)
-    if isinstance(node, ast.AugAssign):
-        return _subscript_name([node.target])
-    if isinstance(node, ast.Delete):
-        return _subscript_name(node.targets)
-    return ""
-
-
-def _default_hits(
-    func: ast.FunctionDef | ast.AsyncFunctionDef, lines: list[str]
-) -> list[str]:
-    return [
-        f"L{default.lineno}: mutable default argument in `{func.name}`. "
-        "One instance is shared by every call"
-        for default in defaults_of(func)
-        if is_mutable_default(default)
-        and not line_or_prev_has_suppression(lines, default.lineno - 1)
-    ]
-
-
-def _parameter_hit(
-    func: ast.FunctionDef | ast.AsyncFunctionDef,
-    node: ast.AST,
-    params: dict[str, str],
-    lines: list[str],
-) -> str | None:
-    target_name = _mutated_name(node)
-    line_no = getattr(node, "lineno", 0)
-    if not target_name or target_name not in params:
-        return None
-    if line_or_prev_has_suppression(lines, max(0, line_no - 1)):
-        return None
-    annotated = params[target_name]
-    annotation_note = (
-        f", annotated `{annotated}`" if annotated in READ_ONLY_ANNOTATIONS else ""
-    )
-    return (
-        f"L{line_no}: parameter `{target_name}` is mutated inside "
-        f"`{func.name}`{annotation_note}"
-    )
-
-
-def find_in_function(
-    func: ast.FunctionDef | ast.AsyncFunctionDef, lines: list[str]
-) -> list[str]:
-    params = parameters_of(func)
-    mutations = (_parameter_hit(func, node, params, lines) for node in ast.walk(func))
-    return [*_default_hits(func, lines), *(hit for hit in mutations if hit is not None)]
-
-
-def find(text: str) -> list[str]:
-    lines = text.splitlines()
-    try:
-        tree = ast.parse(text)
-    except SyntaxError:
-        return find_with_regex(text, lines)
-
-    hits: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            hits.extend(find_in_function(node, lines))
-
-    deduped = list(dict.fromkeys(hits))
-    return deduped[:MAX_FINDINGS]
-
-
-def find_with_regex(text: str, lines: list[str]) -> list[str]:
-    hits: list[str] = []
-    for match in MUTABLE_DEFAULT_REGEX.finditer(text):
-        line_no = text.count("\n", 0, match.start()) + 1
-        if line_or_prev_has_suppression(lines, line_no - 1):
-            continue
-        hits.append(
-            f"L{line_no}: mutable default argument. One instance is shared by every call"
-        )
-    return hits[:MAX_FINDINGS]
-
-
-DETECTED_INTRO = "Mutation of shared or caller-owned state:"
+from _lib.guard_runner import Edit, Finding, GuardSpec, run_guard  # noqa: E402
+from _lib.python_mutation_detectors import find, is_python_source  # noqa: E402
 
 WHY = (
     "A mutable default is created once at definition time, so every call shares it.\n"
     "A mutated parameter changes a value the caller still holds, and nothing at the\n"
-    "call site shows that it happened. See ~/.claude/standards/immutability.md."
+    "call site shows that it happened. Module and class level containers are shared\n"
+    "by every caller and every instance, so a write there is a hidden global.\n"
+    "See ~/.claude/standards/immutability.md."
 )
 
 FIX = (
     "  - Mutable default: use `None` and build a fresh value inside the function.\n"
-    "      def collect(items: Sequence[str] | None = None) -> list[str]:\n"
-    "          return list(items or ())\n"
-    "  - Mutated parameter: return a new value instead.\n"
-    "      def add_tag(items: Sequence[str], tag: str) -> tuple[str, ...]:\n"
-    "          return (*items, tag)\n"
-    "  - Accept the read-only type at the boundary: `Sequence`, `Mapping`,\n"
-    "    `AbstractSet`, or `tuple`, so the type checker rejects the mutation too."
+    "  - Mutated parameter: return a new value, `(*items, tag)`, `{**meta, k: v}`,\n"
+    "    `dataclasses.replace(obj, k=v)`, or copy first with `items = list(items)`.\n"
+    "  - Module state or `global`: pass state in and return the new state.\n"
+    "  - Class attribute: annotate `ClassVar[...]` with a tuple or frozenset, or\n"
+    "    build it per instance in `__init__` or `field(default_factory=...)`.\n"
+    "  - Value types: `@dataclass(frozen=True, slots=True)`.\n"
+    "  - Accept read-only types at the boundary: `Sequence`, `Mapping`, `tuple`."
 )
 
 BYPASS_WHEN = (
     "The function is documented as an in-place operation whose whole contract is the\n"
-    "mutation, such as a buffer writer in a measured hot path."
+    "mutation, such as a buffer writer in a measured hot path. Prefer a `# noqa`\n"
+    "comment on that line naming the reason over disabling the hook."
 )
 
 
-def render_findings(findings: list[tuple[str, list[str]]]) -> str:
-    lines = [DETECTED_INTRO]
-    for path, hits in findings:
-        lines.append(f"{path}:")
-        lines.extend(f"  {hit}" for hit in hits)
-    return "\n".join(lines)
+def _find(edit: Edit) -> tuple[Finding, ...]:
+    return find(edit.text)
 
 
-def _skip_run() -> bool:
-    if not should_run(HOOK_ID):
-        return True
-    if os.environ.get(ENV_DISABLE) == "1":
-        _audit(hook=HOOK_ID, decision="bypass", bypass_env=ENV_DISABLE)
-        return True
-    return is_bypassed(HOOK_ID)
-
-
-def _collect_findings(tool: str, tool_input: dict) -> list[tuple[str, list[str]]]:
-    findings: list[tuple[str, list[str]]] = []
-    for path, text in collect(tool, tool_input):
-        if is_skipped(path):
-            continue
-        hits = find(text)
-        if hits:
-            findings.append((path, hits))
-    return findings
-
-
-def _warn(tool: str, detected: str) -> int:
-    emit_warning(
-        warn(
-            hook=HOOK_ID,
-            purpose=f"{detected}\n\n{WHY}\n\n{FIX}",
-            next_action=(
-                "Return a fresh value instead of mutating. Set "
-                f"{ENV_ENFORCE}=1 to make this a blocking check."
-            ),
-        )
-    )
-    _audit(
-        hook=HOOK_ID,
-        decision="warn",
-        tool=tool,
-        reason="python mutation",
-        command_excerpt=detected[:240],
-    )
-    return 0
-
-
-def _block(tool: str, detected: str) -> int:
-    print(
-        block(
-            hook=HOOK_ID,
-            rule_anchor="standards/immutability.md#per-language-expression",
-            detected=detected,
-            why=WHY,
-            fix=FIX,
-            bypass_when=BYPASS_WHEN,
-            decision="FIX-AND-RETRY",
-            env_var=ENV_DISABLE,
-            safety="callers keep seeing state change under them.",
-        ),
-        file=sys.stderr,
-    )
-    _audit(
-        hook=HOOK_ID,
-        decision="block",
-        tool=tool,
-        reason="python mutation",
-        command_excerpt=detected[:240],
-    )
-    return 2
-
-
-def main() -> int:
-    if _skip_run():
-        return 0
-    payload = read_hook_payload("python-mutation-guard")
-    tool = payload.get("tool_name", "")
-    tool_input = payload.get("tool_input", {}) or {}
-    findings = _collect_findings(tool, tool_input)
-    if not findings:
-        return 0
-    detected = render_findings(findings)
-    if os.environ.get(ENV_ENFORCE) != "1":
-        return _warn(tool, detected)
-    return _block(tool, detected)
+SPEC = GuardSpec(
+    hook_id="python-mutation-guard",
+    env_disable="PYTHON_MUTATION_DISABLE",
+    rule_anchor="standards/immutability.md#per-language-expression",
+    intro="Mutation of shared or caller-owned state:",
+    why=WHY,
+    fix=FIX,
+    bypass_when=BYPASS_WHEN,
+    safety="callers keep seeing state change under them.",
+    reason="python mutation",
+    applies_to=is_python_source,
+    find=_find,
+)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_guard(SPEC))

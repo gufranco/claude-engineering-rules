@@ -440,7 +440,7 @@ Do not check these items by reading the code in isolation. Trace the key from so
 - [ ] **Concurrent delivery with different keys verified.** If two deliveries for the same logical event arrive with different idempotency keys, different timestamps, different request IDs, do they both pass the dedup check? If yes, is there a secondary guard, per-entity mutex, database constraint that prevents double-processing?
 
 - [ ] **Concurrent same-key requests do not both execute.** The loser receives a 409 or waits for the winner's stored response. The claim is an insert against a primary key, never a read followed by an insert
-- [ ] **A reused key with a different body is rejected.** The stored request fingerprint is compared, and a mismatch returns 409 rather than replaying a response for work that never ran
+- [ ] **A reused key with a different body is rejected.** The stored request fingerprint is compared, and a mismatch returns 422 rather than replaying a response for work that never ran
 - [ ] **The stored record can reproduce the original response.** Status code and body, not only the resource ID
 - [ ] **The TTL exceeds the caller's full retry window.** Payment webhooks commonly re-send for three days; a 24-hour window permits a duplicate on day two
 
