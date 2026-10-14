@@ -1,24 +1,4 @@
 #!/usr/bin/env python3
-"""Inject the vault notes most relevant to the prompt, on every turn.
-
-The session-start loader puts the catalog in once. That answers "what exists"
-but not "what is relevant now", so a note filed weeks ago stays unread while
-the same problem is solved again from scratch.
-
-This hook ranks the prompt against every note and injects the closest few. It
-reuses the ranking function the vault's own retrieval evaluation scores, so
-`/brain eval` measures this hook rather than something merely similar to it,
-and a recall regression is a warning that automatic recall got worse.
-
-Read-only. This hook never writes to the vault.
-
-Silence is the default. A wrong injection costs context on every turn, so the
-hook emits nothing unless the vault resolves, the prompt is substantial, and a
-note clears the score floor.
-
-Bypass: set ``VAULT_RECALL_DISABLE=1`` in a parent shell.
-"""
-
 from __future__ import annotations
 
 import importlib.util
@@ -33,6 +13,7 @@ VAULT_VAR = "SECOND_BRAIN_VAULT"
 MIN_PROMPT_WORDS = 4
 MAX_NOTES = 3
 MAX_CHARS = 2000
+SCOPE_OVERSAMPLE = 6
 PREAMBLE_HEADING = "## For future agent"
 
 HEADER = (
@@ -68,34 +49,76 @@ def load_ranker(root: Path) -> ModuleType | None:
     return module
 
 
-def read_prompt() -> str:
+def read_payload() -> tuple[str, str]:
     try:
         payload = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):
-        return ""
+        return "", ""
     if not isinstance(payload, dict):
-        return ""
+        return "", ""
     prompt = payload.get("prompt")
-    return prompt if isinstance(prompt, str) else ""
+    cwd = payload.get("cwd")
+    return (
+        prompt if isinstance(prompt, str) else "",
+        cwd if isinstance(cwd, str) else "",
+    )
 
 
-def preamble_of(root: Path, title: str) -> str:
+def load_notespec(root: Path) -> ModuleType | None:
+    target = root / ".ci" / "notespec.py"
+    if not target.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("_vault_notespec", target)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(spec.name, None)
+        return None
+    return module
+
+
+def note_text(root: Path, title: str) -> tuple[Path, str] | None:
     for path in root.rglob(f"{title}.md"):
-        text = path.read_text(encoding="utf-8", errors="replace")
-        if PREAMBLE_HEADING not in text:
-            return ""
-        after = text.split(PREAMBLE_HEADING, 1)[1].lstrip("\n")
-        return after.split("\n##", 1)[0].strip()
-    return ""
+        return path, path.read_text(encoding="utf-8", errors="replace")
+    return None
 
 
-def render(root: Path, titles: list[str]) -> str:
+def in_scope(kn: ModuleType | None, text: str, cwd: str) -> bool:
+    if kn is None:
+        return True
+    fields = kn.parse_frontmatter(text) or {}
+    patterns = kn.scope_patterns(fields)
+    if not patterns:
+        return True
+    return kn.scope_allows(patterns, cwd or os.getcwd())
+
+
+def preamble_of(text: str) -> str:
+    if PREAMBLE_HEADING not in text:
+        return ""
+    after = text.split(PREAMBLE_HEADING, 1)[1].lstrip("\n")
+    return after.split("\n##", 1)[0].strip()
+
+
+def render(root: Path, titles: list[str], kn: ModuleType | None, cwd: str) -> str:
     blocks = []
     for title in titles:
-        summary = preamble_of(root, title)
+        found = note_text(root, title)
+        if found is None:
+            continue
+        _, text = found
+        if not in_scope(kn, text, cwd):
+            continue
+        summary = preamble_of(text)
         if not summary:
             continue
         blocks.append(f"### {title}\n\n{summary}\n")
+        if len(blocks) == MAX_NOTES:
+            break
     if not blocks:
         return ""
     return (HEADER + "\n".join(blocks))[:MAX_CHARS]
@@ -104,7 +127,7 @@ def render(root: Path, titles: list[str]) -> str:
 def main() -> int:
     if os.environ.get(ENV_VAR) == "1":
         return 0
-    prompt = read_prompt()
+    prompt, cwd = read_payload()
     if len(prompt.split()) < MIN_PROMPT_WORDS:
         return 0
     root = resolve_vault()
@@ -115,12 +138,12 @@ def main() -> int:
         return 0
     try:
         index = ranker.build_index(root)
-        titles = ranker.search(index, prompt, MAX_NOTES)
+        titles = ranker.search(index, prompt, MAX_NOTES * SCOPE_OVERSAMPLE)
     except Exception:
         return 0
     if not titles:
         return 0
-    output = render(root, titles)
+    output = render(root, titles, load_notespec(root), cwd)
     if output:
         sys.stdout.write(output)
     return 0
