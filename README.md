@@ -15,7 +15,7 @@
 
 </div>
 
-**45** always-on rules · **139** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**46** always-on rules · **140** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -30,7 +30,7 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-45 universal rules ship with every conversation. 139 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 139.
+46 universal rules ship with every conversation. 140 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 140.
 
 </td>
 </tr>
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-45 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the four listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
+46 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the five listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -133,11 +133,11 @@ A layered config where each layer catches what the layer above missed.
 
 Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
-Four more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
+Five more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`emulator-runs`](rules/emulator-runs.md) for launching an emulator headless or minimised and never full screen, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
 
 ### Standards, loaded on demand
 
-139 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+140 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, print design, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
@@ -252,7 +252,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`repo-fetch-blocker.py`](hooks/repo-fetch-blocker.py) | PreToolUse Bash | Blocks per-file source fetching via `gh api .../contents`, `gh repo view <o>/<r> <path>`, `glab api .../repository/files`, and `raw.githubusercontent.com` curl/wget. Forces a shallow clone instead, and its private-repo advice passes the token through a credential helper, never the URL. Text in single quotes or a quoted heredoc body is not read as a command. Bypass `REPO_FETCH_DISABLE=1` |
 | [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | Blocks commits with unresolved identity or placeholder authors |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | Requires inline `GITLAB_TOKEN`, blocks GitLab auth login. Exempts `auth`, `config`, `version`, and a `--help` or `-h` anywhere in the call |
-| [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | Blocks `cp`/`mv`/`rm` without `-f`. macOS aliases these to `-i`, which hangs the agent on confirmation prompts. A call prefixed with `command` skips the alias and passes, and quoted text and heredoc bodies are never read as commands. On macOS it also blocks `kcov` and a `make coverage` whose Makefile calls kcov, which trace through stderr there, have held 44 GB, and report a wrong number; it names the Linux-container recipe instead. Bypass `INTERACTIVE_CMD_DISABLE=1` |
+| [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | Blocks `cp`/`mv`/`rm` without `-f`. macOS aliases these to `-i`, which hangs the agent on confirmation prompts. A call prefixed with `command` skips the alias and passes, and quoted text and heredoc bodies are never read as commands. On macOS it also blocks `kcov` and a `make coverage` whose Makefile calls kcov, which trace through stderr there, have held 44 GB, and report a wrong number; it names the Linux-container recipe instead. It also blocks a `mame` launch that would open a window: no `-window`, a headless run missing `SDL_VIDEODRIVER=dummy`, `-video none` or `-sound none`, or a run marked `MAME_WATCHED=1` without `-nomaximize`; informational commands such as `-listxml` pass. Bypass `INTERACTIVE_CMD_DISABLE=1` |
 | [`zsh-special-name-guard.py`](hooks/zsh-special-name-guard.py) | PreToolUse Bash | Under zsh only, blocks the two traps a rule alone did not prevent: a zsh special name used as a variable, such as `path`, `status`, or `argv`, which replaces shell state so `path=` breaks every later command; and an unquoted word with a leading `=`, which zsh expands to a command path and aborts the rest of the command. Quoted text, heredoc bodies, and `[[ ]]` or `(( ))` comparisons are ignored. Unreadable input blocks. Bypass `ZSH_SPECIAL_NAME_GUARD_DISABLE=1` |
 | [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse Bash/Write/Edit | Prevents internal config references in external output. A `gh` or `glab` call that only reads, such as `view`, `list`, `--help`, or an `api` GET, is not publishing |
 | [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
@@ -507,10 +507,10 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 888-item review checklist across 71 categories
-  rules/                 45 short rule cores, each linking to its full text
+  rules/                 46 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             139 on-demand standards, including the full text of every rule
+  standards/             140 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
@@ -554,7 +554,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 139 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 140 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
 
 </details>
 
