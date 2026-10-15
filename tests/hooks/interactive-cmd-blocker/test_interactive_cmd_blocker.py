@@ -443,3 +443,58 @@ def test_bypass_env_var_allows_kcov(tool_use, run_hook, tmp_path):
 
     # Assert
     assert_allowed(result)
+
+
+@pytest.mark.parametrize(
+    ("cmd", "fault"),
+    [
+        ("mame sf2 -rompath roms", "without `-window`"),
+        ("/opt/homebrew/bin/mame snes", "without `-window`"),
+        ("mame sf2 -window -video none", "without `SDL_VIDEODRIVER=dummy`, `-sound none`"),
+        ("SDL_VIDEODRIVER=dummy mame sf2 -window -sound none", "without `-video none`"),
+        ("MAME_WATCHED=1 mame sf2 -window", "watched without `-nomaximize`"),
+        ("cd roms && mame sf2", "without `-window`"),
+    ],
+)
+def test_blocks_mame_that_could_take_the_display(tool_use, run_hook, cmd, fault):
+    # Arrange
+    payload = tool_use("Bash", {"command": cmd})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, f"MAME launched {fault}")
+
+
+@pytest.mark.parametrize(
+    "cmd",
+    [
+        "SDL_VIDEODRIVER=dummy mame sf2 -window -video none -sound none",
+        "export SDL_VIDEODRIVER=dummy && mame -w -video none -sound none snes",
+        "MAME_WATCHED=1 mame sf2 -window -nomaximize",
+        "mame -listxml",
+        "mame -verifyroms sf2",
+        'echo "mame sf2"',
+    ],
+)
+def test_allows_mame_that_stays_off_the_display(tool_use, run_hook, cmd):
+    # Arrange
+    payload = tool_use("Bash", {"command": cmd})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_an_export_after_the_launch_does_not_count(hook):
+    # Arrange
+    command = "mame sf2 -window -video none -sound none; export SDL_VIDEODRIVER=dummy"
+
+    # Act
+    fault = hook.mame_blocked(command)
+
+    # Assert
+    assert fault == "without `SDL_VIDEODRIVER=dummy`"

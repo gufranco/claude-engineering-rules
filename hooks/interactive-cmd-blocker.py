@@ -31,6 +31,33 @@ KCOV_REASON = (
     "Bypass (one-off): set INTERACTIVE_CMD_DISABLE=1 in parent shell."
 )
 
+MAME_COMMANDS = ("mame", "mame64", "mamearcade")
+WINDOW_FLAGS = ("-window", "-w")
+NO_WINDOW_PREFIXES = (
+    "-list",
+    "-verify",
+    "-help",
+    "-showusage",
+    "-showconfig",
+    "-createconfig",
+    "-romident",
+    "-validate",
+    "-version",
+)
+HEADLESS_DRIVER = "SDL_VIDEODRIVER=dummy"
+WATCHED_MARK = "MAME_WATCHED=1"
+MAME_REASON = (
+    "BLOCKED: MAME launched {fault}. MAME opens full screen on macOS by default, "
+    "which takes the user's display while they work, and `-video none` alone "
+    "still opens an SDL window.\n"
+    "Fix: run it headless, `SDL_VIDEODRIVER=dummy mame -window -video none "
+    "-sound none ...`. When the user asked to watch the run, mark it "
+    "`MAME_WATCHED=1 mame -window -nomaximize ...` and minimise it. Prefer "
+    "another emulator for the evidence: MAME's BIOS and configuration "
+    "defaults produce failures and false positives.\n"
+    "Bypass (one-off): set INTERACTIVE_CMD_DISABLE=1 in parent shell."
+)
+
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
@@ -109,6 +136,48 @@ def kcov_blocked(command: str, cwd: str, platform: str) -> bool:
     return False
 
 
+def flag_value(args: list[str], flag: str) -> str:
+    following = [value for name, value in zip(args, args[1:]) if name == flag]
+    return following[-1] if following else ""
+
+
+def headless_gaps(args: list[str], env: frozenset[str]) -> list[str]:
+    wanted = (
+        (HEADLESS_DRIVER in env, HEADLESS_DRIVER),
+        (flag_value(args, "-video") == "none", "-video none"),
+        (flag_value(args, "-sound") == "none", "-sound none"),
+    )
+    return [name for present, name in wanted if not present]
+
+
+def mame_fault(tokens: list[str], exported: frozenset[str]) -> str:
+    base, args = command_head(tokens)
+    if base not in MAME_COMMANDS or any(
+        arg.startswith(NO_WINDOW_PREFIXES) for arg in args[1:]
+    ):
+        return ""
+    env = exported | frozenset(tokens[: len(tokens) - len(args)])
+    if not set(WINDOW_FLAGS) & set(args):
+        return "without `-window`"
+    if WATCHED_MARK in env:
+        return "" if "-nomaximize" in args else "watched without `-nomaximize`"
+    gaps = headless_gaps(args, env)
+    return f"without {', '.join(f'`{gap}`' for gap in gaps)}" if gaps else ""
+
+
+def mame_blocked(command: str) -> str:
+    exported: frozenset[str] = frozenset()
+    for tokens in quoted_segments(command):
+        base, args = command_head(tokens)
+        if base == "export":
+            exported = exported | frozenset(args[1:])
+            continue
+        fault = mame_fault(tokens, exported)
+        if fault:
+            return fault
+    return ""
+
+
 def emit_block(reason: str, command: str) -> None:
     payload = {
         "hookSpecificOutput": {
@@ -159,6 +228,10 @@ def main() -> int:
     cwd = data.get("cwd") or os.getcwd()
     if kcov_blocked(command, cwd, sys.platform):
         emit_block(KCOV_REASON, command)
+
+    fault = mame_blocked(command)
+    if fault:
+        emit_block(MAME_REASON.format(fault=fault), command)
 
     blocked, base = is_blocked(command)
     if not blocked:
