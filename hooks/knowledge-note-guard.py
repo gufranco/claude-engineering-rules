@@ -36,6 +36,11 @@ try:
 except Exception:  # pragma: no cover
     _block = None
 
+try:
+    from _lib import project_workspace as pw
+except ImportError:  # pragma: no cover
+    pw = None
+
 
 HOOK = "knowledge-note-guard"
 ENV_VAR = "KNOWLEDGE_NOTE_DISABLE"
@@ -235,9 +240,18 @@ def main() -> None:
     sys.exit(0)
 
 
+def in_workspace(rel: Path, root: Path) -> bool:
+    if pw is None or not rel.parts or rel.parts[0] not in pw.WORKSPACE_CANDIDATES:
+        return False
+    try:
+        return rel.parts[0] in pw.managed_entries(root)
+    except pw.WorkspaceError:
+        return False
+
+
 def handle_edit(tool: str, tool_input: dict, path: Path, root: Path) -> None:
     rel = kn.relative(path, root)
-    if rel is None or kn.is_exempt(rel):
+    if rel is None or kn.is_exempt(rel) or in_workspace(rel, root):
         sys.exit(0)
     if rel.parts and rel.parts[0] == kn.RAW_DIR and path.exists():
         emit([("KN005", 1, f"edit to immutable source {rel}")], rel)
