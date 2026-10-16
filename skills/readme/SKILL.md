@@ -1,15 +1,15 @@
 ---
 name: readme
-description: Generate a README and GitHub repo description from the actual codebase, in the marketing variant or the --variant assessment variant.
+description: Generate a README and GitHub repo description from the actual codebase, always in English, Japanese, Simplified Chinese and Hong Kong Traditional Chinese, in the marketing variant or the --variant assessment variant.
 disable-model-invocation: true
-argument-hint: "/readme | /readme --languages es,ja,zh-Hans,zh-HK | /readme --variant assessment | /readme --section quick-start | /readme --about-only | /readme --diff"
+argument-hint: "/readme | /readme --languages es | /readme --variant assessment | /readme --section quick-start | /readme --about-only | /readme --diff"
 allowed-tools: "Read, Grep, Glob, Bash, Write, Edit, AskUserQuestion"
 sensitive: true
 ---
 
 ## Overview
 
-Generate a README and GitHub repository description grounded in the actual codebase, in English plus any translations the user selects. Two variants are supported: marketing (default) and assessment (`--variant assessment`). The marketing variant is for a public repository: what the project is, how to install it, how to use it, and where to get help, in that order. The assessment variant reads like an engineering memo: tables for every section and design decisions written as narrative paragraphs. Every claim in both variants is grounded in the actual codebase, and every file the skill writes passes the slop gate in Phase 5. Never invent features.
+Generate a README and GitHub repository description grounded in the actual codebase. Every run writes four files: the English README plus its Japanese, Simplified Chinese and Hong Kong Traditional Chinese translations. Two variants are supported: marketing (default) and assessment (`--variant assessment`). The marketing variant is for a public repository: what the project is, how to install it, how to use it, and where to get help, in that order. The assessment variant reads like an engineering memo: tables for every section and design decisions written as narrative paragraphs. Every claim in both variants is grounded in the actual codebase, and every file the skill writes passes the slop gate in Phase 5. Never invent features.
 
 ## When to use
 
@@ -39,7 +39,7 @@ This skill accepts optional arguments after `/readme`:
 - `--about-only`: generate only the GitHub repo description and topics, skip README.
 - `--section <name>`: regenerate a specific section (e.g., `--section quick-start`).
 - `--diff`: update the existing README based on what changed since it was last written. Each translation is updated from the English diff since that translation file's own last commit.
-- `--languages <tags>`: the translations to write next to the English README, as a comma-separated list of the tags in section 7f: `es`, `ja`, `zh-Hans`, `zh-HK`. Without the flag, ask once with AskUserQuestion, `multiSelect: true`, one option per tag, before Phase 3. An empty answer means English only.
+- `--languages <tags>`: extra translations to write beyond the fixed set, as a comma-separated list of BCP 47 tags such as `es`. The fixed set is always written and never asked about: English, `ja`, `zh-Hans` and `zh-HK`. A tag in the flag that is already in the fixed set changes nothing.
 
 When `--variant assessment` is passed, read [`template-assessment.md`](template-assessment.md) for the full structure and rules. The Deep Scan in Phase 1 still runs because the assessment variant also benefits from grounded data, but the structure, tone, and section list come from the assessment template instead of the marketing structure below.
 
@@ -77,7 +77,7 @@ Write the English README following the structure and style guide below. Every se
 
 ### Phase 3b: Translate
 
-Only when `--languages` or the language question selected at least one tag. Translate the finished English README into each selected language, following section 7f. Translate from the English file every time, never from another translation.
+Always. Translate the finished English README into `ja`, `zh-Hans` and `zh-HK`, plus any tag passed with `--languages`, following section 7f. Translate from the English file every time, never from another translation. With `--section` or `--diff`, the same sections change in every translation in the same run, so no translation falls behind the English file.
 
 ### Phase 4: Generate GitHub About
 
@@ -477,20 +477,20 @@ Generate `AGENTS.md` when the project will be touched by AI coding agents. Inclu
 
 English is always the source and keeps the plain README file name. Each translation is a separate file named with its [BCP 47](https://www.rfc-editor.org/info/bcp47) tag, the convention [standard-readme](https://github.com/RichardLitt/standard-readme/blob/main/spec.md) specifies.
 
-| Language | Tag | File | Switcher label |
-|:---------|:----|:-----|:---------------|
-| English | `en` | README, unchanged | English |
-| Spanish | `es` | `README.es.md` | Español |
-| Japanese | `ja` | `README.ja.md` | 日本語 |
-| Chinese, Simplified | `zh-Hans` | `README.zh-Hans.md` | 简体中文 |
-| Chinese, Traditional, Hong Kong | `zh-HK` | `README.zh-HK.md` | 繁體中文（香港） |
+| Language | Tag | File | Switcher label | Written |
+|:---------|:----|:-----|:---------------|:--------|
+| English | `en` | README, unchanged | English | Always |
+| Japanese | `ja` | `README.ja.md` | 日本語 | Always |
+| Chinese, Simplified | `zh-Hans` | `README.zh-Hans.md` | 简体中文 | Always |
+| Chinese, Traditional, Hong Kong | `zh-HK` | `README.zh-HK.md` | 繁體中文（香港） | Always |
+| Spanish | `es` | `README.es.md` | Español | With `--languages es` |
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher.** The first line of every file, before the title, lists every language in its own name. The current language is plain text and every other one is a link:
+**Language switcher.** The first line of every file, before the title, lists every language in its own name, in the table's order. The current language is plain text and every other one is a link:
 
 ```markdown
-[English](README.md) | Español | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
+[English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 ```
 
 GitHub does not negotiate `Accept-Language`, so the reader always picks from this line.
@@ -873,7 +873,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - **Cap the hero at 5-8 badges.** More than 8 dilutes signal. Pull the rest into a "Status" section below the fold if they earn the slot.
 - **Demo-first.** A GIF, asciinema cast, or 5-line code snippet within the first scroll. No exceptions.
 - **Slop gate.** [`tools/slop-scan.py`](../../tools/slop-scan.py) exits 0 on the English README, and every translation was read against the same shapes.
-- **Translations follow 7f.** One file per selected tag, translated from English, with the switcher on the first line and parity with the English file.
+- **Translations follow 7f.** `README.ja.md`, `README.zh-Hans.md` and `README.zh-HK.md` on every run, plus one file per extra tag, each translated from English, with the switcher on the first line and parity with the English file.
 
 ## Red Flags
 
@@ -888,7 +888,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 
 - The markdown-link validator reports zero findings on the generated README and on every translation.
 - `python3 ~/.claude/tools/slop-scan.py README.md` exits 0.
-- Each selected language has its `README.<tag>.md`. Every file, English included, opens with the switcher line, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
+- `README.ja.md`, `README.zh-Hans.md`, `README.zh-HK.md` and one `README.<tag>.md` per extra tag exist. Every file, English included, opens with the switcher line, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
 - Every Quick Start command maps to a script or Makefile target that exists, and the section ends with a verification command and its expected output.
 - Every path in the project structure tree and every referenced image exists on disk.
 - Every number in the scope sentence was counted from the source in this run.
