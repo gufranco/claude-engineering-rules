@@ -450,7 +450,10 @@ def test_bypass_env_var_allows_kcov(tool_use, run_hook, tmp_path):
     [
         ("mame sf2 -rompath roms", "without `-window`"),
         ("/opt/homebrew/bin/mame snes", "without `-window`"),
-        ("mame sf2 -window -video none", "without `SDL_VIDEODRIVER=dummy`, `-sound none`"),
+        (
+            "mame sf2 -window -video none",
+            "without `SDL_VIDEODRIVER=dummy`, `-sound none`",
+        ),
         ("SDL_VIDEODRIVER=dummy mame sf2 -window -sound none", "without `-video none`"),
         ("MAME_WATCHED=1 mame sf2 -window", "watched without `-nomaximize`"),
         ("cd roms && mame sf2", "without `-window`"),
