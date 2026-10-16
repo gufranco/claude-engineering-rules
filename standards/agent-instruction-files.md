@@ -23,7 +23,9 @@ A thirty-line file that corrects five wrong assumptions beats a four-hundred-lin
 
 Tools read different filenames. Maintaining the same content in several is guaranteed drift. Two working approaches:
 
-**Canonical file plus symlinks.** One real file, the rest are symlinks pointing at it. Simplest, and it survives tools that do not support imports. It fails when two harnesses need genuinely different content.
+**Canonical `AGENTS.md` plus an import stub.** `AGENTS.md` holds every rule; Codex, Cursor, Copilot, Windsurf, Zed and Junie read it directly. The project's Claude Code instruction file is a regular file whose first line is `@AGENTS.md`, followed only by Claude-specific content such as a subagent or a slash command. Claude Code reads `AGENTS.md` on its own only when that file does not exist, and a cloud session or an older version may not read it at all, so the stub is what makes the import hold everywhere. A sentence telling the agent to read `AGENTS.md` is not an import: the file loads only if the agent decides to open it. Never a symlink: Windows checks a committed symlink out as a one-line text file unless `core.symlinks` is enabled, and Claude Code's Edit tool refuses to write through one. Do not add per-tool files for tools that already read `AGENTS.md`.
+
+Provenance: 2026-10-16, owner decision while unifying the instruction files across every gufranco repository, after the symlink failed the Windows requirement; source code.claude.com/docs/en/memory, section "AGENTS.md".
 
 **Modular directory plus thin adapters.** One directory holds the content; each harness gets a small file that imports what it needs.
 
@@ -328,7 +330,7 @@ A name-to-handle table costs a few lines and removes a whole class of guesswork 
 | Documenting standard framework behavior | Known, and it goes stale on the next major version |
 | "Keep the documentation updated" with no document list and no condition | Unactionable, therefore ignored |
 | A present-tense claim about volatile state with no date | Reads as true forever |
-| The same content maintained in several harness files | Guaranteed to drift; use a symlink or an import |
+| The same content maintained in several harness files | Guaranteed to drift; use an `@AGENTS.md` import |
 | A large reference set with no routing table and no anti-read directive | Consumes the context window before work begins |
 | An exemplar that has drifted from current practice | Teaches the drift with full authority |
 | A numeric threshold with no named exceptions | Produces silent violation rather than compliance |
