@@ -86,3 +86,43 @@ def test_conforming_messages_in_every_form_pass(tool_use, run_hook, command):
 
     # Assert
     assert_allowed(result)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "python3 - <<'PY'\nfrom pathlib import Path\nPY\ngit commit -F - <<'MSG'\nfix: read the commit heredoc\nMSG",
+        "cat <<'PY' > tool.py\nfrom pathlib import Path\nPY\ngit commit -F - <<'MSG'\nfix: read the commit heredoc\nMSG",
+        "cat <<'PY' > tool.py\nfrom pathlib import Path\nPY\ngit commit -m 'fix: read the inline message'",
+        "cat <<'PY' > tool.py\nfrom pathlib import Path\nPY\ncat <<'MSG' | git commit -F -\nfix: read the piped heredoc\nMSG",
+    ],
+)
+def test_a_heredoc_before_the_commit_is_not_its_message(tool_use, run_hook, command):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "python3 - <<'PY'\nfrom pathlib import Path\nPY\ngit commit -F - <<'MSG'\nUpdated stuff\nMSG",
+        "cat <<'PY' > tool.py\nfeat: a valid looking line\nPY\ncat <<'MSG' | git commit -F -\nUpdated stuff\nMSG",
+    ],
+)
+def test_the_commit_heredoc_after_another_heredoc_is_checked(
+    tool_use, run_hook, command
+):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "Got: Updated stuff")

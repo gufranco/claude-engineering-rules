@@ -40,6 +40,7 @@ ANY_HEREDOC_RE = re.compile(
     r"<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n(.*?)\n\s*\1\s*$", re.DOTALL | re.MULTILINE
 )
 SHORT_CLUSTER_RE = re.compile(r"-[a-zA-Z]+")
+COMMIT_INVOCATION_RE = re.compile(r"\bgit\b[^\n|;&]*?\bcommit\b")
 
 
 def _read_payload() -> tuple[str, str]:
@@ -96,9 +97,14 @@ def _message_sources(tokens: list[str]) -> tuple[list[str], list[str]]:
     return messages, files
 
 
+def _commit_position(command: str) -> int:
+    found = COMMIT_INVOCATION_RE.search(command)
+    return command.rfind("\n", 0, found.start()) + 1 if found else 0
+
+
 def _read_message_file(path: str, command: str, cwd: str) -> str:
     if path == "-":
-        heredoc = ANY_HEREDOC_RE.search(command)
+        heredoc = ANY_HEREDOC_RE.search(command, _commit_position(command))
         return heredoc.group(2) if heredoc else ""
     resolved = Path(os.path.expanduser(path))
     if cwd and not resolved.is_absolute():
@@ -111,7 +117,7 @@ def _read_message_file(path: str, command: str, cwd: str) -> str:
 
 
 def _extract_message(command: str, cwd: str = "") -> str:
-    heredoc = CAT_HEREDOC_RE.search(command)
+    heredoc = CAT_HEREDOC_RE.search(command, _commit_position(command))
     if heredoc:
         return heredoc.group(2).strip()
     messages, files = _message_sources(_commit_tokens(command))
