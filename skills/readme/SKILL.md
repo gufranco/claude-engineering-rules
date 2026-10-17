@@ -487,11 +487,13 @@ English is always the source and keeps the plain README file name. Each translat
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher.** The first line of every file, before the title, lists every language in its own name, in the table's order. The current language is plain text and every other one is a link:
+**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by `&nbsp;|&nbsp;`. The current language is plain text and every other one is a link:
 
 ```markdown
-[English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
+English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
 ```
+
+The user chose this placement on 2026-10-16, pointing at example-project, over an earlier rule that put the switcher on the first line above the title.
 
 GitHub does not negotiate `Accept-Language`, so the reader always picks from this line.
 
@@ -873,7 +875,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - **Cap the hero at 5-8 badges.** More than 8 dilutes signal. Pull the rest into a "Status" section below the fold if they earn the slot.
 - **Demo-first.** A GIF, asciinema cast, or 5-line code snippet within the first scroll. No exceptions.
 - **Slop gate.** [`tools/slop-scan.py`](../../tools/slop-scan.py) exits 0 on the English README, and every translation was read against the same shapes.
-- **Translations follow 7f.** `README.ja.md`, `README.zh-Hans.md` and `README.zh-HK.md` on every run, plus one file per extra tag, each translated from English, with the switcher on the first line and parity with the English file.
+- **Translations follow 7f.** `README.ja.md`, `README.zh-Hans.md` and `README.zh-HK.md` on every run, plus one file per extra tag, each translated from English, with the switcher under the tagline in the centered header and parity with the English file.
 
 ## Red Flags
 
@@ -888,7 +890,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 
 - The markdown-link validator reports zero findings on the generated README and on every translation.
 - `python3 ~/.claude/tools/slop-scan.py README.md` exits 0.
-- `README.ja.md`, `README.zh-Hans.md`, `README.zh-HK.md` and one `README.<tag>.md` per extra tag exist. Every file, English included, opens with the switcher line, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
+- `README.ja.md`, `README.zh-Hans.md`, `README.zh-HK.md` and one `README.<tag>.md` per extra tag exist. Every file, English included, carries the switcher line under its tagline, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
 - Every Quick Start command maps to a script or Makefile target that exists, and the section ends with a verification command and its expected output.
 - Every path in the project structure tree and every referenced image exists on disk.
 - Every number in the scope sentence was counted from the source in this run.
