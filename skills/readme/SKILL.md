@@ -137,10 +137,10 @@ The `<strong>` line is the tagline: one line, confident, specific. The badge bar
 </div>
 
 <p align="center">
-  <a href="#documentation">Docs</a> &nbsp;|&nbsp;
-  <a href="https://discord.gg/..."><strong>Discord</strong></a> &nbsp;|&nbsp;
-  <a href="https://twitter.com/..."><strong>Twitter</strong></a> &nbsp;|&nbsp;
-  <a href="#contributing">Contributing</a> &nbsp;|&nbsp;
+  <a href="#documentation">Docs</a> |
+  <a href="https://discord.gg/..."><strong>Discord</strong></a> |
+  <a href="https://twitter.com/..."><strong>Twitter</strong></a> |
+  <a href="#contributing">Contributing</a> |
   <a href="https://github.com/.../issues">Issues</a>
 </p>
 ```
@@ -487,13 +487,15 @@ English is always the source and keeps the plain README file name. Each translat
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by `&nbsp;|&nbsp;`. The current language is plain text and every other one is a link:
+**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link:
 
 ```markdown
-English &nbsp;|&nbsp; [日本語](README.ja.md) &nbsp;|&nbsp; [简体中文](README.zh-Hans.md) &nbsp;|&nbsp; [繁體中文（香港）](README.zh-HK.md)
+English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
 ```
 
 The user chose this placement on 2026-10-16, pointing at example-project, over an earlier rule that put the switcher on the first line above the title.
+
+Never use `&nbsp;|&nbsp;` as the separator, here or in the navigation row. Written with spaces around it, as it always is, each side renders a non-breaking space plus an ordinary one, so the reader sees two spaces on each side of every pipe. The user saw the doubled gap across many repositories on 2026-10-17.
 
 GitHub does not negotiate `Accept-Language`, so the reader always picks from this line.
 
@@ -890,7 +892,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 
 - The markdown-link validator reports zero findings on the generated README and on every translation.
 - `python3 ~/.claude/tools/slop-scan.py README.md` exits 0.
-- `README.ja.md`, `README.zh-Hans.md`, `README.zh-HK.md` and one `README.<tag>.md` per extra tag exist. Every file, English included, carries the switcher line under its tagline, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
+- `README.ja.md`, `README.zh-Hans.md`, `README.zh-HK.md` and one `README.<tag>.md` per extra tag exist. Every file, English included, carries the switcher line under its tagline, `grep -c '&nbsp;|&nbsp;' README*.md` reports 0 for every file, and each translation matches the English file in heading count per level, code block count, code block content, and link targets.
 - Every Quick Start command maps to a script or Makefile target that exists, and the section ends with a verification command and its expected output.
 - Every path in the project structure tree and every referenced image exists on disk.
 - Every number in the scope sentence was counted from the source in this run.
