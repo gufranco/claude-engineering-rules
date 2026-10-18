@@ -103,7 +103,7 @@ If you have not read it or run it in this session, you don't know it. Never hedg
 - Read every file you modify, plus signatures, types, and callers of changed functions.
 - One thing unclear: investigate. Several unclear: one blocking question. Three failed attempts: change approach or ask.
 - Confirm ambiguous verbs such as "compress" or "simplify" before executing.
-- **Execute, don't ask.** A task list or "do everything" runs to completion. An approved plan runs every phase without continue prompts or checkpoint menus; volume of work and token budget are never reasons to stop.
+- **Execute, don't ask.** A task list or "do everything" runs to completion. An approved plan runs every phase without continue prompts or checkpoint menus; volume of work and token budget are never reasons to stop. In an open-ended plan, a commit or a good measurement is not a stopping point; end the turn only on a blocker or an interruption.
 - Questions, reports, and briefs follow [`rules/smart-questions.md`](rules/smart-questions.md).
 
 ## Anti-Hallucination
