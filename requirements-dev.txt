@@ -30,4 +30,4 @@ pre-commit==4.6.2
 
 # Runtime imports used by the validators under .github/scripts/
 PyYAML==6.0.3
-types-PyYAML==6.0.12.20260815
+types-PyYAML==6.0.12.20260906
