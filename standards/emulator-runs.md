@@ -29,6 +29,8 @@ The user works while emulator runs happen. An emulator that takes the display, s
 
 On macOS MAME defaults to full screen. Its `-video none` still creates an SDL window, and so does adding `-window`; only `SDL_VIDEODRIVER=dummy` prevents it. A `mame.ini` in the working directory carrying `window 1`, `maximize 0`, `video none` and `sound none` is a backstop for scripts that build their own command line.
 
+MAME writes snapshots, configuration, NVRAM and saved states under its working directory, as `snap/`, `cfg/`, `nvram/` and `sta/`. A scripted run started from inside a repository leaves a screenshot of the cartridge there, untracked, one `git add -A` away from being committed. Run it from a scratch directory and pass `-snapshot_directory`, `-cfg_directory`, `-nvram_directory` and `-state_directory` pointing inside that directory. Seen 2026-10-19: a headless trace left `snap/snes/0000.png` in a sibling repository.
+
 ## Why MAME Is Not The First Witness
 
 MAME runs a system through its BIOS and its own configuration defaults: the BIOS it selects, the region, the slot device and the ini files it finds on the search path. A wrong default produces a failure that is the configuration's, or a pass that the hardware would not give. Prefer an emulator that runs the cartridge directly, and treat a MAME-only result as unconfirmed until a second emulator agrees.
