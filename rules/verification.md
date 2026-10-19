@@ -13,6 +13,7 @@ No completion claim without fresh evidence run in this session. Previous runs, c
 - Before blaming your change, stash it and rerun. A randomized-order suite failing outside the diff reruns with order fixed, `-p no:randomly` for pytest.
 - A blocked tool call ran nothing. Re-read the target and repeat the whole command. A pass after a block is the first real check.
 - Run `date` before reasoning about today, deadlines, or elapsed time.
+- A timestamp written into a file is copied from `date -u` run in the same response, never estimated or carried from an earlier reading.
 - Re-fetch the primary source before publishing a specific that a subagent, snippet, or summary reported.
 - Never read files via `FETCH_HEAD` after another fetch; use `origin/<branch>`.
 - Run checks at the project's pinned toolchain version, never an unpinned local default.
@@ -29,3 +30,4 @@ Full rule, examples, and rationale: [`standards/verification.md`](../standards/v
 ## Provenance
 
 Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.
+Amended 2026-10-19, recurrence 6 since 2026-10-17: workspace prompts were stamped up to 21 minutes in the future from an earlier clock reading or a guess, in scripts and in hand edits; the timestamp line now requires a same-response `date -u`.
