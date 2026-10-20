@@ -482,7 +482,7 @@ English is always the source and keeps the plain README file name. Each translat
 | English | `en` | README, unchanged | English | Always |
 | Japanese | `ja` | `README.ja.md` | 日本語 | Always |
 | Chinese, Simplified | `zh-Hans` | `README.zh-Hans.md` | 简体中文 | Always |
-| Chinese, Traditional, Hong Kong | `zh-HK` | `README.zh-HK.md` | 繁體中文（香港） | Always |
+| Chinese, Traditional, Hong Kong | `zh-HK` | `README.zh-HK.md` | 繁體中文 (香港) | Always |
 | Spanish | `es` | `README.es.md` | Español | With `--languages es` |
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
@@ -490,8 +490,10 @@ Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 **Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link:
 
 ```markdown
-English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文（香港）](README.zh-HK.md)
+English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
 ```
+
+The Hong Kong label is copied byte for byte: `繁體中文`, one ASCII space, then `(香港)` in ASCII parentheses. The full-width punctuation rule for Chinese body text does not apply to the switcher, so never write `（香港）`. The user corrected the full-width form on 2026-10-17.
 
 The user chose this placement on 2026-10-16, pointing at example-project, over an earlier rule that put the switcher on the first line above the title.
 
