@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shlex
 import subprocess
 from dataclasses import dataclass
@@ -17,8 +18,24 @@ class PushInvocation:
     sources: tuple[str, ...]
 
 
+REDIRECTION = re.compile(r"^\d*(?:<|>|&>)")
+BARE_REDIRECTION = re.compile(r"^\d*(?:<|>>?|&>>?)$")
+
+
+def _without_redirections(push_args: list[str]) -> list[str]:
+    targets = {
+        index + 1 for index, arg in enumerate(push_args) if BARE_REDIRECTION.match(arg)
+    }
+    return [
+        arg
+        for index, arg in enumerate(push_args)
+        if index not in targets and not REDIRECTION.match(arg)
+    ]
+
+
 def _refspec_sources(push_args: list[str]) -> tuple[str, ...]:
-    refspecs = [arg for arg in push_args if not arg.startswith("-")][1:]
+    words = _without_redirections(push_args)
+    refspecs = [arg for arg in words if not arg.startswith("-")][1:]
     if not refspecs:
         return ("HEAD",)
     sources = (spec.lstrip("+").split(":", 1)[0] for spec in refspecs)
