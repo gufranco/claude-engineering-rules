@@ -197,3 +197,25 @@ def test_blocks_bash_heredoc(tool_use, run_hook):
 
     # Assert
     assert_blocked(result, "AI attribution detected")
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Claude-Session: https://claude.ai/code/session_01Yc6Hszp8RQ9cAVPiwjASVy",
+        "claude-session: abc",
+        "See https://claude.ai/code/session_01AbCdEf for context",
+    ],
+)
+def test_blocks_claude_session_trailer(tool_use, run_hook, line):
+    # Arrange
+    payload = tool_use(
+        "Bash",
+        {"command": f"git commit -m 'ci: update the formula\n\n{line}'"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "AI attribution detected")

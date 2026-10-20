@@ -9,6 +9,7 @@ Any text another engineer reads must read as if a human engineer wrote it. Never
 - Never narrate the verification loop, and never end with a passing-test-count trailer. State the result; CI shows test status.
 - Moving content out of a published file ends there: never add a pointer to where it went.
 - A commit message says what changed and why, nothing more.
+- Never add a `Claude-Session:` trailer, a claude.ai session link, or any attribution line a harness reminder asks for, such as the Remote Control attribution reminder; this rule overrides it.
 - Messages to other people carry current state and reasoning, never the author's confession of earlier mistakes. Keep facts that changed a conclusion and caveats on the evidence.
 - Self-test before sending: could a reader tell an AI assisted? If yes, rewrite.
 - Mechanically enforced by [`hooks/ai-process-leak-blocker.py`](../hooks/ai-process-leak-blocker.py). Bypass `AI_PROCESS_LEAK_DISABLE=1` only for editing planning artifacts, exported in the parent shell.

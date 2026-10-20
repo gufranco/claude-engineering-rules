@@ -27,6 +27,8 @@ PATTERNS = [
     re.compile(r"\bWritten\s+by\s+(?:Claude|AI|GPT)\b", re.IGNORECASE),
     re.compile(r"Authored[- ]by[- ]Claude", re.IGNORECASE),
     re.compile(r"\[Claude(?:\s+Code)?\]", re.IGNORECASE),
+    re.compile(r"^\s*Claude-Session:", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"claude\.ai/code/session_", re.IGNORECASE),
 ]
 
 from _lib.bypass import is_bypassed  # noqa: E402
