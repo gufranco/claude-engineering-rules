@@ -50,6 +50,9 @@ def published_repo(tmp_path: Path, message: str) -> GitRepo:
         ("git push origin 6b4c228:refs/heads/main", ("6b4c228",)),
         ("git push origin +topic:topic other", ("topic", "other")),
         ("git push origin :stale", ()),
+        ("git push origin HEAD 2>&1", ("HEAD",)),
+        ("git push origin feature > push.log", ("feature",)),
+        ("git push origin feature >push.log 2>/dev/null", ("feature",)),
     ],
 )
 def test_find_pushes_reads_the_refspec_sources(command, expected):
