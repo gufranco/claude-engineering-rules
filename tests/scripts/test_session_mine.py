@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 
@@ -15,7 +16,7 @@ sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
 from _lib import knowledge_notes as kn  # noqa: E402
 
-VAULT_HEALTH = Path.home() / "second-brain" / ".ci" / "vault-health.py"
+VAULT_HEALTH = Path.home() / "second-brain" / ".ci" / "vault_health.py"
 
 
 def load_path(name: str, path: Path) -> ModuleType:
@@ -37,6 +38,8 @@ def record(**fields: object) -> str:
 
 
 def load_vault_health() -> ModuleType:
+    if str(VAULT_HEALTH.parent) not in sys.path:
+        sys.path.insert(0, str(VAULT_HEALTH.parent))
     return load_path("vh_mine", VAULT_HEALTH)
 
 
@@ -280,7 +283,11 @@ def test_generated_notes_pass_the_structural_linter(projects, vault):
     written = module.apply(module.scan(projects), vault, dry_run=False)
 
     # Assert
-    errors = [f for f in vh.audit(vault) if f.severity == "error"]
+    errors = [
+        f
+        for f in vh.audit(vault, today=datetime.now(UTC).date())
+        if f.severity == "error"
+    ]
     assert written == ["wiki/projects/widget.md"]
     assert errors == []
 

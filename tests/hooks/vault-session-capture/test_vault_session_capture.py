@@ -6,6 +6,7 @@ import json
 import os
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -17,7 +18,7 @@ sys.path.insert(0, str(REPO_ROOT / "hooks"))
 
 from _lib import knowledge_notes as kn  # noqa: E402
 
-VAULT_HEALTH = Path.home() / "second-brain" / ".ci" / "vault-health.py"
+VAULT_HEALTH = Path.home() / "second-brain" / ".ci" / "vault_health.py"
 
 
 def load():
@@ -92,6 +93,8 @@ def daily_note(vault: Path) -> Path:
 
 
 def load_vault_health():
+    if str(VAULT_HEALTH.parent) not in sys.path:
+        sys.path.insert(0, str(VAULT_HEALTH.parent))
     spec = importlib.util.spec_from_file_location("vh", VAULT_HEALTH)
     module = importlib.util.module_from_spec(spec)
     sys.modules["vh"] = module
@@ -167,7 +170,11 @@ def test_the_generated_note_passes_the_vault_linters(monkeypatch, vault, project
     code = run(monkeypatch, vault, project)
 
     # Assert
-    errors = [f for f in vh.audit(vault) if f.severity == "error"]
+    errors = [
+        f
+        for f in vh.audit(vault, today=datetime.now(UTC).date())
+        if f.severity == "error"
+    ]
     assert code == 0
     assert errors == []
 
