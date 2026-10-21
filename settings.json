@@ -87,7 +87,12 @@
       "Edit(./**/*id_rsa*)",
       "Read(./**/*id_ed25519*)",
       "Edit(./**/*id_ed25519*)",
-      "Read(**/node_modules/**)"
+      "Read(**/node_modules/**)",
+      "Agent",
+      "Workflow",
+      "CronCreate",
+      "RemoteTrigger",
+      "SendMessage"
     ]
   },
   "model": "opus",
@@ -2035,5 +2040,9 @@
     "vercel": {
       "url": "https://mcp.vercel.com"
     }
-  }
+  },
+  "disableWorkflows": true,
+  "enableWorkflows": false,
+  "workflowKeywordTriggerEnabled": false,
+  "disableAgentView": true
 }

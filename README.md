@@ -308,6 +308,8 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 18 specialized subagents in [`agents/`](agents/). Each follows the agent template at [`TEMPLATE.md`](agents/TEMPLATE.md) and inherits shared discipline from [`_shared-principles.md`](agents/_shared-principles.md).
 
+Agent spawning is off to cut token use. [`settings.json`](settings.json) denies `Agent`, `Workflow`, `CronCreate`, `RemoteTrigger`, and `SendMessage`, and sets `disableWorkflows`, `enableWorkflows: false`, `workflowKeywordTriggerEnabled: false`, and `disableAgentView`. The agents above stay on disk but cannot be launched, and skills that delegate to a subagent run their steps inline. To re-enable, remove those deny entries and keys.
+
 | Agent | Purpose |
 |:------|:--------|
 | [`accessibility-auditor`](agents/accessibility-auditor.md) | WCAG 2.1 AA accessibility review |
