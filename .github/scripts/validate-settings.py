@@ -11,6 +11,14 @@ SETTINGS_PATH = os.path.join(CLAUDE_DIR, "settings.json")
 
 DENY_PATTERN = re.compile(r"^(Read|Write|Edit)\(.+\)$")
 
+WHOLE_TOOL_DENIES = {
+    "Agent",
+    "Workflow",
+    "CronCreate",
+    "RemoteTrigger",
+    "SendMessage",
+}
+
 KNOWN_MATCHERS = {
     "",
     "Bash",
@@ -36,7 +44,7 @@ def validate_deny_rules(data):
 
     seen = set()
     for entry in deny:
-        if not DENY_PATTERN.match(entry):
+        if entry not in WHOLE_TOOL_DENIES and not DENY_PATTERN.match(entry):
             errors.append(f"  Invalid deny pattern: {entry}")
 
         if entry in seen:
