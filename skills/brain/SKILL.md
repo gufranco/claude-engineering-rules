@@ -111,6 +111,8 @@ python3 "$SECOND_BRAIN_VAULT/.ci/vault-freshness.py" --path "$SECOND_BRAIN_VAULT
 
 Errors are VH001 through VH003 and FRESH-1 and FRESH-3. Warnings are the rest. Report both, fix nothing without asking, and never delete.
 
+VH006, a note absent from the index, has a fixer rather than a hand edit. Run `python3 "$SECOND_BRAIN_VAULT/.ci/vault-index.py" --path "$SECOND_BRAIN_VAULT"` to list every note missing from its section, and add `--apply` to write them. It is append-only and never touches a curated entry, so it is safe to run after any write-heavy session. The weekly maintenance workflow runs it on its own.
+
 ## refresh
 
 The maintenance loop. Detection alone is half a system.
