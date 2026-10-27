@@ -75,6 +75,17 @@ A waiver moves a judgment from the model to a person. It does not move a boundar
 
 For these, the answer is to change the design, or to stop and escalate. Not to record a waiver.
 
+## Project Overrides
+
+A project's own instruction file or project settings may depart from a global rule on purpose, and inside that project the departure wins, per the priority order in [`../CLAUDE.md`](../CLAUDE.md). An override is a standing waiver the project owner wrote down in the project rather than in one change, so it follows the same limits:
+
+- It must be explicit: the project file states the convention it requires, such as keeping `specs/` out of git. Silence in the project file never overrides anything.
+- Its scope is that project. It never carries to another repository, even one with the same owner.
+- Nothing in the table above yields to it. Style rules do: a project file requiring JSDoc gets JSDoc in that project, despite the comment policy in [`code-style.md`](../rules/code-style.md).
+- A global hook still fires inside the project. When a hook enforces the overridden rule, follow the project and name the hook and the project line in the change description, so the conflict is visible rather than silenced.
+
+A project document that merely describes the code, and has drifted from it, is not an override. That case is stale documentation and is settled by [`doc-truth.md`](doc-truth.md).
+
 ## Relationship To Bypasses
 
 A mechanical bypass and a waiver answer different questions.
@@ -105,7 +116,7 @@ Naming the false positive out loud is still the test. If that sentence cannot be
 
 ## Interaction With Other Rules
 
-[`../CLAUDE.md`](../CLAUDE.md) "Rule Priority" and "Hook Bypass Discipline" are unchanged. This rule adds the path that was missing between full compliance and a silenced check.
+[`../CLAUDE.md`](../CLAUDE.md) "Rule Priority" names the project override, detailed above, and "Hook Bypass Discipline" is unchanged. This rule adds the path that was missing between full compliance and a silenced check.
 
 [`rule-provenance.md`](../rules/rule-provenance.md) closes the loop. Waivers accumulating against the same rule for the same reason are evidence the rule is mis-scoped, and that is a pruning or rewriting trigger, not a reason to keep granting waivers.
 
