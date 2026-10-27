@@ -7,6 +7,7 @@ Tests verify real behavior against real infrastructure. Prefer integration, then
 - Every test is Arrange, Act, Assert: three blocks separated by exactly one blank line each, nowhere else. Each block opens with its marker comment in the language's syntax, `// Arrange`, `// Act`, `// Assert` or `# Arrange`, `# Act`, `# Assert`, and the marker is the bare word.
 - Those three markers are the only comments a test body carries. The test name states the behavior; named helpers carry setup.
 - One call to the unit under test in Act, bound to a name when it returns a value; a command that returns nothing is called unbound and Assert checks its effect. An expected throw binds the call as a thunk or promise, or captures it with `pytest.raises`, in Act, and asserts in Assert. Shared setup may be hoisted to `beforeEach`; the Arrange block then binds what the act uses.
+- Never delete, loosen, or skip an existing assertion, test case, or test file to make a change pass; fix the code, or get the user's agreement when the behavior was removed on purpose.
 - Use the most specific assertion. Never `toBeTruthy()`, `toBeFalsy()`, or `expect.anything()`; assert exact values and `toHaveLength(n)`.
 - Expected values come from an independent source: a known-good literal, a worked example, or the spec, never a recomputation of the code's own logic.
 - Generate data with a seeded faker: `@faker-js/faker`, `faker`, `gofakeit`, `fake`, `datafaker`. Static values like `"test@example.com"` are a blocking issue.
@@ -23,7 +24,8 @@ Full rule, examples, and rationale: [`standards/testing.md`](../standards/testin
 
 Enforced by: [`hooks/mock-internal-blocker.py`](../hooks/mock-internal-blocker.py).
 Enforced by: [`hooks/tdd-gate.py`](../hooks/tdd-gate.py).
+Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction, under the fails-without-an-error-signal condition: a weakened or deleted test turns a failing change green, and a prose-only ban was reported to shift the agent from editing tests to deleting them.

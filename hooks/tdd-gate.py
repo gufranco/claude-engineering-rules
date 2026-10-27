@@ -114,8 +114,12 @@ BARREL_STATEMENT = re.compile(
     """
 )
 
+from _lib.assertion_weakening import findings_for  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+
+WEAKENING_HOOK = "test-weakening"
+WEAKENING_BYPASS_ENV = "TEST_WEAKENING_DISABLE"
 
 
 def is_test_file(path: Path) -> bool:
@@ -255,7 +259,7 @@ def find_companion_test(path: Path) -> Path | None:
     return _ancestor_test(path.parent, variants)
 
 
-def emit_block(reason: str, file_path: str) -> None:
+def emit_block(reason: str, file_path: str, hook: str = "tdd-gate") -> None:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -266,7 +270,7 @@ def emit_block(reason: str, file_path: str) -> None:
     sys.stdout.write(json.dumps(payload))
     sys.stderr.write(reason)
     _audit(
-        hook="tdd-gate",
+        hook=hook,
         decision="block",
         decision_class="block",
         reason=reason[:200],
@@ -308,13 +312,42 @@ def _block_reason(target: Path) -> str:
     )
 
 
+def _weakened_test_file(data: dict) -> tuple[str, list[str]] | None:
+    if os.environ.get(WEAKENING_BYPASS_ENV) == "1" or is_bypassed(WEAKENING_HOOK):
+        return None
+    tool_input = data.get("tool_input") or {}
+    file_path = str(tool_input.get("file_path", ""))
+    if not file_path or not is_test_file(Path(file_path)):
+        return None
+    findings = findings_for(str(data.get("tool_name", "")), tool_input)
+    return (file_path, findings) if findings else None
+
+
+def _weakening_reason(file_path: str, findings: list[str]) -> str:
+    listed = "\n".join(f"  - {finding}" for finding in findings)
+    return (
+        f"BLOCKED: this change weakens the test file `{Path(file_path).name}`.\n"
+        f"{listed}\n"
+        f"Rule: ~/.claude/rules/testing.md. A test or assertion is never weakened, "
+        f"skipped, or deleted to make a change pass.\n"
+        f"Fix: keep every assertion and test case; fix the code instead. When the "
+        f"behavior was removed on purpose or the test moved to another file, ask the "
+        f"user, then bypass once.\n"
+        f"Bypass (one-off): set {WEAKENING_BYPASS_ENV}=1 in parent shell."
+    )
+
+
 def main() -> int:
+    data = read_hook_payload("tdd-gate")
+
+    weakened = _weakened_test_file(data)
+    if weakened is not None:
+        emit_block(_weakening_reason(*weakened), weakened[0], hook=WEAKENING_HOOK)
+
     if os.environ.get("TDD_GATE_DISABLE") == "1":
         return 0
     if is_bypassed("tdd-gate"):
         return 0
-
-    data = read_hook_payload("tdd-gate")
 
     target = _new_source_target(data)
     if target is None:

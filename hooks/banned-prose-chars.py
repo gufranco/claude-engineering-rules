@@ -15,6 +15,13 @@ except Exception:  # pragma: no cover
 
 
 EM_DASH = "\u2014"
+EN_DASH = chr(0x2013)
+
+MARKDOWN_SUFFIXES = (".md", ".mdx", ".markdown")
+SPACED_HYPHEN_RE = re.compile(r"\b[A-Za-z]{2,}[.,)]? - [A-Za-z(]")
+LIST_MARKER_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
+INLINE_CODE_RE = re.compile(r"`[^`]*`")
+FENCE_PREFIXES = ("```", "~~~")
 
 BOX_DRAWING_RE = re.compile(r"[\u2500-\u257F]")
 
@@ -45,6 +52,10 @@ def find_violations(text: str) -> list[tuple[str, str]]:
         idx = text.index(EM_DASH)
         findings.append(("em dash (U+2014)", _snippet(text, idx)))
 
+    if EN_DASH in text:
+        idx = text.index(EN_DASH)
+        findings.append(("en dash (U+2013)", _snippet(text, idx)))
+
     box_match = BOX_DRAWING_RE.search(text)
     if box_match:
         findings.append(("box-drawing character", _snippet(text, box_match.start())))
@@ -56,6 +67,30 @@ def find_violations(text: str) -> list[tuple[str, str]]:
         )
 
     return findings
+
+
+def _prose_lines(text: str) -> list[str]:
+    in_fence = False
+    prose = []
+    for line in text.splitlines():
+        if line.lstrip().startswith(FENCE_PREFIXES):
+            in_fence = not in_fence
+            continue
+        body = LIST_MARKER_RE.sub("", INLINE_CODE_RE.sub("", line))
+        if not in_fence and not body.lstrip().startswith("|"):
+            prose = [*prose, body]
+    return prose
+
+
+def find_markdown_violations(text: str) -> list[tuple[str, str]]:
+    hits = [line for line in _prose_lines(text) if SPACED_HYPHEN_RE.search(line)]
+    if not hits:
+        return []
+    return [("spaced hyphen used as a dash", hits[0].strip()[:81])]
+
+
+def is_markdown_path(path: str) -> bool:
+    return path.lower().endswith(MARKDOWN_SUFFIXES)
 
 
 SKIPPED_TEST_SEGMENTS = (
@@ -105,7 +140,9 @@ from _lib.hook_profile import should_run  # noqa: E402
 
 BLOCK_FIX = (
     "\n\nFix:\n"
-    "  - Replace em dashes with a period, comma, colon, or rewrite.\n"
+    "  - Replace em dashes and en dashes with a period, comma, colon, or rewrite.\n"
+    "  - In Markdown prose, a spaced hyphen standing in for a dash gets the same fix;\n"
+    "    swapping one dash for another is the same violation.\n"
     "  - Remove emojis and decorative unicode.\n"
     "  - Use Mermaid in fenced code blocks instead of box-drawing diagrams.\n"
     "\nBypass (one-off, when explicitly preserving existing content): "
@@ -124,11 +161,15 @@ def _skipped() -> bool:
     return is_bypassed("banned-prose-chars")
 
 
-def _findings(texts: list[tuple[str, str]]) -> list[str]:
+def _findings(texts: list[tuple[str, str]], markdown: bool = False) -> list[str]:
+    checks = (
+        (find_violations, find_markdown_violations) if markdown else (find_violations,)
+    )
     return [
         f"  - {kind} in {field}: ...{snippet}..."
         for field, text in texts
-        for kind, snippet in find_violations(text)
+        for check in checks
+        for kind, snippet in check(text)
     ]
 
 
@@ -161,7 +202,10 @@ def main() -> int:
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}
 
-    all_findings = _findings(collect_texts(tool, tool_input))
+    markdown = tool in ("Write", "Edit", "MultiEdit") and is_markdown_path(
+        str(tool_input.get("file_path", "") or "")
+    )
+    all_findings = _findings(collect_texts(tool, tool_input), markdown)
     if not all_findings:
         return 0
     return _block(tool, all_findings)

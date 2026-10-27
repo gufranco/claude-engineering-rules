@@ -244,6 +244,19 @@ This section does not replace the database-count assertions in [Write-Path Tests
 
 Provenance: 2026-10-12, threshold skipped because the user explicitly requested adoption. Adopted from the mattpocock/skills `tdd` guidance, whose CHANGELOG records tautological tests as an observed failure: an assertion recomputed the way the code computes it passes by construction and gives zero confidence.
 
+### Assertions Are Never Weakened To Pass
+
+When a change makes a test fail, the code is wrong until shown otherwise. Never delete, loosen, or skip an existing assertion or test case to make the change pass: no removed `expect`, no `toEqual` relaxed to `toBeDefined`, no `it.skip`, `xit`, `@pytest.mark.skip`, `t.Skip()`, or `#[ignore]`, no deleted test file. Fix the code, or, when the behavior the test pins was removed on purpose, say so and get the user's agreement before the test changes.
+
+A banned edit gets replaced by an equivalent in practice. A team that wrote "don't edit the tests to make them pass" saw the agent delete the tests instead; a hook added afterwards was then deleted itself. So the rule is enforced mechanically on every path:
+
+| Path | Enforced by | Response |
+|---|---|---|
+| Edit, MultiEdit, or Write that lowers the assertion or test-case count, or adds a skip marker, in a test file | [`tdd-gate.py`](../hooks/tdd-gate.py) through [`assertion_weakening.py`](../hooks/_lib/assertion_weakening.py) | Blocked; `TEST_WEAKENING_DISABLE=1` once, after the user agrees |
+| `rm`, `git rm`, `unlink`, or `trash` of a test file | [`dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py) | Confirmation prompt to the user |
+
+Replacing an assertion with a stricter one keeps the count and passes. Moving an assertion between the edits of one MultiEdit keeps the total and passes. Moving a test to another file is the legitimate case the bypass exists for.
+
 ## Test Data
 
 Use a fake data generator to produce test data. Never use hardcoded static values like `"test@example.com"`, `"John Doe"`, or `"password123"` in test setup.
