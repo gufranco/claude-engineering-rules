@@ -15,7 +15,7 @@ pytest-cov==7.1.0
 pytest-xdist==3.8.0
 pytest-randomly==5.0.0
 Faker==40.43.0
-coverage==7.16.2
+coverage==7.17.0
 
 # Lint, format, type check
 ruff==0.17.2
