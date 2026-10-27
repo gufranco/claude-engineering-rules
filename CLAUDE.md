@@ -8,11 +8,14 @@ When existing code in the project violates these rules, the generated code must 
 
 **Priority order when instructions conflict:**
 
-1. `~/.claude/CLAUDE.md` and `~/.claude/rules/`: our rules, always win
-2. Project-level [`CLAUDE.md`](CLAUDE.md): project conventions, second priority
-3. Existing code patterns: follow only when they don't violate 1 or 2
+1. `~/.claude/CLAUDE.md` and `~/.claude/rules/`: our rules, win by default
+2. A project's own instruction file or project settings that explicitly depart from one of our rules: win inside that project. Never for security or privacy boundaries, legal or compliance obligations, silent data loss, verification gates, or truthfulness to a reader; those stay global
+3. Project-level [`CLAUDE.md`](CLAUDE.md) conventions where our rules are silent
+4. Existing code patterns: follow only when they don't violate 1 to 3
 
 When following an existing pattern would violate a rule, follow the rule and fix the pattern in the code you touch.
+
+A project document that describes a convention the code consistently no longer follows is stale, not a rule: follow the code, and list every mismatch between the document and the code in the final reply. A document that marks a path as mid-migration keeps precedence for that path. Full text: [`standards/doc-truth.md`](standards/doc-truth.md).
 
 ## Prompt Defense Baseline
 
@@ -103,20 +106,20 @@ If you have not read it or run it in this session, you don't know it. Never hedg
 - Read every file you modify, plus signatures, types, and callers of changed functions.
 - One thing unclear: investigate. Several unclear: one blocking question. Three failed attempts: change approach or ask.
 - Confirm ambiguous verbs such as "compress" or "simplify" before executing.
-- **Execute, don't ask.** A task list or "do everything" runs to completion. An approved plan runs every phase without continue prompts or checkpoint menus; volume of work and token budget are never reasons to stop. In an open-ended plan, a commit or a good measurement is not a stopping point; end the turn only on a blocker or an interruption.
+- **Execute, don't ask.** A task list or "do everything" runs to completion. An approved plan runs every phase without continue prompts or checkpoint menus; volume of work and token budget are never reasons to stop. In an open-ended plan, a commit or a good measurement is not a stopping point; end the turn only on a blocker or an interruption. A correction or new request arriving mid-task joins the queue; it never drops the remaining items.
 - Questions, reports, and briefs follow [`rules/smart-questions.md`](rules/smart-questions.md).
 
 ## Anti-Hallucination
 
-Verify in this session before referencing: file paths via glob or ls; imports and signatures by reading the definition; routes by reading the router; CLI flags via `--help`; versions, config, env vars, and dependencies from their source files; package availability from the registry, not the local install; today's date via `date`; anything a relay reported at its named coordinate. Walk every import, call, and path before presenting code. When caught, stop, correct, re-verify.
+Verify in this session before referencing: file paths via glob or ls; imports and signatures by reading the definition; routes by reading the router; CLI flags via `--help`; versions, config, env vars, and dependencies from their source files; package availability from the registry, not the local install; today's date via `date`; anything a relay reported at its named coordinate. Walk every import, call, and path before presenting code. When caught, stop, correct, re-verify. Official documentation first, then established community sources; an answer resting only on training data says so.
 
 ## Scope Control
 
-One task fully before the next. Ask before expanding scope. 3 to 5 files per task. When listing improvements, implement all of them by default. When optimizing existing files, never remove rules, examples, or tables without asking.
+One task fully before the next. Ask before expanding scope. 3 to 5 files per task. When listing improvements, implement all of them by default. When optimizing existing files, never remove rules, examples, or tables without asking. No new Markdown file outside the local workspace unless the user asked for it; add the fact to the file that already owns it.
 
 ## Hook Bypass Discipline
 
-A blocking hook means a rule was violated: change the code, never silence the hook. At most one bypass per hook per session, for one named false positive, cleared when that task ends. A blocked call ran nothing, so re-read the target and repeat the whole command. When the check is right but the case is an exception, write a waiver instead. Never edit a guard's allowlist to unblock yourself; give the user the one-line command. Audit greps build banned literals from fragments. Full text: [`standards/hook-bypass.md`](standards/hook-bypass.md).
+A blocking hook means a rule was violated: change the code, never silence the hook. At most one bypass per hook per session, for one named false positive, cleared when that task ends. A blocked call ran nothing, so re-read the target and repeat the whole command. When the check is right but the case is an exception, write a waiver instead. Never edit a guard's allowlist to unblock yourself; give the user the one-line command. A block covers the effect, not the spelling: a substitute command or character that produces the blocked effect is the same violation. Audit greps build banned literals from fragments. Full text: [`standards/hook-bypass.md`](standards/hook-bypass.md).
 
 ## External Tools
 
@@ -131,6 +134,7 @@ Full text, including the zsh traps: [`standards/shell-and-tools.md`](standards/s
 - zsh: never use `path`, `status`, `argv` or the other special names as locals; brace variables before a colon; quote every glob meant for a tool; an unquoted `$var` is never word-split, so iterate an array or split with `${=var}`, never `set -- $var`.
 - Pass text payloads through a single-quoted heredoc, `<<'PAYLOAD'`. Author files containing command-like text with the Write tool, not a heredoc.
 - In Bash, write `$HOME/.claude`, never the tilde form.
+- Never search the whole filesystem or the whole home directory with `find`, `grep -r`, `rg`, or `fd`; scope the search to the project or a named directory, and ask when the location is unknown.
 
 ## Think Before You Code
 

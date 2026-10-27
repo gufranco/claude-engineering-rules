@@ -5,7 +5,7 @@ Every piece of text passes a precision gate before it is finalized: chat replies
 - Every sentence earns its place; delete any whose removal loses nothing
 - Lead with the action, reason second
 - Concrete over abstract: name the API, not the quality; show the literal artifact, not a description of it
-- One idea per sentence; one term per concept
+- One idea per sentence; one term per concept, taken from the code or the user, never coined
 - Right format: bullets for rules, numbered lists for steps, tables for lookups, Mermaid for flow
 - Quantify; every stated decision carries its measurement and the limits of that evidence
 - No weasel words: "should consider", "ideally", "where possible" become must or optional
@@ -25,4 +25,4 @@ Enforced by: [`hooks/banned-prose-chars.py`](../hooks/banned-prose-chars.py).
 
 ## Provenance
 
-Added 2026-03-10, recurrence not recorded. Origin: not recorded at creation.
+Added 2026-03-10, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction: terms come from the code or the user, because coined labels compound across sessions until the repository's vocabulary is one the owner no longer recognizes.

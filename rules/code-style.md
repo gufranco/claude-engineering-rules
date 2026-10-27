@@ -33,7 +33,7 @@ Always choose the complete implementation, and write code that is self-explanato
 - Comments are not permitted in source code in any language: application code, tests, scripts, build files, CI and infrastructure config. Docstrings and doc-comment blocks count as comments.
 - Two exemptions only: a tool directive a tool parses, at the start of the comment: eslint, biome, ruff, noqa, pylint, shellcheck, `@ts-expect-error`, prettier-ignore, istanbul/c8, `//go:build`, `//nolint`, webpack magic comments, SPDX headers, Rust `// SAFETY:`; and the bare `Arrange`, `Act`, `Assert` markers that open a test's three blocks. `.env.example` files are out of scope: their comments document each variable.
 - The code is the documentation: names, small functions, and types carry what a comment would have said.
-- A project convention requiring JSDoc is an existing violation, not permission. Put that reasoning in the PR description.
+- A project instruction file that explicitly requires JSDoc or doc comments wins in that project, limited to what it names. Existing comments without such an instruction are a violation, not permission; put that reasoning in the PR description.
 - When code needs a comment, rename, extract a named function, or encode the contract in types instead.
 
 ## Errors And Logging
@@ -84,4 +84,4 @@ Enforced by: [`hooks/settings-hygiene.py`](../hooks/settings-hygiene.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction: a project instruction file that explicitly requires JSDoc or doc comments now wins inside that project, following the project-override rule in the global priority order.

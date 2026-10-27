@@ -150,7 +150,7 @@ When the user provides additional requirements after a plan is created, add them
 
 ### 2. Architecture Fit
 
-Read the surrounding code. Confirm the new code fits the existing patterns, except when existing patterns violate `~/.claude/` rules. Rules always take priority.
+Read the surrounding code. Confirm the new code fits the existing patterns, except when existing patterns violate `~/.claude/` rules. Rules take priority unless the project's instruction file explicitly overrides one, per the priority order in [`../CLAUDE.md`](../CLAUDE.md).
 
 - What conventions does this area of the codebase follow?
 - What abstractions already exist that the new code should use?
@@ -197,9 +197,13 @@ For bug fixes, confirm the root cause before writing the fix.
 
 If any answer is no, investigate further. Do not write a speculative fix.
 
-### 5. Warning Baseline
+### 5. Warning and Test Baseline
 
 Apply the "Warning baseline" section of [`checklists/checklist.md`](../checklists/checklist.md) category 17. Run linter, type checker, and test suite on the files you plan to change. Record the current warning count. After implementation, the count must be equal to or lower.
+
+Run the test suite once before the first edit and record which tests already fail. Without that record, a failure at the end cannot be told apart from one that was already there, and the session spends its effort fixing a failure it did not cause or dismissing one it did. A pre-existing failure is still in scope per [`found-fix.md`](../rules/found-fix.md); the baseline decides how it is reported, never whether it is fixed.
+
+Read the tests that cover the code you are about to change before changing it. They state the behavior callers rely on, and reading them first is what keeps a rewrite from breaking the same test twice.
 
 ### 6. Scope Agreement
 
