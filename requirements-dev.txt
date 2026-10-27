@@ -26,7 +26,7 @@ yamllint==1.38.0
 zizmor==1.30.1
 
 # Local gate runner. Mirrors the CI checks onto a git commit.
-pre-commit==4.6.2
+pre-commit==4.7.0
 
 # Runtime imports used by the validators under .github/scripts/
 PyYAML==6.0.3
