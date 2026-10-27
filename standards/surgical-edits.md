@@ -9,7 +9,7 @@ Every changed line must trace directly to the user's request. If a line cannot b
 - Do not "improve" adjacent code, comments, formatting, or imports the request did not name.
 - Do not refactor code that is not broken.
 - Do not rename variables, reorder arguments, or restructure functions outside the requested scope.
-- Match existing style even when you would write it differently. The rule priority order in `~/.claude/CLAUDE.md` still applies: rules win over project conventions, project conventions win over local style. But "I would write it differently" is not a rule.
+- Match existing style even when you would write it differently. The rule priority order in `~/.claude/CLAUDE.md` still applies: rules win over project conventions unless the project explicitly overrides them, and project conventions win over local style. But "I would write it differently" is not a rule.
 - If you notice unrelated dead code, broken patterns, or improvement opportunities, report them. Do not act on them.
 
 ## Cleanup Boundaries

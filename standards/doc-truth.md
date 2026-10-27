@@ -70,6 +70,18 @@ When opening a pull request, check whether the change affects these and update:
 
 Where a document changes often, state a materiality boundary in the same row, so the obligation stays credible rather than becoming a formality: new inputs, new deploy paths, or changed approval behavior count; a version pin bump or a trivial refactor does not. The full authoring guidance is in [`agent-instruction-files.md`](agent-instruction-files.md).
 
+### A stale description loses to the code
+
+The obligations above prevent drift in the change that causes it. This one covers drift that already happened: a project instruction file or README describes a convention, and the code consistently does something else. Follow the code, and list every mismatch found between the document and the code in the final reply, naming the document line and the code that contradicts it, so the document gets corrected.
+
+The reason is measured. Xu and Wu, "Stale Instruction Files Override the Code in Coding Agents: A One-Sentence Fix", arXiv 2610.30571, built 40 Python projects whose instruction file asked for one convention while the code used another, and ran Claude Code and Codex CLI 320 times. Without a precedence sentence the agents followed the stale file in 90.1% of choices; Claude Code noticed the conflict in 79 of 80 runs and followed the file anyway, and Codex CLI rewrote working code to match the file in 20 of 80 runs, failing the project's tests in 17. With one user-level sentence giving existing code precedence, choices following the code rose from 4.2% to 91.4% and the test pass rate from 89.4% to 100%. The authors attribute the bias to the file arriving as an instruction while the code arrives as tool output.
+
+Three limits keep this narrow:
+
+- It applies to descriptions, never to rules. "API fields are `snake_case`" is a description the code can falsify. "Never use `any`" is a rule, and existing violations are not precedent, per the priority order in [`../CLAUDE.md`](../CLAUDE.md).
+- "Consistently" means the code agrees with itself. When the code is split between both conventions, the document wins and the split is reported.
+- A document that marks a path as mid-migration to the convention it describes keeps precedence for that path; otherwise the agent faithfully copies the legacy code it is meant to replace.
+
 ### Historical records are exempt
 
 A changelog entry, an architecture decision record, an incident report, and an archived plan describe what was true at a point in time. They are supposed to name things that no longer exist. The hook skips `CHANGELOG*`, `docs/adr/`, `specs/`, and any path the project marks as an archive. Editing them to match current code would destroy the record.

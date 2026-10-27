@@ -138,6 +138,16 @@ The service validates the input, persists the entity, and sends
 a confirmation email.
 ```
 
+The term itself comes from the user or the code, never from the writer. A coined name for something that already has one forces every later reader to look up what it means, and the next session builds on the coined name instead of the real one until nobody recognizes the vocabulary. Call a thing by the name it has in the code, the project glossary, or the user's own words. When nothing names it, describe it plainly rather than inventing a label.
+
+```
+# Bad: a coined label for an existing thing
+The drift sentinel compares both trees.
+
+# Good: the name the code already uses
+`doc-sync-guard.py` compares the staged diff with the tracked docs.
+```
+
 ### 7. Quantify
 
 Vague qualifiers are interpreted differently by every reader.
