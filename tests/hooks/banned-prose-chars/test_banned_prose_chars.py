@@ -435,3 +435,75 @@ def test_invalid_json_stdin_blocks():
     # Assert
     assert proc.returncode == 2
     assert "could not read its input" in proc.stderr
+
+
+EN_DASH = chr(0x2013)
+
+
+def test_blocks_en_dash_in_write(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/notes.txt", "content": f"pages 4{EN_DASH}9\n"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "en dash (U+2013)")
+
+
+def test_blocks_spaced_hyphen_dash_in_markdown_prose(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": "/repo/docs/guide.md",
+            "old_string": "old",
+            "new_string": "The cache is warm - requests return fast.\n",
+        },
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "spaced hyphen used as a dash")
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "- The cache is warm\n- Requests return fast\n",
+        "```bash\nls - foo\nwarm - fast\n```\n",
+        "Run `cache - warm` first.\n",
+        "| left - side | right |\n",
+        "Range 4 - 9 pages.\n",
+    ],
+)
+def test_allows_hyphens_that_are_not_prose_dashes(tool_use, run_hook, content):
+    # Arrange
+    payload = tool_use(
+        "Write", {"file_path": "/repo/docs/guide.md", "content": content}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_allows_spaced_hyphen_outside_markdown(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {"file_path": "/repo/src/math.py", "content": "total = gross - net\n"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
