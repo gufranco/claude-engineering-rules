@@ -10,7 +10,7 @@ if str(HOOKS_DIR) not in sys.path:
 
 from _lib.dangerous_command_recoverable import RECOVERABLE  # noqa: E402
 
-EXPECTED_ENTRY_COUNT = 9
+EXPECTED_ENTRY_COUNT = 11
 
 
 def test_recoverable_patterns_all_compile() -> None:
