@@ -7,7 +7,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "hooks"))
 
-from _lib.cli_invocations import Invocation, invocations, segments  # noqa: E402
+from _lib.cli_invocations import (  # noqa: E402
+    Invocation,
+    asks_for_help,
+    invocations,
+    segments,
+)
 
 
 def test_segments_split_on_every_shell_separator():
@@ -118,3 +123,24 @@ def test_segments_keep_operators_inside_double_quotes():
 
     # Assert
     assert result == ['rg "a|gh api user" docs', "ls"]
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        (("--help",), True),
+        (("pr", "view", "-h"), True),
+        (("mr", "note", "1", "-m", "--help"), False),
+        (("pr", "list"), False),
+        ((), False),
+    ],
+)
+def test_a_help_flag_counts_only_when_no_option_consumes_it(args, expected):
+    # Arrange
+    call_args = tuple(args)
+
+    # Act
+    result = asks_for_help(call_args)
+
+    # Assert
+    assert result is expected
