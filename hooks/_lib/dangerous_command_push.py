@@ -52,9 +52,40 @@ def git_push_directory(args: list[str], directory: str) -> tuple[bool, str | Non
     return index < len(args) and args[index] == "push", resolved
 
 
+def strip_command_substitutions(text: str) -> str:
+    out: list[str] = []
+    i = 0
+    n = len(text)
+    while i < n:
+        char = text[i]
+        if char == "$" and i + 1 < n and text[i + 1] == "(":
+            depth = 0
+            j = i + 1
+            while j < n:
+                if text[j] == "(":
+                    depth += 1
+                elif text[j] == ")":
+                    depth -= 1
+                    if depth == 0:
+                        j += 1
+                        break
+                j += 1
+            out.append("X")
+            i = j
+        elif char == "`":
+            end = text.find("`", i + 1)
+            out.append("X")
+            i = n if end == -1 else end + 1
+        else:
+            out.append(char)
+            i += 1
+    return "".join(out)
+
+
 def push_cwd(command: str) -> str | None:
-    base = command_cwd(command)
-    for segment in unquoted_segments(command):
+    sanitized = strip_command_substitutions(command)
+    base = command_cwd(sanitized)
+    for segment in unquoted_segments(sanitized):
         try:
             tokens = shlex.split(segment)
         except ValueError:
@@ -66,6 +97,22 @@ def push_cwd(command: str) -> str | None:
         if pushes:
             return directory
     return None
+
+
+def push_segment(command: str) -> str:
+    sanitized = strip_command_substitutions(command)
+    for segment in unquoted_segments(sanitized):
+        try:
+            tokens = shlex.split(segment)
+        except ValueError:
+            continue
+        head, args = command_head(tokens)
+        if head != "git":
+            continue
+        pushes, _ = git_push_directory(args, "")
+        if pushes:
+            return segment
+    return ""
 
 
 def repo_root(cwd: str = "") -> str:

@@ -162,8 +162,20 @@ def _payload_chunks(
 def _iter_json_objects(text: str):
     depth = 0
     start = -1
+    in_string = False
+    escaped = False
     for index, char in enumerate(text):
-        if char == "{":
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
             if depth == 0:
                 start = index
             depth += 1
