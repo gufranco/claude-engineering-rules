@@ -91,10 +91,7 @@ DIGIT = re.compile(r"(?<![\w.-])\d+(?![\w-])")
 
 def vault_root(raw: str | None = None) -> Path | None:
     value = raw or os.environ.get("SECOND_BRAIN_VAULT") or DEFAULT_VAULT
-    try:
-        root = Path(value).expanduser()
-    except (OSError, ValueError):  # pragma: no cover
-        return None
+    root = Path(value).expanduser()
     return root if root.is_dir() else None
 
 
@@ -156,17 +153,13 @@ def wikilink_targets(text: str) -> list[str]:
 
 
 def iter_notes(root: Path) -> Iterator[tuple[Path, str]]:
-    try:
-        candidates = sorted(root.rglob("*.md"))
-    except OSError:  # pragma: no cover
-        return
-    for path in candidates:
+    for path in sorted(root.rglob("*.md")):
         rel = relative(path, root)
         if rel is None or is_exempt(rel):
             continue
         try:
             yield rel, path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):  # pragma: no cover
+        except (OSError, UnicodeDecodeError):
             continue
 
 

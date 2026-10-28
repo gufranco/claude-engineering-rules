@@ -192,3 +192,26 @@ def test_an_unreadable_payload_is_reported_and_the_batch_still_runs(
     assert result.returncode == 0
     assert result.stderr.startswith("stop-format-typecheck: unreadable payload: ")
     assert batch.exists() is False
+
+
+def test_python_files_are_left_alone_without_ruff_or_black(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Arrange
+    module = _load("_sft_mod_py")
+    empty = tmp_path / "empty-bin"
+    empty.mkdir()
+    monkeypatch.setenv("PATH", str(empty))
+    source = tmp_path / "loose.py"
+    source.write_text("x=1\n", encoding="utf-8")
+
+    # Act
+    module._format_python([str(source)])
+
+    # Assert
+    assert (source.read_text(encoding="utf-8"), capsys.readouterr().err) == (
+        "x=1\n",
+        "",
+    )

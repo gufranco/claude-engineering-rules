@@ -14,6 +14,7 @@ from _lib.hook_input import read_advisory_payload  # noqa: E402
 ENV_VAR = "VAULT_COMPILE_DISABLE"
 VAULT_VAR = "SECOND_BRAIN_VAULT"
 TIMEOUT_SECONDS = 20
+TIMEOUT_VAR = "VAULT_COMPILE_TIMEOUT_SECONDS"
 
 
 def memory_dir_for(cwd: Path) -> Path:
@@ -40,7 +41,8 @@ def _ready_memory_dir(cwd: Path) -> Path | None:
         return None
     try:
         memory.mkdir(exist_ok=True)
-    except OSError:
+    except OSError as error:
+        sys.stderr.write(f"vault-compile: cannot create {memory}: {error}\n")
         return None
     return memory
 
@@ -60,10 +62,11 @@ def _run_compile(script: Path, cwd: Path, memory: Path) -> str | None:
             command,
             capture_output=True,
             text=True,
-            timeout=TIMEOUT_SECONDS,
+            timeout=float(os.environ.get(TIMEOUT_VAR) or TIMEOUT_SECONDS),
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except subprocess.TimeoutExpired:
+        sys.stderr.write(f"vault-compile: {script.name} timed out\n")
         return None
     return finished.stdout if finished.returncode == 0 else None
 

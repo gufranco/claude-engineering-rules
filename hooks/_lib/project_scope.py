@@ -7,10 +7,7 @@ GIT_MARKER = ".git"
 
 
 def repo_root(start: Path) -> Path | None:
-    try:
-        cursor = start.resolve()
-    except OSError:  # pragma: no cover
-        return None
+    cursor = start.resolve()
     while True:
         if (cursor / GIT_MARKER).exists():
             return cursor
@@ -20,10 +17,7 @@ def repo_root(start: Path) -> Path | None:
 
 
 def walk_up(start: Path, limit: int, stop_at_repo_root: bool = True) -> Iterator[Path]:
-    try:
-        cursor = start.resolve()
-    except OSError:  # pragma: no cover
-        return
+    cursor = start.resolve()
     boundary = repo_root(cursor) if stop_at_repo_root else None
     for _ in range(limit):
         yield cursor

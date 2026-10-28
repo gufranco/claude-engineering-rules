@@ -472,3 +472,27 @@ def test_parallel_captures_all_land_in_the_daily_note(vault, project):
         calls,
         1,
     )
+
+
+def test_git_is_treated_as_silent_when_it_is_missing(monkeypatch, tmp_path):
+    # Arrange
+    module = load()
+    monkeypatch.setenv("PATH", str(tmp_path))
+
+    # Act
+    result = module.git(["status"], tmp_path)
+
+    # Assert
+    assert result == ""
+
+
+def test_an_unwritable_vault_does_not_fail_the_turn(monkeypatch, vault, project):
+    # Arrange
+    (vault / "daily").rmdir()
+    (vault / "daily").write_text("not a directory", encoding="utf-8")
+
+    # Act
+    code = run(monkeypatch, vault, project)
+
+    # Assert
+    assert code == 0
