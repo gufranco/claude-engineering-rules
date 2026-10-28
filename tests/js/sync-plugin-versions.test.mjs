@@ -32,8 +32,15 @@ async function fixtureRoot(marketplace) {
 }
 
 function collector() {
-  const lines = [];
-  return { lines, push: (line) => lines.push(line) };
+  let lines = [];
+  return {
+    get lines() {
+      return lines;
+    },
+    record: (line) => {
+      lines = [...lines, line];
+    },
+  };
 }
 
 test("parseRequestedVersion rejects a missing or malformed version", () => {
@@ -74,7 +81,7 @@ test("run writes every manifest and reports each one", async () => {
   const out = collector();
 
   // Act
-  const code = await run(root, ["1.2.3"], out.push, out.push);
+  const code = await run(root, ["1.2.3"], out.record, out.record);
 
   // Assert
   const marketplace = JSON.parse(await readFile(join(root, MARKETPLACE_MANIFEST), "utf8"));
@@ -92,7 +99,7 @@ test("run counts zero nested plugins when the marketplace has none", async () =>
   const out = collector();
 
   // Act
-  await run(root, ["2.0.0"], out.push, out.push);
+  await run(root, ["2.0.0"], out.record, out.record);
 
   // Assert
   assert.equal(out.lines[0], `${MARKETPLACE_MANIFEST} -> 2.0.0 (0 nested)`);
@@ -104,7 +111,7 @@ test("run reports a manifest it cannot read", async () => {
   const out = collector();
 
   // Act
-  const code = await run(root, ["1.0.0"], out.push, out.push);
+  const code = await run(root, ["1.0.0"], out.record, out.record);
 
   // Assert
   assert.equal(code, 1);
