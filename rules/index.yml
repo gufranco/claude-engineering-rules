@@ -179,6 +179,10 @@ always_loaded:
     description: Short core for files a project needs but cannot ship, such as a ROM, BIOS, firmware, licensed weights, or a proprietary SDK. Declared in artifacts.manifest.json, SHA-256 alone decides and is verified in code on the exact bytes consumed, a mismatch names what the user has and what to do, never commit, cache, link to, or auto-download the artifact, CI passes with it absent. Full text in standards/artifact-identity.md
     triggers: [rom, bios, firmware, "model weights", "user-supplied", "artifacts.manifest.json", sha256, checksum, "hash mismatch"]
 
+  docker-dependencies:
+    description: Short core for keeping every project dependency in the Docker image. The image carries the interpreter, libraries and every tool, pinned; the host carries Docker and git only; every documented command runs through the container; no native-tool fast path; a doctor checks the container and the engine, never host tool versions. Full text in standards/docker-dependencies.md
+    triggers: [docker, dockerfile, container, compose, "install python", winget, "host dependency", toolchain, doctor, prerequisites]
+
   emulator-runs:
     description: Short core for launching MAME or any other emulator. Never full screen, a scripted run is headless with no window and no sound, MAME headless is SDL_VIDEODRIVER=dummy with -window -video none -sound none, a watched run is windowed with -nomaximize and minimised, prefer mednafen, ares or Snes9x over MAME as evidence, and corroborate a MAME-only result on a second emulator. Full text in standards/emulator-runs.md
     triggers: [mame, emulator, emulation, mednafen, ares, snes9x, bsnes, higan, mesen, retroarch, fullscreen, "full screen", headless, "-video none"]
@@ -258,6 +262,11 @@ on_demand:
     path: standards/artifact-identity.md
     description: Identity discipline for files a person must supply because the project may not distribute them (game ROMs, console BIOS, vendor firmware, licensed model weights, proprietary SDKs). Manifest as source of truth, SHA-256 as the only authoritative digest with size/CRC32/SHA-1 for cross-checking public databases, stated canonical form, accepted-variant lists, known-bad dumps, identify-diagnose-repair-verify triage, and the never-become-a-distribution-channel boundary
     triggers: [rom, roms, bios, firmware, romset, emulator, emulation, patch, ips, bps, xdelta, "no-intro", redump, mame, "model weights", checkpoint, safetensors, gguf, "bring your own", "user-supplied", "user supplied", byo, "own copy", "provide the file", "supply the file", crc, crc32, sha1, sha256, checksum, digest, "hash mismatch", "verify the file", dump, cartridge]
+
+  docker-dependencies:
+    path: standards/docker-dependencies.md
+    description: Where each dependency lives when a project uses Docker. The host holds Docker and git, the image holds everything else pinned, user artifacts are bind-mounted read-only, install instructions list Docker and git then one container command, entry points are shell and PowerShell launchers, and the doctor checks the engine, the clone and the mounts
+    triggers: [docker, dockerfile, container, compose, "install python", winget, "host dependency", toolchain, doctor, prerequisites, "bind mount"]
 
   emulator-runs:
     path: standards/emulator-runs.md
