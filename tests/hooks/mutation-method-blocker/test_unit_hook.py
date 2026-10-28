@@ -330,3 +330,41 @@ def test_hook_inside_state_mgmt_scope_same_line_immer_produce():
     # Assert
     assert in_scope is True
     assert label == "immer-produce"
+
+
+def test_format_block_is_empty_without_lines():
+    # Arrange
+    lines: list[str] = []
+
+    # Act
+    result = HOOK_MODULE._format_block("Header:", lines)
+
+    # Assert
+    assert result == ""
+
+
+def test_format_findings_omits_the_fix_line_without_a_hint():
+    # Arrange
+    match = core.Match(line=3, col=5, text="items.push(x)", detector="array.push")
+
+    # Act
+    result = HOOK_MODULE._format_findings("src/a.ts", [match])
+
+    # Assert
+    assert result == ["  - src/a.ts:", "      L3:5 [array.push] items.push(x)"]
+
+
+@pytest.mark.parametrize(
+    ("locale", "expected"), [("de-AT", "de"), ("pt-BR", "pt-BR"), ("xx", "en")]
+)
+def test_load_i18n_falls_back_from_region_to_language_to_english(
+    monkeypatch, locale, expected
+):
+    # Arrange
+    monkeypatch.setattr(HOOK_MODULE, "_I18N_CACHE", {})
+
+    # Act
+    bundle = HOOK_MODULE._load_i18n(locale)
+
+    # Assert
+    assert bundle["locale"] == expected

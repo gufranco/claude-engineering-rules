@@ -52,9 +52,7 @@ def _run_git(*args: str) -> subprocess.CompletedProcess[str] | None:
 def _project_root() -> Path:
     result = _run_git("rev-parse", "--show-toplevel")
     if result is not None and result.returncode == 0:
-        toplevel = result.stdout.strip()
-        if toplevel:
-            return Path(toplevel).resolve()
+        return Path(result.stdout.strip()).resolve()
     return Path.cwd().resolve()
 
 
@@ -92,11 +90,7 @@ def _snapshot_project(body: str) -> str:
 
 
 def _is_fresh(path: Path, now: float) -> bool:
-    try:
-        modified_at = path.stat().st_mtime
-    except OSError:
-        return False
-    return (now - modified_at) <= MAX_AGE_SECONDS
+    return (now - path.stat().st_mtime) <= MAX_AGE_SECONDS
 
 
 def retire_legacy_snapshot() -> None:

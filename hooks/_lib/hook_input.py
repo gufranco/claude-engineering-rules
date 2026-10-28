@@ -52,6 +52,18 @@ def read_hook_payload(hook: str) -> dict[str, object]:
     return {**payload, "tool_input": tool_input or {}, "input": tool_input or {}}
 
 
+def read_advisory_payload(hook: str) -> dict[str, object]:
+    try:
+        payload = json.loads(_stdin_text())
+    except (UnicodeDecodeError, ValueError) as error:
+        sys.stderr.write(f"{hook}: unreadable payload: {error}\n")
+        return {}
+    if not isinstance(payload, dict):
+        sys.stderr.write(f"{hook}: payload is not a JSON object\n")
+        return {}
+    return payload
+
+
 def _edits_are_well_formed(edits: object) -> bool:
     if edits is None:
         return True

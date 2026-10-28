@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "hooks"))
 
-from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.hook_input import read_advisory_payload, read_hook_payload  # noqa: E402
 
 
 def _stdin(monkeypatch: pytest.MonkeyPatch, raw: bytes) -> None:
@@ -69,3 +69,41 @@ def test_a_readable_payload_carries_an_object_tool_input(
 
     # Assert
     assert (result["tool_input"], result["tool_name"]) == (expected, "Bash")
+
+
+@pytest.mark.parametrize(
+    ("raw", "message"),
+    [
+        (b"\xff\xfe", "advisory: unreadable payload: "),
+        (b"not json", "advisory: unreadable payload: "),
+        (b"[1, 2]", "advisory: payload is not a JSON object"),
+    ],
+)
+def test_read_advisory_payload_reads_bad_input_as_empty(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    raw: bytes,
+    message: str,
+) -> None:
+    # Arrange
+    _stdin(monkeypatch, raw)
+
+    # Act
+    result = read_advisory_payload("advisory")
+
+    # Assert
+    assert result == {}
+    assert capsys.readouterr().err.startswith(message)
+
+
+def test_read_advisory_payload_returns_an_object(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Arrange
+    _stdin(monkeypatch, json.dumps({"tool_name": "Read"}).encode())
+
+    # Act
+    result = read_advisory_payload("advisory")
+
+    # Assert
+    assert result == {"tool_name": "Read"}

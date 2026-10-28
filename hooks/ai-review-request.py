@@ -22,6 +22,7 @@ from _lib.hook_profile import should_run  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
 from _lib.audit_log import record as _audit  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 
 HOOK_ID = "ai-review-request"
@@ -317,10 +318,7 @@ def main() -> int:
         return 0
     if not should_run(HOOK_ID):
         return 0
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    data = read_advisory_payload(HOOK_ID)
     try:
         summaries = handle(data, default_dependencies())
     except (

@@ -301,8 +301,6 @@ def tracked_paths(repo_root: Path) -> set[str]:
         return set()
     paths: set[str] = set()
     for line in result.stdout.splitlines():
-        if not line:
-            continue
         paths.add(line)
         parts = line.split("/")
         for i in range(1, len(parts)):
@@ -335,8 +333,6 @@ def _relative_link_target(url: str) -> str | None:
     if not url or url.startswith(_LINK_TARGET_SKIP_PREFIXES):
         return None
     target_no_frag = url.split("#", 1)[0]
-    if not target_no_frag:
-        return None
     cleaned = target_no_frag[2:] if target_no_frag.startswith("./") else target_no_frag
     return None if cleaned.startswith("/") else cleaned
 

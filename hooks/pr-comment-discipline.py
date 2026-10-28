@@ -97,13 +97,13 @@ def _resolve(path: str, cwd: str) -> str:
 
 def _writes(command: str, tool: re.Pattern[str]) -> bool:
     return any(
-        _is_write(segment, " ".join(segment))
+        _is_write(segment)
         for segment in _segments(command)
         if tool.search(" ".join(segment))
     )
 
 
-def _is_write(tokens: list[str], command: str) -> bool:
+def _is_write(tokens: list[str]) -> bool:
     lowered = [t.lower() for t in tokens]
     for index, token in enumerate(lowered):
         if token in ("-x", "--method", "--request"):
@@ -112,8 +112,6 @@ def _is_write(tokens: list[str], command: str) -> bool:
         for method in WRITE_METHODS:
             if token in (f"-x{method}", f"--method={method}", f"--request={method}"):
                 return True
-    if re.search(r"-X\s*(?:POST|PUT|PATCH)\b", command, re.IGNORECASE):
-        return True
     return any(flag in lowered for flag in PAYLOAD_FLAGS + FIELD_FLAGS)
 
 
@@ -305,7 +303,7 @@ def _gh_api_violation(
     heredoc = [command] if "<<" in command else []
     for segment in segments:
         text = " ".join(segment)
-        if not GH_API.search(text) or not _is_write(segment, text):
+        if not GH_API.search(text) or not _is_write(segment):
             continue
         violation = _api_violation(segment, heredoc, cwd)
         if violation is not None:

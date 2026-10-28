@@ -309,3 +309,56 @@ def test_honors_third_party_suppression_directive(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def _hook_module():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
+    spec = importlib.util.spec_from_file_location("check_then_act_units", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.parametrize(
+    ("receiver", "expected"),
+    [("db.tx", ""), ("this.service", ""), ("db.seats", "seat")],
+)
+def test_entity_of_skips_generic_and_noise_receivers(receiver, expected):
+    # Arrange
+    module = _hook_module()
+
+    # Act
+    result = module.entity_of(receiver)
+
+    # Assert
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "const row = await db.findFirst({});\nif (!row) {\n  await db.create({});\n}\n",
+        "const seat = await db.seat.findFirst({});\nif (!seat) {\n"
+        "  // eslint-disable-next-line\n  await db.seat.create({});\n}\n",
+    ],
+)
+def test_generic_reads_and_suppressed_writes_are_not_flagged(
+    tool_use, run_hook, content
+):
+    # Arrange
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/services/seat.service.ts", "content": content}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=ENFORCE)
+
+    # Assert
+    assert_allowed(result)

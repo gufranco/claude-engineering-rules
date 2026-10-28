@@ -338,6 +338,9 @@ jobs:
       - name: Release notes render
         run: node scripts/verify-release-notes.mjs
 
+      - name: Node script tests at full coverage
+        run: make test-js
+
       # The full dry run additionally proves the whole plugin chain resolves.
       # Restricted to push events because a pull request from a fork, and every
       # Dependabot pull request, gets a read-only token regardless of the

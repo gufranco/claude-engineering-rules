@@ -28,6 +28,7 @@ SKIP_SEGMENTS = (
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.suppression import is_suppressed  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
@@ -82,12 +83,7 @@ def _tag_end(text: str, index: int) -> int:
 
 
 def _flatten(attrs: str) -> str:
-    for _ in range(10):
-        flattened = EXPRESSION.sub("{}", attrs)
-        if flattened == attrs:
-            return attrs
-        attrs = flattened
-    return attrs
+    return EXPRESSION.sub("{}", attrs)
 
 
 def tags(content: str) -> list[Tag]:
@@ -245,16 +241,8 @@ def find_all(content: str) -> list[tuple[int, str]]:
 
 
 def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
-    if tool_name == "Write":
-        return tool_input.get("file_path", ""), tool_input.get("content", "")
-    if tool_name == "Edit":
-        return tool_input.get("file_path", ""), tool_input.get("new_string", "")
-    if tool_name == "MultiEdit":
-        edits = tool_input.get("edits", [])
-        return tool_input.get("file_path", ""), "\n".join(
-            e.get("new_string", "") for e in edits if isinstance(e, dict)
-        )
-    return "", ""
+    text = "\n".join(part for _, part in payload_fragments(tool_name, tool_input))
+    return tool_input.get("file_path", ""), text
 
 
 def _changed_content(payload: dict) -> tuple[str, str, str]:

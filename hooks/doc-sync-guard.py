@@ -139,16 +139,12 @@ def _is_historical(path: str) -> bool:
     return any(marker in lowered for marker in HISTORICAL_MARKERS)
 
 
-def _tracked_docs(cwd: Path) -> list[str]:
-    out = _git(cwd, "ls-files")
-    if out is None:
-        return []
-    return [
-        line.strip()
-        for line in out.splitlines()
-        if line.strip().lower().endswith(DOC_SUFFIXES)
-        and not _is_historical(line.strip())
-    ]
+def _tracked_docs(tracked: set[str]) -> list[str]:
+    return sorted(
+        path
+        for path in tracked
+        if path.lower().endswith(DOC_SUFFIXES) and not _is_historical(path)
+    )
 
 
 def _env_example_names(cwd: Path, tracked: set[str]) -> tuple[str | None, set[str]]:
@@ -347,13 +343,10 @@ def _collect_findings(cwd: Path, base: str = "--cached") -> list[str]:
         return []
 
     diff = _staged_diff(cwd, base)
-    if not diff:
-        return []
-
     code_diff = _code_hunks(diff)
     added = _added_lines(code_diff)
     removed = _removed_lines(code_diff)
-    docs = _tracked_docs(cwd)
+    docs = _tracked_docs(tracked)
     env_findings = _env_findings(cwd, tracked, staged, added, removed)
     unstaged_docs = [doc for doc in docs if doc not in staged]
     return [

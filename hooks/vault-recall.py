@@ -6,7 +6,10 @@ import json
 import os
 import sys
 from pathlib import Path
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
 from types import ModuleType
+from typing import cast
 
 ENV_VAR = "VAULT_RECALL_DISABLE"
 VAULT_VAR = "SECOND_BRAIN_VAULT"
@@ -31,22 +34,25 @@ def resolve_vault() -> Path | None:
     return root if root.is_dir() else None
 
 
-def load_ranker(root: Path) -> ModuleType | None:
-    target = root / ".ci" / "retrieval-eval.py"
+def _import(name: str, target: Path) -> ModuleType | None:
     if not target.is_file():
         return None
-    sys.path.insert(0, str(target.parent))
-    spec = importlib.util.spec_from_file_location("_vault_ranker", target)
-    if spec is None or spec.loader is None:
-        return None
+    spec = cast(ModuleSpec, importlib.util.spec_from_file_location(name, target))
     module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
+    sys.modules[name] = module
     try:
-        spec.loader.exec_module(module)
-    except Exception:
-        sys.modules.pop(spec.name, None)
+        cast(Loader, spec.loader).exec_module(module)
+    except Exception as error:
+        sys.modules.pop(name, None)
+        sys.stderr.write(f"vault-recall: cannot load {target.name}: {error}\n")
         return None
     return module
+
+
+def load_ranker(root: Path) -> ModuleType | None:
+    target = root / ".ci" / "retrieval-eval.py"
+    sys.path.insert(0, str(target.parent))
+    return _import("_vault_ranker", target)
 
 
 def read_payload() -> tuple[str, str]:
@@ -65,20 +71,7 @@ def read_payload() -> tuple[str, str]:
 
 
 def load_notespec(root: Path) -> ModuleType | None:
-    target = root / ".ci" / "notespec.py"
-    if not target.is_file():
-        return None
-    spec = importlib.util.spec_from_file_location("_vault_notespec", target)
-    if spec is None or spec.loader is None:
-        return None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    try:
-        spec.loader.exec_module(module)
-    except Exception:
-        sys.modules.pop(spec.name, None)
-        return None
-    return module
+    return _import("_vault_notespec", root / ".ci" / "notespec.py")
 
 
 def note_text(root: Path, title: str) -> tuple[Path, str] | None:
@@ -94,7 +87,7 @@ def in_scope(kn: ModuleType | None, text: str, cwd: str) -> bool:
     patterns = kn.scope_patterns(fields)
     if not patterns:
         return True
-    return kn.scope_allows(patterns, cwd or os.getcwd())
+    return bool(kn.scope_allows(patterns, cwd or os.getcwd()))
 
 
 def preamble_of(text: str) -> str:
@@ -139,7 +132,8 @@ def main() -> int:
     try:
         index = ranker.build_index(root)
         titles = ranker.search(index, prompt, MAX_NOTES * SCOPE_OVERSAMPLE)
-    except Exception:
+    except Exception as error:
+        sys.stderr.write(f"vault-recall: ranking failed: {error}\n")
         return 0
     if not titles:
         return 0
@@ -149,8 +143,13 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+def run() -> int:
     try:
-        sys.exit(main())
-    except Exception:
-        sys.exit(0)
+        return main()
+    except OSError as error:
+        sys.stderr.write(f"vault-recall: recall skipped: {error}\n")
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

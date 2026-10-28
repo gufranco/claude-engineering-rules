@@ -47,6 +47,7 @@ URGENCY_ACTION = re.compile(
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/]{200,}={0,2}")
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 
 def has_unicode_confusables(text: str) -> bool:
@@ -138,11 +139,7 @@ def main() -> int:
     if is_bypassed("read-injection-scanner"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
-
+    data = read_advisory_payload("read-injection-scanner")
     tool_name = data.get("tool_name", "")
     if tool_name not in {"Read", "WebFetch", "WebSearch"}:
         return 0

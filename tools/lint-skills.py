@@ -363,6 +363,10 @@ def discover_skills(targets: list[str], skills_dir: Path = SKILLS_DIR) -> list[P
     return sorted(p for p in skills_dir.glob("*/SKILL.md") if is_skill_dir(p))
 
 
+def exit_code(error_count: int, warning_count: int, strict: bool) -> int:
+    return 1 if error_count > 0 or (strict and warning_count > 0) else 0
+
+
 def print_text_report(reports: list[Report], strict: bool, fix_hints: bool) -> int:
     error_count = 0
     warning_count = 0
@@ -387,11 +391,7 @@ def print_text_report(reports: list[Report], strict: bool, fix_hints: bool) -> i
     print(
         f"\n{len(reports)} files scanned, {error_count} errors, {warning_count} warnings"
     )
-    if error_count > 0:
-        return 1
-    if strict and warning_count > 0:
-        return 1
-    return 0
+    return exit_code(error_count, warning_count, strict)
 
 
 def print_json_report(reports: list[Report], strict: bool) -> int:
@@ -415,11 +415,7 @@ def print_json_report(reports: list[Report], strict: bool) -> int:
     print(json.dumps(payload, indent=2))
     error_count = sum(len(r.errors) for r in reports)
     warning_count = sum(len(r.warnings) for r in reports)
-    if error_count > 0:
-        return 1
-    if strict and warning_count > 0:
-        return 1
-    return 0
+    return exit_code(error_count, warning_count, strict)
 
 
 def main(argv: list[str] | None = None) -> int:
