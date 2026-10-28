@@ -31,7 +31,8 @@ make test-all
 ## Checklist
 
 - [ ] `make test-all` passes locally, output pasted above
-- [ ] Coverage on changed files is at or above 95%
+- [ ] `make test-cov` and `make test-js` report 100% coverage with no new exclusion
+- [ ] Every visible change carries high-resolution `Before:` and `After:` screenshots
 - [ ] New rule or standard is registered in [`rules/index.yml`](../rules/index.yml)
 - [ ] New hook has tests for the block case, the allow case, and the bypass
 - [ ] New hook is wired in [`settings.json`](../settings.json) and documented in [`README.md`](../README.md)
