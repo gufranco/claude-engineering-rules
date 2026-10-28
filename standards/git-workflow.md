@@ -180,7 +180,7 @@ When a ticket ID exists, prefix it: `<TICKET-ID>: <description>`
 
 - **What**: One paragraph explaining what changed and why. A reviewer reading only this paragraph should understand the full picture.
 - **How**: Key implementation decisions, trade-offs, and anything non-obvious. Skip trivial details the diff already shows.
-- **Evidence**: A before and an after. The exact test that failed before the change and passes now, or the command output that changed. A visible UI change carries before and after screenshots. "Tests are green" on its own is a claim, not evidence.
+- **Evidence**: A before and an after. The exact test that failed before the change and passes now, or the command output that changed. A visible change on any surface, web, mobile, desktop, or terminal, attaches high-resolution screenshots labeled `Before:` and `After:` through `gh pr create --attach`, per [`frontend-render-gate.md`](frontend-render-gate.md#visual-evidence-in-published-text). "Tests are green" on its own is a claim, not evidence.
 - **Merge Danger**: Two lines, **Door** and **Blast Radius**. A two-way door is cheap to walk back; a one-way door is not. Blast radius names what breaks if the change is wrong: API consumers, layout on mobile, a scheduled job, a partner integration.
 - **Breaking changes**: If any, list them with migration steps.
 

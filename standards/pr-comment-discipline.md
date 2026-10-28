@@ -67,7 +67,7 @@ No mechanical check can enforce this, because a publishing command carries a com
 
 Polite and direct, never warm and long. A reviewer is a person with other work.
 
-- **Answer the point, then stop.** Four sentences is the ceiling. Reasoning past that belongs in the code or the pull-request description.
+- **Answer the point, then stop.** Four sentences is the ceiling. A reply about a visible fix also embeds its high-resolution `After:` screenshot, which is evidence and not a sentence, per [`frontend-render-gate.md`](frontend-render-gate.md#visual-evidence-in-published-text). Reasoning past that belongs in the code or the pull-request description.
 - **Lead with what changed.** The fix and its commit, or the answer, in the first sentence.
 - **Courtesy fits in a clause.** Never a paragraph, never an apology, never repeated thanks.
 - **No restatement.** The reviewer wrote the comment and can see it above your reply.

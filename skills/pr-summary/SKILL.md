@@ -95,7 +95,7 @@ If the PR description is empty or under 50 characters, generate a reviewer-frien
 
 - **What:** one paragraph explaining what changed and why.
 - **How:** key implementation decisions and trade-offs.
-- **Evidence:** a before and an after: the exact test that failed and now passes, or the output that changed. "Tests are green" alone is a claim. A visible UI change carries before and after screenshots; when none exist, say so rather than inventing one.
+- **Evidence:** a before and an after: the exact test that failed and now passes, or the output that changed. "Tests are green" alone is a claim. A visible change carries high-resolution screenshots labeled `Before:` and `After:`; when none exist, capture them per [`standards/frontend-render-gate.md`](../../standards/frontend-render-gate.md) before the body is published.
 - **Merge Danger:** the **Door**, one-way or two-way, and the **Blast Radius**, what breaks if the change is wrong. Always one-way: a migration that drops or rewrites data, an outbound send to users or partners, a deletion, and a public API removal.
 - **Breaking changes:** if any, with migration steps.
 
@@ -145,7 +145,7 @@ Present the full summary:
 - Stop and remove the author when they appear in the reviewer suggestions.
 - Stop and ask the user when `gh pr edit` is about to run without their approval.
 - Stop and move the question to the chat when the generated body contains an open question.
-- Stop and state that no screenshots exist when a visible UI change has none to show.
+- Stop and capture high-resolution `Before:` and `After:` screenshots when a visible change has none to show.
 
 ## Verification
 

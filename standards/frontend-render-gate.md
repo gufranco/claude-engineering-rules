@@ -4,7 +4,7 @@
 
 A change to rendered output is not verified until something has rendered it. Reading the diff, passing a jsdom unit test, and a clean type check are all necessary and none of them is sufficient.
 
-The gate applies to any diff that touches markup, styles, theme tokens, or the component tree: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.dart`, `.css`, `.scss`, and any file whose name or path marks it as a theme or design token source.
+The gate applies to any diff that touches markup, styles, theme tokens, the component tree, a desktop layout, or a terminal UI: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.dart`, `.css`, `.scss`, native view sources, `.qml`, `.ui`, `.xaml`, `.storyboard`, `.xib`, any file whose name or path marks it as a theme or design token source, and any shipped source that imports a terminal UI library. A terminal UI's render-level check is a snapshot of the rendered screen, such as textual's `snap_compare`, bubbletea's teatest golden files, or an insta snapshot of ratatui's `TestBackend`.
 
 ## Why This Rule Exists
 
@@ -84,9 +84,88 @@ agent-browser --session cart-a get text body
 
 ### What The Pull Request States
 
-The pull request body states what was clicked and what was seen, with screenshots or the path to the evidence files. A change with no rendered effect says `No UI change` in one line instead.
+The pull request body states what was clicked and what was seen, with the screenshots [Visual Evidence In Published Text](#visual-evidence-in-published-text) requires. A change with no rendered effect says `No UI change` in one line instead.
 
 Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm skill, its feature notes and launch scripts, its CLAUDE.md, and the agent-browser skill references on snapshot refs and sessions.
+
+## Visual Evidence In Published Text
+
+A reviewer judges an interface change mostly by looking at it. Every text that publishes or answers a visible change carries high-resolution screenshots: Before, unless the surface is new, and After.
+
+### Where It Applies
+
+| Channel | Carries |
+|---|---|
+| A new or edited pull request or merge request | Before and After in the body |
+| A review-thread reply after a visible fix | After, plus Before when the reply explains what changed |
+| A new issue proposing a visible change | Before of the current state, and After when a mockup or prototype exists |
+| An issue answer that ships a fix | Before and After of the fix |
+| A tracker issue or comment, such as Linear | The same as its GitHub equivalent |
+
+It applies to every surface a person looks at: web, mobile, desktop GUI, and terminal UI.
+
+### What A Valid Screenshot Is
+
+- **High resolution.** Capture at a device scale of 2 or more. The longer side must reach 1600 px. A 1x capture of a 1440x900 laptop fails; a 3x phone capture passes.
+- **Labeled.** The alt text starts with `Before:` or `After:` and names the screen, as in `After: checkout button in dark mode`.
+- **Comparable.** Before comes from the base commit with the same data, viewport, theme, locale, and window size as After. A difference the change did not cause hides the one it did.
+- **Complete.** Every state the change touches gets its pair: each theme, each breakpoint the layout changes at, and each error or empty state the diff alters.
+- **Clean.** Seeded or fake data only, never a real customer's name, email, or balance, per [`privacy-defaults.md`](../rules/privacy-defaults.md).
+
+### Capturing Before
+
+Run the base commit beside the branch, never by stashing work:
+
+```bash
+git worktree add ../before "$(git merge-base origin/main HEAD)"
+```
+
+Start it on its own port, capture the same screen, then `git worktree remove ../before`.
+
+### Capture Recipes
+
+Each recipe was run on 2026-10-28 on macOS, and the size it produced is listed.
+
+| Surface | Command | Measured output |
+|---|---|---|
+| Web | `agent-browser set viewport 1440 900 2`, then `agent-browser open <url>` and `agent-browser screenshot after.png` | 2880x1800 |
+| iOS | `xcrun simctl io booted screenshot after.png` | 1206x2622 on an iPhone simulator |
+| Android | `adb exec-out screencap -p > after.png` | 1080x2400 on a Pixel 6 emulator |
+| macOS desktop | `screencapture -o -l <window-id> after.png` on a Retina display | Not run; it needs Screen Recording permission |
+| Terminal UI | `asciinema rec --headless --window-size 100x30 -c '<command>' run.cast`, then `agg --font-size 32 run.cast run.gif` and `magick 'run.gif[-1]' after.png` | 1958x1388 |
+
+An 80x24 terminal at font size 32 renders narrower than 1600 px, so the terminal recipe pins 100x30. For a mobile layout on the web, `agent-browser set viewport 390 844 3` gives 1170x2532. A simulator or emulator started only for a capture runs headless: `xcrun simctl boot <udid>` without opening Simulator.app, and `emulator -avd <name> -no-window -no-audio`.
+
+### Publishing The Images
+
+`gh` uploads local files with `--attach '<file>#<alt text>'` on `pr create`, `pr edit`, `issue create`, `issue edit`, and `issue comment`. An uploaded image inherits the repository's visibility, so a private repository's screenshots stay private. Never commit screenshots to the repository or host them anywhere else.
+
+```bash
+gh pr create --title "..." --body-file body.md \
+  --attach 'before.png#Before: checkout button' \
+  --attach 'after.png#After: checkout button'
+```
+
+A review-thread reply cannot attach. Upload through the pull request first, read the URL back, and embed it:
+
+```bash
+gh pr edit 42 --attach 'after.png#After: focus ring'
+gh pr view 42 --json body --jq .body
+```
+
+Then reply with `![After: focus ring](<url>)` in the body. The upload also keeps the pull request's Evidence section current, which the description needs anyway.
+
+GitLab uploads through `glab api projects/:id/uploads -F file=@after.png`, and Linear through its `prepare_file_upload` tool. Each returns the Markdown to embed.
+
+### How The Hook Decides
+
+[`hooks/frontend-render-gate.py`](../hooks/frontend-render-gate.py) reads the branch diff against its base before any channel above publishes.
+
+- When the diff touches a web, mobile, desktop, or terminal surface, it blocks until the text carries an `After:` image, plus a `Before:` image when an existing surface changed or was deleted.
+- It reads each attached file's header and blocks an image whose longer side is under 1600 px, or a file that is missing or not an image.
+- A terminal surface is a source file that imports a terminal UI library, such as textual, curses, ink, bubbletea, or ratatui.
+- An issue, reply, or tracker text that describes an interface with no visible change behind it and no image raises a confirmation instead of a block.
+- When the diff cannot be read, opening or editing a pull request raises the same confirmation.
 
 ## Mobile
 
@@ -105,6 +184,9 @@ When the toolchain for a mobile target is not installed, that is a gap to close 
 | Describing a visual change in a pull request without having seen it rendered | Ships an unverified claim to a reviewer who will trust it |
 | Waiving a whole accessibility check to get past a known finding | Hides every future regression along with the known one |
 | Reporting a mobile change as verified with no simulator run | There is no evidence at any rung |
+| Publishing a visible change, or a reply about one, without Before and After screenshots | The reviewer's main criterion for an interface goes unseen |
+| Attaching a 1x capture, or a Before taken with other data, theme, or viewport than After | The pair cannot be compared, so the difference the change made stays hidden |
+| Committing screenshots to the repository or hosting them outside the platform | History grows forever, and a private repository's images leak |
 
 ## The Tooling Is Installed
 

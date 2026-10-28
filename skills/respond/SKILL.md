@@ -320,6 +320,15 @@ One reply surface. Every other row posts nothing.
 | Inline thread, bot author | None |
 | Review body, PR-level, commit comment | None. Step 6 closes them |
 
+A reply about a visible fix embeds a high-resolution `After:` screenshot, and `Before:` when the reply explains what changed. The replies endpoint cannot attach, so upload first and reuse the URL, per "Visual Evidence In Published Text" in [`../../standards/frontend-render-gate.md`](../../standards/frontend-render-gate.md):
+
+```bash
+GH_TOKEN=$(gh auth token --user <account>) gh pr edit <pr> --attach 'after.png#After: <screen>'
+GH_TOKEN=$(gh auth token --user <account>) gh pr view <pr> --json body --jq .body
+```
+
+Copy the uploaded URL into the reply body as `![After: <screen>](<url>)`.
+
 Write a JSON file to `/tmp/respond-reply-<thread-id>.json`. Single-quoted heredoc to prevent shell expansion.
 
 ```bash

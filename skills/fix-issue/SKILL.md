@@ -93,6 +93,7 @@ Run the full completion gates from [`../../rules/verification.md`](../../rules/v
 3. Type checker. Zero errors. Show output.
 4. Test suite. All pass. Show output.
 5. Build. Clean, zero warnings. Show output.
+6. Visual evidence, when the fix touches a web, mobile, desktop, or terminal surface. Capture high-resolution `Before:` from the base commit and `After:` from the branch, per "Visual Evidence In Published Text" in [`../../standards/frontend-render-gate.md`](../../standards/frontend-render-gate.md). Any issue comment announcing the fix, and the PR that ships it, attaches both with `gh ... --attach '<file>#After: <screen>'`.
 
 ### Phase 5: Commit
 
@@ -109,7 +110,7 @@ Run the full completion gates from [`../../rules/verification.md`](../../rules/v
    - Root cause or rationale.
    - Files changed.
    - Tests added.
-   - Verification evidence.
+   - Verification evidence, including the screenshot pair for a visible fix.
 
 ## Rules
 
