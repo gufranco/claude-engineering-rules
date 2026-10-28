@@ -65,24 +65,21 @@ def iter_usages(transcript_path: str) -> list[dict]:
     p = Path(transcript_path) if transcript_path else None
     if p is None or not p.is_file():
         return out
-    try:
-        with p.open(encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or not line.startswith("{"):
-                    continue
-                try:
-                    d = json.loads(line)
-                except (json.JSONDecodeError, ValueError):
-                    continue
-                if d.get("type") != "assistant":
-                    continue
-                msg = d.get("message") or {}
-                usage = msg.get("usage")
-                if isinstance(usage, dict):
-                    out.append(usage)
-    except OSError:
-        return out
+    with p.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or not line.startswith("{"):
+                continue
+            try:
+                d = json.loads(line)
+            except (json.JSONDecodeError, ValueError):
+                continue
+            if d.get("type") != "assistant":
+                continue
+            msg = d.get("message") or {}
+            usage = msg.get("usage")
+            if isinstance(usage, dict):
+                out.append(usage)
     return out
 
 
@@ -128,8 +125,6 @@ def context_fill_pct(usages: list[dict], short: str) -> int:
         + int(last.get("cache_read_input_tokens") or 0)
         + int(last.get("cache_creation_input_tokens") or 0)
     )
-    if window <= 0:
-        return 0
     pct = round(100 * used / window)
     return max(0, min(pct, 100))
 
@@ -152,7 +147,7 @@ def main() -> int:
     short = short_model_name(data.get("model", ""))
     transcript_path = data.get("transcript_path", "")
 
-    usages = iter_usages(transcript_path) if transcript_path else []
+    usages = iter_usages(transcript_path)
     totals = aggregate(usages)
     cache_pct = cache_hit_pct(totals)
     cost = session_cost_usd(totals, short)

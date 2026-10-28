@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from typing import cast
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,19 +30,13 @@ def _vault_configured() -> bool:
     raw = os.environ.get("SECOND_BRAIN_VAULT", "").strip()
     if not raw:
         return False
-    try:
-        return Path(raw).expanduser().is_dir()
-    except OSError:
-        return False
+    return Path(raw).expanduser().is_dir()
 
 
 def _is_memory_path(path: str) -> bool:
     if not path:
         return False
-    try:
-        parts = Path(path).expanduser().parts
-    except (OSError, ValueError):
-        return False
+    parts = Path(path).expanduser().parts
     if MEMORY_DIR_LEAF not in parts:
         return False
     return all(part in parts for part in REQUIRED_PATH_PARTS)
@@ -88,12 +83,9 @@ def main() -> int:
     if event.get("tool_name") not in WATCHED_TOOLS:
         return 0
 
-    tool_input = event.get("tool_input")
-    if not isinstance(tool_input, dict):
-        return 0
-
-    file_path = tool_input.get("file_path", "")
-    if not isinstance(file_path, str) or not _is_memory_path(file_path):
+    tool_input = cast("dict[str, object]", event["tool_input"])
+    file_path = str(tool_input.get("file_path") or "")
+    if not _is_memory_path(file_path):
         return 0
     tool = str(event.get("tool_name"))
     if Path(file_path).name == INDEX_NAME and _keeps_generated_index(tool, tool_input):

@@ -65,12 +65,8 @@ def _proposed_content(tool_input: dict) -> str | None:
         return tool_input.get("content")
     if "new_string" in tool_input:
         return tool_input.get("new_string")
-    if "edits" in tool_input and isinstance(tool_input["edits"], list):
-        return "\n".join(
-            edit.get("new_string", "")
-            for edit in tool_input["edits"]
-            if isinstance(edit, dict)
-        )
+    if "edits" in tool_input:
+        return "\n".join(edit.get("new_string", "") for edit in tool_input["edits"])
     return None
 
 
@@ -163,9 +159,7 @@ def _print_structure_findings(
 def _first_reason(
     findings: list[tuple[str, str]], structure_findings: list[str]
 ) -> str:
-    if findings:
-        return findings[0][1]
-    return structure_findings[0] if structure_findings else "unknown"
+    return findings[0][1] if findings else structure_findings[0]
 
 
 def _settings_path(tool_input: dict) -> str:

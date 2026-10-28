@@ -277,3 +277,48 @@ def test_blocks_a_bare_reference_in_a_repository_outside_the_config_repo(
     # Assert
     assert proc.returncode == 2
     assert "The change to docs/outside.md introduces 1 new bare" in proc.stderr
+
+
+def test_more_than_ten_findings_are_capped_in_the_report(
+    tool_use, run_in_repo: Runner, scratch_repo_root: Path
+):
+    # Arrange
+    names = [f"note{i}.md" for i in range(12)]
+    for name in names:
+        _doc(scratch_repo_root, name, "# Note\n")
+    subprocess.run(
+        ["git", "-C", str(scratch_repo_root), "add", "docs"],
+        check=True,
+        timeout=TIMEOUT_S,
+    )
+    target = _doc(scratch_repo_root, "index.md", "")
+    content = "".join(f"See `docs/{name}`.\n" for name in names)
+    payload = tool_use("Write", {"file_path": str(target), "content": content})
+
+    # Act
+    code, stderr = run_in_repo(payload)
+
+    # Assert
+    assert code == 2
+    assert "  ... and 2 more" in stderr
+
+
+def test_an_edit_whose_anchor_is_gone_is_allowed(
+    tool_use, run_in_repo: Runner, scratch_repo_root: Path
+):
+    # Arrange
+    target = _doc(scratch_repo_root, "anchor.md", "# Doc\n")
+    payload = tool_use(
+        "Edit",
+        {
+            "file_path": str(target),
+            "old_string": "missing anchor",
+            "new_string": BARE_MENTION,
+        },
+    )
+
+    # Act
+    code, stderr = run_in_repo(payload)
+
+    # Assert
+    assert (code, stderr) == (0, "")

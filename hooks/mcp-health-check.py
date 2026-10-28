@@ -65,10 +65,7 @@ def _update_state(update: Callable[[State], State]) -> State:
 
 
 def _server_name(tool_name: str) -> str:
-    parts = tool_name.split("__")
-    if len(parts) >= 2 and parts[0] == "mcp":
-        return parts[1]
-    return ""
+    return tool_name.split("__")[1]
 
 
 def _is_failure(data: dict) -> bool:

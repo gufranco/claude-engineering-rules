@@ -144,3 +144,18 @@ def test_skips_missing_staged_paths(git_repo: Path, tool_use, run_hook) -> None:
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_missing_git_binary_allows_the_commit(
+    git_repo: Path, tool_use, run_hook, tmp_path: Path
+) -> None:
+    # Arrange
+    empty = tmp_path / "no-git"
+    empty.mkdir()
+    payload = tool_use("Bash", {"command": f"git -C {git_repo} commit -m 'x'"})
+
+    # Act
+    result = run_hook(HOOK, payload, env={"PATH": str(empty)})
+
+    # Assert
+    assert_allowed(result)

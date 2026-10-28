@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import json
 from pathlib import Path
 from _helpers.hook_assertions import assert_allowed
@@ -137,3 +139,29 @@ def test_allows_unknown_event(tool_use, run_hook, tmp_path):
 
     # Assert
     assert_allowed(result)
+
+
+@pytest.mark.parametrize("event", ["PreToolUse", "PostToolUse"])
+def test_a_tool_without_a_server_name_is_ignored(tool_use, run_hook, tmp_path, event):
+    # Arrange
+    payload = tool_use("mcp__", {}, hook_event_name=event)
+
+    # Act
+    result = run_hook(HOOK, payload, env={"HOME": str(tmp_path)})
+
+    # Assert
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_an_unusable_state_file_is_audited_and_survived(tool_use, run_hook, tmp_path):
+    # Arrange
+    state = tmp_path / ".claude" / "cache" / "mcp-health.json"
+    state.mkdir(parents=True)
+    payload = tool_use("mcp__github__call", {}, hook_event_name="PostToolUse")
+
+    # Act
+    result = run_hook(HOOK, payload, env={"HOME": str(tmp_path)})
+
+    # Assert
+    assert result.code == 0
+    assert state.is_dir()

@@ -9,20 +9,10 @@ import time
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
-try:
-    from _lib.bypass import is_bypassed
-except ImportError:
-
-    def is_bypassed(_name: str) -> bool:
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.hook_profile import should_run
-except ImportError:
-
-    def should_run(_id: str) -> bool:
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 HOOK_ID = "vault-capture-queue"
@@ -92,25 +82,18 @@ def _cooling_down(session: str) -> bool:
 
 
 def _stamp(session: str) -> None:
-    try:
-        with open(_sentinel_path(session), "w", encoding="utf-8") as fh:
-            fh.write(str(time.time()))
-    except OSError:
-        return
+    with open(_sentinel_path(session), "w", encoding="utf-8") as fh:
+        fh.write(str(time.time()))
 
 
 def _tail(path: str) -> list[str]:
     if not path or not os.path.exists(path):
         return []
-    try:
-        size = os.path.getsize(path)
-        with open(path, "rb") as fh:
-            if size > TAIL_BYTES:
-                fh.seek(-TAIL_BYTES, os.SEEK_END)
-                fh.readline()
-            body = fh.read().decode("utf-8", errors="replace")
-    except OSError:
-        return []
+    with open(path, "rb") as fh:
+        if os.path.getsize(path) > TAIL_BYTES:
+            fh.seek(-TAIL_BYTES, os.SEEK_END)
+            fh.readline()
+        body = fh.read().decode("utf-8", errors="replace")
     return body.splitlines()[-TAIL_LINES:]
 
 
@@ -132,15 +115,11 @@ def _signals(lines: list[str]) -> list[str]:
     return found
 
 
-def _enqueue(root: str, entry: dict) -> bool:
+def _enqueue(root: str, entry: dict) -> None:
     directory = os.path.join(root, RUN_DIR)
-    try:
-        os.makedirs(directory, exist_ok=True)
-        with open(os.path.join(directory, QUEUE_NAME), "a", encoding="utf-8") as fh:
-            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except OSError:
-        return False
-    return True
+    os.makedirs(directory, exist_ok=True)
+    with open(os.path.join(directory, QUEUE_NAME), "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
 def _read_payload() -> dict | None:
@@ -152,10 +131,7 @@ def _read_payload() -> dict | None:
 
 
 def _inside_vault(cwd: str, root: str) -> bool:
-    try:
-        return os.path.realpath(cwd) == os.path.realpath(root)
-    except OSError:
-        return True
+    return os.path.realpath(cwd) == os.path.realpath(root)
 
 
 def _queue_entry(session: str, cwd: str, transcript: str, signals: list[str]) -> dict:
@@ -201,8 +177,13 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+def run() -> int:
     try:
-        sys.exit(main())
-    except Exception:
-        sys.exit(0)
+        return main()
+    except OSError as error:
+        sys.stderr.write(f"{HOOK_ID}: capture skipped: {error}\n")
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(run())

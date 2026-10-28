@@ -92,7 +92,7 @@ def run(
         monkeypatch.setenv(key, value)
     payload = stop_payload(cwd, session, transcript_path) if stdin is None else stdin
     monkeypatch.setattr("sys.stdin", io.StringIO(payload))
-    return module.main()
+    return module.run()
 
 
 def queued(vault: Path) -> list[dict]:
@@ -344,3 +344,47 @@ def test_an_unreadable_queue_directory_does_not_fail_the_turn(
     # Assert
     assert code == 0
     assert blocker.read_text(encoding="utf-8") == "not a directory"
+
+
+def test_a_long_transcript_is_read_from_its_tail(
+    monkeypatch, tmp_path, vault, project, transcript, no_subprocess
+):
+    # Arrange
+    path = transcript(["x" * 300 * 1024, CORRECTION_LINE])
+
+    # Act
+    code = run(monkeypatch, tmp_path, vault, project, path)
+
+    # Assert
+    assert (code, len(queued(vault))) == (0, 1)
+
+
+def test_the_session_comes_from_the_environment_when_the_payload_lacks_it(
+    monkeypatch, tmp_path, vault, project, transcript, no_subprocess
+):
+    # Arrange
+    path = transcript([CORRECTION_LINE])
+    payload = json.dumps({"cwd": str(project), "transcript_path": str(path)})
+
+    # Act
+    code = run(
+        monkeypatch, tmp_path, vault, project, path, session="env-sess", stdin=payload
+    )
+
+    # Assert
+    assert (code, queued(vault)[0]["session"]) == (0, "env-sess")
+
+
+def test_an_unreadable_transcript_is_reported_and_skipped(
+    monkeypatch, tmp_path, vault, project, transcript, no_subprocess, capsys
+):
+    # Arrange
+    path = transcript([CORRECTION_LINE])
+    Path(path).chmod(0)
+
+    # Act
+    code = run(monkeypatch, tmp_path, vault, project, path)
+
+    # Assert
+    assert (code, queued(vault)) == (0, [])
+    assert capsys.readouterr().err.startswith("vault-capture-queue: capture skipped: ")

@@ -15,10 +15,7 @@ from _lib.commit_scope import add_scope, commits_all, repo_dir, within  # noqa: 
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.output import block as _block  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit_record
-except Exception:  # noqa: BLE001
-    _audit_record = None  # type: ignore[assignment]
+from _lib.audit_log import record as _audit_record  # noqa: E402
 
 HOOK_NAME = "large-file-blocker"
 ENV_DISABLE = "LARGE_FILE_DISABLE"
@@ -114,8 +111,6 @@ def _offenders(command: str, cwd: str) -> list[tuple[str, int]]:
 
 
 def _audit(command: str) -> None:
-    if _audit_record is None:
-        return
     _audit_record(
         hook=HOOK_NAME,
         decision="block",

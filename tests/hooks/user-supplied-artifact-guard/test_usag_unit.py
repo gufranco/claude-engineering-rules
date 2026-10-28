@@ -8,21 +8,26 @@ from _usag_support import BYPASS_TTL_S, HOOK_NAME, _stage, _stdin_with
 
 from _lib.bypass_writer import set_bypass
 from _lib.output import validate_block_message
+from _helpers.audit_log_support import _read_records, isolate_audit_log
 
 
-def test_audit_noop_when_record_unavailable(
+def test_audit_records_the_block(
     hook: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
 ) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "_audit_record", None)
+    log_path = isolate_audit_log(monkeypatch, tmp_path)
 
     # Act
     hook._audit("git commit -m x", [("game.gba", "reason")])
 
     # Assert
-    assert capsys.readouterr().err == ""
+    record = _read_records(log_path)[-1]
+    assert (record["hook"], record["decision"]) == (
+        "user-supplied-artifact-guard",
+        "block",
+    )
 
 
 def test_main_env_disable_allows_a_staged_artifact(

@@ -15,6 +15,7 @@ HOOK = ROOT / "hooks" / "conventional-commits.py"
 sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
+from _helpers.audit_log_support import _read_records, isolate_audit_log  # noqa: E402
 
 TIMEOUT_S = 30
 ISOLATION = {"CLAUDE_BYPASS_STATE": os.devnull, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
@@ -384,15 +385,73 @@ def test_allows_indented_long_body_line() -> None:
     assert result.returncode == 0
 
 
-def test_audit_noop_when_record_none(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+def test_audit_records_the_block(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # Arrange
     module = _load("_cc_mod2")
-    monkeypatch.setattr(module, "_audit_record", None)
+    log_path = isolate_audit_log(monkeypatch, tmp_path)
 
     # Act
     module._audit("reason", "git commit -m msg")
 
     # Assert
-    assert capsys.readouterr().err == ""
+    record = _read_records(log_path)[-1]
+    assert (record["hook"], record["decision"]) == ("conventional-commits", "block")
+
+
+def test_an_unbalanced_command_is_allowed() -> None:
+    # Arrange
+    command = 'git commit -m "feat: unterminated'
+
+    # Act
+    result = _run(command)
+
+    # Assert
+    assert result.returncode == 0
+
+
+def test_a_commit_word_far_from_git_is_not_parsed() -> None:
+    # Arrange
+    command = "git -c a=1 -c b=2 -c c=3 -c d=4 commit -m 'not conventional'"
+
+    # Act
+    result = _run(command)
+
+    # Assert
+    assert result.returncode == 0
+
+
+def test_an_absolute_message_file_is_read(tmp_path: Path) -> None:
+    # Arrange
+    message = tmp_path / "msg.txt"
+    message.write_text("bad subject\n", encoding="utf-8")
+
+    # Act
+    result = _run(f"git commit -F {message}")
+
+    # Assert
+    assert result.returncode == 2
+
+
+def test_a_missing_message_file_is_reported_and_allowed(tmp_path: Path) -> None:
+    # Arrange
+    missing = tmp_path / "gone.txt"
+
+    # Act
+    result = _run(f"git commit -F {missing}")
+
+    # Assert
+    assert result.returncode == 0
+    assert f"cannot read {missing}" in result.stderr
+
+
+def test_an_empty_message_is_left_to_git() -> None:
+    # Arrange
+    command = "git commit -m ''"
+
+    # Act
+    result = _run(command)
+
+    # Assert
+    assert result.returncode == 0

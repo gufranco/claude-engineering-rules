@@ -187,3 +187,33 @@ def test_an_edit_above_the_compiled_index_block_is_allowed(
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_payload_without_a_path_is_allowed(tool_use, run_hook, vault):
+    # Arrange
+    payload = tool_use("Write", {"content": "x"})
+
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_an_index_edit_whose_anchor_is_missing_is_blocked(
+    tool_use, run_hook, vault, tmp_path
+):
+    # Arrange
+    index = tmp_path / ".claude" / "projects" / "-p" / "memory" / "MEMORY.md"
+    index.parent.mkdir(parents=True)
+    index.write_text("# Memory\n", encoding="utf-8")
+    payload = tool_use(
+        "Edit",
+        {"file_path": str(index), "old_string": "absent", "new_string": "new"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=vault)
+
+    # Assert
+    assert_blocked(result, "the memory directory is generated from the vault")
