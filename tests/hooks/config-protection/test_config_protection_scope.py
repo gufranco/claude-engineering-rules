@@ -61,3 +61,34 @@ def test_a_dependency_change_in_pyproject_passes(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def test_bootstrapping_a_new_strict_pyproject_passes(tool_use, run_hook, tmp_path):
+    # Arrange
+    target = tmp_path / "pyproject.toml"
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "[tool.mypy]\nstrict = true\n"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_overwriting_an_existing_strict_pyproject_blocks(tool_use, run_hook, tmp_path):
+    # Arrange
+    target = tmp_path / "pyproject.toml"
+    target.write_text("[tool.mypy]\nstrict = true\n", encoding="utf-8")
+    payload = tool_use(
+        "Write",
+        {"file_path": str(target), "content": "[tool.mypy]\nstrict = false\n"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "BLOCKED: edits to")

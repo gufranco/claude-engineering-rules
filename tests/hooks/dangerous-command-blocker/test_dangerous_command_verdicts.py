@@ -9,6 +9,7 @@ HOOKS_DIR = Path(__file__).resolve().parents[3] / "hooks"
 if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 
+from _lib.dangerous_command_push import push_segment  # noqa: E402
 from _lib.dangerous_command_verdicts import (  # noqa: E402
     first_notice,
     targets_protected,
@@ -45,6 +46,28 @@ def test_targets_protected_reads_ref_and_branch(
 
     # Act
     result = targets_protected(matched, current)
+
+    # Assert
+    assert result is expected
+
+
+@pytest.mark.parametrize(
+    ("command", "branch", "expected"),
+    [
+        ("git push origin feat && gh pr create --base develop", "feature", False),
+        ("git push origin feat && git log develop", "feature", False),
+        ("git push origin main", "feature", True),
+        ("GH_TOKEN=$(gh auth token --user x) git push origin main", "feature", True),
+    ],
+)
+def test_targets_protected_scopes_to_the_push_segment(
+    command: str, branch: str, expected: bool
+) -> None:
+    # Arrange
+    segment = push_segment(command) or command
+
+    # Act
+    result = targets_protected(segment, branch)
 
     # Assert
     assert result is expected
