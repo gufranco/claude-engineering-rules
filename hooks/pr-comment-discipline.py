@@ -10,28 +10,13 @@ import sys
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.bypass import is_bypassed  # type: ignore
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_id: str) -> bool:  # type: ignore
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.hook_profile import should_run  # type: ignore
-except Exception:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 HOOK_ID = "pr-comment-discipline"

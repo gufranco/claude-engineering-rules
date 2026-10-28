@@ -11,15 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-try:
-    from _lib import knowledge_notes as kn
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib import knowledge_notes as kn  # noqa: E402
 
-try:
-    from _lib.project_scope import repo_root
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib.project_scope import repo_root  # noqa: E402
 
 ENABLE_VAR = "VAULT_AUTO_CAPTURE"
 DISABLE_VAR = "VAULT_CAPTURE_DISABLE"

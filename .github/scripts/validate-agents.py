@@ -7,7 +7,6 @@ import sys
 CLAUDE_DIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
-AGENTS_DIR = os.path.join(CLAUDE_DIR, "agents")
 VALID_MODELS = {"haiku", "sonnet", "opus"}
 REQUIRED_FIELDS = {"name", "description", "tools", "model"}
 
@@ -32,12 +31,9 @@ def parse_frontmatter(content):
         if kv_match:
             current_key = kv_match.group(1)
             value = kv_match.group(2).strip()
+            list_values = []
             if value:
                 fields[current_key] = value
-                list_values = []
-            else:
-                list_values = []
-            continue
 
     return fields
 
@@ -62,8 +58,8 @@ def _field_errors(rel_path: str, fields: dict[str, str | list[str]]) -> list[str
 
 
 def _body_errors(rel_path: str, content: str) -> list[str]:
-    body = content.split("---", 2)[-1] if content.count("---") >= 2 else ""
-    body_offset = content.find(body) if body else 0
+    body = content.split("---", 2)[-1]
+    body_offset = content.find(body)
     body_line_start = content[:body_offset].count("\n") + 1
     errors: list[str] = []
     if "Do not spawn subagents" not in body:
@@ -78,8 +74,8 @@ def _body_errors(rel_path: str, content: str) -> list[str]:
     return errors
 
 
-def validate_agent(filepath):
-    rel_path = os.path.relpath(filepath, CLAUDE_DIR)
+def validate_agent(filepath, claude_dir=CLAUDE_DIR):
+    rel_path = os.path.relpath(filepath, claude_dir)
     with open(filepath) as f:
         content = f.read()
     fields = parse_frontmatter(content)
@@ -88,32 +84,30 @@ def validate_agent(filepath):
     return [*_field_errors(rel_path, fields), *_body_errors(rel_path, content)]
 
 
-def main():
-    agent_files = sorted(glob.glob(os.path.join(AGENTS_DIR, "*.md")))
+SKIP_FILES = frozenset({"TEMPLATE.md", "_shared-principles.md"})
 
+
+def main(claude_dir=CLAUDE_DIR):
+    agent_files = [
+        path
+        for path in sorted(glob.glob(os.path.join(claude_dir, "agents", "*.md")))
+        if os.path.basename(path) not in SKIP_FILES
+    ]
     if not agent_files:
         print("No agent files found in agents/")
-        sys.exit(0)
-
-    skip_files = {"TEMPLATE.md", "_shared-principles.md"}
-    agent_files = [f for f in agent_files if os.path.basename(f) not in skip_files]
-
-    all_errors = []
-    for filepath in agent_files:
-        errors = validate_agent(filepath)
-        all_errors.extend(errors)
-
+        return 0
+    all_errors = [
+        error for path in agent_files for error in validate_agent(path, claude_dir)
+    ]
     print(f"Validated {len(agent_files)} agent definitions")
-
     if all_errors:
         print(f"\nFAILED: {len(all_errors)} error(s) found:\n")
-        for e in all_errors:
-            print(e)
-        sys.exit(1)
-    else:
-        print("PASSED: All agent definitions valid")
-        sys.exit(0)
+        for error in all_errors:
+            print(error)
+        return 1
+    print("PASSED: All agent definitions valid")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

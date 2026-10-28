@@ -8,12 +8,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 WINDOW_SECONDS = 7 * 24 * 60 * 60

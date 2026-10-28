@@ -10,86 +10,81 @@ CLAUDE_DIR = os.path.dirname(
 )
 
 
-def count_files(pattern):
-    return len(glob.glob(os.path.join(CLAUDE_DIR, pattern)))
+def count_files(pattern, base_dir=CLAUDE_DIR):
+    return len(glob.glob(os.path.join(base_dir, pattern)))
 
 
-def count_lines_matching(filepath, pattern):
+def count_lines_matching(filepath, pattern, base_dir=CLAUDE_DIR):
     try:
-        with open(os.path.join(CLAUDE_DIR, filepath)) as f:
+        with open(os.path.join(base_dir, filepath), encoding="utf-8") as f:
             return sum(1 for line in f if re.search(pattern, line))
     except FileNotFoundError:
         return 0
 
 
-def count_index_entries(section):
+def count_index_entries(section, base_dir=CLAUDE_DIR):
     try:
-        with open(os.path.join(CLAUDE_DIR, "rules/index.yml")) as f:
+        with open(os.path.join(base_dir, "rules/index.yml"), encoding="utf-8") as f:
             content = f.read()
-        in_section = False
-        count = 0
-        for line in content.splitlines():
-            if line.startswith(f"{section}:"):
-                in_section = True
-                continue
-            if in_section:
-                if re.match(r"^[a-z]", line):
-                    break
-                if re.match(r"^  [a-z]", line) and not line.strip().startswith("path:"):
-                    if not line.strip().startswith(
-                        "description:"
-                    ) and not line.strip().startswith("triggers:"):
-                        count += 1
-        return count
     except FileNotFoundError:
         return 0
+    in_section = False
+    count = 0
+    for line in content.splitlines():
+        if line.startswith(f"{section}:"):
+            in_section = True
+        elif in_section and re.match(r"^[a-z]", line):
+            break
+        elif in_section and re.match(r"^  [a-z]", line):
+            count += 1
+    return count
 
 
-def count_mcp_servers():
+def count_mcp_servers(base_dir=CLAUDE_DIR):
     try:
-        with open(os.path.join(CLAUDE_DIR, "settings.json")) as f:
+        with open(os.path.join(base_dir, "settings.json"), encoding="utf-8") as f:
             data = json.load(f)
         return len(data.get("mcpServers", {}))
     except (FileNotFoundError, json.JSONDecodeError):
         return 0
 
 
-def count_run_tests():
+def count_run_tests(base_dir=CLAUDE_DIR):
     try:
-        with open(os.path.join(CLAUDE_DIR, "tests/test-hooks.sh")) as f:
+        with open(os.path.join(base_dir, "tests/test-hooks.sh"), encoding="utf-8") as f:
             content = f.read()
         return len(re.findall(r"^run_test ", content, re.MULTILINE))
     except FileNotFoundError:
         return 0
 
 
-def count_agents():
+def count_agents(base_dir=CLAUDE_DIR):
     excluded = {"TEMPLATE.md", "_shared-principles.md"}
-    paths = glob.glob(os.path.join(CLAUDE_DIR, "agents/*.md"))
+    paths = glob.glob(os.path.join(base_dir, "agents/*.md"))
     return len([p for p in paths if os.path.basename(p) not in excluded])
 
 
-def count_lang_rules():
-    paths = glob.glob(os.path.join(CLAUDE_DIR, "rules/lang/*.md"))
+def count_lang_rules(base_dir=CLAUDE_DIR):
+    paths = glob.glob(os.path.join(base_dir, "rules/lang/*.md"))
     return len([p for p in paths if os.path.basename(p) != "README.md"])
 
 
-def derive_counts():
+def derive_counts(base_dir=CLAUDE_DIR):
+    checklist = "checklists/checklist.md"
     return {
-        "rules": count_files("rules/*.md"),
-        "lang_rules": count_lang_rules(),
-        "agents": count_agents(),
-        "always_on_rules": count_index_entries("always_loaded"),
-        "standards": count_files("standards/*.md"),
-        "skills": count_files("skills/*/SKILL.md"),
-        "hooks": count_files("hooks/*.sh") + count_files("hooks/*.py"),
-        "checklist_items": count_lines_matching("checklists/checklist.md", r"^- \["),
-        "checklist_categories": count_lines_matching(
-            "checklists/checklist.md", r"^### \d+"
-        ),
-        "mcp_servers": count_mcp_servers(),
-        "test_cases": count_run_tests(),
-        "on_demand_standards": count_index_entries("on_demand"),
+        "rules": count_files("rules/*.md", base_dir),
+        "lang_rules": count_lang_rules(base_dir),
+        "agents": count_agents(base_dir),
+        "always_on_rules": count_index_entries("always_loaded", base_dir),
+        "standards": count_files("standards/*.md", base_dir),
+        "skills": count_files("skills/*/SKILL.md", base_dir),
+        "hooks": count_files("hooks/*.sh", base_dir)
+        + count_files("hooks/*.py", base_dir),
+        "checklist_items": count_lines_matching(checklist, r"^- \[", base_dir),
+        "checklist_categories": count_lines_matching(checklist, r"^### \d+", base_dir),
+        "mcp_servers": count_mcp_servers(base_dir),
+        "test_cases": count_run_tests(base_dir),
+        "on_demand_standards": count_index_entries("on_demand", base_dir),
     }
 
 
@@ -194,7 +189,7 @@ def _match_mismatches(prefix, count_key, match, counts):
     return [f"{prefix}found {found}, expected {expected}"]
 
 
-def scan_file(filepath, counts):
+def scan_file(filepath, counts, base_dir=CLAUDE_DIR):
     mismatches = []
     matched_labels = set()
     try:
@@ -202,7 +197,7 @@ def scan_file(filepath, counts):
             content = f.read()
     except (OSError, UnicodeDecodeError) as error:
         return [f"  {filepath}: unreadable: {error}"], matched_labels
-    rel_path = os.path.relpath(filepath, CLAUDE_DIR)
+    rel_path = os.path.relpath(filepath, base_dir)
     for line_num, line in enumerate(content.splitlines(), 1):
         for pattern, count_key, desc in COUNT_CHECKS:
             prefix = f"  {rel_path}:{line_num}: {desc}: "
@@ -230,7 +225,7 @@ def dead_patterns(matched_labels):
     ]
 
 
-def files_to_scan():
+def files_to_scan(base_dir=CLAUDE_DIR):
     paths = []
     for pattern in [
         "*.md",
@@ -240,7 +235,7 @@ def files_to_scan():
         "skills/review/reviewer-prompt.md",
         "checklists/*.md",
     ]:
-        paths.extend(glob.glob(os.path.join(CLAUDE_DIR, pattern)))
+        paths.extend(glob.glob(os.path.join(base_dir, pattern)))
     return sorted(set(paths))
 
 
@@ -264,23 +259,23 @@ def _print_failures(all_mismatches, dead):
         print("\nRestore the prose the check expects, or update the check.")
 
 
-def main():
-    counts = derive_counts()
+def main(base_dir=CLAUDE_DIR):
+    counts = derive_counts(base_dir)
     _print_counts(counts)
     all_mismatches = []
     matched_labels = set()
-    for filepath in files_to_scan():
-        mismatches, labels = scan_file(filepath, counts)
+    for filepath in files_to_scan(base_dir):
+        mismatches, labels = scan_file(filepath, counts, base_dir)
         all_mismatches.extend(mismatches)
         matched_labels |= labels
     dead = dead_patterns(matched_labels)
     if all_mismatches or dead:
         _print_failures(all_mismatches, dead)
-        sys.exit(1)
+        return 1
     print("PASSED: All count references match source, and every required")
     print("check matched at least once.")
-    sys.exit(0)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -10,36 +10,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
-try:
-    from _lib import knowledge_notes as kn
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib import knowledge_notes as kn  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.bypass import is_bypassed
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_name: str) -> bool:
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.output import block as _block
-except Exception:  # pragma: no cover
-    _block = None
+from _lib.output import block as _block  # noqa: E402
 
-try:
-    from _lib import project_workspace as pw
-except ImportError:  # pragma: no cover
-    pw = None
+from _lib import project_workspace as pw  # noqa: E402
 
 
 HOOK = "knowledge-note-guard"

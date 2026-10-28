@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.cov_env import apply_coverage_env
 
 HOOK = Path(__file__).resolve().parents[3] / "hooks" / "vault-compile.py"
 
@@ -28,7 +29,7 @@ def run(
         input=json.dumps(payload),
         capture_output=True,
         text=True,
-        env=env,
+        env=apply_coverage_env(env),
         check=False,
         timeout=30,
     )

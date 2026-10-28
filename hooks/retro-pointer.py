@@ -36,26 +36,22 @@ def _already_shown() -> bool:
 
 
 def _mark_shown() -> None:
-    try:
-        with open(_sentinel_path(), "w", encoding="utf-8") as fh:
-            fh.write(str(int(time.time())))
-    except OSError:
-        return
+    with open(_sentinel_path(), "w", encoding="utf-8") as fh:
+        fh.write(str(int(time.time())))
+
+
+def _tail_lines(path: str, limit: int) -> list[str]:
+    if not path or not os.path.isfile(path):
+        return []
+    with open(path, "rb") as fh:
+        if os.path.getsize(path) > limit:
+            fh.seek(-limit, os.SEEK_END)
+            fh.readline()
+        return fh.read().decode("utf-8", errors="replace").splitlines()
 
 
 def _read_tail() -> list[str]:
-    try:
-        size = os.path.getsize(LOG_PATH)
-    except OSError:
-        return []
-    try:
-        with open(LOG_PATH, "rb") as fh:
-            if size > TAIL_BYTES:
-                fh.seek(-TAIL_BYTES, os.SEEK_END)
-                fh.readline()
-            return fh.read().decode("utf-8", errors="replace").splitlines()
-    except OSError:
-        return []
+    return _tail_lines(LOG_PATH, TAIL_BYTES)
 
 
 def _matches_session(entry: dict, sid: str) -> bool:
@@ -106,20 +102,7 @@ TRANSCRIPT_TAIL_LINES = 200
 
 
 def _read_transcript_tail(transcript_path: str) -> list[str]:
-    if not transcript_path or not os.path.exists(transcript_path):
-        return []
-    try:
-        size = os.path.getsize(transcript_path)
-    except OSError:
-        return []
-    try:
-        with open(transcript_path, "rb") as fh:
-            if size > TRANSCRIPT_TAIL_BYTES:
-                fh.seek(-TRANSCRIPT_TAIL_BYTES, os.SEEK_END)
-                fh.readline()
-            return fh.read().decode("utf-8", errors="replace").splitlines()
-    except OSError:
-        return []
+    return _tail_lines(transcript_path, TRANSCRIPT_TAIL_BYTES)
 
 
 def _error_fragments(line: str) -> list[str]:
@@ -213,8 +196,7 @@ def _report() -> int:
         *_block_notices(blocks, bypasses, hooks),
         *_instinct_notices(instinct_patterns),
     ]
-    if notices:
-        emit_user_notice("\n".join(notices))
+    emit_user_notice("\n".join(notices))
     _mark_shown()
     return 0
 

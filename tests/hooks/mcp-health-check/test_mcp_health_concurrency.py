@@ -6,6 +6,7 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from _helpers.cov_env import apply_coverage_env
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK_PATH = ROOT / "hooks" / "mcp-health-check.py"
@@ -24,7 +25,9 @@ def _failure(tmp_home: Path) -> int:
         input=json.dumps(payload),
         capture_output=True,
         text=True,
-        env={**os.environ, "HOME": str(tmp_home), "CLAUDE_HOOK_AUDIT_DISABLE": "1"},
+        env=apply_coverage_env(
+            {**os.environ, "HOME": str(tmp_home), "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
+        ),
         timeout=30,
         check=False,
     )

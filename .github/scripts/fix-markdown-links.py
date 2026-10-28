@@ -85,18 +85,13 @@ def _retarget_link(line: str, f: BrokenLinkFinding) -> str | None:
 
 
 def apply_fixes(file_path: Path, findings: list[Finding]) -> int:
-    if not findings:
-        return 0
     return _apply_line_edits(file_path, findings, _wrap_token)
 
 
 def apply_broken_target_fixes(
     file_path: Path, findings: list[BrokenLinkFinding]
 ) -> int:
-    fixable = [f for f in findings if f.correct_path is not None]
-    if not fixable:
-        return 0
-    return _apply_line_edits(file_path, fixable, _retarget_link)
+    return _apply_line_edits(file_path, findings, _retarget_link)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -114,6 +109,12 @@ def _parse_args() -> argparse.Namespace:
         help="Also fix files under specs/.",
     )
     parser.add_argument(
+        "--root",
+        type=Path,
+        default=REPO_ROOT,
+        help="Repository whose Markdown is fixed. Defaults to this repository.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print the fixes without writing.",
@@ -121,10 +122,10 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _resolve_files(requested: list[str]) -> list[str]:
+def _resolve_files(requested: list[str], root: Path) -> list[str]:
     if requested:
-        return [str(Path(f).resolve().relative_to(REPO_ROOT)) for f in requested]
-    return tracked_markdown_files(REPO_ROOT)
+        return [str(Path(f).resolve().relative_to(root)) for f in requested]
+    return tracked_markdown_files(root)
 
 
 def _print_preview(
@@ -146,13 +147,15 @@ def _fix_broken(
         )
         return len(fixable), text
     applied = apply_broken_target_fixes(path, fixable)
-    if applied:
-        print(f"rewrote {applied} broken target(s) in {rel}")
+    print(f"rewrote {applied} broken target(s) in {rel}")
     return applied, path.read_text(encoding="utf-8")
 
 
-def _fix_bare(path: Path, rel: str, text: str, tracked: set[str], dry_run: bool) -> int:
-    findings = detect_findings(text, rel, REPO_ROOT, tracked=tracked)
+def _fix_bare(
+    path: Path, rel: str, text: str, tracked: set[str], args: argparse.Namespace
+) -> int:
+    dry_run = args.dry_run
+    findings = detect_findings(text, rel, args.root, tracked=tracked)
     if not findings:
         return 0
     if dry_run:
@@ -161,25 +164,24 @@ def _fix_bare(path: Path, rel: str, text: str, tracked: set[str], dry_run: bool)
         )
         return len(findings)
     applied = apply_fixes(path, findings)
-    if applied:
-        print(f"wrapped {applied} bare reference(s) in {rel}")
+    print(f"wrapped {applied} bare reference(s) in {rel}")
     return applied
 
 
 def _fix_file(
     rel: str, args: argparse.Namespace, tracked: set[str]
 ) -> tuple[int, list[BrokenLinkFinding]]:
-    path = REPO_ROOT / rel
+    path = args.root / rel
     if is_advisory_file(rel) and not args.include_advisory:
         return 0, []
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return 0, []
-    broken = detect_broken_link_targets(text, rel, REPO_ROOT, tracked=tracked)
+    broken = detect_broken_link_targets(text, rel, args.root, tracked=tracked)
     fixable = [f for f in broken if f.correct_path is not None]
     broken_count, text = _fix_broken(path, rel, text, fixable, args.dry_run)
-    bare_count = _fix_bare(path, rel, text, tracked, args.dry_run)
+    bare_count = _fix_bare(path, rel, text, tracked, args)
     return broken_count + bare_count, [f for f in broken if f.correct_path is None]
 
 
@@ -199,8 +201,9 @@ def _report_unfixable(unfixable: list[BrokenLinkFinding]) -> None:
 
 def main() -> int:
     args = _parse_args()
-    files = _resolve_files(args.files)
-    tracked = tracked_paths(REPO_ROOT)
+    args.root = args.root.resolve()
+    files = _resolve_files(args.files, args.root)
+    tracked = tracked_paths(args.root)
     outcomes = [(rel, *_fix_file(rel, args, tracked)) for rel in files]
     grand_total = sum(count for _, count, _ in outcomes)
     touched_files = {rel for rel, count, _ in outcomes if count}

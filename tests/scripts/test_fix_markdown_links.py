@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import sys
 from collections.abc import Callable
@@ -19,21 +18,17 @@ Scratch = Callable[[str, str], Path]
 FixRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 
-def _install_fix_script(root: Path) -> Path:
-    script = root / FIX_SCRIPT_RELATIVE
-    script.parent.mkdir(parents=True)
-    shutil.copyfile(REPO_ROOT / FIX_SCRIPT_RELATIVE, script)
-    (root / "hooks").symlink_to(REPO_ROOT / "hooks", target_is_directory=True)
-    return script
-
-
 @pytest.fixture
 def run_fix(scratch_repo_root: Path) -> FixRunner:
-    script = _install_fix_script(scratch_repo_root)
-
     def _run(*args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(script), *args],
+            [
+                sys.executable,
+                str(REPO_ROOT / FIX_SCRIPT_RELATIVE),
+                "--root",
+                str(scratch_repo_root),
+                *args,
+            ],
             capture_output=True,
             text=True,
             env=apply_coverage_env(dict(os.environ)),

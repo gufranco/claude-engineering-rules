@@ -2,79 +2,83 @@
 import os
 import re
 import sys
+import time
 from pathlib import Path
 
 BASE_DIR = Path.home() / ".claude" / "projects"
-ERRORS: list[str] = []
-WARNINGS: list[str] = []
+STALE_AFTER_DAYS = 180
+SECONDS_PER_DAY = 86400
+FILE_REFERENCE = re.compile(r"`(/[^`]+\.(?:ts|js|py|go|rs|md|json|yaml|yml))`")
 
 
-def find_memory_dirs() -> list[Path]:
-    dirs = []
-    if not BASE_DIR.exists():
-        return dirs
-    for project in BASE_DIR.iterdir():
-        mem_dir = project / "memory"
-        if mem_dir.is_dir():
-            dirs.append(mem_dir)
-    return dirs
+def find_memory_dirs(base_dir: Path) -> list[Path]:
+    if not base_dir.exists():
+        return []
+    return sorted(
+        project / "memory"
+        for project in base_dir.iterdir()
+        if (project / "memory").is_dir()
+    )
 
 
-def check_memory_file(path: Path) -> None:
-    with open(path) as f:
-        content = f.read()
-
-    file_refs = re.findall(r"`(/[^`]+\.(ts|js|py|go|rs|md|json|yaml|yml))`", content)
-    for ref, _ in file_refs:
-        if not os.path.exists(ref):
-            WARNINGS.append(f"{path}: references non-existent file: {ref}")
-
-    age_days = (__import__("time").time() - os.path.getmtime(path)) / 86400
-    if age_days > 180:
-        WARNINGS.append(
-            f"{path}: last modified {int(age_days)} days ago — consider reviewing for staleness"
-        )
-
+def check_memory_file(path: Path, now: float) -> list[str]:
+    content = path.read_text(encoding="utf-8")
+    missing = [
+        f"{path}: references non-existent file: {ref}"
+        for ref in FILE_REFERENCE.findall(content)
+        if not os.path.exists(ref)
+    ]
+    age_days = (now - path.stat().st_mtime) / SECONDS_PER_DAY
+    stale = (
+        [
+            f"{path}: last modified {int(age_days)} days ago, "
+            "consider reviewing for staleness"
+        ]
+        if age_days > STALE_AFTER_DAYS
+        else []
+    )
     lines = [
         line.strip()
         for line in content.split("\n")
         if line.strip() and not line.startswith("---") and not line.startswith("#")
     ]
-    if len(lines) < 2:
-        WARNINGS.append(f"{path}: nearly empty — may be a stub or failed write")
+    empty = (
+        [f"{path}: nearly empty, may be a stub or failed write"]
+        if len(lines) < 2
+        else []
+    )
+    return [*missing, *stale, *empty]
 
 
-def main() -> None:
-    memory_dirs = find_memory_dirs()
+def memory_files(memory_dirs: list[Path]) -> list[Path]:
+    return [
+        mem_file
+        for mem_dir in memory_dirs
+        for mem_file in sorted(mem_dir.glob("*.md"))
+        if mem_file.name != "MEMORY.md"
+    ]
+
+
+def main(base_dir: Path = BASE_DIR, now: float | None = None) -> int:
+    memory_dirs = find_memory_dirs(base_dir)
     if not memory_dirs:
         print("No memory directories found.")
-        return
+        return 0
 
-    total = 0
-    for mem_dir in memory_dirs:
-        for mem_file in mem_dir.glob("*.md"):
-            if mem_file.name == "MEMORY.md":
-                continue
-            check_memory_file(mem_file)
-            total += 1
+    files = memory_files(memory_dirs)
+    clock = time.time() if now is None else now
+    warnings = [warning for path in files for warning in check_memory_file(path, clock)]
+    print(f"Scanned {len(files)} memory files across {len(memory_dirs)} project(s).")
 
-    print(f"Scanned {total} memory files across {len(memory_dirs)} project(s).")
-
-    if WARNINGS:
-        print(f"\n{len(WARNINGS)} potential issues:")
-        for w in WARNINGS:
-            print(f"  WARN: {w}")
-
-    if ERRORS:
-        print(f"\n{len(ERRORS)} errors:")
-        for e in ERRORS:
-            print(f"  ERROR: {e}")
-        sys.exit(1)
-    elif WARNINGS:
+    if warnings:
+        print(f"\n{len(warnings)} potential issues:")
+        for warning in warnings:
+            print(f"  WARN: {warning}")
         print("\nReview warnings above. No automatic changes were made.")
     else:
         print("All memory files look healthy.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
