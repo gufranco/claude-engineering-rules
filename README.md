@@ -15,7 +15,7 @@
 
 </div>
 
-**47** always-on rules · **141** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**48** always-on rules · **142** on-demand standards · **42** slash-command skills · **91** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,13 +24,13 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-90 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+91 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-47 universal rules ship with every conversation. 141 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 141.
+48 universal rules ship with every conversation. 142 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 141.
 
 </td>
 </tr>
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-47 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
+48 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -113,6 +113,7 @@ A layered config where each layer catches what the layer above missed.
 | [`agent-operating-limits`](rules/agent-operating-limits.md) | Backstops versus budgets, turn ceilings that carry their measurement, caps whose overflow is reported rather than dropped, the cost of a denied call and of unconditional context injection, and fail-closed on any check that could not run |
 | [`deviation-waivers`](rules/deviation-waivers.md) | Deviating from a rule is allowed, deviating silently is not. A structured waiver with scope, approver, alternatives, and a revisit condition, distinct from a mechanical bypass because it answers a different question. A project's own instruction file may explicitly override a global rule inside that project, never across the security, legal, data-loss, verification, or truthfulness lines |
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, spec-folder links, hyperbole tells, and self-criticism from commit messages, PR descriptions, published docs, and messages to colleagues |
+| [`no-committed-symlinks`](rules/no-committed-symlinks.md) | No repository tracks a symbolic link. Shared source goes through the build, a file needed twice is committed once, and a file from a submodule is committed as its own bytes |
 | [`doc-truth`](rules/doc-truth.md) | Documentation that describes code is a claim about the code. A change that falsifies a claim corrects it in the same commit. Four mechanically certain checks at `git commit`; historical records exempt. A project doc that describes a convention the code consistently no longer follows is stale: the code wins and every mismatch is reported |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
 | [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas kept in the plan folder inside the local workspace, and a close-out merge that folds a completed change into the spec |
@@ -137,7 +138,7 @@ Six more rules in [`rules/`](rules/) load every session like the rest and apply 
 
 ### Standards, loaded on demand
 
-141 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+142 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, print design, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
@@ -194,7 +195,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-90 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+91 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -257,6 +258,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`internal-config-leakage.py`](hooks/internal-config-leakage.py) | PreToolUse Bash/Write/Edit | Prevents internal config references in external output. A `gh` or `glab` call that only reads, such as `view`, `list`, `--help`, or an `api` GET, is not publishing |
 | [`kubectl-context-guard.py`](hooks/kubectl-context-guard.py) | PreToolUse Bash | Forces `--context` or `KUBECONFIG` per call |
 | [`large-file-blocker.py`](hooks/large-file-blocker.py) | PreToolUse Bash | Blocks commits with files over 5MB: the staged blob, plus files that `commit -a` or a same-command `git add` will include, in the repository a leading `cd` or `git -C` names |
+| [`symlink-commit-blocker.py`](hooks/symlink-commit-blocker.py) | PreToolUse Bash | Blocks commits that would record a symbolic link: a staged mode `120000` entry, plus paths that `commit -a` or a same-command `git add` will include. Removing a tracked link is allowed |
 | [`markdown-link-discipline.py`](hooks/markdown-link-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks new bare file mentions in markdown when the path resolves to a real repo file |
 | [`mcp-health-check.py`](hooks/mcp-health-check.py) | PreToolUse/PostToolUse `mcp__*` | Tracks MCP server health in `cache/mcp-health.json`. Short-circuits calls to servers past the unhealthy-failure threshold |
 | [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse Write/Edit | Forces idempotent DDL: `IF NOT EXISTS` where PostgreSQL supports it, `OR REPLACE` for functions, views, triggers and procedures, a guarded `DO` block for types, policies, roles and users, and `IF EXISTS` on every `DROP` |
@@ -509,14 +511,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 888-item review checklist across 71 categories
-  rules/                 47 short rule cores, each linking to its full text
+  rules/                 48 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             141 on-demand standards, including the full text of every rule
+  standards/             142 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 90 runtime hooks
+  hooks/                 91 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -556,7 +558,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 141 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 142 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
 
 </details>
 

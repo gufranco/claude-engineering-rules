@@ -19,6 +19,7 @@ MINIMAL_HOOKS = frozenset(
         "ai-attribution-blocker",
         "ai-process-leak-blocker",
         "large-file-blocker",
+        "symlink-commit-blocker",
         "user-supplied-artifact-guard",
         "english-only-reminder",
         "config-protection",
