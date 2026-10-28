@@ -62,6 +62,7 @@ PAYLOAD_FLAGS = ("--input", "--data", "--data-binary", "--data-raw", "-d")
 FIELD_FLAGS = ("-f", "--field", "--raw-field", "-F")
 
 WRITE_METHODS = ("post", "put", "patch")
+HELP_FLAGS = frozenset({"--help", "-h"})
 
 
 def _tokens(command: str) -> list[str]:
@@ -293,15 +294,22 @@ def _api_violation(
     return None
 
 
-def _cli_violation(executed: str, segments: list[list[str]]) -> tuple[str, str] | None:
-    if PR_COMMENT.search(executed):
+def _runs(pattern: re.Pattern[str], segments: list[list[str]]) -> bool:
+    return any(
+        pattern.search(" ".join(segment)) and not HELP_FLAGS.intersection(segment)
+        for segment in segments
+    )
+
+
+def _cli_violation(segments: list[list[str]]) -> tuple[str, str] | None:
+    if _runs(PR_COMMENT, segments):
         return _violation("PRC001")
     if any(
         PR_REVIEW.search(" ".join(segment)) and _review_has_body(segment)
         for segment in segments
     ):
         return _violation("PRC002")
-    if GLAB_MR_NOTE.search(executed):
+    if _runs(GLAB_MR_NOTE, segments):
         return _violation("PRC006")
     return None
 
@@ -334,9 +342,7 @@ def _curl_violation(command: str, executed: str, cwd: str) -> tuple[str, str] | 
 def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
     segments = _command_segments(command)
     executed = strip_heredoc_bodies(command)
-    violation = _cli_violation(executed, segments) or _gh_api_violation(
-        command, segments, cwd
-    )
+    violation = _cli_violation(segments) or _gh_api_violation(command, segments, cwd)
     if violation is not None:
         return violation
     if GLAB_API.search(executed) and _writes(command, GLAB_API):
