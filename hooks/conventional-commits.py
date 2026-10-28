@@ -14,10 +14,7 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.shell_segments import strip_heredoc_bodies  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit_record
-except Exception:  # noqa: BLE001
-    _audit_record = None  # type: ignore[assignment]
+from _lib.audit_log import record as _audit_record  # noqa: E402
 
 HOOK_NAME = "conventional-commits"
 ENV_DISABLE = "CONVENTIONAL_COMMITS_DISABLE"
@@ -92,7 +89,7 @@ def _message_sources(tokens: list[str]) -> tuple[list[str], list[str]]:
             continue
         if kind == "message":
             messages = [*messages, value]
-        elif kind == "file":
+        else:
             files = [*files, value]
     return messages, files
 
@@ -127,8 +124,6 @@ def _extract_message(command: str, cwd: str = "") -> str:
 
 
 def _audit(reason: str, command: str) -> None:
-    if _audit_record is None:
-        return
     _audit_record(
         hook=HOOK_NAME,
         decision="block",
@@ -140,9 +135,7 @@ def _audit(reason: str, command: str) -> None:
 
 
 def _block(message: str, reason: str, command: str) -> int:
-    sys.stderr.write(message)
-    if not message.endswith("\n"):
-        sys.stderr.write("\n")
+    sys.stderr.write(message.rstrip("\n") + "\n")
     _audit(reason, command)
     return 2
 
@@ -231,8 +224,6 @@ def _trailer_violation(lines: list[str]) -> tuple[str, str] | None:
 
 def _validate(message: str, command: str) -> int:
     lines = message.splitlines()
-    if not lines:
-        return 0
     violation = (
         _subject_violation(lines[0])
         or _body_violation(lines)

@@ -12,10 +12,7 @@ from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit_record
-except Exception:  # noqa: BLE001
-    _audit_record = None  # type: ignore[assignment]
+from _lib.audit_log import record as _audit_record  # noqa: E402
 
 HOOK_NAME = "env-file-guard"
 ENV_DISABLE = "ENV_FILE_GUARD_DISABLE"
@@ -49,8 +46,6 @@ def _read_payload() -> tuple[str, str]:
 
 
 def _audit(reason: str, tool: str, file_path: str) -> None:
-    if _audit_record is None:
-        return
     _audit_record(
         hook=HOOK_NAME,
         decision="block",
