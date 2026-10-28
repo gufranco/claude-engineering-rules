@@ -15,7 +15,7 @@
 
 </div>
 
-**46** always-on rules · **140** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**47** always-on rules · **141** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -30,7 +30,7 @@
 <td width="50%" valign="top">
 
 ### Two-Tier Rule Loading
-46 universal rules ship with every conversation. 140 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 140.
+47 universal rules ship with every conversation. 141 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 141.
 
 </td>
 </tr>
@@ -85,7 +85,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-46 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the five listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
+47 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -133,11 +133,11 @@ A layered config where each layer catches what the layer above missed.
 
 Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
-Five more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`emulator-runs`](rules/emulator-runs.md) for launching an emulator headless or minimised and never full screen, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
+Six more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`emulator-runs`](rules/emulator-runs.md) for launching an emulator headless or minimised and never full screen, [`docker-dependencies`](rules/docker-dependencies.md) for keeping every project dependency in the Docker image and none on the host, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
 
 ### Standards, loaded on demand
 
-140 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+141 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, print design, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
@@ -509,10 +509,10 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 888-item review checklist across 71 categories
-  rules/                 46 short rule cores, each linking to its full text
+  rules/                 47 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             140 on-demand standards, including the full text of every rule
+  standards/             141 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
@@ -556,7 +556,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 140 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 141 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
 
 </details>
 
