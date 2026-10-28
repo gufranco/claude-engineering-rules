@@ -165,10 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.cmd == "watch-list":
         return _cmd_watch_list(args)
-    if args.cmd == "quarterly-check":
-        return _cmd_quarterly_check(args)
-    parser.print_usage(sys.stderr)
-    return 2
+    return _cmd_quarterly_check(args)
 
 
 if __name__ == "__main__":

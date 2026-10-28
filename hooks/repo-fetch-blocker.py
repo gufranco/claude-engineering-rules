@@ -81,7 +81,7 @@ def _block_reason(label: str, why: str) -> str:
     )
 
 
-def emit_block(label: str, why: str, command: str) -> None:
+def emit_block(label: str, why: str, command: str) -> int:
     reason = _block_reason(label, why)
     payload = {
         "hookSpecificOutput": {
@@ -100,7 +100,7 @@ def emit_block(label: str, why: str, command: str) -> None:
         tool="Bash",
         command_excerpt=command[:200],
     )
-    sys.exit(2)
+    return 2
 
 
 def main() -> int:
@@ -123,8 +123,7 @@ def main() -> int:
         return 0
 
     label, why = offender
-    emit_block(label, why, command)
-    return 2
+    return emit_block(label, why, command)
 
 
 if __name__ == "__main__":

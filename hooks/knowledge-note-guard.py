@@ -153,24 +153,19 @@ def emit(findings: list[tuple[str, int, str]], rel: Path) -> None:
     why = "\n".join(f"{code}: {EXPLANATIONS[code]}" for code in codes)
     fix = "\n".join(f"{code}: {FIXES[code]}" for code in codes)
     _audit(hook=HOOK, decision="block", codes=codes, path=str(rel))
-    if _block is None:  # pragma: no cover
-        sys.stderr.write(
-            f"BLOCKED by {HOOK} ({RULE_ANCHOR})\n\n{detected}\n\n{why}\n\n{fix}\n"
+    sys.stderr.write(
+        _block(
+            hook=HOOK,
+            rule_anchor=RULE_ANCHOR,
+            detected=detected,
+            why=why,
+            fix=fix,
+            bypass_when="the note is a fixture, an imported artifact kept verbatim, or a genuine false positive on the volatile-claim heuristic.",
+            decision="FIX-AND-RETRY",
+            env_var=ENV_VAR,
+            safety="an unspecced note degrades retrieval quietly, and no later gate will catch it.",
         )
-    else:
-        sys.stderr.write(
-            _block(
-                hook=HOOK,
-                rule_anchor=RULE_ANCHOR,
-                detected=detected,
-                why=why,
-                fix=fix,
-                bypass_when="the note is a fixture, an imported artifact kept verbatim, or a genuine false positive on the volatile-claim heuristic.",
-                decision="FIX-AND-RETRY",
-                env_var=ENV_VAR,
-                safety="an unspecced note degrades retrieval quietly, and no later gate will catch it.",
-            )
-        )
+    )
     sys.exit(2)
 
 
@@ -218,7 +213,6 @@ def main() -> None:
     if not raw_path:
         sys.exit(0)
     handle_edit(tool, tool_input, Path(raw_path), root)
-    sys.exit(0)
 
 
 def in_workspace(rel: Path, root: Path) -> bool:
@@ -250,5 +244,5 @@ def handle_edit(tool: str, tool_input: dict, path: Path, root: Path) -> None:
     sys.exit(0)
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     main()

@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+from importlib.abc import Loader
+from importlib.machinery import ModuleSpec
+from typing import cast
 import re
 import sys
 
@@ -15,11 +18,9 @@ TEST_SHAPED = re.compile(r"(^test_|_test\.py$|\.test\.py$|^conftest\.py$)")
 
 def load_index() -> dict:
     path = ROOT / ".github" / "scripts" / "validate-cross-refs.py"
-    spec = importlib.util.spec_from_file_location("_cross_refs", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot load the index parser from {path}")
+    spec = cast(ModuleSpec, importlib.util.spec_from_file_location("_cross_refs", path))
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    cast(Loader, spec.loader).exec_module(module)
     return module.parse_index_yml(str(ROOT / "rules" / "index.yml"))
 
 

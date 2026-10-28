@@ -104,6 +104,7 @@ AGENT_META_QUESTIONS = [
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def build_pattern(phrases: list[str], boundary: bool = True) -> re.Pattern:
@@ -152,31 +153,18 @@ def is_skipped_md_path(path: str) -> bool:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
     fp = tool_input.get("file_path", "") or ""
     if tool == "Bash":
-        c = tool_input.get("command", "")
-        if isinstance(c, str) and is_publishing_bash(c):
-            out.append(("bash command", c))
-    elif tool == "Write" and fp.lower().endswith(".md") and not is_skipped_md_path(fp):
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((fp, c))
-    elif tool == "Edit" and fp.lower().endswith(".md") and not is_skipped_md_path(fp):
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((fp, c))
-    elif (
-        tool == "MultiEdit"
-        and fp.lower().endswith(".md")
-        and not is_skipped_md_path(fp)
-    ):
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((f"{fp} [{i}]", c))
-    return out
+        command = str(tool_input.get("command") or "")
+        return [("bash command", command)] if is_publishing_bash(command) else []
+    if not fp.lower().endswith(".md") or is_skipped_md_path(fp):
+        return []
+    if tool == "MultiEdit":
+        return [
+            (f"{fp} [{i}]", str(edit.get("new_string") or ""))
+            for i, edit in enumerate(tool_input.get("edits") or [])
+        ]
+    return [(fp, text) for _, text in payload_fragments(tool, tool_input)]
 
 
 def find_agent_meta_question(prompt: str) -> str | None:

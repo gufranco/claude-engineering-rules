@@ -64,7 +64,7 @@ MISSING_TOKEN_MESSAGE = (
 )
 
 
-def _block(message: str, command: str) -> None:
+def _block(message: str, command: str) -> int:
     print(message, file=sys.stderr)
     _audit(
         hook="gh-token-guard",
@@ -73,7 +73,7 @@ def _block(message: str, command: str) -> None:
         reason="gh CLI without explicit GH_TOKEN",
         command_excerpt=command[:240],
     )
-    sys.exit(2)
+    return 2
 
 
 def _disabled() -> bool:
@@ -86,22 +86,21 @@ def main() -> int:
     if _disabled():
         return 0
     if not should_run("gh-token-guard"):
-        sys.exit(0)
+        return 0
     data = read_hook_payload("gh-token-guard")
 
     command = data.get("tool_input", data.get("input", {})).get("command", "")
     if not command:
-        sys.exit(0)
+        return 0
 
     if GH_AUTH_SWITCH.search(mask_literal_text(command)):
-        _block(AUTH_SWITCH_MESSAGE, command)
+        return _block(AUTH_SWITCH_MESSAGE, command)
 
     if not any(_needs_token(call) for call in invocations(command, "gh")):
-        sys.exit(0)
+        return 0
 
-    _block(f"{MISSING_TOKEN_MESSAGE}Command: {command}", command)
-    return 2
+    return _block(f"{MISSING_TOKEN_MESSAGE}Command: {command}", command)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

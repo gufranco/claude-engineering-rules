@@ -412,3 +412,17 @@ def test_multiedit_collects_findings(tool_use, run_hook):
 
     # Assert
     assert_blocked(result, "Blocked")
+
+
+def test_an_unclosed_indexes_array_is_not_reported(tool_use, run_hook):
+    # Arrange
+    content = "Model.init({}, { indexes: [ { fields: ['email'] }\n"
+    payload = tool_use(
+        "Write", {"file_path": "/repo/src/models/user.ts", "content": content}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert result.code == 0

@@ -17,6 +17,7 @@ MIGRATION_PATH_RE = re.compile(
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def is_prisma_migration(path: str) -> bool:
@@ -253,25 +254,8 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     fp = tool_input.get("file_path", "") or ""
     if not is_prisma_migration(fp):
         return []
-    out: list[tuple[str, str]] = []
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((fp, c))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((fp, c))
-    elif tool == "MultiEdit":
-        merged = []
-        for edit in tool_input.get("edits", []) or []:
-            if isinstance(edit, dict):
-                ns = edit.get("new_string", "")
-                if isinstance(ns, str):
-                    merged.append(ns)
-        if merged:
-            out.append((fp, "\n".join(merged)))
-    return out
+    texts = [text for _, text in payload_fragments(tool, tool_input)]
+    return [(fp, "\n".join(texts))] if texts else []
 
 
 from _lib.hook_profile import should_run  # noqa: E402

@@ -257,9 +257,7 @@ def _file_kind(fp: str) -> str | None:
     return None
 
 
-def _collect_write(fp: str, kind: str, content: object) -> list[Item]:
-    if not isinstance(content, str):
-        return []
+def _collect_write(fp: str, kind: str, content: str) -> list[Item]:
     if kind != "json-maybe":
         return [(fp, "content", "markdown", content)]
     if not looks_like_publishing_json(content):
@@ -270,14 +268,6 @@ def _collect_write(fp: str, kind: str, content: object) -> list[Item]:
     return [(fp, label, "payload", text) for label, text in blocks]
 
 
-def _collect_multiedit(fp: str, content_kind: str, edits: list[object]) -> list[Item]:
-    return [
-        (fp, f"edits[{i}].new_string", content_kind, edit.get("new_string", ""))
-        for i, edit in enumerate(edits)
-        if isinstance(edit, dict) and isinstance(edit.get("new_string", ""), str)
-    ]
-
-
 def _collect_file(tool: str, tool_input: dict, fp: str) -> list[Item]:
     if is_skipped_md_path(fp):
         return []
@@ -285,14 +275,12 @@ def _collect_file(tool: str, tool_input: dict, fp: str) -> list[Item]:
     if kind is None:
         return []
     if tool == "Write":
-        return _collect_write(fp, kind, tool_input.get("content", ""))
+        return _collect_write(fp, kind, str(tool_input.get("content") or ""))
     content_kind = "markdown" if kind == "markdown" else "payload"
-    if tool == "Edit":
-        content = tool_input.get("new_string", "")
-        if not isinstance(content, str):
-            return []
-        return [(fp, "new_string", content_kind, content)]
-    return _collect_multiedit(fp, content_kind, tool_input.get("edits", []) or [])
+    return [
+        (fp, name, content_kind, text)
+        for name, text in payload_fragments(tool, tool_input)
+    ]
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
@@ -354,6 +342,7 @@ def find_leaks(text: str, content_kind: str) -> list[str]:
 
 
 from _lib.hook_profile import should_run  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def _should_skip() -> bool:

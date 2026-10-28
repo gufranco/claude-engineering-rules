@@ -389,3 +389,24 @@ def test_identity_text_inside_a_commit_message_body_is_data(
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_directory_outside_any_repository_has_no_local_user_block(tmp_path):
+    # Arrange
+    import importlib.util
+    import sys
+
+    hook_path = Path(__file__).resolve().parents[3] / "hooks" / "git-author-guard.py"
+    sys.path.insert(0, str(hook_path.parent))
+    spec = importlib.util.spec_from_file_location("git_author_guard_units", hook_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    folder = tmp_path / "plain"
+    folder.mkdir()
+
+    # Act
+    result = module.has_local_user_block(folder)
+
+    # Assert
+    assert result is False
