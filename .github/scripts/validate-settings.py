@@ -10,6 +10,7 @@ CLAUDE_DIR = os.path.dirname(
 SETTINGS_PATH = os.path.join(CLAUDE_DIR, "settings.json")
 
 DENY_PATTERN = re.compile(r"^(Read|Write|Edit)\(.+\)$")
+MCP_TOOL_MATCHER = re.compile(r"^mcp__[A-Za-z0-9-]+__[A-Za-z0-9_]+$")
 
 WHOLE_TOOL_DENIES = {
     "Agent",
@@ -93,7 +94,7 @@ def validate_hooks(data):
         for hook_group in hooks.get(phase, []):
             matcher = hook_group.get("matcher", "")
             for token in matcher.split("|") if matcher else [""]:
-                if token not in KNOWN_MATCHERS:
+                if token not in KNOWN_MATCHERS and not MCP_TOOL_MATCHER.match(token):
                     errors.append(f"  Unknown hook matcher '{token}' in {phase}")
 
             for hook in hook_group.get("hooks", []):

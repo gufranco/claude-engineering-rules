@@ -274,6 +274,15 @@
         ]
       },
       {
+        "matcher": "mcp__linear-onyxodds__save_issue|mcp__linear-onyxodds__save_comment|mcp__linear-lineleap__save_issue|mcp__linear-lineleap__save_comment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/frontend-render-gate.py"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
