@@ -234,7 +234,7 @@ jobs:
         run: bash tests/test-hooks.sh
 
       - name: Hook performance check
-        run: bash .github/scripts/hook-benchmark.sh --threshold 500
+        run: make benchmark
 
   pytest:
     name: Python unit + integration
