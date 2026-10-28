@@ -53,6 +53,7 @@ That expands to:
 | `make test-bats` | bats-core suites for the shell scripts in [`.github/scripts/`](.github/scripts); fails when none exist |
 | `make test-smoke` | the hook smoke suite, [`tests/test-hooks.sh`](tests/test-hooks.sh) |
 | `make benchmark` | every registered PreToolUse hook under 500 ms |
+| `make mutation-scan` | the in-place mutation scan CI runs over every tracked JS and TS file |
 | `make lint` | ruff, shellcheck, actionlint, yamllint, zizmor, lint-skills |
 | `make typecheck` | mypy --strict |
 | `make validate` | the eleven repository validators under [`.github/scripts/`](.github/scripts) |

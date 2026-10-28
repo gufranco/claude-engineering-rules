@@ -93,7 +93,7 @@ PYTEST_N   ?= auto
 
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
-.PHONY: help install test test-fast test-cov test-js test-bats test-analyzers test-smoke benchmark test-all \
+.PHONY: help install test test-fast test-cov test-js test-bats test-analyzers test-smoke benchmark mutation-scan test-all \
         lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
@@ -109,7 +109,8 @@ help:
 	@echo "  test-analyzers  Prove every analyzer catalog rule against the real tools, local only"
 	@echo "  test-smoke   Run the hook smoke suite CI runs, tests/test-hooks.sh"
 	@echo "  benchmark    Hold every hook under 500 ms, as CI does"
-	@echo "  test-all     test-cov + test-js + test-bats + test-smoke + benchmark + lint + typecheck + validate"
+	@echo "  mutation-scan  Scan tracked JS and TS files for in-place mutation, as CI does"
+	@echo "  test-all     test-cov + test-js + test-bats + test-smoke + benchmark + mutation-scan + lint + typecheck + validate"
 	@echo "  lint         All linters: ruff + shellcheck + actionlint + yamllint + zizmor + lint-skills"
 	@echo "  lint-skills  tools/lint-skills.py --strict over every skill"
 	@echo "  format       ruff format (writes)"
@@ -161,7 +162,13 @@ test-smoke:
 benchmark:
 	$(PYTHON) .github/scripts/hook-benchmark.py --threshold 500
 
-test-all: test-cov test-js test-bats test-smoke benchmark lint typecheck validate
+MUTATION_SCAN_GLOBS := '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' '*.mts' '*.cts'
+
+mutation-scan:
+	git ls-files -- $(MUTATION_SCAN_GLOBS) ':!:tests/corpus/' \
+		| MUTATION_METHOD_BATCH_MODE=1 $(PYTHON) hooks/mutation-method-blocker.py
+
+test-all: test-cov test-js test-bats test-smoke benchmark mutation-scan lint typecheck validate
 
 lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills
 

@@ -25,8 +25,15 @@ async function rootWithConfig(config) {
 }
 
 function collector() {
-  const lines = [];
-  return { lines, push: (line) => lines.push(line) };
+  let lines = [];
+  return {
+    get lines() {
+      return lines;
+    },
+    record: (line) => {
+      lines = [...lines, line];
+    },
+  };
 }
 
 const GOOD_NOTES = async () => "## 0.2.0\n\n* add a rule\n* stop a misfire\n";
@@ -105,7 +112,7 @@ test("run prints the notes and the preset when asked", async () => {
   const out = collector();
 
   // Act
-  const code = await run(root, ["--print"], GOOD_NOTES, out.push, out.push);
+  const code = await run(root, ["--print"], GOOD_NOTES, out.record, out.record);
 
   // Assert
   assert.equal(code, 0);
@@ -124,8 +131,8 @@ test("run reports the default preset and a missing plugin", async () => {
 
   // Act
   const codes = [
-    await run(configured, [], GOOD_NOTES, ok.push, ok.push),
-    await run(missing, [], GOOD_NOTES, bad.push, bad.push),
+    await run(configured, [], GOOD_NOTES, ok.record, ok.record),
+    await run(missing, [], GOOD_NOTES, bad.record, bad.record),
   ];
 
   // Assert
