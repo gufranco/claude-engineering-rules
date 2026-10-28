@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+from typing import cast
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 
@@ -209,10 +210,11 @@ def format_file_list(paths: list[str]) -> str:
     return listed
 
 
-def _commit_command(payload: dict) -> str | None:
+def _commit_command(payload: dict[str, object]) -> str | None:
     if payload.get("tool_name") != "Bash":
         return None
-    command = payload.get("tool_input", {}).get("command", "")
+    tool_input = cast("dict[str, object]", payload["tool_input"])
+    command = str(tool_input.get("command") or "")
     if not GIT_COMMIT_INVOCATION.search(strip_git_global_options(command)):
         return None
     return command
@@ -360,12 +362,14 @@ def check_publications(found: list[Publication], repo: str) -> int:
     return 0
 
 
-def _publications(payload: dict, cwd: str) -> tuple[list[Publication], str]:
-    tool_input = payload.get("tool_input", {})
+def _publications(
+    payload: dict[str, object], cwd: str
+) -> tuple[list[Publication], str]:
+    tool_input = cast("dict[str, object]", payload["tool_input"])
     tracked = tracker_publication(str(payload.get("tool_name", "")), tool_input)
     if tracked is not None:
         return [tracked], cwd
-    if payload.get("tool_name") != "Bash" or not isinstance(tool_input, dict):
+    if payload.get("tool_name") != "Bash":
         return [], cwd
     command = str(tool_input.get("command", ""))
     repo = repo_dir(command, cwd)
@@ -378,7 +382,8 @@ def main() -> int:
     if is_bypassed("frontend-render-gate"):
         return 0
     payload = read_hook_payload("frontend-render-gate")
-    cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
+    raw_cwd = payload.get("cwd")
+    cwd = raw_cwd if isinstance(raw_cwd, str) else ""
     command = _commit_command(payload)
     if command is not None and check_commit(command, cwd) != 0:
         return 2
