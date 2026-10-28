@@ -1321,6 +1321,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/coverage-exclusion-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/scope-guard.py"
           }
         ]

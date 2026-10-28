@@ -48,7 +48,7 @@ always_loaded:
     triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation", recommendation, "recommend an option", "which do you recommend", "option trade-off", "pick an option", choice, options]
 
   testing:
-    description: Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines
+    description: Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines, 100% per-file coverage with no exclusion directives, unreachable code treated as a design defect, 100% end-to-end coverage of entry points and scenarios
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   verification:
@@ -921,7 +921,7 @@ on_demand:
 
   testing:
     path: standards/testing.md
-    description: "Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines"
+    description: "Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines, 100% per-file coverage with no exclusion directives, unreachable code treated as a design defect, 100% end-to-end coverage of entry points and scenarios"
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   tone-and-writing:

@@ -108,7 +108,7 @@ One change has one intent stated in a sentence. "Add a dark-mode toggle." "Rate-
 ## Cross-References
 
 - [`normative-keywords.md`](../rules/normative-keywords.md): the keyword vocabulary requirements are written in.
-- [`testing.md`](../rules/testing.md): the Given/When/Then scenario shape and the 95% coverage gate scenarios feed.
+- [`testing.md`](../rules/testing.md): the Given/When/Then scenario shape and the 100% coverage gate and end-to-end coverage the scenarios feed.
 - [`surgical-edits.md`](../rules/surgical-edits.md): the diff-level discipline delta specs mirror, and the triviality skip list.
 - [`code-style.md`](../rules/code-style.md): delivery-path consistency and destructive-action discipline the merge follows.
 - [`../skills/plan/SKILL.md`](../skills/plan/SKILL.md): the operational steps for delta authoring and the close-out merge.

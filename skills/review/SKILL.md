@@ -241,7 +241,7 @@ Say in the terminal report which side got the line-by-line pass and which side w
      | Middle Man | A unit that mostly delegates onward | Remove it and call the real target |
      | Refused Bequest | A subclass or implementer that overrides most of what it inherits | Replace inheritance with composition |
    - **Pass 3: Cascading fix analysis.** Category 16. For every issue: if the author fixes it exactly as suggested, what new problems could that introduce?
-11. **Run local verification**: test, with coverage, lint, build. After tests pass, verify that coverage on changed files and their direct dependents meets 95%. Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
+11. **Run local verification**: test, with coverage, lint, build. After tests pass, verify that coverage on changed files and their direct dependents is 100%, with no exclusion directive added. Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8. If coverage is below threshold, flag it as a blocking finding.
 12. **Check external sources.** If the PR description, commit messages, or code comments reference external projects, articles, or third-party codebases as inspiration, apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. If no references are found, ask the author: "Were any external projects or codebases used as reference during implementation?" If yes, run the clean room checks against the diff. If no, skip category 50.
 13. **Check branch freshness, CI, test evidence, PR size**, parallel. PR > 400 lines = warning, > 1000 = blocking.
 
@@ -485,7 +485,7 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 | Partially covered | N |
 | Missing coverage | N |
 | Untestable | N |
-| Coverage ratio | N% (PASS if >= 95%, FAIL otherwise) |
+| Coverage ratio | N% (PASS at 100%, FAIL otherwise) |
 
 ### Critical Findings
 <severity: critical or high>
@@ -501,8 +501,8 @@ Analyze a feature or module from a QA perspective. Read implementation, identify
 <prioritized list, grouped by severity>
 ```
 
-1. **Verdict.** If coverage ratio is below 95%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths, auth, data writes, error handling is a blocking finding.
-2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](../../rules/testing.md): three blocks opened by the bare `Arrange`, `Act`, `Assert` markers and no other comment, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify 95% is met.
+1. **Verdict.** If coverage ratio is below 100%, the QA verdict is FAIL regardless of other findings. Missing coverage on critical paths, auth, data writes, error handling is a blocking finding.
+2. **Fix mode**, if `--fix`: present report first, wait for confirmation. Generate tests following [`rules/testing.md`](../../rules/testing.md): three blocks opened by the bare `Arrange`, `Act`, `Assert` markers and no other comment, real database, faker for test data. Run test suite after writing. Re-check coverage after adding tests to verify every file is at 100%.
 
 ### 30 QA Rules Reference
 
@@ -655,7 +655,7 @@ Critical findings always default to ASK. Informational findings default to AUTO-
 - The terminal report names the standards loaded in step 6 and carries the Behavioral Flow Analysis, blast radius, and `## Spec` sections.
 - Every finding carries a confidence score of 5 or higher, and every computable finding shows its executed output.
 - A posted review has an empty top-level `body`, one `event`, and inline comments anchored inside hunk ranges.
-- `/review qa` reports a coverage ratio with PASS at 95% or higher, and every finding cites `file:line` and a QA rule number.
+- `/review qa` reports a coverage ratio with PASS only at 100%, and every finding cites `file:line` and a QA rule number.
 - `/review design` reports the dimension scorecard, and every finding cites `file:line` and its rule.
 - Every `gh` call in the run carried an inline `GH_TOKEN` for the account matched from the remote, and the global active account never changed.
 
