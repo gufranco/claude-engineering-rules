@@ -107,3 +107,14 @@ def test_invocations_ignore_other_binaries():
 
     # Assert
     assert result == []
+
+
+def test_segments_keep_operators_inside_double_quotes():
+    # Arrange
+    command = 'rg "a|gh api user" docs && ls'
+
+    # Act
+    result = segments(command)
+
+    # Assert
+    assert result == ['rg "a|gh api user" docs', "ls"]

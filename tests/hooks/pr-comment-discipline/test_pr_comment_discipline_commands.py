@@ -195,3 +195,22 @@ def test_stdin_payload_falls_back_to_the_command(tool_use, run_hook):
 
     # Assert
     assert_blocked(result, "PRC004")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh pr comment --help",
+        "gh pr comment 12 -h",
+        "glab mr note --help",
+    ],
+)
+def test_allows_help_requests_for_comment_commands(tool_use, run_hook, command):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
