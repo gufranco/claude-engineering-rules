@@ -440,3 +440,19 @@ def test_skips_non_scan_extensions(tool_use, run_hook, faker):
 
     # Assert
     assert_allowed(result)
+
+
+def test_allows_console_output_and_storage_keys_without_personal_data(
+    tool_use, run_hook
+):
+    # Arrange
+    content = (
+        'console.log("cart total", total);\nlocalStorage.setItem("theme", "dark");\n'
+    )
+    payload = tool_use("Write", {"file_path": "/repo/src/cart.ts", "content": content})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert result.code == 0

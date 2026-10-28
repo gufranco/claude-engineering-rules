@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import fcntl
-import json
 import os
 import subprocess
 import sys
@@ -12,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _lib import knowledge_notes as kn  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 from _lib.project_scope import repo_root  # noqa: E402
 
@@ -151,9 +151,8 @@ def _separator(existing: str) -> str:
 def main() -> int:
     if os.environ.get(ENABLE_VAR) != "1" or os.environ.get(DISABLE_VAR) == "1":
         return 0
-    try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
+    payload = read_advisory_payload("vault-session-capture")
+    if not payload:
         return 0
     root = kn.vault_root()
     if root is None:

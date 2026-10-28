@@ -178,3 +178,47 @@ def test_ignores_multiedit_non_dict_edit(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_waived_assembly_source_is_not_checked(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/work/src/example-project/asm/boot.asm",
+            "content": "; reset vector\n",
+        },
+    )
+
+    # Act
+    result = run_hook("comment-blocker", payload)
+
+    # Assert
+    assert result.code == 0
+
+
+def test_unreadable_stdin_is_blocked():
+    # Arrange
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from _helpers.cov_env import apply_coverage_env
+
+    hook = Path(__file__).resolve().parents[3] / "hooks" / "comment-blocker.py"
+
+    # Act
+    proc = subprocess.run(
+        [sys.executable, str(hook)],
+        input="not json",
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env(dict(os.environ)),
+        timeout=30,
+        check=False,
+    )
+
+    # Assert
+    assert proc.returncode == 2
+    assert "could not read its input" in proc.stderr

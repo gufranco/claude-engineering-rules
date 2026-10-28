@@ -375,3 +375,33 @@ def test_git_status_non_zero_returncode(tmp_path: Path) -> None:
     assert result.returncode == 0
     body = snapshot.read_text(encoding="utf-8")
     assert "not a git repo" in body
+
+
+def test_a_legacy_snapshot_that_cannot_be_removed_is_reported(tmp_path: Path) -> None:
+    # Arrange
+    home = tmp_path / "home"
+    project = tmp_path / "project"
+    _make_dirs(home, project)
+    (home / ".claude" / ".compact-context").mkdir(parents=True)
+    env = {"HOME": str(home), "CLAUDE_COMPACT_CONTEXT": ""}
+
+    # Act
+    result = _run("pre", env=env, cwd=project)
+
+    # Assert
+    assert result.returncode == 0
+    assert "could not remove" in result.stderr
+
+
+def test_an_unreadable_snapshot_is_reported_and_skipped(tmp_path: Path) -> None:
+    # Arrange
+    snapshot = tmp_path / "snapshot.txt"
+    snapshot.write_text(_snapshot_for(tmp_path), encoding="utf-8")
+    snapshot.chmod(0)
+
+    # Act
+    result = _run("post", env={"CLAUDE_COMPACT_CONTEXT": str(snapshot)}, cwd=tmp_path)
+
+    # Assert
+    assert (result.returncode, result.stdout) == (0, "")
+    assert f"could not read {snapshot}" in result.stderr

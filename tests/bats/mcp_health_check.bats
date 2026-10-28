@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 setup() {
-  SCRIPT="$BATS_TEST_DIRNAME/../../.github/scripts/mcp-health-check.sh"
+  SCRIPT="$BATS_TEST_DIRNAME/../../.github/scripts/mcp-server-probe.py"
   export HOME="$BATS_TEST_TMPDIR/home"
   mkdir -p "$HOME/.claude"
 }
@@ -15,7 +15,7 @@ write_settings() {
   write_settings '{"mcpServers": {"ok": {"command": "true"}}}'
 
   # Act
-  run bash "$SCRIPT"
+  run python3 "$SCRIPT"
 
   # Assert
   [ "$status" -eq 0 ]
@@ -28,7 +28,7 @@ write_settings() {
   write_settings '{"mcpServers": {"slow": {"command": "sleep", "args": ["10"]}}}'
 
   # Act
-  run bash "$SCRIPT"
+  run python3 "$SCRIPT"
 
   # Assert
   [ "$status" -eq 0 ]
@@ -40,7 +40,7 @@ write_settings() {
   write_settings '{"mcpServers": {"bad": {"command": "false"}}}'
 
   # Act
-  run bash "$SCRIPT" --verbose
+  run python3 "$SCRIPT" --verbose
 
   # Assert
   [ "$status" -eq 1 ]
@@ -53,7 +53,7 @@ write_settings() {
   write_settings '{"mcpServers": {"remote": {"type": "http", "url": "https://example.invalid/mcp"}}}'
 
   # Act
-  run bash "$SCRIPT"
+  run python3 "$SCRIPT"
 
   # Assert
   [ "$status" -eq 0 ]
@@ -66,7 +66,7 @@ write_settings() {
   write_settings '{"mcpServers": {"spaced": {"command": "test", "args": ["a b", "=", "a b"]}}}'
 
   # Act
-  run bash "$SCRIPT"
+  run python3 "$SCRIPT"
 
   # Assert
   [ "$status" -eq 0 ]
@@ -78,7 +78,7 @@ write_settings() {
   write_settings '{"mcpServers": {}}'
 
   # Act
-  run bash "$SCRIPT"
+  run python3 "$SCRIPT"
 
   # Assert
   [ "$status" -eq 0 ]
@@ -90,7 +90,7 @@ write_settings() {
   rm -f "$HOME/.claude/settings.json"
 
   # Act
-  run bash "$SCRIPT"
+  run python3 "$SCRIPT"
 
   # Assert
   [ "$status" -eq 1 ]
