@@ -9,8 +9,6 @@
     "pr": "",
     "sessionUrl": false
   },
-  "disableRemoteControl": true,
-  "remoteControlAtStartup": false,
   "includeGitInstructions": false,
   "permissions": {
     "allow": [
@@ -95,7 +93,6 @@
       "SendMessage"
     ]
   },
-  "model": "opus",
   "hooks": {
     "PostCompact": [
       {
@@ -1664,6 +1661,11 @@
       "node_modules"
     ]
   },
+  "disableAgentView": true,
+  "disableRemoteControl": true,
+  "disableWorkflows": true,
+  "enableWorkflows": false,
+  "workflowKeywordTriggerEnabled": false,
   "statusLine": {
     "type": "command",
     "command": "python3 ~/.claude/scripts/statusline.py"
@@ -1676,6 +1678,12 @@
   "modelSettings": {
     "claude-opus-5": {
       "effortLevel": "medium"
+    },
+    "claude-opus-4-8": {
+      "effortLevel": "high"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "high"
     }
   },
   "autoUpdatesChannel": "stable",
@@ -1683,6 +1691,7 @@
   "showThinkingSummaries": true,
   "skipWorkflowUsageWarning": true,
   "switchModelsOnFlag": false,
+  "remoteControlAtStartup": false,
   "autoMode": {
     "allow": [
       "$defaults",
@@ -2040,9 +2049,5 @@
     "vercel": {
       "url": "https://mcp.vercel.com"
     }
-  },
-  "disableWorkflows": true,
-  "enableWorkflows": false,
-  "workflowKeywordTriggerEnabled": false,
-  "disableAgentView": true
+  }
 }
