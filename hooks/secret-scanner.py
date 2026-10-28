@@ -7,12 +7,7 @@ import sys
 from typing import NoReturn
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 COMMIT_PATTERN = re.compile(r"\bgit\s+commit\b")

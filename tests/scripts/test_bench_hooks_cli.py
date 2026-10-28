@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,7 @@ from _helpers.bench_hooks_support import (
     _write_hook,
     bench_hooks,
 )
+from _helpers.cov_env import apply_coverage_env
 
 
 DEFAULT_PAYLOAD_COUNT = 3
@@ -268,6 +270,7 @@ def test_main_module_runs_via_subprocess(
     # Act
     proc = subprocess.run(
         _json_cli_command(script, hooks_dir),
+        env=apply_coverage_env(dict(os.environ)),
         capture_output=True,
         text=True,
         timeout=30,

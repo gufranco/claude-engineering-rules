@@ -21,12 +21,7 @@ from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.shell_segments import command_head, quoted_segments  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 HOOK_ID = "ai-review-request"

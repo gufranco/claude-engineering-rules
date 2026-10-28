@@ -11,6 +11,7 @@ _BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+
 _BASE64_INDEX: dict[str, int] = {ch: i for i, ch in enumerate(_BASE64_CHARS)}
 
 _SOURCE_MAP_CACHE: dict[str, dict[str, Any] | None] = {}
+_MIN_SEGMENT_FIELDS = 4
 
 
 def is_transpiled_path(file_path: str) -> bool:
@@ -59,10 +60,10 @@ def _parse_mappings(mappings: str) -> list[list[list[int]]]:
             seg = list(deltas)
             seg[0] = prev_gen_col + seg[0]
             prev_gen_col = seg[0]
-            if len(seg) >= 4:
-                seg[1] = prev[1] + (deltas[1] if len(deltas) > 1 else 0)
-                seg[2] = prev[2] + (deltas[2] if len(deltas) > 2 else 0)
-                seg[3] = prev[3] + (deltas[3] if len(deltas) > 3 else 0)
+            if len(seg) >= _MIN_SEGMENT_FIELDS:
+                seg[1] = prev[1] + deltas[1]
+                seg[2] = prev[2] + deltas[2]
+                seg[3] = prev[3] + deltas[3]
                 prev[1] = seg[1]
                 prev[2] = seg[2]
                 prev[3] = seg[3]
@@ -84,14 +85,10 @@ def load_source_map(file_path: str) -> dict[str, Any] | None:
     except (OSError, ValueError):
         _SOURCE_MAP_CACHE[file_path] = None
         return None
-    if not isinstance(data, dict) or "mappings" not in data:
+    if not isinstance(data, dict) or not isinstance(data.get("mappings"), str):
         _SOURCE_MAP_CACHE[file_path] = None
         return None
-    try:
-        decoded = _parse_mappings(data["mappings"])
-    except (TypeError, ValueError):
-        _SOURCE_MAP_CACHE[file_path] = None
-        return None
+    decoded = _parse_mappings(data["mappings"])
     bundle = {
         "sources": data.get("sources", []),
         "sourceRoot": data.get("sourceRoot", ""),
@@ -102,7 +99,6 @@ def load_source_map(file_path: str) -> dict[str, Any] | None:
 
 
 _ABSOLUTE_SOURCE_PREFIXES = ("/", "http://", "https://", "file://")
-_MIN_SEGMENT_FIELDS = 4
 
 
 def _segment_at(segments: list[list[int]], col: int) -> list[int] | None:

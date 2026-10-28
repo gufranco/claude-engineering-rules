@@ -72,18 +72,14 @@ def format_cost(cost):
 def format_duration(transcript_path):
     if not transcript_path or not os.path.exists(transcript_path):
         return ""
-    try:
-        created = os.path.getctime(transcript_path)
-        elapsed = int(time.time() - created)
-        if elapsed < 60:
-            return ""
-        hours, remainder = divmod(elapsed, 3600)
-        minutes = remainder // 60
-        if hours > 0:
-            return f"{hours}h{minutes:02d}m"
-        return f"{minutes}m"
-    except OSError:
+    elapsed = int(time.time() - os.path.getctime(transcript_path))
+    if elapsed < 60:
         return ""
+    hours, remainder = divmod(elapsed, 3600)
+    minutes = remainder // 60
+    if hours > 0:
+        return f"{hours}h{minutes:02d}m"
+    return f"{minutes}m"
 
 
 def build_bar(percentage):

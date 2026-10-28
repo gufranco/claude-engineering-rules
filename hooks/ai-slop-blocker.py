@@ -11,34 +11,16 @@ from pathlib import Path
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.bypass import is_bypassed  # type: ignore
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_id: str) -> bool:  # type: ignore
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.hook_profile import should_run  # type: ignore
-except Exception:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
-try:
-    from _lib.output import block as _block_message  # type: ignore
-except Exception:  # pragma: no cover
-    _block_message = None  # type: ignore
+from _lib.output import block as _block_message  # noqa: E402
 
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.project_workspace import in_workspace, is_prompt_file  # noqa: E402

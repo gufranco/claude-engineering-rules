@@ -7,7 +7,6 @@ import sys
 CLAUDE_DIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
-SETTINGS_PATH = os.path.join(CLAUDE_DIR, "settings.json")
 
 DENY_PATTERN = re.compile(r"^(Read|Write|Edit)\(.+\)$")
 MCP_TOOL_MATCHER = re.compile(r"^mcp__[A-Za-z0-9-]+__[A-Za-z0-9_]+$")
@@ -86,7 +85,7 @@ def validate_mcpservers(data):
     return errors
 
 
-def validate_hooks(data):
+def validate_hooks(data, claude_dir=CLAUDE_DIR):
     errors = []
     hooks = data.get("hooks", {})
 
@@ -106,7 +105,7 @@ def validate_hooks(data):
                 for part in parts:
                     if "~/.claude/" in part:
                         relative = part.replace("~/.claude/", "")
-                        resolved = os.path.join(CLAUDE_DIR, relative)
+                        resolved = os.path.join(claude_dir, relative)
                         if not os.path.exists(resolved):
                             errors.append(
                                 f"  Hook script not found: {part} (resolved to {relative}) in {phase}"
@@ -127,17 +126,18 @@ def _summary_line(data):
     return f"Validated settings.json: {deny_count} deny rules, {hook_count} hook commands, {mcp_count} MCP servers"
 
 
-def main():
-    if not os.path.exists(SETTINGS_PATH):
+def main(claude_dir=CLAUDE_DIR):
+    settings_path = os.path.join(claude_dir, "settings.json")
+    if not os.path.exists(settings_path):
         print("settings.json not found")
-        sys.exit(1)
+        return 1
 
-    with open(SETTINGS_PATH) as f:
+    with open(settings_path, encoding="utf-8") as f:
         data = json.load(f)
 
     all_errors = [
         *validate_deny_rules(data),
-        *validate_hooks(data),
+        *validate_hooks(data, claude_dir),
         *validate_mcpservers(data),
     ]
     print(_summary_line(data))
@@ -146,10 +146,10 @@ def main():
         print(f"\nFAILED: {len(all_errors)} error(s) found:\n")
         for e in all_errors:
             print(e)
-        sys.exit(1)
+        return 1
     print("PASSED: settings.json valid")
-    sys.exit(0)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
