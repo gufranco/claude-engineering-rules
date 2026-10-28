@@ -103,7 +103,7 @@ help:
 	@echo "  install      Install python deps into .venv from requirements-dev.txt"
 	@echo "  test         Run pytest (parallel, no coverage gate)"
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
-	@echo "  test-cov     Run pytest with branch coverage, enforce 95%"
+	@echo "  test-cov     Run pytest with branch coverage, enforce 100%"
 	@echo "  test-js      Run the Node script tests, enforce 100% coverage"
 	@echo "  test-bats    Run bats-core suites for the shell scripts"
 	@echo "  test-analyzers  Prove every analyzer catalog rule against the real tools, local only"

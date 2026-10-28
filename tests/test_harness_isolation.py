@@ -144,18 +144,23 @@ def test_coverage_sources_resolve_to_the_repository_from_any_directory(
     sources = read_coverage_config(str(REPO_ROOT / ".coveragerc"), warn=print).source
 
     # Assert
-    assert sources == [f"{REPO_ROOT}/hooks", f"{REPO_ROOT}/.github/scripts"]
+    assert sources == [
+        f"{REPO_ROOT}/hooks",
+        f"{REPO_ROOT}/.github/scripts",
+        f"{REPO_ROOT}/scripts",
+        f"{REPO_ROOT}/tools",
+    ]
 
 
-def test_every_omit_entry_matches_from_any_working_directory() -> None:
+def test_the_coverage_config_omits_no_hand_written_file() -> None:
     # Arrange
     coveragerc = str(REPO_ROOT / ".coveragerc")
 
     # Act
-    omit = read_coverage_config(coveragerc, warn=print).run_omit
+    config = read_coverage_config(coveragerc, warn=print)
 
     # Assert
-    assert [entry for entry in omit if not entry.startswith("*/")] == []
+    assert (config.run_omit, config.report_omit, config.fail_under) == ([], None, 100.0)
 
 
 def test_a_subprocess_built_from_raw_environ_inherits_the_isolation() -> None:

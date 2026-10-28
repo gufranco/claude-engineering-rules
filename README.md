@@ -609,8 +609,9 @@ so it reports success while verifying nothing, which is how a stale number
 survives a green run.
 
 Every pull request runs eight CI jobs: lint, workflow lint, typecheck, hook
-tests, the Python suite at 95% branch coverage, a release-config dry run,
-CodeQL, and dependency review. Dependabot keeps GitHub Actions SHAs, pip, and
+tests, the Python suite at 100% branch coverage with nothing excluded, a
+release-config dry run that also holds the Node scripts at 100%, CodeQL, and
+dependency review. Dependabot keeps GitHub Actions SHAs, pip, and
 npm current on a weekly grouped schedule, and releases are cut by
 semantic-release from Conventional Commits.
 
