@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { argv, cwd, exit } from "node:process";
 
-const CONFIG_PATH = ".releaserc.json";
-const PLUGIN_NAME = "@semantic-release/release-notes-generator";
+export const CONFIG_PATH = ".releaserc.json";
+export const PLUGIN_NAME = "@semantic-release/release-notes-generator";
 
 const SAMPLE_COMMITS = [
   {
@@ -25,8 +26,8 @@ const SAMPLE_COMMITS = [
   },
 ];
 
-async function readPluginConfig() {
-  const raw = JSON.parse(await readFile(CONFIG_PATH, "utf8"));
+export async function readPluginConfig(root) {
+  const raw = JSON.parse(await readFile(join(root, CONFIG_PATH), "utf8"));
   const entry = (raw.plugins ?? []).find(
     (plugin) => plugin === PLUGIN_NAME || (Array.isArray(plugin) && plugin[0] === PLUGIN_NAME),
   );
@@ -36,9 +37,9 @@ async function readPluginConfig() {
   return Array.isArray(entry) ? (entry[1] ?? {}) : {};
 }
 
-function buildContext() {
+export function buildContext(root) {
   return {
-    cwd: cwd(),
+    cwd: root,
     options: { repositoryUrl: "https://github.com/gufranco/claude-engineering-rules" },
     lastRelease: { gitTag: "v0.1.0", version: "0.1.0" },
     nextRelease: { gitTag: "v0.2.0", version: "0.2.0", type: "minor" },
@@ -47,7 +48,7 @@ function buildContext() {
   };
 }
 
-function assertRendered(notes) {
+export function assertRendered(notes) {
   if (typeof notes !== "string" || notes.trim() === "") {
     throw new Error("the generator produced empty release notes");
   }
@@ -57,18 +58,27 @@ function assertRendered(notes) {
   }
 }
 
-async function main() {
-  const pluginConfig = await readPluginConfig();
-  const { generateNotes } = await import(PLUGIN_NAME);
-  const notes = await generateNotes(pluginConfig, buildContext());
+export async function verify(root, args, generateNotes, log) {
+  const pluginConfig = await readPluginConfig(root);
+  const notes = await generateNotes(pluginConfig, buildContext(root));
   assertRendered(notes);
-  if (argv.includes("--print")) {
-    console.log(notes);
+  if (args.includes("--print")) {
+    log(notes);
   }
-  console.log(`release notes render with preset "${pluginConfig.preset ?? "angular"}"`);
+  log(`release notes render with preset "${pluginConfig.preset ?? "angular"}"`);
 }
 
-main().catch((error) => {
-  console.error(`verify-release-notes failed: ${error.message}`);
-  exit(1);
-});
+export async function run(root, args, generateNotes, log, fail) {
+  try {
+    await verify(root, args, generateNotes, log);
+    return 0;
+  } catch (error) {
+    fail(`verify-release-notes failed: ${error.message}`);
+    return 1;
+  }
+}
+
+if (import.meta.main) {
+  const { generateNotes } = await import(PLUGIN_NAME);
+  exit(await run(cwd(), argv.slice(2), generateNotes, console.log, console.error));
+}

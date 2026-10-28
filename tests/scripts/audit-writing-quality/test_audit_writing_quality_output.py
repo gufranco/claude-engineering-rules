@@ -185,3 +185,77 @@ def test_snippet_keeps_short_text_whole(audit_mod: ModuleType, faker: Faker) -> 
 
     # Assert
     assert snippet == short
+
+
+def test_a_relative_out_dir_lands_under_the_root(
+    audit_mod: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Arrange
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "doc.md").write_text("# Doc\n")
+    _set_main_argv(monkeypatch, tmp_path, Path("reports"))
+
+    # Act
+    code = audit_mod.main()
+
+    # Assert
+    assert code == 0
+    assert (tmp_path / "reports" / "audit-findings.md").is_file()
+
+
+def test_the_script_runs_as_a_program(tmp_path: Path) -> None:
+    # Arrange
+    import os
+    import subprocess
+    import sys
+
+    from _helpers.cov_env import apply_coverage_env
+
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "doc.md").write_text("# Doc\n")
+    script = Path(audit_mod_path())
+
+    # Act
+    proc = subprocess.run(
+        [sys.executable, str(script), "--root", str(tmp_path), "--out-dir", "out"],
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env(dict(os.environ)),
+        timeout=60,
+        check=False,
+    )
+
+    # Assert
+    assert proc.returncode == 0
+    assert proc.stderr.startswith("Wrote 0 findings to ")
+
+
+def audit_mod_path() -> str:
+    return str(
+        Path(__file__).resolve().parents[3]
+        / ".github"
+        / "scripts"
+        / "audit-writing-quality.py"
+    )
+
+
+def test_frontmatter_and_inline_code_are_not_scanned(audit_mod: ModuleType) -> None:
+    # Arrange
+    text = "---\ntitle: Should we\n---\n- **Openers**: Great question\nUse `foo (bar)` here.\n"
+
+    # Act
+    findings = audit_mod.scan_text("rules/doc.md", text)
+
+    # Assert
+    assert findings == []
+
+
+def test_mask_code_regions_blanks_inline_code(audit_mod: ModuleType) -> None:
+    # Arrange
+    text = "see `code` here\n"
+
+    # Act
+    result = audit_mod._mask_code_regions(text)
+
+    # Assert
+    assert result == "see        here\n"

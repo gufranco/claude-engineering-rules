@@ -64,3 +64,22 @@ def test_inaccessible_jsx_is_blocked(tool_use, run_hook, content, code):
 
     # Assert
     assert_blocked(result, code)
+
+
+DEEP = "<div data-x={" + "{" * 11 + "1" + "}" * 11 + "} />\n"
+
+
+@pytest.mark.parametrize(
+    "content",
+    ["<button\n", DEEP, "<button>\n  <svg />\n"],
+    ids=["unclosed-tag", "deeply-nested-expression", "unclosed-button"],
+)
+def test_shapes_the_scanner_cannot_finish_are_allowed(tool_use, run_hook, content):
+    # Arrange
+    payload = _write(tool_use, content)
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

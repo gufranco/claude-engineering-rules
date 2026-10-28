@@ -158,3 +158,31 @@ def test_a_notespec_that_fails_to_import_disables_scope_filtering(
 
     # Assert
     assert "### Pool" in proc.stdout
+
+
+def test_when_every_title_is_skipped_nothing_is_injected(tmp_path: Path) -> None:
+    # Arrange
+    vault = _vault(
+        tmp_path,
+        LISTING_RANKER.format(titles=["Missing", "Bare"]),
+        {"Bare": "---\ntype: concept\n---\n\nno preamble here\n"},
+    )
+
+    # Act
+    proc = _run(vault, _prompt())
+
+    # Assert
+    assert (proc.returncode, proc.stdout) == (0, "")
+
+
+def test_an_unreadable_note_is_reported_and_skipped(tmp_path: Path) -> None:
+    # Arrange
+    vault = _vault(tmp_path, LISTING_RANKER.format(titles=["Pool"]), {})
+    (vault / "wiki" / "Pool.md").mkdir()
+
+    # Act
+    proc = _run(vault, _prompt())
+
+    # Assert
+    assert (proc.returncode, proc.stdout) == (0, "")
+    assert proc.stderr.startswith("vault-recall: recall skipped: ")

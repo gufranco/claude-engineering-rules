@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 setup() {
-  SCRIPT="$BATS_TEST_DIRNAME/../../.github/scripts/hook-benchmark.sh"
+  SCRIPT="$BATS_TEST_DIRNAME/../../.github/scripts/hook-benchmark.py"
 }
 
 @test "a threshold flag without a value is rejected" {
@@ -9,7 +9,7 @@ setup() {
   local flag="--threshold"
 
   # Act
-  run bash "$SCRIPT" "$flag"
+  run python3 "$SCRIPT" "$flag"
 
   # Assert
   [ "$status" -ne 0 ]
@@ -21,7 +21,7 @@ setup() {
   local threshold_ms="0"
 
   # Act
-  run bash "$SCRIPT" --threshold "$threshold_ms"
+  run python3 "$SCRIPT" --threshold "$threshold_ms"
 
   # Assert
   [ "$status" -eq 1 ]

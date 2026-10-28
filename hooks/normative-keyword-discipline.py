@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -38,6 +37,7 @@ from _lib.hook_profile import should_run  # noqa: E402
 
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 
 def is_in_scope(path: str) -> bool:
@@ -128,11 +128,7 @@ def _report(tool: str, findings: list[str]) -> int:
 def main() -> int:
     if _skip_run():
         return 0
-    try:
-        payload = json.load(sys.stdin)
-    except ValueError as error:
-        sys.stderr.write(f"normative-keyword-discipline: unreadable payload: {error}\n")
-        return 0
+    payload = read_advisory_payload("normative-keyword-discipline")
     tool = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}
     items = collect(tool, tool_input)

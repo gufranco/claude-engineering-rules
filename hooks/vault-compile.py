@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import json
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 ENV_VAR = "VAULT_COMPILE_DISABLE"
 VAULT_VAR = "SECOND_BRAIN_VAULT"
@@ -27,11 +30,8 @@ def _compile_script() -> Path | None:
 
 
 def _payload_cwd() -> Path:
-    try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        payload = {}
-    return Path(payload.get("cwd") or Path.cwd())
+    payload = read_advisory_payload("vault-compile")
+    return Path(str(payload.get("cwd") or Path.cwd()))
 
 
 def _ready_memory_dir(cwd: Path) -> Path | None:
