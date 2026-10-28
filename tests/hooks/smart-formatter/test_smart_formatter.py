@@ -236,3 +236,18 @@ def test_profile_disable_short_circuits(tmp_path: Path) -> None:
     # Assert
     assert result.returncode == 0
     assert not batch.exists()
+
+
+def test_the_default_batch_lives_in_the_home_cache(tmp_path: Path) -> None:
+    # Arrange
+    target = tmp_path / "app.py"
+    target.write_text("x = 1\n", encoding="utf-8")
+    env = {"HOME": str(tmp_path), "CLAUDE_FORMATTER_BATCH": ""}
+
+    # Act
+    result = _run(str(target), env)
+
+    # Assert
+    batches = list((tmp_path / ".claude" / "cache").glob("edit-batch-*.txt"))
+    assert result.returncode == 0
+    assert [batch.read_text(encoding="utf-8") for batch in batches] == [f"{target}\n"]

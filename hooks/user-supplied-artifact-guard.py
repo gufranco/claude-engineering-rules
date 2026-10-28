@@ -18,10 +18,7 @@ from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.output import block as _block  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit_record
-except Exception:  # noqa: BLE001
-    _audit_record = None  # type: ignore[assignment]
+from _lib.audit_log import record as _audit_record  # noqa: E402
 
 HOOK_NAME = "user-supplied-artifact-guard"
 ENV_DISABLE = "USER_SUPPLIED_ARTIFACT_DISABLE"
@@ -204,8 +201,6 @@ def _classify(
 
 
 def _audit(command: str, offenders: list[tuple[str, str]]) -> None:
-    if _audit_record is None:
-        return
     _audit_record(
         hook=HOOK_NAME,
         decision="block",
