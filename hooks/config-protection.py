@@ -98,6 +98,14 @@ def _guards(path: str, content: str) -> bool:
     return False
 
 
+def _is_bootstrap_write(tool_name: str, file_path: str) -> bool:
+    return (
+        tool_name == "Write"
+        and os.path.basename(file_path) in MIXED_CONFIG_BASENAMES
+        and not os.path.exists(file_path)
+    )
+
+
 def _proposed_content(tool_input: dict) -> str | None:
     if "content" in tool_input:
         return tool_input.get("content")
@@ -161,6 +169,8 @@ def main() -> None:
     tool_input = data.get("tool_input", data.get("input", {}))
     file_path = tool_input.get("file_path") or tool_input.get("path") or ""
     if not file_path or not _guards(file_path, _proposed_content(tool_input) or ""):
+        sys.exit(0)
+    if _is_bootstrap_write(data.get("tool_name", ""), file_path):
         sys.exit(0)
     _block(data, file_path)
 

@@ -185,3 +185,23 @@ def test_payload_without_a_body_key_is_allowed(tool_use, run_hook, tmp_path):
 
     # Assert
     assert_allowed(result)
+
+
+def test_braces_inside_a_comment_body_are_not_a_summary(tool_use, run_hook, tmp_path):
+    # Arrange
+    body = tmp_path / "review.json"
+    body.write_text(
+        '{"event": "COMMENT", "body": "", "comments": [{"path": "a.ts", '
+        '"line": 1, "body": "```suggestion\\n  if (x) { y }\\n```"}]}',
+        encoding="utf-8",
+    )
+    payload = tool_use(
+        "Bash",
+        {"command": f"gh api {REPO}/pulls/12/reviews -X POST --input {body}"},
+    )
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

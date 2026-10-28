@@ -12,7 +12,9 @@ if str(HOOKS_DIR) not in sys.path:
 from _lib.dangerous_command_push import (  # noqa: E402
     git_push_directory,
     names_protected_ref,
+    push_cwd,
     repo_root,
+    strip_command_substitutions,
 )
 
 
@@ -58,3 +60,27 @@ def test_repo_root_outside_a_repository_is_empty(tmp_path: Path) -> None:
 
     # Assert
     assert result == ""
+
+
+def test_strip_command_substitutions_collapses_substitutions() -> None:
+    # Arrange
+    text = "GH_TOKEN=$(gh auth token --user x) git push `whoami`"
+
+    # Act
+    result = strip_command_substitutions(text)
+
+    # Assert
+    assert result == "GH_TOKEN=X git push X"
+
+
+def test_push_cwd_resolves_through_an_env_token_prefix(tmp_path: Path) -> None:
+    # Arrange
+    command = (
+        f"cd {tmp_path} && GH_TOKEN=$(gh auth token --user x) git push origin feature/y"
+    )
+
+    # Act
+    result = push_cwd(command)
+
+    # Assert
+    assert result == str(tmp_path)

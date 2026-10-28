@@ -11,6 +11,7 @@ from _lib.dangerous_command_push import (
     current_branch,
     names_protected_ref,
     push_cwd as resolve_push_cwd,
+    push_segment,
 )
 from _lib.hook_warning import emit_warning
 
@@ -153,7 +154,7 @@ def check_protected_push(
     push_cwd = resolve_push_cwd(command)
     command_cwd = push_cwd or ""
     branch = current_branch(command_cwd)
-    if not targets_protected(matched, branch):
+    if not targets_protected(push_segment(command) or matched, branch):
         return
     repo_root = solo_root(push_cwd, command_cwd)
     if repo_root:
