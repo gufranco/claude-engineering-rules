@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.audit_log import record as _audit  # noqa: E402
 
 

@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.hook_warning import emit_warning  # noqa: E402
@@ -13,7 +13,6 @@ from _lib.hook_warning import emit_warning  # noqa: E402
 from _lib.audit_log import record as _audit  # noqa: E402
 
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.edit_resolution import payload_fragments  # noqa: E402
 

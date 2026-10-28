@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.dangerous_command_input import read_command  # noqa: E402
