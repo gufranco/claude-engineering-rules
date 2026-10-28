@@ -55,6 +55,7 @@ policy-limits.json.*
 remote-settings.json
 remote-settings.json.*
 skills/synced/
+feedback/
 
 # IDE and editor integration
 ide/
