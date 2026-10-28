@@ -22,6 +22,7 @@ Conventional commits, a full local quality gate before every commit, one push pe
 - Never force push or amend pushed commits; roll back with `git revert`.
 - Your migrations must carry the latest timestamps, rechecked after rebase, and be idempotent with `IF NOT EXISTS` and `IF EXISTS`.
 - Never commit `dist/`, `build/`, `.next/`, `out/`, `coverage/`, `node_modules/`. Audit with `git -c core.excludesFile=/dev/null status --porcelain -uall`.
+- Before pushing new files, list `git status --porcelain --ignored -- <source dirs>`; a source file marked `!!` was dropped by an ignore rule, often the global one. Rename it or add a negation, then gate on a `git clone` of the commit, never a copy of the working tree.
 
 Full rule, examples, and rationale: [`standards/git-workflow.md`](../standards/git-workflow.md). Read it before writing a commit or PR, diagnosing CI, resolving conflicts, or writing a CHANGELOG.
 
@@ -39,4 +40,4 @@ Enforced by: [`hooks/review-state-guard.py`](../hooks/review-state-guard.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-14, recurrence 5 in one session: subjects judged by eye overran the 50-character limit and each cost a blocked commit, so the core now requires measuring the length first. Amended again 2026-10-14, recurrence 3 since 2026-09-30: CI watchers filtered `gh run list --commit` by a short SHA, got zero runs with exit 0, and reported done; [`hooks/gh-short-sha-guard.py`](../hooks/gh-short-sha-guard.py) now blocks it.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-14, recurrence 5 in one session: subjects judged by eye overran the 50-character limit and each cost a blocked commit, so the core now requires measuring the length first. Amended again 2026-10-14, recurrence 3 since 2026-09-30: CI watchers filtered `gh run list --commit` by a short SHA, got zero runs with exit 0, and reported done; [`hooks/gh-short-sha-guard.py`](../hooks/gh-short-sha-guard.py) now blocks it. Amended 2026-10-28, recurrence 3 since 2026-09-27: the global ignore file's `*.patch` and `*.log.*` rules silently left needed files out of commits in example-firmware, example-project and example-project, and each time a build from the working tree passed while the clean CI checkout failed, so the core now requires the ignored-file check and a clone-based gate before pushing new files.
