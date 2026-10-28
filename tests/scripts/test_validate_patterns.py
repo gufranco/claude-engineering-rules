@@ -228,3 +228,16 @@ def test_main_fails_when_a_source_file_is_missing(
     # Assert
     assert exit_info.value.code == 1
     assert capsys.readouterr().out == f"{absent} not found\n"
+
+
+def test_a_list_entry_that_is_neither_text_nor_a_name_is_skipped(
+    validator: ModuleType,
+) -> None:
+    # Arrange
+    source = 'EXTRA = [r"\\bshred\\b", 3, (4, "count")]\n'
+
+    # Act
+    result = validator.extract_patterns(source)
+
+    # Assert
+    assert result == ({"EXTRA": ["\\bshred\\b"]}, [])

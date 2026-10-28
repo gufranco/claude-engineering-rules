@@ -186,9 +186,7 @@ Item = tuple[str, str, bool, bool]
 Finding = tuple[str, str, str, str]
 
 
-def _collect_bash(cmd: object) -> list[Item]:
-    if not isinstance(cmd, str):
-        return []
+def _collect_bash(cmd: str) -> list[Item]:
     if is_comment_bash(cmd):
         try:
             tokens = shlex.split(cmd, posix=True)
@@ -223,7 +221,7 @@ def _collect_markdown(tool: str, fp: str, tool_input: dict) -> list[Item]:
 def collect(tool: str, tool_input: dict) -> list[Item]:
     fp = tool_input.get("file_path", "") or ""
     if tool == "Bash":
-        return _collect_bash(tool_input.get("command", ""))
+        return _collect_bash(str(tool_input.get("command") or ""))
     if is_skipped_path(fp) or not fp.lower().endswith((".md", ".markdown")):
         return []
     return _collect_markdown(tool, fp, tool_input)
@@ -313,12 +311,6 @@ def _detected_and_fixes(
 def render(all_findings: list[tuple[str, list[Finding]]]) -> str:
     detected_lines, fix_lines = _detected_and_fixes(all_findings)
     fix = "\n".join(fix_lines) + RENDER_FIX_TAIL
-    if _block_message is None:  # pragma: no cover
-        return (
-            f"BLOCKED by {HOOK_ID} ({RULE_ANCHOR})\n\n"
-            + "\n".join(detected_lines)
-            + f"\n\n{fix}\n\nBypass: {ENV_VAR}=1"
-        )
     return _block_message(
         hook=HOOK_ID,
         rule_anchor=RULE_ANCHOR,

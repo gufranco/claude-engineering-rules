@@ -41,7 +41,7 @@ def git(args: list[str], cwd: Path, *, strip: bool = True) -> str:
             timeout=GIT_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):  # pragma: no cover
+    except (OSError, subprocess.SubprocessError):
         return ""
     if result.returncode != 0:
         return ""
@@ -50,16 +50,11 @@ def git(args: list[str], cwd: Path, *, strip: bool = True) -> str:
 
 def changed_files(cwd: Path) -> list[str]:
     raw = git(["status", "--porcelain"], cwd, strip=False)
-    names: list[str] = []
-    for line in raw.splitlines():
-        name = (
-            line[PORCELAIN_PATH_COLUMN:].strip()
-            if len(line) > PORCELAIN_PATH_COLUMN
-            else ""
-        )
-        if name:
-            names.append(name.split(" -> ")[-1])
-    return names
+    return [
+        line[PORCELAIN_PATH_COLUMN:].strip().split(" -> ")[-1]
+        for line in raw.splitlines()
+        if line[PORCELAIN_PATH_COLUMN:].strip()
+    ]
 
 
 def recent_commits(cwd: Path) -> list[str]:
@@ -163,10 +158,10 @@ def main() -> int:
         if not cwd.is_dir():
             return 0
         capture(root, cwd, datetime.now(timezone.utc))
-    except OSError:  # pragma: no cover
+    except OSError:
         return 0
     return 0
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     raise SystemExit(main())

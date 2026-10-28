@@ -254,3 +254,69 @@ def test_main_exits_one_and_names_each_finding(
         "Every artifact on disk must be reachable from the registry\n"
         "that is supposed to load or document it.\n"
     )
+
+
+def test_an_agent_listed_but_missing_on_disk_is_reported(tree: Path) -> None:
+    # Arrange
+    (tree / "agents" / "auditor.md").unlink()
+
+    # Act
+    findings = run(tree)
+
+    # Assert
+    assert findings == [
+        "README lists the auditor agent but agents/auditor.md does not exist."
+    ]
+
+
+def test_an_on_demand_entry_that_is_not_a_mapping_is_skipped(tree: Path) -> None:
+    # Arrange
+    module = load_validator(tree)
+    index = {"on_demand": {"loose": "not a mapping"}}
+    findings: list[str] = []
+
+    # Act
+    module.check_index_rule_paths(index, findings)
+
+    # Assert
+    assert findings == []
+
+
+def test_main_passes_on_a_clean_tree_and_fails_on_drift(
+    tree: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Arrange
+    module = load_validator(tree)
+    (tree / "rules" / "orphan.md").write_text("# Orphan\n")
+
+    # Act
+    code = module.main()
+
+    # Assert
+    assert code == 1
+    assert capsys.readouterr().out.startswith("FAILED: 1 registry drift finding(s)")
+
+
+def test_the_script_validates_this_repository() -> None:
+    # Arrange
+    import os
+    import subprocess
+    import sys
+
+    from _helpers.cov_env import apply_coverage_env
+
+    # Act
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env(dict(os.environ)),
+        timeout=60,
+        check=False,
+    )
+
+    # Assert
+    assert (proc.returncode, proc.stdout.splitlines()[0]) == (
+        0,
+        "PASSED: no registry drift. Rules and standards are registered,",
+    )

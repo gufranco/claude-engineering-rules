@@ -154,10 +154,7 @@ def record(**fields: Any) -> None:
                 fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
                 fh.write(line + "\n")
             finally:
-                try:
-                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
-                except OSError as unlock_error:
-                    sys.stderr.write(f"audit log: unlock failed: {unlock_error}\n")
+                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
     except Exception as error:
         sys.stderr.write(f"audit log: write failed: {error}\n")
 

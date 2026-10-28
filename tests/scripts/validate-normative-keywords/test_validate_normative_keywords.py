@@ -267,3 +267,18 @@ def test_main_dirty_exits_one(
         f"     1  [should-bullet]  {line}\n"
         "\nTotal: 1 finding(s).\n"
     )
+
+
+def test_walk_ignores_files_that_are_not_markdown(
+    validator_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
+    # Arrange
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "notes.txt").write_text(faker.sentence())
+    (tmp_path / "rules" / "ok.md").write_text(faker.sentence())
+
+    # Act
+    files = list(validator_mod.walk_in_scope(tmp_path))
+
+    # Assert
+    assert files == [tmp_path / "rules" / "ok.md"]

@@ -117,3 +117,39 @@ def test_the_real_tree_is_within_budget(budget_module: ModuleType) -> None:
 
     # Assert
     assert exit_code == 0
+
+
+def test_rules_alone_count_when_there_is_no_claude_md(
+    budget_module: ModuleType, tmp_path: Path
+) -> None:
+    # Arrange
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "a.md").write_text("x", encoding="utf-8")
+
+    # Act
+    files = budget_module.always_loaded_files(tmp_path)
+
+    # Assert
+    assert files == [tmp_path / "rules" / "a.md"]
+
+
+def test_the_script_checks_this_repository() -> None:
+    # Arrange
+    import os
+    import subprocess
+    import sys
+
+    from _helpers.cov_env import apply_coverage_env
+
+    # Act
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        capture_output=True,
+        text=True,
+        env=apply_coverage_env(dict(os.environ)),
+        timeout=60,
+        check=False,
+    )
+
+    # Assert
+    assert (proc.returncode, proc.stdout.splitlines()[-1]) == (0, "PASSED")

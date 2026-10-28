@@ -49,10 +49,6 @@ def _is_canonical(detector: str) -> bool:
     return detector in CANONICAL_DETECTORS
 
 
-def _has_typed_suffix(receiver: str) -> bool:
-    return any(receiver.endswith(s) for s in TYPED_SUFFIX_HINTS)
-
-
 def score_finding(
     detector: str,
     *,

@@ -106,12 +106,8 @@ def _proposed_content(tool_input: dict) -> str | None:
         return tool_input.get("content")
     if "new_string" in tool_input:
         return tool_input.get("new_string")
-    if "edits" in tool_input and isinstance(tool_input["edits"], list):
-        return "\n".join(
-            edit.get("new_string", "")
-            for edit in tool_input["edits"]
-            if isinstance(edit, dict)
-        )
+    if "edits" in tool_input:
+        return "\n".join(edit.get("new_string", "") for edit in tool_input["edits"])
     return None
 
 

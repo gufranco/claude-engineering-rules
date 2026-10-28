@@ -302,3 +302,18 @@ def test_main_with_findings_still_exits_zero(
         "     1  [passive-bullet]  - The input is validated before processing.\n"
         "\nTotal: 1 finding(s). Advisory only; review and rewrite where appropriate.\n"
     )
+
+
+def test_walk_ignores_files_that_are_not_markdown(
+    clarity_mod: ModuleType, tmp_path: Path, faker: Faker
+) -> None:
+    # Arrange
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "notes.txt").write_text(faker.sentence())
+    (tmp_path / "rules" / "ok.md").write_text(faker.sentence())
+
+    # Act
+    files = list(clarity_mod.walk_in_scope(tmp_path))
+
+    # Assert
+    assert files == [tmp_path / "rules" / "ok.md"]

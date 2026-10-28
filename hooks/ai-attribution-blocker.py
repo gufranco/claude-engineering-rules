@@ -28,6 +28,7 @@ PATTERNS = [
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 from _lib.outgoing_commits import (  # noqa: E402
     PushInvocation,
     find_pushes,
@@ -80,29 +81,11 @@ def is_skipped_path(path: str) -> bool:
 
 
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
-    fp = tool_input.get("file_path", "") or ""
-    if tool in ("Write", "Edit", "MultiEdit") and is_skipped_path(fp):
-        return out
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append(("content", c))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append(("new_string", c))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((f"edits[{i}].new_string", c))
-    elif tool == "Bash":
-        c = tool_input.get("command", "")
-        if isinstance(c, str):
-            out.append(("command", c))
-    return out
+    if tool == "Bash":
+        return [("command", str(tool_input.get("command") or ""))]
+    if is_skipped_path(tool_input.get("file_path", "") or ""):
+        return []
+    return payload_fragments(tool, tool_input)
 
 
 from _lib.hook_profile import should_run  # noqa: E402

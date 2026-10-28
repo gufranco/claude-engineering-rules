@@ -38,6 +38,7 @@ from _lib.hook_profile import should_run  # noqa: E402
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_advisory_payload  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def is_in_scope(path: str) -> bool:
@@ -49,25 +50,10 @@ def is_in_scope(path: str) -> bool:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
     fp = tool_input.get("file_path", "") or ""
     if not is_in_scope(fp):
-        return out
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((fp, c))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((fp, c))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((f"{fp} [{i}]", c))
-    return out
+        return []
+    return [(fp, text) for _, text in payload_fragments(tool, tool_input)]
 
 
 def find_should_bullets(text: str) -> list[str]:

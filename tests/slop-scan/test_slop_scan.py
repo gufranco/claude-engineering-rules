@@ -319,3 +319,15 @@ def test_a_gitignored_markdown_file_is_not_scanned(scanner, tmp_path, faker):
 
     # Assert
     assert exit_code == 0
+
+
+def test_git_log_without_git_raises_a_scan_error(scanner, tmp_path, monkeypatch):
+    # Arrange
+    monkeypatch.setenv("PATH", str(tmp_path))
+
+    # Act
+    attempt = lambda: scanner.git_log(tmp_path, "HEAD")  # noqa: E731
+
+    # Assert
+    with pytest.raises(scanner.ScanError, match="git log HEAD failed"):
+        attempt()

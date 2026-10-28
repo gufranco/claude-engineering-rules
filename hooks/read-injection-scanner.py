@@ -58,10 +58,7 @@ def has_unicode_confusables(text: str) -> bool:
     for char in text:
         if unicodedata.category(char) in suspicious_categories:
             suspicious_count += 1
-        try:
-            name = unicodedata.name(char, "")
-        except ValueError:
-            continue
+        name = unicodedata.name(char, "")
         if any(s in name for s in confusable_scripts) and char.isalpha():
             confusable_count += 1
     return suspicious_count >= 3 or confusable_count >= 5

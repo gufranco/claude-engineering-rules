@@ -26,8 +26,6 @@ def looks_like_publishing_json(content: str) -> bool:
         obj = json.loads(content)
     except ValueError:
         return False
-    if not isinstance(obj, dict):
-        return False
     if "comments" in obj and ("commit_id" in obj or "event" in obj):
         return True
     if _has_text(obj.get("body")):

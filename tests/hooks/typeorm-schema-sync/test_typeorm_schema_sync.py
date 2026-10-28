@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import pytest
 from _helpers.hook_assertions import assert_allowed, assert_blocked
 from _typeorm_schema_sync_helpers import HOOK
 
@@ -107,3 +109,27 @@ def test_allows_synchronize_false(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def _typeorm_module():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "hooks" / "typeorm-schema-sync.py"
+    spec = importlib.util.spec_from_file_location("typeorm_units", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize(("args", "expected"), [("f(a, b)", False), ("f(a), b", True)])
+def test_has_top_level_comma_ignores_commas_inside_brackets(args, expected):
+    # Arrange
+    module = _typeorm_module()
+
+    # Act
+    result = module.has_top_level_comma(args)
+
+    # Assert
+    assert result is expected

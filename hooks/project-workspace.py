@@ -6,6 +6,7 @@ import os
 import re
 import shlex
 import sys
+from typing import cast
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -239,9 +240,7 @@ def _stage_reason(root: str) -> str:
 
 
 def _command(data: dict[str, object]) -> str:
-    tool_input = data.get("tool_input")
-    if not isinstance(tool_input, dict):
-        return ""
+    tool_input = cast("dict[str, object]", data["tool_input"])
     command = str(tool_input.get("command") or "")
     return strip_data_heredoc_bodies(command, DATA_SINKS | CODE_INTERPRETERS)
 

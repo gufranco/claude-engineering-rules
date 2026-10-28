@@ -41,7 +41,7 @@ def find_offender(command: str) -> str | None:
     return None
 
 
-def emit_block(reason: str, command: str) -> None:
+def emit_block(reason: str, command: str) -> int:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -59,7 +59,7 @@ def emit_block(reason: str, command: str) -> None:
         tool="Bash",
         command_excerpt=command[:200],
     )
-    sys.exit(2)
+    return 2
 
 
 def _block_reason(offender: str) -> str:
@@ -98,8 +98,7 @@ def main() -> int:
     if offender is None:
         return 0
 
-    emit_block(_block_reason(offender), command)
-    return 2
+    return emit_block(_block_reason(offender), command)
 
 
 if __name__ == "__main__":
