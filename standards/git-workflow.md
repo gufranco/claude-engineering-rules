@@ -348,6 +348,20 @@ Every line it prints is either a file to commit or a pattern missing from that f
 
 Machine-local configuration stays untracked when it names paths, hosts, or accounts that exist on one workstation. Commit a `<name>.example.<ext>` beside it carrying the format and placeholder entries, and point the documentation at the example rather than at the real file. The code that reads it must treat a missing file as the safe default: an empty allowlist, never an open one.
 
+### Source Files an Ignore Rule Swallowed
+
+The opposite failure: a file the build needs matches an ignore pattern, so `git add` skips it without a word and `git status` stays clean. The machine-global ignore file is the usual source, because its patterns were written for artifacts and match ordinary names. On this machine `*.patch` hid a pnpm patch and a vendored patch queue, and `*.log.*` hid a C++ header named `card_failure.log.h` under a `name.type.h` convention. Each time, a build or test run from the working tree passed, because the file was on disk, and the clean CI checkout failed.
+
+Before pushing a change that adds files, list what ignore rules hold back in the source directories:
+
+```bash
+git status --porcelain --ignored -- src tests examples tools
+```
+
+Every `!!` line that is not build output or a cache is a missing file. `git check-ignore -v <path>` names the rule. Fix it with a rename when a convention allows one, or with a `!pattern` negation in the project's own ignore file, then confirm `git check-ignore -q <path>` exits 1.
+
+Run the gates on a clone of the commit, never on a copy of the working tree: `git clone -q . "$(mktemp -d)/repo"`, then the build and tests there. A tar or rsync of the working tree carries the ignored file along and hides the gap.
+
 ## Enforcement
 
 Enforced by: [`hooks/bulk-resolve-blocker.py`](../hooks/bulk-resolve-blocker.py).
