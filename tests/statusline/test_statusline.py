@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from faker import Faker
+from _helpers.cov_env import apply_coverage_env
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "statusline.py"
 OPUS = "claude-opus-4-7"
@@ -23,6 +25,7 @@ def run(stdin_text: str, cwd: Path | None = None) -> tuple[int, str, str]:
         capture_output=True,
         text=True,
         timeout=SCRIPT_TIMEOUT_S,
+        env=apply_coverage_env(dict(os.environ)),
         cwd=cwd,
         check=False,
     )

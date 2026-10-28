@@ -3,16 +3,13 @@ import os
 import re
 import sys
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-CHECKLIST = os.path.join(BASE_DIR, "checklists", "checklist.md")
-CLAUDE_MD = os.path.join(BASE_DIR, "CLAUDE.md")
-README_MD = os.path.join(BASE_DIR, "README.md")
-
-ERRORS = []
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DECLARING_FILES = ("CLAUDE.md", "README.md")
+ITEM_TOLERANCE = 10
 
 
 def count_checklist_items(path: str) -> tuple[int, int]:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         content = f.read()
 
     categories = len(re.findall(r"^###\s+\d+\.\s+", content, re.MULTILINE))
@@ -20,50 +17,48 @@ def count_checklist_items(path: str) -> tuple[int, int]:
     return categories, items
 
 
-def check_declared_counts(path: str, categories: int, items: int, label: str) -> None:
-    with open(path) as f:
+def check_declared_counts(
+    path: str, categories: int, items: int, label: str
+) -> list[str]:
+    with open(path, encoding="utf-8") as f:
         content = f.read()
-
-    cat_matches = re.findall(r"(\d+)\s+categor", content)
-    item_matches = re.findall(r"(\d+)\s+items?", content)
-
-    for m in cat_matches:
-        declared = int(m)
-        if declared != categories:
-            ERRORS.append(
-                f"{label}: declares {declared} categories, checklist has {categories}"
-            )
-
-    for m in item_matches:
-        declared = int(m)
-        if abs(declared - items) > 10:
-            ERRORS.append(
-                f"{label}: declares {declared} items, checklist has {items} (diff > 10)"
-            )
+    category_errors = [
+        f"{label}: declares {declared} categories, checklist has {categories}"
+        for declared in map(int, re.findall(r"(\d+)\s+categor", content))
+        if declared != categories
+    ]
+    item_errors = [
+        f"{label}: declares {declared} items, checklist has {items} (diff > 10)"
+        for declared in map(int, re.findall(r"(\d+)\s+items?", content))
+        if abs(declared - items) > ITEM_TOLERANCE
+    ]
+    return [*category_errors, *item_errors]
 
 
-def main() -> None:
-    if not os.path.exists(CHECKLIST):
-        print(f"ERROR: checklist not found at {CHECKLIST}", file=sys.stderr)
-        sys.exit(1)
+def main(base_dir: str = BASE_DIR) -> int:
+    checklist = os.path.join(base_dir, "checklists", "checklist.md")
+    if not os.path.exists(checklist):
+        print(f"ERROR: checklist not found at {checklist}", file=sys.stderr)
+        return 1
 
-    categories, items = count_checklist_items(CHECKLIST)
+    categories, items = count_checklist_items(checklist)
     print(f"Checklist: {categories} categories, {items} items")
 
-    if os.path.exists(CLAUDE_MD):
-        check_declared_counts(CLAUDE_MD, categories, items, "CLAUDE.md")
-
-    if os.path.exists(README_MD):
-        check_declared_counts(README_MD, categories, items, "README.md")
-
-    if ERRORS:
+    errors = [
+        error
+        for name in DECLARING_FILES
+        if os.path.exists(path := os.path.join(base_dir, name))
+        for error in check_declared_counts(path, categories, items, name)
+    ]
+    if errors:
         print("\nCount mismatches found:")
-        for err in ERRORS:
+        for err in errors:
             print(f"  {err}")
-        sys.exit(1)
+        return 1
 
     print("All count declarations match.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

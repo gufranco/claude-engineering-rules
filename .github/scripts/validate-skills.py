@@ -6,7 +6,6 @@ import sys
 CLAUDE_DIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
-SKILLS_DIR = os.path.join(CLAUDE_DIR, "skills")
 
 REQUIRED_FIELDS = {"name", "description"}
 
@@ -48,12 +47,12 @@ def _sensitive_errors(
     ]
 
 
-def validate_skill(skill_dir: str) -> list[str]:
-    rel = os.path.relpath(skill_dir, CLAUDE_DIR)
+def validate_skill(skill_dir: str, claude_dir: str = CLAUDE_DIR) -> list[str]:
+    rel = os.path.relpath(skill_dir, claude_dir)
     skill_file = os.path.join(skill_dir, "SKILL.md")
     if not os.path.exists(skill_file):
         return [f"  {rel}: missing SKILL.md"]
-    with open(skill_file) as f:
+    with open(skill_file, encoding="utf-8") as f:
         content = f.read()
     if not content.strip():
         return [f"  {rel}/SKILL.md: empty"]
@@ -81,23 +80,24 @@ def skill_dirs(skills_dir: str) -> list[str]:
     ]
 
 
-def main() -> None:
-    if not os.path.isdir(SKILLS_DIR):
+def main(claude_dir: str = CLAUDE_DIR) -> int:
+    skills_dir = os.path.join(claude_dir, "skills")
+    if not os.path.isdir(skills_dir):
         print("No skills/ directory found")
-        sys.exit(0)
+        return 0
 
-    found = skill_dirs(SKILLS_DIR)
-    all_errors = [error for path in found for error in validate_skill(path)]
-    skill_count = len(found)
+    found = skill_dirs(skills_dir)
+    all_errors = [error for path in found for error in validate_skill(path, claude_dir)]
 
-    print(f"Validated {skill_count} skills")
+    print(f"Validated {len(found)} skills")
     if all_errors:
         print(f"\nFAILED: {len(all_errors)} error(s):\n")
         for e in all_errors:
             print(e)
-        sys.exit(1)
+        return 1
     print("PASSED: all skills valid")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

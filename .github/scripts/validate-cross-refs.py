@@ -4,8 +4,7 @@ import os
 import re
 import sys
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-ERRORS = []
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def _parse_index_value(value: str) -> str | list[str]:
@@ -39,21 +38,23 @@ def parse_index_yml(path: str) -> dict:
     return result
 
 
-def validate_index_paths(index_data: dict) -> None:
-    for section in ("always_loaded", "on_demand"):
-        entries = index_data.get(section) or {}
-        for name, entry in entries.items():
-            path = entry.get("path") if isinstance(entry, dict) else None
-            if not path:
-                if section == "always_loaded":
-                    path = f"rules/{name}.md"
-                else:
-                    path = f"standards/{name}.md"
-            full_path = os.path.join(BASE_DIR, path)
-            if not os.path.exists(full_path):
-                ERRORS.append(
-                    f"index.yml [{section}] '{name}': path '{path}' does not exist"
-                )
+DEFAULT_DIRS = {"always_loaded": "rules", "on_demand": "standards"}
+
+
+def _index_path(section: str, name: str, entry: object) -> str:
+    path = entry.get("path") if isinstance(entry, dict) else None
+    return str(path) if path else f"{DEFAULT_DIRS[section]}/{name}.md"
+
+
+def validate_index_paths(index_data: dict, base_dir: str) -> list[str]:
+    return [
+        f"index.yml [{section}] '{name}': path '{path}' does not exist"
+        for section in DEFAULT_DIRS
+        for name, entry in (index_data.get(section) or {}).items()
+        if not os.path.exists(
+            os.path.join(base_dir, path := _index_path(section, name, entry))
+        )
+    ]
 
 
 def parse_frontmatter(content: str) -> dict | None:
@@ -74,44 +75,43 @@ def parse_frontmatter(content: str) -> dict | None:
     return meta
 
 
-def validate_agent_files() -> None:
-    agents_dir = os.path.join(BASE_DIR, "agents")
-    if not os.path.isdir(agents_dir):
-        return
-
-    for filename in sorted(os.listdir(agents_dir)):
-        if not filename.endswith(".md"):
-            continue
-        if filename in ("TEMPLATE.md", "_shared-principles.md"):
-            continue
-
-        filepath = os.path.join(agents_dir, filename)
-        with open(filepath) as f:
-            content = f.read()
-
-        meta = parse_frontmatter(content)
-        if meta is None:
-            ERRORS.append(f"agents/{filename}: missing or malformed frontmatter")
-            continue
-
-        for field in ("name", "description", "tools"):
-            if field not in meta:
-                ERRORS.append(f"agents/{filename}: missing required field '{field}'")
+AGENT_SKIPPED = frozenset({"TEMPLATE.md", "_shared-principles.md"})
+AGENT_FIELDS = ("name", "description", "tools")
 
 
-def validate_standard_files() -> None:
-    standards_dir = os.path.join(BASE_DIR, "standards")
-    if not os.path.isdir(standards_dir):
-        return
+def _agent_errors(filename: str, content: str) -> list[str]:
+    meta = parse_frontmatter(content)
+    if meta is None:
+        return [f"agents/{filename}: missing or malformed frontmatter"]
+    return [
+        f"agents/{filename}: missing required field '{field}'"
+        for field in AGENT_FIELDS
+        if field not in meta
+    ]
 
-    for filename in sorted(os.listdir(standards_dir)):
-        if not filename.endswith(".md"):
-            continue
-        filepath = os.path.join(standards_dir, filename)
-        with open(filepath) as f:
-            first_lines = f.read(500)
-        if not first_lines.strip().startswith("#"):
-            ERRORS.append(f"standards/{filename}: missing top-level heading")
+
+def validate_agent_files(base_dir: str) -> list[str]:
+    paths = sorted(glob.glob(os.path.join(base_dir, "agents", "*.md")))
+    return [
+        error
+        for path in paths
+        if os.path.basename(path) not in AGENT_SKIPPED
+        for error in _agent_errors(os.path.basename(path), _read(path))
+    ]
+
+
+def validate_standard_files(base_dir: str) -> list[str]:
+    paths = sorted(glob.glob(os.path.join(base_dir, "standards", "*.md")))
+    return [
+        f"standards/{os.path.basename(path)}: missing top-level heading"
+        for path in paths
+        if not _read(path)[:500].strip().startswith("#")
+    ]
+
+
+def _read(path: str) -> str:
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
 
 
 HOOK_CITATION = re.compile(
@@ -215,24 +215,27 @@ def find_unknown_skill_references(base_dir: str, commands: frozenset[str]) -> li
     return errors
 
 
-def main() -> None:
-    index_path = os.path.join(BASE_DIR, "rules", "index.yml")
-    index_data = parse_index_yml(index_path)
+def collect_errors(base_dir: str) -> list[str]:
+    index_data = parse_index_yml(os.path.join(base_dir, "rules", "index.yml"))
+    return [
+        *validate_index_paths(index_data, base_dir),
+        *validate_agent_files(base_dir),
+        *validate_standard_files(base_dir),
+        *find_missing_hook_citations(base_dir),
+        *find_unknown_skill_references(base_dir, CLAUDE_CODE_COMMANDS),
+    ]
 
-    validate_index_paths(index_data)
-    validate_agent_files()
-    validate_standard_files()
-    ERRORS.extend(find_missing_hook_citations(BASE_DIR))
-    ERRORS.extend(find_unknown_skill_references(BASE_DIR, CLAUDE_CODE_COMMANDS))
 
-    if ERRORS:
-        print(f"Cross-reference validation failed with {len(ERRORS)} error(s):")
-        for error in ERRORS:
+def main(base_dir: str = BASE_DIR) -> int:
+    errors = collect_errors(base_dir)
+    if errors:
+        print(f"Cross-reference validation failed with {len(errors)} error(s):")
+        for error in errors:
             print(f"  - {error}")
-        sys.exit(1)
-
+        return 1
     print("All cross-references valid")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

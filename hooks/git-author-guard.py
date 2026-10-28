@@ -13,12 +13,7 @@ from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.shell_segments import mask_literal_text  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 PUSH_LOG_LIMIT = 200

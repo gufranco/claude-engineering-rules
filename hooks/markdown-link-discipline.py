@@ -9,12 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-try:
-    from _lib.audit_log import record as _audit
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 from _lib.markdown_link_detector import (  # noqa: E402

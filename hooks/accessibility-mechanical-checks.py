@@ -7,12 +7,7 @@ import sys
 from dataclasses import dataclass
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 UI_EXTS = (".tsx", ".jsx", ".vue", ".svelte", ".html", ".htm")

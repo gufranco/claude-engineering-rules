@@ -8,12 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 from _lib.internal_config_leakage_patterns import (  # noqa: E402
@@ -47,12 +42,7 @@ from _lib.internal_config_leakage_payloads import (  # noqa: E402
     read_payload_file,
 )
 
-try:
-    from _lib.knowledge_notes import in_vault as _in_vault
-except Exception:  # pragma: no cover
-
-    def _in_vault(_path: str) -> bool:
-        return False
+from _lib.knowledge_notes import in_vault as _in_vault  # noqa: E402
 
 
 from _lib import project_workspace as _workspace  # noqa: E402

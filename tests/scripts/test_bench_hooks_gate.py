@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import textwrap
 from pathlib import Path
 
 import pytest
+from _helpers.cov_env import apply_coverage_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "hooks" / "_lib" / "bench_hooks.py"
@@ -45,6 +47,7 @@ def _bench(
             "--threshold-ms",
             str(threshold_ms),
         ],
+        env=apply_coverage_env(dict(os.environ)),
         capture_output=True,
         text=True,
         timeout=60,
