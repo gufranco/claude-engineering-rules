@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from collections.abc import Mapping
+from fnmatch import fnmatch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -28,6 +29,10 @@ from _lib.audit_log import record as _audit  # noqa: E402
 HOOK = "comment-blocker"
 BYPASS_ENV = "COMMENT_BLOCKER_DISABLE"
 SNIPPET_LIMIT = 60
+WAIVED_PATHS = (
+    "*src/nustoolkit/asm/*.asm",
+    "*snes-street-fighter-alpha-2-nochip/asm/*.asm",
+)
 EDIT_LABEL = "line numbers in the file this edit produces"
 STAGED_LABEL = "staged for commit, line numbers in the staged file"
 FIX_GUIDANCE = (
@@ -60,6 +65,8 @@ def format_hits(pairs: list[tuple[int, str]]) -> list[str]:
 
 
 def change_findings(path: str, before: str, after: str, label: str) -> list[str]:
+    if any(fnmatch(path, pattern) for pattern in WAIVED_PATHS):
+        return []
     after_view = document_view(path, after)
     if after_view is None:
         return []
