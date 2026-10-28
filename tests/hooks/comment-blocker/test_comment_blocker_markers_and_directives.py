@@ -154,12 +154,11 @@ def test_no_file_level_suppression_marker(tool_use, run_hook):
         ("/repo/src/app.ts", '/// <reference types="node" />\nconst x = 1\n'),
         ("/repo/src/app.ts", "const x = 1 // eslint-disable-line no-magic-numbers\n"),
         ("/repo/src/app.ts", "// biome-ignore lint: intentional\nconst x = 1\n"),
-        ("/repo/src/app.ts", "// istanbul ignore next\nconst x = 1\n"),
         ("/repo/pkg/main.go", "//go:build linux\n\npackage main\n"),
         ("/repo/pkg/main.go", "//nolint:errcheck\nx := 1\n"),
         ("/repo/src/app.py", "import os  # noqa: F401\n"),
         ("/repo/src/app.py", "x = load()  # type: ignore[no-any-return]\n"),
-        ("/repo/src/app.py", "def f():\n    return 1  # pragma: no cover\n"),
+        ("/repo/src/app.py", "x = 1  # pragma: no mutate\n"),
         ("/repo/src/app.py", "# ruff: noqa: E501\nx = 1\n"),
         ("/repo/src/app.py", "# fmt: off\nx = 1\n# fmt: on\n"),
         ("/repo/src/app.py", "# pylint: disable=too-many-locals\nx = 1\n"),
@@ -178,6 +177,27 @@ def test_allows_tool_directive(tool_use, run_hook, file_path, content):
 
     # Assert
     assert_allowed(result)
+
+
+@pytest.mark.parametrize(
+    ("file_path", "content"),
+    [
+        ("/repo/src/app.ts", "// " + "istan" + "bul ignore next\nconst x = 1\n"),
+        ("/repo/src/app.ts", "/* c" + "8 ignore next */\nconst x = 1\n"),
+        ("/repo/src/app.py", "def f():\n    return 1  # " + "prag" + "ma: no cover\n"),
+        ("/repo/src/app.py", "if x:  # " + "prag" + "ma: no branch\n    y()\n"),
+        ("/repo/lib/a.dart", "// coverage:" + "ignore-line\nfinal x = 1;\n"),
+    ],
+)
+def test_blocks_coverage_exclusion_directive(tool_use, run_hook, file_path, content):
+    # Arrange
+    payload = tool_use("Write", {"file_path": file_path, "content": content})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, BLOCK_MSG)
 
 
 @pytest.mark.parametrize(

@@ -224,9 +224,10 @@ Provenance: 2026-10-12, owner decision. The owner observed comments landing in l
 | Linters | `// eslint-disable-next-line no-console`, `// biome-ignore lint: reason`, `// oxlint-disable`, `# ruff: noqa`, `# noqa: E501`, `# pylint: disable=too-many-locals`, `# shellcheck disable=SC2086` |
 | Type checkers | `// @ts-expect-error`, `// @ts-check`, `/// <reference types="node" />`, `# type: ignore[no-any-return]`, `# pyright: ignore` |
 | Formatters | `// prettier-ignore`, `# fmt: off`, `# fmt: on`, `# isort: skip` |
-| Coverage | `// istanbul ignore next`, `/* c8 ignore start */`, `# pragma: no cover` |
 | Compilers and bundlers | `//go:build linux`, `//nolint:errcheck`, `/* webpackChunkName: "x" */`, `/* #__PURE__ */`, `//# sourceMappingURL=` |
 | Licensing and safety | `// SPDX-License-Identifier: Apache-2.0`, `# SPDX-FileCopyrightText: ...`, Rust `// SAFETY:` required by clippy's `undocumented_unsafe_blocks` |
+
+Coverage exclusion directives such as `// istanbul ignore next` or `# pragma: no cover` are not in this list. They hide untested code, and the 100% coverage rule in [`standards/testing.md`](testing.md#coverage) bans them outright.
 
 The drift argument does not apply to directives: a directive that goes stale is reported by the tool that reads it, so nothing silently misleads a later reader. Two limits keep the carve-out from becoming an escape hatch. The directive must sit at the start of the comment, which leaves a trailing justification allowed (`// eslint-disable-next-line no-console -- CLI entry point`) and blocks prose that merely names a tool. And a directive is written because a tool requires it, never because a line needs explaining.
 

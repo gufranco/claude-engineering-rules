@@ -30,8 +30,6 @@ TOOL_DIRECTIVE = re.compile(
       | webpack (?: ChunkName | Ignore | Mode | Prefetch | Preload ) \b
       | (?: @ )? vite-ignore \b
       | svelte-ignore \b
-      | istanbul \s+ ignore \b
-      | [cv]8 \s+ ignore \b
       | go: (?: build | generate | embed | linkname | noinline | nosplit ) \b
       | \+build \b
       | nolint \b
@@ -52,7 +50,7 @@ TOOL_DIRECTIVE = re.compile(
       | noqa \s* (?: : \s* \S+ )? \s* $
       | nosec \b (?: \s+ B\d+ )* \s* $
       | type: \s* ignore \b
-      | pragma: \s* \S
+      | pragma: \s* (?! no \s* (?: cover | branch ) \b ) \S
       | mypy:
       | pyright:
       | ruff:
@@ -61,7 +59,6 @@ TOOL_DIRECTIVE = re.compile(
       | fmt: \s* (?: off | on | skip ) \b
       | yapf: \s* (?: disable | enable ) \b
       | isort:
-      | coverage: \s* ignore \b
       | (?: en )? coding [:=] \s* [-\w.]+ \s* $
       | shellcheck \s+ (?: disable | enable | shell | source | source-path
           | external-sources ) \b

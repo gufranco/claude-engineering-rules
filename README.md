@@ -15,7 +15,7 @@
 
 </div>
 
-**47** always-on rules · **141** on-demand standards · **42** slash-command skills · **90** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+**47** always-on rules · **141** on-demand standards · **42** slash-command skills · **91** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
 
 ---
 
@@ -24,7 +24,7 @@
 <td width="50%" valign="top">
 
 ### Runtime Guardrails
-90 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+91 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
 
 </td>
 <td width="50%" valign="top">
@@ -79,7 +79,7 @@ A layered config where each layer catches what the layer above missed.
 | [`hooks/`](hooks) | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
 | [`skills/`](skills) | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
 | [`agents/`](agents) | Specialized subagents for focused review tasks | When delegated explicitly |
-| [`checklists/`](checklists) | 888-item review checklist for code, infra, and process | On demand during review |
+| [`checklists/`](checklists) | 889-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
@@ -92,7 +92,7 @@ A layered config where each layer catches what the layer above missed.
 | [`architecture-defaults`](rules/architecture-defaults.md) | Six-question architecture gate. Forces DDD, hexagonal, idempotency, dedup, and state-machine standards to load when the task warrants them. Hard rules baseline |
 | [`code-style`](rules/code-style.md) | DRY/SOLID/KISS, immutability, error classification, branded types, completeness rule, platform-first API selection, no-comments policy, which yields only to a project instruction file that explicitly requires JSDoc or doc comments |
 | [`design-philosophy`](rules/design-philosophy.md) | Complexity manifestations and root causes, deep modules, strategic vs tactical, design it twice, red flags, design taste |
-| [`testing`](rules/testing.md) | Integration-first, strict mock policy, unlabeled Arrange-Act-Assert test structure, expected values from an independent source rather than a recomputation of the code, fake data, deterministic tests. An assertion, test case, or test file is never weakened, skipped, or deleted to make a change pass |
+| [`testing`](rules/testing.md) | Integration-first, strict mock policy, unlabeled Arrange-Act-Assert test structure, expected values from an independent source rather than a recomputation of the code, fake data, deterministic tests. An assertion, test case, or test file is never weakened, skipped, or deleted to make a change pass. Coverage is 100% on every hand-written file with no exclusion directive, and every user-facing entry point and requirement scenario has an end-to-end test |
 | [`security`](rules/security.md) | Secrets, auth, encryption, data privacy, audit logging, supply chain |
 | [`git-workflow`](rules/git-workflow.md) | Conventional commits, branches, CI monitoring, PRs whose description carries before and after Evidence and a Merge Danger call: a one-way or two-way door and the blast radius |
 | [`verification`](rules/verification.md) | Evidence-based completion gates, response self-check, and a full read of every in-scope file on the first pass of any analysis |
@@ -194,7 +194,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-90 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+91 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -230,6 +230,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
+| [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | Blocks an edit that adds a coverage exclusion directive to source, such as `istanbul ignore`, `c8 ignore`, `pragma: no cover`, `#[coverage(off)]`, or `LCOV_EXCL_LINE`, and an edit to a coverage config that writes a threshold under 100. A new omit or exclude entry asks for confirmation, since only generated and vendored paths may be excluded. Prose files are exempt. Bypass `COVERAGE_EXCLUSION_GUARD_DISABLE=1`. |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. A heredoc body fed to `cat`, `tee`, `git`, `gh` or `glab` is data and is not matched; a body fed to a shell still is. Git global options such as `-C` and `-c` are stripped before matching, so `git -C <dir> push --force` blocks like the plain form, and `-f` or a cluster such as `-fu` counts as a force push. A build-directory cleanup skips the remaining checks only when every segment of the command is that cleanup. Input that is not valid JSON blocks. Protected-branch pushes are allowed when the repository the push targets, following `cd` and `-C`, is listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt); a push whose target cannot be determined never qualifies. Deleting a test file and searching `/` or the home directory with `find`, `grep -r`, `rg`, or `fd` raise a confirmation prompt |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Checks the repository a leading `cd` or `git -C` names, and includes unstaged changes for `commit -a`. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
 | [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | Blocks a `git commit` that changes rendered output (`.tsx`, `.html`, `.dart`, styles, theme tokens, native views such as `*View.swift` or `*Screen.kt`, desktop layouts such as `.qml` or `.xaml`, and sources importing a terminal UI library) without touching any render-level check: an e2e or browser suite, XCUITest, `androidTest`, or a terminal snapshot. A `*.spec.tsx` unit test does not count. Cascade outcome, paint order, the accessibility tree, focus order, and third-party iframes are invisible in source and absent from jsdom. At publish time it reads the branch diff against its base: `gh pr create` or `edit`, `gh issue create`, `edit`, or `comment`, a review-thread reply, `glab mr create` or `update`, and a Linear issue or comment on a branch with a visible change are blocked until they carry an `After:` image, plus `Before:` when an existing surface changed, each at least 1600 px on its longer side. Interface wording with no image and no visible change asks for confirmation. Bypass `FRONTEND_RENDER_GATE_DISABLE=1`, or a TTL-bound entry in the shared bypass registry. |
@@ -508,7 +509,7 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 888-item review checklist across 71 categories
+  checklists/            Unified 889-item review checklist across 71 categories
   rules/                 47 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
@@ -516,7 +517,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 90 runtime hooks
+  hooks/                 91 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

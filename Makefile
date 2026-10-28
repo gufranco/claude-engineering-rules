@@ -27,6 +27,13 @@ LINT_PATHS := hooks scripts tools .github/scripts tests analyzers
 # `make typecheck` rather than repeating the list, so the two cannot drift.
 TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/markdown-link-discipline.py \
+                   hooks/frontend-render-gate.py \
+                   hooks/coverage-exclusion-guard.py \
+                   hooks/_lib/coverage_exclusion.py \
+                   hooks/_lib/image_dimensions.py \
+                   hooks/_lib/publish_commands.py \
+                   hooks/_lib/ui_evidence.py \
+                   hooks/_lib/ui_surface.py \
                    $(sort $(wildcard hooks/_lib/mutation_*.py)) \
                    $(sort $(wildcard hooks/_lib/polyglot_mutation_*.py)) \
                    hooks/_lib/guard_runner.py \

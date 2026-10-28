@@ -206,7 +206,8 @@ Full testing philosophy, policies, and guidelines: [`standards/testing.md`](../s
 
 - [ ] Every new function/method has tests
 - [ ] Every code branch tested: success, each error case, each edge case
-- [ ] Coverage on changed code and related files at 95% or above
+- [ ] Coverage at 100% on every changed and related file, with no exclusion directive or omit entry for hand-written code
+- [ ] Every user-facing entry point and requirement scenario has an end-to-end test
 - [ ] Integration tests for database operations, not mocked unit tests
 
 #### Test quality

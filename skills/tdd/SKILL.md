@@ -117,7 +117,7 @@ Run the full test file after every refactor change. The bar is zero failing test
 ### 6. Verify gates
 
 - Format, lint, typecheck, full test suite, build. Apply the Local Quality Gate section of [`standards/git-workflow.md`](../../standards/git-workflow.md).
-- Coverage for the changed file at 95% or higher. Apply the Coverage section of [`standards/testing.md`](../../standards/testing.md).
+- Coverage for the changed file at 100%. Apply the Coverage section of [`standards/testing.md`](../../standards/testing.md).
 
 Report a one-line summary: behavior implemented, test name, files changed, coverage on changed file.
 
@@ -155,7 +155,7 @@ Report a one-line summary: behavior implemented, test name, files changed, cover
 - The green run output shows the new test passing and the full test file passing.
 - The test body has three blocks opened by the bare `Arrange`, `Act`, `Assert` markers, separated by single blank lines, and no other comment.
 - Format, lint, type check, the full suite, and the build exit 0, with zero new warnings.
-- Coverage on the changed file is 95% or higher.
+- Coverage on the changed file is 100%.
 
 ## Related skills
 

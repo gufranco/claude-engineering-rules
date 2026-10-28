@@ -304,14 +304,43 @@ Apply [`checklists/checklist.md`](../checklists/checklist.md) category 17. A cle
 
 ## Coverage
 
-- New code: 95%+ coverage
-- Changed files and files directly related to the changes: 95%+ coverage
-- Existing code: do not reduce coverage
-- **Coverage is a delivery gate.** No task is declared complete until every changed or related file meets 95%+ across statements, branches, functions, and lines. "Related" means files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files with fresh output. "It should pass" is not evidence.
-- **Agent-delegated work included.** When agents implement code, their deliverables must meet the same 95%+ threshold. The orchestrator must verify coverage after agent work completes, not assume it.
-- **Coverage locates gaps; it is never the target.** Read the uncovered lines to find user-visible behavior that has no test, then test that behavior per [What To Test](#what-to-test). A test written only to move the number asserts nothing a user depends on. The 95% gate above still holds, and it is met by testing behavior.
+- **100% on every file.** Statements, branches, functions, and lines all reach 100% on every hand-written file, measured per file, never as a project average. With nothing excluded, a 100% total and 100% on every file are the same claim, so a tool that only gates the total, such as `--cov-fail-under=100`, still enforces it.
+- **The measured set is every hand-written source file**: application code, scripts, hooks, command-line tools, and build helpers. Generated code and vendored third-party code are the only files left out, and they are left out by path in the coverage config.
+- **No exclusion directives.** Never `pragma: no cover`, `pragma: no branch`, `istanbul ignore`, `c8 ignore`, `v8 ignore`, `node:coverage disable`, `coverage:ignore`, `#[coverage(off)]`, `[ExcludeFromCodeCoverage]`, `@codeCoverageIgnore`, `LCOV_EXCL_LINE`, or `:nocov:`, and never an `omit` or `coveragePathIgnorePatterns` entry for hand-written code. `if __name__ == "__main__":` and `if TYPE_CHECKING:` blocks are tested, through `runpy` or a subprocess that coverage follows, or refactored away.
+- **A threshold only rises.** Every coverage threshold in config is 100. An edit that writes a lower one is a regression.
+- **Coverage is a delivery gate.** No task is declared complete until every changed or related file is at 100%, and the project's own gate passes. "Related" means files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool with fresh output. "It should pass" is not evidence.
+- **Agent-delegated work included.** When agents implement code, their deliverables meet the same 100%. The orchestrator verifies coverage after agent work completes, never assumes it.
+- **Coverage locates gaps; it is never the target.** Read the uncovered lines to find user-visible behavior that has no test, then test that behavior per [What To Test](#what-to-test). A test written only to move the number asserts nothing a user depends on. The 100% gate holds, and it is met by testing behavior.
 
-Provenance for the coverage-as-locator bullet: 2026-10-12, owner request, adopted from the ai-hero-cli what-to-test skill.
+### Code No Test Can Reach
+
+A line no test can reach is a design defect, never an exception to the gate. It is one of three things:
+
+| Cause | Fix |
+|---|---|
+| Dead code: a branch no input can take, a fallback for an import that always succeeds, a loop exit that never fires | Delete it |
+| Hidden dependency: the clock, randomness, the filesystem, the network, the environment, process exit | Inject it, or move it into the imperative shell and drive the shell through its real seam, such as a subprocess, a temporary directory, or a stub binary on `PATH` |
+| Defensive duplication: a check that a caller or the type system already guarantees | Remove it, or move it to the boundary where invalid input can actually arrive, and test it there |
+
+Refactor until the line is covered or gone. A file that resists is a file whose design is wrong.
+
+### 100% End-To-End
+
+Every user-facing entry point has an end-to-end test that drives it the way a user does: each route, screen, command-line command, public endpoint, and job trigger. Every requirement scenario in the plan or living spec has one too. Keep the mapping explicit, entry point or scenario to the test that drives it, and a missing row fails the task.
+
+The per-file 100% is measured across all suites combined. Integration and unit tests may cover error paths that an end-to-end run cannot reach, so the end-to-end obligation is completeness of entry points and scenarios, not a second per-file percentage.
+
+### Enforcing The Floor
+
+| Tool | Gate |
+|---|---|
+| pytest-cov | `--cov-fail-under=100` with `branch = True` |
+| coverage.py | `fail_under = 100` under `[report]` |
+| Node test runner | `--test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100` |
+
+[`hooks/coverage-exclusion-guard.py`](../hooks/coverage-exclusion-guard.py) blocks an edit that adds an exclusion directive to source or writes a threshold under 100 into a coverage config. It asks before a new omit or exclude entry, which is legitimate only for generated or vendored paths.
+
+Provenance for the coverage-as-locator bullet: 2026-10-12, owner request, adopted from the ai-hero-cli what-to-test skill. Provenance for the 100% floor: 2026-10-28, owner request: unreachable code is treated as an architecture problem, sloppy code, or code to delete.
 
 ## Write-Path Tests (MANDATORY)
 

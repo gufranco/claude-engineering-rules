@@ -12,7 +12,10 @@ Tests verify real behavior against real infrastructure. Prefer integration, then
 - Expected values come from an independent source: a known-good literal, a worked example, or the spec, never a recomputation of the code's own logic.
 - Generate data with a seeded faker: `@faker-js/faker`, `faker`, `gofakeit`, `fake`, `datafaker`. Static values like `"test@example.com"` are a blocking issue.
 - Zero warnings in test output. Names describe behavior and never reference ticket IDs.
-- Coverage gate: 95%+ statements, branches, functions, and lines on new code, changed files, and related files. Never reduce existing coverage. Agent-produced code meets the same gate. Coverage locates untested behavior a user would notice broken; it is never the target.
+- Coverage gate: 100% statements, branches, functions, and lines on every hand-written file, per file. Agent-produced code meets the same gate. Coverage locates untested behavior a user would notice broken; it is never the target.
+- No exclusions: no `pragma: no cover`, `istanbul ignore`, `c8 ignore`, or any other directive, and no omit entry for hand-written code. Only generated and vendored code stays out, listed by path in the coverage config. A threshold never drops below 100.
+- A line no test can reach is a design defect: delete dead code, inject the hidden dependency, or move the defensive check to the boundary. Refactor until it is covered.
+- 100% E2E: every user-facing entry point, route, screen, command, endpoint, and job trigger, and every requirement scenario, has an end-to-end test driving it the way a user does.
 - Every new or modified write path ships two extra tests against the real database: 10+ identical parallel calls asserting exactly one effect, and two sequential calls asserting one effect and a replayed response. Assert the loser's outcome. Restart the process between calls when a dedup store is involved.
 - Tests are deterministic: fixed clock, seeded randomness, isolated data, no `sleep` in assertions, random ports, temp dirs. Fix or delete a flaky test.
 - Env schema changes update `.env.example`, `.env.test`, CI, and Docker Compose in the same commit.
@@ -25,7 +28,8 @@ Full rule, examples, and rationale: [`standards/testing.md`](../standards/testin
 Enforced by: [`hooks/mock-internal-blocker.py`](../hooks/mock-internal-blocker.py).
 Enforced by: [`hooks/tdd-gate.py`](../hooks/tdd-gate.py).
 Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
+Enforced by: [`hooks/coverage-exclusion-guard.py`](../hooks/coverage-exclusion-guard.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction, under the fails-without-an-error-signal condition: a weakened or deleted test turns a failing change green, and a prose-only ban was reported to shift the agent from editing tests to deleting them.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction, under the fails-without-an-error-signal condition: a weakened or deleted test turns a failing change green, and a prose-only ban was reported to shift the agent from editing tests to deleting them. Amended 2026-10-28, by direct user instruction: the coverage floor is 100% per file with no exclusions, plus 100% E2E coverage of entry points and scenarios, because code no test can reach signals an architecture problem, sloppy code, or code to delete.

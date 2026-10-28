@@ -128,7 +128,7 @@ This skill accepts optional arguments after `/assessment`:
    - **AI slop scan**: run `python3 ~/.claude/tools/slop-scan.py <repo> --commits origin/<base>..HEAD`. It reuses the detectors of [`../../hooks/ai-slop-blocker.py`](../../hooks/ai-slop-blocker.py) over every Markdown file, skipping dependency and build directories, and over each commit message in the range. Exit 0 is clean, 1 lists findings, 2 is a scan error and counts as a failed check. Add `--json` to parse the rows. Record each finding by code.
    - **Output verification**: if the requirements include example inputs, expected outputs, or acceptance criteria, actually run the code with those inputs and verify the results match. Reading the code and believing it works is not proof.
 
-   Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Low test coverage, below 95%, is MEDIUM.
+   Any failures in this step are findings. A failing build or test is CRITICAL. Lint errors are MEDIUM. Dependency vulnerabilities are HIGH if exploitable, MEDIUM otherwise. Outdated dependencies are MEDIUM. Test coverage below 100% on any file is HIGH, and an exclusion directive or omit entry for hand-written code is HIGH.
 
    Record all results for inclusion in the assessment output.
 
