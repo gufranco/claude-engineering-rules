@@ -10,7 +10,7 @@ from typing import cast
 from dataclasses import dataclass
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib.shell_segments import (  # noqa: E402
     CODE_INTERPRETERS,
