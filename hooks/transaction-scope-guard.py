@@ -5,7 +5,7 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.hook_warning import emit_warning  # noqa: E402
 

@@ -11,7 +11,7 @@ CACHE_DIR = os.path.expanduser("~/.claude/cache")
 STATE_FILE = os.path.join(CACHE_DIR, "gateguard-state.json")
 STATE_TTL_SECONDS = 24 * 60 * 60
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.audit_log import record as _audit  # noqa: E402
 
 

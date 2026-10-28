@@ -8,7 +8,7 @@ import shlex
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
 from _lib.audit_log import record as _audit  # noqa: E402

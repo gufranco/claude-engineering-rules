@@ -6,7 +6,7 @@ import os
 import sys
 from typing import cast
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.coverage_exclusion import Action, Verdict, verdict_for  # noqa: E402
