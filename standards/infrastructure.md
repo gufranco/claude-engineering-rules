@@ -152,6 +152,24 @@ Stages should run in order of feedback speed: fastest checks first, slowest last
 7. **E2E / smoke tests**: minutes. Verify critical paths in a production-like environment.
 8. **Deploy to production**: minutes to hours depending on rollout strategy.
 
+### CI Workflow Defaults
+
+Every GitHub Actions workflow follows these defaults, enforced at write time by [`../hooks/workflow-guard.py`](../hooks/workflow-guard.py):
+
+| Default | Why |
+|---|---|
+| `runs-on` names the newest GA Ubuntu LTS label, `ubuntu-26.04` (as of 2026-10-29), never `ubuntu-latest` or another `-latest` label | A moving label changes the image without a commit. Renovate's `github-runners` manager bumps the pin when a newer LTS goes GA |
+| No macOS runner | It is slow and costly. A project whose artifact only macOS can build records a waiver |
+| `step-security/harden-runner` is the first step of every job | Egress is audited before any third-party code runs |
+| `actions/*` and `github/*` on a version tag; every other action on a full 40-character commit SHA with the version in a trailing comment | A tag on a third-party action can be repointed by its owner |
+| Installs use `corepack pnpm install --frozen-lockfile` and `uv sync --locked`; tools run through `pnpm exec` and `uv run` | npm, npx, yarn and pip resolve outside the committed lockfile |
+| A workflow triggered by `push` or `pull_request` sets a top-level `concurrency` group with `cancel-in-progress: true` | A newer push leaves the superseded run billing and its result is ignored anyway |
+| CI calls the same Makefile targets the local gate runs | A check that exists only in YAML cannot be reproduced before the push |
+
+The local gate runs from a fresh `git clone` of the commit with locked installs, never from the working tree, because a file the working tree has and the commit lacks passes locally and fails in CI.
+
+Provenance: Ubuntu LTS by direct user instruction on 2026-10-16; no macOS, harden-runner, pinning, concurrency, and pnpm with uv by direct user instruction on 2026-10-28, applied in `gufranco/claude-engineering-rules` commit `5ea69a9`. The fresh-clone gate on 2026-10-28, after a gate run on the working tree passed and two gate runs on clean clones of the same work failed.
+
 ### Artifact Immutability
 
 - Build the artifact once. Promote the same image/binary through all environments. Never rebuild for production.

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from _lib.shell_segments import strip_heredoc_bodies
+from _lib.shell_variables import assignments, expand
 
 
 class Channel(str, Enum):
@@ -151,9 +152,12 @@ def _body_text(
     return "\n".join(texts), tuple(unreadable)
 
 
-def _attachment(value: str) -> Attachment:
+def _attachment(value: str, cwd: str) -> Attachment:
     path, _, alt = value.partition("#")
-    return Attachment(path=path, alt=alt)
+    resolved = os.path.expanduser(path)
+    if cwd and not os.path.isabs(resolved):
+        resolved = os.path.normpath(os.path.join(cwd, resolved))
+    return Attachment(path=resolved, alt=alt)
 
 
 def _carries_text(channel: Channel, args: list[str], flags: _Flags) -> bool:
@@ -173,7 +177,7 @@ def _cli_publication(
     text, unreadable = _body_text(args, flags, command, cwd)
     return Publication(
         channel=channel,
-        attachments=tuple(_attachment(v) for v in _values(args, ("--attach",))),
+        attachments=tuple(_attachment(v, cwd) for v in _values(args, ("--attach",))),
         text=text,
         repo=next(iter(_values(args, ("--repo", "-R"))), ""),
         base=next(iter(_values(args, ("--base", "-B"))), ""),
@@ -282,8 +286,18 @@ def _segment_publication(
 
 def publications(command: str, cwd: str) -> list[Publication]:
     found: list[Publication] = []
+    known: dict[str, str] = {}
+    here = cwd
     for segment in _segments(command):
-        publication = _segment_publication(segment, command, cwd)
+        assigned = assignments(segment, known)
+        if assigned is not None:
+            known = assigned
+            continue
+        words = [expand(word, known) for word in segment]
+        if words[0] == "cd" and len(words) > 1:
+            here = os.path.join(here, words[1])
+            continue
+        publication = _segment_publication(words, command, here)
         if publication is not None:
             found = [*found, publication]
     return found

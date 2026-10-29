@@ -18,6 +18,8 @@ Tests verify real behavior against real infrastructure. Prefer integration, then
 - 100% E2E: every user-facing entry point, route, screen, command, endpoint, and job trigger, and every requirement scenario, has an end-to-end test driving it the way a user does.
 - Every new or modified write path ships two extra tests against the real database: 10+ identical parallel calls asserting exactly one effect, and two sequential calls asserting one effect and a replayed response. Assert the loser's outcome. Restart the process between calls when a dedup store is involved.
 - Tests are deterministic: fixed clock, seeded randomness, isolated data, no `sleep` in assertions, random ports, temp dirs. Fix or delete a flaky test.
+- Tests never depend on the developer's machine: set the git identity in any repository a test creates, point `HOME` at a temp directory before reading a dotfile, and cover each platform branch on a platform CI runs.
+- Deleting a test file asks first, except a file that is untracked and in no commit, such as a temporary capture spec the session created.
 - Env schema changes update `.env.example`, `.env.test`, CI, and Docker Compose in the same commit.
 - Each page gets at least one mobile viewport E2E test; 320px is the minimum width.
 
@@ -32,4 +34,4 @@ Enforced by: [`hooks/coverage-exclusion-guard.py`](../hooks/coverage-exclusion-g
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction, under the fails-without-an-error-signal condition: a weakened or deleted test turns a failing change green, and a prose-only ban was reported to shift the agent from editing tests to deleting them. Amended 2026-10-28, by direct user instruction: the coverage floor is 100% per file with no exclusions, plus 100% E2E coverage of entry points and scenarios, because code no test can reach signals an architecture problem, sloppy code, or code to delete.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction, under the fails-without-an-error-signal condition: a weakened or deleted test turns a failing change green, and a prose-only ban was reported to shift the agent from editing tests to deleting them. Amended 2026-10-28, by direct user instruction: the coverage floor is 100% per file with no exclusions, plus 100% E2E coverage of entry points and scenarios, because code no test can reach signals an architecture problem, sloppy code, or code to delete. Amended 2026-10-29, recurrence 3 in commit `efb6501` of `gufranco/claude-engineering-rules`: three tests passed only on a configured Mac and failed on the Linux runner. Amended 2026-10-29, `single-incident`, by direct user instruction: the test-deletion confirmation fired on an untracked screenshot spec the session had created, so a file in no commit is exempt.

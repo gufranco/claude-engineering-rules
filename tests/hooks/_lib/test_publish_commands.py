@@ -37,8 +37,8 @@ def test_pr_create_records_attachments_body_and_base(tmp_path):
     assert len(result) == 1
     assert result[0].channel is Channel.PR_CREATE
     assert result[0].attachments == (
-        Attachment("before.png", f"Before: {alt}"),
-        Attachment("after.png", ""),
+        Attachment(str(tmp_path / "before.png"), f"Before: {alt}"),
+        Attachment(str(tmp_path / "after.png"), ""),
     )
     assert (result[0].text, result[0].base, result[0].repo) == (
         "see shots",
@@ -308,3 +308,38 @@ def test_an_absolute_body_file_is_read_as_is(tmp_path):
 
     # Assert
     assert result[0].text == body
+
+
+def test_attachments_and_body_files_follow_a_cd_and_command_variables(tmp_path):
+    # Arrange
+    shots = tmp_path / "shots"
+    shots.mkdir()
+    (shots / "body.md").write_text("see below", encoding="utf-8")
+    command = (
+        f"S={shots}; cd $S && {GH} pr edit 7 --body-file body.md "
+        "--attach './even/after.png#After: page' --attach \"$S/b.png#Before: page\""
+    )
+
+    # Act
+    result = publications(command, str(tmp_path / "repo"))
+
+    # Assert
+    assert (result[0].text, result[0].attachments) == (
+        "see below",
+        (
+            Attachment(str(shots / "./even/after.png"), "After: page"),
+            Attachment(str(shots / "b.png"), "Before: page"),
+        ),
+    )
+
+
+def test_an_exported_variable_feeds_a_body_file_path(tmp_path):
+    # Arrange
+    (tmp_path / "pr.md").write_text("exported body", encoding="utf-8")
+    command = f"export B={tmp_path}; {GH} pr create --body-file ${{B}}/pr.md"
+
+    # Act
+    result = publications(command, "/elsewhere")
+
+    # Assert
+    assert (result[0].text, result[0].unreadable) == ("exported body", ())

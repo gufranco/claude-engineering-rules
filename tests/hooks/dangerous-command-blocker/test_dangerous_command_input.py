@@ -12,7 +12,7 @@ HOOKS_DIR = Path(__file__).resolve().parents[3] / "hooks"
 if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 
-from _lib.dangerous_command_input import read_command  # noqa: E402
+from _lib.dangerous_command_input import CommandInput, read_command  # noqa: E402
 
 
 class Refused(Exception):
@@ -34,7 +34,24 @@ def test_read_command_returns_the_bash_command(
     result = read_command(_refuse)
 
     # Assert
-    assert result == "ls -la"
+    assert result == CommandInput("ls -la", "")
+
+
+@pytest.mark.parametrize(
+    ("cwd", "expected"), [("/srv/project", "/srv/project"), (7, ""), (None, "")]
+)
+def test_read_command_carries_the_payload_cwd_when_it_is_a_string(
+    monkeypatch: pytest.MonkeyPatch, cwd: object, expected: str
+) -> None:
+    # Arrange
+    payload = {"tool_input": {"command": "rm a.test.ts"}, "cwd": cwd}
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+
+    # Act
+    result = read_command(_refuse)
+
+    # Assert
+    assert result == CommandInput("rm a.test.ts", expected)
 
 
 @pytest.mark.parametrize(

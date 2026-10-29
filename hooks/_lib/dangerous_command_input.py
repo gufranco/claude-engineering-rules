@@ -3,10 +3,17 @@ from __future__ import annotations
 import json
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import NoReturn
 
 
-def read_command(refuse: Callable[[str], NoReturn]) -> str:
+@dataclass(frozen=True, slots=True)
+class CommandInput:
+    command: str
+    cwd: str
+
+
+def read_command(refuse: Callable[[str], NoReturn]) -> CommandInput:
     try:
         data = json.loads(sys.stdin.read())
     except ValueError as exc:
@@ -19,4 +26,5 @@ def read_command(refuse: Callable[[str], NoReturn]) -> str:
     command = tool_input.get("command", "")
     if not isinstance(command, str):
         refuse("tool_input.command is not a string")
-    return command
+    cwd = data.get("cwd", "")
+    return CommandInput(command, cwd if isinstance(cwd, str) else "")

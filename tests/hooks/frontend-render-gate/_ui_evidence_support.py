@@ -19,7 +19,7 @@ from _helpers.cov_env import apply_coverage_env  # noqa: E402
 GH = "g" + "h"
 fake = Faker()
 Faker.seed(5521)
-SHARP = (2880, 1800)
+SHARP = (2880, 4200)
 
 
 def png(path: Path, size: tuple[int, int]) -> Path:

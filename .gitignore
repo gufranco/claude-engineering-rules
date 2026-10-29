@@ -37,6 +37,7 @@ history.jsonl
 .settings-hygiene-blocklist
 .last-cleanup
 .bypass-state.json
+.pr-session-ledger/
 .session-locks.json
 settings.local.json
 solo-repos.txt

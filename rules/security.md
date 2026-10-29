@@ -26,7 +26,8 @@ Full rule, examples, and rationale: [`standards/security.md`](../standards/secur
 Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
 Enforced by: [`hooks/env-file-guard.py`](../hooks/env-file-guard.py).
 Enforced by: [`hooks/secret-scanner.py`](../hooks/secret-scanner.py).
+Enforced by: [`hooks/package-manager-guard.py`](../hooks/package-manager-guard.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-28, by direct user instruction: lockfile installs name pnpm and uv, never npm, because the owner made pnpm and uv mandatory for every project.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-28, by direct user instruction: lockfile installs name pnpm and uv, never npm, because the owner made pnpm and uv mandatory for every project. Amended 2026-10-29, by the same instruction: [`hooks/package-manager-guard.py`](../hooks/package-manager-guard.py) now blocks npm, npx, yarn and pip installs in Bash.

@@ -456,6 +456,9 @@ Every test must produce the same result on every run, on every machine. A test t
 | Test execution order | No shared mutable state between tests. Each test sets up its own data |
 | Timing and delays | Never use `setTimeout` or `sleep` in assertions. Use deterministic signals (events, callbacks, polling with timeout) |
 | File system | Use temp directories, clean up in `afterEach` |
+| The developer's machine | Set the git identity inside any repository the test creates, point `HOME` at a temp directory before reading a dotfile, and assert each platform branch on the platform that takes it |
+
+A test that passes only where the author ran it fails first in CI. Origin: `gufranco/claude-engineering-rules` commit `efb6501` on 2026-10-28 fixed three tests that passed only on a configured Mac, two that committed without a git identity and one whose branch was reached only through the personal settings-hygiene blocklist, and gave a darwin-only coverage branch an in-process test that runs on Linux too.
 
 If a test fails intermittently, fix or delete it. Flaky tests erode trust in the entire suite and train developers to ignore failures.
 

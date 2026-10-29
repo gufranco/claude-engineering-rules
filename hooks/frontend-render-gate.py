@@ -25,6 +25,7 @@ from _lib.ui_evidence import (  # noqa: E402
     Action,
     Change,
     MIN_LONGER_SIDE_PX,
+    PROPOSAL_ADVICE,
     Verdict,
     evidence_verdict,
     format_changes,
@@ -114,7 +115,11 @@ BLOCK_MESSAGE = (
 CAPTURE_RECIPES = {
     Surface.WEB: (
         "  web:     agent-browser set viewport 1440 900 2\n"
-        "           agent-browser open <url> && agent-browser screenshot after.png\n"
+        "           agent-browser open <url>\n"
+        "           agent-browser screenshot --full after.png\n"
+        "           a page that scrolls inside a container: set that container and\n"
+        "           its fixed-height ancestors to height: auto first, never\n"
+        "           overflow: visible\n"
     ),
     Surface.MOBILE: (
         "  iOS:     xcrun simctl io booted screenshot after.png\n"
@@ -138,6 +143,9 @@ EVIDENCE_MESSAGE = (
     "Capture at a device scale of 2 or more; the longer side must reach\n"
     f"{MIN_LONGER_SIDE_PX} px.\n{{recipes}}\n"
     "{before_hint}"
+    "One set shares one pixel width: scale proportionally, never pad. Group\n"
+    "desktop and mobile under their own headings, and name the device and\n"
+    "viewport in every label, as in 'After: Mobile 320 px, default queue'.\n"
     "Attach with labeled alt text:\n"
     "  gh pr create --attach 'before.png#Before: <what>' "
     "--attach 'after.png#After: <what>'\n"
@@ -154,20 +162,17 @@ BEFORE_HINT = (
     "screen.\n\n"
 )
 
-ASK_MESSAGE = (
-    "{channel}: {reason}. Attach a high-resolution image of the current state\n"
-    "labeled Before:, and one labeled After: for the change or its mockup.\n"
-    "Approve only when no visible interface is involved.\n"
-    "Rule: rules/frontend-render-gate.md"
-)
+ASK_MESSAGE = "{channel}: {reason}.\n{advice}\nRule: rules/frontend-render-gate.md"
 UNKNOWN_DIFF = Verdict(
     Action.ASK,
     (
         "the branch diff against its base could not be read, so a visible change "
         "cannot be ruled out",
     ),
+    PROPOSAL_ADVICE,
 )
 DIFF_CHANNELS = PULL_REQUEST_CHANNELS - {Channel.THREAD_REPLY}
+TRACKER_CHANNELS = frozenset({Channel.TRACKER_ISSUE, Channel.TRACKER_COMMENT})
 
 
 def _git(repo: str, *args: str) -> subprocess.CompletedProcess[str]:
@@ -292,8 +297,9 @@ def _same_repo(repo: str, slug: str) -> bool:
     return url == wanted or url.endswith((f"/{wanted}", f":{wanted}"))
 
 
-def ui_changes(publication: Publication, repo: str) -> list[Change] | None:
-    if not _same_repo(repo, publication.repo):
+def ui_changes(publication: Publication, repos: tuple[str, ...]) -> list[Change] | None:
+    repo = next((r for r in repos if _same_repo(r, publication.repo)), None)
+    if repo is None:
         return None
     base = resolve_base(repo, publication.base)
     if base is None:
@@ -314,13 +320,17 @@ def _resolve_attachments(publication: Publication, repo: str) -> Publication:
     return dataclasses.replace(publication, attachments=attachments)
 
 
-def judge(publication: Publication, repo: str) -> tuple[Verdict, list[Change]]:
-    changes = ui_changes(publication, repo)
+def judge(
+    publication: Publication, repos: tuple[str, ...]
+) -> tuple[Verdict, list[Change]]:
+    if publication.channel in TRACKER_CHANNELS:
+        return proposal_verdict(publication), []
+    changes = ui_changes(publication, repos)
     if changes is None and publication.channel in DIFF_CHANNELS:
         return UNKNOWN_DIFF, []
     if not changes:
         return proposal_verdict(publication), []
-    resolved = _resolve_attachments(publication, repo)
+    resolved = _resolve_attachments(publication, repos[0])
     return evidence_verdict(resolved, changes, read_dimensions), changes
 
 
@@ -343,7 +353,9 @@ def _ask(publication: Publication, verdict: Verdict) -> int:
             "hookEventName": "PreToolUse",
             "permissionDecision": "ask",
             "permissionDecisionReason": ASK_MESSAGE.format(
-                channel=publication.channel.value, reason="; ".join(verdict.problems)
+                channel=publication.channel.value,
+                reason="; ".join(verdict.problems),
+                advice=verdict.advice,
             ),
         }
     }
@@ -351,9 +363,9 @@ def _ask(publication: Publication, verdict: Verdict) -> int:
     return 0
 
 
-def check_publications(found: list[Publication], repo: str) -> int:
+def check_publications(found: list[Publication], repos: tuple[str, ...]) -> int:
     for publication in found:
-        verdict, changes = judge(publication, repo)
+        verdict, changes = judge(publication, repos)
         if verdict.action is Action.BLOCK:
             print(_evidence_message(publication, verdict, changes), file=sys.stderr)
             return 2
@@ -364,16 +376,16 @@ def check_publications(found: list[Publication], repo: str) -> int:
 
 def _publications(
     payload: dict[str, object], cwd: str
-) -> tuple[list[Publication], str]:
+) -> tuple[list[Publication], tuple[str, ...]]:
     tool_input = cast("dict[str, object]", payload["tool_input"])
     tracked = tracker_publication(str(payload.get("tool_name", "")), tool_input)
     if tracked is not None:
-        return [tracked], cwd
+        return [tracked], (cwd,)
     if payload.get("tool_name") != "Bash":
-        return [], cwd
+        return [], (cwd,)
     command = str(tool_input.get("command", ""))
     repo = repo_dir(command, cwd)
-    return publications(command, repo), repo
+    return publications(command, cwd), (repo, cwd)
 
 
 def main() -> int:
@@ -387,8 +399,8 @@ def main() -> int:
     command = _commit_command(payload)
     if command is not None and check_commit(command, cwd) != 0:
         return 2
-    found, repo = _publications(payload, cwd)
-    return check_publications(found, repo)
+    found, repos = _publications(payload, cwd)
+    return check_publications(found, repos)
 
 
 if __name__ == "__main__":

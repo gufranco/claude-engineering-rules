@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本發佈</a>
 </p>
 
-47 條常駐規則、141 份按需載入的標準、42 個技能、91 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 889 項的審查清單。
+47 條常駐規則、141 份按需載入的標準、42 個技能、93 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
 
 ---
 
@@ -70,13 +70,13 @@ graph LR
 | [`hooks/`](hooks) | 在執行時攔截破壞性指令、密鑰和禁用模式 | 每一次工具呼叫之前 |
 | [`skills/`](skills) | 有文件說明的多步驟工作流程：ship、review、plan、audit | 用戶呼叫 `/<name>` 時 |
 | [`agents/`](agents) | 專注於特定審查任務的子代理 | 明確委派時 |
-| [`checklists/`](checklists) | 涵蓋程式碼、基礎設施和流程的 889 項審查清單 | 審查時按需使用 |
+| [`checklists/`](checklists) | 涵蓋程式碼、基礎設施和流程的 905 項審查清單 | 審查時按需使用 |
 
 ## 包含的內容
 
 ### 常駐規則
 
-[`rules/`](rules/) 中有 47 條規則，[`rules/lang/`](rules/lang/) 中另有 5 條。[`rules/`](rules/) 下的每個檔案都會以簡短核心的形式載入每一次對話，包括語言檔案和表格後列出的 6 條。每個核心只保留會改變日常任務行為的義務，並連結到 [`standards/`](standards/) 中的全文，因此常駐集合維持在 55 個檔案、102,513 個字元，低於 CI 強制執行的 120,000 字元預算，也低於執行環境 150,000 字元的上限。
+[`rules/`](rules/) 中有 47 條規則，[`rules/lang/`](rules/lang/) 中另有 5 條。[`rules/`](rules/) 下的每個檔案都會以簡短核心的形式載入每一次對話，包括語言檔案和表格後列出的 6 條。每個核心只保留會改變日常任務行為的義務，並連結到 [`standards/`](standards/) 中的全文，因此常駐集合維持在 55 個檔案、106,032 個字元，低於 CI 強制執行的 120,000 字元預算，也低於執行環境 150,000 字元的上限。
 
 | 規則 | 涵蓋內容 |
 |:-----|:---------------|
@@ -185,7 +185,7 @@ graph LR
 
 ### 鈎子
 
-[`hooks/`](hooks/) 中有 91 個鈎子，透過 [`settings.json`](settings.json) 接駁。每個鈎子在工具呼叫之前、之後或前後執行。
+[`hooks/`](hooks/) 中有 93 個鈎子，透過 [`settings.json`](settings.json) 接駁。每個鈎子在工具呼叫之前、之後或前後執行。
 
 **繞過渠道。** 每個鈎子都支援兩種渠道，任何一種都可以放行，兩者可以並存。
 
@@ -208,7 +208,7 @@ graph LR
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | 攔截提交和 PR 中的 AI 合著者附註、`Claude-Session` 附註和 claude.ai 工作階段連結，以及外發提交帶有這些內容的 `git push` |
 | [`ai-disclosure-checks.py`](hooks/ai-disclosure-checks.py) | PreToolUse Write/Edit/MultiEdit | 攔截沒有可見 AI 披露就渲染模型輸出的做法，以及沒有標明身份的聊天機械人介面。歐盟《人工智能法》第 52 條、加州 SB 942。繞過：`AI_DISCLOSURE_DISABLE=1` |
 | [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | 攔截提交、PR、發佈說明和程式碼註解中的 AI 工作過程用語。捕捉階段編號、計劃檔案路徑的引用、指向規格資料夾或本地工作區的連結，以及誇張字眼。在原始碼檔案中只掃描註解，所以步驟標籤這類產品字串可以通過。寫入工作區或工作階段草稿區的內容不受限制，只有當發佈指令位於引號之外時，Bash 指令才算作發佈 |
-| [`ai-review-request.py`](hooks/ai-review-request.py) | PostToolUse Bash | 在目前帳戶建立的開放 PR 上執行 `gh pr create`、`gh pr ready` 或 `git push` 之後，要求儲存庫支援的所有 AI 審查：在 Claude App 以手動模式執行的地方發一次 `@claude review always`，在工作流程以標籤控制的地方加上 `claude-review` 標籤。CodeRabbit 和 Codex 每次推送都會審查，所以不作處理。從不攔截，只報告一行 `ai-review:`。亦可作為 CLI 使用：`--repo owner/name --pr N --account login [--dry-run]`。繞過：`AI_REVIEW_REQUEST_DISABLE=1` |
+| [`ai-review-request.py`](hooks/ai-review-request.py) | PostToolUse Bash | 在目前帳戶建立的開放 PR 上執行 `gh pr create`、`gh pr ready` 或 `git push` 之後，要求儲存庫支援的所有 AI 審查：在 Claude App 以手動模式執行的地方發一次 `@claude review always`，在工作流程以標籤控制的地方加上 `claude-review` 標籤。CodeRabbit 和 Codex 每次推送都會審查，所以不作處理。從不攔截，只報告一行 `ai-review:`。亦可作為 CLI 使用：`--repo owner/name --pr N --account login [--dry-run]`。把看到的每個新建拉取請求記入按工作階段劃分的台賬，供 `pr-comment-discipline.py` 讀取。繞過：`AI_REVIEW_REQUEST_DISABLE=1` |
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | 攔截能避過禁用語句清單的結構性冗詞痕跡：否定式對偶、誇大重要性、附加評價的分詞短語、不具名的權威、含糊的推測、取代 `is` 和 `has` 的推銷動詞、開場鋪排、結尾覆述、聊天殘留、未填寫的佔位符、彎引號，以及搜尋經過的敘述，例如拒絕存取的網站或檢查的日期。粗體標籤的清單項目和標題只在公開的 PR 評論中攔截。編號為 `SLOP001` 至 `SLOP015`。搜尋經過的敘述在知識庫、項目工作區和 `PROMPT.md` 中是容許的。配對前會遮蓋程式碼片段，每個偵測器都在 rules、standards、checklists、skills、agents、docs 目錄和根目錄文件中的 333 個 Markdown 檔案上調校過。繞過：`AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | 攔截 TypeScript 的 `as any` 和泛型中的 `any`。沒有放行標記，只遵從第三方工具的指令。 |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | 攔截沒有 `--profile` 的 `aws configure set` |
@@ -222,9 +222,9 @@ graph LR
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | 攔截非測試程式碼中的 `console.*`。沒有放行標記，只遵從第三方工具的指令。 |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | 驗證 Conventional Commits 格式 |
 | [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | 攔截在原始碼加入覆蓋率排除指令的編輯，例如 `istanbul ignore`、`c8 ignore`、`pragma: no cover`、`#[coverage(off)]` 或 `LCOV_EXCL_LINE`，亦攔截把覆蓋率設定的門檻寫到 100 以下的編輯。只有生成的程式碼和第三方程式碼的路徑可以排除，所以新增 omit 或 exclude 項目時會要求確認。文字檔案不受限制。繞過：`COVERAGE_EXCLUSION_GUARD_DISABLE=1`。 |
-| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 種模式：破壞性的 shell 指令、反向 shell、雲端資源刪除、IaC 的 destroy。傳給 `cat`、`tee`、`git`、`gh` 或 `glab` 的 heredoc 正文屬於數據，不作配對；傳給 shell 的正文仍會配對。配對前會去掉 `-C`、`-c` 等 git 全局選項，所以 `git -C <dir> push --force` 與一般寫法一樣會被攔截，`-f` 或 `-fu` 這類組合亦算強制推送。只有當指令的每一段都是清理建置目錄時，這種清理才可以略過其餘檢查。不是有效 JSON 的輸入會被攔截。當推送的目標儲存庫（會追蹤 `cd` 和 `-C`）列在本機的 `solo-repos.txt` 中時，容許推送到受保護分支，這個檔案以 [`solo-repos.example.txt`](solo-repos.example.txt) 為範本；無法確定目標的推送不計在內。刪除測試檔案，以及以 `find`、`grep -r`、`rg` 或 `fd` 搜尋 `/` 或主目錄，會彈出確認 |
+| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 種模式：破壞性的 shell 指令、反向 shell、雲端資源刪除、IaC 的 destroy。傳給 `cat`、`tee`、`git`、`gh` 或 `glab` 的 heredoc 正文屬於數據，不作配對；傳給 shell 的正文仍會配對。配對前會去掉 `-C`、`-c` 等 git 全局選項，所以 `git -C <dir> push --force` 與一般寫法一樣會被攔截，`-f` 或 `-fu` 這類組合亦算強制推送。只有當指令的每一段都是清理建置目錄時，這種清理才可以略過其餘檢查。不是有效 JSON 的輸入會被攔截。當推送的目標儲存庫（會追蹤 `cd` 和 `-C`）列在本機的 `solo-repos.txt` 中時，容許推送到受保護分支，這個檔案以 [`solo-repos.example.txt`](solo-repos.example.txt) 為範本；無法確定目標的推送不計在內。刪除測試檔案，以及以 `find`、`grep -r`、`rg` 或 `fd` 搜尋 `/` 或主目錄，會彈出確認，但未被追蹤且不在任何提交中的測試檔案除外 |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | 攔截暫存差異會令現有文件變假的 `git commit`。四項肯定的檢查：程式碼讀取了 `.env.example` 沒有列出的變數，以及刪除了已追蹤 Markdown 仍在提及的匯出、CLI 旗標或套件腳本。檢查前置的 `cd` 或 `git -C` 指定的儲存庫，並在 `commit -a` 時包括未暫存的改動。變更記錄、ADR 和規格作為歷史記錄不在此列。繞過：`DOC_SYNC_DISABLE=1` |
-| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | 攔截改變渲染輸出（`.tsx`、`.html`、`.dart`、樣式、主題標記、`*View.swift` 或 `*Screen.kt` 等原生視圖、`.qml` 或 `.xaml` 等桌面版面，以及匯入終端 UI 程式庫的原始碼）卻沒有觸及任何渲染層檢查（e2e 或瀏覽器測試套件、XCUITest、`androidTest`，或終端快照）的 `git commit`。`*.spec.tsx` 單元測試不算。層疊結果、繪製次序、無障礙樹、焦點次序和第三方 iframe 從原始碼看不出來，jsdom 中亦沒有。發佈時，它會把分支差異與基準分支比較：在有可見改動的分支上，`gh pr create` 或 `edit`，`gh issue create`、`edit` 或 `comment`，審查討論串的回覆，`glab mr create` 或 `update`，以及 Linear 的 Issue 或評論，都會被攔截，直至附上 `After:` 圖片，現有介面有改動時還要附上 `Before:` 圖片，每張圖片的長邊最少 1600 像素。沒有圖片亦沒有可見改動的介面文字會要求確認。繞過：`FRONTEND_RENDER_GATE_DISABLE=1`，或共用繞過登記冊中附 TTL 的項目。 |
+| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | 攔截改變渲染輸出（`.tsx`、`.html`、`.dart`、樣式、主題標記、`*View.swift` 或 `*Screen.kt` 等原生視圖、`.qml` 或 `.xaml` 等桌面版面，以及匯入終端 UI 程式庫的原始碼）卻沒有觸及任何渲染層檢查（e2e 或瀏覽器測試套件、XCUITest、`androidTest`，或終端快照）的 `git commit`。`*.spec.tsx` 單元測試不算。層疊結果、繪製次序、無障礙樹、焦點次序和第三方 iframe 從原始碼看不出來，jsdom 中亦沒有。發佈時，它會把分支差異與基準分支比較：在有可見改動的分支上，`gh pr create` 或 `edit`，`gh issue create`、`edit` 或 `comment`，審查討論串的回覆，`glab mr create` 或 `update`，以及 Linear 的 Issue 或評論，都會被攔截，直至附上 `After:` 圖片，現有介面有改動時還要附上 `Before:` 圖片，每張圖片的長邊最少 1600 像素。沒有圖片亦沒有可見改動的介面文字會要求確認。同一組圖片的像素寬度必須相同；只要有一個標籤寫了裝置，每個標籤都要寫明裝置和視窗。高度剛好等於一個視窗的圖片會被要求改為整頁截圖。附件路徑會跟隨 `$VAR` 和 `cd`，追蹤器項目只按其本身文字判斷。繞過：`FRONTEND_RENDER_GATE_DISABLE=1`，或共用繞過登記冊中附 TTL 的項目。 |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | 每次呼叫都強制指定 `--context` 或 `DOCKER_CONTEXT` |
 | [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | 攔截 `.env` 及密鑰和證書的複製、名稱像密鑰而值為字面值的 `ENV` 和 `ARG`、Compose 中的 `privileged: true`，以及主機命名空間的切換。對不固定的標籤、`USER root`、已停用的頂層 `version:` 和 `environment:` 中的字面密鑰發出警告。繞過：`DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | 攔截 Drizzle 的原始查詢後門，包括 `tx` 和 `trx` 接收者以及測試檔案 |
@@ -257,7 +257,8 @@ graph LR
 | [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | 攔截 JS/TS 中 105 種原地修改的模式。沒有放行標記，只遵從第三方工具的指令。 |
 | [`normative-keyword-discipline.py`](hooks/normative-keyword-discipline.py) | PreToolUse Write/Edit/MultiEdit | 在 rules、standards、checklists 和 [`CLAUDE.md`](CLAUDE.md) 中攔截以 `Should ` 或 `should ` 開頭的清單項目。落實 BCP 14 有關含糊用字的規則。繞過：`NORMATIVE_KEYWORD_DISABLE=1` |
 | [`notify-webhook.py`](hooks/notify-webhook.py) | Stop | 回覆完成時向 `CLAUDE_NOTIFY_WEBHOOK` 發送 POST |
-| [`pr-comment-discipline.py`](hooks/pr-comment-discipline.py) | PreToolUse Bash | 攔截每一條在討論串以外發佈拉取請求評論的指令：`gh pr` 的 comment 子指令、帶正文的 `gh pr review`、帶非空總結的 reviews POST、沒有 `in_reply_to` 的 `pulls/<n>/comments` POST、`issues/<n>/comments` POST、提交評論的 POST、GitLab 的 MR 備註或新討論，以及沒有父項的 Bitbucket 評論。會讀取 `--input` 和 `--body-file` 的載荷。heredoc 正文中的評論指令屬於數據。討論串回覆、正文為空的審查提交和描述編輯不受影響。繞過：`PR_COMMENT_DISCIPLINE_DISABLE=1` |
+| [`package-manager-guard.py`](hooks/package-manager-guard.py) | PreToolUse Bash | 攔截 npm、npx、yarn 和 pip 的安裝，並列出應改用的 pnpm 或 uv 指令。`npm --version` 這類版本查詢、`uv pip` 和引號內的文字會放行。繞過：`PACKAGE_MANAGER_GUARD_DISABLE=1` |
+| [`pr-comment-discipline.py`](hooks/pr-comment-discipline.py) | PreToolUse Bash | 攔截每一條在討論串以外發佈拉取請求評論的指令：`gh pr` 的 comment 子指令、帶正文的 `gh pr review`、帶非空總結的 reviews POST、沒有 `in_reply_to` 的 `pulls/<n>/comments` POST、`issues/<n>/comments` POST、提交評論的 POST、GitLab 的 MR 備註或新討論，以及沒有父項的 Bitbucket 評論。會讀取 `--input` 和 `--body-file` 的載荷。heredoc 正文中的評論指令屬於數據。討論串回覆、正文為空的審查提交和描述編輯不受影響。在同一工作階段已經開過拉取請求的儲存庫裏，第二次 `gh pr create` 之前會要求確認。繞過：`PR_COMMENT_DISCIPLINE_DISABLE=1` |
 | [`pr-merge-blocker.py`](hooks/pr-merge-blocker.py) | PreToolUse Bash | 在 `/morning` 巡查持有工作階段鎖期間，拒絕每一種形式的拉取請求合併。涵蓋 `gh pr merge`、`glab mr merge`、REST 合併端點和 GraphQL 合併變更。巡查以外不起作用，所以 `/deploy land` 仍然可用。`git merge` 和 `gh pr update-branch` 不受影響。繞過：`PR_MERGE_BLOCKER_DISABLE=1` |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | 攔截 Prisma 的原始查詢後門，測試檔案亦一樣 |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | 強制 schema.prisma 與遷移保持一致，包括多欄 `ALTER TABLE` 的每一欄和欄位層級 `@unique(map:)` 的名稱 |
@@ -295,6 +296,7 @@ graph LR
 | [`vault-recall.py`](hooks/vault-recall.py) | UserPromptSubmit | 注入與提示最接近的第二大腦筆記，只包括標題和前言。排序使用與 `/brain eval` 評分相同的函數，因此召回的倒退可以量度。唯讀，只有在知識庫可以解析而且有筆記超過分數下限時才輸出。繞過：`VAULT_RECALL_DISABLE=1` |
 | [`vault-session-capture.py`](hooks/vault-session-capture.py) | PreCompact | 在對話記錄被壓縮掉之前，把本工作階段做過的事附加到當天的知識庫筆記中，這是細節仍然存在的最後時刻。加鎖附加，所以並行的工作階段不會互相覆寫 |
 | [`vault-capture-queue.py`](hooks/vault-capture-queue.py) | Stop | 判斷本輪是否糾正了某個看法或發現了某個原因，如果是，就排入佇列，交給下一個工作階段記錄；下一個工作階段會在處理用戶任務的同時處理佇列，不會詢問。只寫一行附加式記錄，不啟動任何東西，因為程序分辨不到長期有效的教訓和隨口一提，而掌握這種判斷卻無人看管的寫入者會把推測當作事實記下。繞過：`VAULT_CAPTURE_QUEUE_DISABLE=1` |
+| [`workflow-guard.py`](hooks/workflow-guard.py) | PreToolUse Write/Edit/MultiEdit | 攔截使用 macOS 執行器或 `-latest` 標籤、第三方 action 未固定到完整提交 SHA、含 npm、npx、yarn 或 pip 步驟，以及 `push` 或 `pull_request` 工作流程欠缺可取消的 concurrency 組的 GitHub Actions 工作流程。對早於 `ubuntu-26.04` 的 Ubuntu LTS 和欠缺 `step-security/harden-runner` 的作業發出警告。繞過：`WORKFLOW_GUARD_DISABLE=1` |
 
 ### 自訂代理
 
@@ -508,7 +510,7 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 889-item review checklist across 71 categories
+  checklists/            Unified 905-item review checklist across 71 categories
   rules/                 47 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
@@ -516,7 +518,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 91 runtime hooks
+  hooks/                 93 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -558,7 +560,7 @@ $HOME/.claude/
 <summary><strong>兩級規則載入如何節省上下文？</strong></summary>
 <br>
 
-141 份標準合共 27,200 行。如果每次對話都全部載入，會耗盡上下文視窗。[`rules/index.yml`](rules/index.yml) 把每份標準對應到觸發關鍵字。任務配對時，例如加入一次數據庫遷移會帶出 `database.md`，只會載入相關的標準。
+141 份標準合共 27,285 行。如果每次對話都全部載入，會耗盡上下文視窗。[`rules/index.yml`](rules/index.yml) 把每份標準對應到觸發關鍵字。任務配對時，例如加入一次數據庫遷移會帶出 `database.md`，只會載入相關的標準。
 
 </details>
 

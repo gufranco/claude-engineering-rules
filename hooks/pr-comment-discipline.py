@@ -5,6 +5,7 @@ import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -17,6 +18,7 @@ from _lib.bypass import is_bypassed  # noqa: E402
 
 
 from _lib.hook_profile import should_run  # noqa: E402
+from _lib.pr_session_ledger import create_repos, ledger_dir, opened  # noqa: E402
 
 
 HOOK_ID = "pr-comment-discipline"
@@ -336,6 +338,42 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
     return _curl_violation(command, executed, cwd)
 
 
+SECOND_PR = (
+    "This session already opened {prs}. One task gets one pull request per "
+    "repository: cherry-pick the follow-up onto that branch, update its title "
+    "and body so the body names every tracker key, and close any extra pull "
+    "request without a comment. Approve only when this is a separate task."
+)
+UNREADABLE_LEDGER = (
+    "Pull-request check could not read the pull-request ledger ({error}), so a "
+    "second pull request for this task cannot be ruled out. Approve only when "
+    "this is the first pull request for the task in this repository."
+)
+
+
+def second_pr_reason(command: str, cwd: str, session: str) -> str:
+    try:
+        repeats = [
+            entry
+            for slug in create_repos(command, cwd or os.getcwd())
+            for entry in opened(session, slug, ledger_dir())
+        ]
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        return UNREADABLE_LEDGER.format(error=exc)
+    return SECOND_PR.format(prs=", ".join(repeats)) if repeats else ""
+
+
+def _ask(reason: str, command: str) -> int:
+    decision = {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "ask",
+        "permissionDecisionReason": reason,
+    }
+    print(json.dumps({"hookSpecificOutput": decision}))
+    _audit(hook=HOOK_ID, decision="ask", tool="Bash", command_excerpt=command[:240])
+    return 0
+
+
 def _skip_run() -> bool:
     if not should_run(HOOK_ID):
         return True
@@ -377,7 +415,8 @@ def main() -> int:
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
     violation = find_violation(command, cwd)
     if violation is None:
-        return 0
+        reason = second_pr_reason(command, cwd, str(payload.get("session_id") or ""))
+        return _ask(reason, command) if reason else 0
     code, explanation = violation
     return _block(code, explanation, command)
 

@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">リリース</a>
 </p>
 
-常時ロードされるルール47件、オンデマンドの標準141件、スキル42件、フック91件、エージェント18件に加え、71カテゴリ・889項目のレビューチェックリストを備えています。
+常時ロードされるルール47件、オンデマンドの標準141件、スキル42件、フック93件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
 
 ---
 
@@ -70,13 +70,13 @@ graph LR
 | [`hooks/`](hooks) | 破壊的なコマンド、シークレット、禁止パターンを実行時にブロック | すべてのツール呼び出しの前 |
 | [`skills/`](skills) | ship、review、plan、auditなど、手順が文書化された複数ステップのワークフロー | ユーザーが`/<name>`を呼び出したとき |
 | [`agents/`](agents) | 特定のレビュー作業に特化したサブエージェント | 明示的に委任されたとき |
-| [`checklists/`](checklists) | コード、インフラ、プロセスを対象とする889項目のレビューチェックリスト | レビュー中に必要に応じて |
+| [`checklists/`](checklists) | コード、インフラ、プロセスを対象とする905項目のレビューチェックリスト | レビュー中に必要に応じて |
 
 ## 含まれるもの
 
 ### 常時ロードされるルール
 
-[`rules/`](rules/)に47件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは55ファイルで102,513文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
+[`rules/`](rules/)に47件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは55ファイルで106,032文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
 
 | ルール | 対象 |
 |:-----|:---------------|
@@ -185,7 +185,7 @@ graph LR
 
 ### フック
 
-[`hooks/`](hooks/)に91件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
+[`hooks/`](hooks/)に93件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
 
 **バイパスの経路。** すべてのフックが2つの経路に対応しています。どちらでも通過でき、両方を併用できます。
 
@@ -208,7 +208,7 @@ graph LR
 | [`ai-attribution-blocker.py`](hooks/ai-attribution-blocker.py) | PreToolUse Bash/Write/Edit | コミットとPRのAI共著者トレーラー、`Claude-Session`トレーラー、claude.aiのセッションリンクをブロックし、送信するコミットにそれを含む`git push`もブロックします |
 | [`ai-disclosure-checks.py`](hooks/ai-disclosure-checks.py) | PreToolUse Write/Edit/MultiEdit | AIであることを目に見える形で開示せずにモデルの出力を描画することと、何であるかを示すラベルのないチャットボットUIをブロックします。EU AI法第52条、カリフォルニア州SB 942。バイパスは`AI_DISCLOSURE_DISABLE=1` |
 | [`ai-process-leak-blocker.py`](hooks/ai-process-leak-blocker.py) | PreToolUse Bash/Write/Edit | コミット、PR、リリースノート、コードコメントに含まれるAIの作業過程の言葉をブロックします。フェーズ番号、計画ファイルのパスへの言及、仕様フォルダやローカルワークスペースへのリンク、誇張表現を捕まえます。ソースファイルではコメントだけを走査するため、ステップのラベルのような製品の文字列は通過します。ワークスペースやセッションのスクラッチパッドへの書き込みは対象外で、Bashコマンドが公開とみなされるのは、公開するコマンドが引用符の外にある場合だけです |
-| [`ai-review-request.py`](hooks/ai-review-request.py) | PostToolUse Bash | 実行しているアカウントが作成した開いているPRで`gh pr create`、`gh pr ready`、`git push`を行った後、リポジトリが対応するすべてのAIレビューを依頼します。Claude Appが手動モードで動く場所では`@claude review always`を1回、ワークフローがラベルで制御される場所では`claude-review`ラベルを付けます。CodeRabbitとCodexはプッシュのたびにレビューするため何もしません。ブロックはせず、`ai-review:`の行を1行報告します。CLIとしても使えます：`--repo owner/name --pr N --account login [--dry-run]`。バイパスは`AI_REVIEW_REQUEST_DISABLE=1` |
+| [`ai-review-request.py`](hooks/ai-review-request.py) | PostToolUse Bash | 実行しているアカウントが作成した開いているPRで`gh pr create`、`gh pr ready`、`git push`を行った後、リポジトリが対応するすべてのAIレビューを依頼します。Claude Appが手動モードで動く場所では`@claude review always`を1回、ワークフローがラベルで制御される場所では`claude-review`ラベルを付けます。CodeRabbitとCodexはプッシュのたびにレビューするため何もしません。ブロックはせず、`ai-review:`の行を1行報告します。CLIとしても使えます：`--repo owner/name --pr N --account login [--dry-run]`。作成されたプルリクエストをセッションごとの台帳に記録し、`pr-comment-discipline.py`がそれを読みます。バイパスは`AI_REVIEW_REQUEST_DISABLE=1` |
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | 禁止フレーズのリストをすり抜ける構造上の冗長さの兆候をブロックします。否定の対句、重要性の誇張、評価を加える分詞句、出典のない権威、ぼかした推測、`is`や`has`を置き換えるマーケティング用語、前置き、末尾の要約、チャットの名残、埋められていないプレースホルダー、カーリー引用符、拒否したサイトや確認した日付などの検索の経緯です。太字ラベルの箇条書きと見出しは、公開するPRコメントの中でだけブロックします。コードは`SLOP001`から`SLOP015`です。検索の経緯は、ボールト、プロジェクトのワークスペース、`PROMPT.md`では許可されます。照合の前にコードスパンを隠し、すべての検出器は、rules、standards、checklists、skills、agents、docsの各ディレクトリとルートの文書にある333件のMarkdownファイルで調整されています。バイパスは`AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | TypeScriptの`as any`とジェネリックの`any`をブロックします。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | `--profile`なしの`aws configure set`をブロックします |
@@ -222,9 +222,9 @@ graph LR
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | テスト以外のコードでの`console.*`をブロックします。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Conventional Commitsの形式を検証します |
 | [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | `istanbul ignore`、`c8 ignore`、`pragma: no cover`、`#[coverage(off)]`、`LCOV_EXCL_LINE`など、ソースにカバレッジ除外の指示を加える編集と、カバレッジ設定のしきい値を100未満にする編集をブロックします。除外できるのは生成コードとベンダーのパスだけなので、新しいomitやexcludeのエントリーには確認を求めます。文章のファイルは対象外です。バイパスは`COVERAGE_EXCLUSION_GUARD_DISABLE=1`。 |
-| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190のパターンです。破壊的なシェルコマンド、リバースシェル、クラウドの削除、IaCのdestroyを扱います。`cat`、`tee`、`git`、`gh`、`glab`に渡すヒアドキュメントの本文はデータとして扱い照合しませんが、シェルに渡す本文は照合します。照合の前に`-C`や`-c`などのgitグローバルオプションを取り除くため、`git -C <dir> push --force`も素の形と同じくブロックされ、`-f`や`-fu`のような組み合わせも強制プッシュとみなします。ビルドディレクトリの掃除が残りのチェックを飛ばせるのは、コマンドのすべてのセグメントがその掃除である場合だけです。有効なJSONでない入力はブロックします。保護されたブランチへのプッシュは、`cd`と`-C`をたどったプッシュ先のリポジトリが、[`solo-repos.example.txt`](solo-repos.example.txt)から作るマシンローカルの`solo-repos.txt`に載っている場合に許可されます。プッシュ先が特定できない場合は対象になりません。テストファイルの削除と、`find`、`grep -r`、`rg`、`fd`による`/`やホームディレクトリの検索には確認を求めます |
+| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190のパターンです。破壊的なシェルコマンド、リバースシェル、クラウドの削除、IaCのdestroyを扱います。`cat`、`tee`、`git`、`gh`、`glab`に渡すヒアドキュメントの本文はデータとして扱い照合しませんが、シェルに渡す本文は照合します。照合の前に`-C`や`-c`などのgitグローバルオプションを取り除くため、`git -C <dir> push --force`も素の形と同じくブロックされ、`-f`や`-fu`のような組み合わせも強制プッシュとみなします。ビルドディレクトリの掃除が残りのチェックを飛ばせるのは、コマンドのすべてのセグメントがその掃除である場合だけです。有効なJSONでない入力はブロックします。保護されたブランチへのプッシュは、`cd`と`-C`をたどったプッシュ先のリポジトリが、[`solo-repos.example.txt`](solo-repos.example.txt)から作るマシンローカルの`solo-repos.txt`に載っている場合に許可されます。プッシュ先が特定できない場合は対象になりません。テストファイルの削除と、`find`、`grep -r`、`rg`、`fd`による`/`やホームディレクトリの検索には確認を求めます。ただし、追跡されておらずどのコミットにも含まれないテストファイルは除きます |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | ステージした差分が既存のドキュメントを偽にする`git commit`をブロックします。確実な4つのチェックです。コードが読むのに`.env.example`に記載のない変数と、追跡されているMarkdownがまだ名前を挙げているのに削除されたエクスポート、CLIフラグ、パッケージスクリプトです。先頭の`cd`や`git -C`が指すリポジトリをチェックし、`commit -a`ではステージしていない変更も含めます。変更履歴、ADR、仕様は履歴の記録として対象外です。バイパスは`DOC_SYNC_DISABLE=1` |
-| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | 描画結果を変える`git commit`（`.tsx`、`.html`、`.dart`、スタイル、テーマトークン、`*View.swift`や`*Screen.kt`などのネイティブビュー、`.qml`や`.xaml`などのデスクトップレイアウト、ターミナルUIライブラリをインポートするソース）が、描画レベルのチェック（e2eやブラウザのスイート、XCUITest、`androidTest`、ターミナルのスナップショット）に触れていない場合にブロックします。`*.spec.tsx`の単体テストは数えません。カスケードの結果、描画順序、アクセシビリティツリー、フォーカス順序、サードパーティのiframeはソースからは見えず、jsdomにもありません。公開時にはブランチの差分をベースと比較して読みます。目に見える変更があるブランチでの`gh pr create`や`edit`、`gh issue create`、`edit`、`comment`、レビュースレッドへの返信、`glab mr create`や`update`、LinearのIssueやコメントは、`After:`の画像と、既存の画面が変わった場合は`Before:`の画像を、それぞれ長辺1600ピクセル以上で添付するまでブロックします。画像も目に見える変更もない画面の文言には確認を求めます。バイパスは`FRONTEND_RENDER_GATE_DISABLE=1`、または共有のバイパスレジストリにあるTTL付きのエントリーです。 |
+| [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | 描画結果を変える`git commit`（`.tsx`、`.html`、`.dart`、スタイル、テーマトークン、`*View.swift`や`*Screen.kt`などのネイティブビュー、`.qml`や`.xaml`などのデスクトップレイアウト、ターミナルUIライブラリをインポートするソース）が、描画レベルのチェック（e2eやブラウザのスイート、XCUITest、`androidTest`、ターミナルのスナップショット）に触れていない場合にブロックします。`*.spec.tsx`の単体テストは数えません。カスケードの結果、描画順序、アクセシビリティツリー、フォーカス順序、サードパーティのiframeはソースからは見えず、jsdomにもありません。公開時にはブランチの差分をベースと比較して読みます。目に見える変更があるブランチでの`gh pr create`や`edit`、`gh issue create`、`edit`、`comment`、レビュースレッドへの返信、`glab mr create`や`update`、LinearのIssueやコメントは、`After:`の画像と、既存の画面が変わった場合は`Before:`の画像を、それぞれ長辺1600ピクセル以上で添付するまでブロックします。画像も目に見える変更もない画面の文言には確認を求めます。1組の画像はすべて同じピクセル幅である必要があり、1つのラベルがデバイスを示したら、すべてのラベルがデバイスとビューポートを示します。ちょうど1ビューポート分の高さの画像には、ページ全体のキャプチャを求めます。添付のパスは`$VAR`と`cd`をたどり、トラッカーの項目はその本文だけで判断します。バイパスは`FRONTEND_RENDER_GATE_DISABLE=1`、または共有のバイパスレジストリにあるTTL付きのエントリーです。 |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | 呼び出しごとに`--context`か`DOCKER_CONTEXT`を強制します |
 | [`dockerfile-compose-quality.py`](hooks/dockerfile-compose-quality.py) | PreToolUse Write/Edit/MultiEdit | `.env`や鍵と証明書のコピー、値がリテラルのシークレット名の`ENV`と`ARG`、Composeの`privileged: true`、ホストの名前空間の切り替えをブロックします。固定されていないタグ、`USER root`、非推奨のトップレベルの`version:`、`environment:`のリテラルのシークレットは警告します。バイパスは`DOCKERFILE_QUALITY_DISABLE=1` |
 | [`drizzle-raw-sql-blocker.py`](hooks/drizzle-raw-sql-blocker.py) | PreToolUse Write/Edit | `tx`と`trx`のレシーバーやテストファイルも含め、Drizzleの生クエリの抜け道をブロックします |
@@ -257,7 +257,8 @@ graph LR
 | [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | JS/TSの105のインプレース変更パターンをブロックします。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
 | [`normative-keyword-discipline.py`](hooks/normative-keyword-discipline.py) | PreToolUse Write/Edit/MultiEdit | rules、standards、checklists、[`CLAUDE.md`](CLAUDE.md)で、`Should `や`should `で始まる箇条書きをブロックします。BCP 14のあいまいな語のルールを強制します。バイパスは`NORMATIVE_KEYWORD_DISABLE=1` |
 | [`notify-webhook.py`](hooks/notify-webhook.py) | Stop | 応答の完了時に`CLAUDE_NOTIFY_WEBHOOK`へPOSTします |
-| [`pr-comment-discipline.py`](hooks/pr-comment-discipline.py) | PreToolUse Bash | スレッドの外にプルリクエストのコメントを公開するコマンドをすべてブロックします。`gh pr`のcommentサブコマンド、本文付きの`gh pr review`、空でないサマリーを持つreviewsへのPOST、`in_reply_to`のない`pulls/<n>/comments`へのPOST、`issues/<n>/comments`へのPOST、コミットコメントのPOST、GitLabのMRノートや新しいディスカッション、親のないBitbucketのコメントです。`--input`と`--body-file`のペイロードも読みます。ヒアドキュメントの本文にあるコメントのコマンドはデータです。スレッドへの返信、本文が空のレビューの提出、説明の編集はそのままにします。バイパスは`PR_COMMENT_DISCIPLINE_DISABLE=1` |
+| [`package-manager-guard.py`](hooks/package-manager-guard.py) | PreToolUse Bash | npm、npx、yarn、pipによるインストールをブロックし、代わりに実行するpnpmまたはuvのコマンドを示します。`npm --version`のようなバージョン確認、`uv pip`、引用符内の文字列は通します。バイパスは`PACKAGE_MANAGER_GUARD_DISABLE=1` |
+| [`pr-comment-discipline.py`](hooks/pr-comment-discipline.py) | PreToolUse Bash | スレッドの外にプルリクエストのコメントを公開するコマンドをすべてブロックします。`gh pr`のcommentサブコマンド、本文付きの`gh pr review`、空でないサマリーを持つreviewsへのPOST、`in_reply_to`のない`pulls/<n>/comments`へのPOST、`issues/<n>/comments`へのPOST、コミットコメントのPOST、GitLabのMRノートや新しいディスカッション、親のないBitbucketのコメントです。`--input`と`--body-file`のペイロードも読みます。ヒアドキュメントの本文にあるコメントのコマンドはデータです。スレッドへの返信、本文が空のレビューの提出、説明の編集はそのままにします。同じセッションがすでにプルリクエストを開いたリポジトリで、2つ目の`gh pr create`の前に確認を求めます。バイパスは`PR_COMMENT_DISCIPLINE_DISABLE=1` |
 | [`pr-merge-blocker.py`](hooks/pr-merge-blocker.py) | PreToolUse Bash | `/morning`の巡回がセッションのロックを持っている間、あらゆる形式のプルリクエストのマージを拒否します。`gh pr merge`、`glab mr merge`、RESTのマージエンドポイント、GraphQLのマージのミューテーションです。巡回中以外は何もしないため、`/deploy land`は引き続き動きます。`git merge`と`gh pr update-branch`はそのままにします。バイパスは`PR_MERGE_BLOCKER_DISABLE=1` |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | テストファイルも含め、Prismaの生クエリの抜け道をブロックします |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | 複数列の`ALTER TABLE`のすべての列と、フィールドレベルの`@unique(map:)`の名前も含め、schema.prismaとマイグレーションの一致を強制します |
@@ -295,6 +296,7 @@ graph LR
 | [`vault-recall.py`](hooks/vault-recall.py) | UserPromptSubmit | プロンプトに最も近いセカンドブレインのノートを、タイトルと前文だけ注入します。`/brain eval`が採点するのと同じ関数で順位付けするため、想起の後退を計測できます。読み取り専用で、ボールトが解決でき、ノートが最低スコアを超えたときだけ出力します。バイパスは`VAULT_RECALL_DISABLE=1` |
 | [`vault-session-capture.py`](hooks/vault-session-capture.py) | PreCompact | トランスクリプトがコンパクションで消える前に、セッションで作業した内容を今日のボールトのノートに追記します。詳細が残っている最後の瞬間だからです。ロックを取って追記するため、並行するセッションが互いに上書きすることはありません |
 | [`vault-capture-queue.py`](hooks/vault-capture-queue.py) | Stop | ターンが思い込みを正したか原因を明らかにしたかを判断し、そうであれば次のセッションが記録するようにキューに入れます。次のセッションは尋ねずに、ユーザーのタスクと並行してキューを処理します。追記専用の行を1行書くだけで何も起動しません。プロセスには長く残る教訓と余談を見分けられず、その判断を持つ無人の書き手は推測を事実として記録してしまうからです。バイパスは`VAULT_CAPTURE_QUEUE_DISABLE=1` |
+| [`workflow-guard.py`](hooks/workflow-guard.py) | PreToolUse Write/Edit/MultiEdit | GitHub Actionsのワークフローで、macOSランナーや`-latest`ラベル、完全なコミットSHAに固定されていないサードパーティのアクション、npm、npx、yarn、pipのステップ、キャンセルするconcurrencyグループのない`push`や`pull_request`のワークフローをブロックします。`ubuntu-26.04`より古いUbuntu LTSと、`step-security/harden-runner`のないジョブには警告します。バイパスは`WORKFLOW_GUARD_DISABLE=1` |
 
 ### カスタムエージェント
 
@@ -508,7 +510,7 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 889-item review checklist across 71 categories
+  checklists/            Unified 905-item review checklist across 71 categories
   rules/                 47 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
@@ -516,7 +518,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 91 runtime hooks
+  hooks/                 93 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -558,7 +560,7 @@ $HOME/.claude/
 <summary><strong>2段階のルール読み込みはどのようにコンテキストを節約しますか？</strong></summary>
 <br>
 
-141件の標準は合計27,200行あります。すべてを毎回の会話に読み込むと、コンテキストウィンドウを使い果たしてしまいます。[`rules/index.yml`](rules/index.yml)は各標準をトリガーキーワードに対応付けています。タスクが一致したとき、たとえば「データベースのマイグレーションを追加する」なら`database.md`のように、関係する標準だけが読み込まれます。
+141件の標準は合計27,285行あります。すべてを毎回の会話に読み込むと、コンテキストウィンドウを使い果たしてしまいます。[`rules/index.yml`](rules/index.yml)は各標準をトリガーキーワードに対応付けています。タスクが一致したとき、たとえば「データベースのマイグレーションを追加する」なら`database.md`のように、関係する標準だけが読み込まれます。
 
 </details>
 
