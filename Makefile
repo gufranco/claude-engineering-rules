@@ -157,7 +157,7 @@ validate:
 	              validate-agents validate-settings validate-patterns \
 	              validate-cross-refs validate-registry-drift \
 	              validate-normative-keywords validate-checklist-counts \
-	              validate-instruction-budget; do \
+	              validate-instruction-budget validate-public-content; do \
 	  printf '%-34s ' "$$script"; \
 	  if python3 .github/scripts/$$script.py >/tmp/validate-$$script.log 2>&1; then \
 	    echo PASS; \

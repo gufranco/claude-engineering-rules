@@ -75,7 +75,7 @@ graph LR
 
 ### 常時ロードされるルール
 
-[`rules/`](rules/)に48件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは56ファイルで108,127文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
+[`rules/`](rules/)に49件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは57ファイルで97,312文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
 
 | ルール | 対象 |
 |:-----|:---------------|
@@ -99,7 +99,7 @@ graph LR
 | [`found-fix`](rules/found-fix.md) | 検証の過程で見つかった問題はすべて現在のタスクの対象です。修正を後のセッションに先送りする言い訳の言い回しを禁止します |
 | [`user-commands-one-line`](rules/user-commands-one-line.md) | 利用者に実行してもらうコマンドは安全な1行にまとめます。strictモードのサブシェル、`&&`でつないだ手順、終了コードで止まるゲート、再帰削除のたびに`${VAR:?}`を使います。取り消せない手順の前に利用者が判断すべき結果は、変更とつながず単独で渡します |
 | [`same-turn-persistence`](rules/same-turn-persistence.md) | 訂正を受けたターンは、終わる前にファイルへの書き込みを行います。自分で気付いた誤りもユーザーに指摘された誤りと同じに扱い、書き込みは症状ではなく根本の振る舞いを対象にします。受け入れ基準があるため、必須の記録で設定が膨らむことはありません |
-| [`rule-provenance`](rules/rule-provenance.md) | すべてのルールに、拘束力を持った日付とその原因となった失敗を記します。教訓はまず記録し、3回目の再発でルールに昇格させます。不可逆、暗黙、壊滅的な失敗は例外です。来歴があるからこそルールを整理できます |
+| [`rule-provenance`](rules/rule-provenance.md) | ルールの経緯は非公開のvaultに記録し、リポジトリには置きません。ファイルは現在のルールだけを述べます。教訓はまず記録し、3回目の再発でルールに昇格させます。不可逆、暗黙、壊滅的な失敗は例外です |
 | [`relay-not-source`](rules/relay-not-source.md) | サブエージェントの報告、検索結果の抜粋、要約は中継です。中継は内容だけでなく引用の位置情報も崩すため、具体的な主張が正しく読めても、別の行、タイムスタンプ、レコードを指していることがあります |
 | [`agent-operating-limits`](rules/agent-operating-limits.md) | バックストップと予算の区別、計測値を伴うターン上限、超過分を捨てずに報告する上限、拒否された呼び出しと無条件のコンテキスト注入のコスト、実行できなかったチェックは失敗として扱うこと |
 | [`deviation-waivers`](rules/deviation-waivers.md) | ルールから外れることは許されますが、黙って外れることは許されません。範囲、承認者、代替案、見直し条件を備えた構造化された免除で、別の問いに答えるため機械的なバイパスとは区別されます。プロジェクト自身の指示ファイルは、そのプロジェクト内でグローバルルールを明示的に上書きできますが、セキュリティ、法務、データ損失、検証、誠実さの一線は越えられません |
@@ -216,7 +216,7 @@ graph LR
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | PRとドキュメントでの会話的な前置きや戦術的な誇張をブロックします |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | emダッシュ、enダッシュ、文中の丸括弧、絵文字、ASCIIアート、Markdownの文中でダッシュの代わりに使うスペース付きハイフンをブロックします |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | GitHubやGitLabで複数のスレッドに`resolveReviewThread`を繰り返すループをブロックします |
-| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 所有者のリポジトリで使うすべての言語で、ソースコードへのコメントの追加をブロックします。C系、Python、シェル、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTMLとそのテンプレート方言、CSS、方言ごとのアセンブリ、Jupyterのコードセルなどで、拡張子、ベース名、シバン、内容で判別します。docstringとドキュメントコメントのブロックもコメントとして扱います。編集はディスク上のファイルと照合するため、新たに追加したコメントだけが報告されます。Bashの`git commit`では、ステージされたすべてのファイルを`HEAD`と比較して走査するため、WriteやEditのツール以外で書かれた内容も捕まえます。マージ中は、もう一方の親から変更なしで取り込んだファイルを飛ばします。マージがその中身を何も書いていないためです。対象外は、`eslint-disable`、`@ts-expect-error`、`noqa`、アクションのバージョン固定などのツールの指示、テストファイルの素の`Arrange`、`Act`、`Assert`マーカー、`.env.example`ファイルです。運用者向けのバイパスは`COMMENT_BLOCKER_DISABLE=1` |
+| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 認識できるすべての言語で、ソースコードへのコメントの追加をブロックします。C系、Python、シェル、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTMLとそのテンプレート方言、CSS、方言ごとのアセンブリ、Jupyterのコードセルなどで、拡張子、ベース名、シバン、内容で判別します。docstringとドキュメントコメントのブロックもコメントとして扱います。編集はディスク上のファイルと照合するため、新たに追加したコメントだけが報告されます。Bashの`git commit`では、ステージされたすべてのファイルを`HEAD`と比較して走査するため、WriteやEditのツール以外で書かれた内容も捕まえます。マージ中は、もう一方の親から変更なしで取り込んだファイルを飛ばします。マージがその中身を何も書いていないためです。マシンローカルの`comment-waivers.txt`([`comment-waivers.example.txt`](comment-waivers.example.txt)からコピー)に載っているパスはチェックしません。対象外は、`eslint-disable`、`@ts-expect-error`、`noqa`、アクションのバージョン固定などのツールの指示、テストファイルの素の`Arrange`、`Act`、`Assert`マーカー、`.env.example`ファイルです。運用者向けのバイパスは`COMMENT_BLOCKER_DISABLE=1` |
 | [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | Python、JS/TS、Go、batsで追加または変更したすべてのテストに、素の`Arrange`、`Act`、`Assert`マーカーをそれぞれ1回ずつ順番に置き、空行1つで区切った3つのブロックにすることを求めます。手を付けていない既存のテストはチェックしません。Bashの`git commit`ではステージされたファイルをチェックし、マージがもう一方の親から変更なしで取り込んだファイルは飛ばします。バイパスは`TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | コンパクションをまたいでgitの状態をプロジェクトごとに保持します |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | tsconfig、eslint、ruff、mypyなど、リンター、フォーマッター、型チェッカーの設定の編集をブロックします。設定を緩めるのではなくコードを直させます |
@@ -264,6 +264,7 @@ graph LR
 | [`pr-merge-blocker.py`](hooks/pr-merge-blocker.py) | PreToolUse Bash | `/morning`の巡回がセッションのロックを持っている間、あらゆる形式のプルリクエストのマージを拒否します。`gh pr merge`、`glab mr merge`、RESTのマージエンドポイント、GraphQLのマージのミューテーションです。巡回中以外は何もしないため、`/deploy land`は引き続き動きます。`git merge`と`gh pr update-branch`はそのままにします。バイパスは`PR_MERGE_BLOCKER_DISABLE=1` |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | テストファイルも含め、Prismaの生クエリの抜け道をブロックします |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | 複数列の`ALTER TABLE`のすべての列と、フィールドレベルの`@unique(map:)`の名前も含め、schema.prismaとマイグレーションの一致を強制します |
+| [`private-terms-guard.py`](hooks/private-terms-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | 非公開の拒否リストにある語を、このリポジトリの公開ファイルに書き込む変更、またはステージしたファイルの`git commit`をブロックします。拒否リストはvaultの`.private-terms.txt`にあり、リスト自体は公開されません。vaultやリストがない場合はすべて許可します。gitで無視されるパスとリポジトリ外のパスはチェックしません。読めない入力と読めないインデックスはブロックします。バイパスは`PRIVATE_TERMS_GUARD_DISABLE=1` |
 | [`read-injection-scanner.py`](hooks/read-injection-scanner.py) | PostToolUse Read/WebFetch/WebSearch | 取得した内容を、プロンプトインジェクションのパターン（指示の上書き、ツールの転用、権威の主張、base64の連続、Unicodeの紛らわしい文字）について走査し、警告を出します。バイパスは`READ_INJECTION_DISABLE=1` |
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | LuaやMULTIによるRedisの一連の操作のアトミック化を強制し、TTLなしで取得するロックを指摘します。読み取りと書き込みが競合とみなされるのは同じレシーバーの場合だけで、`Map`では競合とみなしません。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
 | [`check-then-act-blocker.py`](hooks/check-then-act-blocker.py) | PreToolUse Write/Edit/MultiEdit | 書き込みを決める読み取りと、それに続く書き込みを指摘します。既定ではモデルが読む`additionalContext`で警告し、`CHECK_THEN_ACT_ENFORCE=1`のときはブロックします |
@@ -522,7 +523,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 96 runtime hooks
+  hooks/                 97 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
