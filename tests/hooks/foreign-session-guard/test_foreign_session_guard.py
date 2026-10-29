@@ -59,6 +59,24 @@ def test_a_write_into_another_live_session_tree_is_handed_off(
     assert str(theirs) in reason
 
 
+def test_a_write_into_the_shared_vault_passes_while_another_session_works_there(
+    tmp_path, tool_use, run_hook
+):
+    # Arrange
+    mine, vault = _trees(tmp_path)
+    env = {**_sessions(tmp_path, vault, fake.uuid4()), "SECOND_BRAIN_VAULT": str(vault)}
+    target = vault / "wiki" / f"{fake.word()}.md"
+    payload = tool_use(
+        "Write", {"file_path": str(target)}, cwd=str(mine), session_id="me"
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert (result.code, result.stdout) == (0, "")
+
+
 def test_a_write_in_this_session_tree_passes_silently(tmp_path, tool_use, run_hook):
     # Arrange
     mine, theirs = _trees(tmp_path)

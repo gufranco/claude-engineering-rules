@@ -233,7 +233,7 @@ graph LR
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | 注入系统提醒，强制助手用英语输出 |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | 拦截对 `.env`、私钥、云凭据和 tfstate 的编辑 |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | 在命令所针对的仓库中，如果某位审查人对拉取请求的最新审查是 `CHANGES_REQUESTED`，就拦截改写历史的推送；读不到审查状态时拦截，没有拉取请求的分支则放行。与危险命令拦截器共用强制标志的模式，所以 `-fu` 和全局选项也会被同样捕获 |
-| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 写入落在另一个正在运行的 Claude Code 会话的工作目录内之前请求确认，会话信息读自 `~/.claude/sessions/`，因为那个会话会把该文件报告为它自己的改动。目录包含本会话的会话会被忽略。绕过：`FOREIGN_SESSION_GUARD_DISABLE=1` |
+| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 拒绝落在另一个正在运行的 Claude Code 会话工作目录内的写入，并要求代理给用户一段提示，粘贴到那个会话中。会话信息读自 `~/.claude/sessions/`，因为那个会话会把该文件报告为它自己的改动。目录包含本会话的会话会被忽略；两个会话共用的目录归先启动的会话所有。写入 `SECOND_BRAIN_VAULT` 指向的知识库时总是放行，因为所有会话都共用它。绕过：`FOREIGN_SESSION_GUARD_DISABLE=1` |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | 拦截把验证中发现的问题推迟到以后会话的托辞。针对提交信息、PR 正文、发布说明和代码注释；在源文件中只扫描注释，会话草稿区不受限制。位于引号字符串或 heredoc 正文中的发布命令属于数据，不是提交 |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | 除非用户点名了路径，否则每个会话在第一次编辑文件前都必须先读它。这是 pre-flight 中 Confidence 规则的落地 |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | 每次调用都强制指定 `--configuration` |
