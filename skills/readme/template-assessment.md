@@ -204,11 +204,11 @@ proactively. Include only the non-obvious ones.
 [Testing philosophy: e.g., "No mocks for the database layer: tests exercise
 the full request path from HTTP to database and back."]
 
-`npm test` runs all tests, and `npm run test:coverage` runs them with a coverage report:
+`pnpm test` runs all tests, and `pnpm test:coverage` runs them with a coverage report:
 
 ```bash
-npm test
-npm run test:coverage
+pnpm test
+pnpm test:coverage
 ```
 
 | Metric | Coverage |
@@ -242,9 +242,9 @@ Tests cover:
 
 | Command | Description |
 |---------|-------------|
-| `npm start` | [Description] |
-| `npm test` | [Description] |
-| `npm run lint` | [Description] |
+| `pnpm start` | [Description] |
+| `pnpm test` | [Description] |
+| `pnpm lint` | [Description] |
 
 ## Developer Tooling
 

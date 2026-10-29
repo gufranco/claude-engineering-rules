@@ -102,7 +102,7 @@ This skill accepts optional arguments after `/assessment`:
 
 5. **Verify the project works.** Before analyzing architecture, confirm the project actually builds and passes its own tests. A project that doesn't compile is worse than any missing pattern. Run these **in parallel** where possible:
 
-   - **Build**: detect the build system and run it, `pnpm build`, `npm run build`, `make`, `go build`, `cargo build`, etc. Record success or failure with output.
+   - **Build**: detect the build system and run it, `pnpm build`, `make`, `go build`, `cargo build`, etc. Record success or failure with output.
    - **Lint**: run the project's linter, `pnpm lint`, `eslint`, `golangci-lint`, `ruff`, etc. Record warnings and errors.
    - **Typecheck**: if applicable, run the type checker, `pnpm typecheck`, `tsc --noEmit`, `mypy`, etc. Record any type errors.
    - **Tests**: run the test suite with coverage, `pnpm test -- --coverage`, `pytest --cov`, `go test -cover`, etc. Record pass/fail count and coverage percentage.
@@ -124,7 +124,7 @@ This skill accepts optional arguments after `/assessment`:
      Also set `engines` in `package.json`, Node.js, `requires-python` in `pyproject.toml`, Python, or the equivalent for other ecosystems. This enforces the version constraint in the package manager, not just the version manager.
 
      An outdated runtime is a MEDIUM finding. A runtime past end-of-life is HIGH. Missing version manager config is MEDIUM.
-   - **Dependency audit and update**: run the package manager's audit command, `pnpm audit`, `npm audit`, `pip audit`, `cargo audit`, etc. Record any known vulnerabilities by severity. Then check for outdated dependencies, `pnpm outdated`, `npm outdated`, `pip list --outdated`, etc. **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest`, or equivalent and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
+   - **Dependency audit and update**: run the package manager's audit command, `pnpm audit`, `uv run pip-audit`, `cargo audit`, etc. Record any known vulnerabilities by severity. Then check for outdated dependencies, `pnpm outdated`, `uv pip list --outdated`, etc. **Assume dependency versions may be intentionally outdated, vulnerable, or incompatible with the current platform** (e.g., packages that fail on Apple Silicon, deprecated Node.js versions, libraries with known CVEs). Always update all dependencies to their latest stable versions. Run `pnpm update --latest`, or equivalent and verify the project still builds and passes tests after the update. If a specific update breaks something, pin that dependency at the last working version and document why.
    - **AI slop scan**: run `python3 ~/.claude/tools/slop-scan.py <repo> --commits origin/<base>..HEAD`. It reuses the detectors of [`../../hooks/ai-slop-blocker.py`](../../hooks/ai-slop-blocker.py) over every Markdown file, skipping dependency and build directories, and over each commit message in the range. Exit 0 is clean, 1 lists findings, 2 is a scan error and counts as a failed check. Add `--json` to parse the rows. Record each finding by code.
    - **Output verification**: if the requirements include example inputs, expected outputs, or acceptance criteria, actually run the code with those inputs and verify the results match. Reading the code and believing it works is not proof.
 
@@ -327,11 +327,11 @@ This skill accepts optional arguments after `/assessment`:
 
    The pipeline must execute every quality gate the project has, in order of feedback speed:
 
-   1. **Install dependencies**: use the lockfile-based install command, `npm ci`, `pnpm install --frozen-lockfile`, `pip install -r requirements.txt`, etc. Never use `npm install` in CI as it can modify the lockfile.
-   2. **Lint**: run the project's linter such as `npm run lint`, `pnpm lint`, `ruff check`, `golangci-lint run`.
-   3. **Type check**: if applicable, run the type checker, `npm run typecheck`, `tsc --noEmit`, `mypy .`, etc.
-   4. **Build**: compile the project such as `npm run build`, `pnpm build`, `go build`, `cargo build`.
-   5. **Test with coverage**: run the full test suite with coverage reporting such as `npm test -- --coverage`, `pytest --cov`, `go test -cover`.
+   1. **Install dependencies**: use the lockfile-based install command, `pnpm install --frozen-lockfile` or `uv sync --locked`. Never a plain `pnpm install` in CI, as it can modify the lockfile, and never npm or pip: convert a project still on them to pnpm or uv first.
+   2. **Lint**: run the project's linter such as `pnpm lint`, `ruff check`, `golangci-lint run`.
+   3. **Type check**: if applicable, run the type checker, `pnpm typecheck`, `pnpm exec tsc --noEmit`, `mypy .`, etc.
+   4. **Build**: compile the project such as `pnpm build`, `go build`, `cargo build`.
+   5. **Test with coverage**: run the full test suite with coverage reporting such as `pnpm test --coverage`, `pytest --cov`, `go test -cover`.
 
    Pin the runtime version in the pipeline to match the project's version manager config. Prefer `.mise.toml` or `.tool-versions` so a single `mise install` step pins every runtime. Legacy file fallbacks: `.node-version`, `.nvmrc`, `.python-version`, `.ruby-version`, `.terraform-version`, `rust-toolchain.toml`. Use caching for dependencies to speed up runs. Set `fail-fast: true` so the pipeline stops at the first failure.
 

@@ -113,9 +113,9 @@ When a commit changes the database schema or environment variable configuration,
 
 **Database schema changes, Prisma, migrations:**
 
-1. Push to the dev database: `npx prisma db push`
+1. Push to the dev database: `pnpm exec prisma db push`
 2. Push to the test database using the connection string from `.env.test`, not a manually constructed URL
-3. Regenerate the Prisma client: `npx prisma generate`
+3. Regenerate the Prisma client: `pnpm exec prisma generate`
 4. Run the full test suite to verify no regressions
 5. Add new models to the test cleanup order in `test/setup.ts`
 

@@ -24,7 +24,7 @@ Search the codebase, open PRs, recent branches, and community packages for exist
 4. **Closed PRs.** `gh pr list --state closed --search "<keywords>"`. A closed PR may name a dead-end or a postponed approach.
 5. **GitHub code search.** `gh search code "<keywords>" --language=<lang>`. Surface patterns the rest of the world uses for the same problem.
 6. **Library / framework docs.** Read the README and API docs of the major library in the area before authoring a utility. `llms.txt` first, then official docs.
-7. **Package registry.** `npm search`, `cargo search`, `gem search`. For Python, use `https://pypi.org/search/?q=<keywords>` or the JSON API at `https://pypi.org/pypi/<name>/json`, since PyPI disabled the search endpoint that `pip search` called. A maintained package is preferred to a hand-rolled utility.
+7. **Package registry.** `pnpm search`, `cargo search`, `gem search`. For Python, use `https://pypi.org/search/?q=<keywords>` or the JSON API at `https://pypi.org/pypi/<name>/json`, since PyPI disabled the search endpoint that `pip search` called. A maintained package is preferred to a hand-rolled utility.
 8. **Web search.** Only after steps 1-7 turn up nothing. Web results are unranked by domain context.
 
 **Anti-duplication gate for skills and agents.** Before proposing a new `~/.claude/skills/<name>/` or `~/.claude/agents/<name>.md`, run steps 1-2 against `~/.claude/skills/` and `~/.claude/agents/` first, plus the on-demand entries in `~/.claude/rules/index.yml`. Prefer extending an existing skill or agent over creating a new one. Justify the new file in writing when no extension fits.
@@ -37,7 +37,7 @@ Search the codebase, open PRs, recent branches, and community packages for exist
 | Closed PRs | `gh pr list --state closed --search "<keywords>"` |
 | GitHub code search | `gh search code "<keywords>" --language=<lang>` |
 | Library docs | `llms.txt` first, then official docs |
-| Package registry | `npm search`, `cargo search`, `https://pypi.org/search/?q=<keywords>` |
+| Package registry | `pnpm search`, `cargo search`, `https://pypi.org/search/?q=<keywords>` |
 | Web search | Last resort |
 
 If a solution exists in the codebase, reuse or extend it. If a well-adopted package exists, suggest it before implementing manually. Building from scratch what a maintained library already solves is wasted effort and ongoing maintenance burden.

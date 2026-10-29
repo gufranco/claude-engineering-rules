@@ -1069,7 +1069,7 @@ Apply when adding or updating dependencies. Reference: [`standards/security.md`]
 - [ ] SBOM generated on CI build in SPDX or CycloneDX format
 - [ ] Build artifacts signed for provenance verification
 - [ ] Lockfile committed with integrity checking enabled
-- [ ] `npm ci` or `pnpm install --frozen-lockfile` used in CI, not `npm install`
+- [ ] `pnpm install --frozen-lockfile` and `uv sync --locked` used in CI, never npm, pip, or an unlocked install
 - [ ] Package names double-checked for typosquatting
 - [ ] Scoped registries configured for private packages to prevent dependency confusion
 - [ ] SLSA compliance level documented for the service
