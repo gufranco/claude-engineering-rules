@@ -2,7 +2,7 @@
 
 <strong>Claude Codeのための、方針のはっきりしたエンジニアリング設定です。ルール、ランタイムフック、スラッシュコマンドのスキルが、CLIを厳格なペアプログラマーに変えます。</strong>
 
-<sub>[English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)</sub>
+[English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
 
 [![CI](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
 [![Release](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml)
