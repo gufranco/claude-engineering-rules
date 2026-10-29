@@ -5,43 +5,24 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.hook_warning import emit_warning  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.suppression import line_or_prev_has_suppression  # type: ignore
-except Exception:  # pragma: no cover
-
-    def line_or_prev_has_suppression(lines, line_no):  # type: ignore
-        return False
+from _lib.suppression import line_or_prev_has_suppression  # noqa: E402
 
 
-try:
-    from _lib.bypass import is_bypassed  # type: ignore
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_hook: str) -> bool:  # type: ignore
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.hook_profile import should_run  # type: ignore
-except Exception:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 from _lib.output import block, warn  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 HOOK_ID = "check-then-act-blocker"
 ENV_DISABLE = "CHECK_THEN_ACT_DISABLE"
@@ -139,22 +120,7 @@ def entity_of(receiver: str) -> str:
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str]]:
     path = tool_input.get("file_path", "") or ""
-    items: list[tuple[str, str]] = []
-    if tool == "Write":
-        content = tool_input.get("content", "")
-        if isinstance(content, str):
-            items.append((path, content))
-    elif tool == "Edit":
-        content = tool_input.get("new_string", "")
-        if isinstance(content, str):
-            items.append((path, content))
-    elif tool == "MultiEdit":
-        for edit in tool_input.get("edits", []) or []:
-            if isinstance(edit, dict):
-                content = edit.get("new_string", "")
-                if isinstance(content, str):
-                    items.append((path, content))
-    return items
+    return [(path, text) for _, text in payload_fragments(tool, tool_input)]
 
 
 def _write_after(

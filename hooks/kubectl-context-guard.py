@@ -3,13 +3,8 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 KUBECTL_USE_CONTEXT = re.compile(

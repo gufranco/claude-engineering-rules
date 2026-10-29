@@ -320,6 +320,15 @@ One reply surface. Every other row posts nothing.
 | Inline thread, bot author | None |
 | Review body, PR-level, commit comment | None. Step 6 closes them |
 
+A reply about a visible fix embeds a high-resolution `After:` screenshot, and `Before:` when the reply explains what changed. The replies endpoint cannot attach, so upload first and reuse the URL, per "Visual Evidence In Published Text" in [`../../standards/frontend-render-gate.md`](../../standards/frontend-render-gate.md):
+
+```bash
+GH_TOKEN=$(gh auth token --user <account>) gh pr edit <pr> --attach 'after.png#After: <screen>'
+GH_TOKEN=$(gh auth token --user <account>) gh pr view <pr> --json body --jq .body
+```
+
+Copy the uploaded URL into the reply body as `![After: <screen>](<url>)`.
+
 Write a JSON file to `/tmp/respond-reply-<thread-id>.json`. Single-quoted heredoc to prevent shell expansion.
 
 ```bash
@@ -401,6 +410,8 @@ RESOLVED: 7 comments addressed on PR #1234.
 ```
 
 The "Channels swept" line is mandatory. It is the evidence that all four channels were queried, and it is the line a user can check when they suspect a comment was missed.
+
+Before writing `RESOLVED:`, count the done state with the query in "The Done State" of [`standards/pr-comment-discipline.md`](../../standards/pr-comment-discipline.md): zero unresolved review threads and zero bot review bodies left unminimized. Bot status comments, such as previews, coverage reports, lead-approval markers and Linear links, are not review comments and stay visible. A nonzero count means the pass is not done.
 
 ## Service Level Expectations
 
@@ -552,6 +563,7 @@ The skill prompts before adding any credit trailer. The default is no trailer un
 - Every implemented item has a commit, and the local quality gate output is shown before the push.
 - Every published reply sits in a human inline thread and is four sentences or fewer.
 - CI is green on the latest SHA, and a re-fetch after the push found no new threads.
+- The counted done state shows 0 unresolved threads and 0 unminimized bot review bodies.
 
 ## Related skills
 

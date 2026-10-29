@@ -4,7 +4,7 @@ The only comment published on a pull request is a reply inside a thread a person
 
 | Surface | Rule |
 |---|---|
-| Reply in a human's thread | Allowed. Four sentences max, lead with what changed |
+| Reply in a human's thread | Allowed. Four sentences max, lead with what changed; a visible fix embeds its `After:` screenshot |
 | Review summary body | Never written; submit reviews with an empty body |
 | Conversation or commit comment | Never written; fix the code and say it in the commit |
 | AI reviewer trigger on your own PR | Only the exact command the reviewer documents, such as `@claude review always`, once per PR, posted by [`hooks/ai-review-request.py`](../hooks/ai-review-request.py) |
@@ -14,6 +14,7 @@ The only comment published on a pull request is a reply inside a thread a person
 - Every channel is still fetched, classified, and acted on; only the answer shape changed.
 - Fix it now: never a ticket, follow-up PR, or code marker in place of a fix. A fix blocked outside the change gets one sentence naming the blocker.
 - No restating the comment, no closing offer, no apology.
+- Done means zero unresolved review threads and every bot review body minimized, counted after fetching every channel. Bot status comments, such as previews, coverage, lead-approval markers and Linear links, stay visible.
 
 Full rule, examples, and rationale: [`standards/pr-comment-discipline.md`](../standards/pr-comment-discipline.md). Read it before posting, replying, or resolving anything on a pull request.
 
@@ -25,4 +26,4 @@ Enforced by: [`../hooks/found-fix-rationalization-blocker.py`](../hooks/found-fi
 
 ## Provenance
 
-Promoted 2026-09-17, `single-incident`, under the fails-without-an-error-signal condition. Origin: an audit of this configuration found pull-request slots that required text with no subject: a mandated review summary body, bot replies, and unthreaded conversation comments. Full account in [`standards/pr-comment-discipline.md`](../standards/pr-comment-discipline.md).
+Promoted 2026-09-17, `single-incident`, under the fails-without-an-error-signal condition. Origin: an audit of this configuration found pull-request slots that required text with no subject: a mandated review summary body, bot replies, and unthreaded conversation comments. Full account in [`standards/pr-comment-discipline.md`](../standards/pr-comment-discipline.md). Amended 2026-10-29, `single-incident`, by direct user instruction: the owner cleared open threads and visible bot review bodies by hand across tsos-tech/overwatch #671 and #677 and tsos-tech/onyx_fullstack #5005 on 2026-10-28 and 2026-10-29, so the done state is now a counted zero.

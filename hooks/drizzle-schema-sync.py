@@ -5,13 +5,8 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 PUSH_RE = re.compile(
@@ -64,15 +59,10 @@ def looks_like_drizzle_schema(text: str) -> bool:
 
 
 def first_arg_is_string_literal(args: str) -> bool:
-    stripped = args.lstrip()
-    if not stripped:  # pragma: no cover - defensive; callers strip first
-        return False
-    return stripped[0] in ("'", '"', "`")
+    return args.lstrip()[:1] in ("'", '"', "`")
 
 
 def is_skipped_test_path(path: str) -> bool:
-    if not path:  # pragma: no cover - defensive; caller already guards on empty path
-        return False
     p = path.lower()
     return any(seg in p for seg in SKIP_PATH_HINTS)
 
@@ -144,13 +134,7 @@ def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str, str]]:
 
 
 def analyze(kind: str, text: str) -> list[str]:
-    if kind == "schema":
-        return find_in_schema(text)
-    if kind == "script":
-        return find_in_script(text)
-    if kind == "bash":
-        return find_in_script(text)
-    return []  # pragma: no cover - defensive; collect() only emits known kinds
+    return find_in_schema(text) if kind == "schema" else find_in_script(text)
 
 
 from _lib.hook_profile import should_run  # noqa: E402

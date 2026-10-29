@@ -5,6 +5,8 @@ import sys
 
 import pytest
 
+from _helpers.cov_env import apply_coverage_env
+
 HOOK = "zsh-special-name-guard"
 ZSH = {"SHELL": "/bin/zsh"}
 
@@ -131,11 +133,13 @@ def test_blocks_unreadable_input_with_a_message(hooks_dir):
         input="not json",
         capture_output=True,
         text=True,
-        env={
-            "SHELL": "/bin/zsh",
-            "PATH": "/usr/bin:/bin",
-            "CLAUDE_HOOK_AUDIT_DISABLE": "1",
-        },
+        env=apply_coverage_env(
+            {
+                "SHELL": "/bin/zsh",
+                "PATH": "/usr/bin:/bin",
+                "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+            }
+        ),
         check=False,
         timeout=30,
     )
@@ -181,3 +185,26 @@ def test_an_assignment_at_a_command_start_blocks(tool_use, run_hook, command):
 
     # Assert
     assert (exit_code, "zsh special name" in stderr) == (2, True)
+
+
+def _guard():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[3] / "hooks" / f"{HOOK}.py"
+    spec = importlib.util.spec_from_file_location("zsh_guard", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_mask_quoted_keeps_escapes_outside_quotes_and_blanks_them_inside():
+    # Arrange
+    text = 'a\\b "c\\"d"'
+
+    # Act
+    result = _guard().mask_quoted(text)
+
+    # Assert
+    assert result == 'a\\b "    "'

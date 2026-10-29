@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,7 @@ from _helpers.bench_hooks_support import (
     _write_hook,
     bench_hooks,
 )
+from _helpers.cov_env import apply_coverage_env
 
 
 DEFAULT_PAYLOAD_COUNT = 3
@@ -41,9 +43,56 @@ def test_cli_table_format_writes_to_stdout(
     # Assert
     lines = capsys.readouterr().out.splitlines()
     assert rc == 0
-    assert lines[:2] == [TABLE_HEADER, TABLE_RULE]
+    assert lines[0].split() == TABLE_HEADER.split()
+    assert [set(cell) for cell in lines[1].split()] == [{"-"}] * len(TABLE_RULE.split())
     assert lines[2].split()[:2] == ["ok", str(DEFAULT_PAYLOAD_COUNT)]
     assert len(lines) == 3
+
+
+def test_table_columns_fit_the_header_until_a_value_is_wider() -> None:
+    # Arrange
+    stats = [
+        bench_hooks.HookStats(
+            hook="ok",
+            n=3,
+            mean_ms=11.5,
+            p50_ms=12.25,
+            p95_ms=123.45,
+            p99_ms=15.0,
+            max_ms=16.0,
+        )
+    ]
+
+    # Act
+    result = bench_hooks._format_table(stats)
+
+    # Assert
+    assert result.splitlines() == [
+        "hook  n  mean   p50    p95     p99    max    timeouts",
+        "----  -  -----  -----  ------  -----  -----  --------",
+        "ok    3  11.50  12.25  123.45  15.00  16.00  0       ",
+    ]
+
+
+def test_five_character_values_keep_the_header_widths() -> None:
+    # Arrange
+    stats = [
+        bench_hooks.HookStats(
+            hook="ok",
+            n=3,
+            mean_ms=11.5,
+            p50_ms=12.25,
+            p95_ms=14.5,
+            p99_ms=15.0,
+            max_ms=16.0,
+        )
+    ]
+
+    # Act
+    result = bench_hooks._format_table(stats)
+
+    # Assert
+    assert result.splitlines()[:2] == [TABLE_HEADER, TABLE_RULE]
 
 
 def test_cli_json_format_writes_array(
@@ -268,6 +317,7 @@ def test_main_module_runs_via_subprocess(
     # Act
     proc = subprocess.run(
         _json_cli_command(script, hooks_dir),
+        env=apply_coverage_env(dict(os.environ)),
         capture_output=True,
         text=True,
         timeout=30,

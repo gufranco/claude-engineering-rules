@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.cov_env import apply_coverage_env
 
 HOOK = Path(__file__).resolve().parents[3] / "hooks" / "vault-compile.py"
 
@@ -28,7 +29,7 @@ def run(
         input=json.dumps(payload),
         capture_output=True,
         text=True,
-        env=env,
+        env=apply_coverage_env(env),
         check=False,
         timeout=30,
     )
@@ -224,3 +225,54 @@ def test_a_directory_claude_code_never_opened_is_left_alone(tmp_path: Path) -> N
     assert result.returncode == 0
     assert memory.exists() is False
     assert result.stdout == ""
+
+
+def _setup(tmp_path: Path, compile_source: str) -> tuple[Path, Path, Path]:
+    vault = tmp_path / "vault"
+    (vault / ".ci").mkdir(parents=True)
+    (vault / ".ci" / "compile.py").write_text(compile_source, encoding="utf-8")
+    project = tmp_path / "work"
+    project.mkdir()
+    memory = Path(
+        str(load().memory_dir_for(project)).replace(str(Path.home()), str(tmp_path))
+    )
+    return vault, project, memory
+
+
+def _env(tmp_path: Path, vault: Path, **extra: str) -> dict[str, str]:
+    return {
+        "PATH": "/usr/bin:/bin",
+        "HOME": str(tmp_path),
+        "SECOND_BRAIN_VAULT": str(vault),
+        **extra,
+    }
+
+
+def test_a_compile_that_hangs_is_reported_and_skipped(tmp_path: Path) -> None:
+    # Arrange
+    vault, project, memory = _setup(tmp_path, "import time; time.sleep(30)")
+    memory.mkdir(parents=True)
+
+    # Act
+    result = run(
+        {"cwd": str(project)},
+        _env(tmp_path, vault, VAULT_COMPILE_TIMEOUT_SECONDS="0.5"),
+    )
+
+    # Assert
+    assert (result.returncode, result.stdout) == (0, "")
+    assert result.stderr == "vault-compile: compile.py timed out\n"
+
+
+def test_a_memory_path_that_is_a_file_is_reported(tmp_path: Path) -> None:
+    # Arrange
+    vault, project, memory = _setup(tmp_path, "print('applied: 1')")
+    memory.parent.mkdir(parents=True)
+    memory.write_text("not a directory", encoding="utf-8")
+
+    # Act
+    result = run({"cwd": str(project)}, _env(tmp_path, vault))
+
+    # Assert
+    assert (result.returncode, result.stdout) == (0, "")
+    assert result.stderr.startswith(f"vault-compile: cannot create {memory}: ")

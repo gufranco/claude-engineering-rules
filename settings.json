@@ -9,8 +9,6 @@
     "pr": "",
     "sessionUrl": false
   },
-  "disableRemoteControl": true,
-  "remoteControlAtStartup": false,
   "includeGitInstructions": false,
   "permissions": {
     "allow": [
@@ -32,9 +30,7 @@
       "Bash(git remote *)",
       "Bash(git show *)",
       "Bash(pnpm run *)",
-      "Bash(pnpm exec *)",
-      "Bash(npm run *)",
-      "Bash(npx *)"
+      "Bash(pnpm exec *)"
     ],
     "deny": [
       "Read(./.env)",
@@ -95,7 +91,6 @@
       "SendMessage"
     ]
   },
-  "model": "opus",
   "hooks": {
     "PostCompact": [
       {
@@ -277,6 +272,15 @@
         ]
       },
       {
+        "matcher": "mcp__linear-onyxodds__save_issue|mcp__linear-onyxodds__save_comment|mcp__linear-lineleap__save_issue|mcp__linear-lineleap__save_comment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/frontend-render-gate.py"
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -292,6 +296,15 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/gh-token-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/package-manager-guard.py"
           }
         ]
       },
@@ -1324,6 +1337,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/coverage-exclusion-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/scope-guard.py"
           }
         ]
@@ -1451,6 +1473,69 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/dedup-store-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/workflow-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/workflow-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/workflow-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
           }
         ]
       },
@@ -1673,6 +1758,11 @@
       "node_modules"
     ]
   },
+  "disableAgentView": true,
+  "disableRemoteControl": true,
+  "disableWorkflows": true,
+  "enableWorkflows": false,
+  "workflowKeywordTriggerEnabled": false,
   "statusLine": {
     "type": "command",
     "command": "python3 ~/.claude/scripts/statusline.py"
@@ -1685,6 +1775,12 @@
   "modelSettings": {
     "claude-opus-5": {
       "effortLevel": "medium"
+    },
+    "claude-opus-4-8": {
+      "effortLevel": "high"
+    },
+    "claude-opus-5-5": {
+      "effortLevel": "high"
     }
   },
   "autoUpdatesChannel": "stable",
@@ -1692,6 +1788,7 @@
   "showThinkingSummaries": true,
   "skipWorkflowUsageWarning": true,
   "switchModelsOnFlag": false,
+  "remoteControlAtStartup": false,
   "autoMode": {
     "allow": [
       "$defaults",
@@ -2049,9 +2146,5 @@
     "vercel": {
       "url": "https://mcp.vercel.com"
     }
-  },
-  "disableWorkflows": true,
-  "enableWorkflows": false,
-  "workflowKeywordTriggerEnabled": false,
-  "disableAgentView": true
+  }
 }

@@ -4,7 +4,7 @@
 
 A change to rendered output is not verified until something has rendered it. Reading the diff, passing a jsdom unit test, and a clean type check are all necessary and none of them is sufficient.
 
-The gate applies to any diff that touches markup, styles, theme tokens, or the component tree: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.dart`, `.css`, `.scss`, and any file whose name or path marks it as a theme or design token source.
+The gate applies to any diff that touches markup, styles, theme tokens, the component tree, a desktop layout, or a terminal UI: `.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.dart`, `.css`, `.scss`, native view sources, `.qml`, `.ui`, `.xaml`, `.storyboard`, `.xib`, any file whose name or path marks it as a theme or design token source, and any shipped source that imports a terminal UI library. A terminal UI's render-level check is a snapshot of the rendered screen, such as textual's `snap_compare`, bubbletea's teatest golden files, or an insta snapshot of ratatui's `TestBackend`.
 
 ## Why This Rule Exists
 
@@ -84,9 +84,126 @@ agent-browser --session cart-a get text body
 
 ### What The Pull Request States
 
-The pull request body states what was clicked and what was seen, with screenshots or the path to the evidence files. A change with no rendered effect says `No UI change` in one line instead.
+The pull request body states what was clicked and what was seen, with the screenshots [Visual Evidence In Published Text](#visual-evidence-in-published-text) requires. A change with no rendered effect says `No UI change` in one line instead.
 
 Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm skill, its feature notes and launch scripts, its CLAUDE.md, and the agent-browser skill references on snapshot refs and sessions.
+
+## Visual Evidence In Published Text
+
+A reviewer judges an interface change mostly by looking at it. Every text that publishes or answers a visible change carries high-resolution screenshots: Before, unless the surface is new, and After.
+
+### Where It Applies
+
+| Channel | Carries |
+|---|---|
+| A new or edited pull request or merge request | Before and After in the body |
+| A review-thread reply after a visible fix | After, plus Before when the reply explains what changed |
+| A new issue proposing a visible change | Before of the current state, and After when a mockup or prototype exists |
+| An issue answer that ships a fix | Before and After of the fix |
+| A tracker issue or comment, such as Linear | The same as its GitHub equivalent |
+
+It applies to every surface a person looks at: web, mobile, desktop GUI, and terminal UI.
+
+### What A Valid Screenshot Is
+
+- **Present.** A pull request with a visible change carries image files. A text-only `Before / After` section is not evidence.
+- **High resolution.** Capture at a device scale of 2 or more. The longer side must reach 1600 px. A 1x capture of a 1440x900 laptop fails; a 3x phone capture passes.
+- **Full page.** Capture the whole page, never only the viewport. A capture exactly one viewport tall, such as 1800 px from a 900 px viewport at scale 2, shows that the page scrolled inside an inner container and the rest was cut off.
+- **One width per set.** Every image published together has the same pixel width, so each renders at the same width on screen whatever its orientation.
+- **Scaled, never padded.** Equalize widths by proportional scaling. A 640x7798 mobile capture becomes 2880x35091 with `sips --resampleWidth 2880` or `sips -z 35091 2880`. Never pad a narrow capture onto a wider canvas.
+- **Grouped and labeled.** Desktop and mobile go in separate groups, each under its own heading, such as `Desktop, 1440 px viewport` and `Mobile, 320 px viewport`. The alt text starts with `Before:` or `After:`, names the device and viewport, and names the screen, as in `After: Mobile 320 px, default queue`. A new page has no Before; say so in one line.
+- **Comparable.** Before comes from the base commit with the same data, viewport, theme, locale, and window size as After. A difference the change did not cause hides the one it did.
+- **Complete.** Every state the change touches gets its pair: each theme, each breakpoint the layout changes at, and each error or empty state the diff alters.
+- **Clean.** Seeded or fake data only, never a real customer's name, email, or balance, per [`privacy-defaults.md`](../rules/privacy-defaults.md).
+
+### Capturing Before
+
+Run the base commit beside the branch, never by stashing work:
+
+```bash
+git worktree add ../before "$(git merge-base origin/main HEAD)"
+```
+
+Start it on its own port, capture the same screen, then `git worktree remove ../before`.
+
+### Capture Recipes
+
+Each recipe was run on 2026-10-28 on macOS, and the size it produced is listed.
+
+| Surface | Command | Measured output |
+|---|---|---|
+| Web | `agent-browser set viewport 1440 900 2`, then `agent-browser open <url>` and `agent-browser screenshot --full after.png` | 2880 wide, as tall as the page |
+| iOS | `xcrun simctl io booted screenshot after.png` | 1206x2622 on an iPhone simulator |
+| Android | `adb exec-out screencap -p > after.png` | 1080x2400 on a Pixel 6 emulator |
+| macOS desktop | `screencapture -o -l <window-id> after.png` on a Retina display | Not run; it needs Screen Recording permission |
+| Terminal UI | `asciinema rec --headless --window-size 100x30 -c '<command>' run.cast`, then `agg --font-size 32 run.cast run.gif` and `magick 'run.gif[-1]' after.png` | 1958x1388 |
+
+An 80x24 terminal at font size 32 renders narrower than 1600 px, so the terminal recipe pins 100x30. For a mobile layout on the web, `agent-browser set viewport 320 800 2` before the same full-page capture. A simulator or emulator started only for a capture runs headless: `xcrun simctl boot <udid>` without opening Simulator.app, and `emulator -avd <name> -no-window -no-audio`.
+
+### When The Page Scrolls Inside A Container
+
+A full-page capture stops at the viewport edge when the layout pins its root to the viewport and scrolls an inner element, which is what an `h-screen` shell with a `flex-1` column and a scrolling `main` does. Playwright's `fullPage` and `agent-browser screenshot --full` both measure the document, and the document is one viewport tall.
+
+Before capturing, inject CSS that lets each clipping ancestor grow to its content:
+
+```bash
+agent-browser eval "const s = document.createElement('style');
+  s.textContent = '.h-screen, .flex-1, main { height: auto !important } main { flex: none !important }';
+  document.head.appendChild(s)"
+agent-browser screenshot --full after.png
+```
+
+Measured on 2026-10-29 with a 40-row page in that shell at 1440x900 scale 2: 2880x1800 before the injection, 2880x8080 after. Name the project's own clipping classes in the selector. Never set `overflow: visible`: on overwatch a 75-column table then stretched the capture to 18,438 px wide.
+
+### Publishing The Images
+
+`gh` uploads local files with `--attach '<file>#<alt text>'` on `pr create`, `pr edit`, `issue create`, `issue edit`, and `issue comment`. An uploaded image inherits the repository's visibility, so a private repository's screenshots stay private. Never commit screenshots to the repository or host them anywhere else.
+
+```bash
+gh pr create --title "..." --body-file body.md \
+  --attach 'before.png#Before: Desktop 1440 px, checkout button' \
+  --attach 'after.png#After: Desktop 1440 px, checkout button'
+```
+
+The body groups the images by device, one heading each:
+
+```markdown
+### Desktop, 1440 px viewport
+
+![After: Desktop 1440 px, default queue](<url>)
+
+### Mobile, 320 px viewport
+
+![After: Mobile 320 px, default queue](<url>)
+
+New page, so there is no Before.
+```
+
+A review-thread reply cannot attach. Upload through the pull request first, read the URL back, and embed it:
+
+```bash
+gh pr edit 42 --attach 'after.png#After: focus ring'
+gh pr view 42 --json body --jq .body
+```
+
+Then reply with `![After: focus ring](<url>)` in the body. The upload also keeps the pull request's Evidence section current, which the description needs anyway.
+
+GitLab uploads through `glab api projects/:id/uploads -F file=@after.png`, and Linear through its `prepare_file_upload` tool. Each returns the Markdown to embed.
+
+### How The Hook Decides
+
+[`hooks/frontend-render-gate.py`](../hooks/frontend-render-gate.py) reads the branch diff against its base before any channel above publishes.
+
+- When the diff touches a web, mobile, desktop, or terminal surface, it blocks until the text carries an `After:` image, plus a `Before:` image when an existing surface changed or was deleted.
+- It reads each attached file's header and blocks an image whose longer side is under 1600 px, or a file that is missing or not an image.
+- It blocks a set whose images differ in pixel width, naming each width and the `sips --resampleWidth` command that fixes it.
+- When one label names a device or a viewport width, it blocks every label in the set that names neither.
+- It asks for a full-page capture when an image is exactly one common viewport tall at scale 1, 2 or 3, such as 1800 px for 900 at scale 2.
+- It expands `$VAR` and `${VAR}` assigned earlier in the same command or present in the environment, and resolves relative `--attach` and `--body-file` paths against the directory a `cd` moved into. A variable it cannot expand is named in the block.
+- A tracker issue or comment is judged by its own text, never by the checked-out branch, so a schema-only ticket filed from a branch with UI changes passes.
+- A terminal surface is a source file that imports a terminal UI library, such as textual, curses, ink, bubbletea, or ratatui.
+- An issue, reply, or tracker text that describes an interface with no visible change behind it and no image raises a confirmation instead of a block.
+- When the diff cannot be read, opening or editing a pull request raises the same confirmation.
 
 ## Mobile
 
@@ -105,6 +222,14 @@ When the toolchain for a mobile target is not installed, that is a gap to close 
 | Describing a visual change in a pull request without having seen it rendered | Ships an unverified claim to a reviewer who will trust it |
 | Waiving a whole accessibility check to get past a known finding | Hides every future regression along with the known one |
 | Reporting a mobile change as verified with no simulator run | There is no evidence at any rung |
+| Publishing a visible change, or a reply about one, without Before and After screenshots | The reviewer's main criterion for an interface goes unseen |
+| Attaching a 1x capture, or a Before taken with other data, theme, or viewport than After | The pair cannot be compared, so the difference the change made stays hidden |
+| Committing screenshots to the repository or hosting them outside the platform | History grows forever, and a private repository's images leak |
+| A text-only `Before / After` section in place of images | The reviewer reads a claim instead of seeing the change |
+| A viewport-only capture of a page that scrolls | Everything below the fold goes unreviewed |
+| Setting `overflow: visible` to unclip a page | Wide content such as a 75-column table stretches the capture sideways |
+| Padding a narrow capture onto a wider canvas | The phone screenshot renders tiny inside empty space; scale it instead |
+| Mixing desktop and mobile images under one heading | The reader cannot tell which device each image shows |
 
 ## The Tooling Is Installed
 

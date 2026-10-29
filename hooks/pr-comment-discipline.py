@@ -5,33 +5,20 @@ import json
 import os
 import re
 import shlex
+import subprocess
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.bypass import is_bypassed  # type: ignore
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_id: str) -> bool:  # type: ignore
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.hook_profile import should_run  # type: ignore
-except Exception:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
+from _lib.pr_session_ledger import create_repos, ledger_dir, opened  # noqa: E402
 
 
 HOOK_ID = "pr-comment-discipline"
@@ -62,6 +49,7 @@ PAYLOAD_FLAGS = ("--input", "--data", "--data-binary", "--data-raw", "-d")
 FIELD_FLAGS = ("-f", "--field", "--raw-field", "-F")
 
 WRITE_METHODS = ("post", "put", "patch")
+HELP_FLAGS = frozenset({"--help", "-h"})
 
 
 def _tokens(command: str) -> list[str]:
@@ -111,13 +99,13 @@ def _resolve(path: str, cwd: str) -> str:
 
 def _writes(command: str, tool: re.Pattern[str]) -> bool:
     return any(
-        _is_write(segment, " ".join(segment))
+        _is_write(segment)
         for segment in _segments(command)
         if tool.search(" ".join(segment))
     )
 
 
-def _is_write(tokens: list[str], command: str) -> bool:
+def _is_write(tokens: list[str]) -> bool:
     lowered = [t.lower() for t in tokens]
     for index, token in enumerate(lowered):
         if token in ("-x", "--method", "--request"):
@@ -126,8 +114,6 @@ def _is_write(tokens: list[str], command: str) -> bool:
         for method in WRITE_METHODS:
             if token in (f"-x{method}", f"--method={method}", f"--request={method}"):
                 return True
-    if re.search(r"-X\s*(?:POST|PUT|PATCH)\b", command, re.IGNORECASE):
-        return True
     return any(flag in lowered for flag in PAYLOAD_FLAGS + FIELD_FLAGS)
 
 
@@ -293,15 +279,22 @@ def _api_violation(
     return None
 
 
-def _cli_violation(executed: str, segments: list[list[str]]) -> tuple[str, str] | None:
-    if PR_COMMENT.search(executed):
+def _runs(pattern: re.Pattern[str], segments: list[list[str]]) -> bool:
+    return any(
+        pattern.search(" ".join(segment)) and not HELP_FLAGS.intersection(segment)
+        for segment in segments
+    )
+
+
+def _cli_violation(segments: list[list[str]]) -> tuple[str, str] | None:
+    if _runs(PR_COMMENT, segments):
         return _violation("PRC001")
     if any(
         PR_REVIEW.search(" ".join(segment)) and _review_has_body(segment)
         for segment in segments
     ):
         return _violation("PRC002")
-    if GLAB_MR_NOTE.search(executed):
+    if _runs(GLAB_MR_NOTE, segments):
         return _violation("PRC006")
     return None
 
@@ -312,7 +305,7 @@ def _gh_api_violation(
     heredoc = [command] if "<<" in command else []
     for segment in segments:
         text = " ".join(segment)
-        if not GH_API.search(text) or not _is_write(segment, text):
+        if not GH_API.search(text) or not _is_write(segment):
             continue
         violation = _api_violation(segment, heredoc, cwd)
         if violation is not None:
@@ -334,9 +327,7 @@ def _curl_violation(command: str, executed: str, cwd: str) -> tuple[str, str] | 
 def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
     segments = _command_segments(command)
     executed = strip_heredoc_bodies(command)
-    violation = _cli_violation(executed, segments) or _gh_api_violation(
-        command, segments, cwd
-    )
+    violation = _cli_violation(segments) or _gh_api_violation(command, segments, cwd)
     if violation is not None:
         return violation
     if GLAB_API.search(executed) and _writes(command, GLAB_API):
@@ -345,6 +336,42 @@ def find_violation(command: str, cwd: str = "") -> tuple[str, str] | None:
         if GLAB_DISCUSSIONS.search(command):
             return _violation("PRC008")
     return _curl_violation(command, executed, cwd)
+
+
+SECOND_PR = (
+    "This session already opened {prs}. One task gets one pull request per "
+    "repository: cherry-pick the follow-up onto that branch, update its title "
+    "and body so the body names every tracker key, and close any extra pull "
+    "request without a comment. Approve only when this is a separate task."
+)
+UNREADABLE_LEDGER = (
+    "Pull-request check could not read the pull-request ledger ({error}), so a "
+    "second pull request for this task cannot be ruled out. Approve only when "
+    "this is the first pull request for the task in this repository."
+)
+
+
+def second_pr_reason(command: str, cwd: str, session: str) -> str:
+    try:
+        repeats = [
+            entry
+            for slug in create_repos(command, cwd or os.getcwd())
+            for entry in opened(session, slug, ledger_dir())
+        ]
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        return UNREADABLE_LEDGER.format(error=exc)
+    return SECOND_PR.format(prs=", ".join(repeats)) if repeats else ""
+
+
+def _ask(reason: str, command: str) -> int:
+    decision = {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "ask",
+        "permissionDecisionReason": reason,
+    }
+    print(json.dumps({"hookSpecificOutput": decision}))
+    _audit(hook=HOOK_ID, decision="ask", tool="Bash", command_excerpt=command[:240])
+    return 0
 
 
 def _skip_run() -> bool:
@@ -388,7 +415,8 @@ def main() -> int:
     cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
     violation = find_violation(command, cwd)
     if violation is None:
-        return 0
+        reason = second_pr_reason(command, cwd, str(payload.get("session_id") or ""))
+        return _ask(reason, command) if reason else 0
     code, explanation = violation
     return _block(code, explanation, command)
 

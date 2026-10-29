@@ -5,13 +5,8 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 INTERACTIVE_PRONE = ("rm", "cp", "mv")
@@ -178,7 +173,7 @@ def mame_blocked(command: str) -> str:
     return ""
 
 
-def emit_block(reason: str, command: str) -> None:
+def emit_block(reason: str, command: str) -> int:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -196,7 +191,7 @@ def emit_block(reason: str, command: str) -> None:
         tool="Bash",
         command_excerpt=command[:200],
     )
-    sys.exit(2)
+    return 2
 
 
 def _force_flag_reason(base: str) -> str:
@@ -227,18 +222,17 @@ def main() -> int:
 
     cwd = data.get("cwd") or os.getcwd()
     if kcov_blocked(command, cwd, sys.platform):
-        emit_block(KCOV_REASON, command)
+        return emit_block(KCOV_REASON, command)
 
     fault = mame_blocked(command)
     if fault:
-        emit_block(MAME_REASON.format(fault=fault), command)
+        return emit_block(MAME_REASON.format(fault=fault), command)
 
     blocked, base = is_blocked(command)
     if not blocked:
         return 0
 
-    emit_block(_force_flag_reason(base), command)
-    return 2
+    return emit_block(_force_flag_reason(base), command)
 
 
 if __name__ == "__main__":

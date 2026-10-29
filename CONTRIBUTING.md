@@ -17,19 +17,22 @@ so the type is not cosmetic.
 git clone https://github.com/gufranco/claude-engineering-rules.git
 cd claude-engineering-rules
 
-python3 -m venv .venv
 make install
-
-npm ci --ignore-scripts
 ```
 
 [`.mise.toml`](.mise.toml) pins Python 3.14 and Node 24, the versions CI runs;
-`mise install` provides both.
+`mise install` provides both, and the setup also needs uv.
 
-`make install` reads [`requirements-dev.txt`](requirements-dev.txt), which is
-the single source of truth for the Python toolchain. CI installs from the same
-file, so a version bump lands in one place and cannot drift between your
-machine and the pipeline.
+`make install` runs `uv sync --locked`, which builds `.venv` from
+[`uv.lock`](uv.lock), and `corepack pnpm install --frozen-lockfile`, which
+builds `node_modules` from [`pnpm-lock.yaml`](pnpm-lock.yaml). The Python tools
+are declared once in the `dev` group of [`pyproject.toml`](pyproject.toml), and
+both lockfiles carry every transitive package with its integrity hash. CI
+installs from the same two lockfiles, so a version bump lands in one place and
+cannot drift between your machine and the pipeline. After changing a pin, run
+`uv lock` or `corepack pnpm install` and commit the lockfile with it. The
+pnpm version comes from `packageManager` in [`package.json`](package.json);
+`corepack` honors that pin where a system pnpm may not.
 
 The Node toolchain exists only to run `semantic-release`. You need it if you
 touch [`.releaserc.json`](.releaserc.json) or
@@ -48,11 +51,12 @@ That expands to:
 
 | Target | What it does |
 |--------|--------------|
-| `make test-cov` | pytest with branch coverage, gated at 95% |
-| `make test-bats` | bats-core suites for the shell scripts in [`.github/scripts/`](.github/scripts); fails when none exist |
-| `make test-smoke` | the hook smoke suite, [`tests/test-hooks.sh`](tests/test-hooks.sh) |
+| `make test-cov` | pytest with branch coverage over hooks and scripts, gated at 100% with no omitted files or excluded lines |
+| `make test-js` | the Node script tests under [`tests/js/`](tests/js), gated at 100% |
+| `make test-smoke` | every hook run against its fixtures by [`hook-smoke.py`](.github/scripts/hook-smoke.py), with the cases in [`hook-smoke-cases.json`](tests/fixtures/hook-smoke-cases.json) |
 | `make benchmark` | every registered PreToolUse hook under 500 ms |
-| `make lint` | ruff, shellcheck, actionlint, yamllint, zizmor, lint-skills |
+| `make mutation-scan` | the in-place mutation scan CI runs over every tracked JS and TS file |
+| `make lint` | ruff, actionlint, yamllint, zizmor, markdownlint, lint-skills |
 | `make typecheck` | mypy --strict |
 | `make validate` | the eleven repository validators under [`.github/scripts/`](.github/scripts) |
 
@@ -60,7 +64,7 @@ Run `make format` before `make lint` if the formatter complains. Individual
 targets are listed by `make help`.
 
 [`.pre-commit-config.yaml`](.pre-commit-config.yaml) mirrors the same tools
-at the versions pinned in [`requirements-dev.txt`](requirements-dev.txt); a
+at the versions pinned in [`pyproject.toml`](pyproject.toml); a
 different ruff locally gives a green commit and a red pipeline. Install it
 once with `pre-commit install && pre-commit install --hook-type commit-msg`,
 and run it by hand with `pre-commit run --all-files`. Its `local` hooks run the
@@ -72,8 +76,8 @@ the checks.
 you touch [`.releaserc.json`](.releaserc.json) or the release scripts:
 
 ```bash
-npm run release:verify-notes
-npm run release:dry
+corepack pnpm release:verify-notes
+corepack pnpm release:dry
 ```
 
 The first renders release notes through the configured plugin with no token

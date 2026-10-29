@@ -6,13 +6,8 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 PATTERNS: list[tuple[re.Pattern[str], str]] = [
@@ -136,18 +131,14 @@ def find_violations(text: str) -> list[tuple[str, str, str]]:
     return out
 
 
-try:
-    from _lib.knowledge_notes import in_vault as _in_vault
-except Exception:  # pragma: no cover
-
-    def _in_vault(_path: str) -> bool:
-        return False
+from _lib.knowledge_notes import in_vault as _in_vault  # noqa: E402
 
 
 from _lib import project_workspace as _workspace  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.published_text import is_scratch_path, published_text  # noqa: E402
 from _lib.shell_segments import mask_literal_text  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 SKIPPED_PATH_SEGMENTS = (
     "/.claude/",
@@ -215,35 +206,26 @@ def read_body_file(path: str) -> str | None:
 
 
 def collect_texts(tool: str, tool_input: dict) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
     fp = tool_input.get("file_path", "") or ""
-    if tool in ("Write", "Edit", "MultiEdit") and (
-        is_skipped_path(fp) or is_scratch_path(fp)
-    ):
-        return out
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append(("content", published_text(fp, c)))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append(("new_string", published_text(fp, c)))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((f"edits[{i}].new_string", published_text(fp, c)))
-    elif tool == "Bash":
-        c = tool_input.get("command", "")
-        if isinstance(c, str) and bash_command_in_scope(c):
-            out.append(("command", c))
-            for path in extract_body_file_paths(c):
-                body = read_body_file(path)
-                if body is not None:
-                    out.append((f"body-file:{path}", body))
-    return out
+    if tool == "Bash":
+        return _bash_texts(str(tool_input.get("command") or ""))
+    if is_skipped_path(fp) or is_scratch_path(fp):
+        return []
+    return [
+        (name, published_text(fp, text))
+        for name, text in payload_fragments(tool, tool_input)
+    ]
+
+
+def _bash_texts(command: str) -> list[tuple[str, str]]:
+    if not bash_command_in_scope(command):
+        return []
+    bodies = [
+        (f"body-file:{path}", body)
+        for path in extract_body_file_paths(command)
+        if (body := read_body_file(path)) is not None
+    ]
+    return [("command", command), *bodies]
 
 
 from _lib.hook_profile import should_run  # noqa: E402

@@ -267,9 +267,9 @@ The most important section after the hero. It must be prominent, copy-pasteable,
 ```bash
 git clone https://github.com/user/repo.git
 cd repo
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
+pnpm dev
 ```
 
 ### Verify
@@ -305,10 +305,10 @@ The generated section has five parts.
 ```bash
 git clone https://github.com/user/repo.git
 cd repo
-npm install
+pnpm install
 cp .env.example .env
-npm run db:seed
-npm run dev
+pnpm db:seed
+pnpm dev
 ```
 
 To reproduce reported bugs, follow the steps above and then read the bug report's "Steps to reproduce" section.
@@ -321,10 +321,10 @@ To reproduce reported bugs, follow the steps above and then read the bug report'
 
 | Suite | Command | Covers |
 |:------|:--------|:-------|
-| Unit | `npm run test:unit` | Pure functions and domain logic |
-| Integration | `npm run test:integration` | Real database and queue, no mocks |
-| End to end | `npm run test:e2e` | Full user flows through the HTTP layer |
-| Lint and format | `npm run lint` | Style and static analysis gates |
+| Unit | `pnpm test:unit` | Pure functions and domain logic |
+| Integration | `pnpm test:integration` | Real database and queue, no mocks |
+| End to end | `pnpm test:e2e` | Full user flows through the HTTP layer |
+| Lint and format | `pnpm lint` | Style and static analysis gates |
 ```
 
 Take the suite names and commands from the manifest scripts, the Makefile targets, or the CI job matrix found in Phase 1. Never invent a suite the project does not have. When the project ships a single undifferentiated `test` script, show one row and skip the table header ceremony.
@@ -369,7 +369,7 @@ Phase 1 Deep Scan gains these scans:
 2. **Detect lint and style configs.** Look for `.eslintrc.*`, `prettier.config.*`, `.editorconfig`, `pyproject.toml [tool.ruff]`, `clippy.toml`, `golangci.yml`. Cite the discovered files in the table.
 3. **Detect AI review bots.** Look for `.coderabbit.yml`, `.coderabbit.yaml`, `.greptile.yml`, `.cursorrules`, `.cursor/`, `.sourcery.yaml`, `korbit.yml`. List the discovered bots in the conventions table.
 4. **Detect issue tracker.** Read repo metadata via `GH_TOKEN=$(gh auth token --user <account>) gh repo view --json hasIssuesEnabled,url`. If issues are disabled, look for `ISSUE_TEMPLATE/` or `BUG_REPORT.md` template files. If neither, omit the section and leave a comment recommending the user add one.
-5. **Detect testing instructions.** Look for `make test`, `npm run test`, `pytest`, `go test ./...`, or equivalent. Enumerate every test-related script or target, not only the aggregate one, so the Running the tests table can name each suite and what it covers. The reproducing-a-bug instructions reuse the same command.
+5. **Detect testing instructions.** Look for `make test`, `pnpm test`, `pytest`, `go test ./...`, or equivalent. Enumerate every test-related script or target, not only the aggregate one, so the Running the tests table can name each suite and what it covers. The reproducing-a-bug instructions reuse the same command.
 
 #### Skip conditions
 
@@ -487,15 +487,19 @@ English is always the source and keeps the plain README file name. Each translat
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/maeyomi](https://github.com/gufranco/maeyomi). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link:
+**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/maeyomi](https://github.com/gufranco/maeyomi). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link. The line is plain Markdown at the normal text size, never wrapped in `<sub>` or `<small>`, and a blank line is the only gap above and below it:
 
 ```markdown
+<strong>What it does, concretely, in one sentence.</strong>
+
 English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
+
+[![CI](badge-url)](link)
 ```
 
 The Hong Kong label is copied byte for byte: `繁體中文`, one ASCII space, then `(香港)` in ASCII parentheses. The full-width punctuation rule for Chinese body text does not apply to the switcher, so never write `（香港）`. The user corrected the full-width form on 2026-10-17.
 
-The user chose this placement on 2026-10-16, pointing at maeyomi, over an earlier rule that put the switcher on the first line above the title.
+The user chose this placement on 2026-10-16, pointing at maeyomi, over an earlier rule that put the switcher on the first line above the title. On 2026-10-28 the user asked for lighter spacing: two `<br>` lines above and below the switcher read as too much air, so never put `<br>` spacers around it. On 2026-10-29 the user rejected a switcher wrapped in `<sub>` as too small and ugly: the request had been less space around the line, never smaller text, so the line keeps the body text size.
 
 Never use `&nbsp;|&nbsp;` as the separator, here or in the navigation row. Written with spaces around it, as it always is, each side renders a non-breaking space plus an ordinary one, so the reader sees two spaces on each side of every pipe. The user saw the doubled gap across many repositories on 2026-10-17.
 
@@ -548,9 +552,9 @@ Tables grouped by category. Only include if the project has a Makefile, scripts,
 
 | Command | Description |
 |:--------|:------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run test` | Run test suite with coverage |
-| `npm run lint` | Lint and format check |
+| `pnpm dev` | Start development server with hot reload |
+| `pnpm test` | Run test suite with coverage |
+| `pnpm lint` | Lint and format check |
 
 ### Infrastructure
 

@@ -208,25 +208,24 @@ def rebound_names(func: FunctionNode) -> frozenset[str]:
     names = (
         target.id
         for node in ast.walk(func)
-        if isinstance(
-            node, (ast.Assign, ast.AnnAssign, ast.For, ast.With, ast.NamedExpr)
-        )
+        if isinstance(node, BindingNode)
         for target in _binding_targets(node)
         if isinstance(target, ast.Name)
     )
     return frozenset(names)
 
 
-def _binding_targets(node: ast.AST) -> list[ast.expr]:
+BindingNode = ast.Assign | ast.AnnAssign | ast.For | ast.With | ast.NamedExpr
+
+
+def _binding_targets(node: BindingNode) -> list[ast.expr]:
     if isinstance(node, ast.Assign):
         return list(node.targets)
-    if isinstance(node, (ast.AnnAssign, ast.For, ast.NamedExpr)):
-        return [node.target]
     if isinstance(node, ast.With):
         return [
             item.optional_vars for item in node.items if item.optional_vars is not None
         ]
-    return []
+    return [node.target]
 
 
 def _in_place_plus(node: ast.AST, params: dict[str, str]) -> str:

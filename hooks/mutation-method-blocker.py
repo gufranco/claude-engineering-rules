@@ -9,12 +9,7 @@ from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from _lib.audit_log import record as _audit
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields: Any) -> None:
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 from _lib.mutation_allowlists import skip_extension, skip_path
@@ -38,6 +33,7 @@ DETECTOR_SUMMARY_LIMIT = 12
 COMMAND_EXCERPT_LIMIT = 240
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 
 
@@ -69,24 +65,11 @@ MAX_HITS_PER_FILE = 8
 def _normalize_payload(
     tool: str, tool_input: dict[str, Any]
 ) -> list[tuple[str, str, str, bool]]:
-    out: list[tuple[str, str, str, bool]] = []
     fp = tool_input.get("file_path", "") or ""
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((fp, "content", c, True))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((fp, "new_string", c, False))
-    elif tool == "MultiEdit":
-        edits = tool_input.get("edits", []) or []
-        for i, edit in enumerate(edits):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((fp, f"edits[{i}].new_string", c, False))
-    return out
+    return [
+        (fp, name, text, tool == "Write")
+        for name, text in payload_fragments(tool, tool_input)
+    ]
 
 
 def _format_findings(file_path: str, matches: list[Match]) -> list[str]:
@@ -107,22 +90,23 @@ _I18N_CACHE: dict[str, dict[str, Any]] = {}
 def _load_i18n(locale: str) -> dict[str, Any]:
     if locale in _I18N_CACHE:
         return _I18N_CACHE[locale]
-    here = os.path.dirname(os.path.abspath(__file__))
-    candidates = [locale]
-    if "-" in locale:
-        candidates.append(locale.split("-", 1)[0])
-    candidates.append("en")
-    for cand in candidates:
-        path = os.path.join(here, "i18n", f"{cand}.json")
-        try:
-            with open(path, encoding="utf-8") as fh:
-                bundle: dict[str, Any] = json.load(fh)
-                _I18N_CACHE[locale] = bundle
-                return bundle
-        except (OSError, ValueError):
-            continue
-    _I18N_CACHE[locale] = {}
-    return {}
+    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "i18n")
+    candidates = [locale, locale.split("-", 1)[0]]
+    chosen = next(
+        (c for c in candidates if os.path.isfile(os.path.join(folder, f"{c}.json"))),
+        "en",
+    )
+    with open(os.path.join(folder, f"{chosen}.json"), encoding="utf-8") as fh:
+        bundle: dict[str, Any] = json.load(fh)
+    _I18N_CACHE[locale] = bundle
+    return bundle
+
+
+def _format_block(label: str, lines: list[str]) -> str:
+    if not lines:
+        return ""
+    body = "\n".join(f"  - {line}" for line in lines)
+    return f"{label}\n{body}"
 
 
 def _build_message(findings: list[str]) -> str:
@@ -142,12 +126,6 @@ def _build_message(findings: list[str]) -> str:
     byp_header: str = bundle.get("bypass_header", "Bypass envs:")
     byp_lines: list[str] = bundle.get("bypass_lines") or []
 
-    def _format_block(label: str, lines: list[str]) -> str:
-        if not lines:
-            return ""
-        body = "\n".join(f"  - {line}" for line in lines)
-        return f"{label}\n{body}"
-
     sections = [
         _format_block(fix_header, fix_lines),
         _format_block(supp_header, supp_lines),
@@ -166,11 +144,8 @@ def _deny(reason: str) -> int:
             "permissionDecisionReason": reason,
         }
     }
-    try:
-        sys.stdout.write(json.dumps(body, ensure_ascii=False))
-        sys.stdout.flush()
-    except (OSError, TypeError, ValueError) as error:
-        sys.stderr.write(f"mutation-method-blocker: decision write failed: {error}\n")
+    sys.stdout.write(json.dumps(body, ensure_ascii=False))
+    sys.stdout.flush()
     return 2
 
 

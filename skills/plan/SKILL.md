@@ -133,7 +133,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
    4. Closed PRs: `GH_TOKEN=$(gh auth token --user <account>) gh pr list --state closed --search "<keywords>"`. A closed PR often names a dead-end or a postponed approach.
    5. GitHub code search: `GH_TOKEN=$(gh auth token --user <account>) gh search code "<keywords>" --language=<lang>`.
    6. Library docs: `llms.txt` first, then official docs of the major library in the area.
-   7. Package registry: `npm search`, `pip index versions <name>` or the PyPI page, since PyPI disabled `pip search`, `cargo search`, `gem search`.
+   7. Package registry: `pnpm search`, `pip index versions <name>` or the PyPI page, since PyPI disabled `pip search`, `cargo search`, `gem search`.
    8. Web search: last resort, only if 1-7 turned up nothing.
 
    **Anti-duplication gate for skills, agents, hooks, standards, rules.** Before proposing a new file in `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/hooks/`, `~/.claude/standards/`, or `~/.claude/rules/`, run steps 1-2 against `~/.claude/` and the [`rules/index.yml`](../../rules/index.yml) on-demand entries first. Prefer extending an existing file, new subcommand, new section, new mode, over creating a new one. Justify the new file in writing when no extension fits. See [`rules/pre-flight.md`](../../rules/pre-flight.md) for the full rule.
@@ -156,7 +156,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
      references.md  (patterns, related work, applicable rules)
    ```
 
-   For a non-trivial change, `plan.md` carries a **Requirements** section before the task breakdown. Each requirement is one observable behavior stated with a normative keyword, and each carries at least one Given/When/Then scenario. See [`rules/living-specs.md`](../../rules/living-specs.md) for the format and [`rules/normative-keywords.md`](../../rules/normative-keywords.md) for keyword strength. These requirements are the plan's acceptance criteria: each scenario maps to a row in the test traceability matrix (Gate 1) and feeds the 95% coverage gate. The `test-scenario-generator` agent reads this section when present.
+   For a non-trivial change, `plan.md` carries a **Requirements** section before the task breakdown. Each requirement is one observable behavior stated with a normative keyword, and each carries at least one Given/When/Then scenario. See [`rules/living-specs.md`](../../rules/living-specs.md) for the format and [`rules/normative-keywords.md`](../../rules/normative-keywords.md) for keyword strength. These requirements are the plan's acceptance criteria: each scenario maps to a row in the test traceability matrix (Gate 1) and feeds the 100% coverage gate. The `test-scenario-generator` agent reads this section when present.
 
    ```markdown
    ## Requirements
@@ -213,7 +213,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
 
 7. **Append mandatory closing gates.** Every `plan.md` task breakdown must end with these two items, in this order, as the final tasks. They are not optional. They cannot be moved earlier or removed.
 
-   **Gate 1: Test Coverage, 95%+.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8, Testing. Every file changed or directly related to the changes must reach 95%+ coverage across all applicable test types. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 95%, write the missing tests before proceeding.
+   **Gate 1: Test Coverage, 100%.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 8, Testing. Every file changed or directly related to the changes must reach 100% coverage across statements, branches, functions, and lines, with no exclusion directive, and every user-facing entry point and requirement scenario must have an end-to-end test. "Related" means: files that import from, are imported by, or share a data contract with a changed file. Run the coverage tool scoped to changed files. If any file is below 100%, test the behavior behind the uncovered lines, or delete or refactor code no test can reach, before proceeding.
 
    **Gate 2: Clean Room Verification.** Apply [`../../checklists/checklist.md`](../../checklists/checklist.md) category 50, Clean Room. Run all checks from sections A through E against every file produced by this plan. If no external sources were consulted, state that explicitly and skip. Full process and remediation steps: [`standards/clean-room.md`](../../standards/clean-room.md).
 

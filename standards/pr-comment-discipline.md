@@ -48,6 +48,18 @@ The command is addressed to a reviewer that acts on it, so it has the reader the
 | Commit comment | Same |
 | Any channel, bot | The code changes if the finding is real; the thread is resolved or minimized |
 
+### The Done State
+
+A pull request is reported done only after every channel was fetched and the result is zero unresolved review threads and every bot review body minimized. Count it, never estimate it:
+
+```bash
+gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviewThreads(first:100){nodes{isResolved}} reviews(first:100){nodes{author{login} body isMinimized}}}}}' \
+  -F o=<owner> -F r=<repo> -F n=<number> \
+  --jq '.data.repository.pullRequest | {unresolved: [.reviewThreads.nodes[] | select(.isResolved | not)] | length, bodies: [.reviews.nodes[] | select(.body != "" and (.isMinimized | not))] | length}'
+```
+
+Both counts are 0, except a human's review body, which is answered with a code change. Status comments from bots are not review comments and stay visible: preview deployments, coverage reports, lead-approval markers, and tracker links such as Linear's. Origin: on 2026-10-28 and 2026-10-29 the owner cleared open threads and visible bot review bodies by hand across tsos-tech/overwatch #671 and #677 and tsos-tech/onyx_fullstack #5005.
+
 A question that reaches no reply still reaches a fix. When the fix alone would leave the reviewer guessing, the pull-request description carries the sentence, since that is where a reader looks for why.
 
 ## Never Reply To A Bot
@@ -67,7 +79,7 @@ No mechanical check can enforce this, because a publishing command carries a com
 
 Polite and direct, never warm and long. A reviewer is a person with other work.
 
-- **Answer the point, then stop.** Four sentences is the ceiling. Reasoning past that belongs in the code or the pull-request description.
+- **Answer the point, then stop.** Four sentences is the ceiling. A reply about a visible fix also embeds its high-resolution `After:` screenshot, which is evidence and not a sentence, per [`frontend-render-gate.md`](frontend-render-gate.md#visual-evidence-in-published-text). Reasoning past that belongs in the code or the pull-request description.
 - **Lead with what changed.** The fix and its commit, or the answer, in the first sentence.
 - **Courtesy fits in a clause.** Never a paragraph, never an apology, never repeated thanks.
 - **No restatement.** The reviewer wrote the comment and can see it above your reply.

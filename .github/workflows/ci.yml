@@ -11,47 +11,42 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  cancel-in-progress: true
 
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           python-version: "3.14"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Install linters
-        run: pip install -r requirements-dev.txt
-
-      # The runner image ships shellcheck. Installing it unconditionally cost a
-      # full apt index refresh on every run and was the step that hung.
-      - name: ShellCheck
+      - name: Install the locked toolchain
         run: |
-          set -euo pipefail
-          if ! command -v shellcheck >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq shellcheck
-          fi
-          shellcheck --version
-          shellcheck --severity=warning --shell=bash --enable=all tests/test-hooks.sh
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Python lint (ruff check)
-        run: ruff check hooks scripts tools .github/scripts tests
+        run: make lint-py
 
       - name: Python format check (ruff format)
-        run: ruff format --check hooks scripts tools .github/scripts tests
+        run: make format-check
 
       - name: Validate counts
         run: python3 .github/scripts/validate-counts.py
@@ -62,14 +57,20 @@ jobs:
       - name: Validate JSON
         run: python3 -c "import json, glob; [json.load(open(f)) for f in glob.glob('**/*.json', recursive=True) if 'node_modules' not in f]"
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
+
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
+          cache: pnpm
+
+      - name: Install pinned Node tooling
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Markdownlint
-        run: |
-          npx --yes markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
+        run: make lint-md
 
       - name: Validate YAML
         run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))"
@@ -142,29 +143,40 @@ jobs:
 
   workflow-lint:
     name: Workflow lint (actionlint + yamllint)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           python-version: "3.14"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Install yamllint
-        run: pip install -r requirements-dev.txt
+      - name: Install the locked toolchain
+        run: |
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.26"
+          cache: false
 
       - name: Install actionlint
-        run: |
-          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          pwd >> "$GITHUB_PATH"
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
       - name: actionlint
         run: actionlint -color
@@ -187,24 +199,31 @@ jobs:
 
   typecheck:
     name: Typecheck (mypy --strict)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           python-version: "3.14"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Install mypy
-        run: pip install -r requirements-dev.txt
+      - name: Install the locked toolchain
+        run: |
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       # Calls the Makefile so the strict-typed file list lives in exactly one
       # place. Repeating it here is how it silently drifted before.
@@ -213,62 +232,65 @@ jobs:
 
   hooks:
     name: Hook tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           python-version: "3.14"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Make hooks executable
-        run: chmod +x hooks/*.py tests/test-hooks.sh
+      - name: Install the locked toolchain
+        run: |
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Run hook smoke tests
-        run: bash tests/test-hooks.sh
+        run: make test-smoke
 
       - name: Hook performance check
-        run: bash .github/scripts/hook-benchmark.sh --threshold 500
+        run: make benchmark
 
   pytest:
     name: Python unit + integration
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           python-version: "3.14"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      # Installed from a pinned commit rather than apt. Refreshing the apt
-      # index pulled a multi-minute stall into the critical path and twice hung
-      # until the job timed out. This clone is deterministic and takes about a
-      # second.
-      - name: Install bats-core
-        env:
-          BATS_REF: eb7f42f8d608ac693d7a4b67474f6714ea68cfc5
+      - name: Install the locked toolchain
         run: |
-          set -euo pipefail
-          workdir="$(mktemp -d)"
-          git clone --quiet --no-checkout https://github.com/bats-core/bats-core.git "$workdir"
-          git -C "$workdir" fetch --quiet --depth 1 origin "$BATS_REF"
-          git -C "$workdir" checkout --quiet FETCH_HEAD
-          sudo "$workdir/install.sh" /usr/local
-          bats --version
+          uv sync --locked
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
       - name: Symlink checkout to ~/.claude
         run: |
@@ -277,21 +299,12 @@ jobs:
             ln -s "$GITHUB_WORKSPACE" "$HOME/.claude"
           fi
 
-      - name: Bootstrap venv
-        run: |
-          python3 -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install -r requirements-dev.txt
-
       - name: make test-cov
         run: make test-cov
 
-      - name: make test-bats
-        run: make test-bats
-
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: |
@@ -301,7 +314,7 @@ jobs:
 
   release-config:
     name: Release config dry-run
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       # semantic-release verifies push access with `git push --dry-run` before
@@ -309,26 +322,37 @@ jobs:
       # reach the plugin chain that this job exists to check.
       contents: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
+
       - name: Set up Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: npm
+          cache: pnpm
 
       - name: Install release toolchain
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       # The toolchain never ships to a user, but it runs with a write token on
       # main, so a vulnerable dependency there is a release-pipeline risk.
       - name: Audit release toolchain
         run: |
-          npm audit --json > "$RUNNER_TEMP/audit.json" || true
+          pnpm audit --json > "$RUNNER_TEMP/audit.json" || true
           python3 .github/scripts/audit-release-toolchain.py < "$RUNNER_TEMP/audit.json"
+
+      - name: Verify registry signatures
+        run: pnpm audit signatures
 
       # Renders release notes directly through the configured plugin, with no
       # token and no git access, so it also runs on Dependabot and fork pull
@@ -337,6 +361,9 @@ jobs:
       # produces notes missing every commit rather than raising an error.
       - name: Release notes render
         run: node scripts/verify-release-notes.mjs
+
+      - name: Node script tests at full coverage
+        run: make test-js
 
       # The full dry run additionally proves the whole plugin chain resolves.
       # Restricted to push events because a pull request from a fork, and every
@@ -348,7 +375,7 @@ jobs:
         if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release --dry-run --no-ci
+        run: pnpm exec semantic-release --dry-run --no-ci
 
       - name: Plugin version sync is idempotent
         run: |
@@ -363,42 +390,52 @@ jobs:
 
   codeql:
     name: CodeQL (Python)
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
       actions: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370  # v4.39.1
+        uses: github/codeql-action/init@v4
         with:
           languages: python
           queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370  # v4.39.1
+        uses: github/codeql-action/analyze@v4
         with:
           category: codeql-python
 
   dependency-review:
     name: Dependency review
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294  # v5.0.0
+        uses: actions/dependency-review-action@v5.0.0
         with:
           fail-on-severity: high

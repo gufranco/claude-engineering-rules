@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.dangerous_command_input import read_command  # noqa: E402
@@ -16,7 +16,10 @@ from _lib.dangerous_command_push import (  # noqa: E402
     push_cwd as _push_cwd,  # noqa: F401
     repo_root as _repo_root,
 )
-from _lib.dangerous_command_recoverable import RECOVERABLE  # noqa: E402
+from _lib.dangerous_command_recoverable import (  # noqa: E402
+    RECOVERABLE,
+    TEST_DELETION,
+)
 from _lib.dangerous_command_verdicts import (  # noqa: E402
     HOOK_NAME,
     allow,
@@ -37,6 +40,7 @@ from _lib.shell_segments import (  # noqa: E402
     quoted_segments,
     strip_data_heredoc_bodies,
 )
+from _lib.tracked_files import removes_only_uncommitted_tests  # noqa: E402
 
 CONFIRM_SUFFIX = "\nAsk the user to confirm before running this command."
 
@@ -441,17 +445,28 @@ def _skipped() -> bool:
     return not should_run(HOOK_NAME)
 
 
+def _recoverable(command: str, cwd: str) -> list[tuple[str, str]]:
+    if not removes_only_uncommitted_tests(command, cwd or os.getcwd()):
+        return RECOVERABLE
+    return [pattern for pattern in RECOVERABLE if pattern is not TEST_DELETION]
+
+
 def main() -> None:
     if _skipped():
         sys.exit(0)
-    command = read_command(refuse_unreadable)
+    payload = read_command(refuse_unreadable)
+    command = payload.command
     if not command or _is_safe_cleanup(command):
         sys.exit(0)
     matched = strip_git_global_options(strip_data_heredoc_bodies(command))
     block_catastrophic(command, matched, CATASTROPHIC)
     block_critical(command, matched, CRITICAL_PATHS)
     notices = first_notice(
-        command, matched, RECOVERABLE, "CONFIRM REQUIRED: ", CONFIRM_SUFFIX
+        command,
+        matched,
+        _recoverable(command, payload.cwd),
+        "CONFIRM REQUIRED: ",
+        CONFIRM_SUFFIX,
     )
     if re.search(r"\bgit\s+push\b", matched):
         check_protected_push(command, matched, notices, _solo_push_root)

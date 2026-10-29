@@ -87,7 +87,7 @@ def _parse_entry(line: str) -> dict[str, str] | None:
         entry = json.loads(line)
     except ValueError:
         return None
-    if not isinstance(entry, dict):  # pragma: no cover
+    if not isinstance(entry, dict):
         return None
     return entry
 
@@ -96,7 +96,7 @@ def _absorb_transcript(summary: Summary, transcript: Path) -> None:
     summary.sessions += 1
     try:
         handle = transcript.open(encoding="utf-8", errors="replace")
-    except OSError:  # pragma: no cover
+    except OSError:
         return
     with handle:
         for line in handle:
@@ -267,5 +267,5 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     raise SystemExit(main())

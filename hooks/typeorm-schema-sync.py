@@ -5,13 +5,8 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 TS_EXT_RE = re.compile(r"\.(?:ts|tsx|js|jsx|mjs|cjs)$", re.IGNORECASE)
@@ -57,6 +52,7 @@ CHECK_DECORATOR_RE = re.compile(
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def is_skipped_path(path: str) -> bool:
@@ -71,10 +67,7 @@ def is_skipped_path(path: str) -> bool:
 
 
 def first_arg_is_string_literal(args: str) -> bool:
-    stripped = args.lstrip()
-    if not stripped:  # pragma: no cover - defensive; callers strip first
-        return False
-    return stripped[0] in ("'", '"', "`")
+    return args.lstrip()[:1] in ("'", '"', "`")
 
 
 def has_top_level_comma(args: str) -> bool:
@@ -82,7 +75,7 @@ def has_top_level_comma(args: str) -> bool:
     for ch in args:
         if ch in "([{":
             depth += 1
-        elif ch in ")]}":  # pragma: no cover - CHECK regex stops at first close paren
+        elif ch in ")]}":
             depth -= 1
         elif ch == "," and depth == 0:
             return True
@@ -157,25 +150,10 @@ def find(text: str) -> list[str]:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
-    out: list[tuple[str, str, str]] = []
     fp = tool_input.get("file_path", "") or ""
     if is_skipped_path(fp):
-        return out
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((fp, "content", c))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((fp, "new_string", c))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((fp, f"edits[{i}].new_string", c))
-    return out
+        return []
+    return [(fp, name, text) for name, text in payload_fragments(tool, tool_input)]
 
 
 from _lib.hook_profile import should_run  # noqa: E402

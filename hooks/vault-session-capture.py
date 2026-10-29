@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import fcntl
-import json
 import os
 import subprocess
 import sys
@@ -11,15 +10,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-try:
-    from _lib import knowledge_notes as kn
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib import knowledge_notes as kn  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
-try:
-    from _lib.project_scope import repo_root
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib.project_scope import repo_root  # noqa: E402
 
 ENABLE_VAR = "VAULT_AUTO_CAPTURE"
 DISABLE_VAR = "VAULT_CAPTURE_DISABLE"
@@ -47,7 +41,7 @@ def git(args: list[str], cwd: Path, *, strip: bool = True) -> str:
             timeout=GIT_TIMEOUT,
             check=False,
         )
-    except (OSError, subprocess.SubprocessError):  # pragma: no cover
+    except (OSError, subprocess.SubprocessError):
         return ""
     if result.returncode != 0:
         return ""
@@ -56,16 +50,11 @@ def git(args: list[str], cwd: Path, *, strip: bool = True) -> str:
 
 def changed_files(cwd: Path) -> list[str]:
     raw = git(["status", "--porcelain"], cwd, strip=False)
-    names: list[str] = []
-    for line in raw.splitlines():
-        name = (
-            line[PORCELAIN_PATH_COLUMN:].strip()
-            if len(line) > PORCELAIN_PATH_COLUMN
-            else ""
-        )
-        if name:
-            names.append(name.split(" -> ")[-1])
-    return names
+    return [
+        line[PORCELAIN_PATH_COLUMN:].strip().split(" -> ")[-1]
+        for line in raw.splitlines()
+        if line[PORCELAIN_PATH_COLUMN:].strip()
+    ]
 
 
 def recent_commits(cwd: Path) -> list[str]:
@@ -157,9 +146,8 @@ def _separator(existing: str) -> str:
 def main() -> int:
     if os.environ.get(ENABLE_VAR) != "1" or os.environ.get(DISABLE_VAR) == "1":
         return 0
-    try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
+    payload = read_advisory_payload("vault-session-capture")
+    if not payload:
         return 0
     root = kn.vault_root()
     if root is None:
@@ -170,10 +158,10 @@ def main() -> int:
         if not cwd.is_dir():
             return 0
         capture(root, cwd, datetime.now(timezone.utc))
-    except OSError:  # pragma: no cover
+    except OSError:
         return 0
     return 0
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     raise SystemExit(main())

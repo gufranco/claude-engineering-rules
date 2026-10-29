@@ -7,13 +7,8 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 WINDOW_SECONDS = 7 * 24 * 60 * 60
@@ -38,6 +33,7 @@ PROMPT_MAX_LINES = 200
 
 from _lib import project_workspace as pw  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 
 def workspace_dir(cwd: Path) -> Path | None:
@@ -196,10 +192,7 @@ def main() -> int:
         return 0
     if is_bypassed("session-resume-context"):
         return 0
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
+    data = read_advisory_payload("session-resume-context")
 
     if data.get("hook_event_name") != "SessionStart":
         return 0

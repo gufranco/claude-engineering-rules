@@ -206,7 +206,10 @@ Full testing philosophy, policies, and guidelines: [`standards/testing.md`](../s
 
 - [ ] Every new function/method has tests
 - [ ] Every code branch tested: success, each error case, each edge case
-- [ ] Coverage on changed code and related files at 95% or above
+- [ ] Coverage at 100% on every changed and related file, with no exclusion directive or omit entry for hand-written code
+- [ ] Tests never depend on the developer's machine: a test that creates a git repository sets its identity, a test that reads a dotfile points `HOME` at a temp directory, and each platform branch is covered on a platform CI runs
+- [ ] No existing test file deleted to make the change pass; a deleted test names the removed behavior or the place the test moved
+- [ ] Every user-facing entry point and requirement scenario has an end-to-end test
 - [ ] Integration tests for database operations, not mocked unit tests
 
 #### Test quality
@@ -330,6 +333,7 @@ See [`standards/testing.md`](../standards/testing.md) Mocks Policy for the full 
 - [ ] Type definitions available, native or via `@types/*`, for TypeScript projects
 - [ ] License compatible with all project dependencies. No transitive GPL in MIT projects
 - [ ] Bundle size delta measured for frontend dependencies. No single dependency adds more than 50KB gzipped without justification
+- [ ] Installed with pnpm or uv against a committed `pnpm-lock.yaml` or `uv.lock`; no `package-lock.json`, `yarn.lock`, or bare `pip install` left in scripts, docs, or CI
 
 ### 14. Documentation
 
@@ -923,6 +927,11 @@ Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) cover
 - [ ] Pipeline security: secrets injected at runtime, not in repo or build logs? Least-privilege credentials per stage.
 - [ ] DORA metrics tracked? Deployment frequency, lead time, change failure rate, MTTR.
 - [ ] Rollback automated or one-click? Not a multi-step manual process.
+- [ ] Every job runs on the newest GA Ubuntu LTS label? No macOS runner and no `-latest` label.
+- [ ] `step-security/harden-runner` is the first step of every job?
+- [ ] `actions/*` and `github/*` pinned to a version tag, every third-party action to a full commit SHA with the version in a trailing comment?
+- [ ] Every `push` or `pull_request` workflow has a top-level `concurrency` group with `cancel-in-progress: true`?
+- [ ] CI calls the same Makefile or package-script targets as the local gate, and the local gate ran from a fresh clone of the commit with locked installs?
 
 Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) covering CI/CD Pipeline Design
 
@@ -1068,7 +1077,7 @@ Apply when adding or updating dependencies. Reference: [`standards/security.md`]
 - [ ] SBOM generated on CI build in SPDX or CycloneDX format
 - [ ] Build artifacts signed for provenance verification
 - [ ] Lockfile committed with integrity checking enabled
-- [ ] `npm ci` or `pnpm install --frozen-lockfile` used in CI, not `npm install`
+- [ ] `pnpm install --frozen-lockfile` and `uv sync --locked` used in CI, never npm, pip, or an unlocked install
 - [ ] Package names double-checked for typosquatting
 - [ ] Scoped registries configured for private packages to prevent dependency confusion
 - [ ] SLSA compliance level documented for the service
@@ -1331,6 +1340,8 @@ Apply on every message that asks a clarifying question, briefs a subagent, repor
 - [ ] Every comment published on a pull request is a reply inside a thread a person opened. No review summary body, no conversation comment, no commit-comment reply, no reply of any length to a bot
 - [ ] Every reply is four sentences or fewer, leads with what changed or with the answer, restates nothing, and ends without an offer of further help
 - [ ] No finding was answered with a tracker item, a follow-up change, or a code marker. Anything fixable in the open change was fixed there, and anything blocked outside it names the blocker in one sentence
+- [ ] One task has one pull request per repository. A follow-up from the same delivery sits on the open pull request's branch, whose title and body name every tracker key it carries
+- [ ] A pull request reported done has a counted zero: no unresolved review thread and no unminimized bot review body. Bot status comments such as previews, coverage reports, approval markers and tracker links stay visible
 
 ### 71. Frontend Compliance Defaults
 
@@ -1355,6 +1366,15 @@ Apply to every frontend change. Reference: [`../rules/compliance-defaults.md`](.
 - [ ] WCAG 2.2 new criteria covered: 2.4.11 Focus Not Obscured, 2.5.7 Dragging Movements, 2.5.8 Target Size, 3.2.6 Consistent Help, 3.3.7 Redundant Entry, 3.3.8 Accessible Authentication
 - [ ] WCAG 2.0 SC 4.1.1 Parsing still met despite removal in 2.2 (older laws reference it)
 - [ ] `<input type="password">` has `autocomplete` attribute (`current-password` or `new-password`)
+
+**Visual evidence in published text:**
+
+- [ ] A pull request, issue, review reply, or tracker item about a visible change attaches image files, never a text-only Before and After section
+- [ ] Each capture is the full page at device scale 2 or more, longer side at least 1600 px; no image is exactly one viewport tall when the page scrolls
+- [ ] An inner scroll container was unclipped with `height: auto` before capture, never `overflow: visible`
+- [ ] Every image in one set has the same pixel width, reached by proportional scaling, never by padding onto a canvas
+- [ ] Desktop and mobile sit in separate groups under their own headings; every alt text starts with `Before:` or `After:` and names device and viewport
+- [ ] A new page states in one line that it has no Before
 
 **Privacy and data protection (GDPR-grade default):**
 

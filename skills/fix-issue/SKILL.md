@@ -80,7 +80,7 @@ Run the pre-flight checks from [`../../rules/pre-flight.md`](../../rules/pre-fli
 3. **Write the tests first.** Every fix must have tests that:
    - Fail before the fix, for bugs. Run them and show the failure.
    - Cover the new behavior including edge cases, for features.
-   - Meet 95%+ coverage on changed files.
+   - Reach 100% coverage on changed files.
 
 4. **Implement the fix** until those tests pass. Follow [`../../rules/code-style.md`](../../rules/code-style.md) for all code written.
 
@@ -93,6 +93,7 @@ Run the full completion gates from [`../../rules/verification.md`](../../rules/v
 3. Type checker. Zero errors. Show output.
 4. Test suite. All pass. Show output.
 5. Build. Clean, zero warnings. Show output.
+6. Visual evidence, when the fix touches a web, mobile, desktop, or terminal surface. Capture high-resolution `Before:` from the base commit and `After:` from the branch, per "Visual Evidence In Published Text" in [`../../standards/frontend-render-gate.md`](../../standards/frontend-render-gate.md). Any issue comment announcing the fix, and the PR that ships it, attaches both with `gh ... --attach '<file>#After: <screen>'`.
 
 ### Phase 5: Commit
 
@@ -109,7 +110,7 @@ Run the full completion gates from [`../../rules/verification.md`](../../rules/v
    - Root cause or rationale.
    - Files changed.
    - Tests added.
-   - Verification evidence.
+   - Verification evidence, including the screenshot pair for a visible fix.
 
 ## Rules
 
@@ -143,7 +144,7 @@ Run the full completion gates from [`../../rules/verification.md`](../../rules/v
 - For a bug, the new test failed on the unfixed code and passes with the fix.
 - Formatter, linter, type checker, test suite, and build each ran with exit code 0, and their output is shown.
 - `git log -1 --format=%B` shows a conventional subject and a `Fixes #<number>` footer.
-- Coverage on changed files is 95% or more.
+- Coverage on changed files is 100%.
 
 ## Related Skills
 

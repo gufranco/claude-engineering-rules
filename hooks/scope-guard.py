@@ -9,20 +9,12 @@ import time
 from pathlib import Path
 from typing import NoReturn
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.project_scope import repo_root, walk_up
-    from _lib.project_workspace import in_workspace
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib.project_scope import repo_root, walk_up  # noqa: E402
+from _lib.project_workspace import in_workspace  # noqa: E402
 
 PLAN_WINDOW_SECONDS = 60 * 60
 PLAN_HEADER_BYTES = 2048

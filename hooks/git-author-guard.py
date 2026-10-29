@@ -7,18 +7,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.shell_segments import mask_literal_text  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 PUSH_LOG_LIMIT = 200
@@ -92,15 +87,12 @@ def run_git(cwd: Path, *args: str) -> tuple[int, str]:
 
 def has_local_user_block(cwd: Path) -> bool:
     code, top = run_git(cwd, "rev-parse", "--show-toplevel")
-    if code != 0 or not top:
+    if code != 0:
         return False
     config_path = Path(top) / ".git" / "config"
     if not config_path.is_file():
         return False
-    try:
-        content = config_path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return False
+    content = config_path.read_text(encoding="utf-8", errors="replace")
     in_user = False
     for raw in content.splitlines():
         line = raw.strip()

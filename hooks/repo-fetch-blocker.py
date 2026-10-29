@@ -6,13 +6,8 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 GH_API_CONTENTS = re.compile(r"\bgh\s+api\s+[^\n;&|]*?/contents/[^\s'\"]+")
@@ -86,7 +81,7 @@ def _block_reason(label: str, why: str) -> str:
     )
 
 
-def emit_block(label: str, why: str, command: str) -> None:
+def emit_block(label: str, why: str, command: str) -> int:
     reason = _block_reason(label, why)
     payload = {
         "hookSpecificOutput": {
@@ -105,7 +100,7 @@ def emit_block(label: str, why: str, command: str) -> None:
         tool="Bash",
         command_excerpt=command[:200],
     )
-    sys.exit(2)
+    return 2
 
 
 def main() -> int:
@@ -128,8 +123,7 @@ def main() -> int:
         return 0
 
     label, why = offender
-    emit_block(label, why, command)
-    return 2
+    return emit_block(label, why, command)
 
 
 if __name__ == "__main__":

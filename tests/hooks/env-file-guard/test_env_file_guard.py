@@ -15,6 +15,7 @@ HOOK = ROOT / "hooks" / "env-file-guard.py"
 sys.path.insert(0, str(ROOT / "hooks"))
 
 from _lib.bypass_writer import set_bypass  # noqa: E402
+from _helpers.audit_log_support import _read_records, isolate_audit_log  # noqa: E402
 
 TIMEOUT_S = 30
 ISOLATION = {"CLAUDE_BYPASS_STATE": os.devnull, "CLAUDE_HOOK_AUDIT_DISABLE": "1"}
@@ -328,15 +329,16 @@ def test_blocks_non_dict_tool_input() -> None:
     assert "could not read its input" in result.stderr
 
 
-def test_audit_noop_when_record_none(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+def test_audit_records_the_block(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # Arrange
     module = _load("_efg_mod2")
-    monkeypatch.setattr(module, "_audit_record", None)
+    log_path = isolate_audit_log(monkeypatch, tmp_path)
 
     # Act
     module._audit("reason", "Write", "/path")
 
     # Assert
-    assert capsys.readouterr().err == ""
+    record = _read_records(log_path)[-1]
+    assert (record["hook"], record["decision"]) == ("env-file-guard", "block")

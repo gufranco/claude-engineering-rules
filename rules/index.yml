@@ -48,7 +48,7 @@ always_loaded:
     triggers: [question, ask, asking, clarify, clarification, ambiguous, ambiguity, "xy problem", "xy framing", "ship the question", "no hello", "meta question", "bug report", antelope, fingerprint, symptom, "status update", "error report", reproduction, "fixed tag", "resolved tag", "loop closure", "subagent prompt", "agent brief", "object deviation", recommendation, "recommend an option", "which do you recommend", "option trade-off", "pick an option", choice, options]
 
   testing:
-    description: Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines
+    description: Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines, 100% per-file coverage with no exclusion directives, unreachable code treated as a design defect, 100% end-to-end coverage of entry points and scenarios
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   verification:
@@ -108,8 +108,8 @@ always_loaded:
     triggers: [index, "functional index", "expression index", "seq scan", "sequential scan", "query plan", explain, analyze, predicate, "raw sql", regexp_replace, coalesce, "lower(", "upper(", postgres, postgresql, planner, "slow query", "n+1", "full scan"]
 
   frontend-render-gate:
-    description: A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach (cascade outcome, paint order, accessibility tree, focus order, third-party iframes, viewport behavior, post-hydration state), ranks evidence tiers with extending the project's own browser or simulator harness first, requires asserting computed results rather than class names, requires naming the viewport, requires a regression test that fails against the previous revision, and requires recording known findings in a per-route allowlist rather than waiving the check. Same rule for mobile with a simulator. Mechanical hook frontend-render-gate.py.
-    triggers: [frontend, ui, render, browser, playwright, cypress, puppeteer, e2e, "end to end", acceptance, screenshot, visual, "visual regression", viewport, responsive, css, styling, theme, "design token", tsx, jsx, vue, svelte, dart, flutter, simulator, emulator, "computed style", "focus ring", "focus visible", "paint order", "accessibility tree", "tab order", iframe, stripe, hydration]
+    description: A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach (cascade outcome, paint order, accessibility tree, focus order, third-party iframes, viewport behavior, post-hydration state), ranks evidence tiers with extending the project's own browser or simulator harness first, requires asserting computed results rather than class names, requires naming the viewport, requires a regression test that fails against the previous revision, and requires recording known findings in a per-route allowlist rather than waiving the check. Same rule for mobile with a simulator. Every PR, review reply, issue, issue answer, and tracker comment about a visible change attaches high-resolution Before and After screenshots through gh --attach, for web, mobile, desktop GUI, and TUI, enforced at publish time. Mechanical hook frontend-render-gate.py.
+    triggers: [frontend, ui, render, browser, playwright, cypress, puppeteer, e2e, "end to end", acceptance, screenshot, visual, "visual regression", viewport, responsive, css, styling, theme, "design token", tsx, jsx, vue, svelte, dart, flutter, simulator, emulator, "computed style", "focus ring", "focus visible", "paint order", "accessibility tree", "tab order", iframe, stripe, hydration, tui, "terminal ui", textual, ratatui, bubbletea, curses, desktop, qt, qml, xaml, "before and after", attach, "gh pr create"]
 
   privacy-defaults:
     description: GDPR-grade privacy by default across all jurisdictions. Lawful basis, opt-in consent, 30-day DSAR, 72h breach notification, 24-month retention default, DPO designation, DPIA triggers, SCCs/BCRs for transfers, sensitive data union, ADM right to explanation. Forbidden patterns (soft delete for erasure, bundled consent, pre-ticked boxes, PII in logs/URLs).
@@ -450,7 +450,7 @@ on_demand:
   infrastructure:
     path: standards/infrastructure.md
     description: IaC, networking, container orchestration, CI/CD pipeline design, cloud architecture, DORA metrics, cost allocation
-    triggers: [infrastructure, terraform, kubernetes, docker, aws, gcp, cloud, deploy, ci, cd, helm]
+    triggers: [infrastructure, terraform, kubernetes, docker, aws, gcp, cloud, deploy, ci, cd, helm, github actions, workflow, runs-on, runner, harden-runner, concurrency, cancel-in-progress, action pin]
 
   llm-docs:
     path: standards/llm-docs.md
@@ -706,7 +706,7 @@ on_demand:
   agent-operating-limits:
     path: standards/agent-operating-limits.md
     description: "Backstops versus budgets and why confusing them converts a slow run into a total loss. Measured turn ceilings with the sampled distribution recorded beside the number. Per-run caps whose overflow is reported rather than dropped. The cost of a denied tool call, unprojected responses, and unconditional context injection. Fail-closed on any check that errored or could not run, gating on exit codes rather than grepped output. Identity as an operating parameter that changes what an action means"
-    triggers: [max turns, turn limit, turns, backstop, budget, cap, per-run, timeout, denied call, tool denied, allowlist, injection, prompt hook, fail closed, fail open, exit code, projection, jq, context cost, identity, which account, bot]
+    triggers: [max turns, turn limit, turns, backstop, budget, cap, per-run, timeout, denied call, tool denied, allowlist, injection, prompt hook, fail closed, fail open, exit code, projection, jq, context cost, identity, which account, bot, another session, other session, parallel session, live session, session leak]
 
   ai-compliance-defaults:
     path: standards/ai-compliance-defaults.md
@@ -805,8 +805,8 @@ on_demand:
 
   frontend-render-gate:
     path: standards/frontend-render-gate.md
-    description: "A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach (cascade outcome, paint order, accessibility tree, focus order, third-party iframes, viewport behavior, post-hydration state), ranks evidence tiers with extending the project's own browser or simulator harness first, requires asserting computed results rather than class names, requires naming the viewport, requires a regression test that fails against the previous revision, and requires recording known findings in a per-route allowlist rather than waiving the check. Same rule for mobile with a simulator. Mechanical hook frontend-render-gate.py."
-    triggers: [frontend, ui, render, browser, playwright, cypress, puppeteer, e2e, end to end, acceptance, screenshot, visual, visual regression, viewport, responsive, css, styling, theme, design token, tsx, jsx, vue, svelte, dart, flutter, simulator, emulator, computed style, focus ring, focus visible, paint order, accessibility tree, tab order, iframe, stripe, hydration]
+    description: "A change to rendered output is unverified until something renders it. Names the blind class static review and jsdom cannot reach (cascade outcome, paint order, accessibility tree, focus order, third-party iframes, viewport behavior, post-hydration state), ranks evidence tiers with extending the project's own browser or simulator harness first, requires asserting computed results rather than class names, requires naming the viewport, requires a regression test that fails against the previous revision, and requires recording known findings in a per-route allowlist rather than waiving the check. Same rule for mobile with a simulator. Every PR, review reply, issue, issue answer, and tracker comment about a visible change attaches high-resolution Before and After screenshots through gh --attach, for web, mobile, desktop GUI, and TUI, enforced at publish time. Mechanical hook frontend-render-gate.py."
+    triggers: [frontend, ui, render, browser, playwright, cypress, puppeteer, e2e, end to end, acceptance, screenshot, visual, visual regression, viewport, responsive, css, styling, theme, design token, tsx, jsx, vue, svelte, dart, flutter, simulator, emulator, computed style, focus ring, focus visible, paint order, accessibility tree, tab order, iframe, stripe, hydration, tui, terminal ui, textual, ratatui, bubbletea, curses, desktop, qt, qml, xaml, before and after, attach, gh pr create, full page, fullpage, viewport-only, before and after, alt text, sips]
 
   functional-index-fidelity:
     path: standards/functional-index-fidelity.md
@@ -816,7 +816,7 @@ on_demand:
   git-workflow:
     path: standards/git-workflow.md
     description: "Conventional commits, branch naming, local quality gate before commit/push, CI monitoring, PR creation, conflict resolution, rollback strategy"
-    triggers: [git, commit, branch, merge, rebase, ci, pipeline, release, tag, lint, format, build]
+    triggers: [git, commit, branch, merge, rebase, ci, pipeline, release, tag, lint, format, build, pull request, open pr, second pr, cherry-pick, follow-up pr]
 
   hook-bypass:
     path: standards/hook-bypass.md
@@ -871,7 +871,7 @@ on_demand:
   pr-comment-discipline:
     path: standards/pr-comment-discipline.md
     description: "The only comment published on a pull request is a reply inside a thread a person opened. No review summary body, no conversation comment, no commit-comment reply, no reply of any length to a bot, and a new inline thread only on someone else's pull request. Bot threads are read, fixed when the finding is real, then resolved or minimized in silence. Replies are polite and direct with a four-sentence ceiling, no restatement, no closing offer. A problem that can be fixed in the open change is fixed there, never recorded as a ticket or a follow-up"
-    triggers: [pr comment, pull request comment, review comment, review body, summary comment, top-level comment, conversation comment, commit comment, inline comment, reply, reply to pr, respond, address comments, reviewer feedback, resolve thread, minimize, bot, bot thread, follow-up, follow up, ticket, issue, defer, deferral, separate pr, gh pr comment, voice, register, ceiling]
+    triggers: [pr comment, pull request comment, review comment, review body, summary comment, top-level comment, conversation comment, commit comment, inline comment, unresolved thread, done state, reply, reply to pr, respond, address comments, reviewer feedback, resolve thread, minimize, bot, bot thread, follow-up, follow up, ticket, issue, defer, deferral, separate pr, gh pr comment, voice, register, ceiling]
 
   pre-flight:
     path: standards/pre-flight.md
@@ -930,7 +930,7 @@ on_demand:
 
   testing:
     path: standards/testing.md
-    description: "Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines"
+    description: "Integration-first philosophy, strict mock policy, labeled Arrange-Act-Assert test structure, three blocks opened by bare marker comments with no other comment in a test, one act per test, fake data generators, deterministic tests, snapshot guidelines, 100% per-file coverage with no exclusion directives, unreachable code treated as a design defect, 100% end-to-end coverage of entry points and scenarios"
     triggers: [test, testing, unit, unit test, mock, coverage, jest, vitest, pytest, fixture, snapshot, e2e, arrange act assert, aaa, test structure, test body, one assertion per test]
 
   tone-and-writing:

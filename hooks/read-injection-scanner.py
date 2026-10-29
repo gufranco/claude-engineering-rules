@@ -7,13 +7,8 @@ import re
 import sys
 import unicodedata
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 INSTRUCTION_OVERRIDE = re.compile(
@@ -52,6 +47,7 @@ URGENCY_ACTION = re.compile(
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/]{200,}={0,2}")
 
 from _lib.bypass import is_bypassed  # noqa: E402
+from _lib.hook_input import read_advisory_payload  # noqa: E402
 
 
 def has_unicode_confusables(text: str) -> bool:
@@ -62,10 +58,7 @@ def has_unicode_confusables(text: str) -> bool:
     for char in text:
         if unicodedata.category(char) in suspicious_categories:
             suspicious_count += 1
-        try:
-            name = unicodedata.name(char, "")
-        except ValueError:
-            continue
+        name = unicodedata.name(char, "")
         if any(s in name for s in confusable_scripts) and char.isalpha():
             confusable_count += 1
     return suspicious_count >= 3 or confusable_count >= 5
@@ -107,7 +100,13 @@ def _strings(value: object, depth: int) -> list[str]:
     return []
 
 
+def is_image_read(tool_response: object) -> bool:
+    return isinstance(tool_response, dict) and tool_response.get("type") == "image"
+
+
 def extract_payload(tool_name: str, tool_response: object) -> str:
+    if is_image_read(tool_response):
+        return ""
     return "\n".join(_strings(tool_response, 0))[:MAX_PAYLOAD_CHARS]
 
 
@@ -143,11 +142,7 @@ def main() -> int:
     if is_bypassed("read-injection-scanner"):
         return 0
 
-    try:
-        data = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
-        return 0
-
+    data = read_advisory_payload("read-injection-scanner")
     tool_name = data.get("tool_name", "")
     if tool_name not in {"Read", "WebFetch", "WebSearch"}:
         return 0

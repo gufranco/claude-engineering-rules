@@ -12,12 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _lib.bypass import is_bypassed  # noqa: E402
 
-try:
-    from _lib.hook_profile import should_run
-except Exception:  # noqa: BLE001
-
-    def should_run(_name: str) -> bool:  # type: ignore[override]
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
 HOOK_NAME = "smart-formatter"

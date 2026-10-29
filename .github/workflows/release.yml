@@ -25,7 +25,7 @@ concurrency:
 jobs:
   release:
     name: semantic-release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     if: >-
       github.repository == 'gufranco/claude-engineering-rules' &&
@@ -36,7 +36,12 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43  # v2.22.3
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
@@ -67,21 +72,25 @@ jobs:
           echo "main is at the verified commit $head_sha"
           echo "proceed=true" >> "$GITHUB_OUTPUT"
 
+      - name: Set up pnpm
+        if: steps.verify.outputs.proceed == 'true'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
+
       - name: Set up Node.js
         if: steps.verify.outputs.proceed == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        uses: actions/setup-node@v7
         with:
           node-version: "24"
-          cache: npm
+          cache: pnpm
 
       - name: Install release toolchain
         if: steps.verify.outputs.proceed == 'true'
-        run: npm ci --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Audit release toolchain
         if: steps.verify.outputs.proceed == 'true'
         run: |
-          npm audit --json > "$RUNNER_TEMP/audit.json" || true
+          pnpm audit --json > "$RUNNER_TEMP/audit.json" || true
           python3 .github/scripts/audit-release-toolchain.py < "$RUNNER_TEMP/audit.json"
 
       # Cheap and token-free, so it fails fast and with a clear message when a
@@ -92,10 +101,16 @@ jobs:
 
       - name: semantic-release
         if: steps.verify.outputs.proceed == 'true'
+        uses: cycjimmy/semantic-release-action@d9bf53a078bd2f86aaffaec796dbb3d28f1b6f34  # v8.1.3
+        with:
+          semantic_version: 25.0.9
+          extra_plugins: |
+            @semantic-release/exec@7.1.0
+            @semantic-release/git@11.0.1
+            conventional-changelog-conventionalcommits@9.3.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-        run: npx semantic-release

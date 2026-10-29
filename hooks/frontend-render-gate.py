@@ -1,35 +1,43 @@
 #!/usr/bin/env python3
+import dataclasses
+import json
 import os
 import re
 import subprocess
 import sys
+from typing import cast
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.commit_scope import repo_dir  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
-
-UI_SUFFIXES = (
-    ".tsx",
-    ".jsx",
-    ".vue",
-    ".svelte",
-    ".dart",
-    ".css",
-    ".scss",
-    ".sass",
-    ".less",
+from _lib.image_dimensions import read_dimensions  # noqa: E402
+from _lib.publish_commands import (  # noqa: E402
+    PULL_REQUEST_CHANNELS,
+    Channel,
+    Publication,
+    publications,
+    tracker_publication,
 )
-NATIVE_UI_SOURCE = re.compile(
-    r"(?:View|ViewController|Screen|Activity|Fragment|Composable)\.(?:swift|kt)$"
-    r"|(^|/)ui/[^/]+\.(?:swift|kt)$"
+from _lib.ui_evidence import (  # noqa: E402
+    Action,
+    Change,
+    MIN_LONGER_SIDE_PX,
+    PROPOSAL_ADVICE,
+    Verdict,
+    evidence_verdict,
+    format_changes,
+    needs_before,
+    proposal_verdict,
+    surfaces_of,
 )
-
-THEME_OR_TOKEN_SOURCE = re.compile(
-    r"(^|/)(theme|tokens?|palette|design-tokens|typography|colors?)\.[cm]?[jt]s$",
-    re.IGNORECASE,
+from _lib.ui_surface import (  # noqa: E402
+    Surface,
+    content_surface,
+    may_be_tui,
+    path_surface,
 )
 
 RENDER_LEVEL_CHECK = re.compile(
@@ -40,23 +48,22 @@ RENDER_LEVEL_CHECK = re.compile(
     r"|(^|/)[^/]*(accessibility|a11y|axe|visual|screenshot)[^/]*\.[cm]?[jt]sx?$"
     r"|(^|/)[^/]*(accessibility|a11y|golden|integration)[^/]*_test\.dart$"
     r"|(^|/)(playwright|cypress|percy|chromatic|lighthouserc)\.[^/]*$"
-    r"|\.flow\.ya?ml$",
-    re.IGNORECASE,
-)
-
-MOBILE_SUFFIXES = (".dart", ".swift", ".kt")
-
-NOT_A_SHIPPED_SURFACE = re.compile(
-    r"(^|/)(node_modules|dist|build|\.next|out|coverage|storybook-static)(/|$)"
-    r"|(^|/)__(mocks|fixtures)__(/|$)"
-    r"|\.stories\.[cm]?[jt]sx?$"
-    r"|\.d\.ts$",
+    r"|\.flow\.ya?ml$"
+    r"|(^|/)(__snapshots__|snapshots)/"
+    r"|\.(snap|golden|svg\.snap)$"
+    r"|(^|/)tst_[^/]+\.(cpp|py|qml)$",
     re.IGNORECASE,
 )
 
 GIT_COMMIT_INVOCATION = re.compile(r"\bgit\s+(?:-\S+\s+|--\S+(?:=\S+)?\s+)*commit\b")
+DEFAULT_BASES = ("origin/HEAD", "origin/main", "origin/master", "main", "master")
 
 MAX_LISTED = 10
+MAX_CONTENT_FILES = 60
+CONTENT_READ_LIMIT = 256 * 1024
+GIT_TIMEOUT_SECONDS = 10
+GIT_UNAVAILABLE = -1
+BYPASS_ENV = "FRONTEND_RENDER_GATE_DISABLE"
 
 WEB_GUIDANCE = (
     "  agent-browser open <url>\n"
@@ -72,6 +79,23 @@ MOBILE_GUIDANCE = (
     "  suite on a simulator or emulator; xcrun simctl and adb are both present.\n"
 )
 
+DESKTOP_GUIDANCE = (
+    "  Drive the window with the toolkit's own test runner, such as QTest,\n"
+    "  pytest-qt, or WinAppDriver, and assert on the rendered widget tree.\n"
+)
+
+TUI_GUIDANCE = (
+    "  Snapshot the rendered terminal: textual's snap_compare, bubbletea's\n"
+    "  teatest golden files, or ratatui's TestBackend with insta snapshots.\n"
+)
+
+COMMIT_GUIDANCE = {
+    Surface.WEB: WEB_GUIDANCE,
+    Surface.MOBILE: MOBILE_GUIDANCE,
+    Surface.DESKTOP: DESKTOP_GUIDANCE,
+    Surface.TUI: TUI_GUIDANCE,
+}
+
 BLOCK_MESSAGE = (
     "BLOCKED: this commit changes rendered output with no render-level check.\n\n"
     "{files}\n\n"
@@ -85,45 +109,99 @@ BLOCK_MESSAGE = (
     "surface is genuinely unreachable, say so explicitly rather than\n"
     "reporting the change as verified.\n\n"
     "Rule: rules/frontend-render-gate.md\n"
-    "Bypass for a genuine false positive: export FRONTEND_RENDER_GATE_DISABLE=1"
+    f"Bypass for a genuine false positive: export {BYPASS_ENV}=1"
 )
 
+CAPTURE_RECIPES = {
+    Surface.WEB: (
+        "  web:     agent-browser set viewport 1440 900 2\n"
+        "           agent-browser open <url>\n"
+        "           agent-browser screenshot --full after.png\n"
+        "           a page that scrolls inside a container: set that container and\n"
+        "           its fixed-height ancestors to height: auto first, never\n"
+        "           overflow: visible\n"
+    ),
+    Surface.MOBILE: (
+        "  iOS:     xcrun simctl io booted screenshot after.png\n"
+        "  Android: adb exec-out screencap -p > after.png\n"
+    ),
+    Surface.DESKTOP: (
+        "  desktop: screencapture -o -l <window-id> after.png  (Retina, 2x)\n"
+    ),
+    Surface.TUI: (
+        "  TUI:     asciinema rec --headless --window-size 100x30 -c '<command>' run.cast\n"
+        "           agg --font-size 32 run.cast run.gif\n"
+        "           magick 'run.gif[-1]' after.png\n"
+    ),
+}
 
-GIT_TIMEOUT_SECONDS = 10
+EVIDENCE_MESSAGE = (
+    "BLOCKED: {channel} publishes a visible interface change without\n"
+    "high-resolution before and after screenshots.\n\n"
+    "Interface changes in this branch:\n{changes}\n\n"
+    "Problems:\n{problems}\n\n"
+    "Capture at a device scale of 2 or more; the longer side must reach\n"
+    f"{MIN_LONGER_SIDE_PX} px.\n{{recipes}}\n"
+    "{before_hint}"
+    "One set shares one pixel width: scale proportionally, never pad. Group\n"
+    "desktop and mobile under their own headings, and name the device and\n"
+    "viewport in every label, as in 'After: Mobile 320 px, default queue'.\n"
+    "Attach with labeled alt text:\n"
+    "  gh pr create --attach 'before.png#Before: <what>' "
+    "--attach 'after.png#After: <what>'\n"
+    "A thread reply cannot attach: upload with gh pr edit <n> --attach, read the\n"
+    "URL back with gh pr view <n> --json body, and embed it as\n"
+    "![After: <what>](<url>).\n\n"
+    "Rule: rules/frontend-render-gate.md\n"
+    f"Bypass for a genuine false positive: export {BYPASS_ENV}=1"
+)
+
+BEFORE_HINT = (
+    "Capture Before from the base commit with the same data, viewport, theme,\n"
+    "and locale: git worktree add ../before <base>, run it, and shoot the same\n"
+    "screen.\n\n"
+)
+
+ASK_MESSAGE = "{channel}: {reason}.\n{advice}\nRule: rules/frontend-render-gate.md"
+UNKNOWN_DIFF = Verdict(
+    Action.ASK,
+    (
+        "the branch diff against its base could not be read, so a visible change "
+        "cannot be ruled out",
+    ),
+    PROPOSAL_ADVICE,
+)
+DIFF_CHANNELS = PULL_REQUEST_CHANNELS - {Channel.THREAD_REPLY}
+TRACKER_CHANNELS = frozenset({Channel.TRACKER_ISSUE, Channel.TRACKER_COMMENT})
 
 
-def staged_files(repo: str) -> list[str] | None:
+def _git(repo: str, *args: str) -> subprocess.CompletedProcess[str]:
+    command = ["git", "-C", repo, *args]
     try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                repo,
-                "diff",
-                "--cached",
-                "--name-only",
-                "--diff-filter=ACMR",
-            ],
+        return subprocess.run(
+            command,
             capture_output=True,
             text=True,
             check=False,
             timeout=GIT_TIMEOUT_SECONDS,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except (subprocess.TimeoutExpired, OSError) as error:
+        print(f"frontend-render-gate: git {args[0]} failed: {error}", file=sys.stderr)
+        return subprocess.CompletedProcess(command, GIT_UNAVAILABLE, "", str(error))
+
+
+def staged_files(repo: str) -> list[str] | None:
+    result = _git(repo, "diff", "--cached", "--name-only", "--diff-filter=ACMR")
+    if result.returncode == GIT_UNAVAILABLE:
         return None
     if result.returncode != 0:
         return []
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
-def renders_to_a_screen(path: str) -> bool:
-    if NOT_A_SHIPPED_SURFACE.search(path):
-        return False
-    return (
-        path.endswith(UI_SUFFIXES)
-        or bool(THEME_OR_TOKEN_SOURCE.search(path))
-        or bool(NATIVE_UI_SOURCE.search(path))
-    )
+def file_text(repo: str, revision_path: str) -> str:
+    result = _git(repo, "show", revision_path)
+    return result.stdout[:CONTENT_READ_LIMIT] if result.returncode == 0 else ""
 
 
 def any_render_level_check(paths: list[str]) -> bool:
@@ -137,44 +215,192 @@ def format_file_list(paths: list[str]) -> str:
     return listed
 
 
-def _commit_command(payload: dict) -> str | None:
+def _commit_command(payload: dict[str, object]) -> str | None:
     if payload.get("tool_name") != "Bash":
         return None
-    command = payload.get("tool_input", {}).get("command", "")
+    tool_input = cast("dict[str, object]", payload["tool_input"])
+    command = str(tool_input.get("command") or "")
     if not GIT_COMMIT_INVOCATION.search(strip_git_global_options(command)):
         return None
     return command
 
 
-def _block_message(ui_files: list[str]) -> str:
-    targets_mobile = any(path.endswith(MOBILE_SUFFIXES) for path in ui_files)
-    guidance = MOBILE_GUIDANCE if targets_mobile else WEB_GUIDANCE
-    return BLOCK_MESSAGE.format(files=format_file_list(ui_files), guidance=guidance)
+def _block_message(ui_files: list[tuple[str, Surface]]) -> str:
+    surfaces = sorted({surface for _, surface in ui_files}, key=lambda s: s.value)
+    guidance = "".join(COMMIT_GUIDANCE[surface] for surface in surfaces)
+    paths = [path for path, _ in ui_files]
+    return BLOCK_MESSAGE.format(files=format_file_list(paths), guidance=guidance)
 
 
-def main() -> int:
-    if os.environ.get("FRONTEND_RENDER_GATE_DISABLE") == "1":
-        return 0
-    if is_bypassed("frontend-render-gate"):
-        return 0
-    payload = read_hook_payload("frontend-render-gate")
-    command = _commit_command(payload)
-    if command is None:
-        return 0
-    cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else ""
-    paths = staged_files(repo_dir(command, cwd))
+def surfaces_by_path(
+    repo: str, paths: list[tuple[str, str]]
+) -> list[tuple[str, Surface]]:
+    by_path = [(path, path_surface(path)) for path, _ in paths]
+    candidates = [
+        (path, revision)
+        for (path, revision), (_, surface) in zip(paths, by_path)
+        if surface is None and may_be_tui(path)
+    ][:MAX_CONTENT_FILES]
+    by_content = [
+        (path, content_surface(path, file_text(repo, f"{revision}:{path}")))
+        for path, revision in candidates
+    ]
+    return [(path, s) for path, s in [*by_path, *by_content] if s is not None]
+
+
+def check_commit(command: str, cwd: str) -> int:
+    repo = repo_dir(command, cwd)
+    paths = staged_files(repo)
     if paths is None:
         print(
             "BLOCKED: frontend-render-gate could not list the staged files in time. "
-            "Retry the commit; export FRONTEND_RENDER_GATE_DISABLE=1 for a known outage.",
+            f"Retry the commit; export {BYPASS_ENV}=1 for a known outage.",
             file=sys.stderr,
         )
         return 2
-    ui_files = [path for path in paths if renders_to_a_screen(path)]
+    ui_files = surfaces_by_path(repo, [(path, "") for path in paths])
     if not ui_files or any_render_level_check(paths):
         return 0
     print(_block_message(ui_files), file=sys.stderr)
     return 2
+
+
+def resolve_base(repo: str, requested: str) -> str | None:
+    candidates = (f"origin/{requested}", requested) if requested else DEFAULT_BASES
+    for candidate in candidates:
+        result = _git(repo, "merge-base", candidate, "HEAD")
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    return None
+
+
+def branch_changes(repo: str, base: str) -> list[Change] | None:
+    result = _git(repo, "diff", "--name-status", "--no-renames", f"{base}..HEAD")
+    if result.returncode != 0:
+        return None
+    rows = [line.partition("\t") for line in result.stdout.splitlines() if line]
+    statuses = {path: status[:1] for status, _, path in rows}
+    revisions = [
+        (path, base if status == "D" else "HEAD") for path, status in statuses.items()
+    ]
+    return [
+        Change(path=path, status=statuses[path], surface=surface)
+        for path, surface in surfaces_by_path(repo, revisions)
+    ]
+
+
+def _same_repo(repo: str, slug: str) -> bool:
+    if not slug:
+        return True
+    url = _git(repo, "remote", "get-url", "origin").stdout.strip().removesuffix(".git")
+    wanted = slug.removesuffix(".git").split("://")[-1].split("github.com/")[-1]
+    return url == wanted or url.endswith((f"/{wanted}", f":{wanted}"))
+
+
+def ui_changes(publication: Publication, repos: tuple[str, ...]) -> list[Change] | None:
+    repo = next((r for r in repos if _same_repo(r, publication.repo)), None)
+    if repo is None:
+        return None
+    base = resolve_base(repo, publication.base)
+    if base is None:
+        return None
+    return branch_changes(repo, base)
+
+
+def _absolute(path: str, repo: str) -> str:
+    expanded = os.path.expanduser(path)
+    return expanded if os.path.isabs(expanded) else os.path.join(repo, expanded)
+
+
+def _resolve_attachments(publication: Publication, repo: str) -> Publication:
+    attachments = tuple(
+        dataclasses.replace(a, path=_absolute(a.path, repo))
+        for a in publication.attachments
+    )
+    return dataclasses.replace(publication, attachments=attachments)
+
+
+def judge(
+    publication: Publication, repos: tuple[str, ...]
+) -> tuple[Verdict, list[Change]]:
+    if publication.channel in TRACKER_CHANNELS:
+        return proposal_verdict(publication), []
+    changes = ui_changes(publication, repos)
+    if changes is None and publication.channel in DIFF_CHANNELS:
+        return UNKNOWN_DIFF, []
+    if not changes:
+        return proposal_verdict(publication), []
+    resolved = _resolve_attachments(publication, repos[0])
+    return evidence_verdict(resolved, changes, read_dimensions), changes
+
+
+def _evidence_message(
+    publication: Publication, verdict: Verdict, changes: list[Change]
+) -> str:
+    recipes = "".join(CAPTURE_RECIPES[surface] for surface in surfaces_of(changes))
+    return EVIDENCE_MESSAGE.format(
+        channel=publication.channel.value,
+        changes=format_changes(changes),
+        problems="\n".join(f"  - {problem}" for problem in verdict.problems),
+        recipes=recipes,
+        before_hint=BEFORE_HINT if needs_before(changes) else "",
+    )
+
+
+def _ask(publication: Publication, verdict: Verdict) -> int:
+    decision = {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "ask",
+            "permissionDecisionReason": ASK_MESSAGE.format(
+                channel=publication.channel.value,
+                reason="; ".join(verdict.problems),
+                advice=verdict.advice,
+            ),
+        }
+    }
+    print(json.dumps(decision))
+    return 0
+
+
+def check_publications(found: list[Publication], repos: tuple[str, ...]) -> int:
+    for publication in found:
+        verdict, changes = judge(publication, repos)
+        if verdict.action is Action.BLOCK:
+            print(_evidence_message(publication, verdict, changes), file=sys.stderr)
+            return 2
+        if verdict.action is Action.ASK:
+            return _ask(publication, verdict)
+    return 0
+
+
+def _publications(
+    payload: dict[str, object], cwd: str
+) -> tuple[list[Publication], tuple[str, ...]]:
+    tool_input = cast("dict[str, object]", payload["tool_input"])
+    tracked = tracker_publication(str(payload.get("tool_name", "")), tool_input)
+    if tracked is not None:
+        return [tracked], (cwd,)
+    if payload.get("tool_name") != "Bash":
+        return [], (cwd,)
+    command = str(tool_input.get("command", ""))
+    repo = repo_dir(command, cwd)
+    return publications(command, cwd), (repo, cwd)
+
+
+def main() -> int:
+    if os.environ.get(BYPASS_ENV) == "1":
+        return 0
+    if is_bypassed("frontend-render-gate"):
+        return 0
+    payload = read_hook_payload("frontend-render-gate")
+    raw_cwd = payload.get("cwd")
+    cwd = raw_cwd if isinstance(raw_cwd, str) else ""
+    command = _commit_command(payload)
+    if command is not None and check_commit(command, cwd) != 0:
+        return 2
+    found, repos = _publications(payload, cwd)
+    return check_publications(found, repos)
 
 
 if __name__ == "__main__":

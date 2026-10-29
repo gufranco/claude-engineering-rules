@@ -5,13 +5,8 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 SCAN_EXTS = (".tsx", ".jsx", ".vue", ".svelte")
@@ -31,6 +26,7 @@ SKIP_SEGMENTS = (
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 def is_skipped(path: str) -> bool:
@@ -102,16 +98,8 @@ CHECKS = [
 
 
 def extract_content(tool_name: str, tool_input: dict) -> tuple[str, str]:
-    if tool_name == "Write":
-        return tool_input.get("file_path", ""), tool_input.get("content", "")
-    if tool_name == "Edit":
-        return tool_input.get("file_path", ""), tool_input.get("new_string", "")
-    if tool_name == "MultiEdit":
-        edits = tool_input.get("edits", [])
-        return tool_input.get("file_path", ""), "\n".join(
-            e.get("new_string", "") for e in edits if isinstance(e, dict)
-        )
-    return "", ""
+    text = "\n".join(part for _, part in payload_fragments(tool_name, tool_input))
+    return tool_input.get("file_path", ""), text
 
 
 def _changed_content(payload: dict) -> tuple[str, str, str]:

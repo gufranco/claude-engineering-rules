@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,6 +11,8 @@ from types import ModuleType
 
 import pytest
 from faker import Faker
+
+from _helpers.cov_env import apply_coverage_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "session-mine.py"
@@ -470,3 +474,74 @@ def test_collision_falls_back_to_a_numeric_suffix_without_a_cwd(
 
     # Assert
     assert written == ["wiki/projects/shared.md", "wiki/projects/shared 2.md"]
+
+
+def test_note_name_walks_up_the_path_then_numbers_the_name() -> None:
+    # Arrange
+    module = load()
+    summary = module.Summary(directory="d", name="api", cwds={"/work/acme/api"})
+    taken = {"api", "acme api", "work acme api", "api 2"}
+
+    # Act
+    result = module.note_name(summary, taken)
+
+    # Assert
+    assert result == "api 3"
+
+
+def test_a_line_that_is_not_a_json_object_is_skipped(tmp_path, faker: Faker):
+    # Arrange
+    module = load()
+    title = faker.sentence()
+    d = tmp_path / "projects" / "-x-listed"
+    d.mkdir(parents=True)
+    (d / "s.jsonl").write_text(
+        "[1, 2]\n" + record(type="ai-title", aiTitle=title, sessionId="s") + "\n"
+    )
+
+    # Act
+    summary = module.scan(tmp_path / "projects")["-x-listed"]
+
+    # Assert
+    assert (summary.sessions, summary.titles) == (1, [title])
+
+
+def test_an_unreadable_transcript_counts_as_a_session_with_no_detail(tmp_path):
+    # Arrange
+    module = load()
+    d = tmp_path / "projects" / "-x-locked"
+    d.mkdir(parents=True)
+    transcript = d / "s.jsonl"
+    transcript.write_text(record(type="ai-title", aiTitle="Hidden", sessionId="s"))
+    transcript.chmod(0)
+
+    # Act
+    summary = module.scan(tmp_path / "projects")["-x-locked"]
+
+    # Assert
+    assert (summary.sessions, summary.titles, summary.cwds) == (1, [], set())
+
+
+def test_the_script_runs_as_a_program(projects, vault):
+    # Arrange
+    env = apply_coverage_env(dict(os.environ))
+
+    # Act
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--projects",
+            str(projects),
+            "--path",
+            str(vault),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
+        check=False,
+    )
+
+    # Assert
+    assert (proc.returncode, proc.stderr) == (0, "")

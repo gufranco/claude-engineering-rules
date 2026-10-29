@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from _helpers.audit_log_support import _read_records, isolate_audit_log
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK_PATH = ROOT / "hooks" / "large-file-blocker.py"
@@ -103,14 +104,15 @@ def test_read_command_blocks_when_command_non_string(
     assert "large-file-blocker could not read its input" in capsys.readouterr().err
 
 
-def test_audit_noop_when_record_unavailable(
-    hook, monkeypatch: pytest.MonkeyPatch, capsys
+def test_audit_records_the_block(
+    hook, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "_audit_record", None)
+    log_path = isolate_audit_log(monkeypatch, tmp_path)
 
     # Act
     hook._audit("git commit -m x")
 
     # Assert
-    assert capsys.readouterr().err == ""
+    record = _read_records(log_path)[-1]
+    assert (record["hook"], record["decision"]) == ("large-file-blocker", "block")

@@ -8,15 +8,15 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 
 ### Dependencies and runtimes
 
-- [ ] Update all MCP server packages: `npx -y <package>@latest` for each entry in [`settings.json`](../settings.json)
+- [ ] Update all MCP server packages: `pnpm dlx <package>@latest` for each entry in [`settings.json`](../settings.json)
 - [ ] Check for new Claude Code releases: `claude --version`
 - [ ] Review [`standards/`](../standards) files for outdated version references such as Node.js LTS, Python, Go, or Rust
 - [ ] Run `python3 .github/scripts/validate-checklist-counts.py` and fix any count mismatches in README.md and CLAUDE.md
 
 ### Hook health
 
-- [ ] Run `bash .github/scripts/mcp-health-check.sh`, fix any FAIL entries. It launches each stdio server in `~/.claude/settings.json` for up to 3 seconds: PASS when the process stays up or exits 0, FAIL on a non-zero exit, SKIP when the command is not installed. Remote HTTP servers have no command and always show as SKIP. It proves the process starts, not that it answers MCP requests
-- [ ] Run `bash .github/scripts/hook-benchmark.sh`, investigate any hook exceeding 500ms
+- [ ] Run `python3 .github/scripts/mcp-server-probe.py`, fix any FAIL entries. It launches each stdio server in `~/.claude/settings.json` for up to 3 seconds: PASS when the process stays up or exits 0, FAIL on a non-zero exit, SKIP when the command is not installed. Remote HTTP servers have no command and always show as SKIP. It proves the process starts, not that it answers MCP requests
+- [ ] Run `python3 .github/scripts/hook-benchmark.py`, investigate any hook exceeding 500ms
 - [ ] Verify all hooks in [`settings.json`](../settings.json) reference files that still exist in [`hooks/`](../hooks)
 
 ### Memory hygiene
@@ -82,7 +82,6 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 - [ ] Measure context size at session start with and without on-demand standards, verify savings claim in README
 - [ ] Run `rtk gain --history` to review token savings trend
 - [ ] Identify any rule or standard that loads frequently and could be merged into CLAUDE.md
-- [ ] Check [`.github/scripts/context-monitor.py`](../.github/scripts/context-monitor.py) thresholds against current Claude context window sizes
 
 ---
 

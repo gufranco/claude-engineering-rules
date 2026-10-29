@@ -8,37 +8,19 @@ import shlex
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.hook_input import read_hook_payload  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-try:
-    from _lib.bypass import is_bypassed  # type: ignore
-except Exception:  # pragma: no cover
-
-    def is_bypassed(_id: str) -> bool:  # type: ignore
-        return False
+from _lib.bypass import is_bypassed  # noqa: E402
 
 
-try:
-    from _lib.hook_profile import should_run  # type: ignore
-except Exception:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
 
 
-try:
-    from _lib.output import block as _block_message  # type: ignore
-except Exception:  # pragma: no cover
-    _block_message = None  # type: ignore
+from _lib.output import block as _block_message  # noqa: E402
 
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
 from _lib.project_workspace import in_workspace, is_prompt_file  # noqa: E402
@@ -204,9 +186,7 @@ Item = tuple[str, str, bool, bool]
 Finding = tuple[str, str, str, str]
 
 
-def _collect_bash(cmd: object) -> list[Item]:
-    if not isinstance(cmd, str):
-        return []
+def _collect_bash(cmd: str) -> list[Item]:
     if is_comment_bash(cmd):
         try:
             tokens = shlex.split(cmd, posix=True)
@@ -241,7 +221,7 @@ def _collect_markdown(tool: str, fp: str, tool_input: dict) -> list[Item]:
 def collect(tool: str, tool_input: dict) -> list[Item]:
     fp = tool_input.get("file_path", "") or ""
     if tool == "Bash":
-        return _collect_bash(tool_input.get("command", ""))
+        return _collect_bash(str(tool_input.get("command") or ""))
     if is_skipped_path(fp) or not fp.lower().endswith((".md", ".markdown")):
         return []
     return _collect_markdown(tool, fp, tool_input)
@@ -331,12 +311,6 @@ def _detected_and_fixes(
 def render(all_findings: list[tuple[str, list[Finding]]]) -> str:
     detected_lines, fix_lines = _detected_and_fixes(all_findings)
     fix = "\n".join(fix_lines) + RENDER_FIX_TAIL
-    if _block_message is None:  # pragma: no cover
-        return (
-            f"BLOCKED by {HOOK_ID} ({RULE_ANCHOR})\n\n"
-            + "\n".join(detected_lines)
-            + f"\n\n{fix}\n\nBypass: {ENV_VAR}=1"
-        )
     return _block_message(
         hook=HOOK_ID,
         rule_anchor=RULE_ANCHOR,

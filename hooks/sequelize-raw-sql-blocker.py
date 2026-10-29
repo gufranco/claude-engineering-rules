@@ -5,13 +5,8 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 PATTERN = re.compile(
@@ -20,6 +15,7 @@ PATTERN = re.compile(
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 DOCUMENTATION_EXTENSIONS: tuple[str, ...] = (
@@ -43,23 +39,8 @@ def is_skipped_path(path: str) -> bool:
 
 
 def collect(tool: str, tool_input: dict) -> list[tuple[str, str, str]]:
-    out: list[tuple[str, str, str]] = []
     fp = tool_input.get("file_path", "") or ""
-    if tool == "Write":
-        c = tool_input.get("content", "")
-        if isinstance(c, str):
-            out.append((fp, "content", c))
-    elif tool == "Edit":
-        c = tool_input.get("new_string", "")
-        if isinstance(c, str):
-            out.append((fp, "new_string", c))
-    elif tool == "MultiEdit":
-        for i, edit in enumerate(tool_input.get("edits", []) or []):
-            if isinstance(edit, dict):
-                c = edit.get("new_string", "")
-                if isinstance(c, str):
-                    out.append((fp, f"edits[{i}].new_string", c))
-    return out
+    return [(fp, name, text) for name, text in payload_fragments(tool, tool_input)]
 
 
 def find(text: str) -> list[str]:

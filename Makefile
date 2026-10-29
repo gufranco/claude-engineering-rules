@@ -1,14 +1,3 @@
-# Top-level Makefile.
-#
-# Python tooling, including yamllint and zizmor, resolves from the in-repo
-# .venv when it exists and from PATH otherwise. bats, shellcheck, and
-# actionlint are system packages and their targets skip when absent.
-#
-# The tool versions come from requirements-dev.txt, which CI installs from too.
-
-# Prefer the in-repo .venv when it exists, otherwise fall back to whatever is
-# on PATH. CI installs the toolchain with plain pip and still calls these
-# targets, so the two must agree without a venv present.
 VENV       := $(CURDIR)/.venv
 tool = $(if $(wildcard $(VENV)/bin/$(1)),$(VENV)/bin/$(1),$(1))
 
@@ -20,13 +9,20 @@ MYPY       := $(call tool,mypy)
 
 # Must match the paths the CI Lint job passes to ruff. When the two drift,
 # a lint failure only ever surfaces after a push.
-LINT_PATHS := hooks scripts tools .github/scripts tests analyzers
+LINT_PATHS := hooks scripts tools skills .github/scripts tests analyzers
 
 # The modules held to mypy --strict. The rest of the tree does not pass yet, so
 # widening this list is a deliberate change that comes with the fixes. CI calls
 # `make typecheck` rather than repeating the list, so the two cannot drift.
 TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/markdown-link-discipline.py \
+                   hooks/frontend-render-gate.py \
+                   hooks/coverage-exclusion-guard.py \
+                   hooks/_lib/coverage_exclusion.py \
+                   hooks/_lib/image_dimensions.py \
+                   hooks/_lib/publish_commands.py \
+                   hooks/_lib/ui_evidence.py \
+                   hooks/_lib/ui_surface.py \
                    $(sort $(wildcard hooks/_lib/mutation_*.py)) \
                    $(sort $(wildcard hooks/_lib/polyglot_mutation_*.py)) \
                    hooks/_lib/guard_runner.py \
@@ -65,14 +61,9 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/published_text.py \
                    hooks/_lib/hook_input.py
 
-# yamllint and zizmor ship in requirements-dev.txt, so they resolve through
-# the venv like the rest of the python toolchain. bats, shellcheck, and
-# actionlint are system packages and stay optional.
 YAMLLINT   := $(call tool,yamllint)
 ZIZMOR     := $(call tool,zizmor)
 
-BATS       := $(shell command -v bats 2>/dev/null)
-SHELLCHECK := $(shell command -v shellcheck 2>/dev/null)
 ACTIONLINT := $(shell command -v actionlint 2>/dev/null)
 
 # Must match the config the CI workflow-lint job passes to yamllint.
@@ -86,23 +77,24 @@ PYTEST_N   ?= auto
 
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
-.PHONY: help install test test-fast test-cov test-bats test-analyzers test-smoke benchmark test-all \
-        lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills \
+.PHONY: help install test test-fast test-cov test-js test-analyzers test-smoke benchmark mutation-scan test-all \
+        lint lint-py lint-yaml lint-actions lint-workflows lint-md lint-skills \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
 
 help:
 	@echo "Targets:"
-	@echo "  install      Install python deps into .venv from requirements-dev.txt"
+	@echo "  install      Sync .venv from uv.lock and node_modules from pnpm-lock.yaml"
 	@echo "  test         Run pytest (parallel, no coverage gate)"
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
-	@echo "  test-cov     Run pytest with branch coverage, enforce 95%"
-	@echo "  test-bats    Run bats-core suites for the shell scripts"
+	@echo "  test-cov     Run pytest with branch coverage, enforce 100%"
+	@echo "  test-js      Run the Node script tests, enforce 100% coverage"
 	@echo "  test-analyzers  Prove every analyzer catalog rule against the real tools, local only"
-	@echo "  test-smoke   Run the hook smoke suite CI runs, tests/test-hooks.sh"
+	@echo "  test-smoke   Run every hook against its smoke fixtures, as CI does"
 	@echo "  benchmark    Hold every hook under 500 ms, as CI does"
-	@echo "  test-all     test-cov + test-bats + test-smoke + benchmark + lint + typecheck + validate"
-	@echo "  lint         All linters: ruff + shellcheck + actionlint + yamllint + zizmor + lint-skills"
+	@echo "  mutation-scan  Scan tracked JS and TS files for in-place mutation, as CI does"
+	@echo "  test-all     test-cov + test-js + test-smoke + benchmark + mutation-scan + lint + typecheck + validate"
+	@echo "  lint         All linters: ruff + actionlint + yamllint + zizmor + lint-skills"
 	@echo "  lint-skills  tools/lint-skills.py --strict over every skill"
 	@echo "  format       ruff format (writes)"
 	@echo "  format-check ruff format --check (read-only)"
@@ -110,8 +102,8 @@ help:
 	@echo "  clean        Remove caches, coverage data, build artifacts"
 
 install:
-	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -r requirements-dev.txt
+	uv sync --locked
+	corepack pnpm install --frozen-lockfile --ignore-scripts
 
 test:
 	$(PYTEST) -n $(PYTEST_N) --no-cov $(PYTEST_OPTS)
@@ -128,34 +120,35 @@ test-cov:
 test-analyzers:
 	$(PYTEST) --no-cov -p no:randomly analyzers/tests
 
-test-bats:
-ifndef BATS
-	@echo "bats not installed. brew install bats-core"
-	@exit 1
-else
-	@if [ -z "$$(find tests/bats -name '*.bats' 2>/dev/null)" ]; then \
-		echo "no .bats files under tests/bats/"; \
-		exit 1; \
-	fi
-	$(BATS) -r tests/bats
-endif
+NODE_COVERAGE := --experimental-test-coverage --test-coverage-include='scripts/*.mjs' \
+                 --test-coverage-lines=100 --test-coverage-branches=100 \
+                 --test-coverage-functions=100
+
+test-js:
+	node --test $(NODE_COVERAGE) 'tests/js/*.test.mjs'
 
 test-smoke:
-	bash tests/test-hooks.sh
+	$(PYTHON) .github/scripts/hook-smoke.py
 
 benchmark:
-	bash .github/scripts/hook-benchmark.sh --threshold 500
+	$(PYTHON) .github/scripts/hook-benchmark.py --threshold 500
 
-test-all: test-cov test-bats test-smoke benchmark lint typecheck validate
+MUTATION_SCAN_GLOBS := '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs' '*.mts' '*.cts'
 
-lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills
+mutation-scan:
+	git ls-files -- $(MUTATION_SCAN_GLOBS) ':!:tests/corpus/' \
+		| MUTATION_METHOD_BATCH_MODE=1 $(PYTHON) hooks/mutation-method-blocker.py
+
+test-all: test-cov test-js test-smoke benchmark mutation-scan lint typecheck validate
+
+lint: lint-py lint-yaml lint-actions lint-workflows lint-md lint-skills
 
 lint-skills:
 	$(PYTHON) tools/lint-skills.py --strict
 
 lint-md:
-	npx --yes markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
-	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" \
+	pnpm exec markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
+	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README*.md" \
 	  "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
 validate:
@@ -177,13 +170,6 @@ validate:
 
 lint-py:
 	$(RUFF) check $(LINT_PATHS)
-
-lint-sh:
-ifndef SHELLCHECK
-	@echo "shellcheck not installed; skipping"
-else
-	$(SHELLCHECK) $$(git ls-files '*.sh' '*.bash')
-endif
 
 lint-yaml:
 	$(YAMLLINT) -d "$(YAMLLINT_RULES)" .github/

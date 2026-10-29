@@ -241,3 +241,35 @@ def test_a_sibling_test_named_for_the_module_counts(tool_use, run_hook, tmp_path
 
     # Assert
     assert_allowed(result)
+
+
+def test_a_directory_shaped_like_a_test_is_not_a_companion(
+    tool_use, run_hook, tmp_path
+):
+    # Arrange
+    src_dir = tmp_path / "src"
+    (src_dir / "ledger.integration.test.ts").mkdir(parents=True)
+    target = src_dir / "ledger.ts"
+    payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "without a companion test")
+
+
+def test_a_doubled_test_suffix_still_names_the_source(tool_use, run_hook, tmp_path):
+    # Arrange
+    src_dir = tmp_path / "src"
+    tests_dir = src_dir / "__tests__"
+    tests_dir.mkdir(parents=True)
+    (tests_dir / "ledger.test.test.ts").write_text("test('x', () => {})")
+    target = src_dir / "ledger.ts"
+    payload = tool_use("Write", {"file_path": str(target), "content": "export {}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

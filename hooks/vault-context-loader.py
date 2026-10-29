@@ -7,10 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-try:
-    from _lib import knowledge_notes as kn
-except ImportError:  # pragma: no cover
-    sys.exit(0)
+from _lib import knowledge_notes as kn  # noqa: E402
 
 import os  # noqa: E402
 from datetime import datetime, timezone  # noqa: E402
@@ -163,5 +160,5 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     raise SystemExit(main())

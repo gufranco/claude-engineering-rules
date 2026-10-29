@@ -61,3 +61,23 @@ def test_an_export_after_the_call_does_not_cover_it(tool_use, run_hook):
 
     # Assert
     assert_blocked(result, "GH_TOKEN")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'rg -n "user-attachments|gh release upload|pr-assets" docs',
+        'grep -E "a;gh api user&&b" notes.txt',
+    ],
+)
+def test_a_cli_name_inside_a_double_quoted_pattern_is_not_a_call(
+    tool_use, run_hook, command
+):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)

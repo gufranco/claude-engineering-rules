@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 from faker import Faker
+from _helpers.cov_env import apply_coverage_env
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "statusline.py"
 OPUS = "claude-opus-4-7"
@@ -23,6 +25,7 @@ def run(stdin_text: str, cwd: Path | None = None) -> tuple[int, str, str]:
         capture_output=True,
         text=True,
         timeout=SCRIPT_TIMEOUT_S,
+        env=apply_coverage_env(dict(os.environ)),
         cwd=cwd,
         check=False,
     )
@@ -249,3 +252,69 @@ def test_aggregates_a_thousand_turn_transcript(tmp_path: Path, faker: Faker) -> 
 
     # Assert
     assert result == (0, f"[{project.name}] | opus | cache 91% | ctx 0% | $6.75", "")
+
+
+def _load_statusline():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("statusline_module", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+statusline = _load_statusline()
+
+
+def test_model_names_resolve_from_every_shape() -> None:
+    # Arrange
+    inputs = [{"id": "claude-haiku-5-5"}, {"display_name": "Opus"}, {}, "gpt-x"]
+
+    # Act
+    result = [statusline.short_model_name(value) for value in inputs]
+
+    # Assert
+    assert result == ["haiku", "opus", "unknown", "gpt-x"]
+
+
+def test_unparseable_payloads_read_as_empty() -> None:
+    # Arrange
+    text = "{not json"
+
+    # Act
+    result = statusline.parse_payload(text)
+
+    # Assert
+    assert result == {}
+
+
+def test_usages_skip_noise_and_non_assistant_lines(tmp_path: Path) -> None:
+    # Arrange
+    transcript = tmp_path / "t.jsonl"
+    lines = [
+        "",
+        "plain text",
+        "{broken",
+        json.dumps({"type": "user", "message": {"usage": {"input_tokens": 9}}}),
+        json.dumps({"type": "assistant", "message": {"usage": "none"}}),
+        json.dumps({"type": "assistant", "message": {"usage": {"input_tokens": 3}}}),
+    ]
+    transcript.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    # Act
+    result = statusline.iter_usages(str(transcript))
+
+    # Assert
+    assert result == [{"input_tokens": 3}]
+
+
+def test_large_costs_round_to_whole_dollars() -> None:
+    # Arrange
+    cost = 123.6
+
+    # Act
+    result = statusline.format_cost(cost)
+
+    # Assert
+    assert result == "$124"

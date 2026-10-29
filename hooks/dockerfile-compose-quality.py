@@ -5,26 +5,16 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.hook_warning import emit_warning  # noqa: E402
 
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.hook_profile import should_run  # type: ignore  # noqa: E402
-except ImportError:  # pragma: no cover
-
-    def should_run(_id: str) -> bool:  # type: ignore
-        return True
+from _lib.hook_profile import should_run  # noqa: E402
+from _lib.edit_resolution import payload_fragments  # noqa: E402
 
 
 BYPASS_ENV = "DOCKERFILE_QUALITY_DISABLE"
@@ -133,19 +123,8 @@ def detect_kind(path: str) -> str:
 
 
 def extract_new_content(tool_name: str, tool_input: dict) -> tuple[str, bool]:
-    if tool_name == "Write":
-        return tool_input.get("content", "") or "", True
-    if tool_name == "Edit":
-        return tool_input.get("new_string", "") or "", False
-    if tool_name == "MultiEdit":
-        edits = tool_input.get("edits", []) or []
-        parts = []
-        for edit in edits:
-            new = edit.get("new_string", "") or ""
-            if new:
-                parts.append(new)
-        return "\n".join(parts), False
-    return "", False
+    texts = [text for _, text in payload_fragments(tool_name, tool_input) if text]
+    return "\n".join(texts), tool_name == "Write"
 
 
 USER_DIRECTIVE = re.compile(r"^\s*USER\s+(\S+)", re.IGNORECASE)

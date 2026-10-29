@@ -8,17 +8,9 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.expanduser("~/.claude/hooks"))
-try:
-    from _lib.project_scope import walk_up
-except ImportError:  # pragma: no cover
-    sys.exit(0)
-try:
-    from _lib.audit_log import record as _audit  # type: ignore
-except Exception:  # pragma: no cover
-
-    def _audit(**_fields):  # type: ignore
-        return None
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _lib.project_scope import walk_up  # noqa: E402
+from _lib.audit_log import record as _audit  # noqa: E402
 
 
 SOURCE_EXTS = {
@@ -143,23 +135,18 @@ def is_barrel(content: str) -> bool:
 
 
 def _shared_temp_roots() -> tuple[Path, ...]:
-    resolved = []
-    for candidate in ("/tmp", "/private/tmp"):
-        try:
-            resolved.append(Path(candidate).resolve())
-        except OSError:
-            continue
-    return tuple(dict.fromkeys(resolved))
+    return tuple(
+        dict.fromkeys(
+            Path(candidate).resolve() for candidate in ("/tmp", "/private/tmp")
+        )
+    )
 
 
 SHARED_TEMP_ROOTS = _shared_temp_roots()
 
 
 def is_ephemeral_path(path: Path) -> bool:
-    try:
-        resolved = path.resolve()
-    except OSError:
-        return False
+    resolved = path.resolve()
     return any(resolved.is_relative_to(root) for root in SHARED_TEMP_ROOTS)
 
 
@@ -259,7 +246,7 @@ def find_companion_test(path: Path) -> Path | None:
     return _ancestor_test(path.parent, variants)
 
 
-def emit_block(reason: str, file_path: str, hook: str = "tdd-gate") -> None:
+def emit_block(reason: str, file_path: str, hook: str = "tdd-gate") -> int:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -277,7 +264,7 @@ def emit_block(reason: str, file_path: str, hook: str = "tdd-gate") -> None:
         file_path=file_path,
         tool="Write",
     )
-    sys.exit(2)
+    return 2
 
 
 def _new_source_target(data: dict) -> Path | None:
@@ -342,7 +329,9 @@ def main() -> int:
 
     weakened = _weakened_test_file(data)
     if weakened is not None:
-        emit_block(_weakening_reason(*weakened), weakened[0], hook=WEAKENING_HOOK)
+        return emit_block(
+            _weakening_reason(*weakened), weakened[0], hook=WEAKENING_HOOK
+        )
 
     if os.environ.get("TDD_GATE_DISABLE") == "1":
         return 0
@@ -356,8 +345,7 @@ def main() -> int:
     if find_companion_test(target) is not None:
         return 0
 
-    emit_block(_block_reason(target), str(target))
-    return 2
+    return emit_block(_block_reason(target), str(target))
 
 
 if __name__ == "__main__":
