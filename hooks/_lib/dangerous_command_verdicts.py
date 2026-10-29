@@ -12,6 +12,7 @@ from _lib.dangerous_command_push import (
     names_protected_ref,
     push_cwd as resolve_push_cwd,
     push_segment,
+    repo_root as git_toplevel,
 )
 from _lib.hook_warning import emit_warning
 
@@ -127,7 +128,19 @@ def _record_push_bypass(command: str, branch: str) -> None:
     )
 
 
-def _block_protected_push(command: str, branch: str) -> NoReturn:
+def allowlist_hint(top: str) -> str:
+    if not top:
+        return (
+            "Solo repo with no PR workflow? Add it to ~/.claude/solo-repos.txt "
+            "once instead of bypassing on every push.\n"
+        )
+    return (
+        "Solo repo with no PR workflow? Add it once instead of bypassing on "
+        f"every push:\n  echo '{top}' >> ~/.claude/solo-repos.txt\n"
+    )
+
+
+def _block_protected_push(command: str, branch: str, top: str) -> NoReturn:
     audit(
         hook=HOOK_NAME,
         decision="block",
@@ -139,8 +152,7 @@ def _block_protected_push(command: str, branch: str) -> NoReturn:
     print(
         f"BLOCKED: Direct push to protected branch ({branch or 'main/develop'}).\n"
         "Use a feature branch and create a PR instead.\n"
-        "Solo repo with no PR workflow? Add it to ~/.claude/solo-repos.txt "
-        "once instead of bypassing on every push.\n"
+        f"{allowlist_hint(top)}"
         "Bypass (one-off): export ALLOW_PROTECTED_BRANCH_PUSH=1 in the parent shell.\n"
         f"Command: {command}",
         file=sys.stderr,
@@ -160,5 +172,5 @@ def check_protected_push(
     if repo_root:
         _allow_solo_push(command, branch, repo_root, notices)
     if os.environ.get(PUSH_BYPASS_ENV) != "1":
-        _block_protected_push(command, branch)
+        _block_protected_push(command, branch, git_toplevel(command_cwd))
     _record_push_bypass(command, branch)
