@@ -35,6 +35,8 @@ def _pattern(message: str) -> str:
             'rm -rf "$HOME/.claude/hooks"',
         ),
         ("Deleting .git/ destroys repository history", "rm -rf repo/.git"),
+        ("Deleting .git/ destroys repository history", "rm -rf .git"),
+        ("Deleting .git/ destroys repository history", 'rm -rf "repo/.git/objects"'),
     ],
 )
 def test_still_matches_the_destructive_form(message: str, command: str) -> None:
@@ -85,6 +87,11 @@ def test_still_matches_the_destructive_form(message: str, command: str) -> None:
             "Deleting .git/ destroys repository history",
             "rm -f out.log && git -C repo/.git log",
         ),
+        (
+            "Deleting .git/ destroys repository history",
+            'rm -rf "$SCRATCH/mirror.git"',
+        ),
+        ("Deleting .git/ destroys repository history", "rm -f notes/.gitkeep"),
     ],
 )
 def test_ignores_a_flag_or_path_outside_the_destructive_call(

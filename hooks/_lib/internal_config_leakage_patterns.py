@@ -26,6 +26,8 @@ GIT_MESSAGE_SHORT_FLAG_PATTERN = re.compile(r"^-[A-Za-z]*m$")
 
 GIT_MESSAGE_LONG_FLAGS = ("--message", "-m")
 
+GIT_MESSAGE_FILE_FLAGS = ("-F", "--file")
+
 PATH_LEAK_PATTERNS = [
     (re.compile(r"~/\.claude\b"), "~/.claude path reference"),
     (

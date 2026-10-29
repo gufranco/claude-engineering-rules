@@ -130,6 +130,50 @@ def test_still_blocks_internal_paths_inside_the_message(tool_use, run_hook, comm
     assert_blocked(result, "internal Claude config")
 
 
+@pytest.mark.parametrize("flag", ["-F {}", "--file {}", "--file={}"])
+def test_allows_internal_paths_as_arguments_beside_a_message_file(
+    tool_use, run_hook, tmp_path, flag
+):
+    # Arrange
+    message = tmp_path / "msg.txt"
+    message.write_text("docs: tighten wording\n", encoding="utf-8")
+    command = f"git add rules/security.md && git commit {flag.format(message)}"
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_still_blocks_internal_paths_inside_a_message_file(
+    tool_use, run_hook, tmp_path
+):
+    # Arrange
+    message = tmp_path / "msg.txt"
+    message.write_text("docs: tighten\n\nSee rules/security.md\n", encoding="utf-8")
+    payload = tool_use("Bash", {"command": f"git add x.py && git commit -F {message}"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
+
+
+def test_a_fixed_strings_flag_outside_a_commit_is_no_message_file(tool_use, run_hook):
+    # Arrange
+    command = "git log -F x && git commit --fixup rules/security.md"
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "internal Claude config")
+
+
 def test_blocks_whole_command_when_message_cannot_be_isolated(tool_use, run_hook):
     # Arrange
     payload = tool_use("Bash", {"command": "git commit --fixup rules/security.md"})

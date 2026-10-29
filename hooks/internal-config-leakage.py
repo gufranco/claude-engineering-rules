@@ -19,6 +19,7 @@ from _lib.internal_config_leakage_patterns import (  # noqa: E402
     CONVENTIONAL_LABEL_PATTERN_IN_GIT_MESSAGE,
     FORGE_CLIS,
     GIT_MESSAGE_BASH_PATTERNS,
+    GIT_MESSAGE_FILE_FLAGS,
     GIT_MESSAGE_LONG_FLAGS,
     GIT_MESSAGE_SHORT_FLAG_PATTERN,
     GIT_WORD,
@@ -182,6 +183,17 @@ def _message_args(tokens: list[str]) -> tuple[bool, list[str]]:
     return saw_flag, texts
 
 
+def _names_message_file(segment: str, tokens: list[str]) -> bool:
+    if not any(p.search(segment) for p in GIT_MESSAGE_BASH_PATTERNS):
+        return False
+    pairs = zip(tokens, [*tokens[1:], ""])
+    return any(
+        tok.startswith("--file=")
+        or (tok in GIT_MESSAGE_FILE_FLAGS and nxt not in ("", "-"))
+        for tok, nxt in pairs
+    )
+
+
 def extract_git_message_texts(cmd: str) -> list[str] | None:
     bodies, without_heredocs = split_heredoc_bodies(cmd)
     texts = [body for body in bodies if body.strip()]
@@ -194,7 +206,8 @@ def extract_git_message_texts(cmd: str) -> list[str] | None:
         except ValueError:
             return None
         saw, found = _message_args(tokens)
-        saw_message_flag = saw_message_flag or saw
+        named_file = _names_message_file(segment, tokens)
+        saw_message_flag = saw_message_flag or saw or named_file
         texts = [*texts, *found]
     if not texts and not saw_message_flag:
         return None

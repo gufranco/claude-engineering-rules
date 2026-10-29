@@ -125,7 +125,7 @@ def _call_flag(short: str, long: str) -> str:
 
 CRITICAL_PATHS = [
     (
-        rf"{RM_TARGET}{TARGET_PATH}\.git\b",
+        rf"{RM_TARGET}(?:{TARGET_PATH}/)?\.git(?=$|[/\s\"';&|])",
         "Deleting .git/ destroys repository history",
     ),
     (
