@@ -777,6 +777,10 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/memory-write-guard.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/private-terms-guard.py"
           }
         ]
       },
@@ -817,6 +821,10 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/test-aaa-markers.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/private-terms-guard.py"
           }
         ]
       },
@@ -1829,7 +1837,7 @@
       "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
       "### User-specific",
       "**Primary use of Claude Code**: maintaining a personal macOS/Linux dotfiles repo — shell, editor, terminal and tool configs, Homebrew bundles, install scripts, and Docker service definitions",
-      "**Trusted repo**: `/Users/dev/.dotfiles` and its remote `github.com:gufranco/dotfiles.git`. This repo is PUBLIC: only that repo's own dotfiles work is OK to commit or push there; content ported, repointed, or first read from outside this session's repo is not its own work, whoever directed the port. Visibility never clears secrets or sensitive data (SSH/GPG keys, mail tokens, `.env*`) into it",
+      "**Trusted repo**: `~/.dotfiles` and its origin remote. This repo is PUBLIC: only that repo's own dotfiles work is OK to commit or push there; content ported, repointed, or first read from outside this session's repo is not its own work, whoever directed the port. Visibility never clears secrets or sensitive data (SSH/GPG keys, mail tokens, `.env*`) into it",
       "**Org-specific CLIs**: None configured — routine tooling here is general-purpose (`brew`, `gpg`, `gh`, `nvim`, `shellcheck`, `uv`/`uvx`, `pipx`, `launchctl`, `neomutt`, `abook`)"
     ]
   },

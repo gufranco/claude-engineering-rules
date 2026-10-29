@@ -75,7 +75,7 @@ graph LR
 
 ### 常驻规则
 
-[`rules/`](rules/) 中有 48 条规则，[`rules/lang/`](rules/lang/) 中另有 5 条。[`rules/`](rules/) 下的每个文件都会以简短核心的形式加载到每一次对话中，包括语言文件和表格后面列出的 6 条。每个核心只保留会改变日常任务行为的义务，并链接到 [`standards/`](standards/) 中的全文，因此常驻集合保持在 56 个文件、108,127 个字符，低于 CI 强制执行的 120,000 字符预算和 150,000 字符的运行环境上限。
+[`rules/`](rules/) 中有 49 条规则，[`rules/lang/`](rules/lang/) 中另有 5 条。[`rules/`](rules/) 下的每个文件都会以简短核心的形式加载到每一次对话中，包括语言文件和表格后面列出的 6 条。每个核心只保留会改变日常任务行为的义务，并链接到 [`standards/`](standards/) 中的全文，因此常驻集合保持在 57 个文件、97,312 个字符，低于 CI 强制执行的 120,000 字符预算和 150,000 字符的运行环境上限。
 
 | 规则 | 涵盖内容 |
 |:-----|:---------------|
@@ -99,7 +99,7 @@ graph LR
 | [`found-fix`](rules/found-fix.md) | 验证过程中发现的任何问题都属于当前任务的范围。禁止那些把修复推迟到以后会话的托辞 |
 | [`user-commands-one-line`](rules/user-commands-one-line.md) | 交给用户运行的命令写成一行安全的命令：严格模式的子 shell，用 `&&` 连接的步骤，按退出码失败的检查，每次递归删除都用 `${VAR:?}`。不可逆步骤之前需要用户判断的结果单独给出，不与变更串在一起 |
 | [`same-turn-persistence`](rules/same-turn-persistence.md) | 收到纠正的那一轮在结束前必须写入文件。自己发现的错误和用户指出的错误同样对待，写入针对的是根本行为而不是表面症状，准入门槛防止强制记录让配置膨胀 |
-| [`rule-provenance`](rules/rule-provenance.md) | 每条规则都写明它生效的日期和促成它的失败。教训先记录下来，第三次重现时才升级为规则，不可逆、无声或灾难性的失败除外。有了来源记录，规则集才能被精简 |
+| [`rule-provenance`](rules/rule-provenance.md) | 规则的来历记录在私有的 vault 中，从不放进仓库：文件只陈述当前的规则。教训先记录下来，第三次重现时才升级为规则，不可逆、无声或灾难性的失败除外 |
 | [`relay-not-source`](rules/relay-not-source.md) | 子代理的报告、搜索片段或摘要都是转述。转述不仅会弄乱内容，还会弄乱引用位置，所以一个具体的说法读起来正确，却可能指向错误的行、时间戳或记录 |
 | [`agent-operating-limits`](rules/agent-operating-limits.md) | 兜底上限与预算的区别、附带测量值的轮次上限、超出部分要报告而不是丢弃的配额、被拒调用和无条件上下文注入的成本，以及无法运行的检查一律按失败处理 |
 | [`deviation-waivers`](rules/deviation-waivers.md) | 偏离规则是允许的，悄悄偏离则不行。一份结构化的豁免，写明范围、批准人、替代方案和复查条件，它回答的问题与机械式绕过不同，因此两者有区别。项目自己的指令文件可以在该项目内明确覆盖全局规则，但不能越过安全、法律、数据丢失、验证和诚实这几条底线 |
@@ -216,7 +216,7 @@ graph LR
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | 拦截 PR 和文档中的口语化客套和战术性夸张 |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | 拦截长破折号、短破折号、正文中的圆括号、表情符号、ASCII 艺术，以及在 Markdown 正文中用带空格的连字符代替破折号 |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | 拦截在 GitHub 或 GitLab 上对多个讨论串循环调用 `resolveReviewThread` |
-| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 在所有者仓库使用的每种语言中拦截向源代码添加注释：C 系、Python、shell、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTML 及其模板方言、CSS、按方言区分的汇编、Jupyter 代码单元等，按扩展名、文件名、shebang 或内容识别。docstring 和文档注释块也算注释。编辑会与磁盘上的文件比对，所以只报告新加的注释。在 Bash 的 `git commit` 上，它会把每个已暂存的文件与 `HEAD` 比对扫描，从而捕获在 Write 和 Edit 工具之外写入的内容。合并期间，会跳过合并从另一个父提交原样取来的文件，因为合并没有在其中写入任何内容。不受限制的有：`eslint-disable`、`@ts-expect-error`、`noqa` 和 action 版本固定等工具指令，测试文件中裸写的 `Arrange`、`Act`、`Assert` 标记，以及 `.env.example` 文件。运维绕过：`COMMENT_BLOCKER_DISABLE=1` |
+| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 在它能识别的每种语言中拦截向源代码添加注释：C 系、Python、shell、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTML 及其模板方言、CSS、按方言区分的汇编、Jupyter 代码单元等，按扩展名、文件名、shebang 或内容识别。docstring 和文档注释块也算注释。编辑会与磁盘上的文件比对，所以只报告新加的注释。在 Bash 的 `git commit` 上，它会把每个已暂存的文件与 `HEAD` 比对扫描，从而捕获在 Write 和 Edit 工具之外写入的内容。合并期间，会跳过合并从另一个父提交原样取来的文件，因为合并没有在其中写入任何内容。机器本地的 `comment-waivers.txt`（从 [`comment-waivers.example.txt`](comment-waivers.example.txt) 复制）中列出的路径不检查。不受限制的有：`eslint-disable`、`@ts-expect-error`、`noqa` 和 action 版本固定等工具指令，测试文件中裸写的 `Arrange`、`Act`、`Assert` 标记，以及 `.env.example` 文件。运维绕过：`COMMENT_BLOCKER_DISABLE=1` |
 | [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | 要求 Python、JS/TS、Go 和 bats 中每个新增或修改的测试都带有裸写的 `Arrange`、`Act`、`Assert` 标记，各出现一次、依次排列，组成以一个空行分隔的三个块。不检查没有改动的旧测试。在 Bash 的 `git commit` 上检查已暂存的文件，跳过合并从另一个父提交原样取来的文件。绕过：`TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | 按项目在上下文压缩前后保留 git 状态 |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | 拦截对 tsconfig、eslint、ruff、mypy 等 lint、格式化和类型检查配置的编辑。逼着修代码，而不是放宽配置 |
@@ -264,6 +264,7 @@ graph LR
 | [`pr-merge-blocker.py`](hooks/pr-merge-blocker.py) | PreToolUse Bash | 在 `/morning` 巡检持有会话锁期间，拒绝每一种形式的拉取请求合并。涵盖 `gh pr merge`、`glab mr merge`、REST 合并端点和 GraphQL 合并变更。巡检之外不起作用，所以 `/deploy land` 仍然可用。`git merge` 和 `gh pr update-branch` 不受影响。绕过：`PR_MERGE_BLOCKER_DISABLE=1` |
 | [`prisma-raw-sql-blocker.py`](hooks/prisma-raw-sql-blocker.py) | PreToolUse Write/Edit | 拦截 Prisma 的原始查询后门，测试文件中也一样 |
 | [`prisma-schema-sync.py`](hooks/prisma-schema-sync.py) | PreToolUse Write/Edit | 强制 schema.prisma 与迁移保持一致，包括多列 `ALTER TABLE` 的每一列和字段级 `@unique(map:)` 的名称 |
+| [`private-terms-guard.py`](hooks/private-terms-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | 拦截把私有拒绝列表中的词写进本仓库公开文件的写入，或包含这类已暂存文件的 `git commit`。拒绝列表放在 vault 的 `.private-terms.txt`，列表本身从不公开；没有 vault 或列表时全部放行。被 git 忽略的路径和仓库外的路径不检查。无法读取的输入和无法读取的索引会被拦截。绕过：`PRIVATE_TERMS_GUARD_DISABLE=1` |
 | [`read-injection-scanner.py`](hooks/read-injection-scanner.py) | PostToolUse Read/WebFetch/WebSearch | 扫描获取到的内容中的提示注入模式（覆盖指令、改道工具、权威声明、base64 长串、易混淆的 Unicode 字符）并发出警告。绕过：`READ_INJECTION_DISABLE=1` |
 | [`redis-atomicity.py`](hooks/redis-atomicity.py) | PreToolUse Write/Edit | 强制通过 Lua 或 MULTI 让 Redis 操作序列保持原子性，并标记没有 TTL 的锁。只有在同一个接收者上，读和写才算竞态，`Map` 上从不算。没有放行标记，只遵守第三方工具的指令。 |
 | [`check-then-act-blocker.py`](hooks/check-then-act-blocker.py) | PreToolUse Write/Edit/MultiEdit | 标记决定某次写入的读取以及随后的那次写入。默认通过模型会读取的 `additionalContext` 发出警告；在 `CHECK_THEN_ACT_ENFORCE=1` 下拦截 |
@@ -522,7 +523,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 96 runtime hooks
+  hooks/                 97 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
