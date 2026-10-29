@@ -356,3 +356,43 @@ def test_non_text_values_in_a_response_are_skipped(run_hook, tool_use):
 
     # Assert
     assert (code, stdout) == (0, "")
+
+
+def test_an_image_read_carries_no_text_to_scan(run_hook, tool_use):
+    # Arrange
+    payload = tool_use(
+        "Read",
+        {"file_path": "/tmp/after.png"},
+        hook_event_name="PostToolUse",
+        tool_response={
+            "type": "image",
+            "file": {
+                "base64": "iVBORw0KGgo" + "A" * 4000,
+                "type": "image/png",
+                "originalSize": 61435,
+            },
+        },
+    )
+
+    # Act
+    code, stdout, _ = run_hook(HOOK, payload)
+
+    # Assert
+    assert (code, stdout) == (0, "")
+
+
+def test_a_text_read_that_names_an_image_type_is_still_scanned(run_hook, tool_use):
+    # Arrange
+    payload = tool_use(
+        "Read",
+        {"file_path": "/tmp/notes.md"},
+        hook_event_name="PostToolUse",
+        tool_response={"type": "text", "file": {"content": "A" * 250}},
+    )
+
+    # Act
+    code, stdout, _ = run_hook(HOOK, payload)
+
+    # Assert
+    assert code == 0
+    assert_finding(stdout, "long-base64-run")
