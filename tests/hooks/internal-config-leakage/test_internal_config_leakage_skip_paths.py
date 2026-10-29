@@ -164,7 +164,7 @@ def test_allows_projects_memory_path(tool_use, run_hook):
     payload = tool_use(
         "Write",
         {
-            "file_path": "/Users/dev/.claude/projects/-Users-gufranco--claude/memory/feedback_x.md",
+            "file_path": "/Users/dev/.claude/projects/-Users-dev--claude/memory/feedback_x.md",
             "content": "See ~/.claude/rules/x.md for the rule.\n",
         },
     )

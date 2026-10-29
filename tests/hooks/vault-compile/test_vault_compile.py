@@ -40,12 +40,10 @@ def test_the_slug_matches_how_claude_code_names_a_project() -> None:
     module = load()
 
     # Act
-    memory = module.memory_dir_for(
-        Path("/Users/someone/Workspace/Personal/battle")
-    )
+    memory = module.memory_dir_for(Path("/Users/someone/Work Space/@ Personal/battle"))
 
     # Assert
-    assert memory.parent.name == "-Users-someone-Dropbox-Workspace---Pessoal-battle"
+    assert memory.parent.name == "-Users-someone-Work-Space---Personal-battle"
     assert memory.name == "memory"
 
 

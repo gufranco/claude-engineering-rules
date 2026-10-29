@@ -90,7 +90,7 @@ def test_post_is_silent_when_the_snapshot_belongs_to_another_project(
     tmp_path: Path,
 ) -> None:
     # Arrange
-    mine = tmp_path / "minerva"
+    mine = tmp_path / "archive"
     theirs = tmp_path / "aesmovie"
     mine.mkdir()
     theirs.mkdir()

@@ -375,7 +375,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Audit writing quality drift.")
     parser.add_argument(
         "--out-dir",
-        default="specs/2026-05-27-normative-keywords",
+        default="specs/writing-quality",
         help="Directory for output files.",
     )
     parser.add_argument(

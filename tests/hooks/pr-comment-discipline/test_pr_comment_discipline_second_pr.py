@@ -29,7 +29,7 @@ def _create(tool_use, session: str, repo: str = "acme/admin"):
 def test_a_second_pr_in_the_same_repository_asks_first(tmp_path, tool_use, run_hook):
     # Arrange
     session = fake.uuid4()
-    record(session, "https://github.com/acme/admin/pull/671\n", tmp_path, NOW)
+    record(session, "https://github.com/acme/admin/pull/101\n", tmp_path, NOW)
 
     # Act
     result = run_hook(
@@ -39,7 +39,7 @@ def test_a_second_pr_in_the_same_repository_asks_first(tmp_path, tool_use, run_h
     # Assert
     decision = _decision(result.stdout)
     assert (result.code, decision["permissionDecision"]) == (0, "ask")
-    assert "already opened acme/admin#671" in decision["permissionDecisionReason"]
+    assert "already opened acme/admin#101" in decision["permissionDecisionReason"]
     assert "cherry-pick" in decision["permissionDecisionReason"]
 
 
@@ -48,7 +48,7 @@ def test_the_first_pr_or_another_repository_passes_silently(
 ):
     # Arrange
     session = fake.uuid4()
-    record(session, "https://github.com/acme/admin/pull/671\n", tmp_path, NOW)
+    record(session, "https://github.com/acme/admin/pull/101\n", tmp_path, NOW)
     env = {"CLAUDE_PR_LEDGER_DIR": str(tmp_path)}
     payloads = [
         _create(tool_use, fake.uuid4()),

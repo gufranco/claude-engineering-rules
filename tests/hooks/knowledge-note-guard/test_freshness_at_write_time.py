@@ -68,7 +68,7 @@ def test_allows_pointer_with_a_url(tool_use, run_hook, vault_env, note):
         {
             "file_path": note,
             "content": body(
-                "Where truth lives: https://linear.app/Acme/issue/WEB-3789"
+                "Where truth lives: https://linear.app/acme/issue/WEB-3789"
             ),
         },
     )
