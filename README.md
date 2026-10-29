@@ -2,12 +2,11 @@
 
 <strong>An opinionated engineering config for Claude Code. Rules, runtime hooks, and slash-command skills that turn the CLI into a strict pair-programmer.</strong>
 
-<br>
-<br>
+<sub>English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)</sub>
 
 [![CI](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
 [![Release](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/gufranco/claude-engineering-rules/badge)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gufranco/claude-engineering-rules/badge)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
 [![Latest release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196.svg?style=flat-square)](https://www.conventionalcommits.org)
 [![semantic-release](https://img.shields.io/badge/semantic--release-angular-e10079?style=flat-square)](https://github.com/semantic-release/semantic-release)
@@ -15,62 +14,54 @@
 
 </div>
 
-**47** always-on rules · **141** on-demand standards · **42** slash-command skills · **91** runtime hooks · **18** custom agents · **42** MCP servers · **888** review items across **71** categories
+<p align="center">
+  <a href="#quick-start">Quick Start</a> |
+  <a href="CONTRIBUTING.md">Contributing</a> |
+  <a href="SECURITY.md">Security</a> |
+  <a href="https://github.com/gufranco/claude-engineering-rules/issues">Issues</a> |
+  <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
+</p>
+
+47 always-on rules, 141 on-demand standards, 42 skills, 91 hooks, and 18 agents, plus an 889-item review checklist in 71 categories.
 
 ---
 
-<table>
-<tr>
-<td width="50%" valign="top">
+## Usage
 
-### Runtime Guardrails
-91 hooks intercept tool calls before they run. They block destructive commands, secrets in commits, mutating method calls, AI co-author trailers, banned phrases, internal config leakage, and 40+ other failure patterns.
+The guardrails need no command. Every Bash, Write, and Edit call passes through the hooks before it runs, and a blocked call never runs: Claude reads the refusal and changes course. The same refusal, reproduced from a shell with a fixture from this repository:
 
-</td>
-<td width="50%" valign="top">
+```console
+$ python3 ~/.claude/hooks/dangerous-command-blocker.py < ~/.claude/tests/fixtures/bash-force-push.json
+BLOCKED: Use --force-with-lease instead of --force
+Command: git push --force origin main
+$ echo $?
+2
+```
 
-### Two-Tier Rule Loading
-47 universal rules ship with every conversation. 141 domain standards load only when [`rules/index.yml`](rules/index.yml) triggers match the task. Most sessions pull 2-5 standards instead of all 141.
+Workflows are skills, typed as slash commands inside a session:
 
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
+```text
+/plan add rate limiting to the login endpoint
+/review --local
+/ship commit --push
+/investigate why the import job times out
+```
 
-### 42 Slash-Command Skills
-`/ship`, `/review`, `/respond`, `/assessment`, `/plan`, `/audit`, `/onboard`, `/investigate`, `/research`, and 33 more. Each is a documented multi-step workflow with subcommands, not a one-liner. `/audit trust` and `/onboard --verify` catch malicious code in untrusted projects before any install runs.
+## How It Works
 
-</td>
-<td width="50%" valign="top">
+Each layer catches what the layer above it missed.
 
-### Anti-Hallucination by Design
-Verify-before-claim is a rule, not a suggestion. Read the file, run the command, check the output. "It should work" is not evidence.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-### 888-Item Review Checklist
-One file, 71 categories: correctness, security, error handling, concurrency, data integrity, observability, accessibility, performance budgets, supply chain. Apply by category, not by ceremony.
-
-</td>
-<td width="50%" valign="top">
-
-### Mutation-Free TypeScript
-The mutation-method-blocker hook flags 90+ in-place mutation patterns across arrays, Maps, Sets, Dates, `Object.assign`, `delete`, compound assignment, and parameter reassignment. Auto-allows Immer, Redux Toolkit, Pinia, MobX, Zustand, Svelte runes, and 15 other state libs.
-
-</td>
-</tr>
-</table>
-
-## The Problem
-
-Claude Code is capable but uncritical. It will mock the database when you said never mock. It will write `as any` to make TypeScript stop complaining. It will declare a task done without running tests. Without guardrails, the model regresses toward whatever pattern is most common in its training set, not whatever your codebase actually needs.
-
-## The Solution
-
-A layered config where each layer catches what the layer above missed.
+```mermaid
+graph LR
+    A[Session starts] --> B[CLAUDE.md and rules/ load]
+    B --> C[Claude loads the standards that rules/index.yml matches]
+    C --> D[Tool call]
+    D --> E{PreToolUse hooks}
+    E -->|exit 2| F[Call refused, Claude revises]
+    E -->|exit 0| G[Tool runs]
+    G --> H[PostToolUse hooks]
+    H --> I[Stop hooks format and type-check]
+```
 
 | Layer | What it enforces | When it runs |
 |:------|:-----------------|:-------------|
@@ -85,7 +76,7 @@ A layered config where each layer catches what the layer above missed.
 
 ### Rules, always loaded
 
-47 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays near 80,000 characters, well under the 150,000-character instruction limit.
+47 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 102,513 characters across 55 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -231,7 +222,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
 | [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | Blocks an edit that adds a coverage exclusion directive to source, such as `istanbul ignore`, `c8 ignore`, `pragma: no cover`, `#[coverage(off)]`, or `LCOV_EXCL_LINE`, and an edit to a coverage config that writes a threshold under 100. A new omit or exclude entry asks for confirmation, since only generated and vendored paths may be excluded. Prose files are exempt. Bypass `COVERAGE_EXCLUSION_GUARD_DISABLE=1`. |
-| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 150+ patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. A heredoc body fed to `cat`, `tee`, `git`, `gh` or `glab` is data and is not matched; a body fed to a shell still is. Git global options such as `-C` and `-c` are stripped before matching, so `git -C <dir> push --force` blocks like the plain form, and `-f` or a cluster such as `-fu` counts as a force push. A build-directory cleanup skips the remaining checks only when every segment of the command is that cleanup. Input that is not valid JSON blocks. Protected-branch pushes are allowed when the repository the push targets, following `cd` and `-C`, is listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt); a push whose target cannot be determined never qualifies. Deleting a test file and searching `/` or the home directory with `find`, `grep -r`, `rg`, or `fd` raise a confirmation prompt |
+| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. A heredoc body fed to `cat`, `tee`, `git`, `gh` or `glab` is data and is not matched; a body fed to a shell still is. Git global options such as `-C` and `-c` are stripped before matching, so `git -C <dir> push --force` blocks like the plain form, and `-f` or a cluster such as `-fu` counts as a force push. A build-directory cleanup skips the remaining checks only when every segment of the command is that cleanup. Input that is not valid JSON blocks. Protected-branch pushes are allowed when the repository the push targets, following `cd` and `-C`, is listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt); a push whose target cannot be determined never qualifies. Deleting a test file and searching `/` or the home directory with `find`, `grep -r`, `rg`, or `fd` raise a confirmation prompt |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Checks the repository a leading `cd` or `git -C` names, and includes unstaged changes for `commit -a`. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
 | [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | Blocks a `git commit` that changes rendered output (`.tsx`, `.html`, `.dart`, styles, theme tokens, native views such as `*View.swift` or `*Screen.kt`, desktop layouts such as `.qml` or `.xaml`, and sources importing a terminal UI library) without touching any render-level check: an e2e or browser suite, XCUITest, `androidTest`, or a terminal snapshot. A `*.spec.tsx` unit test does not count. Cascade outcome, paint order, the accessibility tree, focus order, and third-party iframes are invisible in source and absent from jsdom. At publish time it reads the branch diff against its base: `gh pr create` or `edit`, `gh issue create`, `edit`, or `comment`, a review-thread reply, `glab mr create` or `update`, and a Linear issue or comment on a branch with a visible change are blocked until they carry an `After:` image, plus `Before:` when an existing surface changed, each at least 1600 px on its longer side. Interface wording with no image and no visible change asks for confirmation. Bypass `FRONTEND_RENDER_GATE_DISABLE=1`, or a TTL-bound entry in the shared bypass registry. |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | Forces `--context` or `DOCKER_CONTEXT` per call |
@@ -263,7 +254,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`migration-idempotency.py`](hooks/migration-idempotency.py) | PreToolUse Write/Edit | Forces idempotent DDL: `IF NOT EXISTS` where PostgreSQL supports it, `OR REPLACE` for functions, views, triggers and procedures, a guarded `DO` block for types, policies, roles and users, and `IF EXISTS` on every `DROP` |
 | [`mise-global-guard.py`](hooks/mise-global-guard.py) | PreToolUse Bash | Blocks `mise use --global`, forces project-local config |
 | [`mock-internal-blocker.py`](hooks/mock-internal-blocker.py) | PreToolUse Write/Edit | Blocks mocking own services, DB, Redis, queues in tests, including Python dotted `patch` targets and root-level `test_*.py` files |
-| [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks 90+ in-place mutation patterns in JS/TS. No allow marker; only third-party tool directives are honored. |
+| [`mutation-method-blocker.py`](hooks/mutation-method-blocker.py) | PreToolUse Write/Edit/MultiEdit | Blocks 105 in-place mutation patterns in JS/TS. No allow marker; only third-party tool directives are honored. |
 | [`normative-keyword-discipline.py`](hooks/normative-keyword-discipline.py) | PreToolUse Write/Edit/MultiEdit | Blocks bullet items starting with `Should ` or `should ` in rules, standards, checklists, and [`CLAUDE.md`](CLAUDE.md). Enforces the BCP 14 weasel-words rule. Bypass `NORMATIVE_KEYWORD_DISABLE=1` |
 | [`notify-webhook.py`](hooks/notify-webhook.py) | Stop | POST to `CLAUDE_NOTIFY_WEBHOOK` on response completion |
 | [`pr-comment-discipline.py`](hooks/pr-comment-discipline.py) | PreToolUse Bash | Blocks every command that publishes a pull-request comment outside a thread: the `gh pr` comment subcommand, `gh pr review` with a body, a reviews POST carrying a non-empty summary, a `pulls/<n>/comments` POST with no `in_reply_to`, an `issues/<n>/comments` POST, a commit-comment POST, a GitLab MR note or new discussion, and a parentless Bitbucket comment. Reads `--input` and `--body-file` payloads. A comment command inside a heredoc body is data. Leaves thread replies, empty-body review submissions, and description edits alone. Bypass `PR_COMMENT_DISCIPLINE_DISABLE=1` |
@@ -476,13 +467,21 @@ ln -sf "$(pwd)/"* "$HOME/.claude/"
 
 ### Verify
 
-Open Claude Code in any project and run:
+Feed a hook the force-push fixture. It refuses and exits 2, the code Claude Code reads as a block:
 
 ```bash
-/ship commit
+python3 ~/.claude/hooks/dangerous-command-blocker.py < ~/.claude/tests/fixtures/bash-force-push.json; echo "exit $?"
 ```
 
-The hooks, rules, and skills activate automatically.
+Expected output:
+
+```text
+BLOCKED: Use --force-with-lease instead of --force
+Command: git push --force origin main
+exit 2
+```
+
+The rules and skills load in the next Claude Code session you open.
 
 ## Configuration
 
@@ -521,7 +520,9 @@ $HOME/.claude/
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
-  tests/                 Hook smoke tests and fixture trees
+  tests/                 pytest suites, Node script tests, smoke cases, and fixtures
+  pyproject.toml         Python dev toolchain, locked in uv.lock
+  package.json           Release toolchain, locked in pnpm-lock.yaml
   .github/workflows/     Lint, validation, hook tests
 ```
 
@@ -557,7 +558,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 141 standards total roughly 26,000 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load. Most conversations need 2-5 standards.
+The 141 standards total 27,200 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
 
 </details>
 
@@ -565,7 +566,7 @@ The 141 standards total roughly 26,000 lines. Loading all of them into every con
 <summary><strong>What does the dangerous command blocker cover?</strong></summary>
 <br>
 
-150+ patterns: filesystem destruction, privilege escalation, reverse shells, git destructive operations, AWS/GCP/Azure CLI deletions, Vercel/Netlify/Firebase, Docker and Kubernetes destructive commands, database CLI drops, IaC destroy, SQL statements without WHERE, credential exfiltration.
+190 patterns: filesystem destruction, privilege escalation, reverse shells, git destructive operations, AWS/GCP/Azure CLI deletions, Vercel/Netlify/Firebase, Docker and Kubernetes destructive commands, database CLI drops, IaC destroy, SQL statements without WHERE, credential exfiltration.
 
 </details>
 
@@ -602,17 +603,30 @@ validate`, which is the drift gate: it walks every registry against what is
 actually on disk and fails when the two disagree. That covers a rule or
 standard missing from [`rules/index.yml`](rules/index.yml), a skill or agent
 missing from this README, a test-shaped file left in [`hooks/`](hooks/) where
-the smoke test would try to execute it, and a count check whose pattern stopped
+the bypass smoke test would execute it, and a count check whose pattern stopped
 matching. That last one matters most: a check that matches nothing cannot fail,
 so it reports success while verifying nothing, which is how a stale number
 survives a green run.
 
-Every pull request runs eight CI jobs: lint, workflow lint, typecheck, hook
-tests, the Python suite at 100% branch coverage with nothing excluded, a
-release-config dry run that also holds the Node scripts at 100%, CodeQL, and
-dependency review. Dependabot keeps GitHub Actions SHAs, pip, and
-npm current on a weekly grouped schedule, and releases are cut by
-semantic-release from Conventional Commits.
+Every pull request runs eight CI jobs on `ubuntu-26.04`: lint, workflow lint,
+typecheck, hook tests, the Python suite at 100% branch coverage with nothing
+excluded, a release-config dry run that also holds the Node scripts at 100%
+and verifies registry signatures, CodeQL, and dependency review. Each job
+records its network egress with harden-runner. GitHub's own actions are pinned
+to a release tag and third-party actions to a commit SHA. Dependabot keeps
+the actions and the Node packages current; [`renovate.json`](renovate.json)
+covers the Python pins, the pre-commit hooks, the actionlint version, and the
+runner image label. Releases are cut by semantic-release from Conventional
+Commits.
+
+## Support
+
+| Need | Where |
+|:-----|:------|
+| Bug report or feature request | [GitHub Issues](https://github.com/gufranco/claude-engineering-rules/issues) |
+| Security report | [Private security advisory](https://github.com/gufranco/claude-engineering-rules/security/advisories/new) |
+| Contributing | [Contribution guide](CONTRIBUTING.md) |
+| Conduct | [Code of conduct](CODE_OF_CONDUCT.md) |
 
 ## Security
 

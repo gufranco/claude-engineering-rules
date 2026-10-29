@@ -11,7 +11,7 @@ from faker import Faker
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / ".github" / "scripts" / "validate-counts.py"
 HOOKS_DEAD_MESSAGE = (
-    "  check 'hooks count in bold' matched nothing in any scanned file. Either "
+    "  check 'hooks count leading a line' matched nothing in any scanned file. Either "
     "the prose that carried it changed shape, or the check is dead. A check that "
     "never fires reports success while verifying nothing."
 )
@@ -97,9 +97,9 @@ def test_required_label_that_never_matched_is_reported(
 def test_only_the_unmatched_label_is_reported(counts_module: ModuleType) -> None:
     # Arrange
     matched_labels = {
-        "always-on rules count in bold",
-        "standards count in bold",
-        "skills count in bold",
+        "always-on rules count",
+        "standards count",
+        "skills count leading a line",
     }
 
     # Act
