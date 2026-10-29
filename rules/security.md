@@ -17,7 +17,7 @@ Secrets never enter the repository, the logs, or the conversation; access is den
 - Enforce request body limits, encode output, avoid ReDoS-prone regex, never `eval()`, allowlist redirect targets, block private IP ranges and `169.254.169.254` for server-side fetches.
 - Revoke JWTs via a `jti` blocklist with TTL on logout, password change, permission change, or compromise.
 - Run as non-root. Production secrets come from a secrets manager with rotation, not static env vars.
-- Commit lockfiles, pin exact versions, use `npm ci`, run audits in CI blocking critical and high, check for typosquatting, generate an SBOM, sign artifacts.
+- Commit lockfiles, pin exact versions, install with `pnpm install --frozen-lockfile` and `uv sync --locked`, run audits in CI blocking critical and high, check for typosquatting, generate an SBOM, sign artifacts.
 
 Full rule, examples, and rationale: [`standards/security.md`](../standards/security.md). Read it before touching auth, tokens, headers, CSP, secrets storage, or personal data handling.
 
@@ -29,4 +29,4 @@ Enforced by: [`hooks/secret-scanner.py`](../hooks/secret-scanner.py).
 
 ## Provenance
 
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation.
+Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-28, by direct user instruction: lockfile installs name pnpm and uv, never npm, because the owner made pnpm and uv mandatory for every project.
