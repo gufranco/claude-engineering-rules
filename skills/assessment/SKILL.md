@@ -253,6 +253,7 @@ This skill accepts optional arguments after `/assessment`:
    In addition to the 71 checklist categories, also assess:
 
    - **README and presentation quality.** The README is the first thing a reviewer reads. Check: does it explain what the project does, how to set it up, how to run it, and how to test it? Are architecture decisions documented? Is there a clear project structure section? For interview submissions, a well-structured README with setup instructions, architecture explanation, and trade-off discussion can be the difference between an interview and a rejection. A missing or minimal README is a HIGH finding.
+   - **Badges.** Run `python3 ~/.claude/tools/readme-badges.py <repo> --visibility <v> --release <r> --check`. Each README it names is a MEDIUM finding: the header carries a stale static version, a stack badge, a coverage number the build does not enforce, or a missing CI, release or license badge. Fix it with `--write`.
 
    - **AI slop.** A reviewer who meets generated filler in the README stops trusting the code behind it. Grade the step 5 scan, then read every README, doc and source comment for the shapes no detector decides: sections of uniform length, lists of exactly three, headings such as "Key Features" or "Future Work" with nothing under them, bold-label bullets standing in for sentences, and comments that restate the next line. Severity:
      - Search narration, chat residue or an unfilled placeholder in the README or the PR description is HIGH.

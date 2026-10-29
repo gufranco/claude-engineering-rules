@@ -4,13 +4,12 @@
 
 English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
 
-[![CI](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
-[![Release](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gufranco/claude-engineering-rules/badge)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
-[![Latest release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196.svg?style=flat-square)](https://www.conventionalcommits.org)
-[![semantic-release](https://img.shields.io/badge/semantic--release-angular-e10079?style=flat-square)](https://github.com/semantic-release/semantic-release)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![mutation method scan](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/mutation-method-scan.yml?branch=main&style=flat-square&label=mutation%20method%20scan)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/mutation-method-scan.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square&label=release)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/claude-engineering-rules?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
+[![license](https://img.shields.io/github/license/gufranco/claude-engineering-rules?style=flat-square&label=license)](LICENSE)
 
 </div>
 
@@ -144,7 +143,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/ship`](skills/ship/SKILL.md) | Delivery pipeline: commit, PR, release, CI checks, worktrees |
 | [`/review`](skills/review/SKILL.md) | Three-pass code review, QA analysis, visual audit |
 | [`/respond`](skills/respond/SKILL.md) | Handle incoming review comments: classify, verify, draft replies, validate locally, post, resolve, monitor CI |
-| [`/assessment`](skills/assessment/SKILL.md) | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Grades AI slop with [`tools/slop-scan.py`](tools/slop-scan.py), which runs the `ai-slop-blocker` detectors over every Markdown file and a commit range, and removes it by deletion. Outputs a machine-readable findings table that `/respond` can consume |
+| [`/assessment`](skills/assessment/SKILL.md) | Architecture completeness audit. Finds missing patterns, planted defects, and standout opportunities. Grades AI slop with [`tools/slop-scan.py`](tools/slop-scan.py), which runs the `ai-slop-blocker` detectors over every Markdown file and a commit range, and removes it by deletion. Outputs a machine-readable findings table that `/respond` can consume. Flags README badges that differ from the standard block |
 | [`/plan`](skills/plan/SKILL.md) | Spec folders with discovery, scope review, ADRs, scaffolding |
 | [`/audit`](skills/audit/SKILL.md) | Security audit, threat modeling, supply chain checks. `/audit trust` adds untrusted-project safety scanning with IOC catalog at [`trust-patterns.md`](skills/audit/trust-patterns.md) |
 | [`/test`](skills/test/SKILL.md) | Test execution, perf, lint, CI smoke, stub generation |
@@ -168,7 +167,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`/onboard`](skills/onboard/SKILL.md) | Codebase onboarding: architecture map, "Start Here". Phase 0 prompts before running the trust scan. Flags `--trust` and `--verify` pre-decide non-interactively |
 | [`/gan`](skills/gan/SKILL.md) | Generator-Evaluator iteration loop for building features against a scored rubric. Iterates planner, generator, and evaluator subagents until the threshold is met |
 | [`/pr-summary`](skills/pr-summary/SKILL.md) | PR summary with reviewer suggestions |
-| [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis. Every claim comes from the code, the English file must pass [`tools/slop-scan.py`](tools/slop-scan.py), and every run also writes Japanese, Simplified Chinese and Hong Kong Traditional Chinese translations with a language switcher; `--languages es` adds Spanish |
+| [`/readme`](skills/readme/SKILL.md) | README generation from codebase analysis. Every claim comes from the code, the English file must pass [`tools/slop-scan.py`](tools/slop-scan.py), and every run also writes Japanese, Simplified Chinese and Hong Kong Traditional Chinese translations with a language switcher; `--languages es` adds Spanish. The header badges come from [`tools/readme-badges.py`](tools/readme-badges.py): CI, release, coverage, OpenSSF Scorecard and license, in that order, flat-square |
 | [`/retro`](skills/retro/SKILL.md) | Session retrospective with pattern extraction |
 | [`/morning`](skills/morning/SKILL.md) | Cross-account work triage. Sweeps every authenticated git identity and its organizations, ranks by who is blocked, reports, then works the queue with per-item consent. Merging is blocked mechanically for the run |
 | [`/session-log`](skills/session-log/SKILL.md) | Session activity logger for handoff |

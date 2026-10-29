@@ -4,13 +4,12 @@
 
 [English](README.md) | 日本語 | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
 
-[![CI](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
-[![Release](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gufranco/claude-engineering-rules/badge)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
-[![Latest release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196.svg?style=flat-square)](https://www.conventionalcommits.org)
-[![semantic-release](https://img.shields.io/badge/semantic--release-angular-e10079?style=flat-square)](https://github.com/semantic-release/semantic-release)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![mutation method scan](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/mutation-method-scan.yml?branch=main&style=flat-square&label=mutation%20method%20scan)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/mutation-method-scan.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square&label=release)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/claude-engineering-rules?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
+[![license](https://img.shields.io/github/license/gufranco/claude-engineering-rules?style=flat-square&label=license)](LICENSE)
 
 </div>
 
@@ -144,7 +143,7 @@ graph LR
 | [`/ship`](skills/ship/SKILL.md) | デリバリーパイプライン。コミット、PR、リリース、CIのチェック、ワークツリー |
 | [`/review`](skills/review/SKILL.md) | 3段階のコードレビュー、QA分析、ビジュアル監査 |
 | [`/respond`](skills/respond/SKILL.md) | 届いたレビューコメントへの対応。分類、検証、返信の下書き、ローカルでの確認、投稿、解決、CIの監視 |
-| [`/assessment`](skills/assessment/SKILL.md) | アーキテクチャの完全性の監査です。欠けているパターン、仕込まれた欠陥、際立たせられる機会を見つけます。[`tools/slop-scan.py`](tools/slop-scan.py)でAIの冗長な文章を評価し、削除で取り除きます。このツールは`ai-slop-blocker`の検出器をすべてのMarkdownファイルとコミット範囲に適用します。`/respond`が読み込める機械可読の指摘表を出力します |
+| [`/assessment`](skills/assessment/SKILL.md) | アーキテクチャの完全性の監査です。欠けているパターン、仕込まれた欠陥、際立たせられる機会を見つけます。[`tools/slop-scan.py`](tools/slop-scan.py)でAIの冗長な文章を評価し、削除で取り除きます。このツールは`ai-slop-blocker`の検出器をすべてのMarkdownファイルとコミット範囲に適用します。`/respond`が読み込める機械可読の指摘表を出力します。標準のブロックと異なるREADMEのバッジも指摘します |
 | [`/plan`](skills/plan/SKILL.md) | 発見、スコープの見直し、ADR、スキャフォールドを含む仕様フォルダ |
 | [`/audit`](skills/audit/SKILL.md) | セキュリティ監査、脅威モデリング、サプライチェーンのチェックです。`/audit trust`は、[`trust-patterns.md`](skills/audit/trust-patterns.md)のIOCカタログを使って、信頼できないプロジェクトの安全性スキャンを追加します |
 | [`/test`](skills/test/SKILL.md) | テストの実行、パフォーマンス、リント、CIのスモーク、スタブの生成 |
@@ -168,7 +167,7 @@ graph LR
 | [`/onboard`](skills/onboard/SKILL.md) | コードベースのオンボーディング。アーキテクチャの地図と「Start Here」です。フェーズ0で信頼性スキャンを実行する前に確認し、`--trust`と`--verify`フラグで対話なしに事前決定できます |
 | [`/gan`](skills/gan/SKILL.md) | 採点基準に対して機能を作り込むGenerator-Evaluatorの反復ループです。しきい値に達するまで、プランナー、ジェネレーター、エバリュエーターのサブエージェントを繰り返します |
 | [`/pr-summary`](skills/pr-summary/SKILL.md) | レビュアーの提案を含むPRの要約 |
-| [`/readme`](skills/readme/SKILL.md) | コードベースの分析によるREADMEの生成です。すべての主張はコードに基づき、英語のファイルは[`tools/slop-scan.py`](tools/slop-scan.py)を通過する必要があります。毎回、言語切り替え付きで日本語、簡体字中国語、香港の繁体字中国語の翻訳も書き込み、`--languages es`でスペイン語を追加します |
+| [`/readme`](skills/readme/SKILL.md) | コードベースの分析によるREADMEの生成です。すべての主張はコードに基づき、英語のファイルは[`tools/slop-scan.py`](tools/slop-scan.py)を通過する必要があります。毎回、言語切り替え付きで日本語、簡体字中国語、香港の繁体字中国語の翻訳も書き込み、`--languages es`でスペイン語を追加します。ヘッダーのバッジは[`tools/readme-badges.py`](tools/readme-badges.py)が生成し、CI、リリース、カバレッジ、OpenSSF Scorecard、ライセンスの順にflat-squareで並べます |
 | [`/retro`](skills/retro/SKILL.md) | パターン抽出を伴うセッションの振り返り |
 | [`/morning`](skills/morning/SKILL.md) | アカウントを横断した作業のトリアージです。認証済みのすべてのgitアイデンティティとその組織を巡回し、誰が止まっているかで順位付けして報告し、項目ごとの同意を得てキューを処理します。実行中はマージが機械的にブロックされます |
 | [`/session-log`](skills/session-log/SKILL.md) | 引き継ぎのためのセッション活動ログ |

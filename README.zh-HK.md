@@ -4,13 +4,12 @@
 
 [English](README.md) | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | 繁體中文 (香港)
 
-[![CI](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
-[![Release](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml/badge.svg)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/release.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/gufranco/claude-engineering-rules/badge)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
-[![Latest release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-fe5196.svg?style=flat-square)](https://www.conventionalcommits.org)
-[![semantic-release](https://img.shields.io/badge/semantic--release-angular-e10079?style=flat-square)](https://github.com/semantic-release/semantic-release)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![ci](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![mutation method scan](https://img.shields.io/github/actions/workflow/status/gufranco/claude-engineering-rules/mutation-method-scan.yml?branch=main&style=flat-square&label=mutation%20method%20scan)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/mutation-method-scan.yml)
+[![release](https://img.shields.io/github/v/release/gufranco/claude-engineering-rules?style=flat-square&label=release)](https://github.com/gufranco/claude-engineering-rules/releases/latest)
+[![coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)](https://github.com/gufranco/claude-engineering-rules/actions/workflows/ci.yml)
+[![openssf scorecard](https://img.shields.io/ossf-scorecard/github.com/gufranco/claude-engineering-rules?style=flat-square&label=openssf%20scorecard)](https://scorecard.dev/viewer/?uri=github.com/gufranco/claude-engineering-rules)
+[![license](https://img.shields.io/github/license/gufranco/claude-engineering-rules?style=flat-square&label=license)](LICENSE)
 
 </div>
 
@@ -144,7 +143,7 @@ graph LR
 | [`/ship`](skills/ship/SKILL.md) | 交付流程：提交、PR、發佈、CI 檢查、工作樹 |
 | [`/review`](skills/review/SKILL.md) | 三輪程式碼審查、QA 分析、視覺審計 |
 | [`/respond`](skills/respond/SKILL.md) | 處理收到的審查評論：分類、驗證、草擬回覆、本地驗證、發佈、解決、監察 CI |
-| [`/assessment`](skills/assessment/SKILL.md) | 架構完整性審計。找出欠缺的模式、預先埋下的缺陷和可以出色發揮的機會。以 [`tools/slop-scan.py`](tools/slop-scan.py) 為 AI 冗詞評分並以刪除的方式去除，這個工具會在每個 Markdown 檔案和一段提交範圍上執行 `ai-slop-blocker` 的偵測器。輸出一份 `/respond` 可以讀取的機器可讀問題表 |
+| [`/assessment`](skills/assessment/SKILL.md) | 架構完整性審計。找出欠缺的模式、預先埋下的缺陷和可以出色發揮的機會。以 [`tools/slop-scan.py`](tools/slop-scan.py) 為 AI 冗詞評分並以刪除的方式去除，這個工具會在每個 Markdown 檔案和一段提交範圍上執行 `ai-slop-blocker` 的偵測器。輸出一份 `/respond` 可以讀取的機器可讀問題表。亦會標出與標準徽章區塊不一致的 README |
 | [`/plan`](skills/plan/SKILL.md) | 包含需求探索、範圍覆檢、ADR 和骨架生成的規格資料夾 |
 | [`/audit`](skills/audit/SKILL.md) | 安全審計、威脅建模、供應鏈檢查。`/audit trust` 借助 [`trust-patterns.md`](skills/audit/trust-patterns.md) 的 IOC 目錄，為不可信的項目加入安全掃描 |
 | [`/test`](skills/test/SKILL.md) | 測試執行、效能、lint、CI 冒煙測試、樁程式碼生成 |
@@ -168,7 +167,7 @@ graph LR
 | [`/onboard`](skills/onboard/SKILL.md) | 程式碼庫上手：架構圖和 Start Here 指南。第 0 階段在執行可信度掃描前先詢問。`--trust` 和 `--verify` 旗標可以不經互動預先決定 |
 | [`/gan`](skills/gan/SKILL.md) | 按評分準則建構功能的生成器與評估器迭代循環。反覆執行規劃者、生成者和評估者子代理，直至達到門檻 |
 | [`/pr-summary`](skills/pr-summary/SKILL.md) | 附審查人建議的 PR 摘要 |
-| [`/readme`](skills/readme/SKILL.md) | 分析程式碼庫生成 README。每個說法都源自程式碼，英文檔案必須通過 [`tools/slop-scan.py`](tools/slop-scan.py)，每次執行亦會寫出附語言切換的日文、簡體中文和香港繁體中文譯本；`--languages es` 會加入西班牙文 |
+| [`/readme`](skills/readme/SKILL.md) | 分析程式碼庫生成 README。每個說法都源自程式碼，英文檔案必須通過 [`tools/slop-scan.py`](tools/slop-scan.py)，每次執行亦會寫出附語言切換的日文、簡體中文和香港繁體中文譯本；`--languages es` 會加入西班牙文。頁首徽章由 [`tools/readme-badges.py`](tools/readme-badges.py) 生成：CI、發佈、覆蓋率、OpenSSF Scorecard 和授權，按此次序，flat-square 樣式 |
 | [`/retro`](skills/retro/SKILL.md) | 提取模式的工作階段檢討 |
 | [`/morning`](skills/morning/SKILL.md) | 跨帳戶的工作分流。逐一巡查每個已認證的 git 身份及其組織，按誰被卡住排序並報告，然後在逐項取得同意後處理佇列。執行期間合併會被機械式攔截 |
 | [`/session-log`](skills/session-log/SKILL.md) | 用於交接的工作階段活動日誌 |
