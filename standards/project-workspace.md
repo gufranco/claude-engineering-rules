@@ -12,7 +12,7 @@ The workspace never touches files the project owns.
 
 ## Why This Rule Exists
 
-The convention first appeared in `example-firmware`, where one session set up a gitignored `<repo>/docs/` with a continuation prompt, and every later session resumed from it without re-explaining anything. Other repositories had no such folder, and continuation prompts ended up scattered in whatever directory the session happened to be in.
+A gitignored workspace with a continuation prompt lets every session resume without re-explaining anything. Without a fixed location, continuation prompts end up scattered in whatever directory a session happens to be in.
 
 A rule alone did not spread the convention, for the same timing reason described in [`doc-truth.md`](doc-truth.md): a prompt goes stale at the end of a turn that changed code, and a rule loaded at session start does not fire then. Enforcement therefore sits at three moments:
 
@@ -22,7 +22,7 @@ A rule alone did not spread the convention, for the same timing reason described
 | End of a turn that changed the repository | [`hooks/project-workspace.py`](../hooks/project-workspace.py) blocks the stop once while `PROMPT.md` is older than the newest change |
 | Staging | [`hooks/project-workspace.py`](../hooks/project-workspace.py) refuses `git add --force` over the workspace |
 
-Work repositories often track their own `<repo>/docs/`. On 2026-09-30, three of the user's work repositories tracked 85, 75, and 20 files there. The user's constraint: a workspace must never interfere with a project's own documentation.
+Work repositories often track their own `<repo>/docs/`, and a workspace must never interfere with a project's own documentation.
 
 ## Workspace Root
 
@@ -41,7 +41,7 @@ Ownership is sticky. `.git/info/exclude` carries the line `# local workspace, ne
 
 - Always `.git/info/exclude`. It is local, invisible to reviewers, and shared by every worktree of the repository.
 - Never add the workspace to the committed `<repo>/.gitignore`. That is a diff in someone else's project.
-- An existing committed entry, as in `example-firmware`, stays as it is.
+- An existing entry for the workspace in a project's own committed ignore file stays as it is.
 - A forced add over the workspace is blocked. A plain add is refused by git itself because the path is excluded.
 
 ## Layout
@@ -127,7 +127,3 @@ A `PROMPT.md` a project already tracks, such as one committed by a teammate, sta
 ## Bypass
 
 `PROJECT_WORKSPACE_DISABLE=1` in the parent shell, or the bypass registry entry `project-workspace`. The stop check blocks at most once per stop chain, so a bypass is for a named false positive only.
-
-## Provenance
-
-Promoted 2026-09-30, `single-incident`, by direct user instruction. Origin: the `example-firmware` convention of a gitignored workspace with a continuation prompt worked, while continuation prompts elsewhere were scattered across `data-monorepo/planning/` and `internal-tools/apps/arrows/`, and the README-as-source preference had been stated in two projects on 2026-09-22 without any rule carrying it. The `<repo>/.work/` fallback exists because the user stated that other companies' documentation folders must not be touched.

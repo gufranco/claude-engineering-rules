@@ -7,7 +7,3 @@
 - Use `using` for resources; set `--erasableSyntaxOnly` when `.ts` runs directly.
 
 Full rule, examples, and rationale: [`standards/typescript-strict.md`](../../standards/typescript-strict.md). Read it before editing a tsconfig.
-
-## Provenance
-
-Added 2026-05-11, recurrence not recorded. Origin: not recorded at creation.

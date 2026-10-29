@@ -185,12 +185,6 @@ describe.skipIf(!artifactPath)("base rom verification", () => {
 
 The synthetic fixture covers the same code path with bytes the project owns: a small file the manifest declares under a test-only artifact id. Verification logic gets full coverage; the real artifact is never required to run the suite.
 
-## Provenance
-
-Record where each digest came from and the version of that source. A digest computed from whatever copy the author had attests to that copy alone, and nobody else can check it. Citing a public database entry makes the claim falsifiable, which is what makes it worth publishing.
-
-Pin the exact field set and format of any external database before importing from it. Do not assume a schema from memory.
-
 ## Cross-References
 
 - [`../rules/artifact-identity.md`](../rules/artifact-identity.md): the rule this standard implements

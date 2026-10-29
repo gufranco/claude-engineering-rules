@@ -217,8 +217,6 @@ Two classes are exempt, and nothing else is:
 1. **The tool directive:** a comment a tool parses and acts on, where the comment syntax is the only channel the tool offers. The table below lists the families.
 2. **The three test markers:** the bare `Arrange`, `Act`, `Assert` comments that open a test's three blocks, in the language's comment syntax, with nothing after the word. They are the only comments a test carries. See [`testing.md`](../rules/testing.md) and [`standards/testing.md`](testing.md) "Test Structure".
 
-Provenance: 2026-10-12, owner decision. The owner observed comments landing in languages other than JavaScript and TypeScript, so the ban now names every language and file kind and counts docstrings as comments; the same decision restored the test markers.
-
 | Family | Examples |
 |--------|----------|
 | Linters | `// eslint-disable-next-line no-console`, `// biome-ignore lint: reason`, `// oxlint-disable`, `# ruff: noqa`, `# noqa: E501`, `# pylint: disable=too-many-locals`, `# shellcheck disable=SC2086` |
@@ -262,7 +260,7 @@ Enforced by: [`hooks/comment-blocker.py`](../hooks/comment-blocker.py). There is
 6. **Pin the package manager.** Different versions produce different lockfiles. Use Corepack, a manifest version field, or CI config to enforce consistency.
 7. **Resolve peers explicitly in peer-coupled ecosystems.** Families whose packages declare each other as peers, such as `@effect/*`, `@angular/*`, `@nestjs/*`, or a React renderer and its plugins, break when one member moves alone. Before adding a member, run `pnpm why <pkg>` for each peer it declares, then install the matching peer versions explicitly in the same command. Never pass `--force` or `--legacy-peer-deps`: both hide the conflict instead of resolving it, and `--legacy-peer-deps` under npm can silently strip existing peers and leave a lockfile that installs a different tree than the one tested.
 
-Provenance for item 7: 2026-10-12, owner request, adopted from the `install-effect-package` skill in Matt Pocock's course-video-manager repository, which records npm's `--legacy-peer-deps` stripping existing `@effect/*` peers from the lockfile.
+Item 7 exists because npm's `--legacy-peer-deps` strips existing peers from the lockfile.
 
 ## Validation
 

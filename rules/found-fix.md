@@ -11,7 +11,3 @@ A problem surfaced during a task is in scope for that task, regardless of which 
 - Mechanically enforced by [`hooks/found-fix-rationalization-blocker.py`](../hooks/found-fix-rationalization-blocker.py). Bypass `FOUND_FIX_RATIONALIZATION_DISABLE=1` only when writing about the rule itself.
 
 Full rule, examples, and rationale: [`standards/found-fix.md`](../standards/found-fix.md). Read it before deciding not to fix something a verification surface flagged, or before writing a change body that mentions an unfixed issue.
-
-## Provenance
-
-Added 2026-05-22, recurrence not recorded. Origin: not recorded at creation.

@@ -51,7 +51,7 @@ Every value starts readonly. Mutability is a decision with a reason, written whe
 
 ### Severity: collections block, attributes warn
 
-Decided 2026-10-14. Collection mutation through a parameter blocks in every guard: a method mutator such as `append` or `push`, item assignment, `del`, and in-place `+=` on a collection. A plain attribute write on a parameter object, such as `cpu.registers.de = value` or `setattr(obj, ...)`, is advisory. Emulator and hardware-model code mutates state objects by design, and 107 of 173 Python parameter hits across the Workspace on that date were attribute writes in those repositories. Shared state at module, package, class, or static level blocks in every language.
+Collection mutation through a parameter blocks in every guard: a method mutator such as `append` or `push`, item assignment, `del`, and in-place `+=` on a collection. A plain attribute write on a parameter object, such as `cpu.registers.de = value` or `setattr(obj, ...)`, is advisory. Emulator and hardware-model code mutates state objects by design, and most parameter attribute writes come from such code. Shared state at module, package, class, or static level blocks in every language.
 
 Two cross-cutting notes. A read-only interface over a mutable object is not immutability; the holder of the concrete type can still change it under you. And shallow immutability stops at the first nested reference, so a frozen object holding a mutable array is mutable where it matters.
 
@@ -161,7 +161,7 @@ Checks that need type information stay with the real tool: aliasing returns in G
 
 ## Analyzer Catalog
 
-Decided 2026-10-14. Literal 100% detection is impossible from source alone: writes through aliased pointers, reflection, FFI and native code escape every tool. The guarantee is narrower and checkable: every rule below is enforced, and each one is proven by a fixture that makes the real tool report it.
+Literal 100% detection is impossible from source alone: writes through aliased pointers, reflection, FFI and native code escape every tool. The guarantee is narrower and checkable: every rule below is enforced, and each one is proven by a fixture that makes the real tool report it.
 
 Three layers enforce the directives:
 

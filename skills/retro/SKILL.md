@@ -82,7 +82,7 @@ Analyze the current conversation to extract directives, corrections, preferences
 
    **Look for an existing check first.** Before proposing a new one, read the repo's own check commands: manifest scripts, linter config, pre-commit config, and CI workflows. A check that exists but is unwired or silently broken is the finding; wire or repair it instead of writing a second one. A repo with no guardrail for a recurring mistake, meaning no pre-commit hook and no CI job running its lint, type check, or tests, is itself a finding.
 
-   The promotion threshold in [`standards/rule-provenance.md`](../../standards/rule-provenance.md) decides whether a finding becomes binding; this step decides its form. A new check carries the same provenance stamp as a rule, and a prose rule whose defect class the check now catches becomes a pointer to the check or is removed, with the removal recorded.
+   The promotion threshold in [`standards/rule-provenance.md`](../../standards/rule-provenance.md) decides whether a finding becomes binding; this step decides its form. A new check gets the same vault record as a rule, and a prose rule whose defect class the check now catches becomes a pointer to the check or is removed, with the removal recorded in the vault.
 
 4. **Present findings** as table with finding, source, destination, status.
 

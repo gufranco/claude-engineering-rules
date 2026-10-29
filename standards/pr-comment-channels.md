@@ -10,7 +10,7 @@ Reading is the obligation this standard carries. What a skill is allowed to publ
 
 ## Why This Rule Exists
 
-An earlier session missed a P0 deadlock report because it was posted as a PR-level conversation comment rather than an inline thread. The fetch query only asked for `reviewThreads`. The comment was invisible to the workflow, and the skill reported the PR as having no open feedback.
+A fetch that asks only for `reviewThreads` misses a blocking report posted as a PR-level conversation comment. The comment is invisible to the workflow, and the PR reads as having no open feedback.
 
 The failure is structural, not incidental. `reviewThreads` is the only channel with a native `isResolved` flag, so it is the only channel that has an obvious "is this handled?" signal. The other three channels have no resolve concept, which makes them easy to omit and easy to misclassify once fetched. This standard names all four channels and defines a terminal state for each so the omission cannot recur.
 
@@ -225,7 +225,7 @@ Step 5 matters: a report of "0 open threads" is ambiguous between "all four chan
 
 ## Sources
 
-Verified 2026-07-16 against live APIs rather than documentation prose.
+Verified against live APIs rather than documentation prose.
 
 - GitHub GraphQL schema, introspected via `gh api graphql` for `PullRequest`, `PullRequestReview`, `PullRequestReviewThread`, `PullRequestTimelineItems`, `CommitComment`, and `ReportedContentClassifiers`.
 - GitHub REST docs, <https://docs.github.com/en/rest/pulls/comments> and <https://docs.github.com/en/rest/commits/comments>, for the three-way distinction between review, issue, and commit comments.

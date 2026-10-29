@@ -87,8 +87,6 @@ A write is verified by reading what the database committed, never by what the in
 - **Settle before reading back, within a bound.** A read taken while the triggering write is still in flight reports a false absence. Wait for in-flight writes to commit, poll at a fixed interval up to a stated limit such as 5 seconds, and when the limit passes with writes still pending, report the result as pending rather than clean.
 - **A page load can write.** A route that reconciles or repairs state on load writes on every visit. Check the writes after every visit to such a route, never only after the click under test.
 
-Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm guard script and its publish feature notes.
-
 ## Response Self-Check
 
 Before presenting analysis, recommendations, or findings, verify your own output against these categories.
@@ -154,7 +152,7 @@ When a task asks to read, analyze, compare, or audit something, read every file 
 - If the scope is too large to read in one turn, split it across parallel subagents. Never trim the reading.
 - A report that still carries a "not opened" or "only grepped" caveat is unfinished. Close the gap before presenting it.
 
-Provenance: 2026-10-12, a stated user requirement that overrides the third-occurrence threshold. A `/research` run on mattpocock/skills used `Explore` agents. They grepped instead of reading, and the report shipped with caveats listing skipped files. The user had to ask again for everything to be read, and found having to ask twice unnecessary.
+An agent that greps instead of reading ships a report with caveats listing skipped files, and the reader has to ask again for everything to be read.
 
 ## Partial Completion
 
@@ -172,7 +170,7 @@ The failure is almost always inherited rather than invented: an earlier document
 
 | Instead of | Write |
 |-----------|-------|
-| "Runs on a copier and an flash cart" as the hardware section | "No coprocessor and no special mapping hardware, so it runs on any cartridge that can hold it. Verified on a copier and an flash cart" |
+| "Runs on a copier and a flash cartridge" as the hardware section | "No coprocessor and no special mapping hardware, so it runs on any cartridge that can hold it. Verified on a copier and a flash cartridge" |
 | "Supported: Node 20 and Node 22" when only those were in CI | "Requires Node 18 or newer, per the engines field. CI covers 20 and 22" |
 | "Works on Postgres 15" after testing one version | "Uses no version-specific feature beyond Postgres 12. Tested against 15" |
 

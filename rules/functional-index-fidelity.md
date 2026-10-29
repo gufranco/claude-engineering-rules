@@ -7,7 +7,3 @@ Applies when a query wraps a column in a function, or when adding an expression 
 - Verify index use with the query plan on realistic data, never with result correctness.
 
 Full rule, examples, and rationale: [`standards/functional-index-fidelity.md`](../standards/functional-index-fidelity.md). Read it before writing or editing such a predicate.
-
-## Provenance
-
-Added 2026-08-20, recurrence not recorded. Origin: not recorded at creation.

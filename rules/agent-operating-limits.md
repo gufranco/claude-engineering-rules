@@ -18,7 +18,3 @@ Full rule, examples, and rationale: [`standards/agent-operating-limits.md`](../s
 ## Enforcement
 
 Enforced by: [`hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py).
-
-## Provenance
-
-Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition. Origin: an audit of an external agent review pipeline whose turn ceiling carried its sampled distribution inline, and whose prompt hook instructed toward an absent capability and cost a denied turn on every run. Full account in [`standards/agent-operating-limits.md`](../standards/agent-operating-limits.md). Amended 2026-10-29, `single-incident`, by direct user instruction: a session working in `~/.claude` wrote `~/.dotfiles/.releaserc.json` while a dotfiles session was running a command, and that session showed the file as its own change, which read as instructions leaking between sessions.

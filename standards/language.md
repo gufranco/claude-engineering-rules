@@ -12,7 +12,7 @@ This rule is enforced by [`hooks/english-only-reminder.py`](../hooks/english-onl
 - Every tool call description: English.
 - Every code comment, commit message, PR title and body, review comment, branch name: English.
 - Every file you author, including spec folders, ADRs, and READMEs: English.
-- One exception: a localized artifact the user asked for is written in its target language. That covers a `README.<tag>.md` produced by `/readme --languages` and the locale files of an internationalized app. Its English source stays English, and every message about it stays English. Added on 2026-10-13, when the user asked `/readme` to support Spanish, Japanese, Simplified Chinese and Hong Kong Traditional Chinese.
+- One exception: a localized artifact the user asked for is written in its target language. That covers a `README.<tag>.md` produced by `/readme --languages` and the locale files of an internationalized app. Its English source stays English, and every message about it stays English.
 
 ## Behavior When User Writes in Another Language
 
@@ -32,7 +32,7 @@ If any non-English text appears, rewrite before sending.
 
 ## Why This Rule Exists
 
-The user is Brazilian and writes in Portuguese for speed. They consume technical output in English: PR descriptions, commit messages, documentation read by international teammates and tooling. Mixed-language output forces them to translate before sharing. English-only output is shareable as-is.
+A user may write in another language for speed while consuming technical output in English: PR descriptions, commit messages, documentation read by international teammates and tooling. Mixed-language output forces a translation before sharing. English-only output is shareable as-is.
 
 ## Enforcement
 

@@ -9,7 +9,3 @@ Applies to any project that runs, builds, or tests through Docker, and to any pl
 - A project that still asks the host for a dependency is out of line: plan the move, and write no new host instructions meanwhile.
 
 Full rule, examples, and rationale: [`standards/docker-dependencies.md`](../standards/docker-dependencies.md). Read it before writing a Dockerfile, install instructions, or a doctor check.
-
-## Provenance
-
-Added 2026-10-28, `single-incident`, by direct user instruction: "Docker deve conter todas as dependencias do projeto, não a máquina host. Temos controle do container, não do host." Origin: a step-by-step install guide told Windows users to install Python on the host, and a proposal let a build use a native assembler when one was installed.

@@ -26,7 +26,3 @@ Full rule, examples, and rationale: [`standards/frontend-render-gate.md`](../sta
 ## Enforcement
 
 Enforced by: [`hooks/frontend-render-gate.py`](../hooks/frontend-render-gate.py).
-
-## Provenance
-
-Added 2026-08-20, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-28, by direct user instruction: visible changes publish high-resolution before and after screenshots in every channel and on every platform, because visibility is a reviewer's main criterion for an interface; the hook now enforces it at publish time. Amended 2026-10-29, recurrence 5 across acme/admin #671 and acme/webapp #5005 on 2026-10-28 and 2026-10-29, by direct user instruction: a text-only Before and After section, viewport-only captures of a page scrolling inside `main`, an `overflow: visible` capture 18,438 px wide, images of mixed widths, and a padded mobile capture were each corrected by hand; the hook now blocks mixed widths and unlabeled devices, and asks on a viewport-only height.

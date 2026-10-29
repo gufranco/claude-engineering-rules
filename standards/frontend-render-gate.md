@@ -8,7 +8,7 @@ The gate applies to any diff that touches markup, styles, theme tokens, the comp
 
 ## Why This Rule Exists
 
-Four defects shipped past a careful static review of an accessibility change, and a reviewer found all four in a real browser within one session. Each one is invisible in source by construction:
+These defect classes pass a careful static review and show up at once in a real browser. Each one is invisible in source by construction:
 
 | Defect | Why source review cannot see it |
 |---|---|
@@ -86,8 +86,6 @@ agent-browser --session cart-a get text body
 
 The pull request body states what was clicked and what was seen, with the screenshots [Visual Evidence In Published Text](#visual-evidence-in-published-text) requires. A change with no rendered effect says `No UI change` in one line instead.
 
-Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm skill, its feature notes and launch scripts, its CLAUDE.md, and the agent-browser skill references on snapshot refs and sessions.
-
 ## Visual Evidence In Published Text
 
 A reviewer judges an interface change mostly by looking at it. Every text that publishes or answers a visible change carries high-resolution screenshots: Before, unless the surface is new, and After.
@@ -128,7 +126,7 @@ Start it on its own port, capture the same screen, then `git worktree remove ../
 
 ### Capture Recipes
 
-Each recipe was run on 2026-10-28 on macOS, and the size it produced is listed.
+Each recipe lists the size it produces on macOS.
 
 | Surface | Command | Measured output |
 |---|---|---|
@@ -153,7 +151,7 @@ agent-browser eval "const s = document.createElement('style');
 agent-browser screenshot --full after.png
 ```
 
-Measured on 2026-10-29 with a 40-row page in that shell at 1440x900 scale 2: 2880x1800 before the injection, 2880x8080 after. Name the project's own clipping classes in the selector. Never set `overflow: visible`: on admin a 75-column table then stretched the capture to 18,438 px wide.
+A 40-row page in that shell at 1440x900 scale 2 captures at 2880x1800 before the injection and 2880x8080 after. Name the project's own clipping classes in the selector. Never set `overflow: visible`: a wide table then stretches the capture to tens of thousands of pixels.
 
 ### Publishing The Images
 

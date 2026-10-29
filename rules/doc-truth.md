@@ -16,7 +16,3 @@ Full rule and rationale: [`standards/doc-truth.md`](../standards/doc-truth.md). 
 ## Enforcement
 
 Enforced by: [`hooks/doc-sync-guard.py`](../hooks/doc-sync-guard.py).
-
-## Provenance
-
-Added 2026-08-17, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction: stale descriptions lose to consistent code, after arXiv 2610.30571 measured agents following a stale instruction file in 90.1% of choices and one precedence sentence moving code-following from 4.2% to 91.4%.

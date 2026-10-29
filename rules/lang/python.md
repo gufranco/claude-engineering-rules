@@ -8,7 +8,3 @@ Applies to Python work or any project with a `pyproject.toml`.
 - Never block the event loop; prefer `asyncio.TaskGroup`; always re-raise `CancelledError`.
 
 Full rule, examples, and rationale: [`standards/python.md`](../../standards/python.md). Read it before writing Python.
-
-## Provenance
-
-Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

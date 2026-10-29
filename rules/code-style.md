@@ -81,7 +81,3 @@ Enforced by: [`hooks/config-protection.py`](../hooks/config-protection.py).
 Enforced by: [`hooks/console-log-blocker.py`](../hooks/console-log-blocker.py).
 Enforced by: [`hooks/interactive-cmd-blocker.py`](../hooks/interactive-cmd-blocker.py).
 Enforced by: [`hooks/settings-hygiene.py`](../hooks/settings-hygiene.py).
-
-## Provenance
-
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction: a project instruction file that explicitly requires JSDoc or doc comments now wins inside that project, following the project-override rule in the global priority order. Amended 2026-10-28, by direct user instruction: coverage exclusion directives left the tool-directive exemption, because the coverage floor is now 100% with no exclusions.

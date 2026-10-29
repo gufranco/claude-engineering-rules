@@ -769,4 +769,4 @@ Enforced by: [`hooks/sequelize-schema-sync.py`](../hooks/sequelize-schema-sync.p
 Enforced by: [`hooks/typeorm-raw-sql-blocker.py`](../hooks/typeorm-raw-sql-blocker.py).
 Enforced by: [`hooks/typeorm-schema-sync.py`](../hooks/typeorm-schema-sync.py).
 
-The Prisma schema-sync hook originated in a production project's pull request on 2026-04-17. Each hook blocks with a message that names this file and the fix; bypass a schema-sync hook only for the unmanaged objects listed under Unmanaged Objects, and record the reason in the pull request description or an ADR, never in a migration comment.
+Each hook blocks with a message that names this file and the fix; bypass a schema-sync hook only for the unmanaged objects listed under Unmanaged Objects, and record the reason in the pull request description or an ADR, never in a migration comment.

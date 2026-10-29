@@ -25,7 +25,7 @@ Tools read different filenames. Maintaining the same content in several is guara
 
 **Canonical `AGENTS.md` plus an import stub.** `AGENTS.md` holds every rule; Codex, Cursor, Copilot, Windsurf, Zed and Junie read it directly. The project's Claude Code instruction file is a regular file whose first line is `@AGENTS.md`, followed only by Claude-specific content such as a subagent or a slash command. Claude Code reads `AGENTS.md` on its own only when that file does not exist, and a cloud session or an older version may not read it at all, so the stub is what makes the import hold everywhere. A sentence telling the agent to read `AGENTS.md` is not an import: the file loads only if the agent decides to open it. Never a symlink: Windows checks a committed symlink out as a one-line text file unless `core.symlinks` is enabled, and Claude Code's Edit tool refuses to write through one. Do not add per-tool files for tools that already read `AGENTS.md`.
 
-Provenance: 2026-10-16, owner decision while unifying the instruction files across every gufranco repository, after the symlink failed the Windows requirement; source code.claude.com/docs/en/memory, section "AGENTS.md".
+Source: code.claude.com/docs/en/memory, section "AGENTS.md".
 
 **Modular directory plus thin adapters.** One directory holds the content; each harness gets a small file that imports what it needs.
 
@@ -61,8 +61,6 @@ Decide what to inline with the branch test: inline what every path through the f
 ### Completion Criteria
 
 Every step in a skill or runbook ends on a completion criterion: the condition that tells the agent the step is done. It is checkable, so the agent can tell done from not done, and exhaustive where it matters: "every modified model has a migration" rather than "produce a migration". A vague criterion invites premature completion, where the agent declares a step done because it ran, not because it achieved its outcome. Split a long step into several only after observing the agent rush through it.
-
-Provenance: 2026-10-12, adopted at the owner's request from mattpocock/skills `writing-great-skills`, kept upstream as `writing-for-agents`.
 
 ## Correct the Default, Then Stop
 

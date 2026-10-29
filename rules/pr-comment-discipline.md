@@ -23,7 +23,3 @@ Full rule, examples, and rationale: [`standards/pr-comment-discipline.md`](../st
 Enforced by: [`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py).
 Enforced by: [`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py).
 Enforced by: [`../hooks/found-fix-rationalization-blocker.py`](../hooks/found-fix-rationalization-blocker.py).
-
-## Provenance
-
-Promoted 2026-09-17, `single-incident`, under the fails-without-an-error-signal condition. Origin: an audit of this configuration found pull-request slots that required text with no subject: a mandated review summary body, bot replies, and unthreaded conversation comments. Full account in [`standards/pr-comment-discipline.md`](../standards/pr-comment-discipline.md). Amended 2026-10-29, `single-incident`, by direct user instruction: the owner cleared open threads and visible bot review bodies by hand across acme/admin #671 and #677 and acme/webapp #5005 on 2026-10-28 and 2026-10-29, so the done state is now a counted zero.

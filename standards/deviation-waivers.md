@@ -123,7 +123,3 @@ Naming the false positive out loud is still the test. If that sentence cannot be
 [`surgical-edits.md`](../rules/surgical-edits.md) is unaffected. A waiver widens what is permitted at one point, never what may be changed.
 
 [`no-ai-process-leak.md`](../rules/no-ai-process-leak.md) governs the wording. A waiver in a pull request body is written as an engineering note, not as a compliance artifact.
-
-## Provenance
-
-Promoted 2026-08-26, `single-incident`, under the unbounded-growth condition applied to bypasses rather than rules: an absolute rule set whose only exception path was a mechanical bypass pushes genuine design disagreements into silenced checks, which leaves no record. Origin: an audit of an external modeling standard whose binding requirement was the process rather than the defaults, stating that a silent deviation is a violation and a surfaced-and-approved one is the system working, with approvals recorded as structured waivers carrying rule, owner, approver, rationale, alternatives, and a revisit condition.

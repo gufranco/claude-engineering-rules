@@ -146,7 +146,3 @@ The handoff prompt carries everything the other session needs with no other cont
 [`ai-review-convergence.md`](../rules/ai-review-convergence.md) bounds the review loop specifically; the per-pass cap here is the general form.
 
 [`../standards/agent-instruction-files.md`](agent-instruction-files.md) covers anti-read directives and context routing, which are the largest lever on run cost.
-
-## Provenance
-
-Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition for the unconditional-injection and fail-open cases. Origin: an audit of an external agent review pipeline whose turn ceiling carried its sampled distribution inline, whose plugin-supplied prompt hook had to be disabled because it instructed toward a capability absent in that context and cost a denied turn on every run, and whose classifier failures were specified to fail closed rather than to skip.

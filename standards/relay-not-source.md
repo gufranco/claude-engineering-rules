@@ -86,7 +86,3 @@ A relay that returns clean coordinates still gets checked. Briefing reduces the 
 [`smart-questions.md`](../rules/smart-questions.md) governs the subagent brief that makes coordinates re-checkable.
 
 [`ai-guardrails.md`](../rules/ai-guardrails.md) requires the orchestrator to review agent output with full rigor. This rule specifies the one check that review most often skips.
-
-## Provenance
-
-Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition. Origin: an audit of an external multi-agent system whose operating rules included a positive-control gate on delegated sweeps, added after repeated observed drift where relayed timestamps pointed at neighboring messages and relayed identifiers named adjacent records, each producing a citation that was well-formed, specific, and wrong.

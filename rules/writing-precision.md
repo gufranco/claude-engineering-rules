@@ -22,7 +22,3 @@ Full rule, examples, and rationale: [`standards/writing-precision.md`](../standa
 Enforced by: [`hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py).
 Enforced by: [`hooks/banned-phrases-blocker.py`](../hooks/banned-phrases-blocker.py).
 Enforced by: [`hooks/banned-prose-chars.py`](../hooks/banned-prose-chars.py).
-
-## Provenance
-
-Added 2026-03-10, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction: terms come from the code or the user, because coined labels compound across sessions until the repository's vocabulary is one the owner no longer recognizes.

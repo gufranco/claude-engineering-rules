@@ -82,7 +82,7 @@ Full checklist: [`checklists/checklist.md`](checklists/checklist.md), 71 categor
 - **Relays are not sources.** Re-fetch anything a subagent, snippet, or summary reported before publishing it. See [`rules/relay-not-source.md`](rules/relay-not-source.md).
 - **Deviate out loud.** An exception is surfaced, approved, and recorded as a waiver. See [`rules/deviation-waivers.md`](rules/deviation-waivers.md).
 - **Fail closed.** A check that errored or could not run failed. Gate on exit codes. See [`rules/agent-operating-limits.md`](rules/agent-operating-limits.md).
-- **Rules carry provenance.** Date and originating failure; promote a lesson on its third sighting. See [`rules/rule-provenance.md`](rules/rule-provenance.md).
+- **History stays in the work record.** A rule, standard, skill, hook, test or README states only the current state; dates, origins and the requests behind a change go to the vault. Promote a lesson on its third sighting. See [`rules/rule-provenance.md`](rules/rule-provenance.md).
 
 ## Tone
 

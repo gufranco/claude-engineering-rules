@@ -275,13 +275,13 @@ The same gates as any other project, plus the ones this domain needs.
 
 ## Worked example
 
-The two reference implementations of this standard:
+A project held to this standard has this shape:
 
-- `example-emulator`: the processor. `conformance/hardware.json` pins the NEC
-  datasheet fact by fact with quotes; `corpus.json` holds recordings from an
-  independent implementation; `differential.py` runs the two local
-  implementations against each other without bound.
-- `example-emulator`: the parts that processor becomes, each running the microcode
-  a user supplies, driven by exchanges read out of thirty-six real cartridges.
+- A processor model whose `conformance/hardware.json` pins the datasheet fact
+  by fact with quotes, a `corpus.json` of recordings from an independent
+  implementation, and a `differential.py` that runs two local implementations
+  against each other without bound.
+- The parts that processor becomes, each running the microcode a user
+  supplies, driven by exchanges read out of real cartridges.
 
-Both were held to this file, and both had defects that only the datasheet found.
+Defects that only the datasheet finds are the reason for both.

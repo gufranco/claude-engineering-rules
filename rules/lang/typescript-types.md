@@ -10,7 +10,3 @@ Full rule, examples, and rationale: [`standards/typescript-types.md`](../../stan
 ## Enforcement
 
 Enforced by: [`hooks/as-any-blocker.py`](../../hooks/as-any-blocker.py).
-
-## Provenance
-
-Added 2026-05-11, recurrence not recorded. Origin: not recorded at creation.

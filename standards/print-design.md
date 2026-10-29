@@ -212,15 +212,3 @@ A layout verified with short sample text is not verified.
   assertion.
 - [`accessibility-testing.md`](accessibility-testing.md): the testing
   infrastructure the colour checks belong in.
-
-## Provenance
-
-Promoted 2026-09-22, `single-incident`, under the fails-without-an-error-signal
-condition: every failure in this standard is invisible until the artifact is
-printed, and several are invisible afterwards too. Origin: a card generator
-whose palette failed WCAG contrast on six of ten categories, where two
-categories printed as the same grey and two collapsed to a CIE difference of 1.9
-under deuteranopia, whose barcodes were drawn at 64 percent of the specified bar
-height, and whose sheet butted cards together with no bleed, no gutter and crop
-marks drawn across the page. Every one of those passed a source review and a
-full test suite.

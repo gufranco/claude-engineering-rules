@@ -9,7 +9,7 @@ All notable changes to this Claude Code configuration are documented here.
 - [`hooks/_lib/git_invocation.py`](hooks/_lib/git_invocation.py) strips git global options before a hook matches a subcommand. A force push written as `git -C <dir> push --force` or `git -c k=v push -f` slipped past the dangerous-command blocker, because every pattern expected `git` and the subcommand to be adjacent. Every hook that gates on a git subcommand now goes through the normaliser, so the same spelling cannot slip past a commit or push gate either.
 - `python3 tools/lint-skills.py --strict` runs in CI, and ruff now checks [`tools/`](tools/). The six-section skill template was adopted in May and never backfilled, and nothing enforced it, so 38 skills drifted from it unnoticed. Every skill now carries the six sections, an `argument-hint`, and a tool scope.
 - The skill linter parses frontmatter as strict YAML, and reports `truncated-by-comment` when a ` #` would make a loader drop the rest of a description. The `/fix-issue` description was silently cut at `"fix issue #N"`, and nine skills failed a strict parse on an unquoted colon.
-- The comment ban now holds in every language the owner's repositories use, from YAML, Make, Terraform, SQL, Lua and assembly to Vim script, TeX and Jupyter code cells, resolved by extension, file name, shebang or content. [`hooks/comment-blocker.py`](hooks/comment-blocker.py) only knew C-family languages, Python, Ruby and shell, allowed docstrings, and never saw a file written through Bash. Docstrings now count as comments, shell comments inside YAML `run` and `script` values are caught, and a `git commit` scans every staged file against `HEAD`.
+- The comment ban now holds in every language the hook recognizes, from YAML, Make, Terraform, SQL, Lua and assembly to Vim script, TeX and Jupyter code cells, resolved by extension, file name, shebang or content. [`hooks/comment-blocker.py`](hooks/comment-blocker.py) only knew C-family languages, Python, Ruby and shell, allowed docstrings, and never saw a file written through Bash. Docstrings now count as comments, shell comments inside YAML `run` and `script` values are caught, and a `git commit` scans every staged file against `HEAD`.
 - Every test carries the bare `Arrange`, `Act` and `Assert` markers again, the one comment a test allows. [`hooks/test-aaa-markers.py`](hooks/test-aaa-markers.py) requires them, once each and in order, on every added or changed test in Python, JS/TS, Go and bats. All 3,343 test functions in this repository were migrated, and the fixtures that ran a hook and asserted in one call were replaced by `run_hook` plus plain assertion helpers.
 - [`hooks/zsh-special-name-guard.py`](hooks/zsh-special-name-guard.py) blocks a zsh special name such as `path` used as a variable, and an unquoted word with a leading `=`. Both traps were already written in the instructions and still broke commands in practice.
 - [`.github/scripts/validate-cross-refs.py`](.github/scripts/validate-cross-refs.py) checks every rule path a hook cites and every `/skill` reference in skills, agents and rules. Seven ORM hooks cited rule files merged months earlier, and three skills pointed at skills that never existed.
@@ -173,7 +173,7 @@ All notable changes to this Claude Code configuration are documented here.
 ### Changed
 
 - `gh-token-guard` and `glab-token-guard` error messages now point at [`standards/multi-account-cli.md`](standards/multi-account-cli.md)
-- [`standards/borrow-restore.md`](standards/borrow-restore.md): rewritten for `mise`, the user's runtime version manager. mise resolves per-project from `.mise.toml`/`.tool-versions` and never mutates a shared "active version", so the borrow-restore fallback is no longer needed for any tool in the toolchain
+- [`standards/borrow-restore.md`](standards/borrow-restore.md): rewritten for `mise`. mise resolves per-project from `.mise.toml`/`.tool-versions` and never mutates a shared "active version", so the borrow-restore fallback is no longer needed for any tool in the toolchain
 - [`skills/setup`](skills/setup): detects mise via `.mise.toml`/`.tool-versions`/legacy compat files, runs `mise install` + `mise current` once before per-runtime checks
 - [`skills/assessment`](skills/assessment): version manager and CI sections feature mise as Recommended; legacy nvm/asdf/pyenv accepted for compat
 
@@ -223,7 +223,7 @@ All notable changes to this Claude Code configuration are documented here.
 
 ### Added
 
-- 13 rule improvements from example-app session corrections
+- 13 rule improvements
 - i18n regional variant standard with dictionary-based verification
 - Semgrep and Qdrant MCP servers
 - LLM integration agents

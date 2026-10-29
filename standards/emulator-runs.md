@@ -29,7 +29,7 @@ The user works while emulator runs happen. An emulator that takes the display, s
 
 On macOS MAME defaults to full screen. Its `-video none` still creates an SDL window, and so does adding `-window`; only `SDL_VIDEODRIVER=dummy` prevents it. A `mame.ini` in the working directory carrying `window 1`, `maximize 0`, `video none` and `sound none` is a backstop for scripts that build their own command line.
 
-MAME writes snapshots, configuration, NVRAM and saved states under its working directory, as `snap/`, `cfg/`, `nvram/` and `sta/`. A scripted run started from inside a repository leaves a screenshot of the cartridge there, untracked, one `git add -A` away from being committed. Run it from a scratch directory and pass `-snapshot_directory`, `-cfg_directory`, `-nvram_directory` and `-state_directory` pointing inside that directory. Seen 2026-10-19: a headless trace left `snap/snes/0000.png` in a sibling repository.
+MAME writes snapshots, configuration, NVRAM and saved states under its working directory, as `snap/`, `cfg/`, `nvram/` and `sta/`. A scripted run started from inside a repository leaves a screenshot of the cartridge there, untracked, one `git add -A` away from being committed. Run it from a scratch directory and pass `-snapshot_directory`, `-cfg_directory`, `-nvram_directory` and `-state_directory` pointing inside that directory.
 
 ## Why MAME Is Not The First Witness
 
@@ -38,7 +38,3 @@ MAME runs a system through its BIOS and its own configuration defaults: the BIOS
 ## Enforcement
 
 [`hooks/interactive-cmd-blocker.py`](../hooks/interactive-cmd-blocker.py) blocks a shell launch of `mame` that would open a window: one without `-window`, a headless run missing `SDL_VIDEODRIVER=dummy`, `-video none` or `-sound none`, and a watched run without `-nomaximize`. Informational commands such as `-listxml` and `-verifyroms` pass. It cannot see an emulator started from inside a Python or shell script; that launch follows this standard by hand.
-
-## Provenance
-
-Promoted 2026-10-15, recurrence 3. The user first said never to open a window full screen, because it stopped their work. Later a verification loop kept opening a window, making noise and closing it, which they described as just as disruptive. On 2026-10-15 they asked again, for runs to be headless and minimised, for other emulators to be preferred over MAME because its BIOS and configuration produce failures and false positives, and for the rule to be saved where it cannot be forgotten.

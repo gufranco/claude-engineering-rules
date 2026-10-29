@@ -301,8 +301,6 @@ A harness that drives the app against a per-run copy of real data needs proof th
 - **Use a tiny fixture for expensive actions.** Seed a minimal record for actions such as export, publish, or encode, and never run them on a full-size real record, which can exhaust the machine.
 - **Name evidence files by step.** Number screenshots, snapshots, and query logs by the step that produced them, so a reader following the directory in order can retrace the run.
 
-Provenance: 2026-10-12, owner request. Adopted from the course-video-manager verify-cvm skill and its run, ledger, and launch scripts.
-
 ## Related Standards
 
 - [`standards/frontend.md`](frontend.md): Frontend Design

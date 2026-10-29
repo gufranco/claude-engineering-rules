@@ -487,7 +487,7 @@ English is always the source and keeps the plain README file name. Each translat
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link. The line is plain Markdown at the normal text size, never wrapped in `<sub>` or `<small>`, and a blank line is the only gap above and below it:
+**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges. It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link. The line is plain Markdown at the normal text size, never wrapped in `<sub>` or `<small>`, and a blank line is the only gap above and below it:
 
 ```markdown
 <strong>What it does, concretely, in one sentence.</strong>
@@ -497,11 +497,11 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
 [![ci](https://img.shields.io/github/actions/workflow/status/owner/repo/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/owner/repo/actions/workflows/ci.yml)
 ```
 
-The Hong Kong label is copied byte for byte: `繁體中文`, one ASCII space, then `(香港)` in ASCII parentheses. The full-width punctuation rule for Chinese body text does not apply to the switcher, so never write `（香港）`. The user corrected the full-width form on 2026-10-17.
+The Hong Kong label is copied byte for byte: `繁體中文`, one ASCII space, then `(香港)` in ASCII parentheses. The full-width punctuation rule for Chinese body text does not apply to the switcher, so never write `（香港）`.
 
-The user chose this placement on 2026-10-16, pointing at example-project, over an earlier rule that put the switcher on the first line above the title. On 2026-10-28 the user asked for lighter spacing: two `<br>` lines above and below the switcher read as too much air, so never put `<br>` spacers around it. On 2026-10-29 the user rejected a switcher wrapped in `<sub>` as too small and ugly: the request had been less space around the line, never smaller text, so the line keeps the body text size.
+Never put `<br>` spacers around the switcher, and never wrap it in `<sub>` or `<small>`: it keeps the body text size with a single blank line on each side.
 
-Never use `&nbsp;|&nbsp;` as the separator, here or in the navigation row. Written with spaces around it, as it always is, each side renders a non-breaking space plus an ordinary one, so the reader sees two spaces on each side of every pipe. The user saw the doubled gap across many repositories on 2026-10-17.
+Never use `&nbsp;|&nbsp;` as the separator, here or in the navigation row. Written with spaces around it, as it always is, each side renders a non-breaking space plus an ordinary one, so the reader sees two spaces on each side of every pipe.
 
 GitHub does not negotiate `Accept-Language`, so the reader always picks from this line.
 
@@ -724,8 +724,6 @@ Read `--visibility` from `gh repo view --json visibility` and `--release` from w
 - Conventional Commits, semantic-release, "made with" and decorative badges.
 - A badge for a workflow that does not run on push, such as a release workflow triggered by `workflow_run`.
 - A coverage badge whose number is not enforced by the build.
-
-Provenance: 2026-10-29, by direct user instruction, after an audit of all 140 active repositories under `gufranco` and `example-project` found two badge styles, a dozen badge kinds in more than twenty orders, 54 READMEs with no badges, and static version badges that no longer matched the latest release.
 
 ### Quantification
 

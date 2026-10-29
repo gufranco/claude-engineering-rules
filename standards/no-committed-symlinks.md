@@ -55,7 +55,3 @@ A link a script or test creates at runtime and never stages, such as a PATH shim
 ## Enforcement
 
 [`hooks/symlink-commit-blocker.py`](../hooks/symlink-commit-blocker.py) runs on every Bash `git commit`. It reads the staged diff for new mode `120000` entries, and also the paths that `git commit -a` or a `git add` in the same command would stage, and blocks when any is a link. Bypass once with `SYMLINK_COMMIT_DISABLE=1` in the parent shell, only for a vendored upstream that must stay byte-identical, after asking the user.
-
-## Provenance
-
-Added 2026-10-28 by direct user instruction. An audit of the owner's 115 repositories found 671 tracked links: 670 in one Nintendo DS demo collection, where a generator script linked the shared audio, system-info and table sources into every demo, and one yazi theme file in dotfiles linked into a submodule.

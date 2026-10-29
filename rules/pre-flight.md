@@ -19,7 +19,3 @@ Full rule, examples, and rationale: [`standards/pre-flight.md`](../standards/pre
 ## Enforcement
 
 Enforced by: [`hooks/scope-guard.py`](../hooks/scope-guard.py).
-
-## Provenance
-
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction: a test baseline before the first edit and a read of the covering tests, because a failure found only at the end cannot be attributed and a rewrite made without the tests in view broke the same test twice in a reported session.

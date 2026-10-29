@@ -13,7 +13,3 @@ Full rule, per-emulator flags, and rationale: [`standards/emulator-runs.md`](../
 ## Enforcement
 
 Enforced by: [`hooks/interactive-cmd-blocker.py`](../hooks/interactive-cmd-blocker.py).
-
-## Provenance
-
-Promoted 2026-10-15, recurrence 3. Origin: a full-screen MAME window took the user's display while they worked, then a scripted loop kept flashing windows open with sound; each correction was stored only as a memory, and it happened again.
