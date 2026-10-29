@@ -159,16 +159,17 @@ Every GitHub Actions workflow follows these defaults, enforced at write time by 
 | Default | Why |
 |---|---|
 | `runs-on` names the newest GA Ubuntu LTS label, `ubuntu-26.04` (as of 2026-10-29), never `ubuntu-latest` or another `-latest` label | A moving label changes the image without a commit. Renovate's `github-runners` manager bumps the pin when a newer LTS goes GA |
-| No macOS runner | It is slow and costly. A project whose artifact only macOS can build records a waiver |
+| macOS only for a job that needs it: a Homebrew tap, an Xcode build, codesigning or notarization, a disk-image tool, or a project that only runs on macOS; pin the label, such as `macos-15` | It is slow and costly. The guard stays silent in a `homebrew-*` repository or a workflow that uses a macOS-only tool such as `brew`, `xcodebuild`, `xcrun`, `codesign`, `notarytool`, `hdiutil` or `diskutil`, and warns otherwise without blocking |
 | `step-security/harden-runner` is the first step of every job | Egress is audited before any third-party code runs |
 | `actions/*` and `github/*` on a version tag; every other action on a full 40-character commit SHA with the version in a trailing comment | A tag on a third-party action can be repointed by its owner |
 | Installs use `corepack pnpm install --frozen-lockfile` and `uv sync --locked`; tools run through `pnpm exec` and `uv run` | npm, npx, yarn and pip resolve outside the committed lockfile |
 | A workflow triggered by `push` or `pull_request` sets a top-level `concurrency` group with `cancel-in-progress: true` | A newer push leaves the superseded run billing and its result is ignored anyway |
+| A release runs in its own workflow, triggered by `workflow_run`, `release`, `repository_dispatch` or a tag-only `push`, with `cancel-in-progress: false`; one workflow never both checks pushes and releases | Cancelling superseded CI runs would otherwise stop a release halfway, after a tag or a formula bump went out and before the rest did |
 | CI calls the same Makefile targets the local gate runs | A check that exists only in YAML cannot be reproduced before the push |
 
 The local gate runs from a fresh `git clone` of the commit with locked installs, never from the working tree, because a file the working tree has and the commit lacks passes locally and fails in CI.
 
-Provenance: Ubuntu LTS by direct user instruction on 2026-10-16; no macOS, harden-runner, pinning, concurrency, and pnpm with uv by direct user instruction on 2026-10-28, applied in `gufranco/claude-engineering-rules` commit `5ea69a9`. The fresh-clone gate on 2026-10-28, after a gate run on the working tree passed and two gate runs on clean clones of the same work failed.
+Provenance: Ubuntu LTS by direct user instruction on 2026-10-16; no macOS, harden-runner, pinning, concurrency, and pnpm with uv by direct user instruction on 2026-10-28, applied in `gufranco/claude-engineering-rules` commit `5ea69a9`. The fresh-clone gate on 2026-10-28, after a gate run on the working tree passed and two gate runs on clean clones of the same work failed. Amended 2026-10-29 by direct user instruction: the macOS ban blocked `gufranco/homebrew-tap`, whose formulae and casks are tested on macOS, and projects that only run on macOS, so a macOS runner became an advisory silenced by macOS-only tooling; the release split followed from the same review, because a top-level cancelling group would stop a release job sharing the CI workflow.
 
 ### Artifact Immutability
 

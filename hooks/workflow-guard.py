@@ -12,26 +12,31 @@ from _lib.workflow_rules import find, is_workflow  # noqa: E402
 WHY = (
     "CI is the one gate every change passes, so its defaults decide speed, cost\n"
     "and supply-chain exposure for the whole project. A moving runner label\n"
-    "changes the image without a commit, a macOS runner is slow and costly, a\n"
-    "tag on a third-party action can be repointed by its owner, npm, npx and pip\n"
-    "bypass the committed pnpm and uv lockfiles, and a run without a\n"
-    "concurrency group keeps billing after a newer push superseded it."
+    "changes the image without a commit, a needless macOS runner is slow and\n"
+    "costly, a tag on a third-party action can be repointed by its owner, npm,\n"
+    "npx and pip bypass the committed pnpm and uv lockfiles, a run without a\n"
+    "concurrency group keeps billing after a newer push superseded it, and a\n"
+    "cancelled release stops halfway through publishing."
 )
 
 FIX = (
-    "  - runs-on: the newest GA Ubuntu LTS label, such as ubuntu-26.04.\n"
+    "  - runs-on: the newest GA Ubuntu LTS label, such as ubuntu-26.04. A job\n"
+    "    that needs macOS, such as a Homebrew tap, an Xcode build or a project\n"
+    "    that only runs on macOS, uses a pinned macOS label.\n"
     "  - uses: actions/* and github/* on a version tag; every other action on a\n"
     "    40-character commit SHA with the version in a trailing comment.\n"
     "  - Install with `corepack pnpm install --frozen-lockfile` or\n"
     "    `uv sync --locked`, and run tools with `pnpm exec` or `uv run`.\n"
     "  - A push or pull_request workflow sets a top-level concurrency group with\n"
-    "    cancel-in-progress: true.\n"
+    "    cancel-in-progress: true. A release runs in its own workflow, on\n"
+    "    workflow_run, release, repository_dispatch or a tag push, with\n"
+    "    cancel-in-progress: false.\n"
     "  - step-security/harden-runner is the first step of every job."
 )
 
 BYPASS_WHEN = (
-    "The project ships an artifact that only a macOS or Windows runner can build\n"
-    "or test, such as a signed macOS app, and the owner approved that runner."
+    "The guard misreads this workflow, such as a trigger block it cannot parse,\n"
+    "and the owner approved the exception."
 )
 
 

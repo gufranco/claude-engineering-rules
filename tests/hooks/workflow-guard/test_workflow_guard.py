@@ -21,7 +21,20 @@ jobs:
 """
 
 
-def test_a_workflow_on_macos_is_blocked(tool_use, run_hook):
+def test_a_workflow_on_a_moving_label_is_blocked(tool_use, run_hook):
+    # Arrange
+    content = WORKFLOW.replace("ubuntu-26.04", "macos-latest")
+    payload = tool_use("Write", {"file_path": PATH, "content": content})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    _code, stderr = assert_blocked(result, "moving label")
+    assert "WORKFLOW_GUARD_DISABLE" in stderr
+
+
+def test_a_macos_workflow_without_a_macos_only_tool_only_warns(tool_use, run_hook):
     # Arrange
     content = WORKFLOW.replace("ubuntu-26.04", "macos-15")
     payload = tool_use("Write", {"file_path": PATH, "content": content})
@@ -30,8 +43,8 @@ def test_a_workflow_on_macos_is_blocked(tool_use, run_hook):
     result = run_hook(HOOK, payload)
 
     # Assert
-    _code, stderr = assert_blocked(result, "macOS runner")
-    assert "WORKFLOW_GUARD_DISABLE" in stderr
+    assert_allowed(result)
+    assert "keep it only for a job that needs macOS" in result.stdout + result.stderr
 
 
 def test_an_edit_adding_npx_is_blocked(tool_use, run_hook):
@@ -82,9 +95,34 @@ def test_a_compliant_workflow_and_other_files_pass_silently(tool_use, run_hook):
     assert [(r.code, r.stdout, r.stderr) for r in results] == [(0, "", "")] * 2
 
 
-def test_the_disable_variable_lets_a_macos_workflow_through(tool_use, run_hook):
+def test_a_homebrew_tap_workflow_on_macos_passes(tool_use, run_hook):
     # Arrange
     content = WORKFLOW.replace("ubuntu-26.04", "macos-15")
+    path = "/repo/homebrew-tap/.github/workflows/ci.yml"
+    payload = tool_use("Write", {"file_path": path, "content": content})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert (result.code, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_a_release_workflow_that_cancels_in_progress_is_blocked(tool_use, run_hook):
+    # Arrange
+    content = WORKFLOW.replace("on: [push, pull_request]", "on: [workflow_run]")
+    payload = tool_use("Write", {"file_path": PATH, "content": content})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "stops a release halfway")
+
+
+def test_the_disable_variable_lets_a_blocked_workflow_through(tool_use, run_hook):
+    # Arrange
+    content = WORKFLOW.replace("ubuntu-26.04", "ubuntu-latest")
     payload = tool_use("Write", {"file_path": PATH, "content": content})
 
     # Act

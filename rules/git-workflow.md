@@ -12,7 +12,7 @@ Conventional commits, a full local quality gate before every commit, one push pe
 - Schema changes: push to dev and test DBs, `prisma generate`, full suite. Env var changes update `.env.example`, `.env.test`, CI, and Compose.
 - Push once, at the end of the task, after all gates pass. Batch CI fixes into one push. Subagents never push.
 - One task, one pull request per repository. A follow-up from the same delivery is cherry-picked onto the open pull request's branch, its title and body updated to name every tracker key; an extra pull request is closed without a comment.
-- CI jobs run on the newest GA Ubuntu LTS label, never macOS or a `-latest` label; `step-security/harden-runner` comes first; `actions/*` on tags, third-party actions on full SHAs; a `push` or `pull_request` workflow cancels superseded runs; CI calls the local gate's Makefile targets.
+- CI jobs run on the newest GA Ubuntu LTS label, never a `-latest` label; a job that needs macOS, such as a Homebrew tap, an Xcode build, or a macOS-only project, uses a pinned macOS label; `step-security/harden-runner` comes first; `actions/*` on tags, third-party actions on full SHAs; a `push` or `pull_request` workflow cancels superseded runs, and a release lives in its own workflow with `cancel-in-progress: false`; CI calls the local gate's Makefile targets.
 - After push: cancel superseded runs, follow the latest to completion, fix every annotation and deprecation warning. Check `gh api rate_limit` before polling; poll a one-shot `gh run view <id>` at multi-minute intervals.
 - If CI does not start, check `gh pr view --json mergeable,mergeableState`; `dirty` means conflicts.
 - Run `actionlint`, `yamllint`, and `shellcheck` before committing CI files.
