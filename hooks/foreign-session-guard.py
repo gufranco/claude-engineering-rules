@@ -22,8 +22,12 @@ REASON = (
     "{path} is inside {cwd}, where another live Claude Code session works "
     "({name}, {session}, {status}). That session reports a file changed in its "
     "tree while one of its commands runs as its own change, and its next edit "
-    "can collide with this one. Approve only when the user asked this session "
-    "to write there; otherwise leave the change to that session.\n"
+    "can collide with this one. Do not write there, and do not retry this write "
+    "another way. Give the user a prompt to paste into session {name}, which "
+    "adds the work to that session's queue. The prompt names {cwd}; lists each "
+    "change as a numbered item with the files it touches; lists what already "
+    "landed there, for that session to verify only; names the verification "
+    "commands to run; and says what its final reply must list.\n"
     "Rule: rules/agent-operating-limits.md"
 )
 
@@ -42,7 +46,7 @@ def _target(tool_input: dict[str, object]) -> str:
     return next((value for value in values if isinstance(value, str) and value), "")
 
 
-def _ask(path: str, owner: LiveSession) -> int:
+def _deny(path: str, owner: LiveSession) -> int:
     reason = REASON.format(
         path=path,
         cwd=owner.cwd,
@@ -52,11 +56,11 @@ def _ask(path: str, owner: LiveSession) -> int:
     )
     decision = {
         "hookEventName": "PreToolUse",
-        "permissionDecision": "ask",
+        "permissionDecision": "deny",
         "permissionDecisionReason": reason,
     }
     print(json.dumps({"hookSpecificOutput": decision}))
-    audit(hook=HOOK, decision="ask", tool="Write", command_excerpt=path[:240])
+    audit(hook=HOOK, decision="deny", tool="Write", command_excerpt=path[:240])
     return 0
 
 
@@ -70,7 +74,7 @@ def main() -> int:
     cwd = str(payload.get("cwd") or os.getcwd())
     own = str(payload.get("session_id") or "")
     owner = owner_of(path, cwd, own, sessions(sessions_dir()))
-    return _ask(path, owner) if owner is not None else 0
+    return _deny(path, owner) if owner is not None else 0
 
 
 if __name__ == "__main__":

@@ -110,10 +110,18 @@ Identity at the account level is governed by [`../standards/multi-account-cli.md
 Several Claude Code sessions run at once on this machine, and each records its working directory in `~/.claude/sessions/<pid>.json`. A session's Bash tool attributes every file that changes in its directory while one of its commands runs to that command, so a write from a second session appears in the first as a change it made, and the first may revert it or build on it as its own.
 
 - Write only inside this session's own working tree.
-- Before writing into a directory another live session works in, ask the user, name that session, and tell the user what the other session will see.
-- When the user approves, say in the final reply which files landed in the other tree, so the user can tell that session.
+- A change that belongs in another live session's directory is handed off: give the user a prompt to paste into that session, which adds the work to its queue. Never write there, and never route the write through Bash or another tool.
+- When two sessions share one directory, the session that started first owns it, read from `startedAt` in each record; the later one hands off.
 
-[`../hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py) asks before a Write, Edit, MultiEdit or NotebookEdit lands inside another live session's directory. A session whose directory contains this session's own, such as one started in a workspace parent, is ignored, and the deepest matching session is named. Origin: on 2026-10-29 a session in `~/.claude` wrote `~/.dotfiles/.releaserc.json` at 02:51:42 UTC while dotfiles session `98f666db` ran `gh run view`, and that session's transcript recorded the file under its own command as a `bashEditDiff`.
+The handoff prompt carries everything the other session needs with no other context:
+
+1. The directory and session it is for.
+2. Each change as a numbered item, with the files it touches and the behavior or test it needs.
+3. What already landed in that directory, listed for the other session to verify only.
+4. The verification commands to run and show.
+5. What the final reply must list, such as every file changed.
+
+[`../hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py) denies a Write, Edit, MultiEdit or NotebookEdit that lands inside another live session's directory and tells the agent to write the handoff prompt instead. A session whose directory contains this session's own, such as one started in a workspace parent, is ignored, and the deepest matching session is named. Without the guard, a write landing in another session's directory shows up in that session as a change made by its own last command.
 
 ## Forbidden Patterns
 

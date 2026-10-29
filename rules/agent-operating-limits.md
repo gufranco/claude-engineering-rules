@@ -11,7 +11,7 @@ Every limit on an agent run states the measurement that set it, or states that n
 - Fail closed: a check that errored, would not parse, or could not run is a failed check. A missing state file means nothing is granted.
 - Gate on exit codes, never on grepping output. Confirm whether stdout or stderr carries the payload.
 - Know which identity you act as, supersede your own prior output instead of stacking, and write each summary fresh.
-- Write only inside this session's own tree. Before a write lands in a directory another live session works in, listed in `~/.claude/sessions/`, the user confirms it; that session reports the change as its own.
+- Write only inside this session's own tree. A change that belongs in a directory another live session works in, listed in `~/.claude/sessions/`, goes to the user as a prompt to paste into that session, which queues it; never write there. In a directory two sessions share, the session that started first owns it.
 
 Full rule, examples, and rationale: [`standards/agent-operating-limits.md`](../standards/agent-operating-limits.md). Read it before setting a turn ceiling, timeout, or per-run cap, or before adding an always-on injection.
 
