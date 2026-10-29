@@ -215,7 +215,7 @@ def test_is_volatile_claim_flags_an_undated_count():
 def test_is_volatile_claim_ignores_the_titles_inside_wikilinks():
     # Arrange
     line = (
-        "Related: [[Acme drizzle revert 2026 09 15]], "
+        "Related: [[Billing revert 2026 09 15]], "
         "[[Drizzle has no EXCLUDED and no multi-row UPDATE]]"
     )
 
