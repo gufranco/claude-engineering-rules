@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import struct
 import subprocess
 import tempfile
@@ -70,7 +71,7 @@ def count_marker_pixels(data: bytes) -> MarkerCount | MarkerFailure:
 
 def _downscale(path: str, target: str) -> str | None:
     command = [
-        os.environ.get(SIPS_ENV, "sips"),
+        *shlex.split(os.environ.get(SIPS_ENV) or "sips"),
         "-s",
         "format",
         "bmp",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import shutil
 import struct
 import subprocess
@@ -92,7 +93,7 @@ def run_gate(
         **{k: v for k, v in os.environ.items() if k != "FRONTEND_RENDER_GATE_DISABLE"},
         "CLAUDE_BYPASS_STATE": os.devnull,
         "CLAUDE_HOOK_AUDIT_DISABLE": "1",
-        "CHANGE_MARKER_SIPS": str(SIPS_STUB),
+        "CHANGE_MARKER_SIPS": shlex.join([sys.executable, str(SIPS_STUB)]),
         **({"PATH": path} if path is not None else {}),
         **(extra_env or {}),
     }
