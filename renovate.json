@@ -21,18 +21,6 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "bats-core commit pinned in the pytest job",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/ci\\.yml$/"
-      ],
-      "matchStrings": [
-        "BATS_REF: (?<currentDigest>[0-9a-f]{40})  # (?<currentValue>v\\d+\\.\\d+\\.\\d+)"
-      ],
-      "depNameTemplate": "bats-core/bats-core",
-      "datasourceTemplate": "github-tags"
-    },
-    {
-      "customType": "regex",
       "description": "actionlint installed with go install in the workflow-lint job",
       "managerFilePatterns": [
         "/^\\.github/workflows/ci\\.yml$/"

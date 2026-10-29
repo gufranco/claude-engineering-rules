@@ -149,6 +149,7 @@ def test_coverage_sources_resolve_to_the_repository_from_any_directory(
         f"{REPO_ROOT}/.github/scripts",
         f"{REPO_ROOT}/scripts",
         f"{REPO_ROOT}/tools",
+        f"{REPO_ROOT}/skills",
     ]
 
 

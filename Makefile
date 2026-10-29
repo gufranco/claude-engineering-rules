@@ -9,7 +9,7 @@ MYPY       := $(call tool,mypy)
 
 # Must match the paths the CI Lint job passes to ruff. When the two drift,
 # a lint failure only ever surfaces after a push.
-LINT_PATHS := hooks scripts tools .github/scripts tests analyzers
+LINT_PATHS := hooks scripts tools skills .github/scripts tests analyzers
 
 # The modules held to mypy --strict. The rest of the tree does not pass yet, so
 # widening this list is a deliberate change that comes with the fixes. CI calls
@@ -64,8 +64,6 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
 YAMLLINT   := $(call tool,yamllint)
 ZIZMOR     := $(call tool,zizmor)
 
-BATS       := $(shell command -v bats 2>/dev/null)
-SHELLCHECK := $(shell command -v shellcheck 2>/dev/null)
 ACTIONLINT := $(shell command -v actionlint 2>/dev/null)
 
 # Must match the config the CI workflow-lint job passes to yamllint.
@@ -79,8 +77,8 @@ PYTEST_N   ?= auto
 
 PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_M)',)
 
-.PHONY: help install test test-fast test-cov test-js test-bats test-analyzers test-smoke benchmark mutation-scan test-all \
-        lint lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills \
+.PHONY: help install test test-fast test-cov test-js test-analyzers test-smoke benchmark mutation-scan test-all \
+        lint lint-py lint-yaml lint-actions lint-workflows lint-md lint-skills \
         format format-check typecheck validate \
         clean clean-pyc clean-cov
 
@@ -91,13 +89,12 @@ help:
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
 	@echo "  test-cov     Run pytest with branch coverage, enforce 100%"
 	@echo "  test-js      Run the Node script tests, enforce 100% coverage"
-	@echo "  test-bats    Run bats-core suites for the shell scripts"
 	@echo "  test-analyzers  Prove every analyzer catalog rule against the real tools, local only"
-	@echo "  test-smoke   Run the hook smoke suite CI runs, tests/test-hooks.sh"
+	@echo "  test-smoke   Run every hook against its smoke fixtures, as CI does"
 	@echo "  benchmark    Hold every hook under 500 ms, as CI does"
 	@echo "  mutation-scan  Scan tracked JS and TS files for in-place mutation, as CI does"
-	@echo "  test-all     test-cov + test-js + test-bats + test-smoke + benchmark + mutation-scan + lint + typecheck + validate"
-	@echo "  lint         All linters: ruff + shellcheck + actionlint + yamllint + zizmor + lint-skills"
+	@echo "  test-all     test-cov + test-js + test-smoke + benchmark + mutation-scan + lint + typecheck + validate"
+	@echo "  lint         All linters: ruff + actionlint + yamllint + zizmor + lint-skills"
 	@echo "  lint-skills  tools/lint-skills.py --strict over every skill"
 	@echo "  format       ruff format (writes)"
 	@echo "  format-check ruff format --check (read-only)"
@@ -130,20 +127,8 @@ NODE_COVERAGE := --experimental-test-coverage --test-coverage-include='scripts/*
 test-js:
 	node --test $(NODE_COVERAGE) 'tests/js/*.test.mjs'
 
-test-bats:
-ifndef BATS
-	@echo "bats not installed. brew install bats-core"
-	@exit 1
-else
-	@if [ -z "$$(find tests/bats -name '*.bats' 2>/dev/null)" ]; then \
-		echo "no .bats files under tests/bats/"; \
-		exit 1; \
-	fi
-	$(BATS) -r tests/bats
-endif
-
 test-smoke:
-	bash tests/test-hooks.sh
+	$(PYTHON) .github/scripts/hook-smoke.py
 
 benchmark:
 	$(PYTHON) .github/scripts/hook-benchmark.py --threshold 500
@@ -154,9 +139,9 @@ mutation-scan:
 	git ls-files -- $(MUTATION_SCAN_GLOBS) ':!:tests/corpus/' \
 		| MUTATION_METHOD_BATCH_MODE=1 $(PYTHON) hooks/mutation-method-blocker.py
 
-test-all: test-cov test-js test-bats test-smoke benchmark mutation-scan lint typecheck validate
+test-all: test-cov test-js test-smoke benchmark mutation-scan lint typecheck validate
 
-lint: lint-py lint-sh lint-yaml lint-actions lint-workflows lint-md lint-skills
+lint: lint-py lint-yaml lint-actions lint-workflows lint-md lint-skills
 
 lint-skills:
 	$(PYTHON) tools/lint-skills.py --strict
@@ -185,13 +170,6 @@ validate:
 
 lint-py:
 	$(RUFF) check $(LINT_PATHS)
-
-lint-sh:
-ifndef SHELLCHECK
-	@echo "shellcheck not installed; skipping"
-else
-	$(SHELLCHECK) $$(git ls-files '*.sh' '*.bash')
-endif
 
 lint-yaml:
 	$(YAMLLINT) -d "$(YAMLLINT_RULES)" .github/

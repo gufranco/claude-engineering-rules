@@ -42,7 +42,21 @@ def _run(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
 def _commit(root: Path) -> None:
     subprocess.run(["git", "-C", str(root), "add", "-A"], check=True, timeout=30)
     subprocess.run(
-        ["git", "-C", str(root), "commit", "-q", "-m", "docs"], check=True, timeout=30
+        [
+            "git",
+            "-C",
+            str(root),
+            "-c",
+            "user.name=Fixture Author",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            "docs",
+        ],
+        check=True,
+        timeout=30,
     )
 
 

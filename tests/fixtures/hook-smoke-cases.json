@@ -1,0 +1,1078 @@
+[
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "allows safe commands",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "blocks rm -rf /",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-catastrophic-rm.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "blocks git push --force",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-force-push.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "blocks curl pipe to shell",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-pipe-to-shell.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "blocks rm -rf .git",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-delete-git.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "warns on git reset --hard (recoverable)",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-git-reset-hard.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "blocks fork bomb",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-fork-bomb.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker",
+    "description": "blocks malformed JSON it cannot check",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "malformed-json.txt",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks sudo rm -rf",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-sudo-rm.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks reverse shell",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-reverse-shell.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks find . -delete (cwd recursive)",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-find-delete-cwd.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks find on relative path with -delete",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-find-delete-relative.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks twine upload",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-twine-upload.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks poetry publish",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-poetry-publish.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks npm registry pivot",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-npm-registry.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks pip index pivot",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-pip-index.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks kubectl clusterrolebinding create",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-kubectl-clusterrolebinding.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Privilege Escalation",
+    "description": "blocks helm with TLS verify disabled",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-helm-insecure.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Cloud CLI",
+    "description": "blocks aws s3 bucket deletion",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-aws-s3-delete.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Cloud CLI",
+    "description": "blocks aws ec2 terminate",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-aws-ec2-terminate.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Cloud CLI",
+    "description": "blocks gcloud instance deletion",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-gcloud-delete.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Cloud CLI",
+    "description": "blocks az resource group deletion",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-az-group-delete.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Cloud CLI",
+    "description": "allows safe aws commands",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-safe-aws.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Dangerous Command Blocker: Containers and K8s",
+    "description": "blocks docker privileged mode",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-docker-privileged.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Containers and K8s",
+    "description": "blocks kubectl delete namespace",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-kubectl-delete-ns.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Containers and K8s",
+    "description": "blocks helm uninstall",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-helm-uninstall.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Containers and K8s",
+    "description": "allows safe kubectl commands",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-safe-kubectl.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Dangerous Command Blocker: Containers and K8s",
+    "description": "allows safe docker commands",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-safe-docker.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Dangerous Command Blocker: Database CLI",
+    "description": "blocks redis FLUSHALL",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-redis-flushall.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: Database CLI",
+    "description": "blocks dropdb",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-dropdb.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: IaC",
+    "description": "blocks terraform destroy",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-terraform-destroy.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: IaC",
+    "description": "blocks pulumi destroy",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-pulumi-destroy.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: IaC",
+    "description": "allows safe terraform commands",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-safe-terraform.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Dangerous Command Blocker: SQL and Misc",
+    "description": "blocks SQL DROP TABLE",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-sql-drop-table.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: SQL and Misc",
+    "description": "blocks crontab -r",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-crontab-remove.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Dangerous Command Blocker: SQL and Misc",
+    "description": "blocks credential exfiltration via curl",
+    "hook": "dangerous-command-blocker.py",
+    "fixture": "bash-curl-exfil.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Conventional Commits",
+    "description": "allows valid conventional commit",
+    "hook": "conventional-commits.py",
+    "fixture": "commit-valid.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Conventional Commits",
+    "description": "blocks non-conventional commit message",
+    "hook": "conventional-commits.py",
+    "fixture": "commit-invalid.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Conventional Commits",
+    "description": "ignores non-commit commands",
+    "hook": "conventional-commits.py",
+    "fixture": "commit-not-a-commit.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Conventional Commits",
+    "description": "blocks commit with subject over 72 chars",
+    "hook": "conventional-commits.py",
+    "fixture": "bash-commit-long-subject.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Conventional Commits",
+    "description": "allows valid heredoc commit",
+    "hook": "conventional-commits.py",
+    "fixture": "bash-commit-heredoc.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Conventional Commits",
+    "description": "blocks malformed JSON",
+    "hook": "conventional-commits.py",
+    "fixture": "malformed-json.txt",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Secret Scanner",
+    "description": "ignores non-commit commands",
+    "hook": "secret-scanner.py",
+    "fixture": "commit-not-a-commit.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Secret Scanner",
+    "description": "allows safe commands",
+    "hook": "secret-scanner.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Secret Scanner",
+    "description": "allows commit when no staged files have secrets",
+    "hook": "secret-scanner.py",
+    "fixture": "commit-valid.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Secret Scanner",
+    "description": "blocks commit when a staged file holds an AWS-shaped key",
+    "hook": "secret-scanner.py",
+    "fixture": "commit-valid.json",
+    "render": false,
+    "expect": 2,
+    "cwd": "staged-secret"
+  },
+  {
+    "section": "Secret Scanner",
+    "description": "blocks malformed JSON",
+    "hook": "secret-scanner.py",
+    "fixture": "malformed-json.txt",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Smart Formatter",
+    "description": "handles nonexistent file gracefully",
+    "hook": "smart-formatter.py",
+    "fixture": "edit-nonexistent-file.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Large File Blocker",
+    "description": "allows safe commands",
+    "hook": "large-file-blocker.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Large File Blocker",
+    "description": "allows non-commit commands",
+    "hook": "large-file-blocker.py",
+    "fixture": "commit-not-a-commit.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Large File Blocker",
+    "description": "allows commit when no staged files are large",
+    "hook": "large-file-blocker.py",
+    "fixture": "commit-valid.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "User-Supplied Artifact Guard",
+    "description": "allows safe commands",
+    "hook": "user-supplied-artifact-guard.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "User-Supplied Artifact Guard",
+    "description": "allows commit when no artifact is staged",
+    "hook": "user-supplied-artifact-guard.py",
+    "fixture": "commit-valid.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Env File Guard",
+    "description": "blocks writing to .env",
+    "hook": "env-file-guard.py",
+    "fixture": "write-env-file.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard",
+    "description": "allows writing to .env.example",
+    "hook": "env-file-guard.py",
+    "fixture": "write-env-example.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Env File Guard",
+    "description": "blocks editing private key files",
+    "hook": "env-file-guard.py",
+    "fixture": "edit-private-key.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard",
+    "description": "blocks writing to secrets directory",
+    "hook": "env-file-guard.py",
+    "fixture": "write-secrets-dir.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard",
+    "description": "blocks writing to .env.staging",
+    "hook": "env-file-guard.py",
+    "fixture": "write-env-staging.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard",
+    "description": "blocks writing to .env.testing",
+    "hook": "env-file-guard.py",
+    "fixture": "write-env-testing.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard",
+    "description": "allows writing to .env.defaults",
+    "hook": "env-file-guard.py",
+    "fixture": "write-env-defaults.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Env File Guard",
+    "description": "allows safe file writes",
+    "hook": "env-file-guard.py",
+    "fixture": "write-tool-input.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Env File Guard",
+    "description": "ignores non-Write/Edit tools",
+    "hook": "env-file-guard.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Env File Guard",
+    "description": "blocks malformed JSON",
+    "hook": "env-file-guard.py",
+    "fixture": "malformed-json.txt",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .aws/credentials",
+    "hook": "env-file-guard.py",
+    "fixture": "write-aws-credentials.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .kube/config",
+    "hook": "env-file-guard.py",
+    "fixture": "write-kube-config.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .docker/config.json",
+    "hook": "env-file-guard.py",
+    "fixture": "write-docker-config.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .npmrc",
+    "hook": "env-file-guard.py",
+    "fixture": "write-npmrc.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .tfstate",
+    "hook": "env-file-guard.py",
+    "fixture": "write-tfstate.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .tfvars",
+    "hook": "env-file-guard.py",
+    "fixture": "write-tfvars.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to .ssh key",
+    "hook": "env-file-guard.py",
+    "fixture": "write-ssh-key.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Env File Guard: Credential Files",
+    "description": "blocks writing to service account JSON",
+    "hook": "env-file-guard.py",
+    "fixture": "write-service-account.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "GH Token Guard",
+    "description": "allows gh with GH_TOKEN set",
+    "hook": "gh-token-guard.py",
+    "fixture": "bash-gh-with-token.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "GH Token Guard",
+    "description": "blocks gh without GH_TOKEN",
+    "hook": "gh-token-guard.py",
+    "fixture": "bash-gh-without-token.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "GH Token Guard",
+    "description": "blocks gh auth switch",
+    "hook": "gh-token-guard.py",
+    "fixture": "bash-gh-auth-switch.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "GH Token Guard",
+    "description": "allows gh auth token as exempt command",
+    "hook": "gh-token-guard.py",
+    "fixture": "bash-gh-auth-token.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "GH Token Guard",
+    "description": "allows non-gh commands",
+    "hook": "gh-token-guard.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "GLab Token Guard",
+    "description": "allows glab with GITLAB_TOKEN set",
+    "hook": "glab-token-guard.py",
+    "fixture": "bash-glab-with-token.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "GLab Token Guard",
+    "description": "blocks glab without GITLAB_TOKEN",
+    "hook": "glab-token-guard.py",
+    "fixture": "bash-glab-without-token.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "GLab Token Guard",
+    "description": "blocks glab auth login",
+    "hook": "glab-token-guard.py",
+    "fixture": "bash-glab-auth-login.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "GLab Token Guard",
+    "description": "allows non-glab commands",
+    "hook": "glab-token-guard.py",
+    "fixture": "bash-safe-command.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Docker Context Guard",
+    "description": "blocks docker context use",
+    "hook": "docker-context-guard.py",
+    "fixture": "bash-docker-context-use.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Docker Context Guard",
+    "description": "allows docker --context flag",
+    "hook": "docker-context-guard.py",
+    "fixture": "bash-docker-context-flag.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Docker Context Guard",
+    "description": "allows DOCKER_CONTEXT env",
+    "hook": "docker-context-guard.py",
+    "fixture": "bash-docker-context-env.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Docker Context Guard",
+    "description": "allows docker context ls",
+    "hook": "docker-context-guard.py",
+    "fixture": "bash-docker-context-ls.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Docker Context Guard",
+    "description": "allows bare docker commands",
+    "hook": "docker-context-guard.py",
+    "fixture": "bash-docker-bare.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Kubectl Context Guard",
+    "description": "blocks kubectl config use-context",
+    "hook": "kubectl-context-guard.py",
+    "fixture": "bash-kubectl-use-context.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Kubectl Context Guard",
+    "description": "allows kubectl --context flag",
+    "hook": "kubectl-context-guard.py",
+    "fixture": "bash-kubectl-context-flag.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Kubectl Context Guard",
+    "description": "allows kubectl config current-context",
+    "hook": "kubectl-context-guard.py",
+    "fixture": "bash-kubectl-current.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Kubectl Context Guard",
+    "description": "blocks kubectx <name>",
+    "hook": "kubectl-context-guard.py",
+    "fixture": "bash-kubectx-switch.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Kubectl Context Guard",
+    "description": "allows bare kubectx (list)",
+    "hook": "kubectl-context-guard.py",
+    "fixture": "bash-kubectx-list.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Kubectl Context Guard",
+    "description": "allows KUBECONFIG env",
+    "hook": "kubectl-context-guard.py",
+    "fixture": "bash-kubectl-kubeconfig.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "AWS Profile Guard",
+    "description": "blocks aws configure set without --profile",
+    "hook": "aws-profile-guard.py",
+    "fixture": "bash-aws-configure-set-default.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "AWS Profile Guard",
+    "description": "allows aws configure set with --profile",
+    "hook": "aws-profile-guard.py",
+    "fixture": "bash-aws-configure-set-profile.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "AWS Profile Guard",
+    "description": "allows aws --profile flag",
+    "hook": "aws-profile-guard.py",
+    "fixture": "bash-aws-with-profile.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "AWS Profile Guard",
+    "description": "allows AWS_PROFILE env",
+    "hook": "aws-profile-guard.py",
+    "fixture": "bash-aws-bare-readonly.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "AWS Profile Guard",
+    "description": "allows bare aws read-only",
+    "hook": "aws-profile-guard.py",
+    "fixture": "bash-aws-without-profile.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Gcloud Config Guard",
+    "description": "blocks gcloud config set account",
+    "hook": "gcloud-config-guard.py",
+    "fixture": "bash-gcloud-set-account.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Gcloud Config Guard",
+    "description": "blocks gcloud config set project",
+    "hook": "gcloud-config-guard.py",
+    "fixture": "bash-gcloud-set-project.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Gcloud Config Guard",
+    "description": "blocks gcloud config configurations activate",
+    "hook": "gcloud-config-guard.py",
+    "fixture": "bash-gcloud-activate-config.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Gcloud Config Guard",
+    "description": "allows gcloud --configuration flag",
+    "hook": "gcloud-config-guard.py",
+    "fixture": "bash-gcloud-with-config-flag.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Gcloud Config Guard",
+    "description": "allows gcloud config configurations list",
+    "hook": "gcloud-config-guard.py",
+    "fixture": "bash-gcloud-config-list.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Terraform Workspace Guard",
+    "description": "blocks terraform workspace select",
+    "hook": "terraform-workspace-guard.py",
+    "fixture": "bash-terraform-workspace-select.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Terraform Workspace Guard",
+    "description": "allows TF_WORKSPACE env",
+    "hook": "terraform-workspace-guard.py",
+    "fixture": "bash-terraform-workspace-env.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Terraform Workspace Guard",
+    "description": "allows terraform workspace list",
+    "hook": "terraform-workspace-guard.py",
+    "fixture": "bash-terraform-workspace-list.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Terraform Workspace Guard",
+    "description": "allows terraform workspace show",
+    "hook": "terraform-workspace-guard.py",
+    "fixture": "bash-terraform-workspace-show.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "blocks mise use --global",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-use-global.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "blocks mise use -g",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-use-g-short.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "blocks mise unuse --global",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-unuse-global.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "allows mise use (project-local)",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-use-local.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "allows mise install",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-install.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "allows mise exec",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-exec.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Mise Global Guard",
+    "description": "allows mise current",
+    "hook": "mise-global-guard.py",
+    "fixture": "bash-mise-current.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Migration Idempotency",
+    "description": "blocks CREATE TABLE without IF NOT EXISTS",
+    "hook": "migration-idempotency.py",
+    "fixture": "migration-create-table-bad.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Migration Idempotency",
+    "description": "allows CREATE TABLE IF NOT EXISTS",
+    "hook": "migration-idempotency.py",
+    "fixture": "migration-create-table-good.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Migration Idempotency",
+    "description": "blocks DROP TABLE without IF EXISTS",
+    "hook": "migration-idempotency.py",
+    "fixture": "migration-drop-bad.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Migration Idempotency",
+    "description": "blocks CREATE INDEX without CONCURRENTLY",
+    "hook": "migration-idempotency.py",
+    "fixture": "migration-create-index-blocking.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Migration Idempotency",
+    "description": "allows CREATE INDEX CONCURRENTLY IF NOT EXISTS",
+    "hook": "migration-idempotency.py",
+    "fixture": "migration-create-index-concurrently.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Migration Idempotency",
+    "description": "ignores DDL outside migration paths",
+    "hook": "migration-idempotency.py",
+    "fixture": "migration-non-migration-path.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "blocks commit with env override on command line",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-commit-env-injection.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "blocks commit when local [user] block overrides identity",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-commit-local-override.json",
+    "render": true,
+    "expect": 2
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "blocks commit when user.email is unset",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-commit-no-identity.json",
+    "render": true,
+    "expect": 2,
+    "env": {
+      "HOME": "@WORK_DIR@/no-identity",
+      "GIT_CONFIG_GLOBAL": "/dev/null",
+      "GIT_CONFIG_SYSTEM": "/dev/null"
+    }
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "allows commit with resolved identity",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-commit-resolved-identity.json",
+    "render": false,
+    "expect": 0,
+    "cwd": "resolved",
+    "env": {
+      "HOME": "@WORK_DIR@/resolved-home",
+      "GIT_CONFIG_GLOBAL": "@WORK_DIR@/resolved-home/.gitconfig",
+      "GIT_CONFIG_SYSTEM": "/dev/null"
+    }
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "allows clean push",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-push-clean.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "blocks push when commit has placeholder author",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-push-placeholder.json",
+    "render": true,
+    "expect": 2
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "blocks git config --local user.email",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-config-local-user.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "allows git config --global user.email",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-config-global-user.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "blocks unscoped git config user.email",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-config-user-email-no-scope.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Git Author Guard",
+    "description": "allows git config --get user.email",
+    "hook": "git-author-guard.py",
+    "fixture": "bash-git-config-get-user.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Settings Hygiene",
+    "description": "allows clean settings.json edit (env var reference)",
+    "hook": "settings-hygiene.py",
+    "fixture": "settings-hygiene-clean.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "Settings Hygiene",
+    "description": "blocks inline credential in connection string",
+    "hook": "settings-hygiene.py",
+    "fixture": "settings-hygiene-inline-credential.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Settings Hygiene",
+    "description": "blocks absolute home path",
+    "hook": "settings-hygiene.py",
+    "fixture": "settings-hygiene-home-path.json",
+    "render": false,
+    "expect": 2
+  },
+  {
+    "section": "Settings Hygiene",
+    "description": "ignores files that are not settings.json",
+    "hook": "settings-hygiene.py",
+    "fixture": "settings-hygiene-non-settings.json",
+    "render": false,
+    "expect": 0
+  },
+  {
+    "section": "English-Only Reminder",
+    "description": "emits system-reminder injection (always exit 0)",
+    "hook": "english-only-reminder.py",
+    "fixture": "english-only-reminder.json",
+    "render": false,
+    "expect": 0
+  }
+]

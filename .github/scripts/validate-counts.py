@@ -51,9 +51,11 @@ def count_mcp_servers(base_dir=CLAUDE_DIR):
 
 def count_run_tests(base_dir=CLAUDE_DIR):
     try:
-        with open(os.path.join(base_dir, "tests/test-hooks.sh"), encoding="utf-8") as f:
-            content = f.read()
-        return len(re.findall(r"^run_test ", content, re.MULTILINE))
+        with open(
+            os.path.join(base_dir, "tests/fixtures/hook-smoke-cases.json"),
+            encoding="utf-8",
+        ) as f:
+            return len(json.load(f))
     except FileNotFoundError:
         return 0
 

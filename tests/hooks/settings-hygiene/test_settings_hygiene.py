@@ -248,6 +248,22 @@ def test_blocks_a_blocklisted_identifier(tool_use, run_hook, tmp_path):
     assert_blocked(result, "blocklisted identifier `acme-internal`")
 
 
+def test_every_blocklist_entry_is_checked_until_one_matches(
+    tool_use, run_hook, tmp_path
+):
+    # Arrange
+    env = _home_with_blocklist(tmp_path, "absent-client\nacme-internal\n")
+    payload = tool_use(
+        "Write", {"file_path": SETTINGS, "content": '{"env": {"X": "acme-internal"}}'}
+    )
+
+    # Act
+    result = run_hook(HOOK, payload, env=env)
+
+    # Assert
+    assert_blocked(result, "blocklisted identifier `acme-internal`")
+
+
 def test_an_unreadable_blocklist_counts_as_empty(tool_use, run_hook, tmp_path):
     # Arrange
     env = _home_with_blocklist(tmp_path, "acme-internal\n")

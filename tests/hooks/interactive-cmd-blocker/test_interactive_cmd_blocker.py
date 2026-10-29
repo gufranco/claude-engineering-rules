@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
 import sys
 from pathlib import Path
 
@@ -501,3 +503,22 @@ def test_an_export_after_the_launch_does_not_count(hook):
 
     # Assert
     assert fault == "without `SDL_VIDEODRIVER=dummy`"
+
+
+def test_main_blocks_kcov_when_the_platform_is_macos(
+    hook, tmp_path, monkeypatch, capsys
+):
+    # Arrange
+    payload = {
+        "tool_name": "Bash",
+        "tool_input": {"command": "kcov out bats test/"},
+        "cwd": str(tmp_path),
+    }
+    monkeypatch.setattr(hook.sys, "platform", "darwin")
+    monkeypatch.setattr(hook.sys, "stdin", io.StringIO(json.dumps(payload)))
+
+    # Act
+    code = hook.main()
+
+    # Assert
+    assert (code, "kcov on macOS" in capsys.readouterr().out) == (2, True)
