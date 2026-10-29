@@ -13,6 +13,7 @@ from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
 from _lib.commit_scope import repo_dir  # noqa: E402
 from _lib.git_invocation import strip_git_global_options  # noqa: E402
+from _lib.change_marker import MARKER_HEX, read_marker  # noqa: E402
 from _lib.image_dimensions import read_dimensions  # noqa: E402
 from _lib.publish_commands import (  # noqa: E402
     PULL_REQUEST_CHANNELS,
@@ -146,6 +147,11 @@ EVIDENCE_MESSAGE = (
     "One set shares one pixel width: scale proportionally, never pad. Group\n"
     "desktop and mobile under their own headings, and name the device and\n"
     "viewport in every label, as in 'After: Mobile 320 px, default queue'.\n"
+    "Mark the change in every After image, in the capture only: inject CSS\n"
+    f"before the screenshot with outline: 8px solid {MARKER_HEX} and\n"
+    "outline-offset: 6px on the changed element, plus a ::before label in\n"
+    f"bold black on {MARKER_HEX}, such as 'NEW: toast'. Before images carry\n"
+    "no mark, and the body says the marking is drawn for the description.\n"
     "Attach with labeled alt text:\n"
     "  gh pr create --attach 'before.png#Before: <what>' "
     "--attach 'after.png#After: <what>'\n"
@@ -331,7 +337,7 @@ def judge(
     if not changes:
         return proposal_verdict(publication), []
     resolved = _resolve_attachments(publication, repos[0])
-    return evidence_verdict(resolved, changes, read_dimensions), changes
+    return evidence_verdict(resolved, changes, read_dimensions, read_marker), changes
 
 
 def _evidence_message(

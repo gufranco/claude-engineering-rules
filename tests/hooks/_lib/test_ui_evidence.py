@@ -8,6 +8,7 @@ from faker import Faker
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "hooks"))
 
+from _lib.change_marker import MarkerCount, MarkerFailure  # noqa: E402
 from _lib.image_dimensions import Dimensions, ImageFailure  # noqa: E402
 from _lib.publish_commands import Attachment, Channel, Publication  # noqa: E402
 from _lib.ui_evidence import (  # noqa: E402
@@ -43,8 +44,66 @@ def _reader(sizes: dict[str, Dimensions | ImageFailure]):
     return lambda path: sizes[path]
 
 
+def _marked(path: str) -> MarkerCount:
+    return MarkerCount(540)
+
+
 MODIFIED = [Change("src/Button.tsx", "M", Surface.WEB)]
 ADDED = [Change("src/Settings.tsx", "A", Surface.WEB)]
+
+
+def test_an_after_image_without_the_marker_blocks():
+    # Arrange
+    publication = _publication(attachments=(Attachment("a.png", "After: toast"),))
+    markers = {"a.png": MarkerCount(fake.random_int(0, 19))}
+
+    # Act
+    result = evidence_verdict(
+        publication, ADDED, _reader({"a.png": SHARP}), markers.__getitem__
+    )
+
+    # Assert
+    assert result.action is Action.BLOCK
+    assert result.problems == (
+        f"a.png: no #FACC15 change marker visible at 360 px wide, "
+        f"{markers['a.png'].pixels} of 20 pixels",
+    )
+
+
+def test_a_before_image_is_never_checked_for_the_marker():
+    # Arrange
+    publication = _publication(
+        attachments=(Attachment("b.png", "Before: x"), Attachment("a.png", "After: x"))
+    )
+    markers = {"a.png": MarkerCount(20)}
+
+    # Act
+    result = evidence_verdict(
+        publication,
+        MODIFIED,
+        _reader({"b.png": SHARP, "a.png": SHARP}),
+        markers.__getitem__,
+    )
+
+    # Assert
+    assert (result.action, result.problems) == (Action.ALLOW, ())
+
+
+def test_an_after_image_that_cannot_be_checked_blocks():
+    # Arrange
+    publication = _publication(attachments=(Attachment("a.png", "After: x"),))
+    reason = fake.sentence()
+
+    # Act
+    result = evidence_verdict(
+        publication,
+        ADDED,
+        _reader({"a.png": SHARP}),
+        lambda path: MarkerFailure(reason),
+    )
+
+    # Assert
+    assert result.problems == (f"a.png: cannot check the change marker: {reason}",)
 
 
 @pytest.mark.parametrize(
@@ -87,7 +146,7 @@ def test_both_images_at_high_resolution_allow_a_modified_surface():
     read = _reader({"b.png": SHARP, "a.png": SHARP})
 
     # Act
-    result = evidence_verdict(publication, MODIFIED, read)
+    result = evidence_verdict(publication, MODIFIED, read, _marked)
 
     # Assert
     assert (result.action, result.problems) == (Action.ALLOW, ())
@@ -99,7 +158,7 @@ def test_an_added_surface_needs_only_after():
 
     # Act
     result = evidence_verdict(
-        publication, ADDED, _reader({"a.png": Dimensions(1170, 6400)})
+        publication, ADDED, _reader({"a.png": Dimensions(1170, 6400)}), _marked
     )
 
     # Assert
@@ -111,7 +170,7 @@ def test_missing_images_name_both_roles():
     publication = _publication(attachments=(Attachment("x.png", "logo"),))
 
     # Act
-    result = evidence_verdict(publication, MODIFIED, _reader({}))
+    result = evidence_verdict(publication, MODIFIED, _reader({}), _marked)
 
     # Assert
     assert result.action is Action.BLOCK
@@ -132,7 +191,7 @@ def test_low_resolution_and_unreadable_images_are_named():
     )
 
     # Act
-    result = evidence_verdict(publication, MODIFIED, read)
+    result = evidence_verdict(publication, MODIFIED, read, _marked)
 
     # Assert
     assert result.problems == (
@@ -151,7 +210,7 @@ def test_embedded_remote_images_count_for_a_reply():
     publication = _publication(Channel.THREAD_REPLY, text=text)
 
     # Act
-    result = evidence_verdict(publication, MODIFIED, _reader({}))
+    result = evidence_verdict(publication, MODIFIED, _reader({}), _marked)
 
     # Assert
     assert result.action is Action.ALLOW
@@ -165,7 +224,7 @@ def test_a_local_reference_must_be_attached():
     )
 
     # Act
-    result = evidence_verdict(publication, ADDED, _reader({"shot.png": SHARP}))
+    result = evidence_verdict(publication, ADDED, _reader({"shot.png": SHARP}), _marked)
 
     # Assert
     assert result.problems == ("other.png: local image referenced but not attached",)

@@ -12,6 +12,7 @@ from faker import Faker
 
 ROOT = Path(__file__).resolve().parents[3]
 HOOK = ROOT / "hooks" / "frontend-render-gate.py"
+SIPS_STUB = Path(__file__).resolve().parent / "sips_stub.py"
 if str(ROOT / "tests") not in sys.path:
     sys.path.insert(0, str(ROOT / "tests"))
 from _helpers.cov_env import apply_coverage_env  # noqa: E402
@@ -85,12 +86,15 @@ def run_gate(
     cwd: Path,
     tool_name: str = "Bash",
     path: str | None = None,
+    extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     env = {
         **{k: v for k, v in os.environ.items() if k != "FRONTEND_RENDER_GATE_DISABLE"},
         "CLAUDE_BYPASS_STATE": os.devnull,
         "CLAUDE_HOOK_AUDIT_DISABLE": "1",
+        "CHANGE_MARKER_SIPS": str(SIPS_STUB),
         **({"PATH": path} if path is not None else {}),
+        **(extra_env or {}),
     }
     payload = json.dumps(
         {"tool_name": tool_name, "tool_input": tool_input, "cwd": str(cwd)}

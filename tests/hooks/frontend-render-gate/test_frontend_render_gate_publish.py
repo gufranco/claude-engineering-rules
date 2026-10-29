@@ -40,6 +40,78 @@ def test_a_pr_with_a_modified_surface_and_both_images_is_allowed(tmp_path):
     assert (result.returncode, result.stderr) == (0, "")
 
 
+def test_an_after_image_without_the_change_marker_is_blocked(tmp_path):
+    # Arrange
+    repo = repo_with_branch(tmp_path, {}, {"src/Toast.tsx": SOURCE})
+    png(repo / "after.png", SHARP)
+    command = f"{GH} pr create -b x --attach 'after.png#After: toast'"
+
+    # Act
+    result = run_gate(_bash(command), repo, extra_env={"SIPS_STUB_MARKED": "19"})
+
+    # Assert
+    assert result.returncode == 2
+    assert (
+        f"{repo / 'after.png'}: no #FACC15 change marker visible at 360 px wide, "
+        "19 of 20 pixels"
+    ) in result.stderr
+    assert "outline: 8px solid #FACC15" in result.stderr
+
+
+def test_a_before_image_needs_no_change_marker(tmp_path):
+    # Arrange
+    repo = _modified(tmp_path)
+    png(repo / "b.png", SHARP)
+    command = f"{GH} pr create -b x --attach 'b.png#Before: button'"
+
+    # Act
+    result = run_gate(_bash(command), repo, extra_env={"SIPS_STUB_MARKED": "0"})
+
+    # Assert
+    assert result.returncode == 2
+    assert "b.png" not in result.stderr.split("Problems:")[1].split("Capture")[0]
+    assert "no high-resolution image labeled After:" in result.stderr
+
+
+def test_an_after_image_that_cannot_be_decoded_is_blocked(tmp_path):
+    # Arrange
+    repo = repo_with_branch(tmp_path, {}, {"src/Toast.tsx": SOURCE})
+    png(repo / "after.png", SHARP)
+    command = f"{GH} pr create -b x --attach 'after.png#After: toast'"
+
+    # Act
+    result = run_gate(_bash(command), repo, extra_env={"SIPS_STUB_FAIL": "1"})
+
+    # Assert
+    assert result.returncode == 2
+    assert (
+        f"{repo / 'after.png'}: cannot check the change marker: "
+        "sips exited 1: unsupported image"
+    ) in result.stderr
+
+
+def test_an_attachment_under_a_substituted_directory_names_the_substitution(
+    tmp_path,
+):
+    # Arrange
+    repo = repo_with_branch(tmp_path, {}, {"src/Toast.tsx": SOURCE})
+    command = (
+        f"SHOTS=$(mktemp -d) && {GH} pr create -b x "
+        '--attach "$SHOTS/after.png#After: toast"'
+    )
+
+    # Act
+    result = run_gate(_bash(command), repo)
+
+    # Assert
+    assert result.returncode == 2
+    assert (
+        "after.png: names a shell variable this check cannot expand, and a "
+        "command substitution counts as one"
+    ) in result.stderr
+    assert "cannot read" not in result.stderr
+
+
 def test_a_pr_with_a_modified_surface_and_no_images_is_blocked(tmp_path):
     # Arrange
     repo = _modified(tmp_path)

@@ -110,6 +110,7 @@ It applies to every surface a person looks at: web, mobile, desktop GUI, and ter
 - **One width per set.** Every image published together has the same pixel width, so each renders at the same width on screen whatever its orientation.
 - **Scaled, never padded.** Equalize widths by proportional scaling. A 640x7798 mobile capture becomes 2880x35091 with `sips --resampleWidth 2880` or `sips -z 35091 2880`. Never pad a narrow capture onto a wider canvas.
 - **Grouped and labeled.** Desktop and mobile go in separate groups, each under its own heading, such as `Desktop, 1440 px viewport` and `Mobile, 320 px viewport`. The alt text starts with `Before:` or `After:`, names the device and viewport, and names the screen, as in `After: Mobile 320 px, default queue`. A new page has no Before; say so in one line.
+- **Marked.** Every After image marks the changed element, because a small element such as a toast cannot be found in a full-page capture at the width GitHub displays it. See [Marking The Change](#marking-the-change). Before images carry no mark.
 - **Comparable.** Before comes from the base commit with the same data, viewport, theme, locale, and window size as After. A difference the change did not cause hides the one it did.
 - **Complete.** Every state the change touches gets its pair: each theme, each breakpoint the layout changes at, and each error or empty state the diff alters.
 - **Clean.** Seeded or fake data only, never a real customer's name, email, or balance, per [`privacy-defaults.md`](../rules/privacy-defaults.md).
@@ -152,6 +153,23 @@ agent-browser screenshot --full after.png
 ```
 
 A 40-row page in that shell at 1440x900 scale 2 captures at 2880x1800 before the injection and 2880x8080 after. Name the project's own clipping classes in the selector. Never set `overflow: visible`: a wide table then stretches the capture to tens of thousands of pixels.
+
+### Marking The Change
+
+Draw the mark in the capture only, never in the product. Inject CSS before the screenshot that outlines the changed element and labels it:
+
+```bash
+agent-browser eval "const s = document.createElement('style');
+  s.textContent = '.toast { outline: 8px solid #FACC15 !important; outline-offset: 6px !important; position: relative }'
+    + ' .toast::before { content: \"NEW: toast\"; position: absolute; top: -40px; left: 0;'
+    + ' background: #FACC15; color: #000; font: bold 16px sans-serif; padding: 4px 8px }';
+  document.head.appendChild(s)"
+agent-browser screenshot --full after.png
+```
+
+Name the project's own selector for the changed element. The label reads `NEW:` for an added element and `CHANGED:` for a modified one. Open the image scaled down to 360 px wide, as with `sips --resampleWidth 360 after.png --out check.png`, and confirm the label is still visible; the label block survives an eight-times downscale where a thin outline may not. The pull request body says the marking is drawn for the description only.
+
+The publish check downscales every `After:` attachment to 360 px wide and blocks it unless at least 20 pixels sit within 48 of `#FACC15` on each channel. An image the check cannot read blocks with a message naming it.
 
 ### Publishing The Images
 
