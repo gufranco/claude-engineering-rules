@@ -439,6 +439,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/symlink-commit-blocker.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/user-supplied-artifact-guard.py"
           }
         ]

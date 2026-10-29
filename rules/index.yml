@@ -159,6 +159,10 @@ always_loaded:
     description: Block phase-N markers, planning-doc references, project planning-folder paths, canvas-region mappings, casual ADR-NNN references, and hyperbole tells (state-of-the-art, 100% faithful) in commit messages, PR descriptions, code comments, and other human-facing artifacts. Enforced by ai-process-leak-blocker.py hook with AI_PROCESS_LEAK_DISABLE parent-shell bypass for editing planning artifacts
     triggers: [ai process leak, process leak, phase, plan reference, canvas region, hyperbole, state-of-the-art, faithful, planning artifact, commit message leak, pr description leak]
 
+  no-committed-symlinks:
+    description: Short core for keeping symbolic links out of every repository. Git records a link as mode 120000 and the commit that adds or changes one is blocked; shared source is reached through the build, a file needed twice is committed once, a file from a submodule is committed as its own bytes, removing a link is always allowed, a generator never emits one, and runtime links outside the index are out of scope. Full text in standards/no-committed-symlinks.md
+    triggers: [symlink, symlinks, "symbolic link", "ln -s", "ln -sf", "ln -sfn", "120000", "mode 120000", "git ls-tree", submodule]
+
   memory-supersede:
     description: Supersede-not-delete chain for project and feedback memories, frontmatter pointers, chain depth limit, reference memories may be deleted
     triggers: [memory, supersede, supersedes, superseded_by, auto-memory, memory chain, memory update, memory archive]
@@ -848,6 +852,11 @@ on_demand:
     path: standards/no-ai-process-leak.md
     description: "Block phase-N markers, planning-doc references, project planning-folder paths, canvas-region mappings, casual ADR-NNN references, and hyperbole tells (state-of-the-art, 100% faithful) in commit messages, PR descriptions, code comments, and other human-facing artifacts. Enforced by ai-process-leak-blocker.py hook with AI_PROCESS_LEAK_DISABLE parent-shell bypass for editing planning artifacts"
     triggers: [ai process leak, process leak, phase, plan reference, canvas region, hyperbole, state-of-the-art, faithful, planning artifact, commit message leak, pr description leak]
+
+  no-committed-symlinks:
+    path: standards/no-committed-symlinks.md
+    description: Why a tracked symbolic link breaks Windows checkouts, archives and tools that do not follow links, the replacement for each kind of link (build source lists, include paths, the file's own bytes), how to locate and remove existing links, and what the symlink-commit-blocker hook checks
+    triggers: [symlink, symlinks, "symbolic link", "ln -s", "ln -sf", "ln -sfn", "120000", "mode 120000", "git ls-tree", submodule]
 
   normative-keywords:
     path: standards/normative-keywords.md

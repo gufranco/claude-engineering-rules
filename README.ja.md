@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">リリース</a>
 </p>
 
-常時ロードされるルール47件、オンデマンドの標準141件、スキル42件、フック94件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
+常時ロードされるルール48件、オンデマンドの標準142件、スキル42件、フック95件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
 
 ---
 
@@ -76,7 +76,7 @@ graph LR
 
 ### 常時ロードされるルール
 
-[`rules/`](rules/)に47件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは55ファイルで106,633文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
+[`rules/`](rules/)に48件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは56ファイルで108,127文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
 
 | ルール | 対象 |
 |:-----|:---------------|
@@ -104,6 +104,7 @@ graph LR
 | [`agent-operating-limits`](rules/agent-operating-limits.md) | バックストップと予算の区別、計測値を伴うターン上限、超過分を捨てずに報告する上限、拒否された呼び出しと無条件のコンテキスト注入のコスト、実行できなかったチェックは失敗として扱うこと |
 | [`deviation-waivers`](rules/deviation-waivers.md) | ルールから外れることは許されますが、黙って外れることは許されません。範囲、承認者、代替案、見直し条件を備えた構造化された免除で、別の問いに答えるため機械的なバイパスとは区別されます。プロジェクト自身の指示ファイルは、そのプロジェクト内でグローバルルールを明示的に上書きできますが、セキュリティ、法務、データ損失、検証、誠実さの一線は越えられません |
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | コミットメッセージ、PRの説明、公開ドキュメント、同僚へのメッセージから、フェーズ番号、計画ファイルのパス、仕様フォルダへのリンク、誇張表現、自己批判を排除します |
+| [`no-committed-symlinks`](rules/no-committed-symlinks.md) | どのリポジトリもシンボリックリンクを追跡しません。共有するソースはビルドを通じて参照し、2か所で必要なファイルは1回だけコミットし、サブモジュール由来のファイルはそのバイト列としてコミットします |
 | [`doc-truth`](rules/doc-truth.md) | コードを説明するドキュメントは、コードについての主張です。主張を偽にする変更は、同じコミットでそれを訂正します。`git commit`時に機械的に確実な4つのチェックを行い、履歴の記録は対象外です。コードが一貫して従わなくなった慣習を説明するプロジェクトのドキュメントは古いものとして扱い、コードを優先して不一致をすべて報告します |
 | [`markdown-links`](rules/markdown-links.md) | 公開Markdownで言及するファイルはすべてクリックできるリンクにします。バリデーターとPreToolUseフックが強制します |
 | [`living-specs`](rules/living-specs.md) | 自明でない変更は、`specs/current/`の生きた振る舞い仕様を保守します。要件、Given/When/Thenのシナリオ、ローカルワークスペース内の計画フォルダに置くADDED、MODIFIED、REMOVEDの差分、完了した変更を仕様に取り込む締めくくりのマージを含みます |
@@ -128,7 +129,7 @@ graph LR
 
 ### オンデマンドで読み込まれる標準
 
-[`standards/`](standards/)に141件の標準があります。[`rules/index.yml`](rules/index.yml)の各エントリーがトリガーキーワードを宣言しており、タスクが一致したときにその標準だけが読み込まれます。
+[`standards/`](standards/)に142件の標準があります。[`rules/index.yml`](rules/index.yml)の各エントリーがトリガーキーワードを宣言しており、タスクが一致したときにその標準だけが読み込まれます。
 
 扱うテーマは、API設計、認証、キャッシュ、コードレビュー、並行性と競合状態、コンテナのセキュリティ、コントラクトテスト、データベース、DDD、デバッグ、分散システム、冪等性と重複排除、言語ごとのイミュータビリティ、ドキュメント、フロントエンド、GraphQL、ヘキサゴナルアーキテクチャ、i18n、インフラ、低レイテンシのエンジニアリング、メッセージキュー、モバイル、モノレポ、オブザーバビリティ、エージェント向け指示ファイルの書き方、OpenTelemetry、パフォーマンス、Postgres、PRコメントのチャネル、印刷デザイン、プライバシー、Redis、レジリエンス、シークレット管理、SRE、ステートマシン、Twelve-Factor、TypeScript 5.x、WebSocket、ゼロダウンタイムデプロイなどです。
 
@@ -185,7 +186,7 @@ graph LR
 
 ### フック
 
-[`hooks/`](hooks/)に94件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
+[`hooks/`](hooks/)に95件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
 
 **バイパスの経路。** すべてのフックが2つの経路に対応しています。どちらでも通過でき、両方を併用できます。
 
@@ -286,6 +287,7 @@ graph LR
 | [`smart-formatter.py`](hooks/smart-formatter.py) | PostToolUse Edit/Write | 編集した各ファイルを、フォーマットを担うStopフックのためにセッションごとのバッチへ記録します |
 | [`stop-format-typecheck.py`](hooks/stop-format-typecheck.py) | Stop | `smart-formatter.py`からセッションのバッチを名前の変更で引き取り、プロジェクトが設定するフォーマッターで各ファイルを1回ずつ整形します。ruffはblackより先で、prettier、shfmt、rubocopは設定ファイルがある場所でだけ使います。その後、触れたワークスペースごとに`tsc`を1回実行し、失敗をモデルに報告します |
 | [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | サブエージェントへの指示の品質を、形、ファイル参照、長さの上限で強制します |
+| [`symlink-commit-blocker.py`](hooks/symlink-commit-blocker.py) | PreToolUse Bash | シンボリックリンクを記録するコミットをブロックします。対象はステージ済みのモード`120000`のエントリーと、`commit -a`や同じコマンド内の`git add`が含めるパスです。追跡中のリンクの削除は許可します |
 | [`tdd-gate.py`](hooks/tdd-gate.py) | PreToolUse Write/Edit/MultiEdit | 対応するテストファイルが見つからない場合、新しい本番用ソースファイルの作成をブロックします。設定ファイル、`__init__.py`、`conftest.py`、`setup.py`、型だけのモジュール、再エクスポートだけの`index`、`scratchpad/`ディレクトリか共有の`/tmp`直下の使い捨てスクリプトは対象外です。pytestの`tmp_path`はユーザーごとの`TMPDIR`にあるため、そこはゲートの対象のままです。バイパスは`TDD_GATE_DISABLE=1`。テストファイルのアサーションやテストケースの数を減らす編集や、スキップのマーカーを加える編集も、[`assertion_weakening.py`](hooks/_lib/assertion_weakening.py)によってブロックし、専用のバイパス`TEST_WEAKENING_DISABLE=1`を持ちます |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | `-chdir`などのグローバルオプションの後も含め、呼び出しごとに`TF_WORKSPACE`を強制します |
 | [`todo-marker-blocker.py`](hooks/todo-marker-blocker.py) | PreToolUse Write/Edit/MultiEdit | Issue番号やほかの括弧書きを伴うものも含め、ソースコードのTODO、FIXME、HACK、XXX、WIPのマーカーをブロックします。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
@@ -512,14 +514,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 905-item review checklist across 71 categories
-  rules/                 47 short rule cores, each linking to its full text
+  rules/                 48 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             141 on-demand standards, including the full text of every rule
+  standards/             142 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 94 runtime hooks
+  hooks/                 95 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -561,7 +563,7 @@ $HOME/.claude/
 <summary><strong>2段階のルール読み込みはどのようにコンテキストを節約しますか？</strong></summary>
 <br>
 
-141件の標準は合計27,295行あります。すべてを毎回の会話に読み込むと、コンテキストウィンドウを使い果たしてしまいます。[`rules/index.yml`](rules/index.yml)は各標準をトリガーキーワードに対応付けています。タスクが一致したとき、たとえば「データベースのマイグレーションを追加する」なら`database.md`のように、関係する標準だけが読み込まれます。
+142件の標準は合計27,356行あります。すべてを毎回の会話に読み込むと、コンテキストウィンドウを使い果たしてしまいます。[`rules/index.yml`](rules/index.yml)は各標準をトリガーキーワードに対応付けています。タスクが一致したとき、たとえば「データベースのマイグレーションを追加する」なら`database.md`のように、関係する標準だけが読み込まれます。
 
 </details>
 
