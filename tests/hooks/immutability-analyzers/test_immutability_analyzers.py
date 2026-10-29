@@ -127,6 +127,28 @@ def test_preexisting_finding_on_an_untouched_line_is_advisory(run_hook, workspac
     )
 
 
+def test_an_advisory_finding_reaches_the_model_at_stop(run_hook, workspace):
+    # Arrange
+    repo = workspace["repo"]
+    source = repo / "core.py"
+    source.write_text(DIRTY_PY + "\n\nVALUE = 1\n", encoding="utf-8")
+    _git(repo, "add", "core.py")
+    _git(repo, "commit", "-q", "--no-gpg-sign", "-m", "base")
+    source.write_text(DIRTY_PY + "\n\nVALUE = 2\n", encoding="utf-8")
+    _record(run_hook, workspace["env"], source)
+
+    # Act
+    result = _stop(run_hook, workspace["env"])
+
+    # Assert
+    context = json.loads(result.stdout)["hookSpecificOutput"]
+    assert (
+        context["hookEventName"],
+        "pre-existing" in context["additionalContext"],
+        "Investigate this advisory" in context["additionalContext"],
+    ) == ("Stop", True, True)
+
+
 def test_missing_analyzer_blocks(run_hook, workspace):
     # Arrange
     source = workspace["repo"] / "a.lua"

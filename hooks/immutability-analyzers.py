@@ -17,6 +17,7 @@ from _lib.audit_log import record as audit  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.changed_lines import changed_lines  # noqa: E402
 from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
+from _lib.hook_warning import emit_user_notice, emit_warning  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.source_scope import in_scope  # noqa: E402
 
@@ -143,7 +144,9 @@ def _settle(
 ) -> int:
     if not review.blocking:
         batch.replace(queued)
-        return _emit({"systemMessage": report}) if review.advisory or queued else 0
+        if review.advisory or queued:
+            emit_warning(report, event="Stop")
+        return 0
     digest = hashlib.sha256(report.encode("utf-8")).hexdigest()
     if repeated and digest == batch.remembered():
         batch.replace(queued)
@@ -153,7 +156,8 @@ def _settle(
             reason="unchanged after block",
             command_excerpt=report[:240],
         )
-        return _emit({"systemMessage": f"Unresolved after one block:\n{report}"})
+        emit_user_notice(f"Unresolved after one block:\n{report}")
+        return 0
     batch.remember(digest)
     audit(
         hook=HOOK_ID,

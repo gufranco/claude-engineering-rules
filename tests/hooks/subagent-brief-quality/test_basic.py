@@ -1,5 +1,6 @@
 from __future__ import annotations
 from _helpers.hook_assertions import assert_allowed, assert_blocked
+import json
 import os
 import subprocess
 import sys
@@ -22,6 +23,26 @@ def test_all_four_heuristics_pass(tool_use, run_hook):
 
     # Assert
     assert_allowed(result)
+
+
+def test_one_failed_heuristic_reaches_the_model(tool_use, run_hook):
+    # Arrange
+    prompt = (
+        "Find callers of createUser at services/userService.ts:42. "
+        "Report file:line for each caller."
+    )
+    payload = tool_use("Agent", {"prompt": prompt})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert (
+        result.code,
+        "length cap" in context.lower(),
+        "Investigate this advisory" in context,
+    ) == (0, True, True)
 
 
 def test_one_heuristic_fails_is_advisory(tool_use, run_hook):

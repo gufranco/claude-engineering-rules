@@ -274,7 +274,7 @@ graph LR
 | [`python-mutation-guard.py`](hooks/python-mutation-guard.py) | PreToolUse Write/Edit/MultiEdit | 基于 AST 的 Python 不可变性：拦截可变默认值、通过参数修改集合、`global`、模块和类级别的容器，以及 `object.__setattr__` 后门；对参数属性写入和非 frozen 的 dataclass 发出警告 |
 | [`polyglot-immutability-guard.py`](hooks/polyglot-immutability-guard.py) | PreToolUse Write/Edit/MultiEdit | Go、Rust、C、C++、Swift、Java、Kotlin、C#、Dart、Ruby 和 Lua 中共享的可变状态 |
 | [`idempotency-guard.py`](hooks/idempotency-guard.py) | PreToolUse Write/Edit/MultiEdit | 不能安全重复的操作：裸写的 `mkdir` 和 `ln -s`、没有守卫的 rc 文件追加、Terraform 的 `timestamp()` 和 `uuid()`、被关闭的 Kafka 幂等生产者 |
-| [`immutability-analyzers.py`](hooks/immutability-analyzers.py) | PostToolUse Write/Edit/MultiEdit, Stop | 用 [`analyzers/`](analyzers/) 中的配置，对本轮编辑过的文件运行 clang-tidy、golangci-lint、ruff、pyright、rubocop、luacheck、detekt、PMD、swiftlint 和 Dart 分析器；改动行上的问题会拦截，缺少分析器也会拦截 |
+| [`immutability-analyzers.py`](hooks/immutability-analyzers.py) | PostToolUse Write/Edit/MultiEdit, Stop | 用 [`analyzers/`](analyzers/) 中的配置，对本轮编辑过的文件运行 clang-tidy、golangci-lint、ruff、pyright、rubocop、luacheck、detekt、PMD、swiftlint 和 Dart 分析器；改动行上的问题会拦截，缺少分析器也会拦截，未改动行上的问题则作为待调查的提示交给模型 |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | 拦截累积时，在会话结束时以 `systemMessage` 向用户显示一行摘要 |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | 拦截对非用户本人撰写的审查误操作 REQUEST_CHANGES、DISMISS 或 DELETE |
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | 把 CLI 命令改写为经由 RTK 执行，以节省 token |
@@ -287,7 +287,7 @@ graph LR
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | 拦截设置中的凭据和主目录的绝对路径 |
 | [`smart-formatter.py`](hooks/smart-formatter.py) | PostToolUse Edit/Write | 把每个编辑过的文件记录到会话的批次中，交给负责格式化的 Stop 钩子 |
 | [`stop-format-typecheck.py`](hooks/stop-format-typecheck.py) | Stop | 通过重命名从 `smart-formatter.py` 认领本会话的批次，用项目配置的格式化工具把每个文件格式化一次，ruff 优先于 black，prettier、shfmt 和 rubocop 只在存在其配置文件的地方使用，然后在每个涉及的工作区运行一次 `tsc`，并把失败报告给模型 |
-| [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | 通过结构、文件引用和长度上限强制子代理提示的质量 |
+| [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | 通过结构、文件引用和长度上限强制子代理提示的质量。两项或以上检查失败会拦截，只有一项失败时作为待调查的提示交给模型 |
 | [`symlink-commit-blocker.py`](hooks/symlink-commit-blocker.py) | PreToolUse Bash | 拦截会记录符号链接的提交：已暂存的模式 `120000` 条目，以及 `commit -a` 或同一命令中的 `git add` 会纳入的路径。允许删除已跟踪的链接 |
 | [`tdd-gate.py`](hooks/tdd-gate.py) | PreToolUse Write/Edit/MultiEdit | 找不到配套的测试文件时，拦截新建生产源文件。配置文件、`__init__.py`、`conftest.py`、`setup.py`、纯类型模块、只做重新导出的 `index` 桶文件，以及 `scratchpad/` 目录或共享 `/tmp` 根目录下的一次性脚本不受限制。按用户区分的 `TMPDIR` 仍受约束，因为 pytest 的 `tmp_path` 就在那里。绕过：`TDD_GATE_DISABLE=1`。它还会通过 [`assertion_weakening.py`](hooks/_lib/assertion_weakening.py) 拦截减少测试文件中断言或测试用例数量、或添加跳过标记的编辑。编辑后的文件若不弱于最后一次提交的版本则放行，因此删除任何提交中都没有的测试是允许的。独立的绕过：`TEST_WEAKENING_DISABLE=1` |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | 每次调用都强制指定 `TF_WORKSPACE`，包括在 `-chdir` 等全局选项之后 |

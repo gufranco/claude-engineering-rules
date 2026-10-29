@@ -9,8 +9,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.audit_log import record as _audit  # noqa: E402
 
 
-ADVISORY_MODE = False
-
 IN_SCOPE_PATH_SEGMENTS = (
     "/.claude/rules/",
     "/.claude/standards/",
@@ -88,7 +86,7 @@ def _findings(items: list[tuple[str, str]]) -> list[str]:
 
 
 def _report(tool: str, findings: list[str]) -> int:
-    severity_label = "Warning" if ADVISORY_MODE else "Blocked"
+    severity_label = "Blocked"
     message = (
         f"{severity_label}: bullet items starting with 'Should ' detected. "
         'Rules: ~/.claude/standards/writing-precision.md "Eliminate weasel words" '
@@ -102,12 +100,12 @@ def _report(tool: str, findings: list[str]) -> int:
     print(message, file=sys.stderr)
     _audit(
         hook="normative-keyword-discipline",
-        decision="warn" if ADVISORY_MODE else "block",
+        decision="block",
         tool=tool,
         reason="should bullet",
         command_excerpt=" | ".join(findings)[:240],
     )
-    return 0 if ADVISORY_MODE else 2
+    return 2
 
 
 def main() -> int:

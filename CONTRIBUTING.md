@@ -139,6 +139,12 @@ privileges. It gets the strictest review in the repository.
   which blocks with exit 2 on stdin that is not a JSON object, a `tool_input`
   that is not an object, or a text field that is not a string. A hook that
   only informs, such as a PostToolUse or SessionStart hook, never blocks.
+- Send an advisory, a finding that does not block, through `emit_warning` in
+  [`hook_warning.py`](hooks/_lib/hook_warning.py). It shows the warning to the
+  user and hands it to the model with an instruction to investigate, then fix
+  it or say why it does not apply. The model never sees stderr from a hook that
+  exits 0, and `systemMessage` reaches only the user, so `make validate` fails
+  an advisory sent any other way.
 - Stay fast. The benchmark gate in CI holds hooks under 500 ms.
 - Ship tests under [`tests/hooks/<hook-name>/`](tests) covering the block case,
   the allow case, and the bypass.
