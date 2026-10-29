@@ -212,7 +212,7 @@ Key articles cited frequently:
 
 ### LGPD (Brazil, Lei 13.709/2018)
 
-Effective 14 August 2018. Articles below verified against the Planalto official text on 2026-05-27.
+Effective 14 August 2018. Articles below follow the Planalto official text.
 
 | Article | Obligation (verified) |
 |---------|-----------------------|

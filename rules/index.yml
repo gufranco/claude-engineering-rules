@@ -60,7 +60,7 @@ always_loaded:
     triggers: [feedback, correction, corrected, "you are right", persist, remember, memory, lesson, mistake, "same turn", "will do better", noted, "keep in mind", "next time", preference, "admission bar"]
 
   rule-provenance:
-    description: Every rule states when it became binding and what made it binding. Provenance stamp carrying date, recurrence count, and the concrete failure. Promotion threshold of three occurrences before a logged lesson becomes a binding rule, with a single-incident skip for irreversible, silent, or catastrophic failures. Rules carry their incident inline so they are unarguable. Pruning triggers, since provenance is what makes a rule set shrinkable
+    description: A rule's history lives in the private vault, never in the repository. Rule, standard, skill, hook, test and README files state only the current state, with no dates of changes, no quoted instructions, and no project, employer, person, pull request or session behind a change. Promotion threshold of three occurrences before a logged lesson becomes a binding rule, with a single-incident skip for irreversible, silent, or catastrophic failures. Rules state their mechanism inline, written generically. Pruning triggers, with each removal recorded in the vault
     triggers: [rule, "new rule", provenance, promote, promotion, threshold, recurrence, prune, pruning, "rule set", speculative, origin, incident, "why this rule", stamp]
 
   relay-not-source:
@@ -909,7 +909,7 @@ on_demand:
 
   rule-provenance:
     path: standards/rule-provenance.md
-    description: "Every rule states when it became binding and what made it binding. Provenance stamp carrying date, recurrence count, and the concrete failure. Promotion threshold of three occurrences before a logged lesson becomes a binding rule, with a single-incident skip for irreversible, silent, or catastrophic failures. Rules carry their incident inline so they are unarguable. Pruning triggers, since provenance is what makes a rule set shrinkable"
+    description: "A rule's history lives in the private vault, never in the repository. Rule, standard, skill, hook, test and README files state only the current state, with no dates of changes, no quoted instructions, and no project, employer, person, pull request or session behind a change. Promotion threshold of three occurrences before a logged lesson becomes a binding rule, with a single-incident skip for irreversible, silent, or catastrophic failures. Rules state their mechanism inline, written generically. Pruning triggers, with each removal recorded in the vault"
     triggers: [rule, new rule, provenance, promote, promotion, threshold, recurrence, prune, pruning, rule set, speculative, origin, incident, why this rule, stamp]
 
   same-turn-persistence:

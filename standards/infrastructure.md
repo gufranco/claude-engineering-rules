@@ -169,7 +169,7 @@ Every GitHub Actions workflow follows these defaults, enforced at write time by 
 
 The local gate runs from a fresh `git clone` of the commit with locked installs, never from the working tree, because a file the working tree has and the commit lacks passes locally and fails in CI.
 
-Provenance: Ubuntu LTS by direct user instruction on 2026-10-16; no macOS, harden-runner, pinning, concurrency, and pnpm with uv by direct user instruction on 2026-10-28, applied in `gufranco/claude-engineering-rules` commit `5ea69a9`. The fresh-clone gate on 2026-10-28, after a gate run on the working tree passed and two gate runs on clean clones of the same work failed. Amended 2026-10-29 by direct user instruction: the macOS ban blocked `gufranco/homebrew-tap`, whose formulae and casks are tested on macOS, and projects that only run on macOS, so a macOS runner became an advisory silenced by macOS-only tooling; the release split followed from the same review, because a top-level cancelling group would stop a release job sharing the CI workflow.
+A macOS runner is advisory, silenced by macOS-only tooling, because Homebrew taps and macOS-only projects can only be tested there. Releases live in their own workflow because a top-level cancelling group would stop a release job sharing the CI workflow. The gate runs on a fresh clone because a working tree can carry files a clean checkout lacks.
 
 ### Artifact Immutability
 

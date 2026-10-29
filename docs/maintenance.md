@@ -101,10 +101,3 @@ Run these outside the quarterly schedule when specific events occur:
 
 ---
 
-## Maintenance log
-
-Record completed maintenance runs here. Most recent first.
-
-| Date | Who | What |
-|:-----|:----|:-----|
-| 2026-04-16 |, | Initial maintenance document created |

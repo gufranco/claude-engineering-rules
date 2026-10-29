@@ -18,7 +18,3 @@ Full rule, examples, and rationale: [`standards/smart-questions.md`](../standard
 ## Enforcement
 
 Enforced by: [`hooks/subagent-brief-quality.py`](../hooks/subagent-brief-quality.py).
-
-## Provenance
-
-Added 2026-05-14, recurrence not recorded. Origin: not recorded at creation.

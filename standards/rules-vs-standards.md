@@ -13,7 +13,7 @@ Tier 1 content shapes how every response is produced. Tier 2 content provides do
 
 ## Core and Full Text
 
-Claude Code loads every file under [`rules/`](../rules), including [`rules/lang/`](../rules/lang), plus [`CLAUDE.md`](../CLAUDE.md) and its imports, into every session, and warns once the total passes 150,000 characters. On 2026-09-25 the set measured 539,200 characters across 52 files, so the always-loaded tier was split.
+Claude Code loads every file under [`rules/`](../rules), including [`rules/lang/`](../rules/lang), plus [`CLAUDE.md`](../CLAUDE.md) and its imports, into every session, and warns once the total passes 150,000 characters. Full rule text loaded on every session would pass that limit several times over, so the always-loaded tier holds short cores and the full text lives in standards.
 
 Each `rules/<name>.md` is now a core of roughly 500 to 7,000 characters: the obligations, bans, and thresholds that change behavior on an ordinary task, then a link to `standards/<name>.md`, which holds the original full text verbatim. After the split the always-loaded set measured about 80,000 characters. The long sections of [`CLAUDE.md`](../CLAUDE.md) moved the same way, to [`confidence-and-evidence.md`](confidence-and-evidence.md), [`tone-and-writing.md`](tone-and-writing.md), [`hook-bypass.md`](hook-bypass.md), [`shell-and-tools.md`](shell-and-tools.md), [`completion-gates.md`](completion-gates.md), and [`knowledge-single-source.md`](knowledge-single-source.md).
 

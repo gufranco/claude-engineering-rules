@@ -12,7 +12,7 @@ Slop is text whose shape was chosen before its content: a structure gets picked 
 
 The catalogue below comes from the field guide maintained by WikiProject AI Cleanup at <https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing>, which is derived from thousands of reviewed instances rather than from intuition, cross-checked against <https://arxiv.org/abs/2509.19163> and <https://tomyandell.dev/blog/llm-voice>. Two properties make it usable here: the tells are structural, so they survive paraphrase, and each one has a stated mechanism, so a novel variant is recognizable.
 
-The guide groups its vocabulary by model generation and changes as models change. The word list in `SLOP009` follows its 2026-10-13 revision. Word frequency describes a corpus, never one text. Kobak and coauthors counted 379 style words in excess in 2024 PubMed abstracts, with "delves" at 28 times its expected rate, and state that their analysis cannot identify an individual abstract (<https://arxiv.org/abs/2406.07016>). `SLOP009` therefore fires only on two distinct words in one passage.
+The guide groups its vocabulary by model generation and changes as models change. The word list in `SLOP009` tracks the guide's vocabulary section. Word frequency describes a corpus, never one text. Kobak and coauthors counted 379 style words in excess in 2024 PubMed abstracts, with "delves" at 28 times its expected rate, and state that their analysis cannot identify an individual abstract (<https://arxiv.org/abs/2406.07016>). `SLOP009` therefore fires only on two distinct words in one passage.
 
 ## The Three Deciding Tests
 
@@ -79,7 +79,7 @@ A comment, README, or document describes what exists. It never records how the a
 | The tool that checked | "confirmed with a logic analyzer trace" | The measured value, with its unit |
 | A paragraph explaining why a value is unknown | Three sentences of search history | `Unknown.` |
 
-This became a rule on 2026-10-12, after a restyle of 58 firmware sources and twelve READMEs filled their headers with research history. A reader of the finished project asks what the code does and why a value is what it is. The search that produced the answer belongs in the commit, the plan folder, or the vault.
+A reader of the finished project asks what the code does and why a value is what it is. The search that produced the answer belongs in the commit, the plan folder, or the vault.
 
 Records exist to hold that history, so `SLOP015` stays silent in three places: the vault under `SECOND_BRAIN_VAULT`, the project workspace resolved by [`../hooks/_lib/project_workspace.py`](../hooks/_lib/project_workspace.py), and any `PROMPT.md`. Every other tell still applies there.
 
@@ -174,7 +174,7 @@ Third-party AI detectors are not evidence. On the RAID benchmark, a RoBERTa dete
 
 [`../hooks/ai-slop-blocker.py`](../hooks/ai-slop-blocker.py) runs at PreToolUse on Write, Edit, MultiEdit for Markdown, and on Bash commands that publish text. Codes are `SLOP001` through `SLOP015`. Code spans and fenced blocks are excluded before matching, so quoted examples and sample output never trip it.
 
-The detector set is deliberately narrower than this document. Every pattern was measured against the Markdown files under the rules, standards, checklists, skills, agents and docs directories before inclusion, 210 files as of 2026-09-17 and 333 files, root documents included, as of 2026-10-13. Only patterns at or below three corpus hits were wired up for Markdown. `SLOP015` matched one sentence, in the frontend standard, and that sentence was deleted. The six words added to `SLOP009` made no file reach two distinct hits. Rule of three and structural symmetry are not mechanically decidable and are review-time obligations.
+The detector set is deliberately narrower than this document. Every pattern is measured against the repository's own Markdown before inclusion, and only patterns at or below three corpus hits are wired up for Markdown. Rule of three and structural symmetry are not mechanically decidable and are review-time obligations.
 
 `SLOP013` and `SLOP014` are the exception, and they carry their own scope. A bullet opening with a bold label measures 648 hits in that corpus and a Markdown heading measures 3600, so neither can be enforced on repository Markdown or on a pull-request description, where [`git-workflow.md`](../rules/git-workflow.md) prescribes exactly that shape. Both are a template tell in one place only: the body of a comment published on a pull request. The two detectors therefore fire only on a command posting into a review thread, a review payload, or a GitLab discussion note, and the hook parses the JSON payload so it reads the body a person will see rather than one escaped line.
 
@@ -207,12 +207,6 @@ A reviewer opens a thread expecting one thing back, and a long reply makes them 
 [`normative-keywords.md`](../rules/normative-keywords.md) supplies the obligation word that replaces a stripped hedge.
 
 [`surgical-edits.md`](../rules/surgical-edits.md) still bounds the diff. Finding slop in a file this change already touches is in scope per [`found-fix.md`](../rules/found-fix.md); rewriting a neighbouring document is not.
-
-## Provenance
-
-Promoted 2026-08-26, `single-incident`, under the fails-without-an-error-signal condition. Slop passes every existing gate: it compiles, it lints, it reads as competent, and no check reports it, so the defect reaches the reader intact and is attributed to the author's judgment.
-
-Origin: the phrase-blocklist layer already in place was measured against the structural tell catalogue maintained by WikiProject AI Cleanup and found to cover vocabulary only, leaving negative parallelism, significance inflation, participial tails, evasive attribution, copulative avoidance, and markup residue entirely unenforced. Corpus calibration across the 209 Markdown files under the rules, standards, checklists, skills, agents and docs directories returned zero hits on 31 of 35 candidate detectors, which establishes both that the existing voice is already disciplined and that the detectors carry a near-zero false-positive rate here. The wired detector set then reported five findings across that corpus plus the two root instruction documents, of which two were detector false positives, now excluded, and three were real and fixed.
 
 ## Enforcement
 

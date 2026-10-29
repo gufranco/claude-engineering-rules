@@ -77,7 +77,3 @@ Here `run.sh check` exits non-zero on a bad state, so the backfill cannot run af
 ## Enforcement
 
 [`hooks/user-commands-one-line.py`](../hooks/user-commands-one-line.py) is a Stop hook. It reads the reply that ends the turn and blocks it when two or more lines begin with `! `, when a `! ` line joins steps with `;` outside strict mode, when it silences a failure with `|| true` or `|| :`, or when it deletes recursively from a path built from a variable without `${VAR:?}`. It does not fire on a turn a Stop hook already continued. Bypass with `USER_COMMANDS_ONE_LINE_DISABLE=1` in the parent shell, or a TTL-bound entry in the shared bypass registry.
-
-## Provenance
-
-Added 2026-10-29, `single-incident`, by direct user instruction: "Eu sempre quero que, quando tiver mais de um comando para ser executado, todos sejam enviados em uma única linha igual pedi agora." Amended the same day: "Revise isso e torne o mais seguro possível, porém ainda tudo em uma linha somente", after the risk was raised that chaining a check and a risky change hides the check's result before the change runs. Origin: an Acme session handed the user a container cleanup command and two production backfill commands as separate blocks.

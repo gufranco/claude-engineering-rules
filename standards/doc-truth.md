@@ -8,9 +8,7 @@ The scope is every artifact that asserts something about code: README files, API
 
 ## Why This Rule Exists
 
-The configuration already said "update everything the change affects, never leave stale docs" in the Completeness list of [`code-style.md`](../rules/code-style.md), and it already had a [`documentation-checker`](../agents/documentation-checker.md) agent. Documentation still drifted.
-
-The reason is timing, not wording. Enforcement layers fire at different moments relative to the work:
+A prose rule such as "update everything the change affects" in [`code-style.md`](../rules/code-style.md), and a [`documentation-checker`](../agents/documentation-checker.md) agent, do not stop documentation from drifting. The reason is timing, not wording. Enforcement layers fire at different moments relative to the work:
 
 | Layer | Fires | Can it change what gets written? |
 |---|---|---|
@@ -20,7 +18,7 @@ The reason is timing, not wording. Enforcement layers fire at different moments 
 | Reviewer agent | After the artifact exists | Only by asking for a rewrite |
 | Write-time hook | At the moment of publishing | Yes, mechanically |
 
-Documentation had the first layer in generic form and the fourth layer. It had nothing at the fifth. Adding more prose to the first layer would not have changed the outcome, because the layer that was missing is the one that fires when the change is published. That is the gap [`doc-sync-guard.py`](../hooks/doc-sync-guard.py) fills.
+More prose at the first layer does not help, because the layer that matters is the one that fires when the change is published. [`doc-sync-guard.py`](../hooks/doc-sync-guard.py) is that layer.
 
 ## Obligations
 

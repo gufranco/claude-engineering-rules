@@ -104,5 +104,3 @@ Three rules govern a draft:
 - **User-facing only.** An internal refactor, a test, or a CI change goes in Internal, or nowhere when nobody outside the team would read it.
 - **Related changes grouped.** Five commits that build one feature are one entry, never five.
 - **Never a list of commit subjects.** A commit subject is written for maintainers and names how something was made. An entry names what a user can now do and why it changed.
-
-Provenance: 2026-10-12, owner request. Adopted from the sandcastle pre-release skill, which reviews changesets as user-facing, grouped, and distinct from commit messages.

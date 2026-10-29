@@ -14,7 +14,3 @@ Full rule, examples, and rationale: [`standards/knowledge-notes.md`](../standard
 ## Enforcement
 
 Enforced by: [`../hooks/knowledge-note-guard.py`](../hooks/knowledge-note-guard.py).
-
-## Provenance
-
-Added 2026-08-18, recurrence not recorded. Origin: not recorded at creation.

@@ -16,7 +16,3 @@ Full rule, examples, and rationale: [`standards/user-commands-one-line.md`](../s
 ## Enforcement
 
 Enforced by: [`hooks/user-commands-one-line.py`](../hooks/user-commands-one-line.py).
-
-## Provenance
-
-Added 2026-10-29, `single-incident`, by direct user instruction: "Eu sempre quero que, quando tiver mais de um comando para ser executado, todos sejam enviados em uma única linha", then "torne o mais seguro possível, porém ainda tudo em uma linha somente". Origin: an Acme session handed the user a cleanup command and two prod commands as separate blocks, and the user had to ask for them in one command.

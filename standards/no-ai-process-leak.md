@@ -8,18 +8,18 @@ This rule is enforced mechanically by `~/.claude/hooks/ai-process-leak-blocker.p
 
 ## Why This Rule Exists
 
-Earlier sessions produced commits with subjects and bodies like:
+A commit like this one publishes that the change came out of an AI-driven plan:
 
 ```
-chore(repo): bootstrap regnant project scaffolding
+chore(repo): bootstrap project scaffolding
 
-Initial Phase 0 of the regnant plan. Lays down the meta files needed
+Initial Phase 0 of the plan. Lays down the meta files needed
 before any real code...
 
-Refs: specs/2026-05-22-atlassian-platform-terraform/plan.md
+Refs: specs/<date>-<slug>/plan.md
 ```
 
-The user flagged this immediately: no human writes "Phase 0 of the plan" or "Refs: specs/<date>-<slug>/plan.md" in a commit. These phrases publish that the change came out of an AI-driven multi-phase plan. They are subtler than `Co-authored-by: Claude` but just as identifying.
+No human writes "Phase 0 of the plan" or "Refs: specs/<date>-<slug>/plan.md" in a commit. These phrases publish that the change came out of an AI-driven multi-phase plan. They are subtler than `Co-authored-by: Claude` but just as identifying.
 
 The narrow `ai-attribution-blocker.py` hook misses them because it scans only explicit attribution strings. The narrow `internal-config-leakage.py` hook misses them because it scans `~/.claude/` paths, not project-level planning paths. This rule and its companion hook fill the gap.
 

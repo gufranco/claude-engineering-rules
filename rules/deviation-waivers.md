@@ -10,7 +10,3 @@ Deviating from a rule is allowed. Deviating silently is not: surface the tradeof
 - A tripwire halts work at a stated threshold and proceeds only on a recorded waiver.
 
 Full rule, examples, and rationale: [`standards/deviation-waivers.md`](../standards/deviation-waivers.md). Read it before writing a waiver or reaching for a bypass.
-
-## Provenance
-
-Promoted 2026-08-26, `single-incident`, under the unbounded-growth condition. Origin: with a mechanical bypass as the only exception path, genuine design disagreements ended up as silenced checks that left no record. Full account in [`standards/deviation-waivers.md`](../standards/deviation-waivers.md).

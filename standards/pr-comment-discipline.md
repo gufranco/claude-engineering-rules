@@ -22,17 +22,17 @@ A tracker item is never the answer to a problem that can be fixed in the open ch
 
 Two prose layers already govern comment voice. [`../standards/code-review.md`](code-review.md) forbids labels, templates and checklist shape; [`anti-slop.md`](../rules/anti-slop.md) catalogues the rhetorical shapes and records a corpus calibration that returned no findings across 209 of this repository's own Markdown files. Where a person chooses whether to write at all, the voice holds.
 
-The slop was concentrated in the artifacts with a mandatory slot and nothing to fill it:
+Slop concentrates in artifacts with a mandatory slot and nothing to fill it:
 
-- A review summary body that the skill required to be non-empty, because the GitHub API cannot edit an empty body afterwards. An API constraint became a paragraph of prose on every review.
-- A reply to a bot, whose own register rule conceded that the audience has no stake, cannot be persuaded, will not answer, and does not remember the thread. An audience with none of those properties needs no message at all.
-- A reply into a channel with no reply endpoint, answered by opening a fresh conversation comment that nobody threads to the point it answers.
+- A review summary body required to be non-empty only because the GitHub API cannot edit an empty body afterwards.
+- A reply to a bot, an audience that has no stake, cannot be persuaded, will not answer, and does not remember the thread.
+- A reply into a channel with no reply endpoint, answered by a fresh conversation comment that nobody threads to the point it answers.
 
-Writing better prose into those three slots was the wrong fix. The slots are gone.
+Better prose in those slots is the wrong fix. This rule has no such slots.
 
 ## The Reviewer Trigger Exception
 
-Some AI reviewers wait for a command before they review. The Claude GitHub App in manual mode posts a notice on every new pull request and reviews only after `@claude review` once, or `@claude review always` for every later push. On 2026-10-03, 320 of the owner's pull requests in one organization had received the notice and almost no reviews, because nothing ever posted the command.
+Some AI reviewers wait for a command before they review. The Claude GitHub App in manual mode posts a notice on every new pull request and reviews only after `@claude review` once, or `@claude review always` for every later push. A notice nobody answers means the pull request is never reviewed.
 
 The command is addressed to a reviewer that acts on it, so it has the reader the rest of this rule demands. [`../hooks/ai-review-request.py`](../hooks/ai-review-request.py) posts it after a pull request is opened, marked ready, or pushed. It acts only on an open pull request the acting account authored, posts only the exact documented command, and skips it when that account already posted it. Where a review workflow is gated by a label instead, the hook adds the label and posts nothing. Every other conversation comment stays forbidden, and [`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py) still blocks a hand-written one.
 
@@ -58,7 +58,7 @@ gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$
   --jq '.data.repository.pullRequest | {unresolved: [.reviewThreads.nodes[] | select(.isResolved | not)] | length, bodies: [.reviews.nodes[] | select(.body != "" and (.isMinimized | not))] | length}'
 ```
 
-Both counts are 0, except a human's review body, which is answered with a code change. Status comments from bots are not review comments and stay visible: preview deployments, coverage reports, lead-approval markers, and tracker links such as Linear's. Origin: on 2026-10-28 and 2026-10-29 the owner cleared open threads and visible bot review bodies by hand across acme/admin #671 and #677 and acme/webapp #5005.
+Both counts are 0, except a human's review body, which is answered with a code change. Status comments from bots are not review comments and stay visible: preview deployments, coverage reports, lead-approval markers, and tracker links such as Linear's.
 
 A question that reaches no reply still reaches a fix. When the fix alone would leave the reviewer guessing, the pull-request description carries the sentence, since that is where a reader looks for why.
 
@@ -151,14 +151,6 @@ An explicit request to export a plan to a tracker is a different thing, and [`..
 - [`found-fix.md`](../rules/found-fix.md): a problem surfaced by any verification surface is in scope for the current change.
 - [`no-ai-process-leak.md`](../rules/no-ai-process-leak.md): what a reply must never disclose about how it was produced.
 - [`../skills/respond/SKILL.md`](../skills/respond/SKILL.md): the workflow this rule governs.
-
-## Provenance
-
-Promoted 2026-09-17, `single-incident`, under the fails-without-an-error-signal condition. A content-free artifact passes every gate: it compiles nothing, breaks nothing, and reads as diligence, so the cost lands on the reviewer who scrolls past it rather than on any check.
-
-Origin: an audit of this configuration's own pull-request surfaces found three slots that required text and supplied no subject. A review summary body mandated non-empty because the GitHub API cannot edit an empty one later. A bot reply governed by a register whose stated premises argued for no reply at all. Three channels with no reply endpoint answered by opening unthreaded conversation comments. The reply-only rule, the no-bot-reply rule, the four-sentence ceiling, and the fix-now rule were set by the repository owner in the same session.
-
-Amended 2026-10-03, `single-incident`: the owner asked that every AI reviewer a repository supports be requested automatically, subscribed for every push. A read-only pass over 394 of the owner's pull requests found the Claude App in manual mode and a label-gated workflow left unlabelled on 16 pull requests. The reviewer trigger exception above is the result.
 
 ## Enforcement
 

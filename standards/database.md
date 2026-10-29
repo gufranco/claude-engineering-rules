@@ -202,8 +202,6 @@ The agent never runs a migration against production, by that command or any othe
 
 A runbook step whose outcome nobody has observed is marked `Unproven.` in the runbook, with what is confirmed and what is not. Until someone confirms it once, the operator reports the raw output the step printed beside the conclusion drawn from it.
 
-Provenance: 2026-10-12, owner request. Adopted from the course-video-manager deploy-migration skill and its CLAUDE.md.
-
 ## Expand-Contract Migrations
 
 Use the expand-contract pattern for zero-downtime schema changes:

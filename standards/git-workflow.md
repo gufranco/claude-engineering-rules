@@ -26,8 +26,6 @@
   git commit -m 'fix(f5): name failed cache stores' -m 'Body text.'
   ```
 
-  Added 2026-10-14 after one session lost five commit attempts to the length check: each subject was judged short by eye.
-
 **Body:** Wrap at 72 characters. Explain WHAT and WHY, not HOW.
 
 **Footer:**
@@ -217,7 +215,7 @@ gh pr merge <number> --squash --delete-branch
 2. Update the first pull request's title and body so they describe both changes, and list every tracker key the delivery carries, such as `ENG-3060` and `ENG-3071`.
 3. Close the extra pull request without a comment: `gh pr close <number>`.
 
-[`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py) asks for confirmation before `gh pr create` in a repository where the same session already opened one, from a per-session ledger that [`../hooks/ai-review-request.py`](../hooks/ai-review-request.py) records. Origin: acme/admin #677, the Prisma schema sync for ENG-3071, was opened beside #671 for ENG-3060, the page that needed it, on 2026-10-28, and had to be folded in by hand.
+[`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py) asks for confirmation before `gh pr create` in a repository where the same session already opened one, from a per-session ledger that [`../hooks/ai-review-request.py`](../hooks/ai-review-request.py) records.
 
 **Dual-base PRs, same change targeting two branches:** never use `--delete-branch` on the first merge. GitHub auto-closes any other open PR whose head is the deleted branch. Use separate branches like `fix/foo-develop` and `fix/foo-main` from the start, or omit `--delete-branch` until both PRs are merged.
 

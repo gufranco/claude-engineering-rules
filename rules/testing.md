@@ -31,7 +31,3 @@ Enforced by: [`hooks/mock-internal-blocker.py`](../hooks/mock-internal-blocker.p
 Enforced by: [`hooks/tdd-gate.py`](../hooks/tdd-gate.py).
 Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
 Enforced by: [`hooks/coverage-exclusion-guard.py`](../hooks/coverage-exclusion-guard.py).
-
-## Provenance
-
-Added 2026-03-06, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-27, by direct user instruction, under the fails-without-an-error-signal condition: a weakened or deleted test turns a failing change green, and a prose-only ban was reported to shift the agent from editing tests to deleting them. Amended 2026-10-28, by direct user instruction: the coverage floor is 100% per file with no exclusions, plus 100% E2E coverage of entry points and scenarios, because code no test can reach signals an architecture problem, sloppy code, or code to delete. Amended 2026-10-29, recurrence 3 in commit `efb6501` of `gufranco/claude-engineering-rules`: three tests passed only on a configured Mac and failed on the Linux runner. Amended 2026-10-29, `single-incident`, by direct user instruction: the test-deletion confirmation fired on an untracked screenshot spec the session had created, so a file in no commit is exempt.

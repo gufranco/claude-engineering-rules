@@ -31,8 +31,6 @@ it('marks a pending task done when it is completed', () => {
 });
 ```
 
-Provenance: 2026-10-12, owner request. Adopted from the ai-hero-cli what-to-test skill and the course-video-manager do-work DB-TDD and FRONTEND-TDD guides.
-
 ## Mocks Policy (STRICT)
 
 **Allowed:** External third-party APIs outside your control, systems you do not own and cannot run locally, Time/Date, Randomness
@@ -57,15 +55,13 @@ interface BillingPort {
 
 This shape applies only to the allowed mock surface above. Internal services stay real in tests.
 
-Provenance: 2026-10-12, owner request. Adopted from the ai-engineer-workshop tdd skill's mocking guide.
-
 ## Test Structure
 
 Every test follows Arrange, Act, Assert, in that order. The three phases are mandatory, their order is fixed, and each phase is labeled.
 
 Each block opens with its marker comment in the language's comment syntax: `// Arrange`, `// Act`, `// Assert` in C-family languages, `# Arrange`, `# Act`, `# Assert` in Python, Ruby, and shell, and the equivalent elsewhere. A marker is the bare word. Nothing follows it on the line, so `// Assert: status code` is a violation. The three markers are the only comments a test carries; the comment ban in [`code-style.md`](../rules/code-style.md) "Comments" covers everything else in a test exactly as it covers production code, with the same exemption for tool directives.
 
-Provenance: 2026-10-12, an owner decision that restores the markers banned on 2026-09-18. The markers make the phase boundaries scannable at a glance, and every other comment stays banned so the code remains the documentation.
+The markers make the phase boundaries scannable at a glance, and every other comment stays banned so the code remains the documentation.
 
 ### The three blocks
 
@@ -242,7 +238,7 @@ The literal prices are the worked example, so they are the oracle, not the fille
 
 This section does not replace the database-count assertions in [Write-Path Tests](#write-path-tests-mandatory). Counting rows asserts an observable effect against a literal, which is an independent source of truth.
 
-Provenance: 2026-10-12, threshold skipped because the user explicitly requested adoption. Adopted from the mattpocock/skills `tdd` guidance, whose CHANGELOG records tautological tests as an observed failure: an assertion recomputed the way the code computes it passes by construction and gives zero confidence.
+An assertion recomputed the way the code computes it passes by construction and gives zero confidence.
 
 ### Assertions Are Never Weakened To Pass
 
@@ -265,7 +261,7 @@ Static values hide couplings. A test passing with `"test@example.com"` might fai
 
 **Seeding:** seed the generator per test file or describe block. Same seed produces the same sequence on every run.
 
-**Filler, not the input under test.** Generate filler values: emails, names, ids, timestamps, anything the assertion does not depend on. A literal that is itself the behavior under test stays literal, such as the exact command string a hook must block or the worked example an expected value comes from, because it is the oracle. Owner decision, 2026-10-12.
+**Filler, not the input under test.** Generate filler values: emails, names, ids, timestamps, anything the assertion does not depend on. A literal that is itself the behavior under test stays literal, such as the exact command string a hook must block or the worked example an expected value comes from, because it is the oracle.
 
 | Language | Library |
 |----------|---------|
@@ -340,7 +336,7 @@ The per-file 100% is measured across all suites combined. Integration and unit t
 
 [`hooks/coverage-exclusion-guard.py`](../hooks/coverage-exclusion-guard.py) blocks an edit that adds an exclusion directive to source or writes a threshold under 100 into a coverage config. It asks before a new omit or exclude entry, which is legitimate only for generated or vendored paths.
 
-Provenance for the coverage-as-locator bullet: 2026-10-12, owner request, adopted from the ai-hero-cli what-to-test skill. Provenance for the 100% floor: 2026-10-28, owner request: unreachable code is treated as an architecture problem, sloppy code, or code to delete.
+Unreachable code is treated as an architecture problem, sloppy code, or code to delete, which is why the floor is 100%.
 
 ## Write-Path Tests (MANDATORY)
 
@@ -458,7 +454,7 @@ Every test must produce the same result on every run, on every machine. A test t
 | File system | Use temp directories, clean up in `afterEach` |
 | The developer's machine | Set the git identity inside any repository the test creates, point `HOME` at a temp directory before reading a dotfile, and assert each platform branch on the platform that takes it |
 
-A test that passes only where the author ran it fails first in CI. Origin: `gufranco/claude-engineering-rules` commit `efb6501` on 2026-10-28 fixed three tests that passed only on a configured Mac, two that committed without a git identity and one whose branch was reached only through the personal settings-hygiene blocklist, and gave a darwin-only coverage branch an in-process test that runs on Linux too.
+A test that passes only where the author ran it fails first in CI. Typical causes: a test that commits without setting a git identity, one that reads a file only the author's machine has, and a platform branch covered only on the author's operating system.
 
 If a test fails intermittently, fix or delete it. Flaky tests erode trust in the entire suite and train developers to ignore failures.
 

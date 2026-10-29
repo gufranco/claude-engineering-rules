@@ -19,7 +19,3 @@ Full rule, examples, and rationale: [`standards/no-ai-process-leak.md`](../stand
 ## Enforcement
 
 Enforced by: [`hooks/ai-attribution-blocker.py`](../hooks/ai-attribution-blocker.py).
-
-## Provenance
-
-Added 2026-05-22, recurrence not recorded. Origin: not recorded at creation.

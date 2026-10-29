@@ -13,7 +13,3 @@ A correction produces a file write before the turn that received it ends, or it 
 - Write each accepted item as one dense line.
 
 Full rule, examples, and rationale: [`standards/same-turn-persistence.md`](../standards/same-turn-persistence.md). Read it before deciding where a correction goes or whether it clears the bar.
-
-## Provenance
-
-Added 2026-08-26, recurrence not recorded. Origin: not recorded at creation.

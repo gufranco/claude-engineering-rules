@@ -13,14 +13,10 @@ flags it, the fix lands in this task.
 
 ## Why This Rule Exists
 
-The user explicitly flagged a regression in a session where the CI run came
-back with three annotations. Two were Node 20 deprecation notices on
-upstream actions; one was a CodeQL Action v3 deprecation. The assistant
-reported the run as green and dismissed the annotations as "pre-existing,
-not introduced by this work." The user corrected: "fix everything, even
-what wasn't introduced now." The fix took four lines of YAML and one
-extra commit. The cost of the deferral was negotiation, a follow-up turn,
-and erosion of trust.
+A CI run that comes back with deprecation annotations is not green. Reporting
+it as green and dismissing the annotations as "pre-existing, not introduced
+by this work" ships the warnings, and fixing them later costs a follow-up
+turn for what is often a few lines of YAML.
 
 The existing rules already required the fix. [`verification.md`](../rules/verification.md)
 "CI is clean" line says: "All checks pass AND zero annotations/warnings.
@@ -30,8 +26,8 @@ warnings. Deprecation notices, version warnings, and non-fatal alerts all
 require a fix before the task is done." The failure was not the rule. The
 failure was the rationalization that wrapped around it.
 
-This rule names the rationalization pattern explicitly so the next session
-cannot reach for it.
+This rule names the rationalization pattern explicitly so it cannot be
+reached for.
 
 ## In Scope
 

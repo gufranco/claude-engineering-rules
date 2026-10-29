@@ -7,7 +7,3 @@ Every frontend task targets WCAG 2.2 AA, plus AAA where it does not conflict wit
 - Honor `prefers-reduced-motion`; `lang` on `<html>`; no image CAPTCHA; never `tabindex` above 0.
 
 Full rule, examples, and rationale: [`standards/accessibility-defaults.md`](../standards/accessibility-defaults.md). Read it before writing or reviewing any UI markup.
-
-## Provenance
-
-Added 2026-05-27, recurrence not recorded. Origin: not recorded at creation.

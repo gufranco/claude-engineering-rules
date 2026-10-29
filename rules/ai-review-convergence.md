@@ -8,7 +8,3 @@ Applies when a PR carries automated review comments. Zero bot comments is unreac
 - Judge human reviewers on the merits, not by the gate. Verify the fix before replying and name the commit.
 
 Full rule, examples, and rationale: [`standards/ai-review-convergence.md`](../standards/ai-review-convergence.md). Read it before working a batch of bot review comments.
-
-## Provenance
-
-Added 2026-08-20, recurrence not recorded. Origin: not recorded at creation.

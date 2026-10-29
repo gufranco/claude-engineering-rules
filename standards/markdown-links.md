@@ -118,7 +118,7 @@ The repo is public-facing. New visitors land on the GitHub repo page and use the
 
 The same applies to skill files, standards, and rule files: contributors browsing them benefit from one-click navigation to the files they describe.
 
-The earlier README-only rule in [`skills/readme/SKILL.md`](../skills/readme/SKILL.md) covered the marketing-grade variant only and was not enforced. This file generalizes the rule and pairs it with the validator and hook for enforcement.
+This file pairs the rule with the validator and hook that enforce it.
 
 ## Cross-References
 

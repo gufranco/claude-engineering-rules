@@ -14,7 +14,7 @@ This standard summarizes the obligations of EU AI Act (Regulation 2024/1689), Co
 | High-risk most obligations | 2 August 2026 | Annex III systems |
 | Article 6(1) + post-market monitoring | 2 August 2027 | Final transitional provisions |
 
-Verified against [artificialintelligenceact.eu/implementation-timeline/](https://artificialintelligenceact.eu/implementation-timeline/) on 2026-05-27.
+Source: [artificialintelligenceact.eu/implementation-timeline/](https://artificialintelligenceact.eu/implementation-timeline/).
 
 ## Risk Tier Classification
 
