@@ -246,11 +246,11 @@ Environment variables are insufficient for production secrets. A single compromi
 Dependencies are attack surface. A compromised package runs with your code's permissions.
 
 - **Lock dependencies**: always commit lockfiles. Pin exact versions, not ranges
-- **Verify integrity**: enable lockfile integrity checking via `npm ci`, not `npm install`, in CI
+- **Verify integrity**: install from the lockfile in CI with `pnpm install --frozen-lockfile` and `uv sync --locked`, never a plain `pnpm install`
 - **Review before adding**: check the package's maintainers, recent commits, download count, and known vulnerabilities before installing. A package with 12 downloads and one maintainer is a risk
 - **Typosquatting**: double-check package names. `lodash` vs `1odash`, `colors` vs `colour`. One character can mean malicious code
 - **Dependency confusion**: if you use private packages, configure scoped registries to prevent public registry substitution
-- **Audit regularly**: run `npm audit`, `pip audit`, or equivalent in CI. Block builds on critical/high vulnerabilities
+- **Audit regularly**: run `pnpm audit`, `pnpm audit signatures`, `uv run pip-audit`, or equivalent in CI. Block builds on critical/high vulnerabilities
 - **Minimize surface**: fewer dependencies = fewer attack vectors. Prefer native/stdlib when the alternative is a small package with deep transitive dependencies
 - **Monitor advisories**: subscribe to security advisories for your critical dependencies. Do not wait for a scheduled audit to learn about a zero-day
 - **SBOM generation**: generate a Software Bill of Materials on every CI build using SPDX or CycloneDX format. Per-file SPDX-License-Identifier headers improve SBOM accuracy. See [`licensing.md`](licensing.md)

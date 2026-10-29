@@ -133,7 +133,7 @@ The steps below are enablers, not gates. Their order shows what becomes possible
    4. Closed PRs: `GH_TOKEN=$(gh auth token --user <account>) gh pr list --state closed --search "<keywords>"`. A closed PR often names a dead-end or a postponed approach.
    5. GitHub code search: `GH_TOKEN=$(gh auth token --user <account>) gh search code "<keywords>" --language=<lang>`.
    6. Library docs: `llms.txt` first, then official docs of the major library in the area.
-   7. Package registry: `npm search`, `pip index versions <name>` or the PyPI page, since PyPI disabled `pip search`, `cargo search`, `gem search`.
+   7. Package registry: `pnpm search`, `pip index versions <name>` or the PyPI page, since PyPI disabled `pip search`, `cargo search`, `gem search`.
    8. Web search: last resort, only if 1-7 turned up nothing.
 
    **Anti-duplication gate for skills, agents, hooks, standards, rules.** Before proposing a new file in `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/hooks/`, `~/.claude/standards/`, or `~/.claude/rules/`, run steps 1-2 against `~/.claude/` and the [`rules/index.yml`](../../rules/index.yml) on-demand entries first. Prefer extending an existing file, new subcommand, new section, new mode, over creating a new one. Justify the new file in writing when no extension fits. See [`rules/pre-flight.md`](../../rules/pre-flight.md) for the full rule.

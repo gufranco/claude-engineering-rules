@@ -30,7 +30,7 @@ Run `trust` on any freshly received project before the first install or build co
 | `/audit threat` | STRIDE threat modeling for the project or a specific component |
 | `/audit daily` | High-confidence security gate: secrets archaeology, supply chain, CI/CD pipeline review |
 | `/audit comprehensive` | Deep scan: daily checks plus OWASP Top 10, STRIDE per component, LLM/AI review |
-| `/audit trust` | Untrusted-project safety scan. Run before `npm install`, `pip install`, or any build command on a freshly received project |
+| `/audit trust` | Untrusted-project safety scan. Run before `pnpm install`, `uv sync`, or any build command on a freshly received project |
 
 If no subcommand is given, run all layers except threat modeling, daily, and comprehensive, which require focused analysis.
 
@@ -52,7 +52,7 @@ If no subcommand is given, run all layers except threat modeling, daily, and com
 2. **Dependency scan**: per-language audit (see deps section).
 3. **Secret scanning**: scan all tracked files, `git ls-files` using patterns from `~/.claude/hooks/secret-scanner.py`. Skip binaries, lockfiles, vendored code. Check [`.gitignore`](../../.gitignore) covers `.env`, `*.pem`, `*.key`. Apply the extended provider-specific patterns below (see secrets section) for Stripe, Twilio, GCP, Azure, Slack, Shopify, and other services not covered by the hook's generic patterns.
 4. **Dockerfile and Compose checks**: see the `docker` subcommand section below. Run the full Dockerfile checklist and, when `compose*.yml` or `docker-compose*.yml` is present, the full Compose checklist. If `hadolint` is on `PATH`, run `hadolint Dockerfile`. If `docker scout` is available, run `docker scout quickview` and `docker scout cves`. If `trivy` is available, scan built images.
-5. **Code patterns**: SQL injection, string concatenation in queries, command injection via `exec`, `spawn`, or `eval` with dynamic input, XSS through `dangerouslySetInnerHTML` or `innerHTML`, path traversal, hardcoded secrets, insecure randomness using `Math.random()` for security, empty catch blocks. Run `semgrep --config auto` if available. Also check supply chain risks: review `postinstall` scripts in dependencies via `cat node_modules/<pkg>/package.json | jq .scripts.postinstall`, verify scoped packages resolve to the private registry, `npm install --dry-run`, verify Docker secrets use `--mount=type=secret` not `ENV` or `ARG`, and confirm lockfile integrity hashes are present.
+5. **Code patterns**: SQL injection, string concatenation in queries, command injection via `exec`, `spawn`, or `eval` with dynamic input, XSS through `dangerouslySetInnerHTML` or `innerHTML`, path traversal, hardcoded secrets, insecure randomness using `Math.random()` for security, empty catch blocks. Run `semgrep --config auto` if available. Also check supply chain risks: review `postinstall` scripts in dependencies via `cat node_modules/<pkg>/package.json | jq .scripts.postinstall`, verify scoped packages resolve to the private registry, `pnpm install --lockfile-only --ignore-scripts`, verify Docker secrets use `--mount=type=secret` not `ENV` or `ARG`, and confirm lockfile integrity hashes are present.
 6. **Compile report** by severity:
 
 ```
@@ -88,7 +88,7 @@ Audit dependencies for known vulnerabilities. Detect package manager from lockfi
 
 ### Package Manager Detection
 
-`bun.lock`/`bun.lockb` = bun, `pnpm-lock.yaml` = pnpm, `yarn.lock` = yarn, `package-lock.json` = npm, `Cargo.toml` = cargo, `go.mod` = go, `pyproject.toml` with `uv.lock` = uv, `pyproject.toml` with `[tool.poetry]` = poetry, `pyproject.toml`/`requirements.txt` = pip. Also check for `Makefile`/`Justfile` targets.
+`bun.lock`/`bun.lockb` = bun, `pnpm-lock.yaml` = pnpm, `yarn.lock` = yarn, `package-lock.json` = npm, which is converted to pnpm with `pnpm import`, `Cargo.toml` = cargo, `go.mod` = go, `pyproject.toml` with `uv.lock` = uv, `pyproject.toml` with `[tool.poetry]` = poetry, `pyproject.toml`/`requirements.txt` = pip. Also check for `Makefile`/`Justfile` targets.
 
 ### Audit (default)
 
@@ -319,7 +319,7 @@ Fast security gate for routine use. Three focused checks that catch the highest-
    - Report each finding with the commit hash, file path, and pattern matched.
 
 2. **Dependency supply chain check.** Audit the dependency tree:
-   - Run the project's audit command: `npm audit`, `pnpm audit`, `pip audit`, `cargo audit`, or equivalent.
+   - Run the project's audit command: `pnpm audit`, `uv run pip-audit`, `cargo audit`, or equivalent.
    - Check for known CVEs with severity >= HIGH.
    - Flag packages with fewer than 100 weekly downloads or a single maintainer.
    - Flag packages added in the last 30 days that have no prior release history.
@@ -463,7 +463,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 
 - First contact with a project from any external source: take-home, contractor delivery, open-source repo from an unknown maintainer, a dependency you are considering adding.
 - Automatically invoked by `/onboard` Phase 0 before any architecture exploration begins.
-- Before running `npm install`, `pip install`, `cargo build`, or any build/setup command on a fresh clone.
+- Before running `pnpm install`, `uv sync`, `cargo build`, or any build/setup command on a fresh clone.
 
 ### When NOT to use
 
@@ -478,7 +478,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 - `--no-semgrep`, `--no-trivy`, `--no-gitleaks`: opt out of specific external tools even if installed.
 - `--strict`: upgrade MEDIUM findings to HIGH. Useful when the project is highly untrusted.
 - `--json`: emit machine-readable findings instead of the narrative report. Used by `/onboard` Phase 0.
-- `--no-npm-signatures`: skip `npm audit signatures` in step 12.
+- `--no-signatures`: skip `pnpm audit signatures` in step 12.
 
 ### Steps
 
@@ -502,7 +502,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 
 10. **Scan dependencies.** For each direct dependency in the manifest:
     - Query offline metadata first, lockfile, package cache.
-    - If `npm` is available and the user has internet, run `npm view <name> time` to get age. Skip if offline.
+    - If `pnpm` is available and the user has internet, run `pnpm view <name> time` to get age. Skip if offline.
     - Compare names against the typosquat list and known-malicious package list in [`trust-patterns.md`](trust-patterns.md).
     - Apply Section G patterns. Known-malicious match is CRITICAL. Age under 7 days is HIGH. Lockfile resolving to non-default registry is CRITICAL.
 
@@ -512,7 +512,7 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
     - `gitleaks` if installed: run `gitleaks detect --no-git --redact --report-path /tmp/gitleaks-trust.json`. Parse findings.
     - `semgrep` if installed and the `apiiro/malicious-code-ruleset` is reachable: run with that ruleset. Parse findings.
     - `trivy` if installed: run `trivy fs --scanners misconfig,secret,vuln .`. Parse findings.
-    - `npm audit signatures` if `package.json` and `package-lock.json` are present, network is available, and `--no-npm-signatures` was not passed. Verifies Sigstore provenance.
+    - `pnpm audit signatures` if `package.json` and `pnpm-lock.yaml` are present, network is available, and `--no-signatures` was not passed. Verifies Sigstore provenance.
     - Each tool's findings merge into the master findings list with mapped severity. Tools are opt-out via `--no-<tool>` if the user wants speed.
 
 13. **Compute verdict.** Per the rules in [`trust-patterns.md`](trust-patterns.md) Verdict Logic section. Per-file aggregate first, then project aggregate.
@@ -576,16 +576,16 @@ Read-only safety scan for untrusted projects. Detects install-time hooks, creden
 - Always scan `.env.example`, never `.env` directly.
 - Always detect package manager from lockfile.
 - Never update packages without showing changes and getting approval.
-- Never run `npm audit fix --force` without explicit approval.
+- Never apply `pnpm audit --fix` overrides that cross a major version without explicit approval.
 - If no vulnerabilities found, say so clearly.
 - Classify by actual severity, not quantity.
 
 ## Common Rationalizations
 
 - "`trivy` is missing, so install it and continue": installing a scanner needs the user's approval. Report what is available and ask.
-- "`npm audit fix --force` clears the report fastest": it can jump major versions and break the build. Show the changes and get explicit approval.
+- "`pnpm audit --fix` clears the report fastest": it can jump major versions and break the build. Show the changes and get explicit approval.
 - "Showing the leaked key makes the finding concrete": the report carries file, line, and pattern name, with the match masked.
-- "Run `npm install` first so the dependency scan sees `node_modules`": on an untrusted project, install runs lifecycle scripts. Run `trust` first, from manifests and lockfiles only.
+- "Run `pnpm install` first so the dependency scan sees `node_modules`": on an untrusted project, install runs lifecycle scripts. Run `trust` first, from manifests and lockfiles only.
 - "Twelve LOW findings outweigh one HIGH": classify by actual severity, never by count.
 
 ## Red Flags

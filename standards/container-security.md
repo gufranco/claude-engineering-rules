@@ -107,12 +107,13 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM node:22-slim@sha256:... AS node-deps
 WORKDIR /app
-COPY --link package.json package-lock.json ./
+COPY --link package.json pnpm-lock.yaml ./
 
 RUN --mount=type=secret,id=npm_token,target=/run/secrets/npm_token \
-    npm config set //registry.npmjs.org/:_authToken=$(cat /run/secrets/npm_token) && \
-    npm ci && \
-    npm config delete //registry.npmjs.org/:_authToken
+    corepack enable && \
+    pnpm config set //registry.npmjs.org/:_authToken=$(cat /run/secrets/npm_token) && \
+    pnpm install --frozen-lockfile && \
+    pnpm config delete //registry.npmjs.org/:_authToken
 
 RUN <<EOF
 set -eux
@@ -140,7 +141,7 @@ Canonical cache-mount targets:
 | Debian / Ubuntu apt | `/var/cache/apt`, `/var/lib/apt` (and disable apt's docker-clean) |
 | Alpine apk | `/var/cache/apk` |
 | Python pip | `/root/.cache/pip` |
-| Node npm | `/root/.npm` |
+| Node pnpm | `/root/.local/share/pnpm/store` |
 | Node pnpm | `/root/.local/share/pnpm/store` |
 | Node yarn classic | `/usr/local/share/.cache/yarn` |
 | Go modules | `/go/pkg/mod` |

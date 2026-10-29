@@ -267,9 +267,9 @@ The most important section after the hero. It must be prominent, copy-pasteable,
 ```bash
 git clone https://github.com/user/repo.git
 cd repo
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
+pnpm dev
 ```
 
 ### Verify
@@ -305,10 +305,10 @@ The generated section has five parts.
 ```bash
 git clone https://github.com/user/repo.git
 cd repo
-npm install
+pnpm install
 cp .env.example .env
-npm run db:seed
-npm run dev
+pnpm db:seed
+pnpm dev
 ```
 
 To reproduce reported bugs, follow the steps above and then read the bug report's "Steps to reproduce" section.
@@ -321,10 +321,10 @@ To reproduce reported bugs, follow the steps above and then read the bug report'
 
 | Suite | Command | Covers |
 |:------|:--------|:-------|
-| Unit | `npm run test:unit` | Pure functions and domain logic |
-| Integration | `npm run test:integration` | Real database and queue, no mocks |
-| End to end | `npm run test:e2e` | Full user flows through the HTTP layer |
-| Lint and format | `npm run lint` | Style and static analysis gates |
+| Unit | `pnpm test:unit` | Pure functions and domain logic |
+| Integration | `pnpm test:integration` | Real database and queue, no mocks |
+| End to end | `pnpm test:e2e` | Full user flows through the HTTP layer |
+| Lint and format | `pnpm lint` | Style and static analysis gates |
 ```
 
 Take the suite names and commands from the manifest scripts, the Makefile targets, or the CI job matrix found in Phase 1. Never invent a suite the project does not have. When the project ships a single undifferentiated `test` script, show one row and skip the table header ceremony.
@@ -369,7 +369,7 @@ Phase 1 Deep Scan gains these scans:
 2. **Detect lint and style configs.** Look for `.eslintrc.*`, `prettier.config.*`, `.editorconfig`, `pyproject.toml [tool.ruff]`, `clippy.toml`, `golangci.yml`. Cite the discovered files in the table.
 3. **Detect AI review bots.** Look for `.coderabbit.yml`, `.coderabbit.yaml`, `.greptile.yml`, `.cursorrules`, `.cursor/`, `.sourcery.yaml`, `korbit.yml`. List the discovered bots in the conventions table.
 4. **Detect issue tracker.** Read repo metadata via `GH_TOKEN=$(gh auth token --user <account>) gh repo view --json hasIssuesEnabled,url`. If issues are disabled, look for `ISSUE_TEMPLATE/` or `BUG_REPORT.md` template files. If neither, omit the section and leave a comment recommending the user add one.
-5. **Detect testing instructions.** Look for `make test`, `npm run test`, `pytest`, `go test ./...`, or equivalent. Enumerate every test-related script or target, not only the aggregate one, so the Running the tests table can name each suite and what it covers. The reproducing-a-bug instructions reuse the same command.
+5. **Detect testing instructions.** Look for `make test`, `pnpm test`, `pytest`, `go test ./...`, or equivalent. Enumerate every test-related script or target, not only the aggregate one, so the Running the tests table can name each suite and what it covers. The reproducing-a-bug instructions reuse the same command.
 
 #### Skip conditions
 
@@ -548,9 +548,9 @@ Tables grouped by category. Only include if the project has a Makefile, scripts,
 
 | Command | Description |
 |:--------|:------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run test` | Run test suite with coverage |
-| `npm run lint` | Lint and format check |
+| `pnpm dev` | Start development server with hot reload |
+| `pnpm test` | Run test suite with coverage |
+| `pnpm lint` | Lint and format check |
 
 ### Infrastructure
 

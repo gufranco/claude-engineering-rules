@@ -170,8 +170,8 @@ When a failure has a distinctive message and a non-obvious cause, put the litera
 Changing the manifest without regenerating the lockfile passes locally and fails
 the deploy build with:
 
-    npm error `npm ci` can only install packages when your package.json and
-    npm error package-lock.json are in sync.
+    ERR_PNPM_OUTDATED_LOCKFILE  Cannot install with "frozen-lockfile" because
+    pnpm-lock.yaml is not up to date with package.json
 
 Run the install and commit both files together.
 ```

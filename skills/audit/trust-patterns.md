@@ -29,7 +29,7 @@ Cluster rule: matches of the same row count once per file. When two or more MEDI
 
 ## Section A: Install-time hooks
 
-Lifecycle scripts and install configs that run automatically before any application code is imported. Highest-priority targets because they run on first `npm install` / `pip install` / equivalent.
+Lifecycle scripts and install configs that run automatically before any application code is imported. Highest-priority targets because they run on first `pnpm install` / `uv sync` / equivalent.
 
 | Pattern | Severity | Target | Rationale | Known false positives |
 |---------|----------|--------|-----------|----------------------|
@@ -153,18 +153,18 @@ IDE and shell-tooling configs that execute code automatically when the project i
 
 ## Section G: Dependency red flags
 
-Properties of declared dependencies, evaluated against metadata available offline, lockfile, and optionally online, `npm view`, `pip show`.
+Properties of declared dependencies, evaluated against metadata available offline, lockfile, and optionally online, `pnpm view`, `uv pip show`.
 
 | Pattern | Severity | Target | Rationale | Known false positives |
 |---------|----------|--------|-----------|----------------------|
 | Direct dependency name matching the known-malicious package list at the end of this file | CRITICAL | Manifest dependencies | Definitive IOC | None |
 | Direct dependency name within Levenshtein distance 1 of a top-1000 package and not matching any known scope | HIGH | Manifest dependencies | Typosquat | Internal-scoped packages with intentional similar names |
-| Direct dependency published less than 7 days ago | HIGH | Manifest dependencies + `npm view` data | Most malicious packages are caught and removed within days; fresh packages are higher risk | Patched stable libraries during a security release window |
-| Direct dependency published less than 30 days ago | MEDIUM | Manifest dependencies + `npm view` data | Same signal weaker | New libraries with no prior releases |
-| Direct dependency with fewer than 100 weekly downloads relative to a stated download count over 10000 | HIGH | `npm view` data | Sudden drop or fresh malicious package | Internal packages |
-| Direct dependency where the package manifest's `repository.url` returns 404, points to a deleted repo, or contains no commits | HIGH | `npm view` data | Backing source code missing | Private libraries |
-| Direct dependency where the maintainer changed in the last 30 days and the new maintainer has no prior package history | HIGH | `npm view` data | Account takeover signal | New maintainers with verifiable identity |
-| Direct dependency with a single maintainer and no organization scope | MEDIUM | `npm view` data | Single-point-of-failure for compromise | Many legitimate small packages fit this |
+| Direct dependency published less than 7 days ago | HIGH | Manifest dependencies + `pnpm view` data | Most malicious packages are caught and removed within days; fresh packages are higher risk | Patched stable libraries during a security release window |
+| Direct dependency published less than 30 days ago | MEDIUM | Manifest dependencies + `pnpm view` data | Same signal weaker | New libraries with no prior releases |
+| Direct dependency with fewer than 100 weekly downloads relative to a stated download count over 10000 | HIGH | `pnpm view` data | Sudden drop or fresh malicious package | Internal packages |
+| Direct dependency where the package manifest's `repository.url` returns 404, points to a deleted repo, or contains no commits | HIGH | `pnpm view` data | Backing source code missing | Private libraries |
+| Direct dependency where the maintainer changed in the last 30 days and the new maintainer has no prior package history | HIGH | `pnpm view` data | Account takeover signal | New maintainers with verifiable identity |
+| Direct dependency with a single maintainer and no organization scope | MEDIUM | `pnpm view` data | Single-point-of-failure for compromise | Many legitimate small packages fit this |
 | Lockfile resolves a direct dependency to a different version than the manifest range | HIGH | Lockfile vs manifest | Possible lockfile tampering | Intentional version pinning via lockfile |
 | Lockfile resolves any package to a non-default registry without a documented company registry config | CRITICAL | Lockfile | Dependency confusion attack | Documented private registry |
 | Lockfile has no integrity hash (`integrity:` field empty or missing) for a package | HIGH | Lockfile | Lockfile cannot verify package content | Local-path or git-protocol dependencies |

@@ -8,7 +8,7 @@ Quarterly tasks that keep the configuration healthy and up-to-date.
 
 ### Dependencies and runtimes
 
-- [ ] Update all MCP server packages: `npx -y <package>@latest` for each entry in [`settings.json`](../settings.json)
+- [ ] Update all MCP server packages: `pnpm dlx <package>@latest` for each entry in [`settings.json`](../settings.json)
 - [ ] Check for new Claude Code releases: `claude --version`
 - [ ] Review [`standards/`](../standards) files for outdated version references such as Node.js LTS, Python, Go, or Rust
 - [ ] Run `python3 .github/scripts/validate-checklist-counts.py` and fix any count mismatches in README.md and CLAUDE.md

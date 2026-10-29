@@ -489,7 +489,7 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build && pnpm start &
-      - run: npx wait-on http://localhost:3000 --timeout 30000
+      - run: pnpm dlx wait-on http://localhost:3000 --timeout 30000
       - run: pnpm dlx pa11y-ci --config pa11y.config.js
         name: Pa11y CI (WCAG 2 AA)
 ```

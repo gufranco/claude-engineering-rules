@@ -388,7 +388,7 @@ Use a CDN for global distribution. Enable Brotli compression for 15 to 20 percen
 
 - Lab: Chrome DevTools Performance panel, Lighthouse CLI, WebPageTest
 - Field: Chrome User Experience Report or CrUX, Google Search Console, `web-vitals` library sent to analytics
-- Lighthouse CLI: `npx lighthouse https://example.com --output html --output-path report.html`
+- Lighthouse CLI: `pnpm dlx lighthouse https://example.com --output html --output-path report.html`
 
 ## SEO
 

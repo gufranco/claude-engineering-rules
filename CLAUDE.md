@@ -125,7 +125,7 @@ A blocking hook means a rule was violated: change the code, never silence the ho
 
 Full text, including the zsh traps: [`standards/shell-and-tools.md`](standards/shell-and-tools.md).
 
-- Verify a tool is installed with `which` before use; ask before installing. Never Homebrew on Linux. pnpm for JavaScript.
+- Verify a tool is installed with `which` before use; ask before installing. Never Homebrew on Linux. uv for Python and pnpm for JavaScript, never pip, npm, or npx; commit `uv.lock` and `pnpm-lock.yaml`.
 - Check rate limits before polling. Local binaries over Docker wrappers.
 - Clone to `mktemp -d` rather than fetching three or more files via API. See [`rules/repo-analysis.md`](rules/repo-analysis.md).
 - Name the account on every multi-account CLI call: `GH_TOKEN=$(gh auth token --user <account>) gh ...`, account read from `git remote get-url origin`.

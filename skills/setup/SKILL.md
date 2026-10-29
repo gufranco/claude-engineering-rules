@@ -157,9 +157,9 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
    - If the service is not in docker-compose, inform the user that the service needs to be started manually and provide the typical connection details from the env vars.
 
 7. **Run database setup.** Detect the ORM or migration tool:
-   - Prisma: `npx prisma migrate dev` or `npx prisma db push` depending on the project stage. Then `npx prisma db seed` if a seed script exists.
-   - Knex: `npx knex migrate:latest` then `npx knex seed:run` if seeds exist.
-   - TypeORM: `npx typeorm migration:run`.
+   - Prisma: `pnpm exec prisma migrate dev` or `pnpm exec prisma db push` depending on the project stage. Then `pnpm exec prisma db seed` if a seed script exists.
+   - Knex: `pnpm exec knex migrate:latest` then `pnpm exec knex seed:run` if seeds exist.
+   - TypeORM: `pnpm exec typeorm migration:run`.
    - Django: `python manage.py migrate` then `python manage.py loaddata` if fixtures exist.
    - SQLAlchemy with Alembic: `alembic upgrade head`.
    - If no ORM is detected but `DATABASE_URL` exists, inform the user that manual database setup may be needed.
@@ -215,7 +215,7 @@ This skill takes no arguments. Run `/setup` and it walks through everything inte
 - Always verify the application actually starts. "Dependencies installed" is not "setup complete."
 - Never install runtimes or system-level tools automatically. Report what is missing and let the user decide how to install.
 - When a step fails, report the error clearly and continue with the remaining steps where possible. A failed database migration should not prevent reporting what else was configured.
-- Prefer `pnpm` for JavaScript and TypeScript projects. Only use `npm` or `yarn` when the lockfile indicates otherwise.
+- Use `pnpm` for every JavaScript and TypeScript project. A project with `package-lock.json` or `yarn.lock` is converted: `pnpm import`, delete the old lockfile, and pin `packageManager`.
 - When docker-compose starts a service, wait for its health check before running migrations. A started container is not a ready service.
 
 ## Common Rationalizations
