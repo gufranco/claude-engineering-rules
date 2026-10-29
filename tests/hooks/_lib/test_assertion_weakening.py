@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,6 +13,7 @@ HOOKS_DIR = Path(__file__).resolve().parents[3] / "hooks"
 if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 
+from _lib import assertion_weakening  # noqa: E402
 from _lib.assertion_weakening import (  # noqa: E402
     UNREADABLE,
     findings_for,
@@ -189,6 +193,148 @@ def test_write_over_an_unreadable_file_fails_closed(tmp_path: Path) -> None:
 
     # Assert
     assert findings == [UNREADABLE]
+
+
+COMMITTED = "def test_a():\n    assert a == 1\n"
+ADDED = "\n\ndef test_b():\n    assert b == 2\n"
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+
+def _committed_test_file(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    (repo / "tests").mkdir(parents=True)
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", f"{fake.user_name()}@repo.test")
+    _git(repo, "config", "user.name", fake.name())
+    _git(repo, "config", "commit.gpgsign", "false")
+    target = repo / "tests" / "test_x.py"
+    target.write_text(COMMITTED, encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    return target
+
+
+def test_removing_tests_that_no_commit_holds_is_allowed(tmp_path: Path) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path)
+    target.write_text(COMMITTED + ADDED, encoding="utf-8")
+    tool_input = {"file_path": str(target), "old_string": ADDED, "new_string": ""}
+
+    # Act
+    findings = findings_for("Edit", tool_input)
+
+    # Assert
+    assert findings == []
+
+
+def test_removing_a_committed_test_is_still_reported(tmp_path: Path) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path)
+    tool_input = {"file_path": str(target), "old_string": COMMITTED, "new_string": ""}
+
+    # Act
+    findings = findings_for("Edit", tool_input)
+
+    # Assert
+    assert findings == ["assertions drop from 1 to 0", "test cases drop from 1 to 0"]
+
+
+def test_a_multiedit_removing_uncommitted_tests_everywhere_is_allowed(
+    tmp_path: Path,
+) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path)
+    target.write_text(COMMITTED + ADDED + ADDED, encoding="utf-8")
+    edits = [{"old_string": ADDED, "new_string": "", "replace_all": True}]
+    tool_input = {"file_path": str(target), "edits": edits}
+
+    # Act
+    findings = findings_for("MultiEdit", tool_input)
+
+    # Assert
+    assert findings == []
+
+
+def test_rewriting_a_file_no_commit_holds_is_allowed(tmp_path: Path) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path).parent / "test_new.py"
+    target.write_text(COMMITTED, encoding="utf-8")
+    tool_input = {"file_path": str(target), "content": ""}
+
+    # Act
+    findings = findings_for("Write", tool_input)
+
+    # Assert
+    assert findings == []
+
+
+def test_an_edit_whose_old_text_is_missing_keeps_the_finding(tmp_path: Path) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path)
+    tool_input = {"file_path": str(target), "old_string": ADDED, "new_string": ""}
+
+    # Act
+    findings = findings_for("Edit", tool_input)
+
+    # Assert
+    assert findings == ["assertions drop from 1 to 0", "test cases drop from 1 to 0"]
+
+
+def test_without_git_the_finding_is_kept(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path)
+    target.write_text(COMMITTED + ADDED, encoding="utf-8")
+    monkeypatch.setenv("PATH", str(tmp_path / "no-tools"))
+    tool_input = {"file_path": str(target), "old_string": ADDED, "new_string": ""}
+
+    # Act
+    findings = findings_for("Edit", tool_input)
+
+    # Assert
+    assert findings == ["assertions drop from 1 to 0", "test cases drop from 1 to 0"]
+
+
+def test_a_git_show_that_times_out_keeps_the_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path)
+    target.write_text(COMMITTED + ADDED, encoding="utf-8")
+    stub_dir = tmp_path / "bin"
+    stub_dir.mkdir()
+    stub = stub_dir / "git"
+    stub.write_text(
+        f'#!/bin/sh\ncase " $* " in *" show "*) sleep 3 ;; esac\nexec "{shutil.which("git")}" "$@"\n',
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{stub_dir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setattr(assertion_weakening, "GIT_TIMEOUT_SECONDS", 0.5)
+    tool_input = {"file_path": str(target), "old_string": ADDED, "new_string": ""}
+
+    # Act
+    findings = findings_for("Edit", tool_input)
+
+    # Assert
+    assert findings == ["assertions drop from 1 to 0", "test cases drop from 1 to 0"]
+
+
+def test_an_unreadable_target_keeps_the_finding(tmp_path: Path) -> None:
+    # Arrange
+    target = _committed_test_file(tmp_path).parent / "test_dir.py"
+    target.mkdir()
+    tool_input = {"file_path": str(target), "old_string": ADDED, "new_string": ""}
+
+    # Act
+    findings = findings_for("Edit", tool_input)
+
+    # Assert
+    assert findings == ["assertions drop from 1 to 0", "test cases drop from 1 to 0"]
 
 
 def test_other_tools_report_nothing() -> None:

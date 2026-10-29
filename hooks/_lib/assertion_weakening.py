@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 ASSERTION_RE = re.compile(
@@ -43,6 +44,7 @@ MEASURES: tuple[tuple[str, re.Pattern[str], str], ...] = (
 )
 
 UNREADABLE = "the existing test file could not be read to compare against"
+GIT_TIMEOUT_SECONDS = 5
 
 
 def _weakened(direction: str, old: int, new: int) -> bool:
@@ -97,8 +99,66 @@ def edit_sides(tool_name: str, tool_input: dict[str, object]) -> tuple[str, str]
     return current, str(tool_input.get("content", ""))
 
 
+def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess[str] | None:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(cwd), *args],
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def _committed_text(path: Path) -> str | None:
+    top = _git(path.parent, "rev-parse", "--show-toplevel")
+    if top is None or top.returncode != 0:
+        return None
+    relative = path.resolve().relative_to(Path(top.stdout.strip()).resolve())
+    shown = _git(path.parent, "show", f"HEAD:{relative.as_posix()}")
+    if shown is None:
+        return None
+    return shown.stdout if shown.returncode == 0 else ""
+
+
+def _apply(text: str, edit: dict[str, object]) -> str | None:
+    old = str(edit.get("old_string", ""))
+    new = str(edit.get("new_string", ""))
+    if not old or old not in text:
+        return None
+    return text.replace(old, new, -1 if edit.get("replace_all") is True else 1)
+
+
+def _edited_text(
+    tool_name: str, tool_input: dict[str, object], text: str
+) -> str | None:
+    if tool_name == "Write":
+        return str(tool_input.get("content", ""))
+    raw = tool_input.get("edits") if tool_name == "MultiEdit" else [tool_input]
+    edits = [e for e in raw if isinstance(e, dict)] if isinstance(raw, list) else []
+    result: str | None = text
+    for edit in edits:
+        result = _apply(result, edit) if result is not None else None
+    return result
+
+
+def no_weaker_than_commit(tool_name: str, tool_input: dict[str, object]) -> bool:
+    path = Path(str(tool_input.get("file_path", "")))
+    current = _current_text(path)
+    committed = _committed_text(path)
+    if current is None or committed is None:
+        return False
+    after = _edited_text(tool_name, tool_input, current)
+    return after is not None and not weakening_findings(committed, after)
+
+
 def findings_for(tool_name: str, tool_input: dict[str, object]) -> list[str]:
     sides = edit_sides(tool_name, tool_input)
     if sides is None:
         return [UNREADABLE]
-    return weakening_findings(*sides)
+    findings = weakening_findings(*sides)
+    if findings and no_weaker_than_commit(tool_name, tool_input):
+        return []
+    return findings
