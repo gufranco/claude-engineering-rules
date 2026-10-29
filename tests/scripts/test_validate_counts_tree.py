@@ -61,7 +61,9 @@ def _tree(root: Path, readme: str) -> Path:
             "agents/TEMPLATE.md": "t\n",
             "checklists/checklist.md": "### 1. One\n- [ ] a\n- [ ] b\n",
             "settings.json": json.dumps({"mcpServers": {"m": {}}}),
-            "tests/test-hooks.sh": "run_test a\nrun_test b\n",
+            "tests/fixtures/hook-smoke-cases.json": json.dumps(
+                [{"hook": "a"}, {"hook": "b"}]
+            ),
             "README.md": readme,
         },
     )

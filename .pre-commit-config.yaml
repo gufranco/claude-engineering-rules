@@ -52,11 +52,6 @@ repos:
       - id: zizmor
         args: [--persona=regular, --min-severity=low]
 
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.11.0
-    hooks:
-      - id: shellcheck
-        args: [--severity=warning]
 
   - repo: local
     hooks:
