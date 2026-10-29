@@ -206,10 +206,35 @@ def _documents(
     return documents
 
 
+def _merging(root: str) -> bool:
+    try:
+        _git(root, "rev-parse", "--verify", "-q", "MERGE_HEAD")
+    except StagedScanError:
+        return False
+    return True
+
+
+def _without_merged_copies(
+    root: str, documents: list[StagedDocument]
+) -> list[StagedDocument]:
+    if not documents or not _merging(root):
+        return documents
+    theirs = _read_objects(root, [f"MERGE_HEAD:{d.path}" for d in documents])
+    return [
+        document
+        for document, blob in zip(documents, theirs, strict=True)
+        if _decode(blob) != document.after
+    ]
+
+
 def staged_documents(request: CommitRequest) -> list[StagedDocument]:
     root = _repository_root(request.directory)
     if root is None:
         return []
+    return _without_merged_copies(root, _scanned_documents(root, request))
+
+
+def _scanned_documents(root: str, request: CommitRequest) -> list[StagedDocument]:
     staged = [
         entry for entry in _changed_paths(root, "--cached") if "\n" not in entry.path
     ]

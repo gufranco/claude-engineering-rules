@@ -40,6 +40,8 @@ CONFIG_READ_FLAGS = re.compile(
 
 CONFIG_REMOVE_FLAGS = re.compile(r"--(?:unset|unset-all|remove-section)\b")
 
+USER_KEY_WITH_VALUE = re.compile(r"\buser\.(?:email|name)\s+\S")
+
 AUTHOR_FLAG = re.compile(r"(?:^|\s)--author(?:=|\s)")
 
 ENV_AUTHOR_OVERRIDE = re.compile(
@@ -246,7 +248,7 @@ def check_config_mutation(command: str) -> None:
     rest = match.group("rest")
     if CONFIG_READ_FLAGS.search(rest) or CONFIG_REMOVE_FLAGS.search(rest):
         return
-    if not re.search(r"\buser\.(?:email|name)\b", rest):
+    if not USER_KEY_WITH_VALUE.search(rest):
         return
     has_global = re.search(r"--global\b", rest) is not None
     has_local = re.search(r"--local\b", rest) is not None
