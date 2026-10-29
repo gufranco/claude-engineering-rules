@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本发布</a>
 </p>
 
-47 条常驻规则、141 份按需加载的标准、42 个技能、94 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
+48 条常驻规则、142 份按需加载的标准、42 个技能、95 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
 
 ---
 
@@ -76,7 +76,7 @@ graph LR
 
 ### 常驻规则
 
-[`rules/`](rules/) 中有 47 条规则，[`rules/lang/`](rules/lang/) 中另有 5 条。[`rules/`](rules/) 下的每个文件都会以简短核心的形式加载到每一次对话中，包括语言文件和表格后面列出的 6 条。每个核心只保留会改变日常任务行为的义务，并链接到 [`standards/`](standards/) 中的全文，因此常驻集合保持在 55 个文件、106,633 个字符，低于 CI 强制执行的 120,000 字符预算和 150,000 字符的运行环境上限。
+[`rules/`](rules/) 中有 48 条规则，[`rules/lang/`](rules/lang/) 中另有 5 条。[`rules/`](rules/) 下的每个文件都会以简短核心的形式加载到每一次对话中，包括语言文件和表格后面列出的 6 条。每个核心只保留会改变日常任务行为的义务，并链接到 [`standards/`](standards/) 中的全文，因此常驻集合保持在 56 个文件、108,127 个字符，低于 CI 强制执行的 120,000 字符预算和 150,000 字符的运行环境上限。
 
 | 规则 | 涵盖内容 |
 |:-----|:---------------|
@@ -104,6 +104,7 @@ graph LR
 | [`agent-operating-limits`](rules/agent-operating-limits.md) | 兜底上限与预算的区别、附带测量值的轮次上限、超出部分要报告而不是丢弃的配额、被拒调用和无条件上下文注入的成本，以及无法运行的检查一律按失败处理 |
 | [`deviation-waivers`](rules/deviation-waivers.md) | 偏离规则是允许的，悄悄偏离则不行。一份结构化的豁免，写明范围、批准人、替代方案和复查条件，它回答的问题与机械式绕过不同，因此两者有区别。项目自己的指令文件可以在该项目内明确覆盖全局规则，但不能越过安全、法律、数据丢失、验证和诚实这几条底线 |
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | 从提交信息、PR 描述、公开文档和发给同事的消息中排除阶段编号、计划文件路径、规格文件夹链接、夸张措辞和自我批评 |
+| [`no-committed-symlinks`](rules/no-committed-symlinks.md) | 任何仓库都不跟踪符号链接。共享源码通过构建引用，两处都需要的文件只提交一次，来自子模块的文件按其自身字节提交 |
 | [`doc-truth`](rules/doc-truth.md) | 描述代码的文档就是对代码的断言。让断言变假的改动要在同一次提交中修正它。在 `git commit` 时做四项机械上确定的检查；历史记录不在此列。如果项目文档描述的约定代码已经一贯不再遵守，就视为过时：以代码为准，并报告每一处不一致 |
 | [`markdown-links`](rules/markdown-links.md) | 公开 Markdown 中提到的每个文件都是可点击的链接。由校验器和 PreToolUse 钩子强制执行 |
 | [`living-specs`](rules/living-specs.md) | 非平凡的改动要维护 `specs/current/` 中活的行为规格：需求、Given/When/Then 场景、放在本地工作区计划文件夹中的 ADDED、MODIFIED、REMOVED 差异，以及把已完成改动并入规格的收尾合并 |
@@ -128,7 +129,7 @@ graph LR
 
 ### 按需加载的标准
 
-[`standards/`](standards/) 中有 141 份标准。[`rules/index.yml`](rules/index.yml) 中的每个条目都声明了触发关键词，任务匹配时只加载对应的标准。
+[`standards/`](standards/) 中有 142 份标准。[`rules/index.yml`](rules/index.yml) 中的每个条目都声明了触发关键词，任务匹配时只加载对应的标准。
 
 主题包括：API 设计、认证、缓存、代码审查、并发与竞态条件、容器安全、契约测试、数据库、DDD、调试、分布式系统、幂等性与去重、各语言的不可变性、文档、前端、GraphQL、六边形架构、国际化、基础设施、低延迟工程、消息队列、移动端、单体仓库、可观测性、编写代理指令文件、OpenTelemetry、性能、Postgres、PR 评论渠道、印刷设计、隐私、Redis、韧性、密钥管理、SRE、状态机、十二要素、TypeScript 5.x、WebSocket、零停机部署等。
 
@@ -185,7 +186,7 @@ graph LR
 
 ### 钩子
 
-[`hooks/`](hooks/) 中有 94 个钩子，通过 [`settings.json`](settings.json) 接入。每个钩子在工具调用之前、之后或前后运行。
+[`hooks/`](hooks/) 中有 95 个钩子，通过 [`settings.json`](settings.json) 接入。每个钩子在工具调用之前、之后或前后运行。
 
 **绕过渠道。** 每个钩子都支持两种渠道，任意一种都能放行，两者可以同时存在。
 
@@ -286,6 +287,7 @@ graph LR
 | [`smart-formatter.py`](hooks/smart-formatter.py) | PostToolUse Edit/Write | 把每个编辑过的文件记录到会话的批次中，交给负责格式化的 Stop 钩子 |
 | [`stop-format-typecheck.py`](hooks/stop-format-typecheck.py) | Stop | 通过重命名从 `smart-formatter.py` 认领本会话的批次，用项目配置的格式化工具把每个文件格式化一次，ruff 优先于 black，prettier、shfmt 和 rubocop 只在存在其配置文件的地方使用，然后在每个涉及的工作区运行一次 `tsc`，并把失败报告给模型 |
 | [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | 通过结构、文件引用和长度上限强制子代理提示的质量 |
+| [`symlink-commit-blocker.py`](hooks/symlink-commit-blocker.py) | PreToolUse Bash | 拦截会记录符号链接的提交：已暂存的模式 `120000` 条目，以及 `commit -a` 或同一命令中的 `git add` 会纳入的路径。允许删除已跟踪的链接 |
 | [`tdd-gate.py`](hooks/tdd-gate.py) | PreToolUse Write/Edit/MultiEdit | 找不到配套的测试文件时，拦截新建生产源文件。配置文件、`__init__.py`、`conftest.py`、`setup.py`、纯类型模块、只做重新导出的 `index` 桶文件，以及 `scratchpad/` 目录或共享 `/tmp` 根目录下的一次性脚本不受限制。按用户区分的 `TMPDIR` 仍受约束，因为 pytest 的 `tmp_path` 就在那里。绕过：`TDD_GATE_DISABLE=1`。它还会通过 [`assertion_weakening.py`](hooks/_lib/assertion_weakening.py) 拦截减少测试文件中断言或测试用例数量、或添加跳过标记的编辑，并有独立的绕过 `TEST_WEAKENING_DISABLE=1` |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | 每次调用都强制指定 `TF_WORKSPACE`，包括在 `-chdir` 等全局选项之后 |
 | [`todo-marker-blocker.py`](hooks/todo-marker-blocker.py) | PreToolUse Write/Edit/MultiEdit | 拦截源代码中的 TODO、FIXME、HACK、XXX、WIP 标记，包括带有 Issue 编号或其他括号说明的标记。没有放行标记，只遵守第三方工具的指令。 |
@@ -512,14 +514,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 905-item review checklist across 71 categories
-  rules/                 47 short rule cores, each linking to its full text
+  rules/                 48 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             141 on-demand standards, including the full text of every rule
+  standards/             142 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 94 runtime hooks
+  hooks/                 95 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -561,7 +563,7 @@ $HOME/.claude/
 <summary><strong>两级规则加载如何节省上下文？</strong></summary>
 <br>
 
-141 份标准合计 27,295 行。如果每次对话都全部加载，会耗尽上下文窗口。[`rules/index.yml`](rules/index.yml) 把每份标准映射到触发关键词。任务匹配时，例如添加一次数据库迁移会拉取 `database.md`，只加载相关的标准。
+142 份标准合计 27,356 行。如果每次对话都全部加载，会耗尽上下文窗口。[`rules/index.yml`](rules/index.yml) 把每份标准映射到触发关键词。任务匹配时，例如添加一次数据库迁移会拉取 `database.md`，只加载相关的标准。
 
 </details>
 
