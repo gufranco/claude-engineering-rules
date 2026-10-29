@@ -67,7 +67,7 @@ All notable changes to this Claude Code configuration are documented here.
 - `zizmor` static analysis of the workflows, wired into the CI lint job and `make lint`. It covers what actionlint does not: template injection, over-broad token permissions, and unpinned action references.
 - Community health files. [`SECURITY.md`](SECURITY.md) carries the threat model, including the point that hooks run with the developer's own privileges and are advisory rather than a sandbox. [`CONTRIBUTING.md`](CONTRIBUTING.md) documents the local gate and the fact that a commit type decides a released version. Plus [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`.github/CODEOWNERS`](.github/CODEOWNERS), issue forms, and a pull request template.
 - [`.pre-commit-config.yaml`](.pre-commit-config.yaml) mirrors the CI gate locally, pinned to the same tool versions so a green local commit is a green pipeline.
-- [`requirements-dev.txt`](requirements-dev.txt) as the single source of truth for the Python toolchain. The Makefile and all four CI jobs that need Python now install from it, and Dependabot opens bumps against it.
+- `requirements-dev.txt` as the single source of truth for the Python toolchain. The Makefile and all four CI jobs that need Python now install from it, and Dependabot opens bumps against it.
 
 ### Changed
 
