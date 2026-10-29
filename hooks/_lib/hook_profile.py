@@ -81,6 +81,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "mcp-health-check",
         "workflow-guard",
         "package-manager-guard",
+        "foreign-session-guard",
     }
 )
 

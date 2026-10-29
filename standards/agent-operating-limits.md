@@ -105,6 +105,16 @@ An agent acting through an account changes what its actions mean, not only who i
 
 Identity at the account level is governed by [`../standards/multi-account-cli.md`](multi-account-cli.md) and the git-author rule in [`git-workflow.md`](../rules/git-workflow.md). This section covers the layer above: what the identity makes an action mean.
 
+### Another Session's Tree
+
+Several Claude Code sessions run at once on this machine, and each records its working directory in `~/.claude/sessions/<pid>.json`. A session's Bash tool attributes every file that changes in its directory while one of its commands runs to that command, so a write from a second session appears in the first as a change it made, and the first may revert it or build on it as its own.
+
+- Write only inside this session's own working tree.
+- Before writing into a directory another live session works in, ask the user, name that session, and tell the user what the other session will see.
+- When the user approves, say in the final reply which files landed in the other tree, so the user can tell that session.
+
+[`../hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py) asks before a Write, Edit, MultiEdit or NotebookEdit lands inside another live session's directory. A session whose directory contains this session's own, such as one started in a workspace parent, is ignored, and the deepest matching session is named. Origin: on 2026-10-29 a session in `~/.claude` wrote `~/.dotfiles/.releaserc.json` at 02:51:42 UTC while dotfiles session `98f666db` ran `gh run view`, and that session's transcript recorded the file under its own command as a `bashEditDiff`.
+
 ## Forbidden Patterns
 
 | Pattern | Reason |

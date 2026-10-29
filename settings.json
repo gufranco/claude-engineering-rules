@@ -1499,6 +1499,42 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/foreign-session-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/concurrent-fanout-guard.py"
           }
         ]
