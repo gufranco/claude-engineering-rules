@@ -180,21 +180,49 @@ def test_ignores_multiedit_non_dict_edit(tool_use, run_hook):
     assert_allowed(result)
 
 
-def test_a_waived_assembly_source_is_not_checked(tool_use, run_hook):
+def test_a_path_listed_in_the_waiver_file_is_not_checked(tool_use, run_hook, tmp_path):
     # Arrange
+    waivers = tmp_path / "comment-waivers.txt"
+    waivers.write_text(
+        "# assembly sources\n\n*src/firmware/asm/*.asm\n", encoding="utf-8"
+    )
     payload = tool_use(
         "Write",
         {
-            "file_path": "/work/src/example-project/asm/boot.asm",
+            "file_path": "/work/src/firmware/asm/boot.asm",
             "content": "; reset vector\n",
         },
     )
 
     # Act
-    result = run_hook("comment-blocker", payload)
+    result = run_hook(
+        "comment-blocker", payload, env={"COMMENT_BLOCKER_WAIVERS": str(waivers)}
+    )
 
     # Assert
     assert result.code == 0
+
+
+def test_an_assembly_comment_is_blocked_without_a_waiver_file(
+    tool_use, run_hook, tmp_path
+):
+    # Arrange
+    payload = tool_use(
+        "Write",
+        {
+            "file_path": "/work/src/firmware/asm/boot.asm",
+            "content": "; reset vector\n",
+        },
+    )
+    missing = tmp_path / "absent.txt"
+
+    # Act
+    result = run_hook(
+        "comment-blocker", payload, env={"COMMENT_BLOCKER_WAIVERS": str(missing)}
+    )
+
+    # Assert
+    assert result.code == 2
 
 
 def test_unreadable_stdin_is_blocked():

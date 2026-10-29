@@ -29,10 +29,8 @@ from _lib.audit_log import record as _audit  # noqa: E402
 HOOK = "comment-blocker"
 BYPASS_ENV = "COMMENT_BLOCKER_DISABLE"
 SNIPPET_LIMIT = 60
-WAIVED_PATHS = (
-    "*src/example-project/asm/*.asm",
-    "*example-emulator/asm/*.asm",
-)
+WAIVERS_ENV = "COMMENT_BLOCKER_WAIVERS"
+DEFAULT_WAIVERS = "~/.claude/comment-waivers.txt"
 EDIT_LABEL = "line numbers in the file this edit produces"
 STAGED_LABEL = "staged for commit, line numbers in the staged file"
 FIX_GUIDANCE = (
@@ -64,8 +62,19 @@ def format_hits(pairs: list[tuple[int, str]]) -> list[str]:
     ]
 
 
+def waived_patterns() -> tuple[str, ...]:
+    source = os.path.expanduser(os.environ.get(WAIVERS_ENV) or DEFAULT_WAIVERS)
+    try:
+        with open(source, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+    except OSError:
+        return ()
+    stripped = (line.strip() for line in lines)
+    return tuple(line for line in stripped if line and not line.startswith("#"))
+
+
 def change_findings(path: str, before: str, after: str, label: str) -> list[str]:
-    if any(fnmatch(path, pattern) for pattern in WAIVED_PATHS):
+    if any(fnmatch(path, pattern) for pattern in waived_patterns()):
         return []
     after_view = document_view(path, after)
     if after_view is None:

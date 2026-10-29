@@ -1,0 +1,13 @@
+# Paths where comment-blocker does not check for added comments, such as
+# assembly sources whose syntax needs comments to stay readable.
+#
+# Copy this file to `comment-waivers.txt`, which is machine-local and never
+# committed, then add your own entries.
+#
+# Read by hooks/comment-blocker.py. One fnmatch glob per line, matched
+# against the full file path. Blank lines and lines starting with `#` are
+# ignored. Set COMMENT_BLOCKER_WAIVERS to read another file instead.
+#
+# A missing `comment-waivers.txt` means no waivers, so every path is checked.
+
+# */src/firmware/asm/*.asm
