@@ -30,9 +30,7 @@
       "Bash(git remote *)",
       "Bash(git show *)",
       "Bash(pnpm run *)",
-      "Bash(pnpm exec *)",
-      "Bash(npm run *)",
-      "Bash(npx *)"
+      "Bash(pnpm exec *)"
     ],
     "deny": [
       "Read(./.env)",

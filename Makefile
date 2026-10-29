@@ -1,14 +1,3 @@
-# Top-level Makefile.
-#
-# Python tooling, including yamllint and zizmor, resolves from the in-repo
-# .venv when it exists and from PATH otherwise. bats, shellcheck, and
-# actionlint are system packages and their targets skip when absent.
-#
-# The tool versions come from requirements-dev.txt, which CI installs from too.
-
-# Prefer the in-repo .venv when it exists, otherwise fall back to whatever is
-# on PATH. CI installs the toolchain with plain pip and still calls these
-# targets, so the two must agree without a venv present.
 VENV       := $(CURDIR)/.venv
 tool = $(if $(wildcard $(VENV)/bin/$(1)),$(VENV)/bin/$(1),$(1))
 
@@ -72,9 +61,6 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/published_text.py \
                    hooks/_lib/hook_input.py
 
-# yamllint and zizmor ship in requirements-dev.txt, so they resolve through
-# the venv like the rest of the python toolchain. bats, shellcheck, and
-# actionlint are system packages and stay optional.
 YAMLLINT   := $(call tool,yamllint)
 ZIZMOR     := $(call tool,zizmor)
 
@@ -100,7 +86,7 @@ PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_
 
 help:
 	@echo "Targets:"
-	@echo "  install      Install python deps into .venv from requirements-dev.txt"
+	@echo "  install      Sync .venv from uv.lock and node_modules from pnpm-lock.yaml"
 	@echo "  test         Run pytest (parallel, no coverage gate)"
 	@echo "  test-fast    Run pytest serial, no coverage, fail fast"
 	@echo "  test-cov     Run pytest with branch coverage, enforce 100%"
@@ -119,8 +105,8 @@ help:
 	@echo "  clean        Remove caches, coverage data, build artifacts"
 
 install:
-	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -r requirements-dev.txt
+	uv sync --locked
+	corepack pnpm install --frozen-lockfile --ignore-scripts
 
 test:
 	$(PYTEST) -n $(PYTEST_N) --no-cov $(PYTEST_OPTS)
@@ -176,7 +162,7 @@ lint-skills:
 	$(PYTHON) tools/lint-skills.py --strict
 
 lint-md:
-	npx --yes markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
+	pnpm exec markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
 	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" \
 	  "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
