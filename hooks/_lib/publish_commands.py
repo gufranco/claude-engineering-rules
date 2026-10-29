@@ -56,6 +56,7 @@ class _Flags:
 
 
 SUBSTITUTION = re.compile(r"\$\([^()]*\)|`[^`\n]*`")
+SUBSTITUTED = "${__command_substitution__}"
 ASSIGNMENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=\S*")
 PREFIX_WORDS = frozenset({"env", "command", "exec", "builtin", "nohup", "time"})
 SEPARATORS = frozenset({"&&", "||", ";", "|", "&", "|&"})
@@ -84,7 +85,7 @@ EDIT_CHANNELS = frozenset({Channel.PR_EDIT, Channel.ISSUE_EDIT, Channel.MR_UPDAT
 
 
 def _segments(command: str) -> list[list[str]]:
-    flat = SUBSTITUTION.sub("SUBST", strip_heredoc_bodies(command))
+    flat = SUBSTITUTION.sub(SUBSTITUTED, strip_heredoc_bodies(command))
     found: list[list[str]] = []
     for line in flat.splitlines():
         lexer = shlex.shlex(line, posix=True, punctuation_chars=";&|")

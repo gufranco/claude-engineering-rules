@@ -19,6 +19,7 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/frontend-render-gate.py \
                    hooks/coverage-exclusion-guard.py \
                    hooks/_lib/coverage_exclusion.py \
+                   hooks/_lib/change_marker.py \
                    hooks/_lib/image_dimensions.py \
                    hooks/_lib/publish_commands.py \
                    hooks/_lib/ui_evidence.py \

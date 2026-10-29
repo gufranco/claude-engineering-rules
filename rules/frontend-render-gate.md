@@ -9,6 +9,7 @@ A change to markup, styles, theme tokens, the component tree, a desktop layout, 
 - Every pull request, review reply, issue, issue answer, and tracker comment about a visible change must attach screenshots labeled `Before:`, unless the surface is new, and `After:`. Web, mobile, desktop GUI, and TUI alike.
 - Screenshots are high resolution: device scale 2 or more, longer side at least 1600 px. Before comes from the base commit with the same data, viewport, theme, and locale.
 - Capture the full page. When an inner container scrolls, set each clipping ancestor to `height: auto` and the scrolling `main` to `flex: none` first; never `overflow: visible`.
+- Mark the change in every After screenshot, in the capture only: an 8 px `#FACC15` outline with a 6 px offset and a bold black `::before` label on `#FACC15`, such as `NEW: toast`. Check it at 360 px wide before publishing; Before stays unmarked, and the PR body says the mark is drawn for the description.
 - One set, one pixel width: scale proportionally with `sips --resampleWidth`, never pad. Desktop and mobile sit in separate headed groups; alt text names device and viewport, as in `After: Mobile 320 px, default queue`. A new page says it has no Before.
 - Upload with `gh ... --attach '<file>#After: <screen>'`; never commit screenshots or host them elsewhere.
 

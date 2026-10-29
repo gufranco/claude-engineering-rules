@@ -6,14 +6,22 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
+from _lib.change_marker import (
+    MARKER_HEX,
+    MIN_MARKER_PIXELS,
+    SAMPLE_WIDTH_PX,
+    MarkerCount,
+    MarkerFailure,
+)
 from _lib.image_dimensions import Dimensions, ImageFailure
 from _lib.publish_commands import Attachment, Channel, Publication
 from _lib.ui_surface import Surface
 
 MIN_LONGER_SIDE_PX = 1600
 UNEXPANDED = (
-    "names a shell variable this check cannot expand; assign it earlier in the "
-    "same command or pass the literal path"
+    "names a shell variable this check cannot expand, and a command "
+    "substitution counts as one; assign a literal path earlier in the same "
+    "command or pass the literal path"
 )
 UNREADABLE_BODY = (
     "body file could not be read; a relative path resolves against the "
@@ -123,6 +131,7 @@ ISSUE_CHANNELS = frozenset(
 )
 
 DimensionReader = Callable[[str], "Dimensions | ImageFailure"]
+MarkerReader = Callable[[str], "MarkerCount | MarkerFailure"]
 
 
 def role_of(label: str) -> Role | None:
@@ -162,8 +171,33 @@ def _measure(path: str, size: Dimensions | ImageFailure) -> Dimensions | str:
     return size
 
 
+def marker_problem(path: str, found: MarkerCount | MarkerFailure) -> str | None:
+    if isinstance(found, MarkerFailure):
+        return f"{path}: cannot check the change marker: {found.reason}"
+    if found.pixels >= MIN_MARKER_PIXELS:
+        return None
+    return (
+        f"{path}: no {MARKER_HEX} change marker visible at {SAMPLE_WIDTH_PX} px "
+        f"wide, {found.pixels} of {MIN_MARKER_PIXELS} pixels"
+    )
+
+
+def _check_attachment(
+    path: str, role: Role, read: DimensionReader, marked: MarkerReader
+) -> tuple[Dimensions | None, list[str]]:
+    if "$" in path:
+        return None, [f"{path}: {UNEXPANDED}"]
+    size = _measure(path, read(path))
+    if isinstance(size, str):
+        return None, [size]
+    if role is not Role.AFTER:
+        return size, []
+    unmarked = marker_problem(path, marked(path))
+    return size, [] if unmarked is None else [unmarked]
+
+
 def _attachment_findings(
-    publication: Publication, read: DimensionReader
+    publication: Publication, read: DimensionReader, marked: MarkerReader
 ) -> tuple[set[Role], list[str], Measured]:
     roles: set[Role] = set()
     problems: list[str] = []
@@ -172,12 +206,9 @@ def _attachment_findings(
         role = attachment_role(attachment)
         if role is None:
             continue
-        if "$" in attachment.path:
-            problems = [*problems, f"{attachment.path}: {UNEXPANDED}"]
-            continue
-        size = _measure(attachment.path, read(attachment.path))
-        if isinstance(size, str):
-            problems = [*problems, size]
+        size, found = _check_attachment(attachment.path, role, read, marked)
+        problems = [*problems, *found]
+        if size is None:
             continue
         measured = [*measured, (attachment.path, size)]
         roles = roles | {role}
@@ -260,10 +291,13 @@ def _missing_roles(roles: set[Role], changes: list[Change]) -> list[str]:
 
 
 def evidence_verdict(
-    publication: Publication, changes: list[Change], read: DimensionReader
+    publication: Publication,
+    changes: list[Change],
+    read: DimensionReader,
+    marked: MarkerReader,
 ) -> Verdict:
     attached_roles, attached_problems, measured = _attachment_findings(
-        publication, read
+        publication, read, marked
     )
     attached = {attachment.path for attachment in publication.attachments}
     embedded_roles, embedded_problems = _embedded_findings(publication, attached)

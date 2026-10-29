@@ -333,6 +333,26 @@ def test_attachments_and_body_files_follow_a_cd_and_command_variables(tmp_path):
     )
 
 
+def test_a_variable_assigned_from_a_substitution_stays_unexpanded(
+    tmp_path, monkeypatch
+):
+    # Arrange
+    monkeypatch.setenv("SHOTS", str(tmp_path / "stale"))
+    command = (
+        f"SHOTS=$(mktemp -d) && {GH} pr create --body x "
+        '--attach "$SHOTS/a.png#After: page" --attach "$(pwd)/b.png#Before: page"'
+    )
+
+    # Act
+    result = publications(command, str(tmp_path))
+
+    # Assert
+    assert [a.path for a in result[0].attachments] == [
+        str(tmp_path / "${__command_substitution__}" / "a.png"),
+        str(tmp_path / "${__command_substitution__}" / "b.png"),
+    ]
+
+
 def test_an_exported_variable_feeds_a_body_file_path(tmp_path):
     # Arrange
     (tmp_path / "pr.md").write_text("exported body", encoding="utf-8")
