@@ -121,7 +121,7 @@ The handoff prompt carries everything the other session needs with no other cont
 4. The verification commands to run and show.
 5. What the final reply must list, such as every file changed.
 
-[`../hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py) denies a Write, Edit, MultiEdit or NotebookEdit that lands inside another live session's directory and tells the agent to write the handoff prompt instead. A session whose directory contains this session's own, such as one started in a workspace parent, is ignored, and the deepest matching session is named. Without the guard, a write landing in another session's directory shows up in that session as a change made by its own last command.
+[`../hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py) denies a Write, Edit, MultiEdit or NotebookEdit that lands inside another live session's directory and tells the agent to write the handoff prompt instead. A session whose directory contains this session's own, such as one started in a workspace parent, is ignored, and the deepest matching session is named. A write inside the knowledge vault named by `SECOND_BRAIN_VAULT` always passes, because every session reads and writes it and its notes go through their own guard. Without the guard, a write landing in another session's directory shows up in that session as a change made by its own last command.
 
 ## Forbidden Patterns
 

@@ -233,7 +233,7 @@ graph LR
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | 注入系統提示，強制助手以英文輸出 |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | 攔截對 `.env`、私鑰、雲端憑證和 tfstate 的編輯 |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | 在指令所針對的儲存庫中，如果某位審查人對拉取請求的最新審查是 `CHANGES_REQUESTED`，就攔截改寫歷史的推送；讀不到審查狀態時攔截，沒有拉取請求的分支則放行。與危險指令攔截器共用強制旗標的模式，所以 `-fu` 和全局選項亦會同樣被捕捉 |
-| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 寫入落在另一個正在執行的 Claude Code 工作階段的工作目錄內之前要求確認，工作階段資料讀自 `~/.claude/sessions/`，因為那個工作階段會把該檔案報告為它自己的改動。目錄包含本工作階段的工作階段會被忽略。繞過：`FOREIGN_SESSION_GUARD_DISABLE=1` |
+| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 拒絕落在另一個正在執行的 Claude Code 工作階段工作目錄內的寫入，並要求代理給用戶一段提示，貼到那個工作階段中。工作階段資料讀自 `~/.claude/sessions/`，因為那個工作階段會把該檔案報告為它自己的改動。目錄包含本工作階段的工作階段會被忽略；兩個工作階段共用的目錄歸先啟動的工作階段所有。寫入 `SECOND_BRAIN_VAULT` 指向的知識庫時一律放行，因為所有工作階段都共用它。繞過：`FOREIGN_SESSION_GUARD_DISABLE=1` |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | 攔截把驗證中發現的問題推到之後工作階段的推搪說法。針對提交訊息、PR 正文、發佈說明和程式碼註解；在原始碼檔案中只掃描註解，工作階段草稿區不受限制。位於引號字串或 heredoc 正文中的發佈指令屬於數據，不是提交 |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | 除非用戶點名了路徑，否則每個工作階段在第一次編輯檔案前都必須先讀它。這是 pre-flight 中 Confidence 規則的落實 |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | 每次呼叫都強制指定 `--configuration` |

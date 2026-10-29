@@ -11,6 +11,7 @@ from _lib.audit_log import record as audit  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload, tool_input_of  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
+from _lib.knowledge_notes import in_vault  # noqa: E402
 from _lib.live_sessions import LiveSession, owner_of, sessions, sessions_dir  # noqa: E402
 
 HOOK = "foreign-session-guard"
@@ -69,7 +70,7 @@ def main() -> int:
         return 0
     payload = read_hook_payload(HOOK)
     path = _target(tool_input_of(payload))
-    if payload.get("tool_name") not in WRITE_TOOLS or not path:
+    if payload.get("tool_name") not in WRITE_TOOLS or not path or in_vault(path):
         return 0
     cwd = str(payload.get("cwd") or os.getcwd())
     own = str(payload.get("session_id") or "")
