@@ -172,7 +172,7 @@ always_loaded:
     triggers: [found-fix, "pre-existing", "not introduced", "orthogonal", "leave for later", "out of scope", deprecation, annotation, "verification gate", "broken windows"]
 
   user-commands-one-line:
-    description: Commands handed to the user to run go in one safe line: a strict-mode subshell, steps joined with &&, gates that fail by exit code, quoted variables and ${VAR:?} on recursive deletes, and a result the user must judge handed alone before an irreversible change. Enforced by hooks/user-commands-one-line.py, a Stop hook that blocks two or more `! ` command lines, `;` outside strict mode, `|| true`, and unguarded recursive deletes, with USER_COMMANDS_ONE_LINE_DISABLE parent-shell bypass
+    description: "Commands handed to the user to run go in one safe line: a strict-mode subshell, steps joined with &&, gates that fail by exit code, quoted variables and ${VAR:?} on recursive deletes, and a result the user must judge handed alone before an irreversible change. Enforced by hooks/user-commands-one-line.py, a Stop hook that blocks two or more `! ` command lines, `;` outside strict mode, `|| true`, and unguarded recursive deletes, with USER_COMMANDS_ONE_LINE_DISABLE parent-shell bypass"
     triggers: [command, commands, "run this", "! prefix", bang, "one line", "single line", handoff, "user runs"]
 
   living-specs:
