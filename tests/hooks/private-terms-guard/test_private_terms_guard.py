@@ -43,7 +43,7 @@ def repo(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def term(faker: Faker) -> str:
-    return f"{faker.word()}corp"
+    return f"{faker.word().lower()}corp"
 
 
 def _env(tmp_path: Path, repo: Path, term: str) -> dict[str, str]:
