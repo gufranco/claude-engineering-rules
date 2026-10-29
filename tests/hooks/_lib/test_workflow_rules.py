@@ -72,16 +72,8 @@ def test_a_workflow_following_every_default_has_no_findings():
     assert result == []
 
 
-@pytest.mark.parametrize(
-    ("label", "fragment"),
-    [
-        ("macos-15", "macOS runner"),
-        ("[macos-26, ubuntu-26.04]", "macOS runner"),
-        ("ubuntu-latest", "moving label"),
-        ("windows-latest", "moving label"),
-    ],
-)
-def test_macos_and_latest_runner_labels_block(label, fragment):
+@pytest.mark.parametrize("label", ["ubuntu-latest", "windows-latest", "macos-latest"])
+def test_latest_runner_labels_block(label):
     # Arrange
     text = CLEAN.replace("runs-on: ubuntu-26.04", f"runs-on: {label}")
 
@@ -91,8 +83,27 @@ def test_macos_and_latest_runner_labels_block(label, fragment):
     # Assert
     assert len(result) == 1
     assert result[0][0] == 11
-    assert fragment in result[0][1]
+    assert "moving label" in result[0][1]
     assert result[0][2] is True
+
+
+@pytest.mark.parametrize("label", ["macos-15", "[macos-26, ubuntu-26.04]"])
+def test_a_macos_runner_with_no_macos_only_tool_is_advisory(label):
+    # Arrange
+    text = CLEAN.replace("runs-on: ubuntu-26.04", f"runs-on: {label}")
+
+    # Act
+    result = _messages(text)
+
+    # Assert
+    assert result == [
+        (
+            11,
+            "runs-on names a macOS runner, which is slow and costly; keep it only "
+            "for a job that needs macOS, and run everything else on ubuntu-26.04",
+            False,
+        )
+    ]
 
 
 def test_an_older_ubuntu_lts_label_is_advisory():
@@ -176,8 +187,9 @@ def test_a_push_workflow_without_concurrency_blocks():
     assert result == [
         (
             1,
-            "no concurrency group with cancel-in-progress, so a new push leaves "
-            "the superseded run going",
+            "no top-level concurrency group with cancel-in-progress, so a new push "
+            "leaves the superseded run going; a job that must finish, such as a "
+            "release, belongs in its own workflow",
             True,
         )
     ]
@@ -227,6 +239,167 @@ def test_an_edit_fragment_skips_the_whole_file_checks():
 
     # Assert
     assert result == []
+
+
+def _on(triggers: str, cancel: str = "true") -> str:
+    return CLEAN.replace(
+        "on:\n  push:\n    branches: [main]\n  pull_request:\n", triggers
+    ).replace("cancel-in-progress: true", f"cancel-in-progress: {cancel}")
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/work/homebrew-tap/.github/workflows/ci.yml",
+        "homebrew-core/.github/workflows/tests.yaml",
+    ],
+)
+def test_a_homebrew_tap_may_run_on_macos(path):
+    # Arrange
+    text = CLEAN.replace("ubuntu-26.04", "macos-15")
+
+    # Act
+    result = find(path, text, True)
+
+    # Assert
+    assert result == ()
+
+
+@pytest.mark.parametrize(
+    "step",
+    [
+        f"      - uses: Homebrew/actions/setup-homebrew@{PINNED}\n",
+        "      - run: xcodebuild -scheme App test\n",
+        "      - run: hdiutil create -size 1m disk.dmg\n",
+        "      - run: brew install --formula bash\n",
+    ],
+)
+def test_a_workflow_using_a_macos_only_tool_may_run_on_macos(step):
+    # Arrange
+    text = CLEAN.replace("ubuntu-26.04", "macos-15").replace(
+        "      - uses: actions/checkout@v6\n",
+        f"      - uses: actions/checkout@v6\n{step}",
+    )
+
+    # Act
+    result = _messages(text)
+
+    # Assert
+    assert result == []
+
+
+def test_a_homebrew_tap_still_blocks_a_moving_macos_label():
+    # Arrange
+    text = CLEAN.replace("ubuntu-26.04", "macos-latest")
+
+    # Act
+    result = find("/work/homebrew-tap/.github/workflows/ci.yml", text, True)
+
+    # Assert
+    assert [(hit.line, hit.blocking) for hit in result] == [(11, True)]
+    assert "moving label" in result[0].message
+
+
+@pytest.mark.parametrize(
+    "triggers",
+    [
+        "on:\n  push:\n    tags: ['v*']\n",
+        "on:\n  workflow_run:\n    workflows: [CI]\n    types: [completed]\n",
+        "on:\n  release:\n    types: [published]\n",
+        "on:\n  repository_dispatch:\n    types: [formula-bump]\n",
+    ],
+)
+def test_a_release_workflow_that_never_cancels_passes(triggers):
+    # Arrange
+    text = _on(triggers, cancel="false")
+
+    # Act
+    result = _messages(text)
+
+    # Assert
+    assert result == []
+
+
+@pytest.mark.parametrize(
+    "triggers",
+    [
+        "on:\n  push:\n    tags-ignore: ['nightly']\n",
+        "on: [workflow_run]\n",
+    ],
+)
+def test_a_release_workflow_that_cancels_in_progress_blocks(triggers):
+    # Arrange
+    text = _on(triggers)
+
+    # Act
+    result = _messages(text)
+
+    # Assert
+    assert result == [
+        (
+            1,
+            "a release workflow sets cancel-in-progress: true, so a newer run stops "
+            "a release halfway; set cancel-in-progress: false",
+            True,
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "triggers",
+    [
+        "on:\n  pull_request:\n  release:\n    types: [published]\n",
+        "on:\n  push:\n    branches: [main]\n  workflow_run:\n    workflows: [CI]\n",
+    ],
+)
+def test_a_workflow_that_checks_pushes_and_releases_blocks(triggers):
+    # Arrange
+    text = _on(triggers)
+
+    # Act
+    result = _messages(text)
+
+    # Assert
+    assert result == [
+        (
+            1,
+            "this workflow checks pushes and also releases, so cancelling superseded "
+            "runs stops a release halfway; move the release to its own workflow on "
+            "workflow_run, release, repository_dispatch or a tag push",
+            True,
+        )
+    ]
+
+
+@pytest.mark.parametrize("triggers", ["on: push\n", "on:\n  push:\n"])
+def test_an_unfiltered_push_needs_a_cancelling_group(triggers):
+    # Arrange
+    text = _on(triggers, cancel="false")
+
+    # Act
+    result = _messages(text)
+
+    # Assert
+    assert [(line, blocking) for line, _message, blocking in result] == [(1, True)]
+    assert "no top-level concurrency group" in result[0][1]
+
+
+@pytest.mark.parametrize(
+    "triggers",
+    [
+        "on:\n  schedule:\n    - cron: '17 6 * * 1'\n  # weekly\n\n  workflow_dispatch:\n",
+        "",
+    ],
+)
+def test_a_scheduled_or_triggerless_workflow_may_cancel_or_not(triggers):
+    # Arrange
+    texts = [_on(triggers), _on(triggers, cancel="false")]
+
+    # Act
+    result = [_messages(text) for text in texts]
+
+    # Assert
+    assert result == [[], []]
 
 
 def test_a_file_outside_the_workflows_folder_has_no_findings():
