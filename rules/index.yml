@@ -702,7 +702,7 @@ on_demand:
   agent-operating-limits:
     path: standards/agent-operating-limits.md
     description: "Backstops versus budgets and why confusing them converts a slow run into a total loss. Measured turn ceilings with the sampled distribution recorded beside the number. Per-run caps whose overflow is reported rather than dropped. The cost of a denied tool call, unprojected responses, and unconditional context injection. Fail-closed on any check that errored or could not run, gating on exit codes rather than grepped output. Identity as an operating parameter that changes what an action means"
-    triggers: [max turns, turn limit, turns, backstop, budget, cap, per-run, timeout, denied call, tool denied, allowlist, injection, prompt hook, fail closed, fail open, exit code, projection, jq, context cost, identity, which account, bot]
+    triggers: [max turns, turn limit, turns, backstop, budget, cap, per-run, timeout, denied call, tool denied, allowlist, injection, prompt hook, fail closed, fail open, exit code, projection, jq, context cost, identity, which account, bot, another session, other session, parallel session, live session, session leak]
 
   ai-compliance-defaults:
     path: standards/ai-compliance-defaults.md

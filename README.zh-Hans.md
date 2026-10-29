@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本发布</a>
 </p>
 
-47 条常驻规则、141 份按需加载的标准、42 个技能、93 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
+47 条常驻规则、141 份按需加载的标准、42 个技能、94 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
 
 ---
 
@@ -76,7 +76,7 @@ graph LR
 
 ### 常驻规则
 
-[`rules/`](rules/) 中有 47 条规则，[`rules/lang/`](rules/lang/) 中另有 5 条。[`rules/`](rules/) 下的每个文件都会以简短核心的形式加载到每一次对话中，包括语言文件和表格后面列出的 6 条。每个核心只保留会改变日常任务行为的义务，并链接到 [`standards/`](standards/) 中的全文，因此常驻集合保持在 55 个文件、106,032 个字符，低于 CI 强制执行的 120,000 字符预算和 150,000 字符的运行环境上限。
+[`rules/`](rules/) 中有 47 条规则，[`rules/lang/`](rules/lang/) 中另有 5 条。[`rules/`](rules/) 下的每个文件都会以简短核心的形式加载到每一次对话中，包括语言文件和表格后面列出的 6 条。每个核心只保留会改变日常任务行为的义务，并链接到 [`standards/`](standards/) 中的全文，因此常驻集合保持在 55 个文件、106,633 个字符，低于 CI 强制执行的 120,000 字符预算和 150,000 字符的运行环境上限。
 
 | 规则 | 涵盖内容 |
 |:-----|:---------------|
@@ -185,7 +185,7 @@ graph LR
 
 ### 钩子
 
-[`hooks/`](hooks/) 中有 93 个钩子，通过 [`settings.json`](settings.json) 接入。每个钩子在工具调用之前、之后或前后运行。
+[`hooks/`](hooks/) 中有 94 个钩子，通过 [`settings.json`](settings.json) 接入。每个钩子在工具调用之前、之后或前后运行。
 
 **绕过渠道。** 每个钩子都支持两种渠道，任意一种都能放行，两者可以同时存在。
 
@@ -232,6 +232,7 @@ graph LR
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | 注入系统提醒，强制助手用英语输出 |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | 拦截对 `.env`、私钥、云凭据和 tfstate 的编辑 |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | 在命令所针对的仓库中，如果某位审查人对拉取请求的最新审查是 `CHANGES_REQUESTED`，就拦截改写历史的推送；读不到审查状态时拦截，没有拉取请求的分支则放行。与危险命令拦截器共用强制标志的模式，所以 `-fu` 和全局选项也会被同样捕获 |
+| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 写入落在另一个正在运行的 Claude Code 会话的工作目录内之前请求确认，会话信息读自 `~/.claude/sessions/`，因为那个会话会把该文件报告为它自己的改动。目录包含本会话的会话会被忽略。绕过：`FOREIGN_SESSION_GUARD_DISABLE=1` |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | 拦截把验证中发现的问题推迟到以后会话的托辞。针对提交信息、PR 正文、发布说明和代码注释；在源文件中只扫描注释，会话草稿区不受限制。位于引号字符串或 heredoc 正文中的发布命令属于数据，不是提交 |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | 除非用户点名了路径，否则每个会话在第一次编辑文件前都必须先读它。这是 pre-flight 中 Confidence 规则的落地 |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | 每次调用都强制指定 `--configuration` |
@@ -518,7 +519,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 93 runtime hooks
+  hooks/                 94 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -560,7 +561,7 @@ $HOME/.claude/
 <summary><strong>两级规则加载如何节省上下文？</strong></summary>
 <br>
 
-141 份标准合计 27,285 行。如果每次对话都全部加载，会耗尽上下文窗口。[`rules/index.yml`](rules/index.yml) 把每份标准映射到触发关键词。任务匹配时，例如添加一次数据库迁移会拉取 `database.md`，只加载相关的标准。
+141 份标准合计 27,295 行。如果每次对话都全部加载，会耗尽上下文窗口。[`rules/index.yml`](rules/index.yml) 把每份标准映射到触发关键词。任务匹配时，例如添加一次数据库迁移会拉取 `database.md`，只加载相关的标准。
 
 </details>
 
