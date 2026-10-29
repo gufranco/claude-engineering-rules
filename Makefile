@@ -80,7 +80,7 @@ PYTEST_OPTS = $(if $(PYTEST_K),-k '$(PYTEST_K)',) $(if $(PYTEST_M),-m '$(PYTEST_
 
 .PHONY: help install test test-fast test-cov test-js test-analyzers test-smoke benchmark mutation-scan test-all \
         lint lint-py lint-yaml lint-actions lint-workflows lint-md lint-skills \
-        format format-check typecheck validate \
+        format format-check typecheck validate validate-structure \
         clean clean-pyc clean-cov
 
 help:
@@ -100,6 +100,8 @@ help:
 	@echo "  format       ruff format (writes)"
 	@echo "  format-check ruff format --check (read-only)"
 	@echo "  typecheck    mypy --strict over TYPECHECK_PATHS"
+	@echo "  validate     validate-structure plus every .github/scripts/validate-* check"
+	@echo "  validate-structure  Parse tracked JSON and rules/index.yml, check index paths and code fences"
 	@echo "  clean        Remove caches, coverage data, build artifacts"
 
 install:
@@ -152,7 +154,21 @@ lint-md:
 	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README*.md" \
 	  "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
-validate:
+validate-structure:
+	$(PYTHON) -c "import json, subprocess; files = subprocess.run(['git', 'ls-files', '*.json'], capture_output=True, text=True, check=True).stdout.split(); [json.load(open(f)) for f in files]; print(f'{len(files)} JSON files parse')"
+	$(PYTHON) -c "import os, sys, yaml; idx = yaml.safe_load(open('rules/index.yml')); paths = [e.get('path', f'rules/{n}.md') for s in ('always_loaded', 'on_demand') for n, e in (idx.get(s) or {}).items()]; missing = [p for p in paths if not os.path.exists(p)]; [print(f'ERROR: {p} referenced in index.yml does not exist') for p in missing]; print(f'{len(paths)} index.yml paths checked'); sys.exit(1 if missing else 0)"
+	@errors=0; \
+	for f in rules/*.md skills/*/SKILL.md checklists/*.md; do \
+	  count=$$(grep -c '^[[:space:]]*```' "$$f" || true); \
+	  if [ $$(( $${count:-0} % 2 )) -ne 0 ]; then \
+	    echo "ERROR: $$f has unclosed code block ($$count triple-backtick lines)"; \
+	    errors=$$((errors + 1)); \
+	  fi; \
+	done; \
+	if [ "$$errors" -gt 0 ]; then echo "$$errors file(s) with markdown issues"; exit 1; fi; \
+	echo "All markdown files valid"
+
+validate: validate-structure
 	@fail=0; \
 	for script in validate-counts validate-markdown-links validate-skills \
 	              validate-agents validate-settings validate-patterns \

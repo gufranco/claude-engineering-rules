@@ -58,7 +58,7 @@ That expands to:
 | `make mutation-scan` | the in-place mutation scan CI runs over every tracked JS and TS file |
 | `make lint` | ruff, actionlint, yamllint, zizmor, markdownlint, lint-skills |
 | `make typecheck` | mypy --strict |
-| `make validate` | the eleven repository validators under [`.github/scripts/`](.github/scripts) |
+| `make validate` | `make validate-structure`, which parses every tracked JSON file and the rule index, checks the index paths and unclosed code fences, then every `validate-*` script under [`.github/scripts/`](.github/scripts) |
 
 Run `make format` before `make lint` if the formatter complains. Individual
 targets are listed by `make help`.
