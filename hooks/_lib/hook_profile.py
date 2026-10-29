@@ -79,6 +79,8 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "rtk-rewrite",
         "subagent-brief-quality",
         "mcp-health-check",
+        "workflow-guard",
+        "package-manager-guard",
     }
 )
 

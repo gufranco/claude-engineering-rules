@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+TEST_DELETION: tuple[str, str] = (
+    r"\b(?:git\s+rm|rm|unlink|trash)\s[^;&|\n]*(?:\.(?:test|spec)\.\w+|(?<![\w-])test_\w+\.py|_test\.(?:py|go|rb)|/(?:__tests__|tests?)/)",
+    "Deleting a test file removes coverage, and a test is never deleted to make a change pass. Confirm the behavior it covered was removed on purpose, or that the test moved.",
+)
+
 RECOVERABLE: list[tuple[str, str]] = [
     (
         r"\bgit\s+reset\s+--hard\b",
@@ -37,10 +42,7 @@ RECOVERABLE: list[tuple[str, str]] = [
         r"\bpulumi\s+cancel\b",
         "pulumi cancel aborts an in-progress update. Confirm the update should be cancelled.",
     ),
-    (
-        r"\b(?:git\s+rm|rm|unlink|trash)\s[^;&|\n]*(?:\.(?:test|spec)\.\w+|(?<![\w-])test_\w+\.py|_test\.(?:py|go|rb)|/(?:__tests__|tests?)/)",
-        "Deleting a test file removes coverage, and a test is never deleted to make a change pass. Confirm the behavior it covered was removed on purpose, or that the test moved.",
-    ),
+    TEST_DELETION,
     (
         r"\b(?:find|fd|rg|grep\s+-[a-zA-Z]*[rR][a-zA-Z]*)\s(?:[^;&|\n]*\s)?(?:/|~/?|\"?\$(?:HOME|\{HOME\})\"?/?)(?=$|[\s;&|])",
         "Searching the whole filesystem or home directory stalls the machine and every parallel session. Scope the search to the project or a named directory, or ask the user where the file lives.",

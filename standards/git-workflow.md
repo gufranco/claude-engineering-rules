@@ -211,6 +211,14 @@ gh pr create --draft --title "<TICKET-ID>: WIP"
 gh pr merge <number> --squash --delete-branch
 ```
 
+**One task, one pull request per repository.** A follow-up change that belongs to the same delivery, such as the schema sync a new page depends on, goes onto the open pull request's branch, never into a second pull request. When a second one was already opened:
+
+1. Cherry-pick its commits onto the first pull request's branch: `git cherry-pick <sha>...`.
+2. Update the first pull request's title and body so they describe both changes, and list every tracker key the delivery carries, such as `ENG-3060` and `ENG-3071`.
+3. Close the extra pull request without a comment: `gh pr close <number>`.
+
+[`../hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py) asks for confirmation before `gh pr create` in a repository where the same session already opened one, from a per-session ledger that [`../hooks/ai-review-request.py`](../hooks/ai-review-request.py) records. Origin: tsos-tech/overwatch #677, the Prisma schema sync for ENG-3071, was opened beside #671 for ENG-3060, the page that needed it, on 2026-10-28, and had to be folded in by hand.
+
 **Dual-base PRs, same change targeting two branches:** never use `--delete-branch` on the first merge. GitHub auto-closes any other open PR whose head is the deleted branch. Use separate branches like `fix/foo-develop` and `fix/foo-main` from the start, or omit `--delete-branch` until both PRs are merged.
 
 ## Shallow Clone Detection

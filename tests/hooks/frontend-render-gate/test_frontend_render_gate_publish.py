@@ -57,7 +57,7 @@ def test_a_pr_with_a_modified_surface_and_no_images_is_blocked(tmp_path):
 def test_an_added_surface_needs_only_an_after_image(tmp_path):
     # Arrange
     repo = repo_with_branch(tmp_path, {}, {"src/Settings.tsx": SOURCE})
-    png(repo / "after.png", (1170, 2532))
+    png(repo / "after.png", (1170, 6400))
 
     # Act
     result = run_gate(_bash(f"{GH} pr create -b x --attach after.png"), repo)
@@ -230,20 +230,37 @@ def test_an_issue_describing_an_interface_without_images_asks(tmp_path):
     assert "checkout" not in result.stdout
 
 
-def test_a_linear_comment_on_a_ui_branch_needs_images(tmp_path):
+def test_a_tracker_comment_is_judged_by_its_text_not_the_checked_out_branch(
+    tmp_path,
+):
     # Arrange
     repo = _modified(tmp_path)
 
     # Act
     result = run_gate(
-        {"issueId": "ENG-1", "body": "Fixed"},
+        {"issueId": "ENG-1", "body": "Synced the Prisma schema with develop"},
         repo,
         tool_name="mcp__linear-acme__save_comment",
     )
 
     # Assert
-    assert result.returncode == 2
-    assert "tracker comment" in result.stderr
+    assert (result.returncode, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_a_tracker_issue_describing_a_screen_without_an_image_asks(tmp_path):
+    # Arrange
+    repo = _modified(tmp_path)
+
+    # Act
+    result = run_gate(
+        {"title": "Queue", "description": "The redemptions page layout changes"},
+        repo,
+        tool_name="mcp__linear-acme__save_issue",
+    )
+
+    # Assert
+    assert (result.returncode, decision(result)) == (0, "ask")
+    assert "tracker issue" in result.stdout
 
 
 def test_unrelated_tools_pass(tmp_path):

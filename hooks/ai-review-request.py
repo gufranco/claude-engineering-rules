@@ -11,11 +11,13 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from _lib import ai_review  # noqa: E402
+from _lib import pr_session_ledger  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.git_invocation import OPTIONS_WITH_SEPARATE_VALUE  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
@@ -209,6 +211,16 @@ def handle(data: dict, deps: Dependencies) -> list[str]:
     return list(dict.fromkeys(summaries))
 
 
+def record_created(data: dict, directory: Path, now: float) -> None:
+    command = (data.get("tool_input") or {}).get("command") or ""
+    triggers = find_triggers(command, data.get("cwd") or os.getcwd())
+    if not any(trigger.kind is TriggerKind.CREATE for trigger in triggers):
+        return
+    response = data.get("tool_response")
+    stdout = response.get("stdout", "") if isinstance(response, dict) else ""
+    pr_session_ledger.record(str(data.get("session_id") or ""), stdout, directory, now)
+
+
 def _run(args: list[str], cwd: str | None = None) -> str:
     return subprocess.run(
         args,
@@ -320,6 +332,7 @@ def main() -> int:
         return 0
     data = read_advisory_payload(HOOK_ID)
     try:
+        record_created(data, pr_session_ledger.ledger_dir(), time.time())
         summaries = handle(data, default_dependencies())
     except (
         OSError,

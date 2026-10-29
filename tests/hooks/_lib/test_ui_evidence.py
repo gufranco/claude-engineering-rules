@@ -26,7 +26,7 @@ from _lib.ui_surface import Surface  # noqa: E402
 
 fake = Faker()
 Faker.seed(9203)
-SHARP = Dimensions(2880, 1800)
+SHARP = Dimensions(2880, 4200)
 URL = "https://github.com/user-attachments/assets/0d1e"
 
 
@@ -99,7 +99,7 @@ def test_an_added_surface_needs_only_after():
 
     # Act
     result = evidence_verdict(
-        publication, ADDED, _reader({"a.png": Dimensions(1170, 2532)})
+        publication, ADDED, _reader({"a.png": Dimensions(1170, 6400)})
     )
 
     # Assert
@@ -136,7 +136,8 @@ def test_low_resolution_and_unreadable_images_are_named():
 
     # Assert
     assert result.problems == (
-        "body.md: body file could not be read",
+        "body.md: body file could not be read; a relative path resolves "
+        "against the directory a cd moved into",
         "b.png: 1440x900, longer side under 1600 px",
         "a.mov: not an image",
         "no high-resolution image labeled After:",
