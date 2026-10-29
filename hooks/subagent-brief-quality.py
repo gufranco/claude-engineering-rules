@@ -7,6 +7,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _lib.audit_log import record as _audit  # noqa: E402
+from _lib.hook_warning import emit_warning  # noqa: E402
 
 
 AGENT_TOOL_NAMES = ("Agent", "Task")
@@ -179,6 +180,10 @@ def _block_message(failures: list[str]) -> str:
 
 
 def _advise(tool: str, failure: str) -> int:
+    emit_warning(
+        f"Subagent brief: {failure}.\n"
+        'Rule: ~/.claude/standards/smart-questions.md "Briefing Subagents".'
+    )
     _audit(
         hook="subagent-brief-quality",
         decision="advise",

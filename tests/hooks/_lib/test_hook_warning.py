@@ -22,9 +22,26 @@ def test_a_warning_reaches_the_model_and_the_user(capsys):
         "systemMessage": text,
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "additionalContext": text,
+            "additionalContext": (
+                "check-then-act sequence on line 4\n\n"
+                "Investigate this advisory before you continue: read the code it "
+                "names and decide whether it holds. If it holds, fix it in this "
+                "change. If it does not, state in one line why it does not apply."
+            ),
         },
     }
+
+
+def test_a_stop_warning_names_its_event(capsys):
+    # Arrange
+    text = "ruff format changed 2 files"
+
+    # Act
+    emit_warning(text, event="Stop")
+
+    # Assert
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["hookSpecificOutput"]["hookEventName"] == "Stop"
 
 
 def test_a_notice_reaches_only_the_user(capsys):

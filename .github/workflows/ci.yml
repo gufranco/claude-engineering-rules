@@ -57,6 +57,9 @@ jobs:
       - name: Validate public content carries no work history
         run: python3 .github/scripts/validate-public-content.py
 
+      - name: Validate every hook advisory reaches the model
+        run: python3 .github/scripts/validate-hook-warnings.py
+
       - name: Validate JSON, index.yml and Markdown structure
         run: make validate-structure
 

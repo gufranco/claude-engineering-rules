@@ -274,7 +274,7 @@ graph LR
 | [`python-mutation-guard.py`](hooks/python-mutation-guard.py) | PreToolUse Write/Edit/MultiEdit | ASTに基づくPythonのイミュータビリティです。変更可能な既定値、引数を通じたコレクションの変更、`global`、モジュールやクラスレベルのコンテナ、`object.__setattr__`による抜け道をブロックし、引数の属性への書き込みとfrozenでないdataclassは警告します |
 | [`polyglot-immutability-guard.py`](hooks/polyglot-immutability-guard.py) | PreToolUse Write/Edit/MultiEdit | Go、Rust、C、C++、Swift、Java、Kotlin、C#、Dart、Ruby、Luaの共有された変更可能な状態 |
 | [`idempotency-guard.py`](hooks/idempotency-guard.py) | PreToolUse Write/Edit/MultiEdit | 繰り返すと安全でない操作です。素の`mkdir`と`ln -s`、ガードのないrcファイルへの追記、Terraformの`timestamp()`と`uuid()`、無効にしたKafkaの冪等プロデューサー |
-| [`immutability-analyzers.py`](hooks/immutability-analyzers.py) | PostToolUse Write/Edit/MultiEdit, Stop | ターン内で編集したファイルに対し、[`analyzers/`](analyzers/)の設定でclang-tidy、golangci-lint、ruff、pyright、rubocop、luacheck、detekt、PMD、swiftlint、Dartのアナライザーを実行します。変更した行への指摘はブロックし、アナライザーがない場合もブロックします |
+| [`immutability-analyzers.py`](hooks/immutability-analyzers.py) | PostToolUse Write/Edit/MultiEdit, Stop | ターン内で編集したファイルに対し、[`analyzers/`](analyzers/)の設定でclang-tidy、golangci-lint、ruff、pyright、rubocop、luacheck、detekt、PMD、swiftlint、Dartのアナライザーを実行します。変更した行への指摘はブロックし、アナライザーがない場合もブロックします。変更していない行への指摘は、調べるべきアドバイザリーとしてモデルに渡します |
 | [`retro-pointer.py`](hooks/retro-pointer.py) | Stop | ブロックが溜まったとき、セッションの終わりに1行の要約を`systemMessage`としてユーザーに表示します |
 | [`review-state-guard.py`](hooks/review-state-guard.py) | PreToolUse Bash | ユーザーが書いていないレビューへの、誤ったREQUEST_CHANGES、DISMISS、DELETEをブロックします |
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | トークンを節約するため、CLIコマンドをRTK経由に書き換えます |
@@ -287,7 +287,7 @@ graph LR
 | [`settings-hygiene.py`](hooks/settings-hygiene.py) | PreToolUse Write/Edit/MultiEdit | 設定内の認証情報とホームディレクトリの絶対パスをブロックします |
 | [`smart-formatter.py`](hooks/smart-formatter.py) | PostToolUse Edit/Write | 編集した各ファイルを、フォーマットを担うStopフックのためにセッションごとのバッチへ記録します |
 | [`stop-format-typecheck.py`](hooks/stop-format-typecheck.py) | Stop | `smart-formatter.py`からセッションのバッチを名前の変更で引き取り、プロジェクトが設定するフォーマッターで各ファイルを1回ずつ整形します。ruffはblackより先で、prettier、shfmt、rubocopは設定ファイルがある場所でだけ使います。その後、触れたワークスペースごとに`tsc`を1回実行し、失敗をモデルに報告します |
-| [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | サブエージェントへの指示の品質を、形、ファイル参照、長さの上限で強制します |
+| [`subagent-brief-quality.py`](hooks/subagent-brief-quality.py) | PreToolUse Task | サブエージェントへの指示の品質を、形、ファイル参照、長さの上限で強制します。2つ以上のチェックに失敗するとブロックし、1つだけの失敗は調べるべきアドバイザリーとしてモデルに渡します |
 | [`symlink-commit-blocker.py`](hooks/symlink-commit-blocker.py) | PreToolUse Bash | シンボリックリンクを記録するコミットをブロックします。対象はステージ済みのモード`120000`のエントリーと、`commit -a`や同じコマンド内の`git add`が含めるパスです。追跡中のリンクの削除は許可します |
 | [`tdd-gate.py`](hooks/tdd-gate.py) | PreToolUse Write/Edit/MultiEdit | 対応するテストファイルが見つからない場合、新しい本番用ソースファイルの作成をブロックします。設定ファイル、`__init__.py`、`conftest.py`、`setup.py`、型だけのモジュール、再エクスポートだけの`index`、`scratchpad/`ディレクトリか共有の`/tmp`直下の使い捨てスクリプトは対象外です。pytestの`tmp_path`はユーザーごとの`TMPDIR`にあるため、そこはゲートの対象のままです。バイパスは`TDD_GATE_DISABLE=1`。テストファイルのアサーションやテストケースの数を減らす編集や、スキップのマーカーを加える編集も、[`assertion_weakening.py`](hooks/_lib/assertion_weakening.py)によってブロックします。編集後のファイルが最後にコミットされた版より弱くならない編集は通すため、どのコミットにもないテストの削除は許可します。専用のバイパスは`TEST_WEAKENING_DISABLE=1`です |
 | [`terraform-workspace-guard.py`](hooks/terraform-workspace-guard.py) | PreToolUse Bash | `-chdir`などのグローバルオプションの後も含め、呼び出しごとに`TF_WORKSPACE`を強制します |
