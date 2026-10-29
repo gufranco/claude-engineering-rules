@@ -15,6 +15,7 @@ class LiveSession:
     cwd: str
     name: str
     status: str
+    started_at: int = 0
 
 
 def sessions_dir() -> Path:
@@ -44,8 +45,13 @@ def _record(file: Path) -> LiveSession | None:
         return None
     if not _alive(pid):
         return None
+    started = data.get("startedAt")
     return LiveSession(
-        session, cwd, str(data.get("name") or ""), str(data.get("status") or "")
+        session,
+        cwd,
+        str(data.get("name") or ""),
+        str(data.get("status") or ""),
+        started if isinstance(started, int) else 0,
     )
 
 
@@ -60,10 +66,19 @@ def _inside(path: str, root: str) -> bool:
     return path == root or path.startswith(root.rstrip("/") + "/")
 
 
-def _foreign(session: LiveSession, path: str, here: str, own_session: str) -> bool:
+def _i_started_first_here(
+    session: LiveSession, root: str, here: str, own_start: int | None
+) -> bool:
+    if here != root or own_start is None:
+        return False
+    return own_start <= session.started_at
+
+
+def _foreign(session: LiveSession, path: str, here: str, own_start: int | None) -> bool:
     root = os.path.realpath(session.cwd)
     shelters_me = bool(here) and here != root and _inside(here, root)
-    return session.session_id != own_session and _inside(path, root) and not shelters_me
+    mine_first = _i_started_first_here(session, root, here, own_start)
+    return _inside(path, root) and not shelters_me and not mine_first
 
 
 def owner_of(
@@ -71,5 +86,7 @@ def owner_of(
 ) -> LiveSession | None:
     path = os.path.realpath(target)
     here = os.path.realpath(own_cwd) if own_cwd else ""
-    owners = [s for s in live if _foreign(s, path, here, own_session)]
+    own_start = next((s.started_at for s in live if s.session_id == own_session), None)
+    others = [s for s in live if s.session_id != own_session]
+    owners = [s for s in others if _foreign(s, path, here, own_start)]
     return max(owners, key=lambda s: len(os.path.realpath(s.cwd)), default=None)

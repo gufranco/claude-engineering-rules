@@ -38,7 +38,7 @@ def _trees(tmp_path: Path) -> tuple[Path, Path]:
     ("tool", "key"),
     [("Write", "file_path"), ("Edit", "file_path"), ("NotebookEdit", "notebook_path")],
 )
-def test_a_write_into_another_live_session_tree_asks_first(
+def test_a_write_into_another_live_session_tree_is_handed_off(
     tmp_path, tool_use, run_hook, tool, key
 ):
     # Arrange
@@ -53,9 +53,10 @@ def test_a_write_into_another_live_session_tree_asks_first(
 
     # Assert
     decision = json.loads(result.stdout)["hookSpecificOutput"]
-    assert (result.code, decision["permissionDecision"]) == (0, "ask")
-    assert "dotfiles-3c" in decision["permissionDecisionReason"]
-    assert str(theirs) in decision["permissionDecisionReason"]
+    reason = decision["permissionDecisionReason"]
+    assert (result.code, decision["permissionDecision"]) == (0, "deny")
+    assert "Give the user a prompt to paste into session dotfiles-3c" in reason
+    assert str(theirs) in reason
 
 
 def test_a_write_in_this_session_tree_passes_silently(tmp_path, tool_use, run_hook):

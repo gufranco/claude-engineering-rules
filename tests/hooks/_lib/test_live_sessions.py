@@ -42,6 +42,22 @@ def test_a_session_whose_process_is_alive_is_listed(tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("started", "expected"), [(1_793_280_624_171, 1_793_280_624_171), ("x", 0)]
+)
+def test_a_record_carries_its_start_time_when_it_is_an_integer(
+    tmp_path, started, expected
+):
+    # Arrange
+    _write(tmp_path, os.getpid(), fake.uuid4(), "/Users/x/.claude", startedAt=started)
+
+    # Act
+    result = sessions(tmp_path)
+
+    # Assert
+    assert [found.started_at for found in result] == [expected]
+
+
+@pytest.mark.parametrize(
     "content",
     ["{broken", "[]", json.dumps({"pid": "x", "sessionId": "s", "cwd": "/a"})],
 )
@@ -78,8 +94,8 @@ def test_a_missing_sessions_folder_lists_nothing(tmp_path):
     assert result == ()
 
 
-def _live(cwd: str, session: str | None = None) -> LiveSession:
-    return LiveSession(session or fake.uuid4(), cwd, "other", "busy")
+def _live(cwd: str, session: str | None = None, started_at: int = 0) -> LiveSession:
+    return LiveSession(session or fake.uuid4(), cwd, "other", "busy", started_at)
 
 
 def test_a_write_inside_another_session_tree_names_that_session():
@@ -116,10 +132,10 @@ def test_own_tree_ancestor_sessions_and_sibling_prefixes_are_not_foreign(
     assert result is None
 
 
-def test_this_session_and_a_second_session_in_the_same_tree():
+def test_a_session_that_started_first_in_a_shared_tree_owns_it():
     # Arrange
-    mine = _live("/Users/x/.dotfiles", "me")
-    twin = _live("/Users/x/.dotfiles")
+    mine = _live("/Users/x/.dotfiles", "me", started_at=2_000)
+    twin = _live("/Users/x/.dotfiles", started_at=1_000)
 
     # Act
     result = owner_of("/Users/x/.dotfiles/a", "/Users/x/.dotfiles", "me", (mine, twin))
@@ -128,14 +144,37 @@ def test_this_session_and_a_second_session_in_the_same_tree():
     assert result == twin
 
 
+def test_a_later_twin_in_a_shared_tree_does_not_own_it():
+    # Arrange
+    mine = _live("/Users/x/.dotfiles", "me", started_at=1_000)
+    twin = _live("/Users/x/.dotfiles", started_at=2_000)
+
+    # Act
+    result = owner_of("/Users/x/.dotfiles/a", "/Users/x/.dotfiles", "me", (mine, twin))
+
+    # Assert
+    assert result is None
+
+
+def test_a_session_without_its_own_record_hands_a_shared_tree_to_the_twin():
+    # Arrange
+    twin = _live("/Users/x/.dotfiles", started_at=2_000)
+
+    # Act
+    result = owner_of("/Users/x/.dotfiles/a", "/Users/x/.dotfiles", "me", (twin,))
+
+    # Assert
+    assert result == twin
+
+
 def test_the_deepest_matching_session_owns_the_path():
     # Arrange
     outer = _live("/Users/x/Workspace")
-    inner = _live("/Users/x/Workspace/example-project")
+    inner = _live("/Users/x/Workspace/toolkit")
 
     # Act
     result = owner_of(
-        "/Users/x/Workspace/example-project/test/io.bats",
+        "/Users/x/Workspace/toolkit/test/io.bats",
         "/Users/x/.claude",
         "me",
         (outer, inner),
