@@ -284,6 +284,10 @@ If `--dry-run`, stop here and exit.
 
 Order: code first, then reply, then resolve. Each step has its own checkpoint.
 
+### Step 0: Re-read the pull request state
+
+Teammates merge while a batch is being worked, so the state read in Phase 1 goes stale. Immediately before Step 1, Step 3, and Step 5, run `GH_TOKEN=$(gh auth token --user <account>) gh pr view <pr> --json state,mergedAt,headRefOid`. When `state` is `MERGED` or `CLOSED`, stop the batch, leave the working tree clean, and report who merged it and when. When `headRefOid` moved, fetch and review the new commits before continuing.
+
 ### Step 1: Apply code changes
 
 Each thread's change becomes its own commit. Commit message format: `fix(<scope>): <one-line description>`. Body includes `Refs: <comment URL>`. Credit trailers per "Commit Credit Conventions" below.
