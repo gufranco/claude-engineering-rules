@@ -100,7 +100,13 @@ def _strings(value: object, depth: int) -> list[str]:
     return []
 
 
+def is_image_read(tool_response: object) -> bool:
+    return isinstance(tool_response, dict) and tool_response.get("type") == "image"
+
+
 def extract_payload(tool_name: str, tool_response: object) -> str:
+    if is_image_read(tool_response):
+        return ""
     return "\n".join(_strings(tool_response, 0))[:MAX_PAYLOAD_CHARS]
 
 
