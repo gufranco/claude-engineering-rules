@@ -42,6 +42,28 @@ def test_allows_git_config_get(tool_use, run_hook):
     assert_allowed(result)
 
 
+def test_allows_reading_a_user_key_without_a_value(tool_use, run_hook):
+    # Arrange
+    payload = tool_use("Bash", {"command": "git config user.email && git log -1"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
+def test_blocks_an_explicit_local_write_to_a_user_key(tool_use, run_hook):
+    # Arrange
+    payload = tool_use("Bash", {"command": "git config --local user.email a@b.c"})
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_blocked(result, "BLOCKED: explicit --local write to user.*")
+
+
 def test_allows_git_config_global_user_email(tool_use, run_hook):
     # Arrange
     payload = tool_use("Bash", {"command": "git config --global user.email me@x.com"})

@@ -97,6 +97,7 @@ graph LR
 | [`language`](rules/language.md) | 強制回覆語言：所有輸出都用英文 |
 | [`smart-questions`](rules/smart-questions.md) | 提問格式、提出選項時必須附上建議、狀態報告、以 FIXED、RESOLVED、DONE 收尾、Tatham 有關錯誤報告的要點 |
 | [`found-fix`](rules/found-fix.md) | 驗證過程中發現的任何問題都屬於目前任務的範圍。禁止把修正推到之後工作階段的推搪說法 |
+| [`user-commands-one-line`](rules/user-commands-one-line.md) | 交給用戶執行的指令寫成一行安全的指令：嚴格模式的子 shell、以 `&&` 連接的步驟、按結束碼失敗的檢查，每次遞迴刪除都用 `${VAR:?}`。不可逆步驟之前需要用戶判斷的結果獨立交出，不與變更串在一起 |
 | [`same-turn-persistence`](rules/same-turn-persistence.md) | 收到糾正的那一輪在結束前必須寫入檔案。自己發現的錯誤和用戶指出的錯誤同樣處理，寫入針對的是根本行為而非表面症狀，准入門檻防止強制記錄令設定膨脹 |
 | [`rule-provenance`](rules/rule-provenance.md) | 每條規則都寫明生效日期和促成它的失誤。教訓先記錄下來，第三次重現時才升格為規則，不可逆、無聲或災難性的失誤除外。有了來源記錄，規則集才可以精簡 |
 | [`relay-not-source`](rules/relay-not-source.md) | 子代理的報告、搜尋片段或摘要都是轉述。轉述不只會弄亂內容，也會弄亂引用的位置，因此一個具體的說法讀起來正確，卻可能指向錯誤的行、時間戳或記錄 |
@@ -215,14 +216,14 @@ graph LR
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | 攔截 PR 和文件中的口語化客套和戰術性誇張 |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | 攔截長破折號、短破折號、正文中的圓括號、表情符號、ASCII 藝術，以及在 Markdown 正文中以帶空格的連字號代替破折號 |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | 攔截在 GitHub 或 GitLab 上對多個討論串循環呼叫 `resolveReviewThread` |
-| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 在擁有者儲存庫使用的每種語言中攔截在原始碼加入註解：C 系、Python、shell、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTML 及其範本方言、CSS、按方言區分的組合語言、Jupyter 程式碼儲存格等，按副檔名、檔案名稱、shebang 或內容辨識。docstring 和文件註解區塊亦算註解。編輯會與磁碟上的檔案比對，所以只報告新加的註解。在 Bash 的 `git commit` 上，它會把每個已暫存的檔案與 `HEAD` 比對掃描，從而捕捉在 Write 和 Edit 工具以外寫入的內容。不受限制的有：`eslint-disable`、`@ts-expect-error`、`noqa` 和 action 版本固定等工具指令，測試檔案中光寫的 `Arrange`、`Act`、`Assert` 標記，以及 `.env.example` 檔案。營運繞過：`COMMENT_BLOCKER_DISABLE=1` |
-| [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | 要求 Python、JS/TS、Go 和 bats 中每個新增或修改的測試都帶有光寫的 `Arrange`、`Act`、`Assert` 標記，各出現一次並依次排列，組成以一個空行分隔的三個區塊。不檢查沒有改動的舊測試。在 Bash 的 `git commit` 上檢查已暫存的檔案。繞過：`TEST_AAA_MARKERS_DISABLE=1` |
+| [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 在擁有者儲存庫使用的每種語言中攔截在原始碼加入註解：C 系、Python、shell、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTML 及其範本方言、CSS、按方言區分的組合語言、Jupyter 程式碼儲存格等，按副檔名、檔案名稱、shebang 或內容辨識。docstring 和文件註解區塊亦算註解。編輯會與磁碟上的檔案比對，所以只報告新加的註解。在 Bash 的 `git commit` 上，它會把每個已暫存的檔案與 `HEAD` 比對掃描，從而捕捉在 Write 和 Edit 工具以外寫入的內容。合併期間，會略過合併從另一個父提交原樣取來的檔案，因為合併沒有在其中寫入任何內容。不受限制的有：`eslint-disable`、`@ts-expect-error`、`noqa` 和 action 版本固定等工具指令，測試檔案中光寫的 `Arrange`、`Act`、`Assert` 標記，以及 `.env.example` 檔案。營運繞過：`COMMENT_BLOCKER_DISABLE=1` |
+| [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | 要求 Python、JS/TS、Go 和 bats 中每個新增或修改的測試都帶有光寫的 `Arrange`、`Act`、`Assert` 標記，各出現一次並依次排列，組成以一個空行分隔的三個區塊。不檢查沒有改動的舊測試。在 Bash 的 `git commit` 上檢查已暫存的檔案，略過合併從另一個父提交原樣取來的檔案。繞過：`TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | 按項目在上下文壓縮前後保留 git 狀態 |
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | 攔截對 tsconfig、eslint、ruff、mypy 等 lint、格式化和型別檢查設定的編輯。迫使修正程式碼，而不是放寬設定 |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | 攔截非測試程式碼中的 `console.*`。沒有放行標記，只遵從第三方工具的指令。 |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | 驗證 Conventional Commits 格式 |
 | [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | 攔截在原始碼加入覆蓋率排除指令的編輯，例如 `istanbul ignore`、`c8 ignore`、`pragma: no cover`、`#[coverage(off)]` 或 `LCOV_EXCL_LINE`，亦攔截把覆蓋率設定的門檻寫到 100 以下的編輯。只有生成的程式碼和第三方程式碼的路徑可以排除，所以新增 omit 或 exclude 項目時會要求確認。文字檔案不受限制。繞過：`COVERAGE_EXCLUSION_GUARD_DISABLE=1`。 |
-| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 種模式：破壞性的 shell 指令、反向 shell、雲端資源刪除、IaC 的 destroy。傳給 `cat`、`tee`、`git`、`gh` 或 `glab` 的 heredoc 正文屬於數據，不作配對；傳給 shell 的正文仍會配對。配對前會去掉 `-C`、`-c` 等 git 全局選項，所以 `git -C <dir> push --force` 與一般寫法一樣會被攔截，`-f` 或 `-fu` 這類組合亦算強制推送。只有當指令的每一段都是清理建置目錄時，這種清理才可以略過其餘檢查。不是有效 JSON 的輸入會被攔截。當推送的目標儲存庫（會追蹤 `cd` 和 `-C`）列在本機的 `solo-repos.txt` 中時，容許推送到受保護分支，這個檔案以 [`solo-repos.example.txt`](solo-repos.example.txt) 為範本；無法確定目標的推送不計在內。刪除測試檔案，以及以 `find`、`grep -r`、`rg` 或 `fd` 搜尋 `/` 或主目錄，會彈出確認，但未被追蹤且不在任何提交中的測試檔案除外 |
+| [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 種模式：破壞性的 shell 指令、反向 shell、雲端資源刪除、IaC 的 destroy。傳給 `cat`、`tee`、`git`、`gh` 或 `glab` 的 heredoc 正文屬於數據，不作配對；傳給 shell 的正文仍會配對。Docker 或 Podman 的 `-f`、`-a`、`-v` 等旗標只有作為同一次呼叫中的獨立參數時才計算；刪除字面路徑 `/tmp` 或 `/private/tmp` 下的 `.env` 檔案是容許的，除非路徑以 `..` 跳出。配對前會去掉 `-C`、`-c` 等 git 全局選項，所以 `git -C <dir> push --force` 與一般寫法一樣會被攔截，`-f` 或 `-fu` 這類組合亦算強制推送。只有當指令的每一段都是清理建置目錄時，這種清理才可以略過其餘檢查。不是有效 JSON 的輸入會被攔截。當推送的目標儲存庫（會追蹤 `cd` 和 `-C`）列在本機的 `solo-repos.txt` 中時，容許推送到受保護分支，這個檔案以 [`solo-repos.example.txt`](solo-repos.example.txt) 為範本；無法確定目標的推送不計在內。刪除測試檔案，以及以 `find`、`grep -r`、`rg` 或 `fd` 搜尋 `/` 或主目錄，會彈出確認，但未被追蹤且不在任何提交中的測試檔案除外 |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | 攔截暫存差異會令現有文件變假的 `git commit`。四項肯定的檢查：程式碼讀取了 `.env.example` 沒有列出的變數，以及刪除了已追蹤 Markdown 仍在提及的匯出、CLI 旗標或套件腳本。檢查前置的 `cd` 或 `git -C` 指定的儲存庫，並在 `commit -a` 時包括未暫存的改動。變更記錄、ADR 和規格作為歷史記錄不在此列。繞過：`DOC_SYNC_DISABLE=1` |
 | [`frontend-render-gate.py`](hooks/frontend-render-gate.py) | PreToolUse Bash, Linear `save_issue` and `save_comment` | 攔截改變渲染輸出（`.tsx`、`.html`、`.dart`、樣式、主題標記、`*View.swift` 或 `*Screen.kt` 等原生視圖、`.qml` 或 `.xaml` 等桌面版面，以及匯入終端 UI 程式庫的原始碼）卻沒有觸及任何渲染層檢查（e2e 或瀏覽器測試套件、XCUITest、`androidTest`，或終端快照）的 `git commit`。`*.spec.tsx` 單元測試不算。層疊結果、繪製次序、無障礙樹、焦點次序和第三方 iframe 從原始碼看不出來，jsdom 中亦沒有。發佈時，它會把分支差異與基準分支比較：在有可見改動的分支上，`gh pr create` 或 `edit`，`gh issue create`、`edit` 或 `comment`，審查討論串的回覆，`glab mr create` 或 `update`，以及 Linear 的 Issue 或評論，都會被攔截，直至附上 `After:` 圖片，現有介面有改動時還要附上 `Before:` 圖片，每張圖片的長邊最少 1600 像素。沒有圖片亦沒有可見改動的介面文字會要求確認。同一組圖片的像素寬度必須相同；只要有一個標籤寫了裝置，每個標籤都要寫明裝置和視窗。高度剛好等於一個視窗的圖片會被要求改為整頁截圖。附件路徑會跟隨 `$VAR` 和 `cd`，追蹤器項目只按其本身文字判斷。繞過：`FRONTEND_RENDER_GATE_DISABLE=1`，或共用繞過登記冊中附 TTL 的項目。 |
 | [`docker-context-guard.py`](hooks/docker-context-guard.py) | PreToolUse Bash | 每次呼叫都強制指定 `--context` 或 `DOCKER_CONTEXT` |
@@ -243,7 +244,7 @@ graph LR
 | [`memory-write-guard.py`](hooks/memory-write-guard.py) | PreToolUse Write/Edit/MultiEdit | 設定了第二大腦知識庫時，令工作階段的記憶目錄維持為生成產物：記憶目錄由 `/brain compile` 以腳本寫入，因此對它的每次 Write 或 Edit 都會被攔截，對 `MEMORY.md` 的編輯只有在不改動編譯區塊時才放行。當 `SECOND_BRAIN_VAULT` 未設定或無法解析時完全不起作用，所以沒有知識庫的副本會保持執行環境的預設行為。繞過：`MEMORY_WRITE_GUARD_DISABLE=1` |
 | [`privacy-leakage-checks.py`](hooks/privacy-leakage-checks.py) | PreToolUse Write/Edit/MultiEdit | 捕捉 `console.log` 中的個人數據、`localStorage` 中的識別碼、未經同意檢查就設定的 Cookie，以及周圍沒有同意守衛的硬編碼分析或推廣追蹤 ID。繞過：`PRIVACY_CHECKS_DISABLE=1` |
 | [`repo-fetch-blocker.py`](hooks/repo-fetch-blocker.py) | PreToolUse Bash | 攔截透過 `gh api .../contents`、`gh repo view <o>/<r> <path>`、`glab api .../repository/files` 以及對 `raw.githubusercontent.com` 的 curl 或 wget 逐個擷取原始碼檔案。改為強制淺層複製，針對私人儲存庫的建議亦是透過憑證助手而非 URL 傳遞權杖。單引號內或帶引號的 heredoc 正文中的文字不會當作指令。繞過：`REPO_FETCH_DISABLE=1` |
-| [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | 攔截身份未解析或作者為佔位符的提交 |
+| [`git-author-guard.py`](hooks/git-author-guard.py) | PreToolUse Bash | 攔截身份未解析或作者為佔位符的提交，以及在 `--global` 以外對 `user.email` 或 `user.name` 的 `git config` 寫入；不帶值的鍵屬於讀取，予以放行 |
 | [`glab-token-guard.py`](hooks/glab-token-guard.py) | PreToolUse Bash | 要求內嵌的 `GITLAB_TOKEN`，攔截 GitLab 的 auth login。`auth`、`config`、`version` 以及呼叫中任何位置的 `--help` 或 `-h` 不受限制 |
 | [`interactive-cmd-blocker.py`](hooks/interactive-cmd-blocker.py) | PreToolUse Bash | 攔截不帶 `-f` 的 `cp`、`mv`、`rm`。macOS 會把它們設為 `-i` 的別名，確認提示會令代理卡住。前面加上 `command` 的呼叫會略過別名而放行，引號內的文字和 heredoc 正文不會當作指令。在 macOS 上還會攔截 `kcov` 以及 Makefile 呼叫 kcov 的 `make coverage`，它們在那裏透過 stderr 追蹤，曾經佔用 44 GB 並報出錯誤的數字；它會改為提供 Linux 容器中的做法。它亦會攔截會開啟視窗的 `mame` 啟動：沒有 `-window`，無介面執行欠缺 `SDL_VIDEODRIVER=dummy`、`-video none` 或 `-sound none`，或者標記了 `MAME_WATCHED=1` 的執行沒有 `-nomaximize`；`-listxml` 等查詢類指令會放行。繞過：`INTERACTIVE_CMD_DISABLE=1` |
 | [`zsh-special-name-guard.py`](hooks/zsh-special-name-guard.py) | PreToolUse Bash | 只在 zsh 下，攔截單靠規則未能防止的兩個陷阱：把 `path`、`status` 或 `argv` 等 zsh 特殊名稱當作變數，這會取代 shell 狀態，`path=` 會令之後的每條指令都失效；以及以 `=` 開頭而未加引號的字，zsh 會把它展開為指令路徑並中止指令的其餘部分。引號內的文字、heredoc 正文以及 `[[ ]]` 或 `(( ))` 比較會被忽略。讀不到的輸入會被攔截。繞過：`ZSH_SPECIAL_NAME_GUARD_DISABLE=1` |
@@ -292,6 +293,7 @@ graph LR
 | [`todo-marker-blocker.py`](hooks/todo-marker-blocker.py) | PreToolUse Write/Edit/MultiEdit | 攔截原始碼中的 TODO、FIXME、HACK、XXX、WIP 標記，包括附有 Issue 編號或其他括號說明的標記。沒有放行標記，只遵從第三方工具的指令。 |
 | [`typeorm-raw-sql-blocker.py`](hooks/typeorm-raw-sql-blocker.py) | PreToolUse Write/Edit | 攔截 TypeORM 的原始查詢後門，測試檔案亦一樣 |
 | [`typeorm-schema-sync.py`](hooks/typeorm-schema-sync.py) | PreToolUse Write/Edit | 強制 TypeORM 實體與遷移保持一致 |
+| [`user-commands-one-line.py`](hooks/user-commands-one-line.py) | Stop | 讀取結束本輪的回覆，當以 `! ` 開頭的行有兩行或以上、某個 `! ` 行在嚴格模式以外用 `;` 連接步驟、用 `\|\| true` 吞掉失敗，或在沒有 `${VAR:?}` 的情況下遞迴刪除由變數拼出的路徑時攔截。讀取 `last_assistant_message`，或最後一次用戶提示之後的記錄尾部。略過已被 Stop 鈎子繼續過的輪次。繞過：`USER_COMMANDS_ONE_LINE_DISABLE=1` |
 | [`user-supplied-artifact-guard.py`](hooks/user-supplied-artifact-guard.py) | PreToolUse Bash | 令用戶必須自行提供的檔案不會進入 git 歷史。當檔案配對 `artifacts.manifest.json` 中宣告的摘要，或帶有明確屬於 ROM、光碟映像檔、韌體或模型權重的副檔名時，攔截 `git commit` 和附明確路徑的 `git add`。摘要檢查之前先按大小篩選。繞過：`USER_SUPPLIED_ARTIFACT_DISABLE=1` |
 | [`vault-compile.py`](hooks/vault-compile.py) | SessionStart | 在注入目錄之前，從知識庫重新編譯本項目的記憶目錄，令記憶永遠不會因為忘記一條指令而落後。只有編譯改變了內容時才輸出，所有失敗路徑都以 exit 0 結束，因為落後一次編譯的記憶目錄總好過無法啟動的工作階段。編譯在 `VAULT_COMPILE_TIMEOUT_SECONDS`（預設 20）後中止，逾時會被記錄。繞過：`VAULT_COMPILE_DISABLE=1` |
 | [`vault-context-loader.py`](hooks/vault-context-loader.py) | SessionStart | 每個工作階段注入一次第二大腦的目錄，所以在第一條問題之前已知道知識庫有甚麼，而不是事後才搜尋。亦會報告知識庫的維護是否逾期，因為停止運作的循環與無事可做的循環一樣安靜，並展示之前的工作階段排入佇列的記錄 |
@@ -513,14 +515,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 905-item review checklist across 71 categories
-  rules/                 48 short rule cores, each linking to its full text
+  rules/                 49 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             142 on-demand standards, including the full text of every rule
+  standards/             143 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 95 runtime hooks
+  hooks/                 96 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

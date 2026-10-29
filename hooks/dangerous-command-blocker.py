@@ -112,10 +112,19 @@ CATASTROPHIC: list[tuple[str, str]] = [
     (r"\bsudo\s+visudo\b", "edit sudoers"),
 ]
 
+SAME_CALL = r"[^;&|\n]*\s"
+FLAG_END = r"(?=[\s'\";&|)]|$)"
+OUTSIDE_TEMP = r"(?:(?!(?:/private)?/tmp/)|(?=[^\s\"';&|]*\.\./))"
+
+
+def _call_flag(short: str, long: str) -> str:
+    return rf"{SAME_CALL}(?:-[a-zA-Z]*{short}[a-zA-Z]*|--{long}){FLAG_END}"
+
+
 CRITICAL_PATHS = [
     (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.git\b", "Deleting .git/ destroys repository history"),
     (
-        r"\brm\s+(-[a-zA-Z]*\s+)?.*\.env\b",
+        rf"\brm\b[^;&|\n]*?\s[\"']?{OUTSIDE_TEMP}[^\s\"';&|]*\.env\b",
         "Deleting .env removes environment configuration",
     ),
     (
@@ -204,23 +213,23 @@ CRITICAL_PATHS = [
     (r"\bsupabase\s+projects\s+delete\b", "Supabase project deletion"),
     (r"\bdocker\s+run\s+.*--privileged", "Docker privileged mode is a security risk"),
     (
-        r"\bdocker\s+system\s+prune\s+.*-a",
+        r"\bdocker\s+system\s+prune\b" + _call_flag("a", "all"),
         "Docker system prune -a removes all unused data",
     ),
-    (r"\bdocker\s+rm\s+.*-f", "Docker forced container removal"),
-    (r"\bdocker\s+rmi\s+.*-f", "Docker forced image removal"),
+    (r"\bdocker\s+rm\b" + _call_flag("f", "force"), "Docker forced container removal"),
+    (r"\bdocker\s+rmi\b" + _call_flag("f", "force"), "Docker forced image removal"),
     (
         r"\bdocker\s+volume\s+(rm|prune)\b",
         "Docker volume removal destroys persistent data",
     ),
     (r"\bdocker\s+network\s+rm\b", "Docker network removal"),
     (
-        r"\bdocker(-|\s+)compose\s+down\s+.*-v",
+        r"\bdocker(-|\s+)compose\s+down\b" + _call_flag("v", "volumes"),
         "Docker Compose down -v destroys volumes",
     ),
     (r"\bpodman\s+run\s+.*--privileged", "Podman privileged mode is a security risk"),
     (
-        r"\bpodman\s+system\s+prune\s+.*-a",
+        r"\bpodman\s+system\s+prune\b" + _call_flag("a", "all"),
         "Podman system prune -a removes all unused data",
     ),
     (

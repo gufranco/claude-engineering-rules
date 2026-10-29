@@ -30,7 +30,8 @@
       "Bash(git remote *)",
       "Bash(git show *)",
       "Bash(pnpm run *)",
-      "Bash(pnpm exec *)"
+      "Bash(pnpm exec *)",
+      "Edit(~/.claude/**)"
     ],
     "deny": [
       "Read(./.env)",
@@ -1748,6 +1749,10 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/project-workspace.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/user-commands-one-line.py"
           }
         ]
       }

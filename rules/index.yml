@@ -171,6 +171,10 @@ always_loaded:
     description: A problem surfaced by any verification surface (CI annotations, deprecations, linter warnings, security advisories, hook blockers, broken docs links) is in scope for the current task regardless of when it was introduced. Bans the "pre-existing", "not introduced by my change", "orthogonal", "out of scope" rationalizations in commit messages, PR descriptions, and code comments. Enforced by hooks/found-fix-rationalization-blocker.py with FOUND_FIX_RATIONALIZATION_DISABLE parent-shell bypass for writing about the rule itself
     triggers: [found-fix, "pre-existing", "not introduced", "orthogonal", "leave for later", "out of scope", deprecation, annotation, "verification gate", "broken windows"]
 
+  user-commands-one-line:
+    description: Commands handed to the user to run go in one safe line: a strict-mode subshell, steps joined with &&, gates that fail by exit code, quoted variables and ${VAR:?} on recursive deletes, and a result the user must judge handed alone before an irreversible change. Enforced by hooks/user-commands-one-line.py, a Stop hook that blocks two or more `! ` command lines, `;` outside strict mode, `|| true`, and unguarded recursive deletes, with USER_COMMANDS_ONE_LINE_DISABLE parent-shell bypass
+    triggers: [command, commands, "run this", "! prefix", bang, "one line", "single line", handoff, "user runs"]
+
   living-specs:
     description: Maintain a living, testable statement of current behavior for non-trivial changes. specs/current/ organized by domain, requirements with normative keywords, Given/When/Then scenarios, delta discipline (ADDED/MODIFIED/REMOVED) against the current spec, and a close-out merge owned by /plan archive and reachable from /ship and /retro. Trivial changes skip per the surgical-edits skip list. Distinct from dated plan folders which record why; living specs record what
     triggers: [living spec, "living specs", behavioral spec, source of truth, requirement, scenario, "given/when/then", delta spec, "specs/current", archive spec, close-out merge, spec-driven]
@@ -802,6 +806,11 @@ on_demand:
     path: standards/found-fix.md
     description: "A problem surfaced by any verification surface (CI annotations, deprecations, linter warnings, security advisories, hook blockers, broken docs links) is in scope for the current task regardless of when it was introduced. Bans the \"pre-existing\", \"not introduced by my change\", \"orthogonal\", \"out of scope\" rationalizations in commit messages, PR descriptions, and code comments. Enforced by hooks/found-fix-rationalization-blocker.py with FOUND_FIX_RATIONALIZATION_DISABLE parent-shell bypass for writing about the rule itself"
     triggers: [found-fix, pre-existing, not introduced, orthogonal, leave for later, out of scope, deprecation, annotation, verification gate, broken windows]
+
+  user-commands-one-line:
+    path: standards/user-commands-one-line.md
+    description: "Commands handed to the user to run go in one safe line: a strict-mode subshell, steps joined with &&, gates that fail by exit code, quoted variables and ${VAR:?} on recursive deletes, and a result the user must judge handed alone before an irreversible change. Enforced by hooks/user-commands-one-line.py, a Stop hook that blocks two or more `! ` command lines, `;` outside strict mode, `|| true`, and unguarded recursive deletes, with USER_COMMANDS_ONE_LINE_DISABLE parent-shell bypass"
+    triggers: [command, commands, run this, "! prefix", bang, one line, single line, handoff, user runs]
 
   frontend-render-gate:
     path: standards/frontend-render-gate.md

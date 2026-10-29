@@ -213,3 +213,42 @@ def test_skips_an_unreadable_worktree_file(repo: GitRepo) -> None:
 
     # Assert
     assert documents == []
+
+
+def _diverged(repo: GitRepo, ours: str, theirs: str) -> None:
+    repo.stage("a.py", "x = 1\n\n\n\ny = 1\n")
+    repo.stage("b.py", "z = 1\n")
+    repo.commit()
+    repo.git("checkout", "-q", "-b", "feature")
+    repo.stage("a.py", theirs)
+    repo.commit()
+    repo.git("checkout", "-q", "main")
+    repo.stage("b.py", "z = 2\n")
+    repo.stage("a.py", ours)
+    repo.commit()
+    repo.git("merge", "-q", "--no-commit", "--no-ff", "feature")
+
+
+def test_skips_a_file_the_merge_took_unchanged_from_the_other_parent(
+    repo: GitRepo,
+) -> None:
+    # Arrange
+    _diverged(repo, "x = 1\n\n\n\ny = 1\n", "x = 1\n\n\n\ny = 2\n")
+
+    # Act
+    documents = staged_documents(CommitRequest(str(repo.root), False))
+
+    # Assert
+    assert documents == []
+
+
+def test_keeps_a_merged_file_both_parents_changed(repo: GitRepo) -> None:
+    # Arrange
+    _diverged(repo, "x = 2\n\n\n\ny = 1\n", "x = 1\n\n\n\ny = 2\n")
+    expected = StagedDocument("a.py", "x = 2\n\n\n\ny = 1\n", "x = 2\n\n\n\ny = 2\n")
+
+    # Act
+    documents = staged_documents(CommitRequest(str(repo.root), False))
+
+    # Assert
+    assert documents == [expected]
