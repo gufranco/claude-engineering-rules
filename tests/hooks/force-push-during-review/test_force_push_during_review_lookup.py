@@ -30,13 +30,15 @@ NO_PR = 'echo "no pull requests found for branch feat" >&2\nexit 1\n'
 REVIEWER = "rev-" + "alpha"
 
 
-def _bin(directory: Path, scripts: dict[str, str]) -> str:
+def _bin(
+    directory: Path, scripts: dict[str, str], system_path: str = SYSTEM_PATH
+) -> str:
     directory.mkdir(parents=True, exist_ok=True)
     for name, body in scripts.items():
         stub = directory / name
         stub.write_text("#!/bin/sh\n" + body, encoding="utf-8")
         stub.chmod(0o755)
-    return f"{directory}:{SYSTEM_PATH}"
+    return ":".join(part for part in (str(directory), system_path) if part)
 
 
 def test_an_open_changes_requested_review_blocks(tmp_path, tool_use, run_hook):
@@ -153,13 +155,18 @@ def test_a_push_spelled_with_extra_spacing_and_no_force_is_not_forced():
 
 
 @pytest.mark.parametrize(
-    "scripts",
-    [{"git": BRANCH_OK, "gh": "echo boom >&2\nexit 1\n"}, {"git": BRANCH_OK}],
+    ("scripts", "system_path"),
+    [
+        ({"git": BRANCH_OK, "gh": "echo boom >&2\nexit 1\n"}, SYSTEM_PATH),
+        ({"git": BRANCH_OK}, ""),
+    ],
     ids=["gh-error", "gh-missing"],
 )
-def test_a_lookup_that_cannot_answer_blocks(scripts, tmp_path, tool_use, run_hook):
+def test_a_lookup_that_cannot_answer_blocks(
+    scripts, system_path, tmp_path, tool_use, run_hook
+):
     # Arrange
-    path = _bin(tmp_path / "bin", scripts)
+    path = _bin(tmp_path / "bin", scripts, system_path)
     payload = tool_use("Bash", {"command": FORCE_PUSH})
 
     # Act
