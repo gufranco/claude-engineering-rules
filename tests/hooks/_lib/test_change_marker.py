@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 import struct
 import sys
 from pathlib import Path
@@ -158,6 +159,26 @@ def test_reads_the_marker_through_a_downscaled_copy(tmp_path, monkeypatch):
 
     # Assert
     assert result == MarkerCount(24)
+
+
+def test_runs_a_sips_command_given_with_arguments(tmp_path, monkeypatch):
+    # Arrange
+    sample = tmp_path / "sample.bmp"
+    sample.write_bytes(_bmp(_image(30, 2, 21)))
+    script = tmp_path / "fake sips.py"
+    script.write_text(
+        f"import shutil, sys\nshutil.copyfile({str(sample)!r}, sys.argv[8])\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(
+        SIPS_ENV, f"{shlex.quote(sys.executable)} {shlex.quote(str(script))}"
+    )
+
+    # Act
+    result = read_marker(str(tmp_path / "after.png"))
+
+    # Assert
+    assert result == MarkerCount(21)
 
 
 def test_names_a_sips_failure(tmp_path, monkeypatch):
