@@ -115,6 +115,8 @@ CATASTROPHIC: list[tuple[str, str]] = [
 SAME_CALL = r"[^;&|\n]*\s"
 FLAG_END = r"(?=[\s'\";&|)]|$)"
 OUTSIDE_TEMP = r"(?:(?!(?:/private)?/tmp/)|(?=[^\s\"';&|]*\.\./))"
+RM_TARGET = r"\brm\b[^;&|\n]*?\s[\"']?"
+TARGET_PATH = r"[^\s\"';&|]*"
 
 
 def _call_flag(short: str, long: str) -> str:
@@ -122,13 +124,16 @@ def _call_flag(short: str, long: str) -> str:
 
 
 CRITICAL_PATHS = [
-    (r"\brm\s+(-[a-zA-Z]*\s+)?.*\.git\b", "Deleting .git/ destroys repository history"),
     (
-        rf"\brm\b[^;&|\n]*?\s[\"']?{OUTSIDE_TEMP}[^\s\"';&|]*\.env\b",
+        rf"{RM_TARGET}{TARGET_PATH}\.git\b",
+        "Deleting .git/ destroys repository history",
+    ),
+    (
+        rf"{RM_TARGET}{OUTSIDE_TEMP}{TARGET_PATH}\.env\b",
         "Deleting .env removes environment configuration",
     ),
     (
-        r"\brm\s+(-[a-zA-Z]*\s+)?.*\.claude\b",
+        rf"{RM_TARGET}{TARGET_PATH}\.claude\b",
         "Deleting .claude/ removes Claude configuration",
     ),
     (
