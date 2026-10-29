@@ -1,9 +1,6 @@
 version: 2
 
 updates:
-  # GitHub Actions are pinned to commit SHAs for supply-chain integrity, which
-  # means nothing updates them without a bot. Dependabot rewrites the SHA and
-  # the trailing version comment together, so the pin stays readable.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -25,44 +22,6 @@ updates:
       actions-minor-patch:
         patterns:
           - "*"
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: pip
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Etc/UTC
-    open-pull-requests-limit: 5
-    versioning-strategy: increase
-    commit-message:
-      prefix: build
-      include: scope
-    labels:
-      - dependencies
-      - python
-    groups:
-      # The test runner plugins move together and break together. Bumping
-      # pytest without its plugins produces a plugin-incompatibility failure
-      # that reads like a test regression.
-      pytest-stack:
-        patterns:
-          - pytest
-          - pytest-*
-          - coverage
-        update-types:
-          - minor
-          - patch
-      lint-stack:
-        patterns:
-          - ruff
-          - mypy
-          - yamllint
-          - PyYAML
-          - types-PyYAML
         update-types:
           - minor
           - patch

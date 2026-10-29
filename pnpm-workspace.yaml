@@ -1,0 +1,4 @@
+overrides:
+  "@semantic-release/npm": "npm:@semantic-release/exec@7.1.0"
+  re2js: 2.9.1
+  katex: 0.19.1

@@ -497,7 +497,7 @@ The hooks, rules, and skills activate automatically.
 ### Permissions
 
 - **51 deny rules** block Read and Edit on sensitive files: `.env` variants, `secrets/`, SSH keys, AWS creds, GnuPG, kube and Docker config, `.npmrc`, `.pypirc`, `.netrc`, `*.pem`, `*.key`, `*.tfstate`, `*.tfvars`, plus Read on `node_modules`
-- **21 allow rules** skip the permission prompt. They include the unscoped `Read`, `Write`, `Edit`, `Bash`, `WebFetch`, `WebSearch`, `Skill`, and `NotebookEdit` tools, so the allow list is broad rather than read-only, plus scoped entries such as `git diff`, `git log`, `git status`, `pnpm run`, `npm run`, and `npx`. Deny rules still win over these allows, and the hooks are the layer that blocks destructive commands
+- **19 allow rules** skip the permission prompt. They include the unscoped `Read`, `Write`, `Edit`, `Bash`, `WebFetch`, `WebSearch`, `Skill`, and `NotebookEdit` tools, so the allow list is broad rather than read-only, plus scoped entries such as `git diff`, `git log`, `git status`, `pnpm run`, and `pnpm exec`. Deny rules still win over these allows, and the hooks are the layer that blocks destructive commands
 
 The `env-file-guard.py` hook adds a runtime block on Write and Edit to the same file classes at any path, plus `credentials/` directories, `.pgpass`, and `service-account*.json`. It does not cover Read or Bash, so a secret file outside the deny globs is still readable.
 
@@ -593,8 +593,7 @@ carries the reasoning behind a change, which generated notes cannot.
 conventions. The short version:
 
 ```bash
-python3 -m venv .venv && make install
-npm ci --ignore-scripts
+make install
 make test-all
 ```
 

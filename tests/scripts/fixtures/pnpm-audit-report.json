@@ -1,0 +1,61 @@
+{
+  "advisories": {
+    "1097678": {
+      "findings": [
+        {
+          "version": "1.2.5",
+          "paths": [
+            ".>minimist"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1097678,
+      "title": "Prototype Pollution in minimist",
+      "module_name": "minimist",
+      "vulnerable_versions": ">=1.0.0 <1.2.6",
+      "patched_versions": ">=1.2.6",
+      "severity": "critical",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-xvch-5gv4-984h",
+      "url": "https://github.com/advisories/GHSA-xvch-5gv4-984h"
+    },
+    "1098094": {
+      "findings": [
+        {
+          "version": "3.0.2",
+          "paths": [
+            ".>braces"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1098094,
+      "title": "Uncontrolled resource consumption in braces",
+      "module_name": "braces",
+      "vulnerable_versions": "<3.0.3",
+      "patched_versions": ">=3.0.3",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-1050",
+      "github_advisory_id": "GHSA-grv7-fg5c-xmjg",
+      "url": "https://github.com/advisories/GHSA-grv7-fg5c-xmjg"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 1,
+      "critical": 1
+    },
+    "dependencies": 6,
+    "devDependencies": 0,
+    "optionalDependencies": 14,
+    "totalDependencies": 20
+  }
+}

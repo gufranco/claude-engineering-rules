@@ -59,22 +59,26 @@ vulnerability in this repository even though no code executes.
 
 | Control | Where |
 |---------|-------|
-| Every GitHub Action pinned to a full commit SHA | [`.github/workflows/`](.github/workflows) |
-| Automated dependency and action bumps | [`.github/dependabot.yml`](.github/dependabot.yml) |
+| GitHub's own actions pinned to a release tag, third-party actions to a full commit SHA, enforced by zizmor | [`.github/workflows/`](.github/workflows), [`.github/zizmor.yml`](.github/zizmor.yml) |
+| Network egress of every job recorded by harden-runner in audit mode | [`.github/workflows/`](.github/workflows) |
+| Automated action and Node bumps | [`.github/dependabot.yml`](.github/dependabot.yml) |
+| Automated Python, pre-commit and runner image bumps | [`renovate.json`](renovate.json) |
 | Static analysis of the workflows themselves | `zizmor` in the CI lint job |
 | Code scanning | CodeQL, `security-extended` query suite |
 | Dependency advisories on every pull request | `actions/dependency-review-action` |
 | Supply-chain posture scoring | [`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml) |
-| Pinned Python toolchain | [`requirements-dev.txt`](requirements-dev.txt) |
-| Pinned Node toolchain with committed lockfile | [`package.json`](package.json), `package-lock.json` |
+| Python toolchain locked with hashes, installed with `uv sync --locked` | [`pyproject.toml`](pyproject.toml), [`uv.lock`](uv.lock) |
+| Node toolchain locked with integrity hashes, installed with `pnpm install --frozen-lockfile` | [`package.json`](package.json), [`pnpm-lock.yaml`](pnpm-lock.yaml) |
+| Registry signatures of every installed Node package | `pnpm audit signatures` in the release-config job |
 | Secret scanning before commit | [`hooks/secret-scanner.py`](hooks/secret-scanner.py) |
 
 ### The `@semantic-release/npm` override
 
-[`package.json`](package.json) carries one `overrides` entry:
+[`pnpm-workspace.yaml`](pnpm-workspace.yaml) carries this override:
 
-```json
-"overrides": { "@semantic-release/npm": "npm:@semantic-release/exec@7.1.0" }
+```yaml
+overrides:
+  "@semantic-release/npm": "npm:@semantic-release/exec@7.1.0"
 ```
 
 `semantic-release` depends on `@semantic-release/npm` unconditionally, and that
@@ -88,7 +92,7 @@ This repository publishes nothing to any registry. `@semantic-release/npm` is
 not listed in [`.releaserc.json`](.releaserc.json), so the plugin never loads
 and the vendored CLI never runs. Rather than carry unreachable vulnerable code
 in the tree, the override aliases the unused plugin to one already present.
-In [`package-lock.json`](package-lock.json) the `@semantic-release/npm` slot
+In [`pnpm-lock.yaml`](pnpm-lock.yaml) the `@semantic-release/npm` slot
 resolves to `@semantic-release/exec`, so the vendored CLI and its bundled tree
 are absent.
 
@@ -96,10 +100,12 @@ The release pipeline verifies this arrangement rather than assuming it. The
 `release-config` job in [`ci.yml`](.github/workflows/ci.yml) runs on every pull
 request and every push to `main`:
 
-- `npm audit --json` piped into
+- `pnpm audit --json` piped into
   [`audit-release-toolchain.py`](.github/scripts/audit-release-toolchain.py),
-  which fails on any high or critical advisory except the named waivers in that
-  script, and fails on a waived one once npm reports a fix.
+  which fails on any high or critical advisory and fails closed when the
+  output is not a pnpm advisories report.
+- `pnpm audit signatures`, which fails when an installed package lacks a valid
+  registry signature.
 - [`verify-release-notes.mjs`](scripts/verify-release-notes.mjs), which renders release notes through the
   configured plugin with no token.
 - `semantic-release --dry-run --no-ci`, on push events only, because pull
@@ -111,3 +117,11 @@ during a release.
 
 Revisit the override when `semantic-release` stops depending on
 `@semantic-release/npm`, or when the bundled advisories are resolved upstream.
+
+### The `re2js` and `katex` overrides
+
+`markdownlint-cli2` 0.24.0 reaches `re2js` 2.8.6, GHSA-gg6h-894w-4m9c, high,
+and `katex` 0.16.47, GHSA-238p-pmpm-9mq7, low, through `markdownlint`. The two
+overrides in [`pnpm-workspace.yaml`](pnpm-workspace.yaml) lift them to 2.9.1
+and 0.19.1, the patched releases. Drop each one once `markdownlint` depends on
+a patched range.
