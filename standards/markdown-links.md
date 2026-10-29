@@ -41,7 +41,8 @@ monorepo standard means the reader's manifest, never this repository's. Linking
 it would send the reader somewhere irrelevant, so these tokens stay bare:
 
 `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`,
-`pyproject.toml`, `uv.lock`, `requirements-dev.txt`, `.pre-commit-config.yaml`,
+`pyproject.toml`, `uv.lock`, `README.ja.md`, `README.zh-Hans.md`, `README.zh-HK.md`,
+`requirements-dev.txt`, `.pre-commit-config.yaml`,
 `.mise.toml`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
 `SECURITY.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/`.
 

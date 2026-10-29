@@ -70,7 +70,9 @@ def _tree(root: Path, readme: str) -> Path:
 
 
 GOOD_README = (
-    "**2** always-on rules, **1** standards, **1** skills, **2** hooks.\n"
+    "2 always-on rules, 1 on-demand standards.\n"
+    "1 skills in a\n"
+    "2 hooks in b\n"
     "It has 1 categories, 2 items.\n"
 )
 
@@ -132,7 +134,7 @@ def test_main_passes_a_consistent_tree(counts, tmp_path, capsys):
 
 def test_main_reports_stale_counts_and_dead_checks(counts, tmp_path, capsys):
     # Arrange
-    root = _tree(tmp_path, "**9** hooks and 3 categories, 7 items.\n")
+    root = _tree(tmp_path, "9 hooks and 3 categories, 7 items.\n")
 
     # Act
     code = counts.main(str(root))
@@ -140,7 +142,7 @@ def test_main_reports_stale_counts_and_dead_checks(counts, tmp_path, capsys):
     # Assert
     output = capsys.readouterr().out
     assert code == 1
-    assert "README.md:1: hooks count in bold: found 9, expected 2" in output
+    assert "README.md:1: hooks count leading a line: found 9, expected 2" in output
     assert "README.md:1: categories and items: found 3 categories, expected 1" in output
     assert "README.md:1: categories and items: found 7 items, expected 2" in output
     assert "FAILED: 3 check(s) matched nothing:" in output
@@ -181,7 +183,7 @@ def test_main_reports_only_stale_counts_when_every_check_fires(
     counts, tmp_path, capsys
 ):
     # Arrange
-    root = _tree(tmp_path, GOOD_README.replace("**2** hooks", "**5** hooks"))
+    root = _tree(tmp_path, GOOD_README.replace("2 hooks in", "5 hooks in"))
 
     # Act
     code = counts.main(str(root))

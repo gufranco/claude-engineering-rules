@@ -487,15 +487,19 @@ English is always the source and keeps the plain README file name. Each translat
 
 Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
-**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link:
+**Language switcher.** It sits inside the centered header block, on its own line directly under the bold tagline and above the badges, as in [gufranco/example-project](https://github.com/gufranco/example-project). It lists every language in its own name, in the table's order, separated by a plain ` | `: one space, a pipe, one space. The current language is plain text and every other one is a link. The line is wrapped in `<sub>` so it reads smaller than the tagline, and a blank line is the only gap above and below it:
 
 ```markdown
-English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
+<strong>What it does, concretely, in one sentence.</strong>
+
+<sub>English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)</sub>
+
+[![CI](badge-url)](link)
 ```
 
 The Hong Kong label is copied byte for byte: `繁體中文`, one ASCII space, then `(香港)` in ASCII parentheses. The full-width punctuation rule for Chinese body text does not apply to the switcher, so never write `（香港）`. The user corrected the full-width form on 2026-10-17.
 
-The user chose this placement on 2026-10-16, pointing at example-project, over an earlier rule that put the switcher on the first line above the title.
+The user chose this placement on 2026-10-16, pointing at example-project, over an earlier rule that put the switcher on the first line above the title. On 2026-10-28 the user asked for lighter spacing: two `<br>` lines above and below the switcher read as too much air, so never put `<br>` spacers around it.
 
 Never use `&nbsp;|&nbsp;` as the separator, here or in the navigation row. Written with spaces around it, as it always is, each side renders a non-breaking space plus an ordinary one, so the reader sees two spaces on each side of every pipe. The user saw the doubled gap across many repositories on 2026-10-17.
 

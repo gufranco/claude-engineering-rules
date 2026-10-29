@@ -210,10 +210,10 @@ def scan_file(filepath, counts, base_dir=CLAUDE_DIR):
 
 
 REQUIRED_LABELS = (
-    "always-on rules count in bold",
-    "standards count in bold",
-    "skills count in bold",
-    "hooks count in bold",
+    "always-on rules count",
+    "standards count",
+    "skills count leading a line",
+    "hooks count leading a line",
 )
 
 

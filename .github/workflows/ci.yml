@@ -70,8 +70,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Markdownlint
-        run: |
-          pnpm exec markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
+        run: make lint-md
 
       - name: Validate YAML
         run: python3 -c "import yaml; yaml.safe_load(open('rules/index.yml'))"
