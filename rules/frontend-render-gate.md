@@ -8,6 +8,8 @@ A change to markup, styles, theme tokens, the component tree, a desktop layout, 
 - Mobile needs a simulator or emulator run; a widget test is not enough. If unverified, say so.
 - Every pull request, review reply, issue, issue answer, and tracker comment about a visible change must attach screenshots labeled `Before:`, unless the surface is new, and `After:`. Web, mobile, desktop GUI, and TUI alike.
 - Screenshots are high resolution: device scale 2 or more, longer side at least 1600 px. Before comes from the base commit with the same data, viewport, theme, and locale.
+- Capture the full page. When an inner container scrolls, set each clipping ancestor to `height: auto` and the scrolling `main` to `flex: none` first; never `overflow: visible`.
+- One set, one pixel width: scale proportionally with `sips --resampleWidth`, never pad. Desktop and mobile sit in separate headed groups; alt text names device and viewport, as in `After: Mobile 320 px, default queue`. A new page says it has no Before.
 - Upload with `gh ... --attach '<file>#After: <screen>'`; never commit screenshots or host them elsewhere.
 
 `agent-browser` is installed globally:
@@ -27,4 +29,4 @@ Enforced by: [`hooks/frontend-render-gate.py`](../hooks/frontend-render-gate.py)
 
 ## Provenance
 
-Added 2026-08-20, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-28, by direct user instruction: visible changes publish high-resolution before and after screenshots in every channel and on every platform, because visibility is a reviewer's main criterion for an interface; the hook now enforces it at publish time.
+Added 2026-08-20, recurrence not recorded. Origin: not recorded at creation. Amended 2026-10-28, by direct user instruction: visible changes publish high-resolution before and after screenshots in every channel and on every platform, because visibility is a reviewer's main criterion for an interface; the hook now enforces it at publish time. Amended 2026-10-29, recurrence 5 across acme/admin #671 and acme/webapp #5005 on 2026-10-28 and 2026-10-29, by direct user instruction: a text-only Before and After section, viewport-only captures of a page scrolling inside `main`, an `overflow: visible` capture 18,438 px wide, images of mixed widths, and a padded mobile capture were each corrected by hand; the hook now blocks mixed widths and unlabeled devices, and asks on a viewport-only height.
