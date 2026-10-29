@@ -148,7 +148,7 @@ lint-skills:
 
 lint-md:
 	pnpm exec markdownlint-cli2 "rules/*.md" "rules/lang/*.md" "standards/*.md" \
-	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README.md" \
+	  "skills/*/SKILL.md" "checklists/*.md" "CLAUDE.md" "README*.md" \
 	  "CONTRIBUTING.md" "SECURITY.md" "CODE_OF_CONDUCT.md"
 
 validate:
