@@ -111,7 +111,7 @@ The first thing anyone sees. It must create instant visual identity and communic
 
 **Light and dark mode logo via `<picture>`.** This is the canonical pattern as of late 2023. The older `#gh-dark-mode-only` fragment hack is deprecated. Drizzle, tRPC, Vite, Supabase, and Next.js all use this form.
 
-The `<strong>` line is the tagline: one line, confident, specific. The badge bar below it follows the cap and allowlist in the Badges section.
+The `<strong>` line is the tagline: one line, confident, specific. The badge block below it is the one [`tools/readme-badges.py`](../../tools/readme-badges.py) writes, per the Badges section.
 
 ```html
 <div align="center">
@@ -130,9 +130,9 @@ The `<strong>` line is the tagline: one line, confident, specific. The badge bar
 <br>
 <br>
 
-[![CI](badge-url)](link)
-[![Version](badge-url)](link)
-[![License](badge-url)](link)
+[![ci](https://img.shields.io/github/actions/workflow/status/owner/repo/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/owner/repo/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/owner/repo?style=flat-square&label=release)](https://github.com/owner/repo/releases/latest)
+[![license](https://img.shields.io/github/license/owner/repo?style=flat-square&label=license)](LICENSE)
 
 </div>
 
@@ -494,7 +494,7 @@ Any other BCP 47 tag passed to `--languages` follows the same file pattern.
 
 English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁體中文 (香港)](README.zh-HK.md)
 
-[![CI](badge-url)](link)
+[![ci](https://img.shields.io/github/actions/workflow/status/owner/repo/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/owner/repo/actions/workflows/ci.yml)
 ```
 
 The Hong Kong label is copied byte for byte: `繁體中文`, one ASCII space, then `(香港)` in ASCII parentheses. The full-width punctuation rule for Chinese body text does not apply to the switcher, so never write `（香港）`. The user corrected the full-width form on 2026-10-17.
@@ -696,45 +696,36 @@ The README should be scannable in 10 seconds. A developer scrolling fast should 
 
 ### Badges
 
-Only for verifiable, meaningful facts. Grouped and ordered consistently. Cap at 5 to 8 badges in the hero. More than 8 dilutes signal and pushes content below the fold.
+Every repository carries the same badge block, computed from its files by [`tools/readme-badges.py`](../../tools/readme-badges.py), never written by hand. The block sits in the centered header, after the tagline and the language switcher, one badge per line, with a blank line above and below it, and every `README*.md` translation carries the identical block.
 
-**Order**: build status, version and release, downloads, license, then optional extras like coverage, bundle size, and community.
-
-**High-signal allowlist.** Each badge in this list earns its slot because it answers a real trust question.
-
-| Badge | What it tells the reader | Source |
-|-------|--------------------------|--------|
-| CI status | "Does it build?" | GitHub Actions, CircleCI |
-| Package version | "What version is current?" | npm, PyPI, crates.io, JSR |
-| Downloads per month or week | "Is anyone using it?" | npm, PyPI, GitHub Releases |
-| License | "Can I use it?" | shields.io static badge |
-| Coverage | "Are the tests honest?" | Codecov, Coveralls |
-| Bundle size | "Will it bloat my app?" | Bundlephobia, size-limit |
-| Community count | "Is there help when I get stuck?" | Discord, Slack |
-| OpenSSF Scorecard | "Is the supply chain audited?" | scorecard.dev |
-| Star History snapshot | "Is momentum building?" | Use only after the project crosses ~1k stars |
-
-**OpenSSF Scorecard badge format** for security-sensitive projects:
-
-```markdown
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/{owner}/{repo}/badge)](https://scorecard.dev/viewer/?uri=github.com/{owner}/{repo})
+```bash
+python3 ~/.claude/tools/readme-badges.py <repo> --visibility public --release yes --write
+python3 ~/.claude/tools/readme-badges.py <repo> --visibility public --release yes --check
 ```
 
-The badge requires the `scorecard-action:v2` GitHub Action with `publish_results: true` and `id-token: write` permission.
+Read `--visibility` from `gh repo view --json visibility` and `--release` from whether `gh release list --limit 1` prints a release. `--check` exits 1 and names each README whose block differs.
 
-**Denylist.** These add noise without trust signal and should never appear:
+**The set and its order.** Nothing outside this list appears in the header:
 
-- "Made with love", "Built with passion", "FORTHEBADGE" decorative tags
-- "Awesome" badges that link to nothing or to a placeholder list
-- Generic technology stack badges for the project's primary language. The language is already visible in the GitHub repo header
-- Badges for tools that are not central to the project's value proposition
-- Broken or outdated badges that show error states or that point at deleted services
+| Order | Badge | Shown when |
+|:------|:------|:-----------|
+| 1 | One CI badge per workflow that runs on push, labeled with the workflow's `name` in lowercase, in file-name order | The workflow is not a release, scorecard, CodeQL, stale, pages, deploy, formula, labeler, Dependabot or Renovate workflow |
+| 2 | Release, the latest GitHub release | The repository is public and has a release |
+| 3 | Coverage, the lowest floor the configuration enforces, such as `fail_under` or a vitest threshold | A nonzero floor is enforced; a README claim does not count |
+| 4 | OpenSSF Scorecard | The repository is public and runs `ossf/scorecard-action` |
+| 5 | License, from the `LICENSE` file | A license file names a known SPDX license |
 
-**Style consistency.** Pick one shields.io style and keep it across every badge. Common choices: `flat`, `flat-square`, `for-the-badge`. Mixing styles looks unfinished.
+**Style.** shields.io `flat-square` on every badge, lowercase labels, and live endpoints so a badge never goes stale. A private repository uses GitHub's own workflow badge for CI and a static license badge, because shields.io cannot read a private repository, and it shows no release or scorecard badge.
 
-**Color semantics.** Green for healthy or positive, red for failing or critical, blue for informational. Shields.io defaults map status colors automatically.
+**Never in the header**, because each one goes stale or says nothing a reader can check:
 
-**Alt text on every badge.** The `[![alt](url)](link)` markdown form includes alt text inside the brackets by default. Custom HTML `<img>` badges need explicit `alt=""`. Screen readers stay silent on image-only badges.
+- A static version badge such as `version-2.0.0`; the release badge replaces it.
+- A language, framework, runtime or tool badge, such as Python, TypeScript, Node.js, Docker, POSIX sh or mypy. The repository header and the README body already say it.
+- Conventional Commits, semantic-release, "made with" and decorative badges.
+- A badge for a workflow that does not run on push, such as a release workflow triggered by `workflow_run`.
+- A coverage badge whose number is not enforced by the build.
+
+Provenance: 2026-10-29, by direct user instruction, after an audit of all 140 active repositories under `gufranco` and `example-project` found two badge styles, a dozen badge kinds in more than twenty orders, 54 READMEs with no badges, and static version badges that no longer matched the latest release.
 
 ### Quantification
 
@@ -902,7 +893,7 @@ Capture before the upgrade: baseline star count, weekly view count, clone count.
 - Every Quick Start command maps to a script or Makefile target that exists, and the section ends with a verification command and its expected output.
 - Every path in the project structure tree and every referenced image exists on disk.
 - Every number in the scope sentence was counted from the source in this run.
-- The hero carries at most 8 badges and a demo within the first scroll.
+- `python3 ~/.claude/tools/readme-badges.py <repo> --visibility <v> --release <r> --check` exits 0, so every `README*.md` carries the standard badge block, and the hero shows a demo within the first scroll.
 - The About description is at most 350 characters with no trailing period, and the topics are at most 20, lowercase, and hyphenated.
 - The user approved the draft before the write, and every `gh` call that applied the About carried an inline `GH_TOKEN` for the account matched from the remote.
 

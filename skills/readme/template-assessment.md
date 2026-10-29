@@ -10,6 +10,10 @@ For the marketing-grade variant covering open-source repos and portfolio project
 
 Scan the project in parallel: package manifest, infrastructure configs, source tree structure, environment files, git context, test output with coverage, and any existing README. Read the actual codebase to extract concrete details: number of tests, coverage percentage, number of endpoints, isolation levels used, patterns applied, and technologies with their exact versions from the lockfile or config.
 
+## Badges
+
+The assessment README carries the same badge block as every other README, set and order included, written by `python3 ~/.claude/tools/readme-badges.py <repo> --visibility <v> --release <r> --write` and placed under the title paragraph. The rules live in the Badges section of [`SKILL.md`](SKILL.md).
+
 ## README Structure
 
 ```
