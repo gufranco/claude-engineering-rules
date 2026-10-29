@@ -124,7 +124,7 @@ def test_audit_records_the_block(hook, monkeypatch: pytest.MonkeyPatch) -> None:
     ]
 
 
-def test_audit_record_is_none_when_the_audit_log_cannot_import(
+def test_a_missing_audit_log_fails_the_import(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Arrange
@@ -134,20 +134,23 @@ def test_audit_record_is_none_when_the_audit_log_cannot_import(
     assert spec.loader is not None
 
     # Act
-    spec.loader.exec_module(module)
+    attempt = lambda: spec.loader.exec_module(module)  # noqa: E731
 
     # Assert
-    assert module._audit_record is None
+    with pytest.raises(ImportError):
+        attempt()
 
 
-def test_audit_noop_when_record_unavailable(
-    hook, monkeypatch: pytest.MonkeyPatch, capsys
+def test_audit_keeps_only_the_first_200_characters_of_the_command(
+    hook, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # Arrange
-    monkeypatch.setattr(hook, "_audit_record", None)
+    calls: list[dict[str, str]] = []
+    monkeypatch.setattr(hook, "_audit_record", lambda **kwargs: calls.append(kwargs))
+    command = "git commit -m " + "x" * 300
 
     # Act
-    hook._audit("git commit -m x")
+    hook._audit(command)
 
     # Assert
-    assert capsys.readouterr().err == ""
+    assert calls[0]["command_excerpt"] == command[:200]
