@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本發佈</a>
 </p>
 
-47 條常駐規則、141 份按需載入的標準、42 個技能、93 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
+47 條常駐規則、141 份按需載入的標準、42 個技能、94 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
 
 ---
 
@@ -76,7 +76,7 @@ graph LR
 
 ### 常駐規則
 
-[`rules/`](rules/) 中有 47 條規則，[`rules/lang/`](rules/lang/) 中另有 5 條。[`rules/`](rules/) 下的每個檔案都會以簡短核心的形式載入每一次對話，包括語言檔案和表格後列出的 6 條。每個核心只保留會改變日常任務行為的義務，並連結到 [`standards/`](standards/) 中的全文，因此常駐集合維持在 55 個檔案、106,032 個字元，低於 CI 強制執行的 120,000 字元預算，也低於執行環境 150,000 字元的上限。
+[`rules/`](rules/) 中有 47 條規則，[`rules/lang/`](rules/lang/) 中另有 5 條。[`rules/`](rules/) 下的每個檔案都會以簡短核心的形式載入每一次對話，包括語言檔案和表格後列出的 6 條。每個核心只保留會改變日常任務行為的義務，並連結到 [`standards/`](standards/) 中的全文，因此常駐集合維持在 55 個檔案、106,633 個字元，低於 CI 強制執行的 120,000 字元預算，也低於執行環境 150,000 字元的上限。
 
 | 規則 | 涵蓋內容 |
 |:-----|:---------------|
@@ -185,7 +185,7 @@ graph LR
 
 ### 鈎子
 
-[`hooks/`](hooks/) 中有 93 個鈎子，透過 [`settings.json`](settings.json) 接駁。每個鈎子在工具呼叫之前、之後或前後執行。
+[`hooks/`](hooks/) 中有 94 個鈎子，透過 [`settings.json`](settings.json) 接駁。每個鈎子在工具呼叫之前、之後或前後執行。
 
 **繞過渠道。** 每個鈎子都支援兩種渠道，任何一種都可以放行，兩者可以並存。
 
@@ -232,6 +232,7 @@ graph LR
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | 注入系統提示，強制助手以英文輸出 |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | 攔截對 `.env`、私鑰、雲端憑證和 tfstate 的編輯 |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | 在指令所針對的儲存庫中，如果某位審查人對拉取請求的最新審查是 `CHANGES_REQUESTED`，就攔截改寫歷史的推送；讀不到審查狀態時攔截，沒有拉取請求的分支則放行。與危險指令攔截器共用強制旗標的模式，所以 `-fu` 和全局選項亦會同樣被捕捉 |
+| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 寫入落在另一個正在執行的 Claude Code 工作階段的工作目錄內之前要求確認，工作階段資料讀自 `~/.claude/sessions/`，因為那個工作階段會把該檔案報告為它自己的改動。目錄包含本工作階段的工作階段會被忽略。繞過：`FOREIGN_SESSION_GUARD_DISABLE=1` |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | 攔截把驗證中發現的問題推到之後工作階段的推搪說法。針對提交訊息、PR 正文、發佈說明和程式碼註解；在原始碼檔案中只掃描註解，工作階段草稿區不受限制。位於引號字串或 heredoc 正文中的發佈指令屬於數據，不是提交 |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | 除非用戶點名了路徑，否則每個工作階段在第一次編輯檔案前都必須先讀它。這是 pre-flight 中 Confidence 規則的落實 |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | 每次呼叫都強制指定 `--configuration` |
@@ -518,7 +519,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 93 runtime hooks
+  hooks/                 94 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -560,7 +561,7 @@ $HOME/.claude/
 <summary><strong>兩級規則載入如何節省上下文？</strong></summary>
 <br>
 
-141 份標準合共 27,285 行。如果每次對話都全部載入，會耗盡上下文視窗。[`rules/index.yml`](rules/index.yml) 把每份標準對應到觸發關鍵字。任務配對時，例如加入一次數據庫遷移會帶出 `database.md`，只會載入相關的標準。
+141 份標準合共 27,295 行。如果每次對話都全部載入，會耗盡上下文視窗。[`rules/index.yml`](rules/index.yml) 把每份標準對應到觸發關鍵字。任務配對時，例如加入一次數據庫遷移會帶出 `database.md`，只會載入相關的標準。
 
 </details>
 

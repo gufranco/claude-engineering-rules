@@ -22,7 +22,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">リリース</a>
 </p>
 
-常時ロードされるルール47件、オンデマンドの標準141件、スキル42件、フック93件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
+常時ロードされるルール47件、オンデマンドの標準141件、スキル42件、フック94件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
 
 ---
 
@@ -76,7 +76,7 @@ graph LR
 
 ### 常時ロードされるルール
 
-[`rules/`](rules/)に47件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは55ファイルで106,032文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
+[`rules/`](rules/)に47件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは55ファイルで106,633文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
 
 | ルール | 対象 |
 |:-----|:---------------|
@@ -185,7 +185,7 @@ graph LR
 
 ### フック
 
-[`hooks/`](hooks/)に93件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
+[`hooks/`](hooks/)に94件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
 
 **バイパスの経路。** すべてのフックが2つの経路に対応しています。どちらでも通過でき、両方を併用できます。
 
@@ -232,6 +232,7 @@ graph LR
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | アシスタントの出力を英語にするシステムリマインダーを注入します |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | `.env`、秘密鍵、クラウドの認証情報、tfstateの編集をブロックします |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | コマンドが対象とするリポジトリで、レビュアーのプルリクエストに対する最新のレビューが`CHANGES_REQUESTED`のとき、履歴を書き換えるプッシュをブロックします。レビューの状態が読めない場合はブロックし、プルリクエストのないブランチは許可します。強制フラグのパターンを危険コマンドのブロッカーと共有するため、`-fu`やグローバルオプションも同じように捕まえます |
+| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | 別の稼働中のClaude Codeセッションの作業ディレクトリ内に書き込む前に確認を求めます。セッションは`~/.claude/sessions/`から読み取ります。そのセッションはファイルを自分の変更として報告するためです。このセッションを含むディレクトリのセッションは無視します。バイパスは`FOREIGN_SESSION_GUARD_DISABLE=1` |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | 検証で見つかった問題を後のセッションに先送りする言い訳の言い回しをブロックします。対象はコミットメッセージ、PRの本文、リリースノート、コードコメントです。ソースファイルではコメントだけを走査し、セッションのスクラッチパッドは対象外です。引用符の中やヒアドキュメントの本文にある公開コマンドはデータであり、コミットではありません |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | ユーザーがパスを指定した場合を除き、セッションごとに最初の編集の前にファイルを読むことを強制します。pre-flightの「Confidence」ルールを実装するものです |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | 呼び出しごとに`--configuration`を強制します |
@@ -518,7 +519,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 93 runtime hooks
+  hooks/                 94 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -560,7 +561,7 @@ $HOME/.claude/
 <summary><strong>2段階のルール読み込みはどのようにコンテキストを節約しますか？</strong></summary>
 <br>
 
-141件の標準は合計27,285行あります。すべてを毎回の会話に読み込むと、コンテキストウィンドウを使い果たしてしまいます。[`rules/index.yml`](rules/index.yml)は各標準をトリガーキーワードに対応付けています。タスクが一致したとき、たとえば「データベースのマイグレーションを追加する」なら`database.md`のように、関係する標準だけが読み込まれます。
+141件の標準は合計27,295行あります。すべてを毎回の会話に読み込むと、コンテキストウィンドウを使い果たしてしまいます。[`rules/index.yml`](rules/index.yml)は各標準をトリガーキーワードに対応付けています。タスクが一致したとき、たとえば「データベースのマイグレーションを追加する」なら`database.md`のように、関係する標準だけが読み込まれます。
 
 </details>
 

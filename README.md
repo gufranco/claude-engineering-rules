@@ -22,7 +22,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
 </p>
 
-47 always-on rules, 141 on-demand standards, 42 skills, 93 hooks, and 18 agents, plus an 905-item review checklist in 71 categories.
+47 always-on rules, 141 on-demand standards, 42 skills, 94 hooks, and 18 agents, plus a 905-item review checklist in 71 categories.
 
 ---
 
@@ -76,7 +76,7 @@ graph LR
 
 ### Rules, always loaded
 
-47 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 106,032 characters across 55 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
+47 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 106,633 characters across 55 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -185,7 +185,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-93 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+94 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -232,6 +232,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`english-only-reminder.py`](hooks/english-only-reminder.py) | UserPromptSubmit | Injects system-reminder forcing English assistant output |
 | [`env-file-guard.py`](hooks/env-file-guard.py) | PreToolUse Write/Edit | Blocks edits to `.env`, private keys, cloud creds, tfstate |
 | [`force-push-during-review.py`](hooks/force-push-during-review.py) | PreToolUse Bash | Blocks history-rewriting pushes when a reviewer's latest review on the pull request is `CHANGES_REQUESTED`, in the repository the command targets; blocks when the review state cannot be read, and allows a branch with no pull request. Shares its force-flag patterns with the dangerous-command blocker, so `-fu` and global options are caught the same way |
+| [`foreign-session-guard.py`](hooks/foreign-session-guard.py) | PreToolUse Write/Edit/MultiEdit/NotebookEdit | Asks before a write lands inside another live Claude Code session's working directory, read from `~/.claude/sessions/`, because that session reports the file as its own change. A session whose directory contains this one is ignored. Bypass `FOREIGN_SESSION_GUARD_DISABLE=1` |
 | [`found-fix-rationalization-blocker.py`](hooks/found-fix-rationalization-blocker.py) | PreToolUse Bash/Write/Edit | Blocks rationalization phrases that defer verification-surface findings to a later session. Targets commit messages, PR bodies, release notes, and code comments; in a source file only comments are scanned, and the session scratchpad is exempt. A publishing command inside a quoted string or heredoc body is data, not a commit |
 | [`gateguard-fact-force.py`](hooks/gateguard-fact-force.py) | PreToolUse Write/Edit/MultiEdit | Forces reading a file before the first edit per session unless the user named the path. Operationalizes the pre-flight "Confidence" rule |
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
@@ -518,7 +519,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 93 runtime hooks
+  hooks/                 94 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -560,7 +561,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 141 standards total 27,285 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
+The 141 standards total 27,295 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
 
 </details>
 
