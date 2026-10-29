@@ -29,6 +29,12 @@ def _pattern(message: str) -> str:
             "rm -f /tmp/../Users/dev/app/.env",
         ),
         ("Podman system prune -a removes all unused data", "podman system prune --all"),
+        ("Deleting .claude/ removes Claude configuration", "rm -rf ~/.claude"),
+        (
+            "Deleting .claude/ removes Claude configuration",
+            'rm -rf "$HOME/.claude/hooks"',
+        ),
+        ("Deleting .git/ destroys repository history", "rm -rf repo/.git"),
     ],
 )
 def test_still_matches_the_destructive_form(message: str, command: str) -> None:
@@ -70,6 +76,14 @@ def test_still_matches_the_destructive_form(message: str, command: str) -> None:
         (
             "Deleting .env removes environment configuration",
             "rm -f build.log && cat .env.example",
+        ),
+        (
+            "Deleting .claude/ removes Claude configuration",
+            'rm -rf /tmp/gate && cd "$HOME/.claude" && git log -1',
+        ),
+        (
+            "Deleting .git/ destroys repository history",
+            "rm -f out.log && git -C repo/.git log",
         ),
     ],
 )
