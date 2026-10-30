@@ -90,6 +90,35 @@ def test_here_string_is_not_a_heredoc():
 
 
 @pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ("make", [("make", "")]),
+        (
+            "cd a && make 2>&1 | tail -3; echo x",
+            [("cd a ", ""), (" make 2>&1 ", "&&"), (" tail -3", "|"), (" echo x", ";")],
+        ),
+        ("make &>log & wait", [("make &>log ", ""), (" wait", "&")]),
+        (
+            "make |& tee log || true",
+            [("make ", ""), (" tee log ", "|&"), (" true", "||")],
+        ),
+        ("echo 'a; b' \"c | d\"", [("echo 'a; b' \"c | d\"", "")]),
+        ("a\nb;", [("a", ""), ("b", "\n")]),
+        ("", []),
+    ],
+)
+def test_operator_segments_name_the_operator_before_each_segment(command, expected):
+    # Arrange
+    command_input = command
+
+    # Act
+    segments = shell_segments.operator_segments(command_input)
+
+    # Assert
+    assert segments == expected
+
+
+@pytest.mark.parametrize(
     ("tokens", "expected"),
     [
         (["ls", "-la"], ("ls", ["ls", "-la"])),

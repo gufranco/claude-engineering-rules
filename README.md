@@ -21,7 +21,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
 </p>
 
-49 always-on rules, 143 on-demand standards, 42 skills, 98 hooks, and 18 agents, plus a 905-item review checklist in 71 categories.
+49 always-on rules, 143 on-demand standards, 42 skills, 99 hooks, and 18 agents, plus a 905-item review checklist in 71 categories.
 
 ---
 
@@ -186,7 +186,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-98 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+99 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -213,6 +213,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | Blocks the structural slop tells that survive a phrase blocklist: negative parallelism, significance inflation, participial evaluation tails, unnamed authorities, hedged speculation, marketing verbs replacing `is` and `has`, throat-clearing, trailing recaps, chat residue, unfilled placeholders, curly quotes, search narration such as sites that refused or the date a check ran. Bold-label bullets and headings are blocked only inside a published PR comment. Codes `SLOP001` to `SLOP015`. Search narration is allowed in the vault, the project workspace and `PROMPT.md`. Code spans are masked before matching, and every detector was calibrated against the 333 Markdown files under the rules, standards, checklists, skills, agents and docs directories plus the root documents. Bypass `AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | Blocks TypeScript `as any` and generic `any`. No allow marker; only third-party tool directives are honored. |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | Blocks `aws configure set` without `--profile` |
+| [`background-exit-status.py`](hooks/background-exit-status.py) | PreToolUse Bash | Blocks a background command whose last step is a filter or a report, such as `tail`, `grep`, `tee` or `echo`, run after a build or test step, because the task notification then carries that filter's exit status. A command that ends in `exit $code`, or a pipeline under `set -o pipefail`, passes. Bypass `BACKGROUND_EXIT_STATUS_DISABLE=1` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | Blocks conversational fluff and tactical hyperbole in PRs and docs |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | Blocks em dashes, en dashes, parens in prose, emojis, ASCII art, and in Markdown prose a spaced hyphen standing in for a dash |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | Blocks multi-thread `resolveReviewThread` loops on GitHub or GitLab |
@@ -524,7 +525,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 98 runtime hooks
+  hooks/                 99 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

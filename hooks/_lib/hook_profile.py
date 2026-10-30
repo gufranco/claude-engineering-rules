@@ -66,6 +66,7 @@ STANDARD_HOOKS = MINIMAL_HOOKS | frozenset(
         "doc-sync-guard",
         "conventional-commits",
         "commit-test-weakening",
+        "background-exit-status",
         "smart-formatter",
         "edit-accumulator",
         "stop-format-typecheck",
