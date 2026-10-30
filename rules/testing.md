@@ -31,3 +31,4 @@ Enforced by: [`hooks/mock-internal-blocker.py`](../hooks/mock-internal-blocker.p
 Enforced by: [`hooks/tdd-gate.py`](../hooks/tdd-gate.py).
 Enforced by: [`hooks/dangerous-command-blocker.py`](../hooks/dangerous-command-blocker.py).
 Enforced by: [`hooks/coverage-exclusion-guard.py`](../hooks/coverage-exclusion-guard.py).
+Enforced by: [`hooks/commit-test-weakening.py`](../hooks/commit-test-weakening.py).

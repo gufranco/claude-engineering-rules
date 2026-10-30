@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本发布</a>
 </p>
 
-48 条常驻规则、142 份按需加载的标准、42 个技能、95 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
+48 条常驻规则、142 份按需加载的标准、42 个技能、98 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
 
 ---
 
@@ -186,7 +186,7 @@ graph LR
 
 ### 钩子
 
-[`hooks/`](hooks/) 中有 95 个钩子，通过 [`settings.json`](settings.json) 接入。每个钩子在工具调用之前、之后或前后运行。
+[`hooks/`](hooks/) 中有 98 个钩子，通过 [`settings.json`](settings.json) 接入。每个钩子在工具调用之前、之后或前后运行。
 
 **绕过渠道。** 每个钩子都支持两种渠道，任意一种都能放行，两者可以同时存在。
 
@@ -222,6 +222,7 @@ graph LR
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | 拦截对 tsconfig、eslint、ruff、mypy 等 lint、格式化和类型检查配置的编辑。逼着修代码，而不是放宽配置 |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | 拦截非测试代码中的 `console.*`。没有放行标记，只遵守第三方工具的指令。 |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | 校验 Conventional Commits 格式 |
+| [`commit-test-weakening.py`](hooks/commit-test-weakening.py) | PreToolUse Bash | 把所有定义了测试用例的已改动和未跟踪测试文件加总，与上一次提交相比，测试用例或断言减少、或跳过标记增加的提交会被拦截。它读取工作区，因此用 shell 脚本删除的测试和用 Edit 删除的一样会被发现，移到另一个文件的测试则相互抵消。绕过方式为 `COMMIT_TEST_WEAKENING_DISABLE=1` |
 | [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | 拦截向源代码添加覆盖率排除指令的编辑，例如 `istanbul ignore`、`c8 ignore`、`pragma: no cover`、`#[coverage(off)]` 或 `LCOV_EXCL_LINE`，也拦截把覆盖率配置的阈值写到 100 以下的编辑。只有生成代码和第三方代码的路径可以排除，所以新增 omit 或 exclude 条目时会请求确认。文本文件不受限制。绕过：`COVERAGE_EXCLUSION_GUARD_DISABLE=1`。 |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 种模式：破坏性的 shell 命令、反向 shell、云资源删除、IaC 的 destroy。传给 `cat`、`tee`、`git`、`gh` 或 `glab` 的 heredoc 正文属于数据，不参与匹配；传给 shell 的正文仍会匹配。Docker 或 Podman 的 `-f`、`-a`、`-v` 等标志只有作为同一次调用中的独立参数时才算数；`.git`、`.env`、`.claude` 等受保护路径只有作为 `rm` 调用本身的参数时才算数；`.git` 只有作为完整的路径组成部分时才算数，所以 `name.git` 这样的裸镜像是普通路径；删除字面路径 `/tmp` 或 `/private/tmp` 下的 `.env` 文件是允许的，除非路径用 `..` 跳出。匹配前会去掉 `-C`、`-c` 等 git 全局选项，所以 `git -C <dir> push --force` 和普通写法一样会被拦截，`-f` 或 `-fu` 这样的组合也算强制推送。只有当命令的每一段都是对构建目录的清理时，这种清理才能跳过其余检查。不是有效 JSON 的输入会被拦截。当推送的目标仓库（会跟踪 `cd` 和 `-C`）列在机器本地的 `solo-repos.txt` 中时，允许推送到受保护分支，这个文件以 [`solo-repos.example.txt`](solo-repos.example.txt) 为模板；无法确定目标的推送不算在内。删除测试文件，以及用 `find`、`grep -r`、`rg` 或 `fd` 搜索 `/` 或主目录，会弹出确认，但未被跟踪且不在任何提交中的测试文件除外 |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | 拦截暂存的差异会让现有文档变假的 `git commit`。四项确定的检查：代码读取了 `.env.example` 中没有列出的变量，以及删除了已跟踪 Markdown 仍在提及的导出、CLI 标志或包脚本。检查前导的 `cd` 或 `git -C` 指定的仓库，并在 `commit -a` 时包含未暂存的改动。变更日志、ADR 和规格作为历史记录不在此列。绕过：`DOC_SYNC_DISABLE=1` |
@@ -523,7 +524,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 97 runtime hooks
+  hooks/                 98 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

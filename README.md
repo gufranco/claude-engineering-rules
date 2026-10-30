@@ -21,7 +21,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
 </p>
 
-49 always-on rules, 143 on-demand standards, 42 skills, 95 hooks, and 18 agents, plus a 905-item review checklist in 71 categories.
+49 always-on rules, 143 on-demand standards, 42 skills, 98 hooks, and 18 agents, plus a 905-item review checklist in 71 categories.
 
 ---
 
@@ -186,7 +186,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-97 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+98 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -222,6 +222,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
+| [`commit-test-weakening.py`](hooks/commit-test-weakening.py) | PreToolUse Bash | Blocks a commit whose test files, summed across every changed and untracked test file that defines a test case and compared with the last commit, lose test cases or assertions or gain skip markers. It reads the working tree, so a test removed by a shell script is caught as well as one removed with Edit, and a test moved to another file nets to zero. Bypass `COMMIT_TEST_WEAKENING_DISABLE=1` |
 | [`coverage-exclusion-guard.py`](hooks/coverage-exclusion-guard.py) | PreToolUse Write/Edit/MultiEdit | Blocks an edit that adds a coverage exclusion directive to source, such as `istanbul ignore`, `c8 ignore`, `pragma: no cover`, `#[coverage(off)]`, or `LCOV_EXCL_LINE`, and an edit to a coverage config that writes a threshold under 100. A new omit or exclude entry asks for confirmation, since only generated and vendored paths may be excluded. Prose files are exempt. Bypass `COVERAGE_EXCLUSION_GUARD_DISABLE=1`. |
 | [`dangerous-command-blocker.py`](hooks/dangerous-command-blocker.py) | PreToolUse Bash | 190 patterns: destructive shell commands, reverse shells, cloud deletions, IaC destroy. A heredoc body fed to `cat`, `tee`, `git`, `gh` or `glab` is data and is not matched; a body fed to a shell still is. A Docker or Podman flag such as `-f`, `-a` or `-v` counts only as its own token inside the same call, a protected path such as `.git`, `.env` or `.claude` counts only as an argument of the `rm` call itself, `.git` counts only as a whole path component, so a bare mirror named like `name.git` is an ordinary path, and deleting a `.env` file under a literal `/tmp` or `/private/tmp` path is allowed unless the path climbs out with `..`. Git global options such as `-C` and `-c` are stripped before matching, so `git -C <dir> push --force` blocks like the plain form, and `-f` or a cluster such as `-fu` counts as a force push. A build-directory cleanup skips the remaining checks only when every segment of the command is that cleanup. Input that is not valid JSON blocks. Protected-branch pushes are allowed when the repository the push targets, following `cd` and `-C`, is listed in a machine-local `solo-repos.txt`, seeded from [`solo-repos.example.txt`](solo-repos.example.txt); a push whose target cannot be determined never qualifies. Deleting a test file and searching `/` or the home directory with `find`, `grep -r`, `rg`, or `fd` raise a confirmation prompt, except a test file that is untracked and in no commit |
 | [`doc-sync-guard.py`](hooks/doc-sync-guard.py) | PreToolUse Bash | Blocks a `git commit` whose staged diff makes existing documentation false. Four certain checks: a variable the code reads that `.env.example` does not name, and an export, CLI flag, or package script removed while tracked markdown still names it. Checks the repository a leading `cd` or `git -C` names, and includes unstaged changes for `commit -a`. Changelogs, ADRs, and specs are exempt as historical records. Bypass `DOC_SYNC_DISABLE=1` |
@@ -523,7 +524,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 97 runtime hooks
+  hooks/                 98 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

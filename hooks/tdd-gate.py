@@ -35,27 +35,6 @@ SOURCE_EXTS = {
     ".exs",
 }
 
-TEST_DIR_PARTS = {
-    "tests",
-    "test",
-    "__tests__",
-    "spec",
-    "specs",
-    "e2e",
-    "integration-tests",
-}
-
-TEST_NAME_MARKERS = (
-    ".test.",
-    ".spec.",
-    ".int.",
-    ".e2e.",
-    "_test.",
-    "_spec.",
-    "Test.",
-    "Spec.",
-)
-
 EXCLUDED_DIR_PARTS = {
     "node_modules",
     "dist",
@@ -109,17 +88,10 @@ BARREL_STATEMENT = re.compile(
 from _lib.assertion_weakening import findings_for  # noqa: E402
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.test_paths import is_test_file  # noqa: E402
 
 WEAKENING_HOOK = "test-weakening"
 WEAKENING_BYPASS_ENV = "TEST_WEAKENING_DISABLE"
-
-
-def is_test_file(path: Path) -> bool:
-    parts = set(path.parts)
-    if parts & TEST_DIR_PARTS:
-        return True
-    name = path.name
-    return any(marker in name for marker in TEST_NAME_MARKERS)
 
 
 def is_barrel(content: str) -> bool:
