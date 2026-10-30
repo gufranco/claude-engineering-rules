@@ -39,6 +39,7 @@ SPECIAL_NAME_USE = re.compile(
     "|".join((DECLARATION, ASSIGNMENT, LOOP_VARIABLE, READ_TARGET)), re.MULTILINE
 )
 LEADING_EQUALS = re.compile(r"(?:^|(?<=[\s;&|(]))=\S+", re.MULTILINE)
+COLON_MODIFIER = re.compile(r"(?<!\\)\$[A-Za-z_][A-Za-z0-9_]*:[A-Za-z]")
 DOUBLE_BRACKET = re.compile(r"\[\[.*?\]\]", re.DOTALL)
 ARITHMETIC = re.compile(r"\(\(.*?\)\)", re.DOTALL)
 
@@ -57,27 +58,37 @@ LEADING_EQUALS_REASON = (
     "Fix: quote the word, `echo '== up'`, or use `[[ a == b ]]` instead of `[ a == b ]`.\n"
     f"Bypass (one-off): set {BYPASS_ENV}=1 in the parent shell."
 )
+COLON_MODIFIER_REASON = (
+    "BLOCKED: a bare variable followed by a colon and a letter. zsh reads `:r`, `:h`, "
+    "`:t`, `:l` and the other letters after `$name:` as a parameter modifier, even "
+    'inside double quotes, so `"$image:latest"` becomes the lowercased value followed '
+    "by `atest`, with no error.\n"
+    'Fix: brace the name, `"${r}:gates"`, or write the text literally.\n'
+    f"Bypass (one-off): set {BYPASS_ENV}=1 in the parent shell."
+)
 UNREADABLE_REASON = (
     "BLOCKED: zsh-special-name-guard could not read its input: stdin is not UTF-8 JSON."
 )
 
 
-def mask_quoted(text: str) -> str:
+def mask_quoted(text: str, masked: str = "'\"") -> str:
     out: list[str] = []
     quote = ""
     escaped = False
     for char in text:
+        hidden = bool(quote) and quote in masked
         if escaped:
-            out = [*out, " " if quote else char]
+            out = [*out, " " if hidden else char]
             escaped = False
             continue
         if char == "\\" and quote != "'":
             escaped = True
-            out = [*out, " " if quote else char]
+            out = [*out, " " if hidden else char]
             continue
         if quote:
             closing = char == quote
-            out = [*out, char if closing else ("\n" if char == "\n" else " ")]
+            kept = char if closing or not hidden else ("\n" if char == "\n" else " ")
+            out = [*out, kept]
             quote = "" if closing else quote
             continue
         if char in "'\"":
@@ -101,6 +112,8 @@ def violation(command: str) -> str:
         return SPECIAL_NAME_REASON
     if LEADING_EQUALS.search(text):
         return LEADING_EQUALS_REASON
+    if COLON_MODIFIER.search(mask_quoted(strip_heredoc_bodies(command), masked="'")):
+        return COLON_MODIFIER_REASON
     return ""
 
 
