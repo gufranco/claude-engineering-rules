@@ -15,15 +15,15 @@ QUOTED_HEREDOC_START = re.compile(
 
 def strip_heredoc_bodies(command: str) -> str:
     kept: list[str] = []
-    delimiter = ""
+    pending: tuple[str, ...] = ()
     state = ""
     for line in command.splitlines():
-        if delimiter:
-            delimiter = "" if line.strip() == delimiter else delimiter
+        if pending:
+            pending = pending[1:] if line.strip() == pending[0] else pending
             continue
         kept = [*kept, line]
-        match, state = _unquoted_match(HEREDOC_START, line, state)
-        delimiter = match.group(1) if match else ""
+        matches, state = _unquoted_matches(HEREDOC_START, line, state)
+        pending = tuple(match.group(1) for match in matches)
     return "\n".join(kept)
 
 
@@ -43,6 +43,13 @@ def strip_data_heredoc_bodies(command: str, sinks: frozenset[str] = DATA_SINKS) 
             drop = match is not None and _feeds_data_sink(line, match, sinks)
         kept = [*kept, line]
     return "\n".join(kept)
+
+
+CONTAINER_RM_FLAG = re.compile(r"(?<!\S)--rm(?==|\s|$)")
+
+
+def mask_container_rm_flag(command: str) -> str:
+    return CONTAINER_RM_FLAG.sub("--auto-remove", command)
 
 
 def _feeds_data_sink(line: str, match: re.Match[str], sinks: frozenset[str]) -> bool:
@@ -93,12 +100,18 @@ def _blank_quoted(line: str, state: str) -> tuple[str, str]:
     return "".join(out), state
 
 
+def _unquoted_matches(
+    pattern: re.Pattern[str], line: str, state: str
+) -> tuple[list[re.Match[str]], str]:
+    blanked, next_state = _blank_quoted(line, state)
+    return [m for m in pattern.finditer(line) if blanked[m.start()] == "<"], next_state
+
+
 def _unquoted_match(
     pattern: re.Pattern[str], line: str, state: str
 ) -> tuple[re.Match[str] | None, str]:
-    blanked, next_state = _blank_quoted(line, state)
-    match = next((m for m in pattern.finditer(line) if blanked[m.start()] == "<"), None)
-    return match, next_state
+    matches, next_state = _unquoted_matches(pattern, line, state)
+    return (matches[0] if matches else None), next_state
 
 
 def line_segments(line: str) -> list[list[str]]:

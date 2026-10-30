@@ -37,6 +37,7 @@ from _lib.git_invocation import (  # noqa: E402
 from _lib.hook_profile import should_run  # noqa: E402
 from _lib.shell_segments import (  # noqa: E402
     command_head,
+    mask_container_rm_flag,
     quoted_segments,
     strip_data_heredoc_bodies,
 )
@@ -472,7 +473,9 @@ def main() -> None:
     command = payload.command
     if not command or _is_safe_cleanup(command):
         sys.exit(0)
-    matched = strip_git_global_options(strip_data_heredoc_bodies(command))
+    matched = mask_container_rm_flag(
+        strip_git_global_options(strip_data_heredoc_bodies(command))
+    )
     block_catastrophic(command, matched, CATASTROPHIC)
     block_critical(command, matched, CRITICAL_PATHS)
     notices = first_notice(
