@@ -566,7 +566,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 143 standards total 27,356 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
+The 143 standards total 27,366 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
 
 </details>
 
