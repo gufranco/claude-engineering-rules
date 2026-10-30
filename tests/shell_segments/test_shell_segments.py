@@ -58,6 +58,26 @@ def test_dash_heredoc_with_indented_terminator_is_dropped():
     assert segments == [["cat", "<<-END"], ["ls"]]
 
 
+def test_every_heredoc_started_on_one_line_has_its_body_dropped():
+    # Arrange
+    command = (
+        "git commit -F - <<'ONE' && git commit -F - <<'TWO' && git log\n"
+        "first body\n"
+        "ONE\n"
+        'second body == "x"\n'
+        "TWO\n"
+        "echo after"
+    )
+
+    # Act
+    stripped = shell_segments.strip_heredoc_bodies(command)
+
+    # Assert
+    assert stripped == (
+        "git commit -F - <<'ONE' && git commit -F - <<'TWO' && git log\necho after"
+    )
+
+
 def test_here_string_is_not_a_heredoc():
     # Arrange
     command = "read -r x <<<word\nkcov out run.sh"

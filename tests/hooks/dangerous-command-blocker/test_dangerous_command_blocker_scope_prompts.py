@@ -41,6 +41,8 @@ def test_deleting_a_test_file_asks_for_confirmation(tool_use, run_hook, command)
         "rm src/orders.ts",
         "rm latest_tests.txt",
         "git mv tests/test_a.py tests/test_b.py",
+        'docker run --rm -v "$PWD:/work" img python3 patch.retail.test.py',
+        "podman run --rm=true img sh -c 'python3 tests/test_api.py'",
     ],
 )
 def test_other_deletions_and_moves_raise_no_test_prompt(tool_use, run_hook, command):
@@ -53,6 +55,40 @@ def test_other_deletions_and_moves_raise_no_test_prompt(tool_use, run_hook, comm
     # Assert
     assert code == 0
     assert TEST_DELETION not in stdout
+
+
+@pytest.mark.parametrize(
+    ("command", "absent"),
+    [
+        (
+            'docker run --rm img sh -c "ls" ; python3 "$HOME/.claude/scripts/x.py" list',
+            "Deleting .claude/",
+        ),
+        ("docker run --rm img sh -c 'ls *.py'", "rm with wildcard"),
+    ],
+)
+def test_a_container_rm_flag_is_not_an_rm_command(tool_use, run_hook, command, absent):
+    # Arrange
+    payload = tool_use("Bash", {"command": command})
+
+    # Act
+    code, stdout, stderr = run_hook(HOOK, payload)
+
+    # Assert
+    assert (code, absent in stdout + stderr) == (0, False)
+
+
+def test_a_real_rm_after_a_container_rm_flag_still_blocks(tool_use, run_hook):
+    # Arrange
+    payload = tool_use(
+        "Bash", {"command": "docker run --rm img ls && rm -rf ~/.claude"}
+    )
+
+    # Act
+    code, _stdout, stderr = run_hook(HOOK, payload)
+
+    # Assert
+    assert (code, "Deleting .claude/" in stderr) == (2, True)
 
 
 @pytest.mark.parametrize(
