@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本发布</a>
 </p>
 
-48 条常驻规则、142 份按需加载的标准、42 个技能、98 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
+49 条常驻规则、143 份按需加载的标准、42 个技能、98 个钩子和 18 个代理，外加一份覆盖 71 个类别、共 905 项的审查清单。
 
 ---
 
@@ -129,7 +129,7 @@ graph LR
 
 ### 按需加载的标准
 
-[`standards/`](standards/) 中有 142 份标准。[`rules/index.yml`](rules/index.yml) 中的每个条目都声明了触发关键词，任务匹配时只加载对应的标准。
+[`standards/`](standards/) 中有 143 份标准。[`rules/index.yml`](rules/index.yml) 中的每个条目都声明了触发关键词，任务匹配时只加载对应的标准。
 
 主题包括：API 设计、认证、缓存、代码审查、并发与竞态条件、容器安全、契约测试、数据库、DDD、调试、分布式系统、幂等性与去重、各语言的不可变性、文档、前端、GraphQL、六边形架构、国际化、基础设施、低延迟工程、消息队列、移动端、单体仓库、可观测性、编写代理指令文件、OpenTelemetry、性能、Postgres、PR 评论渠道、印刷设计、隐私、Redis、韧性、密钥管理、SRE、状态机、十二要素、TypeScript 5.x、WebSocket、零停机部署等。
 
@@ -566,7 +566,7 @@ $HOME/.claude/
 <summary><strong>两级规则加载如何节省上下文？</strong></summary>
 <br>
 
-142 份标准合计 27,356 行。如果每次对话都全部加载，会耗尽上下文窗口。[`rules/index.yml`](rules/index.yml) 把每份标准映射到触发关键词。任务匹配时，例如添加一次数据库迁移会拉取 `database.md`，只加载相关的标准。
+143 份标准合计 27,366 行。如果每次对话都全部加载，会耗尽上下文窗口。[`rules/index.yml`](rules/index.yml) 把每份标准映射到触发关键词。任务匹配时，例如添加一次数据库迁移会拉取 `database.md`，只加载相关的标准。
 
 </details>
 

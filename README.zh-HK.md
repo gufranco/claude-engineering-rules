@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本發佈</a>
 </p>
 
-48 條常駐規則、142 份按需載入的標準、42 個技能、98 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
+49 條常駐規則、143 份按需載入的標準、42 個技能、98 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
 
 ---
 
@@ -129,7 +129,7 @@ graph LR
 
 ### 按需載入的標準
 
-[`standards/`](standards/) 中有 142 份標準。[`rules/index.yml`](rules/index.yml) 中的每個項目都宣告了觸發關鍵字，任務配對時只載入相關的標準。
+[`standards/`](standards/) 中有 143 份標準。[`rules/index.yml`](rules/index.yml) 中的每個項目都宣告了觸發關鍵字，任務配對時只載入相關的標準。
 
 主題包括：API 設計、認證、快取、程式碼審查、並行與競爭條件、容器安全、合約測試、數據庫、DDD、除錯、分散式系統、冪等性與去重、各語言的不可變性、文件、前端、GraphQL、六角形架構、國際化、基礎設施、低延遲工程、訊息佇列、流動裝置、單一儲存庫、可觀察性、撰寫代理指令檔、OpenTelemetry、效能、Postgres、PR 評論渠道、印刷設計、私隱、Redis、韌性、密鑰管理、SRE、狀態機、十二要素、TypeScript 5.x、WebSocket、零停機部署等。
 
@@ -566,7 +566,7 @@ $HOME/.claude/
 <summary><strong>兩級規則載入如何節省上下文？</strong></summary>
 <br>
 
-142 份標準合共 27,356 行。如果每次對話都全部載入，會耗盡上下文視窗。[`rules/index.yml`](rules/index.yml) 把每份標準對應到觸發關鍵字。任務配對時，例如加入一次數據庫遷移會帶出 `database.md`，只會載入相關的標準。
+143 份標準合共 27,366 行。如果每次對話都全部載入，會耗盡上下文視窗。[`rules/index.yml`](rules/index.yml) 把每份標準對應到觸發關鍵字。任務配對時，例如加入一次數據庫遷移會帶出 `database.md`，只會載入相關的標準。
 
 </details>
 
