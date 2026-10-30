@@ -309,12 +309,17 @@ def test_a_git_show_that_times_out_keeps_the_finding(
     stub_dir.mkdir()
     stub = stub_dir / "git"
     stub.write_text(
-        f'#!/bin/sh\ncase " $* " in *" show "*) sleep 3 ;; esac\nexec "{shutil.which("git")}" "$@"\n',
+        "#!/bin/sh\n"
+        'case " $* " in\n'
+        f'  *" rev-parse "*) echo "{target.parent.parent.resolve()}" ;;\n'
+        '  *" show "*) sleep 10 ;;\n'
+        f'  *) exec "{shutil.which("git")}" "$@" ;;\n'
+        "esac\n",
         encoding="utf-8",
     )
     stub.chmod(0o755)
     monkeypatch.setenv("PATH", f"{stub_dir}{os.pathsep}{os.environ['PATH']}")
-    monkeypatch.setattr(assertion_weakening, "GIT_TIMEOUT_SECONDS", 0.5)
+    monkeypatch.setattr(assertion_weakening, "GIT_TIMEOUT_SECONDS", 2)
     tool_input = {"file_path": str(target), "old_string": ADDED, "new_string": ""}
 
     # Act
