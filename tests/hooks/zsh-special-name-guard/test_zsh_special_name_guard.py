@@ -88,6 +88,51 @@ def test_allows_commands_without_the_trap(tool_use, run_hook, command):
     assert (exit_code, stdout) == (0, "")
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        'docker run --rm "$r:gates" sh',
+        "git show $BRANCH:readme.md",
+        'echo "pulling $image:latest"',
+        "cd $dir && echo $name:t",
+    ],
+)
+def test_blocks_a_bare_variable_followed_by_a_colon_and_a_letter(
+    tool_use, run_hook, command
+):
+    # Arrange
+    payload = bash_payload(tool_use, command)
+
+    # Act
+    exit_code, _, stderr = run_hook(HOOK, payload, env=ZSH)
+
+    # Assert
+    assert (exit_code, "parameter modifier" in stderr) == (2, True)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'docker run --rm "${r}:gates" sh',
+        "echo '$r:gates'",
+        'curl "$HOST:$PORT/x"',
+        'echo "$base://example.test"',
+        "echo ${x:-fallback}",
+        'echo "\\$r:gates"',
+        "git commit -F - <<'ONE' && git commit -F - <<'TWO'\nbody\nONE\nsecond $r:x == y\nTWO",
+    ],
+)
+def test_allows_a_braced_quoted_or_non_letter_colon(tool_use, run_hook, command):
+    # Arrange
+    payload = bash_payload(tool_use, command)
+
+    # Act
+    exit_code, stdout, _ = run_hook(HOOK, payload, env=ZSH)
+
+    # Assert
+    assert (exit_code, stdout) == (0, "")
+
+
 def test_stays_inert_when_the_shell_is_not_zsh(tool_use, run_hook):
     # Arrange
     payload = bash_payload(tool_use, "for path in a; do :; done")
