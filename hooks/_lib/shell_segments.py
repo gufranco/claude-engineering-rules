@@ -60,9 +60,30 @@ def _feeds_data_sink(line: str, match: re.Match[str], sinks: frozenset[str]) -> 
 
 
 UNQUOTED_OPERATOR = re.compile(r"&&|\|\||[;|&\n]")
+STATEMENT_OPERATOR = re.compile(r"&&|\|\||\|&|(?<![<>&])&(?![>&])|[;|\n]")
 
 
 def unquoted_segments(command: str) -> list[str]:
+    blanked_text = _blank_command(command)
+    bounds = [(m.start(), m.end()) for m in UNQUOTED_OPERATOR.finditer(blanked_text)]
+    starts = [0, *(end for _, end in bounds)]
+    ends = [*(start for start, _ in bounds), len(command)]
+    return [command[a:b] for a, b in zip(starts, ends) if command[a:b].strip()]
+
+
+def operator_segments(command: str) -> list[tuple[str, str]]:
+    matches = list(STATEMENT_OPERATOR.finditer(_blank_command(command)))
+    starts = [0, *(m.end() for m in matches)]
+    ends = [*(m.start() for m in matches), len(command)]
+    leading = ["", *(m.group() for m in matches)]
+    return [
+        (command[a:b], operator)
+        for a, b, operator in zip(starts, ends, leading)
+        if command[a:b].strip()
+    ]
+
+
+def _blank_command(command: str) -> str:
     parts: list[str] = []
     state = ""
     delimiter = ""
@@ -76,11 +97,7 @@ def unquoted_segments(command: str) -> list[str]:
             blanked, state = _blank_quoted(line, state)
             delimiter = match.group(1) if match else ""
         parts = [*parts, *separator, blanked]
-    blanked_text = "".join(parts)
-    bounds = [(m.start(), m.end()) for m in UNQUOTED_OPERATOR.finditer(blanked_text)]
-    starts = [0, *(end for _, end in bounds)]
-    ends = [*(start for start, _ in bounds), len(command)]
-    return [command[a:b] for a, b in zip(starts, ends) if command[a:b].strip()]
+    return "".join(parts)
 
 
 def _blank_quoted(line: str, state: str) -> tuple[str, str]:

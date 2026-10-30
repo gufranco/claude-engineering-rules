@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本發佈</a>
 </p>
 
-49 條常駐規則、143 份按需載入的標準、42 個技能、98 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
+49 條常駐規則、143 份按需載入的標準、42 個技能、99 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
 
 ---
 
@@ -186,7 +186,7 @@ graph LR
 
 ### 鈎子
 
-[`hooks/`](hooks/) 中有 98 個鈎子，透過 [`settings.json`](settings.json) 接駁。每個鈎子在工具呼叫之前、之後或前後執行。
+[`hooks/`](hooks/) 中有 99 個鈎子，透過 [`settings.json`](settings.json) 接駁。每個鈎子在工具呼叫之前、之後或前後執行。
 
 **繞過渠道。** 每個鈎子都支援兩種渠道，任何一種都可以放行，兩者可以並存。
 
@@ -213,6 +213,7 @@ graph LR
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | 攔截能避過禁用語句清單的結構性冗詞痕跡：否定式對偶、誇大重要性、附加評價的分詞短語、不具名的權威、含糊的推測、取代 `is` 和 `has` 的推銷動詞、開場鋪排、結尾覆述、聊天殘留、未填寫的佔位符、彎引號，以及搜尋經過的敘述，例如拒絕存取的網站或檢查的日期。粗體標籤的清單項目和標題只在公開的 PR 評論中攔截。編號為 `SLOP001` 至 `SLOP015`。搜尋經過的敘述在知識庫、項目工作區和 `PROMPT.md` 中是容許的。配對前會遮蓋程式碼片段，每個偵測器都在 rules、standards、checklists、skills、agents、docs 目錄和根目錄文件中的 333 個 Markdown 檔案上調校過。繞過：`AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | 攔截 TypeScript 的 `as any` 和泛型中的 `any`。沒有放行標記，只遵從第三方工具的指令。 |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | 攔截沒有 `--profile` 的 `aws configure set` |
+| [`background-exit-status.py`](hooks/background-exit-status.py) | PreToolUse Bash | 攔截在建置或測試步驟之後以 `tail`、`grep`、`tee` 或 `echo` 等過濾或輸出指令結尾的背景指令，因為工作通知隨後報告的是該過濾指令的結束狀態。以 `exit $code` 結尾的指令，或在 `set -o pipefail` 下的管道，可以通過。繞過方式為 `BACKGROUND_EXIT_STATUS_DISABLE=1` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | 攔截 PR 和文件中的口語化客套和戰術性誇張 |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | 攔截長破折號、短破折號、正文中的圓括號、表情符號、ASCII 藝術，以及在 Markdown 正文中以帶空格的連字號代替破折號 |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | 攔截在 GitHub 或 GitLab 上對多個討論串循環呼叫 `resolveReviewThread` |
@@ -524,7 +525,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 98 runtime hooks
+  hooks/                 99 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

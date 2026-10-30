@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">リリース</a>
 </p>
 
-常時ロードされるルール49件、オンデマンドの標準143件、スキル42件、フック98件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
+常時ロードされるルール49件、オンデマンドの標準143件、スキル42件、フック99件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
 
 ---
 
@@ -186,7 +186,7 @@ graph LR
 
 ### フック
 
-[`hooks/`](hooks/)に98件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
+[`hooks/`](hooks/)に99件のフックがあり、[`settings.json`](settings.json)で接続されています。それぞれがツール呼び出しの前、後、または前後に実行されます。
 
 **バイパスの経路。** すべてのフックが2つの経路に対応しています。どちらでも通過でき、両方を併用できます。
 
@@ -213,6 +213,7 @@ graph LR
 | [`ai-slop-blocker.py`](hooks/ai-slop-blocker.py) | PreToolUse Bash/Write/Edit/MultiEdit | 禁止フレーズのリストをすり抜ける構造上の冗長さの兆候をブロックします。否定の対句、重要性の誇張、評価を加える分詞句、出典のない権威、ぼかした推測、`is`や`has`を置き換えるマーケティング用語、前置き、末尾の要約、チャットの名残、埋められていないプレースホルダー、カーリー引用符、拒否したサイトや確認した日付などの検索の経緯です。太字ラベルの箇条書きと見出しは、公開するPRコメントの中でだけブロックします。コードは`SLOP001`から`SLOP015`です。検索の経緯は、ボールト、プロジェクトのワークスペース、`PROMPT.md`では許可されます。照合の前にコードスパンを隠し、すべての検出器は、rules、standards、checklists、skills、agents、docsの各ディレクトリとルートの文書にある333件のMarkdownファイルで調整されています。バイパスは`AI_SLOP_DISABLE=1` |
 | [`as-any-blocker.py`](hooks/as-any-blocker.py) | PreToolUse Write/Edit | TypeScriptの`as any`とジェネリックの`any`をブロックします。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
 | [`aws-profile-guard.py`](hooks/aws-profile-guard.py) | PreToolUse Bash | `--profile`なしの`aws configure set`をブロックします |
+| [`background-exit-status.py`](hooks/background-exit-status.py) | PreToolUse Bash | ビルドやテストの後に`tail`、`grep`、`tee`、`echo`などのフィルターや出力で終わるバックグラウンドコマンドをブロックします。タスクの通知がそのフィルターの終了ステータスを伝えてしまうためです。`exit $code`で終わるコマンドと、`set -o pipefail`の下のパイプラインは通ります。バイパスは`BACKGROUND_EXIT_STATUS_DISABLE=1` |
 | [`banned-phrases-blocker.py`](hooks/banned-phrases-blocker.py) | PreToolUse Bash/Write/Edit | PRとドキュメントでの会話的な前置きや戦術的な誇張をブロックします |
 | [`banned-prose-chars.py`](hooks/banned-prose-chars.py) | PreToolUse Write/Edit/Bash | emダッシュ、enダッシュ、文中の丸括弧、絵文字、ASCIIアート、Markdownの文中でダッシュの代わりに使うスペース付きハイフンをブロックします |
 | [`bulk-resolve-blocker.py`](hooks/bulk-resolve-blocker.py) | PreToolUse Bash | GitHubやGitLabで複数のスレッドに`resolveReviewThread`を繰り返すループをブロックします |
@@ -524,7 +525,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 98 runtime hooks
+  hooks/                 99 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

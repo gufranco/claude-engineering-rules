@@ -18,3 +18,4 @@ Full rule, examples, and rationale: [`standards/agent-operating-limits.md`](../s
 ## Enforcement
 
 Enforced by: [`hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py).
+Enforced by: [`hooks/background-exit-status.py`](../hooks/background-exit-status.py).
