@@ -11,13 +11,13 @@ dev = [
   "pytest-randomly==5.0.0",
   "Faker==40.43.0",
   "coverage==7.17.0",
-  "ruff==0.17.2",
-  "mypy==2.4.0",
+  "ruff==0.17.3",
+  "mypy==2.4.1",
   "yamllint==1.38.0",
   "zizmor==1.31.1",
   "pre-commit==4.7.0",
   "PyYAML==6.0.3",
-  "types-PyYAML==6.0.12.20260906",
+  "types-PyYAML==6.0.12.20261030",
 ]
 
 [tool.uv]
