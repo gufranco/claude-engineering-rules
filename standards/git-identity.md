@@ -64,10 +64,18 @@ This is a template. Replace placeholder values, `personal-user`, `work-org`, `al
 | Category | Triggers | Check |
 |----------|----------|-------|
 | Commit creation | `git commit`, `git commit --amend`, `git cherry-pick`, `git rebase`, `git revert`, `git merge` with custom commit | Effective `user.email` is non-empty. No `[user]` block in the repository's `.git/config`. No inline `GIT_AUTHOR_EMAIL=` or `GIT_COMMITTER_EMAIL=` |
-| Push | `git push`, `git push --force`, `git push --force-with-lease` | Walk `git log --format=%ae @{push}..HEAD`. Block if any author email is empty or matches a placeholder pattern |
+| Push | `git push`, `git push --force`, `git push --force-with-lease` | Walk `@{push}..HEAD`. Block when an author email is empty or a placeholder, when an author or committer email is derived from the machine name such as `user@host.local`, when a committer differs from the resolved `user.email`, and, when `commit.gpgsign` is true, when a commit has no valid signature |
 | Config mutation | `git config user.email <value>`, `git config user.name <value>`, `git config --local user.*` | Block any `--local` write to `user.*`. Allow `--global` writes (they edit `~/.gitconfig`, the source of truth) |
 
 Read-only commands, `git config --get user.email`, `git status`, `git log`, are not gated.
+
+## Scripts that run git
+
+A script that runs git with an environment built from scratch, such as Python's `subprocess.run(..., env={"PATH": ...})`, drops `HOME`. Git then never reads `~/.gitconfig`: it guesses an identity from the machine name, `user@host.local`, and signs nothing, and `useConfigOnly` cannot stop it, because that setting lives in the file git never read. The commit check never sees a commit made inside a script, so the push check is the only gate.
+
+- A script passes the inherited environment and only adds to it: `env={**os.environ, "LC_ALL": "C"}`.
+- A script never pushes. Every push is a plain `git push` run through Bash, so this hook checks each commit before it leaves.
+- A script that commits checks `git log --format='%ae %ce %G?'` for its new commits against the resolved `user.email` and a `G` signature, and stops when one differs.
 
 ## Bypass
 

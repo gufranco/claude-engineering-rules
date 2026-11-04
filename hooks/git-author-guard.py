@@ -23,6 +23,13 @@ PLACEHOLDER_EMAIL = re.compile(
     re.IGNORECASE,
 )
 
+HOST_DERIVED_EMAIL = re.compile(
+    r"\.(?:local|lan|localdomain|home|internal)$|@localhost$|\(none\)",
+    re.IGNORECASE,
+)
+
+UNSIGNED_STATES = frozenset({"N", "B"})
+
 COMMIT_TRIGGERS = re.compile(
     r"\bgit\b(?:\s+-(?:c\s+\S+|C\s+\S+|[a-zA-Z]+(?:=\S+)?))*\s+"
     r"(?:commit|cherry-pick|rebase|revert|merge)\b"
@@ -193,18 +200,64 @@ def check_commit(command: str, cwd: Path) -> None:
     _check_resolved_identity(cwd)
 
 
-def _unpushed_author_log(cwd: Path) -> str | None:
+def _unpushed_identity_log(cwd: Path) -> str | None:
+    fields = "--format=<%ae>%x09<%ce>%x09%G?%x09%h"
     code, log = run_git(
-        cwd,
-        "log",
-        f"--max-count={PUSH_LOG_LIMIT}",
-        "--format=<%ae>",
-        "@{push}..HEAD",
+        cwd, "log", f"--max-count={PUSH_LOG_LIMIT}", fields, "@{push}..HEAD"
     )
     if code == 0:
         return log
-    code, log = run_git(cwd, "log", "-1", "--format=<%ae>", "HEAD")
+    code, log = run_git(cwd, "log", "-1", fields, "HEAD")
     return log if code == 0 else None
+
+
+def _parse_identity_line(line: str) -> tuple[str, str, str, str]:
+    author, committer, signature, short = line.split("\t")
+    return author[1:-1], committer[1:-1], signature, short
+
+
+def _check_host_derived(email: str, role: str, short: str) -> None:
+    if not HOST_DERIVED_EMAIL.search(email):
+        return
+    block(
+        f"BLOCKED: commit {short} has a {role} email derived from the "
+        f"machine name ({email}).\n"
+        "Git guessed it because it could not read ~/.gitconfig, which "
+        "happens when a script runs git without HOME.\n"
+        "Rewrite the commit with the configured identity before pushing, "
+        "and make the script pass os.environ through.\n"
+        "See: standards/git-identity.md"
+    )
+
+
+def _check_committer(committer: str, expected: str, short: str) -> None:
+    if not expected or committer == expected:
+        return
+    block(
+        f"BLOCKED: commit {short} was committed as {committer}, but this "
+        f"repository resolves user.email to {expected}.\n"
+        "Rewrite the commit with the configured identity before pushing.\n"
+        "See: standards/git-identity.md"
+    )
+
+
+def _check_signature(signature: str, signing: bool, short: str) -> None:
+    if not signing or signature not in UNSIGNED_STATES:
+        return
+    block(
+        f"BLOCKED: commit {short} carries no valid signature, but "
+        "commit.gpgsign is true for this repository.\n"
+        "A commit made by a script without HOME is never signed. "
+        "Re-create it with signing before pushing.\n"
+        "See: standards/git-identity.md"
+    )
+
+
+def _push_expectations(cwd: Path) -> tuple[str, bool]:
+    code, email = run_git(cwd, "config", "--get", "user.email")
+    expected = email if code == 0 else ""
+    code, signing = run_git(cwd, "config", "--bool", "--get", "commit.gpgsign")
+    return expected, code == 0 and signing == "true"
 
 
 def _check_push_email(email: str) -> None:
@@ -229,16 +282,17 @@ def _check_push_email(email: str) -> None:
 def check_push(command: str, cwd: Path) -> None:
     if not is_inside_repo(cwd):
         return
-    log = _unpushed_author_log(cwd)
+    log = _unpushed_identity_log(cwd)
     if log is None:
         return
-    emails = [
-        line.strip()[1:-1]
-        for line in log.splitlines()
-        if line.strip().startswith("<") and line.strip().endswith(">")
-    ]
-    for email in emails:
-        _check_push_email(email)
+    expected, signing = _push_expectations(cwd)
+    for line in log.splitlines():
+        author, committer, signature, short = _parse_identity_line(line)
+        _check_push_email(author)
+        _check_host_derived(author, "author", short)
+        _check_host_derived(committer, "committer", short)
+        _check_committer(committer, expected, short)
+        _check_signature(signature, signing, short)
 
 
 def check_config_mutation(command: str) -> None:

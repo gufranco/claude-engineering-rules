@@ -22,6 +22,7 @@ Conventional commits, a full local quality gate before every commit, one push pe
 - Pushing to `main`, `master`, or `develop` is blocked. Solo repos listed in the machine-local `solo-repos.txt`, copied from [`solo-repos.example.txt`](../solo-repos.example.txt), are exempt. Never list a repo with reviewers.
 - Before rebasing, and before believing any divergence or a push 403, run `git rev-parse --is-shallow-repository`; if `true`, `git fetch --unshallow`. Never trust `git merge-base` on a shallow clone.
 - Never force push or amend pushed commits; roll back with `git revert`.
+- A script that runs git passes the inherited environment, never one without `HOME`, and never pushes; every push is a plain Bash `git push`, so the identity guard checks each commit's author, committer and signature.
 - Your migrations must carry the latest timestamps, rechecked after rebase, and be idempotent with `IF NOT EXISTS` and `IF EXISTS`.
 - Never commit `dist/`, `build/`, `.next/`, `out/`, `coverage/`, `node_modules/`. Audit with `git -c core.excludesFile=/dev/null status --porcelain -uall`.
 - Before pushing new files, list `git status --porcelain --ignored -- <source dirs>`; a source file marked `!!` was dropped by an ignore rule, often the global one. Rename it or add a negation, then gate on a `git clone` of the commit, never a copy of the working tree.
