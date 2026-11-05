@@ -952,7 +952,7 @@ Reference: [`standards/infrastructure.md`](../standards/infrastructure.md) cover
 
 ### 50. Clean Room Verification
 
-Applies when any external project, codebase, article, or third-party source was consulted during planning or implementation. If no external sources were consulted, state that explicitly and skip this category.
+Applies when any external project, codebase, article, or third-party source was consulted during planning or implementation, when the work rebuilds a vendor's API or protocol, or when it handles a ROM, BIOS, firmware, or other artifact the project does not own. If none applies, state that explicitly and skip this category.
 
 Full process and similarity thresholds: [`standards/clean-room.md`](../standards/clean-room.md), sections Verification Checklist and Similarity Thresholds.
 
@@ -995,6 +995,30 @@ Full process and similarity thresholds: [`standards/clean-room.md`](../standards
 - [ ] No patented algorithms reproduced such as check source README, LICENSE, or PATENTS files
 - [ ] Source was publicly available, not accessed through NDA or restricted channel
 - [ ] No function, class, or block of 4+ lines copied from the source
+- [ ] A source with no licence file was used for facts only
+
+#### Contract and observation (section H, compatibility mode)
+
+- [ ] Every vendor account, trial, or developer edition used as a test oracle passed the contract and terms gate: restricting clauses quoted with agreement version and date, owner's risk acceptance recorded
+- [ ] Observation touched only accounts the owner holds
+- [ ] Observation notes hold no verbatim messages, credentials, tenant identifiers, or personal data
+- [ ] Observer and implementer were separate sessions, or the policy says otherwise and no public text claims separation
+- [ ] Every exact vendor message in code has a decision-log entry naming the client that compares it; text a person reads is original
+
+#### Source records and distribution (section I)
+
+- [ ] Every source consulted is recorded with its licence, what was taken, and how it was confirmed
+- [ ] Contract operations and imported fixtures carry provenance that a test verifies
+- [ ] No artifact image, partial dump, listing, or binary patch is tracked or released
+- [ ] No tracked file or commit names where to obtain an artifact or a patch
+- [ ] Every copied file keeps its notices and has a NOTICE entry
+
+#### Names and public claims (section J)
+
+- [ ] Marks appear only to describe compatibility, with the owner named and non-affiliation stated
+- [ ] No vendor logo, artwork, template, or stylesheet is in the repository
+- [ ] Every public statement about the process matches each covered project's policy
+- [ ] No tracked file or commit message frames the work as unauthorized copying or defeating a protection
 
 #### Remediation process (when a check fails)
 

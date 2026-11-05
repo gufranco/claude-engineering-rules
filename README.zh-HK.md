@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">版本發佈</a>
 </p>
 
-49 條常駐規則、143 份按需載入的標準、42 個技能、99 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 905 項的審查清單。
+50 條常駐規則、143 份按需載入的標準、42 個技能、99 個鈎子和 18 個代理，另加一份涵蓋 71 個類別、共 920 項的審查清單。
 
 ---
 
@@ -69,13 +69,13 @@ graph LR
 | [`hooks/`](hooks) | 在執行時攔截破壞性指令、密鑰和禁用模式 | 每一次工具呼叫之前 |
 | [`skills/`](skills) | 有文件說明的多步驟工作流程：ship、review、plan、audit | 用戶呼叫 `/<name>` 時 |
 | [`agents/`](agents) | 專注於特定審查任務的子代理 | 明確委派時 |
-| [`checklists/`](checklists) | 涵蓋程式碼、基礎設施和流程的 905 項審查清單 | 審查時按需使用 |
+| [`checklists/`](checklists) | 涵蓋程式碼、基礎設施和流程的 920 項審查清單 | 審查時按需使用 |
 
 ## 包含的內容
 
 ### 常駐規則
 
-[`rules/`](rules/) 中有 49 條規則，[`rules/lang/`](rules/lang/) 中另有 5 條。[`rules/`](rules/) 下的每個檔案都會以簡短核心的形式載入每一次對話，包括語言檔案和表格後列出的 6 條。每個核心只保留會改變日常任務行為的義務，並連結到 [`standards/`](standards/) 中的全文，因此常駐集合維持在 57 個檔案、97,312 個字元，低於 CI 強制執行的 120,000 字元預算，也低於執行環境 150,000 字元的上限。
+[`rules/`](rules/) 中有 50 條規則，[`rules/lang/`](rules/lang/) 中另有 5 條。[`rules/`](rules/) 下的每個檔案都會以簡短核心的形式載入每一次對話，包括語言檔案和表格後列出的 7 條。每個核心只保留會改變日常任務行為的義務，並連結到 [`standards/`](standards/) 中的全文，因此常駐集合維持在 58 個檔案、99,625 個字元，低於 CI 強制執行的 120,000 字元預算，也低於執行環境 150,000 字元的上限。
 
 | 規則 | 涵蓋內容 |
 |:-----|:---------------|
@@ -125,7 +125,7 @@ graph LR
 
 另外，[`rules/lang/`](rules/lang/) 中有 5 個特定語言的檔案：`typescript-immutability`、`typescript-types`、`typescript-strict`、`orm-migrations`、`python`。
 
-[`rules/`](rules/) 中還有 6 條規則，與其他規則一樣在每個工作階段載入，只在條件成立時適用；每條在 [`rules/index.yml`](rules/index.yml) 中都有一份載有全文的按需標準：處理項目不能分發、須由用戶自行提供的檔案的 [`artifact-identity`](rules/artifact-identity.md)，以無介面或最小化方式而非全螢幕啟動模擬器的 [`emulator-runs`](rules/emulator-runs.md)，把項目所有依賴都放進 Docker 映像檔而不放在主機上的 [`docker-dependencies`](rules/docker-dependencies.md)，以及 [`knowledge-notes`](rules/knowledge-notes.md)、[`everyday-engineering`](rules/everyday-engineering.md) 和 [`project-glossary`](rules/project-glossary.md)。
+[`rules/`](rules/) 中還有 7 條規則，與其他規則一樣在每個工作階段載入，只在條件成立時適用；每條在 [`rules/index.yml`](rules/index.yml) 中都有一份載有全文的按需標準：處理項目不擁有的外部程式碼、供應商產品和傾印檔，涵蓋程式碼研究、供應商 API 相容重新實作和自有傾印保存的 [`clean-room`](rules/clean-room.md)，處理項目不能分發、須由用戶自行提供的檔案的 [`artifact-identity`](rules/artifact-identity.md)，以無介面或最小化方式而非全螢幕啟動模擬器的 [`emulator-runs`](rules/emulator-runs.md)，把項目所有依賴都放進 Docker 映像檔而不放在主機上的 [`docker-dependencies`](rules/docker-dependencies.md)，以及 [`knowledge-notes`](rules/knowledge-notes.md)、[`everyday-engineering`](rules/everyday-engineering.md) 和 [`project-glossary`](rules/project-glossary.md)。
 
 ### 按需載入的標準
 
@@ -220,7 +220,7 @@ graph LR
 | [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 在它能辨識的每種語言中攔截在原始碼加入註解：C 系、Python、shell、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTML 及其範本方言、CSS、按方言區分的組合語言、Jupyter 程式碼儲存格等，按副檔名、檔案名稱、shebang 或內容辨識。docstring 和文件註解區塊亦算註解。編輯會與磁碟上的檔案比對，所以只報告新加的註解。在 Bash 的 `git commit` 上，它會把每個已暫存的檔案與 `HEAD` 比對掃描，從而捕捉在 Write 和 Edit 工具以外寫入的內容。合併期間，會略過合併從另一個父提交原樣取來的檔案，因為合併沒有在其中寫入任何內容。本機的 `comment-waivers.txt`（從 [`comment-waivers.example.txt`](comment-waivers.example.txt) 複製）中列出的路徑不檢查。不受限制的有：`eslint-disable`、`@ts-expect-error`、`noqa` 和 action 版本固定等工具指令，測試檔案中光寫的 `Arrange`、`Act`、`Assert` 標記，以及 `.env.example` 檔案。營運繞過：`COMMENT_BLOCKER_DISABLE=1` |
 | [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | 要求 Python、JS/TS、Go 和 bats 中每個新增或修改的測試都帶有光寫的 `Arrange`、`Act`、`Assert` 標記，各出現一次並依次排列，組成以一個空行分隔的三個區塊。不檢查沒有改動的舊測試。在 Bash 的 `git commit` 上檢查已暫存的檔案，略過合併從另一個父提交原樣取來的檔案。繞過：`TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | 按項目在上下文壓縮前後保留 git 狀態 |
-| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | 攔截對 tsconfig、eslint、ruff、mypy 等 lint、格式化和型別檢查設定的編輯。迫使修正程式碼，而不是放寬設定 |
+| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | 攔截對 tsconfig、eslint、ruff、mypy 等 lint、格式化和型別檢查設定的編輯。迫使修正程式碼，而不是放寬設定。編輯現有的法律政策檔案前會先詢問用戶：clean room 政策、`LICENSE`、`COPYING`、`NOTICE`、第三方聲明、`LEGAL` 或 `LICENSES/` 下的檔案；建立新檔案則允許 |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | 攔截非測試程式碼中的 `console.*`。沒有放行標記，只遵從第三方工具的指令。 |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | 驗證 Conventional Commits 格式 |
 | [`commit-test-weakening.py`](hooks/commit-test-weakening.py) | PreToolUse Bash | 把所有定義了測試案例的已改動和未追蹤測試檔案加總，與上一次提交相比，測試案例或斷言減少、或略過標記增加的提交會被攔截。它讀取工作區，因此用 shell 腳本刪除的測試和用 Edit 刪除的一樣會被發現，移到另一個檔案的測試則互相抵消。繞過方式為 `COMMIT_TEST_WEAKENING_DISABLE=1` |
@@ -517,8 +517,8 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 905-item review checklist across 71 categories
-  rules/                 49 short rule cores, each linking to its full text
+  checklists/            Unified 920-item review checklist across 71 categories
+  rules/                 50 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
   standards/             143 on-demand standards, including the full text of every rule
