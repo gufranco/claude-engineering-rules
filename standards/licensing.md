@@ -224,6 +224,33 @@ When combining code under different licenses, verify compatibility before mixing
 
 When in doubt, consult legal counsel. License compatibility is context-specific.
 
+## Copied Third-Party Code
+
+Copying is the exception; independent implementation under [`clean-room.md`](clean-room.md) comes first. When a file is copied:
+
+- Place it under a folder that marks it as third-party, such as `third_party/<name>/`, with the upstream licence file beside it. Its original headers stay unchanged.
+- List every modification in `NOTICE`, and mark each changed region in the file itself where the format allows.
+- Copy tests only when their licence allows it, and say in `NOTICE` whether they were copied.
+- Name the upstream URL, revision, source path, line range, and licence in the commit body that adds the copy.
+
+### NOTICE
+
+When an Apache-2.0 work includes a `NOTICE` file, section 4(d) requires every redistribution to carry its attribution notices. Every project that carries third-party material keeps one, and it holds:
+
+- The project's own name and copyright line.
+- One entry per copied file, folder, font, dataset, or fixture: what it is, where it came from with a pinned revision, its copyright holder, its licence, where the licence text lives in the tree, and every modification.
+- The non-affiliation statement for any trademark the project names.
+
+A dependency installed from a registry needs no `NOTICE` entry; its notices travel in its own package. A project with many entries may split them into `THIRD_PARTY_NOTICES.md` and point to it from `NOTICE`.
+
+### Licence Files That Must Ship
+
+A licence that requires its text to travel with each copy, such as the SIL Open Font License for a bundled font, is satisfied in the build output, not only in the repository. A build test asserts that the licence file sits beside the asset in the shipped bundle, and the release archive includes `LICENSE` and `NOTICE`.
+
+### Fixtures From Other Projects
+
+An imported fixture, such as a vendor's published API description, keeps a provenance record beside it: publisher, repository, commit-pinned URL, retrieval date, SHA-256, licence file, purpose, and modifications. A test recomputes the digest, checks that the URL names the pinned commit, and fails when the licence file is missing.
+
 ## REUSE.toml Configuration
 
 REUSE.toml replaces the deprecated `.reuse/dep5` format. Use it for bulk licensing of files that cannot contain comments.

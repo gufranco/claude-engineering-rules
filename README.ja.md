@@ -21,7 +21,7 @@
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">リリース</a>
 </p>
 
-常時ロードされるルール49件、オンデマンドの標準143件、スキル42件、フック99件、エージェント18件に加え、71カテゴリ・905項目のレビューチェックリストを備えています。
+常時ロードされるルール50件、オンデマンドの標準143件、スキル42件、フック99件、エージェント18件に加え、71カテゴリ・920項目のレビューチェックリストを備えています。
 
 ---
 
@@ -69,13 +69,13 @@ graph LR
 | [`hooks/`](hooks) | 破壊的なコマンド、シークレット、禁止パターンを実行時にブロック | すべてのツール呼び出しの前 |
 | [`skills/`](skills) | ship、review、plan、auditなど、手順が文書化された複数ステップのワークフロー | ユーザーが`/<name>`を呼び出したとき |
 | [`agents/`](agents) | 特定のレビュー作業に特化したサブエージェント | 明示的に委任されたとき |
-| [`checklists/`](checklists) | コード、インフラ、プロセスを対象とする905項目のレビューチェックリスト | レビュー中に必要に応じて |
+| [`checklists/`](checklists) | コード、インフラ、プロセスを対象とする920項目のレビューチェックリスト | レビュー中に必要に応じて |
 
 ## 含まれるもの
 
 ### 常時ロードされるルール
 
-[`rules/`](rules/)に49件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる6件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは57ファイルで97,312文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
+[`rules/`](rules/)に50件、[`rules/lang/`](rules/lang/)に5件のルールがあります。[`rules/`](rules/)以下のファイルは、言語別ファイルと表の後に挙げる7件を含め、すべて短いコアとしてすべての会話に読み込まれます。各コアは通常のタスクで振る舞いを変える義務だけを残し、全文は[`standards/`](standards/)にリンクします。そのため常時ロードされるセットは58ファイルで99,625文字に収まり、CIが強制する120,000文字の予算と、ハーネスの上限である150,000文字を下回っています。
 
 | ルール | 対象 |
 |:-----|:---------------|
@@ -125,7 +125,7 @@ graph LR
 
 ほかに[`rules/lang/`](rules/lang/)に言語別のファイルが5件あります。`typescript-immutability`、`typescript-types`、`typescript-strict`、`orm-migrations`、`python`です。
 
-[`rules/`](rules/)にはさらに6件のルールがあり、ほかと同じくすべてのセッションで読み込まれ、条件が成り立つときだけ適用されます。それぞれ[`rules/index.yml`](rules/index.yml)に全文を持つオンデマンドの標準があります。プロジェクトが配布できないため利用者が自分で用意するファイルを扱う[`artifact-identity`](rules/artifact-identity.md)、エミュレーターを全画面ではなくヘッドレスか最小化で起動する[`emulator-runs`](rules/emulator-runs.md)、プロジェクトの依存関係をホストではなくすべてDockerイメージに入れる[`docker-dependencies`](rules/docker-dependencies.md)、そして[`knowledge-notes`](rules/knowledge-notes.md)、[`everyday-engineering`](rules/everyday-engineering.md)、[`project-glossary`](rules/project-glossary.md)です。
+[`rules/`](rules/)にはさらに7件のルールがあり、ほかと同じくすべてのセッションで読み込まれ、条件が成り立つときだけ適用されます。それぞれ[`rules/index.yml`](rules/index.yml)に全文を持つオンデマンドの標準があります。プロジェクトが所有しない外部コード、ベンダー製品、ダンプを扱い、コード研究、ベンダーAPIの互換再実装、所有するダンプの保存を対象とする[`clean-room`](rules/clean-room.md)、プロジェクトが配布できないため利用者が自分で用意するファイルを扱う[`artifact-identity`](rules/artifact-identity.md)、エミュレーターを全画面ではなくヘッドレスか最小化で起動する[`emulator-runs`](rules/emulator-runs.md)、プロジェクトの依存関係をホストではなくすべてDockerイメージに入れる[`docker-dependencies`](rules/docker-dependencies.md)、そして[`knowledge-notes`](rules/knowledge-notes.md)、[`everyday-engineering`](rules/everyday-engineering.md)、[`project-glossary`](rules/project-glossary.md)です。
 
 ### オンデマンドで読み込まれる標準
 
@@ -220,7 +220,7 @@ graph LR
 | [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | 認識できるすべての言語で、ソースコードへのコメントの追加をブロックします。C系、Python、シェル、YAML、Make、Docker、Terraform、SQL、Lua、Clojure、TeX、Vim script、HTMLとそのテンプレート方言、CSS、方言ごとのアセンブリ、Jupyterのコードセルなどで、拡張子、ベース名、シバン、内容で判別します。docstringとドキュメントコメントのブロックもコメントとして扱います。編集はディスク上のファイルと照合するため、新たに追加したコメントだけが報告されます。Bashの`git commit`では、ステージされたすべてのファイルを`HEAD`と比較して走査するため、WriteやEditのツール以外で書かれた内容も捕まえます。マージ中は、もう一方の親から変更なしで取り込んだファイルを飛ばします。マージがその中身を何も書いていないためです。マシンローカルの`comment-waivers.txt`([`comment-waivers.example.txt`](comment-waivers.example.txt)からコピー)に載っているパスはチェックしません。対象外は、`eslint-disable`、`@ts-expect-error`、`noqa`、アクションのバージョン固定などのツールの指示、テストファイルの素の`Arrange`、`Act`、`Assert`マーカー、`.env.example`ファイルです。運用者向けのバイパスは`COMMENT_BLOCKER_DISABLE=1` |
 | [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | Python、JS/TS、Go、batsで追加または変更したすべてのテストに、素の`Arrange`、`Act`、`Assert`マーカーをそれぞれ1回ずつ順番に置き、空行1つで区切った3つのブロックにすることを求めます。手を付けていない既存のテストはチェックしません。Bashの`git commit`ではステージされたファイルをチェックし、マージがもう一方の親から変更なしで取り込んだファイルは飛ばします。バイパスは`TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | コンパクションをまたいでgitの状態をプロジェクトごとに保持します |
-| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | tsconfig、eslint、ruff、mypyなど、リンター、フォーマッター、型チェッカーの設定の編集をブロックします。設定を緩めるのではなくコードを直させます |
+| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | tsconfig、eslint、ruff、mypyなど、リンター、フォーマッター、型チェッカーの設定の編集をブロックします。設定を緩めるのではなくコードを直させます。既存の法務ポリシーファイルを編集する前にユーザーに確認します。対象はクリーンルームのポリシー、`LICENSE`、`COPYING`、`NOTICE`、サードパーティ通知、`LEGAL`、`LICENSES/`以下のファイルで、新規作成は許可されます |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | テスト以外のコードでの`console.*`をブロックします。許可マーカーはなく、サードパーティのツールの指示だけに従います。 |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Conventional Commitsの形式を検証します |
 | [`commit-test-weakening.py`](hooks/commit-test-weakening.py) | PreToolUse Bash | テストケースを定義する変更済みおよび未追跡のテストファイルを合計し、直前のコミットと比べてテストケースやアサーションが減るか、スキップマーカーが増えるコミットをブロックします。作業ツリーを読むため、Editで削除したテストだけでなくシェルスクリプトで削除したテストも検出し、別のファイルへ移したテストは差し引きゼロになります。バイパスは`COMMIT_TEST_WEAKENING_DISABLE=1` |
@@ -517,8 +517,8 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 905-item review checklist across 71 categories
-  rules/                 49 short rule cores, each linking to its full text
+  checklists/            Unified 920-item review checklist across 71 categories
+  rules/                 50 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
   standards/             143 on-demand standards, including the full text of every rule

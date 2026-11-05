@@ -21,7 +21,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
 </p>
 
-49 always-on rules, 143 on-demand standards, 42 skills, 99 hooks, and 18 agents, plus a 905-item review checklist in 71 categories.
+50 always-on rules, 143 on-demand standards, 42 skills, 99 hooks, and 18 agents, plus a 920-item review checklist in 71 categories.
 
 ---
 
@@ -69,13 +69,13 @@ graph LR
 | [`hooks/`](hooks) | Runtime blocks for destructive commands, secrets, banned patterns | Before every tool call |
 | [`skills/`](skills) | Documented multi-step workflows: ship, review, plan, audit | When the user invokes `/<name>` |
 | [`agents/`](agents) | Specialized subagents for focused review tasks | When delegated explicitly |
-| [`checklists/`](checklists) | 905-item review checklist for code, infra, and process | On demand during review |
+| [`checklists/`](checklists) | 920-item review checklist for code, infra, and process | On demand during review |
 
 ## What's Included
 
 ### Rules, always loaded
 
-49 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the six listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 97,312 characters across 57 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
+50 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the seven listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 99,625 characters across 58 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -125,7 +125,7 @@ graph LR
 
 Plus 5 language-specific files in [`rules/lang/`](rules/lang/): `typescript-immutability`, `typescript-types`, `typescript-strict`, `orm-migrations`, `python`.
 
-Six more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`emulator-runs`](rules/emulator-runs.md) for launching an emulator headless or minimised and never full screen, [`docker-dependencies`](rules/docker-dependencies.md) for keeping every project dependency in the Docker image and none on the host, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
+Seven more rules in [`rules/`](rules/) load every session like the rest and apply only when their condition holds; each also has an on-demand standard in [`rules/index.yml`](rules/index.yml) that carries its full text: [`clean-room`](rules/clean-room.md) for outside code, vendor products, and artifacts the project does not own, covering code study, compatibility reimplementation of a vendor API, and preservation of owned dumps, [`artifact-identity`](rules/artifact-identity.md) for files a person must supply because the project may not distribute them, [`emulator-runs`](rules/emulator-runs.md) for launching an emulator headless or minimised and never full screen, [`docker-dependencies`](rules/docker-dependencies.md) for keeping every project dependency in the Docker image and none on the host, [`knowledge-notes`](rules/knowledge-notes.md), [`everyday-engineering`](rules/everyday-engineering.md), and [`project-glossary`](rules/project-glossary.md).
 
 ### Standards, loaded on demand
 
@@ -220,7 +220,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`comment-blocker.py`](hooks/comment-blocker.py) | PreToolUse Write/Edit/MultiEdit/Bash | Blocks any comment added to source code, in every language it recognizes: C-family, Python, shell, YAML, Make, Docker, Terraform, SQL, Lua, Clojure, TeX, Vim script, HTML and its template dialects, CSS, assembly by dialect, Jupyter code cells, and more, resolved by extension, basename, shebang, or content. Docstrings and doc-comment blocks count as comments. An edit is resolved against the file on disk, so only newly added comments are reported. On a Bash `git commit` it scans every staged file against `HEAD`, which catches content written outside the Write and Edit tools. During a merge, a file the merge took unchanged from the other parent is skipped, since the merge authored nothing in it. Paths listed in the machine-local `comment-waivers.txt`, copied from [`comment-waivers.example.txt`](comment-waivers.example.txt), are not checked. Exempt: tool directives such as `eslint-disable`, `@ts-expect-error`, `noqa` and action version pins, the bare `Arrange`, `Act`, `Assert` markers in test files, and `.env.example` files. Operator bypass `COMMENT_BLOCKER_DISABLE=1` |
 | [`test-aaa-markers.py`](hooks/test-aaa-markers.py) | PreToolUse Write/Edit/MultiEdit/Bash | Requires every added or changed test in Python, JS/TS, Go, and bats to carry the bare `Arrange`, `Act`, `Assert` markers once each, in order, as three blocks separated by one blank line. Untouched legacy tests are not checked. On a Bash `git commit` it checks the staged files, skipping a file a merge took unchanged from the other parent. Bypass `TEST_AAA_MARKERS_DISABLE=1` |
 | [`compact-context-saver.py`](hooks/compact-context-saver.py) | SessionStart / PreCompact / PostCompact | Preserves git status across compaction, scoped per project |
-| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config |
+| [`config-protection.py`](hooks/config-protection.py) | PreToolUse Write/Edit/MultiEdit | Blocks edits to linter, formatter, and typechecker configs like tsconfig, eslint, ruff, mypy. Forces fixing code instead of weakening config. Asks the user before an edit to an existing legal policy file: a clean-room policy, `LICENSE`, `COPYING`, `NOTICE`, third-party notices, `LEGAL`, or a file under `LICENSES/`; creating a new one is allowed |
 | [`console-log-blocker.py`](hooks/console-log-blocker.py) | PreToolUse Write/Edit | Blocks `console.*` in non-test code. No allow marker; only third-party tool directives are honored. |
 | [`conventional-commits.py`](hooks/conventional-commits.py) | PreToolUse Bash | Validates conventional commit format |
 | [`commit-test-weakening.py`](hooks/commit-test-weakening.py) | PreToolUse Bash | Blocks a commit whose test files, summed across every changed and untracked test file that defines a test case and compared with the last commit, lose test cases or assertions or gain skip markers. It reads the working tree, so a test removed by a shell script is caught as well as one removed with Edit, and a test moved to another file nets to zero. Bypass `COMMIT_TEST_WEAKENING_DISABLE=1` |
@@ -517,8 +517,8 @@ $HOME/.claude/
   CLAUDE.md              Core engineering rules, always loaded
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
-  checklists/            Unified 905-item review checklist across 71 categories
-  rules/                 49 short rule cores, each linking to its full text
+  checklists/            Unified 920-item review checklist across 71 categories
+  rules/                 50 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
   standards/             143 on-demand standards, including the full text of every rule

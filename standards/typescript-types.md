@@ -64,6 +64,28 @@ A draft offers only `submit`, so it cannot ship or cancel. A submitted order has
 - Different from discriminated unions: unions model "what states exist" as data. Type state models "what transitions are legal" through method availability. The compiler prevents invalid transitions, not runtime checks
 - Combine with branded types for state identifiers: `DraftOrderId` vs `ShippedOrderId` prevents passing the wrong order to the wrong function
 
+## Known Or Unknown Values
+
+A value that comes from evidence, such as an observed vendor behavior, a measured hardware figure, or an inventory scanned from a remote system, can be absent because nobody has established it yet. Model that state instead of filling it with a guess, an empty string, or `null`:
+
+```typescript
+enum NextAction {
+  Observe = 'observe',
+  ReadDocumentation = 'read-documentation',
+  Measure = 'measure',
+  AskOwner = 'ask-owner',
+}
+
+type Knowledge<T> =
+  | { readonly status: 'known'; readonly value: T; readonly source: string }
+  | { readonly status: 'unknown'; readonly question: string; readonly nextAction: NextAction };
+```
+
+- `known` carries where the value came from; `unknown` carries the question that would settle it and the action that would answer it
+- Code that needs the value matches on `status` exhaustively, so a report, a compatibility claim, or a generated document cannot present an unknown as a fact
+- Never convert `unknown` to a default inside the domain. A default is a decision, recorded where it is made
+- Use for: compatibility inventories, hardware constants pending measurement, vendor limits not yet observed, any field a report might otherwise round up
+
 ## Enforcement
 
 Enforced by: [`hooks/as-any-blocker.py`](../hooks/as-any-blocker.py).

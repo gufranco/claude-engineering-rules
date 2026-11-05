@@ -72,6 +72,7 @@ PROTECTED_TSCONFIG_SUFFIXES = (".json",)
 
 from _lib.bypass import is_bypassed  # noqa: E402
 from _lib.hook_input import read_hook_payload  # noqa: E402
+from _lib.legal_policy_files import ask_decision, needs_approval  # noqa: E402
 
 
 def _is_protected(path: str) -> bool:
@@ -152,6 +153,18 @@ def _block(data: dict, file_path: str) -> None:
     sys.exit(2)
 
 
+def _ask_for_legal_policy(data: dict, file_path: str) -> None:
+    print(ask_decision(file_path))
+    _audit(
+        hook=HOOK_NAME,
+        decision="ask",
+        tool=data.get("tool_name", "Write"),
+        reason=f"legal policy file: {os.path.basename(file_path)}",
+        file_path=file_path,
+    )
+    sys.exit(0)
+
+
 def main() -> None:
     if _skipped():
         sys.exit(0)
@@ -159,6 +172,8 @@ def main() -> None:
 
     tool_input = data.get("tool_input", data.get("input", {}))
     file_path = tool_input.get("file_path") or tool_input.get("path") or ""
+    if file_path and needs_approval(data.get("tool_name", ""), file_path):
+        _ask_for_legal_policy(data, file_path)
     if not file_path or not _guards(file_path, _proposed_content(tool_input) or ""):
         sys.exit(0)
     if _is_bootstrap_write(data.get("tool_name", ""), file_path):

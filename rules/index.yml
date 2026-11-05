@@ -187,6 +187,10 @@ always_loaded:
     description: Short core for files a project needs but cannot ship, such as a ROM, BIOS, firmware, licensed weights, or a proprietary SDK. Declared in artifacts.manifest.json, SHA-256 alone decides and is verified in code on the exact bytes consumed, a mismatch names what the user has and what to do, never commit, cache, link to, or auto-download the artifact, CI passes with it absent. Full text in standards/artifact-identity.md
     triggers: [rom, bios, firmware, "model weights", "user-supplied", "artifacts.manifest.json", sha256, checksum, "hash mismatch"]
 
+  clean-room:
+    description: Short core for outside code, vendor products, and artifacts the project does not own. Name the mode, copy no expression, copyleft and unlicensed sources for facts only, never leaked or NDA material, the contract and terms gate before a vendor account is a test oracle, the functional-string exception logged per client, no artifact bytes or source pointers, provenance per source checked by tests, nominative marks and public claims that match the policy. Full text in standards/clean-room.md
+    triggers: [clean room, clean-room, reverse engineering, compatibility, drop-in, parity, black box, terms of service, trademark, provenance, rom, bios, dump, patch]
+
   docker-dependencies:
     description: Short core for keeping every project dependency in the Docker image. The image carries the interpreter, libraries and every tool, pinned; the host carries Docker and git only; every documented command runs through the container; no native-tool fast path; a doctor checks the container and the engine, never host tool versions. Full text in standards/docker-dependencies.md
     triggers: [docker, dockerfile, container, compose, "install python", winget, "host dependency", toolchain, doctor, prerequisites]
@@ -378,8 +382,8 @@ on_demand:
 
   clean-room:
     path: standards/clean-room.md
-    description: Clean room implementation process to avoid plagiarism and legal exposure when using external projects as reference or inspiration
-    triggers: [clean room, plagiarism, copyright, license, reference, inspiration, external source, derivative, similar, copy]
+    description: Clean room and legal guardrails across three modes, code study, compatibility reimplementation of a vendor API, and preservation of owned artifacts. Source ladder and per-licence reading rules, sources never used, the contract and terms gate for vendor accounts and trials, verifier and observer roles for agent sessions, observation notes, the functional-string exception, decision log, evidence classes, test oracles and changelog review, no artifact bytes or source pointers, vocabulary guard, counsel review for highest-exposure features, copying licensed code with notices, provenance records checked by tests, nominative trademark use, true public claims, sign-off and protected policy files, verification checklist A to J
+    triggers: [clean room, clean-room, plagiarism, copyright, license, reference, inspiration, external source, derivative, similar, copy, reverse engineering, black box, black-box, compatibility, compatible, drop-in, drop in, parity, reimplementation, reimplement, vendor api, terms of service, terms of use, eula, benchmarking, competitive use, trademark, nominative, affiliation, provenance, observation notes, decision log, notice, third-party notices, dco, sign-off, rom, bios, firmware, dump, patch, preservation, interoperability, homebrew, counsel]
 
   cost-awareness:
     path: standards/cost-awareness.md
