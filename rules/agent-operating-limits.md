@@ -12,6 +12,8 @@ Every limit on an agent run states the measurement that set it, or states that n
 - Gate on exit codes, never on grepping output. Confirm whether stdout or stderr carries the payload.
 - Know which identity you act as, supersede your own prior output instead of stacking, and write each summary fresh.
 - Write only inside this session's own tree. A change that belongs in a directory another live session works in, listed in `~/.claude/sessions/`, goes to the user as a prompt to paste into that session, which queues it; never write there. In a directory two sessions share, the session that started first owns it. The knowledge vault named by `SECOND_BRAIN_VAULT` is shared by every session and is never handed off.
+- A sandbox, fake `HOME` or fixture tree holds copies, never links, to anything outside it: `git clone`, `git worktree add` or `cp -R`, never `ln` to a real repo or a real home path. A write through a linked path lands in the real tree, and stubbing commands does not stop `ln`, `mv`, `cp` or redirection.
+- Before running an installer or any script that links, moves or deletes inside a sandbox, list every symlink in it and stop if one resolves outside. After the run, snapshot the real tree including ignored files and search it for links into the temp dir; a clean `git status` is not proof.
 
 Full rule, examples, and rationale: [`standards/agent-operating-limits.md`](../standards/agent-operating-limits.md). Read it before setting a turn ceiling, timeout, or per-run cap, or before adding an always-on injection.
 
@@ -19,3 +21,5 @@ Full rule, examples, and rationale: [`standards/agent-operating-limits.md`](../s
 
 Enforced by: [`hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py).
 Enforced by: [`hooks/background-exit-status.py`](../hooks/background-exit-status.py).
+Enforced by: [`hooks/sandbox-link-guard.py`](../hooks/sandbox-link-guard.py).
+Enforced by: [`hooks/sandbox-link-audit.py`](../hooks/sandbox-link-audit.py).

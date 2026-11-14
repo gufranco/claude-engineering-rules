@@ -123,6 +123,25 @@ The handoff prompt carries everything the other session needs with no other cont
 
 [`../hooks/foreign-session-guard.py`](../hooks/foreign-session-guard.py) denies a Write, Edit, MultiEdit or NotebookEdit that lands inside another live session's directory and tells the agent to write the handoff prompt instead. A session whose directory contains this session's own, such as one started in a workspace parent, is ignored, and the deepest matching session is named. A write inside the knowledge vault named by `SECOND_BRAIN_VAULT` always passes, because every session reads and writes it and its notes go through their own guard. Without the guard, a write landing in another session's directory shows up in that session as a change made by its own last command.
 
+## A Sandbox Holds Copies, Never Links
+
+A sandbox that reaches a real directory through a link is not a sandbox. A fake `HOME` that links `.dotfiles` to the real repository passes every write through: an installer that links `$HOME/.gnupg` to `$DOTFILES/gnupg`, then writes `$HOME/.gnupg/gpg-agent.conf`, replaces the real agent config with a link into the temp dir. When the temp dir is deleted, that link dangles, the real tool loses its settings, and nothing reports it: the file is ignored by git, so `git status` stays clean, and the sandbox run itself passes. Stubbing `brew`, `git`, `sudo` or `gpg` changes nothing, because `ln`, `mv`, `cp` and shell redirection still run.
+
+1. Build the sandbox from copies. A repository goes in with `git clone` or `git worktree add`; anything else with `cp -R`. Never `ln` a real repository or a path under the real home into a temp dir, and never hard-link a real file there, since a write through a hard link changes the real file.
+2. Before running an installer, a migration, or any script that links, moves or deletes, list the sandbox's symlinks and fail if one resolves outside it. The line prints each escaping target and exits 1 when there is one:
+   ```bash
+   ! find "$S" -type l -exec realpath {} + | grep -v "^$(realpath "$S")/"
+   ```
+3. After the run, prove the real tree is unchanged. Touch a marker before the run, then list everything newer, ignored and untracked files included, and search for links into the temp dir:
+   ```bash
+   find "$REAL" -newer "$MARKER" -not -path '*/.git/*'
+   find "$REAL" "$HOME" -maxdepth 3 -type l -lname "$S*"
+   ```
+
+[`../hooks/sandbox-link-guard.py`](../hooks/sandbox-link-guard.py) blocks an `ln`, symbolic or hard, whose link lands under `/tmp`, `/private/tmp` or `$TMPDIR` and whose source is under the real home or inside a git work tree. It expands variables assigned earlier in the same command, treats `$(mktemp ...)` as a temp dir, follows `cd`, and resolves a relative symlink source from the link's folder. A link between two temp paths, a link inside a dir the command just made with `mktemp`, and a stub pointing at a system binary pass.
+
+[`../hooks/sandbox-link-audit.py`](../hooks/sandbox-link-audit.py) runs when a turn ends. It walks the session's repository, ignored files included, plus the entries of the home directory and of `~/.config` two levels deep, and blocks the stop once when a link there points into a temp dir, naming each one, so it is repaired while the temp dir still exists. A second stop only warns. The bypass for both is `SANDBOX_LINK_DISABLE=1`.
+
 ## Forbidden Patterns
 
 | Pattern | Reason |
@@ -136,6 +155,7 @@ The handoff prompt carries everything the other session needs with no other cont
 | Treating a check that errored as a check that was skipped | Fails open on the exact case most likely to hide a defect |
 | Gating on a grep of output rather than on the exit code | Matches inside errors and help text, so the gate reports false success |
 | Acting on a thread or record without knowing which identity you act as | The action can silently change what the record is |
+| Linking a real repository or home path into a sandbox | Every write through the link lands in the real tree, and the link dangles once the temp dir is deleted |
 
 ## Interaction With Other Rules
 

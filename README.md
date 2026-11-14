@@ -187,7 +187,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-100 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+102 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -284,6 +284,8 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Reads the most recent active `plan.md` under the workspace `plans/` or `specs/` (modified within 60min). A plan whose header carries an `Archived:` or `Superseded:` stamp is closed and governs nothing. Blocks the edit when its target is not in the plan's declared file list, which accepts paths and extensionless names such as `Makefile`. Files outside the repository that holds the spec, such as the vault, are never checked. Bypass `SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 38 secret patterns before git commit |
 | [`machine-leak-guard.py`](hooks/machine-leak-guard.py) | PreToolUse Bash | Blocks a `git commit` or a publishing `gh` call that would carry details of this machine: home path, login, host names, real name and personal emails outside authorship, local folder names above the repository, tmux window names, live session ids, temp paths. Identifiers are discovered at check time, never stored. Scans added lines, the commit message, files named by a same-command `git add`, and `gh` titles, bodies, notes and API fields. Extra names and exemptions go in the machine-local `machine-identifiers.txt`, copied from [`machine-identifiers.example.txt`](machine-identifiers.example.txt). [`tools/machine-leak-scan.py`](tools/machine-leak-scan.py) runs the same matcher over every tracked line of a repository. Bypass `MACHINE_LEAK_DISABLE=1` |
+| [`sandbox-link-guard.py`](hooks/sandbox-link-guard.py) | PreToolUse Bash | Blocks an `ln`, symbolic or hard, that puts a link under `/tmp`, `/private/tmp` or `$TMPDIR` to a path under the real home or inside a git work tree, since every write through it lands in the real tree. Expands variables assigned earlier in the command, treats `$(mktemp ...)` as temp, follows `cd`. Names `git clone`, `git worktree add` and `cp -R` as the alternatives. Bypass `SANDBOX_LINK_DISABLE=1` |
+| [`sandbox-link-audit.py`](hooks/sandbox-link-audit.py) | Stop | Walks the session's repository, ignored files included, and the entries of the home directory and `~/.config`, and blocks the stop once when a link there points into a temp dir that will be deleted with the session; a second stop only warns. Bypass `SANDBOX_LINK_DISABLE=1` |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches, in test files too |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | Names the local workspace and surfaces its `PROMPT.md` in full, then the most recent checkpoint or active plan (within 7 days), as `additionalContext` on startup, clear, or compact so the session resumes with a pointer to in-progress work |
@@ -527,7 +529,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 100 runtime hooks
+  hooks/                 102 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

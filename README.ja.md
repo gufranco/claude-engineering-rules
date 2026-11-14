@@ -284,6 +284,8 @@ graph LR
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | ワークスペースの`plans/`か`specs/`にある最新の有効な`plan.md`（60分以内に変更されたもの）を読みます。ヘッダーに`Archived:`か`Superseded:`の印がある計画は閉じたものとして何も制御しません。編集の対象が計画の宣言したファイル一覧にない場合はブロックします。一覧にはパスと`Makefile`のような拡張子のない名前を書けます。ボールトなど、仕様を持つリポジトリの外のファイルはチェックしません。バイパスは`SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | git commitの前に38のシークレットのパターンを照合します |
 | [`machine-leak-guard.py`](hooks/machine-leak-guard.py) | PreToolUse Bash | このマシンの情報を含む `git commit` や公開用の `gh` 呼び出しをブロックします。対象はホームパス、ログイン名、ホスト名、作者表記以外の本名と個人メール、リポジトリより上のローカルフォルダー名、tmuxのウィンドウ名、実行中のセッションID、一時パスです。識別子はチェック時に検出し、保存しません。追加された行、コミットメッセージ、同じコマンドの `git add` で指定したファイル、`gh` のタイトル、本文、ノート、APIフィールドを調べます。追加の名前と除外は、[`machine-identifiers.example.txt`](machine-identifiers.example.txt) をコピーしたマシンローカルの `machine-identifiers.txt` に書きます。[`tools/machine-leak-scan.py`](tools/machine-leak-scan.py) は同じ照合をリポジトリの追跡中の全行に実行します。バイパスは `MACHINE_LEAK_DISABLE=1` |
+| [`sandbox-link-guard.py`](hooks/sandbox-link-guard.py) | PreToolUse Bash | `/tmp`、`/private/tmp`、`$TMPDIR` の下に、実際のホームやgitの作業ツリー内のパスを指すリンクを作る `ln` をブロックします。シンボリックリンクもハードリンクも対象です。そのリンクを通した書き込みはすべて実際のツリーに届くためです。同じコマンドで先に代入された変数を展開し、`$(mktemp ...)` を一時ディレクトリとして扱い、`cd` を追跡します。代わりに `git clone`、`git worktree add`、`cp -R` を示します。バイパスは `SANDBOX_LINK_DISABLE=1` |
+| [`sandbox-link-audit.py`](hooks/sandbox-link-audit.py) | Stop | セッションのリポジトリを無視ファイルも含めて走査し、ホームと `~/.config` の項目も調べます。セッションと一緒に削除される一時ディレクトリを指すリンクがあれば、停止を一度だけブロックします。2回目の停止では警告だけです。バイパスは `SANDBOX_LINK_DISABLE=1` |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | テストファイルも含め、Sequelizeの生クエリの抜け道をブロックします |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Sequelizeのモデルとマイグレーションの一致を強制します |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | ローカルワークスペースの名前を示してその`PROMPT.md`を全文表示し、続いて最新のチェックポイントか有効な計画（7日以内）を、起動時、clear時、compact時に`additionalContext`として示します。セッションは進行中の作業への手がかりを持って再開します |
@@ -527,7 +529,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 100 runtime hooks
+  hooks/                 102 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

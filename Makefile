@@ -65,7 +65,10 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/machine_leak.py \
                    hooks/_lib/machine_leak_sources.py \
                    hooks/machine-leak-guard.py \
-                   tools/machine-leak-scan.py
+                   tools/machine-leak-scan.py \
+                   hooks/_lib/sandbox_links.py \
+                   hooks/sandbox-link-guard.py \
+                   hooks/sandbox-link-audit.py
 
 YAMLLINT   := $(call tool,yamllint)
 ZIZMOR     := $(call tool,zizmor)

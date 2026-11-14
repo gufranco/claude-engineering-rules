@@ -267,6 +267,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/sandbox-link-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/doc-sync-guard.py",
             "if": "Bash(git commit *)"
           }
@@ -1788,6 +1797,10 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/user-commands-one-line.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/sandbox-link-audit.py"
           }
         ]
       }

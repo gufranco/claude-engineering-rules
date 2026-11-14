@@ -284,6 +284,8 @@ graph LR
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | 读取工作区 `plans/` 或 `specs/` 下最近的活动 `plan.md`（60 分钟内修改过）。标头带有 `Archived:` 或 `Superseded:` 标记的计划视为已关闭，不再约束任何内容。当编辑目标不在计划声明的文件列表中时拦截，列表可以写路径，也可以写 `Makefile` 这类没有扩展名的名称。持有规格的仓库之外的文件（例如知识库）从不检查。绕过：`SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 在 git commit 之前检查 38 种密钥模式 |
 | [`machine-leak-guard.py`](hooks/machine-leak-guard.py) | PreToolUse Bash | 拦截会带出本机信息的 `git commit` 或发布用的 `gh` 调用：主目录路径、登录名、主机名、作者信息以外的真实姓名和个人邮箱、仓库以上的本地文件夹名称、tmux 窗口名称、运行中的会话 ID、临时路径。标识符在检查时检测，从不存储。检查新增的行、提交信息、同一命令中 `git add` 指定的文件，以及 `gh` 的标题、正文、说明和 API 字段。额外名称和豁免写在本机的 `machine-identifiers.txt`，由 [`machine-identifiers.example.txt`](machine-identifiers.example.txt) 复制而来。[`tools/machine-leak-scan.py`](tools/machine-leak-scan.py) 对仓库中每一行已跟踪内容运行同一匹配。绕过方式 `MACHINE_LEAK_DISABLE=1` |
+| [`sandbox-link-guard.py`](hooks/sandbox-link-guard.py) | PreToolUse Bash | 拦截在 `/tmp`、`/private/tmp` 或 `$TMPDIR` 下创建、指向真实主目录或 git 工作树内路径的 `ln`，符号链接和硬链接都算，因为经由它的每次写入都会落到真实的树中。会展开同一命令中先前赋值的变量，把 `$(mktemp ...)` 视为临时目录，并跟随 `cd`。提示改用 `git clone`、`git worktree add` 和 `cp -R`。绕过方式 `SANDBOX_LINK_DISABLE=1` |
+| [`sandbox-link-audit.py`](hooks/sandbox-link-audit.py) | Stop | 遍历会话的仓库（包括被忽略的文件），以及主目录和 `~/.config` 的条目；若有链接指向会随会话删除的临时目录，就拦截一次停止，第二次停止只发出警告。绕过方式 `SANDBOX_LINK_DISABLE=1` |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | 拦截 Sequelize 的原始查询后门，测试文件中也一样 |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | 强制 Sequelize 模型与迁移保持一致 |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | 在启动、clear 或 compact 时，以 `additionalContext` 写明本地工作区并完整展示其中的 `PROMPT.md`，然后是最近的检查点或活动计划（7 天内），让会话带着指向进行中工作的线索恢复 |
@@ -527,7 +529,7 @@ $HOME/.claude/
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 100 runtime hooks
+  hooks/                 102 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
