@@ -165,3 +165,51 @@ def test_ignores_a_heredoc_whose_terminator_never_appears() -> None:
 
     # Assert
     assert reported_numbers(pairs) == (2,)
+
+
+def test_reports_a_ruby_comment_below_a_regex_holding_an_odd_quote_count() -> None:
+    # Arrange
+    family = family_for("Brewfile")
+    text = 'serial = out[/"Serial" = "([^"]+)"/, 1]\n# Fonts\ncask \'x\'\n'
+
+    # Act
+    pairs = comment_lines(text, family)
+
+    # Assert
+    assert reported_numbers(pairs) == (2,)
+
+
+def test_reports_no_added_ruby_comment_when_a_quoted_regex_line_is_removed() -> None:
+    # Arrange
+    family = family_for("Brewfile")
+    kept = "# Fonts\ncask 'x'\n"
+    before = 'serial = out[/"Serial" = "([^"]+)"/, 1]\n' + kept
+    after = "model = out.strip\n" + kept
+
+    # Act
+    pairs = added_comment_lines(before, after, family)
+
+    # Assert
+    assert pairs == []
+
+
+def test_reads_a_hash_inside_a_ruby_regex_as_code() -> None:
+    # Arrange
+    family = family_for("lib/a.rb")
+
+    # Act
+    pairs = comment_lines("ok = name =~ /a#b/\nlabel = text[/#{prefix}-x/]\n", family)
+
+    # Assert
+    assert pairs == []
+
+
+def test_reads_a_ruby_slash_after_an_operand_as_division() -> None:
+    # Arrange
+    family = family_for("lib/a.rb")
+
+    # Act
+    pairs = comment_lines("half = total / 2 # note /\n", family)
+
+    # Assert
+    assert reported_numbers(pairs) == (1,)
