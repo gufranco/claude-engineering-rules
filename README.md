@@ -21,7 +21,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
 </p>
 
-50 always-on rules, 143 on-demand standards, 42 skills, 99 hooks, and 18 agents, plus a 920-item review checklist in 71 categories.
+51 always-on rules, 144 on-demand standards, 42 skills, 100 hooks, and 18 agents, plus a 920-item review checklist in 71 categories.
 
 ---
 
@@ -75,7 +75,7 @@ graph LR
 
 ### Rules, always loaded
 
-50 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the seven listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 99,625 characters across 58 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
+51 rules in [`rules/`](rules/) plus 5 in [`rules/lang/`](rules/lang/). Every file under [`rules/`](rules/) loads into every conversation as a short core, including the language files and the seven listed after the table. Each core keeps the obligations that change behavior on an ordinary task and links to its full text in [`standards/`](standards/), so the always-loaded set stays at 100,625 characters across 58 files, under the 120,000-character budget CI enforces and the harness limit of 150,000.
 
 | Rule | What it covers |
 |:-----|:---------------|
@@ -106,6 +106,7 @@ graph LR
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | Blocks phase-N markers, plan-path references, spec-folder links, hyperbole tells, and self-criticism from commit messages, PR descriptions, published docs, and messages to colleagues |
 | [`no-committed-symlinks`](rules/no-committed-symlinks.md) | No repository tracks a symbolic link. Shared source goes through the build, a file needed twice is committed once, and a file from a submodule is committed as its own bytes |
 | [`doc-truth`](rules/doc-truth.md) | Documentation that describes code is a claim about the code. A change that falsifies a claim corrects it in the same commit. Four mechanically certain checks at `git commit`; historical records exempt. A project doc that describes a convention the code consistently no longer follows is stale: the code wins and every mismatch is reported |
+| [`machine-agnostic`](rules/machine-agnostic.md) | Everything committed or published reads the same on any machine: no home path, login, host, local folder or window name, live session id or temp path. The owner's identity appears only in authorship, and fixtures built from real data are renamed before they are written |
 | [`markdown-links`](rules/markdown-links.md) | Every file mention in published markdown is a clickable link. Validator and PreToolUse hook enforce |
 | [`living-specs`](rules/living-specs.md) | Non-trivial changes maintain a `specs/current/` living behavioral spec: requirements, Given/When/Then scenarios, ADDED/MODIFIED/REMOVED deltas kept in the plan folder inside the local workspace, and a close-out merge that folds a completed change into the spec |
 | [`project-workspace`](rules/project-workspace.md) | Every repository keeps the user's working material in a local workspace that is never committed: `<repo>/docs/` unless the project owns it, then `<repo>/.work/`, ignored through `.git/info/exclude` only. `PROMPT.md` there stays pasteable into a new session. The README is the single source of truth for the project |
@@ -129,7 +130,7 @@ Seven more rules in [`rules/`](rules/) load every session like the rest and appl
 
 ### Standards, loaded on demand
 
-143 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
+144 standards in [`standards/`](standards/). Each entry in [`rules/index.yml`](rules/index.yml) declares trigger keywords. When a task matches, only those standards load.
 
 Topics: API design, authentication, caching, code review, concurrency and race conditions, container security, contract testing, database, DDD, debugging, distributed systems, idempotency and deduplication, immutability across languages, documentation, frontend, GraphQL, hexagonal architecture, i18n, infrastructure, low-latency engineering, message queues, mobile, monorepo, observability, authoring agent instruction files, OpenTelemetry, performance, postgres, PR comment channels, print design, privacy, redis, resilience, secrets management, SRE, state machines, twelve-factor, TypeScript 5.x, WebSocket, zero-downtime deployments, and more.
 
@@ -186,7 +187,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-99 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+100 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -282,6 +283,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | Rewrites CLI commands through RTK for token savings |
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | Reads the most recent active `plan.md` under the workspace `plans/` or `specs/` (modified within 60min). A plan whose header carries an `Archived:` or `Superseded:` stamp is closed and governs nothing. Blocks the edit when its target is not in the plan's declared file list, which accepts paths and extensionless names such as `Makefile`. Files outside the repository that holds the spec, such as the vault, are never checked. Bypass `SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 38 secret patterns before git commit |
+| [`machine-leak-guard.py`](hooks/machine-leak-guard.py) | PreToolUse Bash | Blocks a `git commit` or a publishing `gh` call that would carry details of this machine: home path, login, host names, real name and personal emails outside authorship, local folder names above the repository, tmux window names, live session ids, temp paths. Identifiers are discovered at check time, never stored. Scans added lines, the commit message, files named by a same-command `git add`, and `gh` titles, bodies, notes and API fields. Extra names and exemptions go in the machine-local `machine-identifiers.txt`, copied from [`machine-identifiers.example.txt`](machine-identifiers.example.txt). [`tools/machine-leak-scan.py`](tools/machine-leak-scan.py) runs the same matcher over every tracked line of a repository. Bypass `MACHINE_LEAK_DISABLE=1` |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | Blocks Sequelize raw query escape hatches, in test files too |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Enforces Sequelize model vs migration parity |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | Names the local workspace and surfaces its `PROMPT.md` in full, then the most recent checkpoint or active plan (within 7 days), as `additionalContext` on startup, clear, or compact so the session resumes with a pointer to in-progress work |
@@ -518,14 +520,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 920-item review checklist across 71 categories
-  rules/                 50 short rule cores, each linking to its full text
+  rules/                 51 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             143 on-demand standards, including the full text of every rule
+  standards/             144 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 99 runtime hooks
+  hooks/                 100 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite
@@ -567,7 +569,7 @@ The testing rule treats unit tests as a fallback for pure functions. A test that
 <summary><strong>How does two-tier rule loading save context?</strong></summary>
 <br>
 
-The 143 standards total 27,366 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
+The 144 standards total 27,366 lines. Loading all of them into every conversation would burn the context window. [`rules/index.yml`](rules/index.yml) maps each standard to trigger keywords. When a task matches, e.g. "add a database migration" pulls `database.md`, only the relevant standards load.
 
 </details>
 

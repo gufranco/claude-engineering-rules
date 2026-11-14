@@ -106,6 +106,7 @@ graph LR
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | 從提交訊息、PR 描述、公開文件和給同事的訊息中排除階段編號、計劃檔案路徑、規格資料夾連結、誇張字眼和自我批評 |
 | [`no-committed-symlinks`](rules/no-committed-symlinks.md) | 任何儲存庫都不追蹤符號連結。共用原始碼透過建置引用，兩處都需要的檔案只提交一次，來自子模組的檔案按其本身位元組提交 |
 | [`doc-truth`](rules/doc-truth.md) | 描述程式碼的文件就是對程式碼的聲明。令聲明變假的改動要在同一次提交中修正。在 `git commit` 時進行四項機械上肯定的檢查；歷史記錄不在此列。如果項目文件描述的慣例程式碼已一貫不再遵守，就視為過時：以程式碼為準，並報告每一處不一致 |
+| [`machine-agnostic`](rules/machine-agnostic.md) | 提交或發佈的所有內容在任何機器上讀起來都一樣：不含主目錄路徑、登入名稱、主機名稱、本機資料夾或視窗名稱、執行中的工作階段 ID 或臨時路徑。擁有者的身分只出現在作者資訊中，由真實資料建立的測試資料在寫入前先改名 |
 | [`markdown-links`](rules/markdown-links.md) | 公開 Markdown 中提到的每個檔案都是可點擊的連結。由驗證器和 PreToolUse 鈎子強制執行 |
 | [`living-specs`](rules/living-specs.md) | 非簡單的改動要維護 `specs/current/` 中活的行為規格：需求、Given/When/Then 情境、放在本地工作區計劃資料夾中的 ADDED、MODIFIED、REMOVED 差異，以及把完成的改動併入規格的收尾合併 |
 | [`project-workspace`](rules/project-workspace.md) | 每個儲存庫都把用戶的工作資料放在一個從不提交的本地工作區：項目不使用 `<repo>/docs/` 時用它，否則用 `<repo>/.work/`，只透過 `.git/info/exclude` 忽略。當中的 `PROMPT.md` 一直可以直接貼到新的工作階段。README 是項目唯一的事實來源 |
@@ -282,6 +283,7 @@ graph LR
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | 把 CLI 指令改寫為經 RTK 執行，以節省 token |
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | 讀取工作區 `plans/` 或 `specs/` 下最近的有效 `plan.md`（60 分鐘內修改過）。標題帶有 `Archived:` 或 `Superseded:` 標記的計劃視為已關閉，不再約束任何內容。當編輯目標不在計劃宣告的檔案清單中時攔截，清單可以寫路徑，也可以寫 `Makefile` 這類沒有副檔名的名稱。持有規格的儲存庫以外的檔案（例如知識庫）從不檢查。繞過：`SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | 在 git commit 之前檢查 38 種密鑰模式 |
+| [`machine-leak-guard.py`](hooks/machine-leak-guard.py) | PreToolUse Bash | 封鎖會帶出本機資訊的 `git commit` 或發佈用的 `gh` 呼叫：主目錄路徑、登入名稱、主機名稱、作者資訊以外的真實姓名和個人電郵、儲存庫以上的本機資料夾名稱、tmux 視窗名稱、執行中的工作階段 ID、臨時路徑。識別資料在檢查時偵測，從不儲存。檢查新增的行、提交訊息、同一命令中 `git add` 指定的檔案，以及 `gh` 的標題、內文、說明和 API 欄位。額外名稱和豁免寫在本機的 `machine-identifiers.txt`，由 [`machine-identifiers.example.txt`](machine-identifiers.example.txt) 複製而來。[`tools/machine-leak-scan.py`](tools/machine-leak-scan.py) 對儲存庫中每一行已追蹤內容執行同一比對。略過方式 `MACHINE_LEAK_DISABLE=1` |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | 攔截 Sequelize 的原始查詢後門，測試檔案亦一樣 |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | 強制 Sequelize 模型與遷移保持一致 |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | 在啟動、clear 或 compact 時，以 `additionalContext` 寫明本地工作區並完整展示其中的 `PROMPT.md`，然後是最近的檢查點或有效計劃（7 天內），令工作階段帶着指向進行中工作的線索恢復 |
@@ -518,14 +520,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 920-item review checklist across 71 categories
-  rules/                 50 short rule cores, each linking to its full text
+  rules/                 51 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             143 on-demand standards, including the full text of every rule
+  standards/             144 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 99 runtime hooks
+  hooks/                 100 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

@@ -7,6 +7,7 @@ MINIMAL_HOOKS = frozenset(
         "dangerous-command-blocker",
         "env-file-guard",
         "secret-scanner",
+        "machine-leak-guard",
         "git-author-guard",
         "aws-profile-guard",
         "gcloud-config-guard",

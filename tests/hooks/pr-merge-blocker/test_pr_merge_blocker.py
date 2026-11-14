@@ -36,7 +36,7 @@ MERGE_COMMANDS = [
     "gh pr merge 123",
     "gh pr merge 123 --squash",
     "gh pr merge --rebase --delete-branch",
-    "GH_TOKEN=$(gh auth token --user gufranco) gh pr merge 42 --merge",
+    "GH_TOKEN=$(gh auth token --user octocat) gh pr merge 42 --merge",
     "gh pr merge --auto --squash 7",
     "glab mr merge 45",
     "glab mr merge !45 --yes",

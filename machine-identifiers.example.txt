@@ -1,0 +1,17 @@
+# Machine-local names that must never reach a commit or a published text.
+#
+# Copy this file to `machine-identifiers.txt`, which is machine-local and never
+# committed, then add your own entries.
+#
+# Read by hooks/machine-leak-guard.py and tools/machine-leak-scan.py, which
+# already discover the home path, login name, host names, real name, git
+# emails, local folder names, tmux window names and live session ids on their
+# own. Use this file for what they cannot see.
+#
+# One entry per line. Blank lines and lines starting with `#` are ignored.
+# A plain line adds a name to catch, matched without regard to case.
+# A line starting with `!` exempts a name, such as a public product or
+# organization that happens to match a local folder.
+#
+# FormerClientName
+# !Some Product

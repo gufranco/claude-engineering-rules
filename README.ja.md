@@ -106,6 +106,7 @@ graph LR
 | [`no-ai-process-leak`](rules/no-ai-process-leak.md) | コミットメッセージ、PRの説明、公開ドキュメント、同僚へのメッセージから、フェーズ番号、計画ファイルのパス、仕様フォルダへのリンク、誇張表現、自己批判を排除します |
 | [`no-committed-symlinks`](rules/no-committed-symlinks.md) | どのリポジトリもシンボリックリンクを追跡しません。共有するソースはビルドを通じて参照し、2か所で必要なファイルは1回だけコミットし、サブモジュール由来のファイルはそのバイト列としてコミットします |
 | [`doc-truth`](rules/doc-truth.md) | コードを説明するドキュメントは、コードについての主張です。主張を偽にする変更は、同じコミットでそれを訂正します。`git commit`時に機械的に確実な4つのチェックを行い、履歴の記録は対象外です。コードが一貫して従わなくなった慣習を説明するプロジェクトのドキュメントは古いものとして扱い、コードを優先して不一致をすべて報告します |
+| [`machine-agnostic`](rules/machine-agnostic.md) | コミットや公開するものは、どのマシンでも同じ内容になります。ホームパス、ログイン名、ホスト名、ローカルのフォルダー名やウィンドウ名、実行中のセッションID、一時パスは含めません。所有者の身元は作者表記にだけ現れ、実データから作るフィクスチャは書く前に名前を置き換えます |
 | [`markdown-links`](rules/markdown-links.md) | 公開Markdownで言及するファイルはすべてクリックできるリンクにします。バリデーターとPreToolUseフックが強制します |
 | [`living-specs`](rules/living-specs.md) | 自明でない変更は、`specs/current/`の生きた振る舞い仕様を保守します。要件、Given/When/Thenのシナリオ、ローカルワークスペース内の計画フォルダに置くADDED、MODIFIED、REMOVEDの差分、完了した変更を仕様に取り込む締めくくりのマージを含みます |
 | [`project-workspace`](rules/project-workspace.md) | すべてのリポジトリは、ユーザーの作業資料をコミットしないローカルワークスペースに置きます。プロジェクトが所有していなければ`<repo>/docs/`、所有していれば`<repo>/.work/`で、無視の設定は`.git/info/exclude`だけで行います。そこにある`PROMPT.md`は、新しいセッションにそのまま貼り付けられる状態を保ちます。READMEがプロジェクトの唯一の情報源です |
@@ -282,6 +283,7 @@ graph LR
 | [`rtk-rewrite.py`](hooks/rtk-rewrite.py) | PreToolUse Bash | トークンを節約するため、CLIコマンドをRTK経由に書き換えます |
 | [`scope-guard.py`](hooks/scope-guard.py) | PreToolUse Write/Edit/MultiEdit | ワークスペースの`plans/`か`specs/`にある最新の有効な`plan.md`（60分以内に変更されたもの）を読みます。ヘッダーに`Archived:`か`Superseded:`の印がある計画は閉じたものとして何も制御しません。編集の対象が計画の宣言したファイル一覧にない場合はブロックします。一覧にはパスと`Makefile`のような拡張子のない名前を書けます。ボールトなど、仕様を持つリポジトリの外のファイルはチェックしません。バイパスは`SCOPE_GUARD_DISABLE=1` |
 | [`secret-scanner.py`](hooks/secret-scanner.py) | PreToolUse Bash | git commitの前に38のシークレットのパターンを照合します |
+| [`machine-leak-guard.py`](hooks/machine-leak-guard.py) | PreToolUse Bash | このマシンの情報を含む `git commit` や公開用の `gh` 呼び出しをブロックします。対象はホームパス、ログイン名、ホスト名、作者表記以外の本名と個人メール、リポジトリより上のローカルフォルダー名、tmuxのウィンドウ名、実行中のセッションID、一時パスです。識別子はチェック時に検出し、保存しません。追加された行、コミットメッセージ、同じコマンドの `git add` で指定したファイル、`gh` のタイトル、本文、ノート、APIフィールドを調べます。追加の名前と除外は、[`machine-identifiers.example.txt`](machine-identifiers.example.txt) をコピーしたマシンローカルの `machine-identifiers.txt` に書きます。[`tools/machine-leak-scan.py`](tools/machine-leak-scan.py) は同じ照合をリポジトリの追跡中の全行に実行します。バイパスは `MACHINE_LEAK_DISABLE=1` |
 | [`sequelize-raw-sql-blocker.py`](hooks/sequelize-raw-sql-blocker.py) | PreToolUse Write/Edit | テストファイルも含め、Sequelizeの生クエリの抜け道をブロックします |
 | [`sequelize-schema-sync.py`](hooks/sequelize-schema-sync.py) | PreToolUse Write/Edit | Sequelizeのモデルとマイグレーションの一致を強制します |
 | [`session-resume-context.py`](hooks/session-resume-context.py) | SessionStart | ローカルワークスペースの名前を示してその`PROMPT.md`を全文表示し、続いて最新のチェックポイントか有効な計画（7日以内）を、起動時、clear時、compact時に`additionalContext`として示します。セッションは進行中の作業への手がかりを持って再開します |
@@ -518,14 +520,14 @@ $HOME/.claude/
   RTK.md                 RTK token-optimized CLI proxy reference
   settings.json          Permissions, hooks, MCP servers
   checklists/            Unified 920-item review checklist across 71 categories
-  rules/                 50 short rule cores, each linking to its full text
+  rules/                 51 short rule cores, each linking to its full text
     index.yml            Rule and standard catalog with trigger keywords
     lang/                5 language-specific cores: TypeScript, Python, ORM migrations
-  standards/             143 on-demand standards, including the full text of every rule
+  standards/             144 on-demand standards, including the full text of every rule
   agents/                18 specialized subagents
   skills/                42 slash-command skills
     audit/trust-patterns.md  IOC catalog for the /audit trust scan
-  hooks/                 99 runtime hooks
+  hooks/                 100 runtime hooks
   .github/scripts/       Validation and maintenance scripts (CI helpers)
   hooks/_lib/            Shared hook libraries (mutation detectors, audit log, suppression, git command normaliser)
   analyzers/             Immutability configs for the end-of-turn analyzers, and their local proof suite

@@ -81,7 +81,7 @@ def test_blocks_gh_auth_switch(tool_use, run_hook):
 def test_allows_gh_with_inline_token(tool_use, run_hook):
     # Arrange
     payload = tool_use(
-        "Bash", {"command": "GH_TOKEN=$(gh auth token --user gufranco) gh pr list"}
+        "Bash", {"command": "GH_TOKEN=$(gh auth token --user octocat) gh pr list"}
     )
 
     # Act

@@ -41,6 +41,7 @@ history.jsonl
 .session-locks.json
 settings.local.json
 solo-repos.txt
+machine-identifiers.txt
 comment-waivers.txt
 
 # Caches

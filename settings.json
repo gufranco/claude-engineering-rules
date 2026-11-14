@@ -258,6 +258,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/machine-leak-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/doc-sync-guard.py",
             "if": "Bash(git commit *)"
           }
@@ -273,7 +282,7 @@
         ]
       },
       {
-        "matcher": "mcp__linear-acme__save_issue|mcp__linear-acme__save_comment|mcp__linear-example__save_issue|mcp__linear-example__save_comment",
+        "matcher": "mcp__.*",
         "hooks": [
           {
             "type": "command",

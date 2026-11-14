@@ -139,6 +139,10 @@ always_loaded:
     description: CAN-SPAM + CASL + ePrivacy + LGPD marketing rules. Opt-in default everywhere, one-click unsubscribe, List-Unsubscribe header, identity disclosure (legal name + physical address), accurate subject lines, transactional vs marketing distinction, suppression list, frequency cap, CASL express vs implied consent, Brazil LGPD soft opt-in conditions.
     triggers: [spam, "anti-spam", "anti spam", marketing, newsletter, broadcast, "push notification", email campaign, sms, unsubscribe, "list-unsubscribe", "can-spam", casl, transactional, opt-in, opt-out]
 
+  machine-agnostic:
+    description: Everything committed or published reads the same on any machine. No home path, login, host, local folder or window name, live session id or temp path in tracked files, commit messages or pull request text; the owner's identity only in authorship. Fixtures from real data are renamed, generated reports use relative paths, and a commit-time guard derives the identifiers from the running machine
+    triggers: [machine, agnostic, leak, personal data, home path, hostname, username, fixture, fixtures, real data, window name, session id, absolute path, demo, tape, readme output]
+
   markdown-links:
     description: Every file mention in published markdown is a clickable link to the actual file. Two acceptable forms, exception zones, validator and hook integration, skip-list for test fixtures and command examples
     triggers: [markdown, md, documentation, readme, link, file reference, file mention, bare path, backlink, doc link]
@@ -850,6 +854,11 @@ on_demand:
     path: standards/living-specs.md
     description: "Maintain a living, testable statement of current behavior for non-trivial changes. specs/current/ organized by domain, requirements with normative keywords, Given/When/Then scenarios, delta discipline (ADDED/MODIFIED/REMOVED) against the current spec, and a close-out merge owned by /plan archive and reachable from /ship and /retro. Trivial changes skip per the surgical-edits skip list. Distinct from dated plan folders which record why; living specs record what"
     triggers: [living spec, living specs, behavioral spec, source of truth, requirement, scenario, given/when/then, delta spec, specs/current, archive spec, close-out merge, spec-driven]
+
+  machine-agnostic:
+    path: standards/machine-agnostic.md
+    description: "Everything committed or published reads the same on any machine. No home path, login, host, local folder or window name, live session id or temp path in tracked files, commit messages or pull request text; the owner's identity only in authorship. Fixtures from real data are renamed, generated reports use relative paths, and a commit-time guard derives the identifiers from the running machine"
+    triggers: [machine, agnostic, leak, personal data, home path, hostname, username, fixture, fixtures, real data, window name, session id, absolute path, demo, tape, readme output]
 
   markdown-links:
     path: standards/markdown-links.md

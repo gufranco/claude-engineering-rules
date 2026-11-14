@@ -60,7 +60,12 @@ TYPECHECK_PATHS := hooks/mutation-method-blocker.py \
                    hooks/_lib/cli_invocations.py \
                    hooks/_lib/shell_segments.py \
                    hooks/_lib/published_text.py \
-                   hooks/_lib/hook_input.py
+                   hooks/_lib/hook_input.py \
+                   hooks/_lib/machine_identity.py \
+                   hooks/_lib/machine_leak.py \
+                   hooks/_lib/machine_leak_sources.py \
+                   hooks/machine-leak-guard.py \
+                   tools/machine-leak-scan.py
 
 YAMLLINT   := $(call tool,yamllint)
 ZIZMOR     := $(call tool,zizmor)
