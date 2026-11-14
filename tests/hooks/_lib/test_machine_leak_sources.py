@@ -177,3 +177,67 @@ def test_an_oversized_added_file_is_skipped(repo: Path) -> None:
 
     # Assert
     assert result == []
+
+
+def test_a_heredoc_message_with_an_apostrophe_is_read_as_the_message(tmp_path):
+    # Arrange
+    command = (
+        "cd \"/home/u/some where\" && git commit -F - <<'MSG'\n"
+        "fix: y\n\nthe maintainer's machine\nMSG"
+    )
+
+    # Act
+    result = command_text_lines(command, str(tmp_path))
+
+    # Assert
+    assert result == [
+        (MESSAGE_LABEL, 1, "fix: y"),
+        (MESSAGE_LABEL, 3, "the maintainer's machine"),
+    ]
+
+
+def test_a_heredoc_body_file_feeds_the_published_text(tmp_path) -> None:
+    # Arrange
+    command = "gh pr comment 1 --body-file - <<'B'\nhello\nB"
+
+    # Act
+    result = command_text_lines(command, str(tmp_path))
+
+    # Assert
+    assert result == [(PUBLISHED_LABEL, 1, "hello")]
+
+
+def test_the_fallback_skips_segments_that_publish_nothing(tmp_path) -> None:
+    # Arrange
+    command = "cd /home/u/x && gh pr create --body 'open"
+
+    # Act
+    result = command_text_lines(command, str(tmp_path))
+
+    # Assert
+    assert result == [(COMMAND_LABEL, 1, "gh pr create --body 'open")]
+
+
+def test_a_heredoc_opened_by_another_command_is_not_the_message(tmp_path) -> None:
+    # Arrange
+    command = (
+        "python3 - <<'PY'\nold = 'private words'\nPY\n"
+        "git commit -F - <<'MSG'\ndocs: neutral\nMSG"
+    )
+
+    # Act
+    result = command_text_lines(command, str(tmp_path))
+
+    # Assert
+    assert result == [(MESSAGE_LABEL, 1, "docs: neutral")]
+
+
+def test_an_unparseable_command_keeps_its_publishing_heredoc(tmp_path) -> None:
+    # Arrange
+    command = "gh pr create --body 'open <<'B'\nignored\nB\ngh pr comment 1 --body-file - <<'C'\nkept\nC"
+
+    # Act
+    result = command_text_lines(command, str(tmp_path))
+
+    # Assert
+    assert "kept" in [text for _label, _number, text in result]
