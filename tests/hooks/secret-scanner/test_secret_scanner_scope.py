@@ -33,6 +33,7 @@ def repo(tmp_path: Path) -> Path:
     root = tmp_path / "repo"
     root.mkdir()
     _git(root, "init", "-q")
+    _git(root, "config", "commit.gpgsign", "false")
     (root / "app.py").write_text("print('ok')\n", encoding="utf-8")
     _git(root, "add", "app.py")
     _git(root, "commit", "-q", "--no-verify", "-m", "chore: start")

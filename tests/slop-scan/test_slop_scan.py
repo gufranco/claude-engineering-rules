@@ -57,6 +57,7 @@ def repo_with_commits(tmp_path: Path, faker: Faker, messages: list[str]) -> Path
     repo = tmp_path / "repo"
     repo.mkdir()
     git(repo, identity, "init", "-q")
+    git(repo, identity, "config", "commit.gpgsign", "false")
     for index, message in enumerate(messages):
         (repo / f"f{index}.txt").write_text(str(index), encoding="utf-8")
         git(repo, identity, "add", ".")

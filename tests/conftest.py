@@ -134,6 +134,11 @@ def scratch_repo_root(tmp_path: Path) -> Path:
     (root / "README.md").write_text(SCRATCH_README_TEXT, encoding="utf-8")
     subprocess.run(["git", "init", "-q", str(root)], check=True, timeout=30.0)
     subprocess.run(
+        ["git", "-C", str(root), "config", "commit.gpgsign", "false"],
+        check=True,
+        timeout=30.0,
+    )
+    subprocess.run(
         ["git", "-C", str(root), "add", "README.md"], check=True, timeout=30.0
     )
     return root

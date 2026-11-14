@@ -61,6 +61,7 @@ def git(*args: str, cwd: Path, env: dict[str, str] | None = None) -> None:
 def init_repo(path: Path) -> Path:
     path.mkdir(parents=True)
     git("init", "-q", cwd=path)
+    git("config", "--local", "commit.gpgsign", "false", cwd=path)
     return path
 
 

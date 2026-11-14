@@ -32,6 +32,7 @@ def git_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
+    _git(repo, "config", "commit.gpgsign", "false")
     (repo / "real.txt").write_text("real\n")
     _git(repo, "add", "real.txt")
     _git(repo, "commit", "-q", "-m", "init")
