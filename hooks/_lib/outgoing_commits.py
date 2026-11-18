@@ -33,8 +33,30 @@ def _without_redirections(push_args: list[str]) -> list[str]:
     ]
 
 
+DELETE_FLAGS = frozenset({"--delete", "-d"})
+OPTIONS_TAKING_A_VALUE = frozenset(
+    {
+        "-o",
+        "--push-option",
+        "--repo",
+        "--receive-pack",
+        "--exec",
+        "--recurse-submodules",
+    }
+)
+
+
+def _only_deletes(words: list[str]) -> bool:
+    return any(
+        word in DELETE_FLAGS and previous not in OPTIONS_TAKING_A_VALUE
+        for previous, word in zip(["", *words], words, strict=False)
+    )
+
+
 def _refspec_sources(push_args: list[str]) -> tuple[str, ...]:
     words = _without_redirections(push_args)
+    if _only_deletes(words):
+        return ()
     refspecs = [arg for arg in words if not arg.startswith("-")][1:]
     if not refspecs:
         return ("HEAD",)

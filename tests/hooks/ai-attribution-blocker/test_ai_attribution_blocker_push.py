@@ -99,6 +99,22 @@ def test_allows_a_push_when_the_trailer_is_already_on_the_remote(
     assert_allowed(result)
 
 
+def test_allows_a_push_that_only_deletes_remote_branches(
+    tool_use, run_hook, tmp_path, faker
+):
+    # Arrange
+    repo = published_repo(tmp_path, faker.sentence())
+    repo.git("push", "-q", "origin", "main:stale")
+    command = "git push origin --delete stale"
+    payload = tool_use("Bash", {"command": command}, cwd=str(repo.root))
+
+    # Act
+    result = run_hook(HOOK, payload)
+
+    # Assert
+    assert_allowed(result)
+
+
 def test_blocks_a_push_whose_outgoing_commits_cannot_be_read(
     tool_use, run_hook, tmp_path
 ):
