@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from collections.abc import Callable, Iterator
 from pathlib import Path
 import pytest
@@ -22,6 +23,7 @@ HOOKS_DIR = REPO_ROOT / "hooks"
 SUBPROCESS_TIMEOUT_S = 6.0
 SCRATCH_REPO_DIRNAME = "repo"
 SCRATCH_README_TEXT = "# Scratch\n"
+REAL_TREE_PARENT = "/var/tmp"
 
 Payload = dict[str, object]
 
@@ -125,6 +127,12 @@ def hooks_dir() -> Path:
 @pytest.fixture(scope="session")
 def repo_root() -> Path:
     return REPO_ROOT
+
+
+@pytest.fixture
+def real_tree_root() -> Iterator[Path]:
+    with tempfile.TemporaryDirectory(dir=REAL_TREE_PARENT) as folder:
+        yield Path(folder)
 
 
 @pytest.fixture

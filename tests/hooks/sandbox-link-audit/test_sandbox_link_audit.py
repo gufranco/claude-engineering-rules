@@ -20,13 +20,13 @@ class Layout:
 
 
 @pytest.fixture
-def layout(tmp_path: Path) -> Layout:
-    home = tmp_path / "home"
+def layout(real_tree_root: Path) -> Layout:
+    home = real_tree_root / "home"
     repo = home / "dots"
     (repo / "gnupg").mkdir(parents=True)
     subprocess.run(["git", "-C", str(repo), "init", "-q"], check=True, timeout=30)
     (repo / ".gitignore").write_text("gnupg/\n", encoding="utf-8")
-    temp_root = tmp_path / "tmpdir"
+    temp_root = real_tree_root / "tmpdir"
     scratch = temp_root / "claude-1000" / "session" / "scratchpad"
     scratch.mkdir(parents=True)
     env = {"HOME": str(home), "TMPDIR": f"{temp_root}/"}

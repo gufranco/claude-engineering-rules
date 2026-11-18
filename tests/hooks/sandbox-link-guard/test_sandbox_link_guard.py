@@ -18,13 +18,13 @@ class Layout:
 
 
 @pytest.fixture
-def layout(tmp_path: Path) -> Layout:
-    home = tmp_path / "home"
+def layout(real_tree_root: Path) -> Layout:
+    home = real_tree_root / "home"
     (home / ".dotfiles" / "gnupg").mkdir(parents=True)
-    temp_root = tmp_path / "tmpdir"
+    temp_root = real_tree_root / "tmpdir"
     scratch = temp_root / "claude-1000" / "session" / "scratchpad"
     scratch.mkdir(parents=True)
-    outside_repo = tmp_path / "work" / "repo"
+    outside_repo = real_tree_root / "work" / "repo"
     (outside_repo / ".git").mkdir(parents=True)
     env = {"HOME": str(home), "TMPDIR": f"{temp_root}/"}
     return Layout(home, scratch, outside_repo, env)

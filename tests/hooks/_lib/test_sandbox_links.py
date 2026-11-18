@@ -92,13 +92,13 @@ def test_no_tmpdir_leaves_only_the_fixed_roots() -> None:
     assert roots == ("/tmp", "/private/tmp")
 
 
-def test_a_path_in_a_work_tree_outside_home_is_real(tmp_path) -> None:
+def test_a_path_in_a_work_tree_outside_home_is_real(real_tree_root) -> None:
     # Arrange
-    (tmp_path / "repo" / ".git").mkdir(parents=True)
+    (real_tree_root / "repo" / ".git").mkdir(parents=True)
     env = {"HOME": "/home/user"}
 
     # Act
-    result = is_real(str(tmp_path / "repo" / "src"), env)
+    result = is_real(str(real_tree_root / "repo" / "src"), env)
 
     # Assert
     assert result is True
