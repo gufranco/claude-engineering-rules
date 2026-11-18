@@ -125,3 +125,21 @@ and `katex` 0.16.47, GHSA-238p-pmpm-9mq7, low, through `markdownlint`. The two
 overrides in [`pnpm-workspace.yaml`](pnpm-workspace.yaml) lift them to 2.9.1
 and 0.19.1, the patched releases. Drop each one once `markdownlint` depends on
 a patched range.
+
+### The `picomatch` audit exception
+
+GHSA-fc5q-39xc-vjpf, high, affects `picomatch` 2.3.2 and 4.0.5, which reach
+this repository only through the semantic-release tooling. No `picomatch`
+release fixes it, so [`pnpm-workspace.yaml`](pnpm-workspace.yaml) lists the
+advisory under `auditConfig.ignoreGhsas` and the release toolchain audit passes
+over it.
+
+| Field | Value |
+|---|---|
+| rule | The release toolchain audit fails on any high or critical advisory |
+| scope | GHSA-fc5q-39xc-vjpf in `pnpm-workspace.yaml` |
+| approved_by | Gustavo Franco, 2026-11-18 |
+| rationale | The flaw is a regular-expression slowdown on repeated extglob patterns. The release tooling only matches patterns written in this repository's own release configuration, so nobody outside it can supply one, and nothing from the tooling ships in the rules, hooks or skills |
+| alternatives | Lowering the audit to critical only, which would hide every later high finding; replacing semantic-release |
+| risk | A slow or stalled release run on a hostile pattern committed to the release configuration, which already needs write access to `main` |
+| revisit | When `picomatch` publishes a fix or the advisory is withdrawn; remove the `ignoreGhsas` entry and this section then |
