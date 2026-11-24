@@ -190,6 +190,10 @@ For every commit message, PR description, PR review reply, code comment, or chat
 
 If any answer is yes, rewrite before sending. The hook will block the worst of it; this self-test catches the rest.
 
+## Third-Party Repositories
+
+Before posting an issue, pull request, or comment to a repository the user does not own, read its `CONTRIBUTING` file for an AI-use policy. When the policy requires AI-written text to be declared, never post undeclared text: hand the user a draft to post in their own words, or ask whether to post it with the declaration.
+
 ## Bypass
 
 The bypass `AI_PROCESS_LEAK_DISABLE=1` is for editing planning artifacts that legitimately contain phase-N language and spec paths. Examples: project planning docs, ADRs, the rule files in `~/.claude/`. Export the variable in the parent shell before invoking Claude Code on those files. Never set it inline on a single command, because the hook reads the command string before the assignment takes effect.

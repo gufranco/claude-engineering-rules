@@ -42,3 +42,4 @@ Enforced by: [`hooks/large-file-blocker.py`](../hooks/large-file-blocker.py).
 Enforced by: [`hooks/review-state-guard.py`](../hooks/review-state-guard.py).
 Enforced by: [`hooks/workflow-guard.py`](../hooks/workflow-guard.py).
 Enforced by: [`hooks/pr-comment-discipline.py`](../hooks/pr-comment-discipline.py).
+Enforced by: [`hooks/dirty-tree-push-guard.py`](../hooks/dirty-tree-push-guard.py).

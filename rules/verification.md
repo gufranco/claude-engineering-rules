@@ -5,6 +5,7 @@ No completion claim without fresh evidence run in this session. Previous runs, c
 - Gate: identify what would fail if the work were wrong, run it now, read the full output, confirm it matches, only then claim done.
 - Code changes: formatter, tests, lint, and build, all four. Frontend and mobile: render it in a real engine or simulator; a jsdom or widget test is not render evidence.
 - Evidence means output: 0 test failures, 0 lint warnings, a clean build, a reproduction that now succeeds, the actual endpoint response, the file re-read.
+- A claim about a produced file, such as a video's container, codecs, or layout, is checked by reading that file on every branch that writes it, never inferred from the type requested.
 - Zero warnings is part of clean. Scan output for `warn`, `warning`, `deprecated`, `deprecation`, `notice`. CI is clean only with zero annotations.
 - A flagged problem is in scope even when it predates your work. Fix it rather than dismissing it by age or authorship.
 - Never read test results with `tail -N`; gate on the exit code and read the full output for the counts.

@@ -21,7 +21,7 @@ English | [日本語](README.ja.md) | [简体中文](README.zh-Hans.md) | [繁�
   <a href="https://github.com/gufranco/claude-engineering-rules/releases">Releases</a>
 </p>
 
-51 always-on rules, 144 on-demand standards, 42 skills, 100 hooks, and 18 agents, plus a 920-item review checklist in 71 categories.
+51 always-on rules, 144 on-demand standards, 42 skills, 104 hooks, and 18 agents, plus a 920-item review checklist in 71 categories.
 
 ---
 
@@ -187,7 +187,7 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 
 ### Hooks
 
-102 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
+104 hooks in [`hooks/`](hooks/) wired through [`settings.json`](settings.json). Each runs before, after, or around a tool call.
 
 **Bypass channels.** Every hook supports two. Either grants a pass; both coexist.
 
@@ -242,6 +242,8 @@ Topics: API design, authentication, caching, code review, concurrency and race c
 | [`gcloud-config-guard.py`](hooks/gcloud-config-guard.py) | PreToolUse Bash | Forces `--configuration` per call |
 | [`gh-run-watch-blocker.py`](hooks/gh-run-watch-blocker.py) | PreToolUse Bash | Blocks `gh run watch` and equivalents that poll every 3s and burn the API rate budget, including `glab ci view --live` and `glab ci status --wait` or `--live`. Text in single quotes or a quoted heredoc body is not read as a command. Bypass `GH_RUN_WATCH_DISABLE=1` |
 | [`gh-short-sha-guard.py`](hooks/gh-short-sha-guard.py) | PreToolUse Bash | Blocks `gh run list --commit` with a SHA shorter than 40 characters, which matches no runs and exits 0, so a CI wait built on it reports done or not started |
+| [`dirty-tree-push-guard.py`](hooks/dirty-tree-push-guard.py) | PreToolUse Bash | Blocks `git push` while tracked files are modified and the call does not stage everything, so the pushed commit is the tree that was tested |
+| [`colima-temp-mount-guard.py`](hooks/colima-temp-mount-guard.py) | PreToolUse Bash | Blocks a Docker mount from `/tmp`, `/var/folders`, `$TMPDIR` or an `mktemp` folder outside the home directory when Colima runs Docker, since Colima mounts such a folder empty |
 | [`gh-token-guard.py`](hooks/gh-token-guard.py) | PreToolUse Bash | Requires inline `GH_TOKEN`, blocks `gh auth switch`. Exempts `gh auth` plus invocations that reach no API (`--version`, `--help` or `-h` anywhere in the call, `config`, `alias`, `completion`). Reads commands on every line, and ignores `gh` text inside single quotes or a quoted heredoc body |
 | [`knowledge-note-guard.py`](hooks/knowledge-note-guard.py) | PreToolUse Write/Edit/MultiEdit/Bash | Enforces the knowledge-note specification inside the second brain: missing frontmatter, missing `## For future agent` preamble, an undated volatile claim, a wikilink to a note that does not exist, a pointer with no resolvable target (FRESH-3), a write into the immutable raw folder, a removal outside trash. Skips `specs/`, `eval/` and [`tests/`](tests/), which hold plan artifacts rather than notes, and the vault's local workspace folder when `.git/info/exclude` registers it. Bypass `KNOWLEDGE_NOTE_DISABLE=1` |
 | [`memory-write-guard.py`](hooks/memory-write-guard.py) | PreToolUse Write/Edit/MultiEdit | Keeps the session memory directory a generated artifact while a second brain vault is configured: every Write or Edit into the memory directory is blocked, since `/brain compile` writes it as a script, and an edit to `MEMORY.md` passes only when it leaves the compiled block unchanged. Completely inert when `SECOND_BRAIN_VAULT` is unset or does not resolve, so a clone without a vault keeps the harness default. Bypass `MEMORY_WRITE_GUARD_DISABLE=1` |

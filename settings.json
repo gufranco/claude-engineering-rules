@@ -1436,6 +1436,24 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/dirty-tree-push-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/colima-temp-mount-guard.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "python3 ~/.claude/hooks/repo-fetch-blocker.py"
           }
         ]
