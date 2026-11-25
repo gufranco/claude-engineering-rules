@@ -192,7 +192,14 @@ If any answer is yes, rewrite before sending. The hook will block the worst of i
 
 ## Third-Party Repositories
 
-Before posting an issue, pull request, or comment to a repository the user does not own, read its `CONTRIBUTING` file for an AI-use policy. When the policy requires AI-written text to be declared, never post undeclared text: hand the user a draft to post in their own words, or ask whether to post it with the declaration.
+To post an issue, pull request, or comment to a repository the user does not own, show the full final text in chat and post it with `gh` only after the user approves that exact text. The user never has to open a browser to post it.
+
+Before drafting, read the repository's `CONTRIBUTING` file for an AI-use policy. When the policy requires AI-written text to be declared, the user's review does not make a draft their own writing, so offer two paths and post only one of them:
+
+- The user rewrites the draft in chat in their own words, and the agent posts that text unchanged.
+- The agent posts its draft with the declaration the policy asks for.
+
+Never post an undeclared agent draft to such a repository, and never answer a template's AI-use question falsely.
 
 ## Bypass
 
